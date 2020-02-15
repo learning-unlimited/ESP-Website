@@ -33,11 +33,12 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from esp.middleware import ESPError
 from esp.users.models import admin_required
 from esp.themes import settings as themes_settings
 from esp.themes.controllers import ThemeController
 
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from django.http import HttpResponseRedirect
 from django.conf import settings
 
@@ -46,8 +47,14 @@ import random
 import string
 import os.path
 
+THEME_ERROR_STRING = "Your site's theme is not in the generic templates system. " + \
+                     "If you want to switch to one of the standard themes, " + \
+                     "please contact the web team."
+
 @admin_required
 def landing(request):
+    if settings.LOCAL_THEME:
+        raise ESPError(THEME_ERROR_STRING, log=False)
     context = {}
     tc = ThemeController()
     context['theme_name'] = tc.get_current_theme()
@@ -56,13 +63,16 @@ def landing(request):
 
 @admin_required
 def selector(request, keep_files=None):
+    if settings.LOCAL_THEME:
+        raise ESPError(THEME_ERROR_STRING, log=False)
+
     context = {}
     tc = ThemeController()
-    
+
     if request.method == 'POST' and 'action' in request.POST:
         if request.POST['action'] == 'select':
             theme_name = request.POST['theme'].replace(' (current)', '')
-            
+
             #   Check for differences between the theme's files and those in the working copy.
             #   If there are differences, require a confirmation from the user for each file.
             differences = tc.check_local_modifications(theme_name)
@@ -79,7 +89,7 @@ def selector(request, keep_files=None):
         elif request.POST['action'] == 'clear':
             tc.save_customizations('%s-last' % tc.get_current_theme())
             tc.clear_theme()
-    
+
     context['theme_name'] = tc.get_current_theme()
     context['themes'] = tc.get_theme_names()
     return render_to_response('themes/selector.html', request, context)
@@ -90,12 +100,15 @@ def confirm_overwrite(request, current_theme=None, differences=None, orig_view=N
         they would like to keep, and which they would like to overwrite
         with the ones from the theme data.  """
 
+    if settings.LOCAL_THEME:
+        raise ESPError(THEME_ERROR_STRING, log=False)
+
     context = {}
     tc = ThemeController()
-    
+
     if current_theme is None:
         current_theme = request.POST.get('theme', '')
-    
+
     if request.method == 'POST' and request.POST.get('confirm_overwrite', '0') == '1':
         files_to_keep = []
         diffs_current = tc.check_local_modifications(current_theme)
@@ -113,11 +126,11 @@ def confirm_overwrite(request, current_theme=None, differences=None, orig_view=N
         if request.POST.get('orig_view', '') == 'recompile':
             view_func = recompile
         return view_func(request, keep_files=files_to_keep)
-    
+
     #   Display the form asking the user which files to keep/overwrite.
     if differences is None:
         differences = tc.check_local_modifications(current_theme)
-        
+
     context['theme_name'] = current_theme
     context['differences'] = differences
     context['orig_view'] = orig_view
@@ -125,6 +138,9 @@ def confirm_overwrite(request, current_theme=None, differences=None, orig_view=N
 
 @admin_required
 def configure(request, current_theme=None, force_display=False, keep_files=None):
+    if settings.LOCAL_THEME:
+        raise ESPError(THEME_ERROR_STRING, log=False)
+
     context = {}
     tc = ThemeController()
     if current_theme is None:
@@ -135,10 +151,10 @@ def configure(request, current_theme=None, force_display=False, keep_files=None)
     if form_class is None:
         form = None
         return render_to_response('themes/configure_form.html', request, context)
-    
+
     if request.method == 'POST' and not force_display:
         form = form_class(request.POST.copy())
-        
+
         if form.is_valid():
             #   Done; save results and go back to landing page.
             if form.cleaned_data['theme'] != tc.get_current_theme():
@@ -159,14 +175,16 @@ def configure(request, current_theme=None, force_display=False, keep_files=None)
     context['form'] = form
     context['keep_files'] = keep_files
     context['confirm_overwrite'] = request.POST.get('confirm_overwrite', '0')
-    
+
     return render_to_response('themes/configure_form.html', request, context)
 
 @admin_required
 def editor(request):
+    if settings.LOCAL_THEME:
+        raise ESPError(THEME_ERROR_STRING, log=False)
 
     tc = ThemeController()
-    
+
     if request.method == 'POST':
         #   Handle form submission
         vars = None
@@ -211,7 +229,7 @@ def editor(request):
 
     #   Load a bunch of preset fonts
     context['sans_fonts'] = sorted(themes_settings.sans_serif_fonts.iteritems())
-    
+
     #   Load the theme-specific options
     adv_vars = tc.find_less_variables(current_theme, theme_only=True)
     context['adv_vars'] = {}
@@ -241,6 +259,8 @@ def editor(request):
 
 @admin_required
 def recompile(request, keep_files=None):
+    if settings.LOCAL_THEME:
+        raise ESPError(THEME_ERROR_STRING, log=False)
 
     tc = ThemeController()
 

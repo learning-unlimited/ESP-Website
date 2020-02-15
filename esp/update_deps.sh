@@ -49,5 +49,6 @@ then
 fi
 
 # Upgrade/install pip, setuptools, wheel, and application dependencies.
-pip install -U pip setuptools wheel
+pip install -U pip
+pip install -U setuptools wheel
 pip install -U -r "$BASEDIR/esp/requirements.txt"

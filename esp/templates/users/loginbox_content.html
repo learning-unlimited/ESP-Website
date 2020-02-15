@@ -7,7 +7,12 @@
 
   <div class="logged_in hidden">
     <ul class="nav">
-      <li><a id="loginbox_user_name"></a></li>
+      <li>
+          <a id="loginbox_user_name">
+              Hello, <span id="user_first_name"></span>
+              <span id="user_last_name"></span>!
+          </a>
+      </li>
       <li><form class="navbar-form form-inline" action="/myesp/signout">
         <a href="/myesp/signout"><button class="btn btn-inverse" style="margin-right:0px;">Logout</button></a>
         <span class="dropdown">

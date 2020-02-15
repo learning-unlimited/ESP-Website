@@ -40,7 +40,7 @@ from esp.program.models import Program, StudentAppResponse, StudentRegistration,
 from esp.program.models.class_ import ClassSubject
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.modules.base import main_call, aux_call, needs_admin, needs_student, meets_grade
-from esp.web.util import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.models import ESPUser
 from esp.utils.query_utils import nest_Q
 
@@ -80,25 +80,25 @@ class ClassChangeRequestModule(ProgramModuleObj):
         for timeslot in timeslots:
             try:
                 enrollments[timeslot] = ClassSubject.objects.get(nest_Q(StudentRegistration.is_valid_qobject(), 'sections__studentregistration'), sections__studentregistration__relationship__name="Enrolled", sections__studentregistration__user=request.user, sections__meeting_times=timeslot, parent_program=prog)
-            except ClassSubject.DoesNotExist: 
+            except ClassSubject.DoesNotExist:
                 enrollments[timeslot] = None
 
         context = {}
         context['timeslots'] = timeslots
         context['enrollments'] = enrollments
         context['user'] = request.user
-        if 'success' in request.GET: 
+        if 'success' in request.GET:
             context['success'] = True
-        else: 
+        else:
             context['success'] = False
 
         if request.user.isStudent():
             sections_by_slot = dict([(timeslot,[(section, 1 == StudentRegistration.valid_objects().filter(user=context['user'], section=section, relationship__name="Request").count()) for section in sections if section.get_meeting_times()[0] == timeslot and section.parent_class.grade_min <= request.user.getGrade(prog) <= section.parent_class.grade_max and section.parent_class not in enrollments.values() and ESPUser.getRankInClass(request.user, section.parent_class) in (5,10)]) for timeslot in timeslots])
-        else: 
+        else:
             sections_by_slot = dict([(timeslot,[(section, False) for section in sections if section.get_meeting_times()[0] == timeslot]) for timeslot in timeslots])
 
         fields = {}
-        for i, timeslot in enumerate(sections_by_slot.keys()): 
+        for i, timeslot in enumerate(sections_by_slot.keys()):
             choices = [('0', "I'm happy with my current enrollment.")]
             initial = '0'
             for section in sections_by_slot[timeslot]:
@@ -109,23 +109,23 @@ class ClassChangeRequestModule(ProgramModuleObj):
 
         form = type('ClassChangeRequestForm', (forms.Form,), fields)
         context['form'] = form()
-        if request.method == "POST": 
+        if request.method == "POST":
             old_requests = StudentRegistration.valid_objects().filter(user=context['user'], section__parent_class__parent_program=prog, relationship__name="Request")
             for r in old_requests:
                 r.expire()
             form = form(request.POST)
-            if form.is_valid(): 
-                for value in form.cleaned_data.values(): 
+            if form.is_valid():
+                for value in form.cleaned_data.values():
                     section = None
-                    for s in sections: 
-                        if s.emailcode() == value: 
+                    for s in sections:
+                        if s.emailcode() == value:
                             section = s
                             break
-                    if not section: 
+                    if not section:
                         continue
                     r = StudentRegistration.valid_objects().get_or_create(user=context['user'], section=section, relationship=RegistrationType.objects.get_or_create(name="Request", category="student")[0])[0]
                     r.save()
 
                 return HttpResponseRedirect(request.path.rstrip('/')+'/?success')
-        else: 
+        else:
             return render_to_response(self.baseDir() + 'classchangerequest.html', request, context)

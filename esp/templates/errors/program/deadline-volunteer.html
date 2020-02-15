@@ -1,0 +1,20 @@
+{% extends "main.html" %}
+
+{% block title %}Volunteer Registration Closed{% endblock %}
+
+
+{% block content %}
+
+<h1>{{ moduleObj.program.niceName }} Volunteer Registration Closed</h1>
+
+<strong>
+<p>
+This registration page ({{ moduleObj.module.getFriendlyName }}) is not currently open, possibly because you are either too early or too late.  Please look in the <a href="/volunteer/index.html">volunteers section</a> of our site for information about the schedule for this program.  Alternatively, feel free to go <a href="javascript:history.back();">back</a> to the page that you came from.
+</p>
+
+<p>
+If you think this message was in error, send us an <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}">email</a>, telling us what you were trying to do, the URL of the page, and that {{ extension }} closed.
+</p>
+</strong>
+
+{% endblock %}

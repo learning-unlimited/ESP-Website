@@ -1,0 +1,11 @@
+Hi {{ student.name }},
+
+On {{ curtime|date:"l M d Y" }} at {{ curtime|date:"h:i A" }}, you joined the Student Lottery for {{ program.niceName }}.
+
+For more information, or if you would like to make any changes, please visit the student lottery page at <http://{{ DEFAULT_HOST }}/learn/{{ program.url }}/studentreg> at any time before registration for the student lottery closes.
+
+{% if note %}
+Additional comments: {{ note }}{% endif %}
+
+- {{ program.program_type }} Registration System
+  Contact the directors: {{ program.director_email }}

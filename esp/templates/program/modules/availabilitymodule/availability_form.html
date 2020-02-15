@@ -2,16 +2,30 @@
 
 {% block title %}Availability for {{ prog.niceName }}{% endblock %}
 
-{% block subsection_name %}Documents for Class{% endblock %}
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+<link rel="stylesheet" href="/media/default_styles/availability.css" type="text/css" />
+{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript" src="/media/scripts/program/modules/availability.js"></script>
+
+<script>
+$j(document).ready(function() {
+  Availability.init({{ isAdmin|yesno:"true,false" }}, "You are currently scheduled to teach at this time");
+});
+</script>
+{% endblock %}
 
 {% block content %}
 
 {% load render_qsd %}
+{% load modules %}
 
-<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+<h1>{% if isAdmin %}Manage{% else %}Your{% endif %} Availability for {{ prog.niceName }}</h1>
 
-<h1>Your Availability for {{ prog.niceName }}</h1>
-
+{% if groups %}
 <div id="program_form">
 
 {% inline_program_qsd_block prog "availability_instructions" %}
@@ -20,11 +34,11 @@ Before you can register classes in {{ prog.niceName }}, please let us know which
 </p>
 
 <p>
-You must include enough times (in contiguous blocks) for all of the classes that you would like to teach.  If classes have already been scheduled, the times taken by the classes are grayed out below.
+You must include enough times (in contiguous blocks) for all of the classes that you would like to teach.  If classes have already been scheduled, the times taken by the classes are indicated below.
 </p>
 
 <p>
-<b>Checked checkboxes mean that you are available at the indicated time.</b>
+You can click on individual timeblocks, highlight multiple timeblocks, and even click a block header to change your availability for the entire block.
 </p>
 {% end_inline_program_qsd_block %}
 
@@ -39,7 +53,7 @@ We have detected that you are currently signed up to teach more hours of class t
 {% if conflict_found %}
 {% inline_program_qsd_block prog "teacher_conflict" %}
 <p style="color: red;">
-You are scheduled to teach a class during at least one timeslot in which you are not marked as available.  Please <a href="mailto:{{ prog.director_email }}">contact the directors</a> immediately to resolve this conflict.
+You are scheduled to teach a class during at least one timeslot in which you are not marked as available (indicated with a red border below).  Please <a href="mailto:{{ prog.director_email }}">contact the directors</a> immediately to resolve this conflict.
 </p>
 {% end_inline_program_qsd_block %}
 {% endif %}
@@ -56,31 +70,45 @@ You submitted a schedule with no available times.  You can't register a class wi
 
 <form method="post" action="{{ request.path }}">
 <input type="hidden" name="user" value="{{ teacher_user.username }}" />
-<table cellpadding="4" cellspacing="0" align="center" width="300">
-    <tr>
-        <th colspan="2" align="center">Time Slots for {{ prog.niceName }}</th>
-    </tr>
-    {% for h in groups %}
-    {% if num_groups != 1 %}
-    <tr>
-        <th class="small" colspan="2" align="center"><b>Block {{ forloop.counter }} {% ifchanged h.selections.0.slot.start.day %}({{ h.selections.0.slot.start|date:"D M d, Y" }}){% endifchanged %}</b></th>
-    </tr>
-    {% endif %}
-        {% for t in h.selections %}
-        <tr>
-            <td align="center"><input type="checkbox" name="timeslots" value="{{ t.slot.id }}" {% if t.checked %}checked{% endif %} {% if t.taken %}disabled{% endif %} /></td>
-            <td><span style="color: {% if t.taken %}gray{% else %}black{% endif %};">{{ t.slot.short_description }}</span></td>
-        </tr>
-        {% endfor %}
+
+<center>
+  {% include "program/modules/availability.html" %}
+  <div hidden id="checkboxes">
+    {% for group in groups %}
+      {% for time in group %}
+        <input type="checkbox" name="timeslots" {% if time.section %}data-hover="{{ time.section }} ({{ time.section.prettyrooms|join:", " }})"{% endif %} value="{{ time.slot.id }}" {% if time.checked %}checked{% endif %} {% if time.taken %}disabled{% endif %}>
+      {% endfor %}
     {% endfor %}
-    <tr>
-        <td align="center" colspan="2"><input type="submit" class="fancybutton" value="Submit" /></td>
-    </tr>
-</table>
+  </div>
+  <br>
+
+  <input type="submit" class="btn btn-primary" value="Submit" />
+</center>
+
+
 </form>
 
-<br />
+<h2>Unscheduled classes</h2>
+{% for s in unscheduled %}
+{{ s }} ({{ s.prettyDuration }})<br>
+{% endfor %}
 
 </div>
+
+<div class="side right" hidden>
+  <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
+  <span class="summary" style="background-color: #00FF00;">Available</span>
+  <span class="summary" style="background-color: #42b3f4;">Scheduled to Teach</span>
+</div>
+{% endif %}
+
+{% if search_form and program|hasModule:"CheckAvailabilityModule" %}
+<br><br>
+<form method="POST" action="/manage/{{ program.getUrlBase }}/edit_availability">
+{{ search_form.as_p }}
+<input type="hidden" name="search" hidden />
+<input type="submit" value="Search" />
+</form>
+{% endif %}
 
 {% endblock %}

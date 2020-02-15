@@ -31,7 +31,7 @@ for s in sections:
     actual_duration = len(s.get_meeting_times())
     if expected_duration != actual_duration and actual_duration > 0:  # >0 to avoid unscheduled classes
         print str(s.emailcode()) + ' has expected duration ' + str(expected_duration) + ', actual duration ' + str(actual_duration)
-            
+
 # The Events in the Resources for the section match the Events of the meeting_times for the section.
 print "Checking: The Events in the Resources for the section match the Events of the meeting_times for the section."
 for s in sections:

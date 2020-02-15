@@ -75,7 +75,7 @@ while n <= limit:
     curl.setopt(curl.WRITEFUNCTION, res.callback)
     curl.setopt(curl.CAINFO, "cacert.pem")
     curl.perform()
-    
+
     http_code = curl.getinfo(curl.HTTP_CODE)
     result = res.content()
 
@@ -95,7 +95,7 @@ while n <= limit:
 
         print ""
         sys.stdout.write("[ " + str(limit) + " ] ")
-    
+
     sys.stdout.write(" " + str(n))
     n += 1
     #  now to the next page
@@ -122,7 +122,7 @@ while len(ids) > 0:
         f.write(ids.pop())
         n += 1
         # end mini loop
-    
+
     f.write("""\">
   <input type="hidden" name="dataview" value="1">
   <input type="submit" value="Download Batch """)

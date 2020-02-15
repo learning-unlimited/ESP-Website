@@ -6,7 +6,7 @@
 
 set -e
 
-this_dir=${0%/*}
+this_dir="$(readlink -f "${0%/*}")"
 base_dir=/lu/sites
 
 cd $base_dir || exit 1
@@ -15,6 +15,6 @@ echo "$@"
 for i in $sites ; do
   if [ -f $i/esp/manage.py ] ; then
     echo -n "$i: "
-    python $this_dir/single_query.py "$base_dir/$i" "$@"
+    python "$this_dir/single_query.py" "$base_dir/$i" "$@"
   fi
 done

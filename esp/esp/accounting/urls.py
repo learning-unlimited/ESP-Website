@@ -33,9 +33,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from django.conf.urls import *
+from django.conf.urls import url
 from esp.accounting.views import summary
 
-urlpatterns = patterns('esp.accounting',
-    (r'^$', summary),
-)
+urlpatterns = [
+    url(r'^$', summary),
+]

@@ -1,8 +1,3 @@
-div .manage_hidden {
-    display: none;
-    height: 0px;
-}
-
 div .module_group_body {
     padding-left: 10px;
     padding-right: 10px;
@@ -21,11 +16,6 @@ div .module_group_header {
     padding: 5px;
     margin-bottom: 8px;
     box-shadow: 3px 3px 5px #CCCCCC;
-}
-
-div .header_special {
-    background-color: #acf5ff;
-    margin-bottom: 20px;
 }
 
 div .module_link_large {

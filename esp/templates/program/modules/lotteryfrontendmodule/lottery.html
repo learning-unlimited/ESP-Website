@@ -1,0 +1,63 @@
+{% extends "main.html" %}
+
+{% block title %}Run Lottery Assignment Thing Tool{% endblock %}
+
+{% block xtrajs %}
+{{ block.super }}
+<script>
+var program_url_base = '{{ program.getUrlBase }}';
+</script>
+<script type="text/javascript" src="/media/scripts/program/modules/lotteryfrontend.js"></script>
+{% endblock %}
+
+{% block subsection_name %}Lottery Options{% endblock %}
+
+{% block content %}
+
+<h1>Generate Student Schedules</h1>
+
+<form id="lotteryForm" class="form-inline">
+    <h3>Configuration</h3>
+    <table width="100%" cellpadding="5">
+        {% for option_key, option_value in options.items %}
+            <tr>
+                <th>{{ option_key }}</th>
+                <td>
+                    <input type="text" class="input-small" name="lottery_{{ option_key }}" value="{{ option_value.0 }}" />
+                </td>
+                <td>{{ option_value.1 }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+
+    <h3>Run</h3>
+    <p>You will be able to review the generated schedules below before saving them.</p>
+    <button id="lotteryRun" type="submit" class="btn btn-primary btn-large">Generate Student Schedules</button>
+</form>
+
+<h1>Save Student Schedules</h1>
+
+<p>Statistics for the generated schedules appear below. After reviewing, you can save the schedules, which uploads the student-to-class assignments to the website{% if has_old_schedules %}, overwriting the existing schedules{% endif %}.</p>
+<div id="lotteryStats"></div>
+<button
+	id="lotterySaveSafe"
+	type="button"
+	class="btn btn-success lotterySave"
+	disabled
+	{% if has_old_schedules %}style="display:none;"{% endif %}
+	>
+    Save Schedules to Website
+</button>
+<button
+	id="lotterySaveOverwrite"
+	type="button"
+	class="btn btn-danger lotterySave"
+	disabled
+	{% if not has_old_schedules %}style="display:none;"{% endif %}
+	>
+    Save Schedules to Website (and overwrite existing schedules)
+</button>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

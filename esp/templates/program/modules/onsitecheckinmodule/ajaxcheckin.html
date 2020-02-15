@@ -2,17 +2,23 @@
 
 {% block title %}{{program.niceName}} Management{% endblock %}
 
-{% block subsection_name %}Rapid check-in for {{program.niceName}}{% endblock %}
-
 {% block stylesheets %}
-    {{ block.super }}
-    <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
+{{ block.super }}
+<link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
+
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+table {
+    table-layout: fixed;
+    width: 100%;
+}
+#id_target_user {
+    width: calc(100% - 10px);
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<style type="text/css">
-.nocheckmark { border: 1px solid black; }
-</style>
 <br />
 <br />
 
@@ -30,22 +36,25 @@ Welcome to student check-in for {{program.niceName}}.  Make sure that the studen
 
 <form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">
 <table>
-<tr>
-    <th colspan="2">
-        Choose Students to Check In
-    </th>
-</tr>
-<tr>
-    <td>
-        <table>
-            {{ form }}
-        </table>
-    </td>
-    <td align="center">
-        <input class="button" type="submit" value="Check-In" />
-    </td>
-</tr>
-
+    <col width="85%">
+    <col width="15%">
+    <tr>
+        <th colspan="2">
+            Choose Students to Check In
+        </th>
+    </tr>
+    <tr>
+        <td>
+            <table>
+                <col width="20%">
+                <col width="80%">
+                {{ form }}
+            </table>
+        </td>
+        <td align="center">
+            <input class="button" type="submit" value="Check-In" />
+        </td>
+    </tr>
 </table>
 
 </form>
@@ -66,5 +75,6 @@ Welcome to student check-in for {{program.niceName}}.  Make sure that the studen
 
 </div>
 
+{% include "program/modules/onsitecore/returnlink.html" %}
 
 {% endblock %}

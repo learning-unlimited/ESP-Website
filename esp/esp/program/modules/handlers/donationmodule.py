@@ -33,8 +33,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.web.util import render_to_response
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
+from esp.utils.web import render_to_response
 from esp.dbmail.models import send_mail
 from esp.users.models import ESPUser, Record
 from esp.tagdict.models import Tag
@@ -104,14 +104,15 @@ class DonationModule(ProgramModuleObj):
             return {'donation': ESPUser.objects.filter(QObj).distinct()}
 
     def studentDesc(self):
-        return {'donation': """Students who have chosen to make an optional donation."""}
+        return {'donation': """Students who have chosen to make an optional donation"""}
 
     @main_call
     @usercheck_usetl
     @meets_deadline('/ExtraCosts')
+    @meets_cap
     def donation(self, request, tl, one, two, module, extra, prog):
 
-        user = ESPUser(request.user)
+        user = request.user
 
         iac = IndividualAccountingController(self.program, user)
 
@@ -120,7 +121,7 @@ class DonationModule(ProgramModuleObj):
         # do in other accounting modules, and don't allow changes after payment
         # has occured.
         if iac.amount_due() <= 0:
-            raise ESPError("You've already paid for this program.  Please make any further changes on-site so that we can charge or refund you properly.", log=False)
+            raise ESPError("You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.", log=False)
 
         # Donations and non-donations go through different code paths. If a
         # user chooses to make a donation, set_donation_amount() is called via

@@ -43,3 +43,8 @@ color: lightgray;
 .sortReversed {
   color: red;
 }
+
+.help-text {
+  margin: 10px;
+  font-style: italic;
+}

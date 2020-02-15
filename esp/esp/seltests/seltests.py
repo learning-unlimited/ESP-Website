@@ -47,13 +47,13 @@ class CsrfTestCase(SeleniumTestCase):
         self.open_url("/") # Load index
 
         try_normal_login(self, "student", "student")
-        self.failUnless(self.is_text_present('Student Student'))
+        self.assertTrue(self.is_text_present('Student Student'))
         logout(self)
 
         self.delete_cookie("esp_csrftoken")
 
         try_normal_login(self, "student", "student")
-        self.failUnless(self.is_text_present('Student Student'))
+        self.assertTrue(self.is_text_present('Student Student'))
         logout(self)
 
         self.close()

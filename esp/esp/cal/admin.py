@@ -39,7 +39,7 @@ from esp.cal.models import EventType, Event
 admin_site.register(EventType)
 
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('id', 'program', 'name', 'pretty_time', 'event_type', 'short_description')
+    list_display = ('id', 'program', 'name', 'short_time', 'pretty_date', 'event_type', 'short_description')
     list_filter = ('program', 'start', 'end', 'event_type')
     date_hierarchy = 'start'
     search_fields = ('=id', 'name', 'short_description', 'description')

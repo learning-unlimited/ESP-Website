@@ -3,10 +3,6 @@
 
 {% block title %} Class Lottery Registration for {{prog.niceName}} {% endblock %}
 
-{% load subsection %}
-{% block subsection %}
-{% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
-
 {% block xtrajs %}
 <script type="text/javascript">    var base_url = "{{ program.getUrlBase }}";  </script>
 <script type="text/javascript">    var program_base_url = "/json/"+base_url+"/";

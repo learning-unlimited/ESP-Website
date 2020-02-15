@@ -23,7 +23,7 @@ srs_pairs = srs.values_list('user', 'section')
 
 users = ESPUser.objects.filter(id__in=srs.values_list('user'))
 sections = ClassSection.objects.filter(
-    id__in=srs.values_list('section')
+    parent_class__parent_program=program
 ).prefetch_related('meeting_times')
 timeblocks = Event.objects.filter(
     program=program, event_type__description='Class Time Block')

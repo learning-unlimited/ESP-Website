@@ -40,14 +40,50 @@ function deleteClass (id, name) {
     }
 }
 
+function emailTeachers (emailAddress, subject) {
+    window.open("mailto:" + emailAddress + '?subject=' + encodeURIComponent(subject));
+}
+
 function showAll () {
     $j(".fqr-class-detail").show();
-    $j(".flag-detail:not(#flag-extra)").show();
+    $j(".flag-detail:not(.flag-extra)").show();
+}
+
+function showWithComments () {
+    $j(".fqr-class-detail").show();
+    $j(".flag-detail.flag-has-comment").show();
 }
 
 function hideAll () {
     $j(".fqr-class-detail").hide();
     $j(".flag-detail").hide();
+}
+
+function approveAll (IDs) {
+    var r = confirm("Are you sure you'd like to approve ALL of these classes?");
+    if (r) {
+        IDs.forEach(function(element) {
+            approve(element);
+        });
+    }
+}
+
+function unreviewAll (IDs) {
+    var r = confirm("Are you sure you'd like to unreview ALL of these classes?");
+    if (r) {
+        IDs.forEach(function(element) {
+            unreview(element);
+        });
+    }
+}
+
+function rejectAll (IDs) {
+    var r = confirm("Are you sure you'd like to reject ALL of these classes?");
+    if (r) {
+        IDs.forEach(function(element) {
+            reject(element);
+        });
+    }
 }
 
 $j(document).ready(function () {

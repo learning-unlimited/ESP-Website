@@ -1,11 +1,7 @@
 {% extends "main.html" %}
+{% load users %}
 
 {% block title %}Review Student {{ student.name }}{% endblock %}
-
-{% block subsection %}
-{% load subsection %}
-{% autoescape off %}{{ "Review student apps"|subsection }}{% endautoescape %}
-{% endblock %}
 
 {% block stylesheets %}
 {{ block.super }}
@@ -18,7 +14,7 @@
 
 <p>
 Application for {{ student.name }}. <br/>
-Grade: {{ student.getGrade }} <br />
+Grade: {{ student|getGradeForProg:program.id }} <br />
 DOB:   {{ student.getLastProfile.student_info.dob|date:"M d, Y" }}<br />
 Added your class: {{ student.added_class|date:"m/d/Y @ h:i:s" }}
 </p>

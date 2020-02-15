@@ -4,6 +4,7 @@ from south.management.commands import patch_for_test_db_setup
 from south.management.commands import test as test_south
 
 import logging
+logger = logging.getLogger(__name__)
 import sys
 
 
@@ -21,9 +22,9 @@ class Command(test_south.Command):
       run_selenium_tests = bool(options.get('run_selenium_tests', False))
 
       # Check test types
-      if (run_south_tests and run_selenium_tests or 
+      if (run_south_tests and run_selenium_tests or
          not run_south_tests and not run_selenium_tests):
-         logging.error("You must specify exactly one of --selenium-tests and --normal-tests.")
+         logger.error("You must specify exactly one of --selenium-tests and --normal-tests.")
          sys.exit(1)
 
       # Apply the south patch for syncdb, migrate commands during tests
@@ -37,7 +38,7 @@ class Command(test_south.Command):
          # Instead, we parse the relevant options ourselves.
          verbosity = int(options.get('verbosity', 1))
          interactive = options.get('interactive', True)
-         failfast = options.get('failfast', False)         
+         failfast = options.get('failfast', False)
 
          test_runner = SeleniumTestRunner(verbosity=verbosity, interactive=interactive, failfast=failfast)
          test_runner.selenium = True

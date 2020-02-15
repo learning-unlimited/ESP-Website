@@ -1,7 +1,6 @@
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ClassSubject
 from esp.users.models import ESPUser
-from esp.users.views.make_admin import make_user_admin
 from django.core import mail
 
 class CancelClassTest(ProgramFrameworkTest):
@@ -21,13 +20,13 @@ class CancelClassTest(ProgramFrameworkTest):
         # Create an admin account
         self.adminUser, created = ESPUser.objects.get_or_create(username='admin')
         self.adminUser.set_password('password')
-        make_user_admin(self.adminUser)
+        self.adminUser.makeAdmin()
         self.adminUser.save()
 
     def testCancelClass(self):
         # Login with the admin account
         self.client.login(username='admin', password='password')
-        
+
         # Cancel the class
         cancelMsg = 'Testing cancel class'
         self.client.post("/manage/"+self.program.url+"/manageclass/"+str(self.cls.id)+"?action=cancel_cls", { 'acknowledgement': 'on', 'explanation': cancelMsg, 'target': self.cls.id })
@@ -36,10 +35,10 @@ class CancelClassTest(ProgramFrameworkTest):
         self.cls = ClassSubject.objects.get(pk=self.cls.id)
 
         # Check that the class was changed to cancelled
-        self.failUnless(self.cls.status == -20)
+        self.assertTrue(self.cls.status == -20)
         # Check that the sections were cancelled
         for sec in self.cls.sections.all():
-            self.failUnless(sec.status == -20)
+            self.assertTrue(sec.status == -20)
 
         # Test that an email was sent
         directorEmail = None
@@ -53,10 +52,9 @@ class CancelClassTest(ProgramFrameworkTest):
                     studentEmail = m
                     break
 
-        self.failUnless(directorEmail != None and cancelMsg in directorEmail.body)
-        self.failUnless(studentEmail != None and cancelMsg in studentEmail.body)
+        self.assertTrue(directorEmail != None and cancelMsg in directorEmail.body)
+        self.assertTrue(studentEmail != None and cancelMsg in studentEmail.body)
 
         # Check that classes show up in the cancelled classes printable
         r = self.client.get("/manage/"+self.program.url+"/classesbytime?cancelled")
-        self.failUnless(self.cls.emailcode() in r.content)
-                
+        self.assertTrue(self.cls.emailcode() in r.content)

@@ -22,6 +22,8 @@ class ClassList(BaseHandler):
         except ESPUser.DoesNotExist:
             return
 
+        self.emailcode = cls.emailcode()
+
         program = cls.parent_program
         self.recipients = ['%s Directors <%s>' % (program.niceName(), program.director_email)]
 
@@ -54,7 +56,7 @@ class ClassList(BaseHandler):
             return
 
         # Create a class list in Mailman,
-        # then bounce this e-mail off to it
+        # then bounce this email off to it
 
         list_name = "%s-%s" % (cls.emailcode(), user_type)
 
@@ -81,7 +83,7 @@ class ClassList(BaseHandler):
                 'subject_prefix': "[%s]" % (cls.parent_program.niceName(),),
             })
             send_mail("[ESP] Activated class mailing list: %s@%s" % (list_name, Site.objects.get_current().domain),
-                      render_to_string("mailman/new_list_intro_teachers.txt", 
+                      render_to_string("mailman/new_list_intro_teachers.txt",
                                        { 'classname': str(cls),
                                          'mod_password': set_list_moderator_password(list_name) }),
                       settings.DEFAULT_EMAIL_ADDRESSES['default'], ["%s-teachers@%s" % (cls.emailcode(), Site.objects.get_current().domain), ])
@@ -100,4 +102,4 @@ class ClassList(BaseHandler):
 
         self.send = True
 
-        
+

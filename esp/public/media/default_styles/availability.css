@@ -1,0 +1,104 @@
+.wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.side {
+  width: 280px;
+}
+
+.summary {
+  display: block;
+  padding: 5px 5px;
+  font-size: 16px;
+  width: 100px;
+  margin: 5px 5px 5px 5px;
+  font-family: sans-serif;
+}
+
+.left span {
+  background-color: #dbe3e7;
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  padding: 5px 5px;
+  font-size: small;
+  width: 160px;
+  display: none;
+}
+
+.noselect {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+input, select {
+  padding: 2px;
+}
+
+td.group, table.group {
+  vertical-align: top !important;
+  border-spacing: 0px 2px !important;
+  padding: 0 !important;
+}
+
+.wrap table {
+  border-width: 0px !important;
+  border-collapse: separate !important;
+  border-spacing: 5px 1px;
+}
+
+.wrap th {
+  text-align: center !important;
+  font-weight: bold !important;
+  background: #CCCCCC !important;
+  padding: 3px !important;
+  height: 80px !important;
+  width: 75px !important;
+}
+
+.label {
+  text-align: right;
+  /* font-weight:bold; */
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.proposed, .canDo, .teaching {
+  font-size: 16px !important;
+  text-align: center !important;
+}
+
+.proposed {
+  background: #EFEFEF;
+}
+
+.canDo {
+  background: #00FF00;
+}
+
+.teaching {
+  background: #42b3f4;
+}
+
+.teaching:not(.canDo) {
+  border: solid 2px red !important;
+}
+
+.headerText {
+  font-size: 18px;
+}
+
+form {
+  margin: 0px !important;
+  padding: 0px !important;
+}
+
+tbody {
+  display: table-row-group !important;
+  vertical-align: middle !important;
+  border-color: inherit !important;
+}

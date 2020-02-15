@@ -1,0 +1,14 @@
+{% autoescape off %}
+-- Notice to teachers --
+Class Section {{ sec.emailcode }} has been cancelled.  {% if email_students %}{{ num_students }} students have been sent the following email.{% else %}Students were not emailed.{% endif %} All students have been removed from the class.
+If you did not request this class cancellation, please contact us at {{ director_email }} immediately.
+-------------------------
+
+{% include "email/class_cancellation_body.txt" %}
+{% if email_ssis %}
+
+Additionally, all students that selected this class in the class lottery were emailed the email below.
+-------------------------
+
+{% endif %}
+{% endautoescape %}

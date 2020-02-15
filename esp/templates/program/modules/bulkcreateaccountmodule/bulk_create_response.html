@@ -1,0 +1,29 @@
+{% extends "main.html" %}
+
+{% block title %}Bulk Account Response{% endblock %}
+
+{% block content %}
+
+    <h1>Success!</h1>
+
+    <p>Your accounts have been created with the following passwords for each prefix.<p>
+
+    <div style="color: red"><b>Please save this list somewhere yourself, as the website
+        does NOT save these anywhere once you navigate away from this page.</b></div>
+
+    <br/>
+
+    <table border="1px" cellpadding="5px">
+        <tr>
+            <th>Prefix</th>
+            <th>Password</th>
+        </tr>
+        {% for prefix, password in passwords.items %}
+            <tr>
+                <td>{{ prefix }}</td>
+                <td>{{ password }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+
+{% endblock %}

@@ -9,7 +9,7 @@ def ascii_sanitize(s):
 
 def dateonly(d):
     return d.strftime('%Y-%m-%d')
-    
+
 def timeonly(d):
     return d.strftime('%H:%M:%S')
 
@@ -23,16 +23,16 @@ appropriate_sections = []
 for un in teacher_usernames:
     teacher = ESPUser.objects.get(username=un)
     appropriate_sections += list(teacher.getTaughtSections(splash))
-    
+
 """
-print 'Checking for students in these sections:' 
+print 'Checking for students in these sections:'
 for sec in appropriate_sections:
     print ' -> %s: %s' % (sec.teachers, sec.title())
 """
 
 bits = UserBit.valid_objects().filter(verb=filter_verb,qsc=splash.anchor).order_by('startdate')
 
-outfile.write('"Checkin date","Checkin time","Student first name","Student last name","Student e-mail","Teacher","Class code","Subject","Parent first name","Parent last name","Parent e-mail","Street","City","State","Zip code"\n')
+outfile.write('"Checkin date","Checkin time","Student first name","Student last name","Student email","Teacher","Class code","Subject","Parent first name","Parent last name","Parent email","Street","City","State","Zip code"\n')
 student_list = [ESPUser(bit.user) for bit in bits]
 for i in range(len(student_list)):
     student = student_list[i]
@@ -42,7 +42,7 @@ for i in range(len(student_list)):
         if sec in appropriate_sections:
             prof = student.getLastProfile()
             print 'Found %s in %s' % (student, sec)
-            #   First, last, student e-mail,
+            #   First, last, student email,
             if prof.contact_user:
                 cu = prof.contact_user
             else:

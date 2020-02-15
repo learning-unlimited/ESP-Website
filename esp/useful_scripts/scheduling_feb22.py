@@ -102,7 +102,7 @@ for cls in classes:
         file.write('  <class-teacher id=%d />\n' % teacher.id)
     file.write('</class>\n')
 file.write('\n')
-   
+
 file.close()
 
 print 'Wrote output to %s' % filename

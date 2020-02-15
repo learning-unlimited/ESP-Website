@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 """
 Identify groups of accounts to merge.
@@ -17,7 +17,7 @@ def get_dob(user):
         profile_current = user.registrationprofile_set.get(most_recent_profile=True)
     except:
         profile_current = user.getLastProfile()
-        
+
     dob = None
     if profile_current.student_info and profile_current.student_info.dob:
         dob = profile_current.student_info.dob
@@ -31,7 +31,7 @@ def get_dob(user):
 
 def get_duplicate_users():
     """ Find duplicate users based on their full name and birth date """
-    
+
     user_groups = {}
     users = ESPUser.objects.all().order_by('id')
     non_dob_users = 0
@@ -41,7 +41,7 @@ def get_duplicate_users():
         ut = user.getUserTypes()
         if not (len(ut) == 1 and ut[0] == u'Student'):
             continue
-    
+
         num_students += 1
         #   Try hard to find their DOB.
         name = user.name().lower()
@@ -54,22 +54,22 @@ def get_duplicate_users():
             non_dob_users += 1
             pass
             """
- 
+
         key = tuple([name, dob])
         if key not in user_groups:
             user_groups[key] = []
         user_groups[key].append(user)
-        
+
     print 'Of %d users there were %d students, %d of which had no DOB marked.' % (users.count(), num_students, non_dob_users)
     return user_groups
-    
+
 def merge_group(group):
     #   Put highest numbered account at beginning of list
     group.sort(key=lambda x: -x.id)
     for acct in group[1:]:
         UserForwarder.forward(acct, group[0])
     print 'Merged accounts: %s <- [%s]' % (group[0].username, ', '.join(x.username for x in group[1:]))
-    
+
 ug = get_duplicate_users()
 group_dict = {}
 for u in ug.keys():
@@ -77,11 +77,11 @@ for u in ug.keys():
     if x not in group_dict:
         group_dict[x] = []
     group_dict[x].append(u)
-    
+
 size_dict = {}
 for key in group_dict:
     size_dict[key] = len(group_dict[key])
-    
+
 print 'Distribution of duplicate account numbers'
 print size_dict
 

@@ -1,0 +1,60 @@
+{% extends "main.html" %}
+
+{% block title %}Unenroll Students{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+<script type="text/javascript"
+        src="/media/scripts/program/modules/unenroll.js"></script>
+<script type="text/javascript">
+    var program_base_url = "/onsite/{{ program.getUrlBase }}/";
+</script>
+
+<h1>Select Students to Unenroll</h1>
+
+<p>Use the form below to unenroll students who have not checked into the program. Before using this, make sure that the latest check-ins have been recorded in the website.</p>
+
+<p>
+  <span id="message">Loading enrollment numbers...</span>
+  <button id="refresh">Refresh Data</button>
+</p>
+
+<form id="program_form" method="post" action="{{ request.path }}">
+  <input type="hidden" name="selected_enrollments" value="" />
+  <table cellpadding="4" cellspacing="0" align="center" width="300">
+    <tr>
+      <th>Kick students whose first class starts at...</th>
+      <th>from sections starting at...</th>
+    </tr>
+    {% for t in selections %}
+    <tr>
+      <td>
+        <input type="checkbox" name="student_timeslots" value="{{ t.slot.id }}"
+               data-seq="{{ t.seq }}"
+               {% if t.passed %} checked {% endif %}
+               id="student_timeslot_{{ t.slot.id }}" />
+        <label for="student_timeslot_{{ t.slot.id }}">
+          {{ t.slot.short_description }}
+        </label>
+      </td>
+      <td>
+        <input type="checkbox" name="section_timeslots" value="{{ t.slot.id }}"
+               data-seq="{{ t.seq }}"
+               {% if t.upcoming %} checked {% endif %}
+               id="section_timeslot_{{ t.slot.id }}" />
+        <label for="section_timeslot_{{ t.slot.id }}">
+          {{ t.slot.short_description }}
+        </label>
+      </td>
+    </tr>
+    {% endfor %}
+    <tr>
+      <td colspan="2" align="center"><input class="fancybutton" value="Submit" type="submit" disabled></td>
+    </tr>
+  </table>
+</form>
+
+{% include "program/modules/onsitecore/returnlink.html" %}
+
+{% endblock %}

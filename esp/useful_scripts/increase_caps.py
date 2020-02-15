@@ -7,13 +7,15 @@ from script_setup import *
 
 from esp.dbmail.models import send_mail
 
-program = Program.objects.get(url='Spark/2015')
+program = Program.objects.get(url='Splash/2015')
 
-email_subject_template = 'Your Spark class %(email_code)s: "%(title)s"'
+# TODO: Consider changing this to something non-class-dependent so that the
+# emails thread together for admins!
+email_subject_template = 'Your Splash class %(email_code)s: "%(title)s"'
 email_template = '''
 Hi %(teacher_names)s,
 
-Thanks for teaching for Spark!  We've scheduled your class %(email_code)s:
+Thanks for teaching for Splash!  We've scheduled your class %(email_code)s:
 "%(title)s", with capacity %(class_cap)s.  Some of the sections are scheduled in
 rooms with more space than that:
 
@@ -21,18 +23,16 @@ rooms with more space than that:
 
 Would you be willing to increase the max size of your class to the room size
 (or to any amount in between)?  If you would like to do so, please let us know
-by replying to this email by 11:59pm on Friday, February 27.  If not, you can
+by replying to this email by 5pm on Wednesday, November 4.  If not, you can
 simply ignore this email.
 
 Thanks,
-Miriam and Taylor
-Spark 2015 Directors
+Clio and Mikayla
+Splash 2015 Directors
 '''
-# TODO: Consider changing this to something non-class-dependent so that the
-# emails thread together for admins!
 section_template = '%(email_code)s: room %(room)s (capacity %(room_cap)s)'
 
-from_address = 'spark@mit.edu'
+from_address = 'Splash <splash@mit.edu>'
 extra_headers = {
     'Sender': 'server@esp.mit.edu',
 }
@@ -86,8 +86,38 @@ for c in program.classes():
         }
         to_address = '%s-teachers@esp.mit.edu' % c.emailcode()
 
-        send_mail(subject, email_text, from_address,
-                  [to_address, from_address], extra_headers=extra_headers)
-
-        
-            
+        while True:
+            # this is a while loop because send_mail sometimes errors
+            # particularly "too many concurrent SMTP connections"
+            # loop until sending is successful,
+            # or it errors and the user decides not to retry
+            try:
+                send_mail(subject, email_text, from_address,
+                          [to_address, from_address], extra_headers=extra_headers)
+            except Exception as e:
+                # print the exception
+                print "An error occurred while sending:", subject
+                import traceback
+                traceback.print_exc()
+                # prompt the user to retry
+                while True:
+                    # loop until the user gives a yes or no answer
+                    print "Retry (y/n)?",
+                    choice = raw_input().lower()
+                    if choice in ['y', 'yes']:
+                        retry = True
+                        break
+                    elif choice in ['n', 'no']:
+                        retry = False
+                        break
+                if retry:
+                    continue
+                else:
+                    print "Skipping:", subject
+                    break
+            else:
+                # email was sent successfully
+                print "Sent:", subject
+                break
+        import time
+        time.sleep(1)

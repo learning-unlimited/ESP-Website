@@ -22,7 +22,7 @@ class PropertyDict(dict):
                 else:
                     self[key] = val
         return self
-                    
+
     def flatten(self):
         result = []
         for key in self.keys():

@@ -76,7 +76,7 @@ class TextMessageModule(ProgramModuleObj):
             profile = RegistrationProfile.getLastForProgram(student, self.program)
             profile.text_reminder = False
             profile.save()
-            
+
 
     class Meta:
         proxy = True

@@ -55,6 +55,9 @@
       <dl>
         <dt>Grades</dt> <dd data-bind="text: grade_range"></dd>
         <dt>Difficulty</dt> <dd data-bind="text: difficulty"></dd>
+        <!-- ko if: class_style -->
+        <dt>Class Style</dt> <dd data-bind="text: class_style"></dd>
+        <!-- /ko -->
         <!-- ko if: prereqs -->
         <dt>Prerequisites</dt> <dd data-bind="text: prereqs"></dd>
         <!-- /ko -->

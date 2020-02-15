@@ -2,8 +2,6 @@
 
 {% block title %}Group Texting Portal{% endblock %}
 
-{% block subsection_name %}Group Texting Portal{% endblock %}
-
 {% block xtrajs %}
 {{block.super}}
 <script type="text/javascript">
@@ -27,6 +25,9 @@
 <p>The texts have been submitted to our SMS provider.</p>
 
 <h2>Send log</h2>
+{% if override %}
+<p><i>(Texting preferences were overriden)</i></p>
+{% endif %}
 
 <pre>{{ log }}</pre>
 

@@ -43,9 +43,9 @@ from esp.program.models import VolunteerRequest, VolunteerOffer
 
 from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 
-from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest
+from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest, PhaseZeroRecord
 
-from esp.program.models import ProgramCheckItem, ClassSection, ClassSubject, ClassCategories, ClassSizeRange
+from esp.program.models import ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
 
 from esp.program.models import ClassFlag, ClassFlagType
@@ -58,7 +58,7 @@ class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler')
     search_fields = ['link_title', 'admin_title', 'handler']
 admin_site.register(ProgramModule, ProgramModuleAdmin)
-    
+
 class ArchiveClassAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'year', 'date', 'category', 'program', 'teacher')
     search_fields = ['id', 'description', 'title', 'program', 'teacher', 'category']
@@ -68,7 +68,9 @@ admin_site.register(ArchiveClass, ArchiveClassAdmin)
 class ProgramAdmin(admin.ModelAdmin):
     class Media:
         css = { 'all': ( 'styles/admin.css', ) }
-    filter_horizontal = ('program_modules', 'class_categories', 'flag_types')
+    list_display = ('id', 'name', 'url', 'director_email', 'grade_min', 'grade_max',)
+    filter_horizontal = ('program_modules', 'class_categories', 'flag_types',)
+    search_fields = ('name', )
 admin_site.register(Program, ProgramAdmin)
 
 class RegistrationProfileAdmin(admin.ModelAdmin):
@@ -83,7 +85,7 @@ class RegistrationProfileAdmin(admin.ModelAdmin):
         return True
 
 admin_site.register(RegistrationProfile, RegistrationProfileAdmin)
-    
+
 class TeacherBioAdmin(admin.ModelAdmin):
     list_display = ('user', 'program', 'slugbio')
     search_fields = default_user_search() + ['slugbio', 'bio']
@@ -117,12 +119,12 @@ admin_site.register(SplashInfo, Admin_SplashInfo)
 def subclass_instance_type(obj):
     return type(obj.subclass_instance())._meta.object_name
 subclass_instance_type.short_description = 'Instance type'
-        
+
 class BooleanTokenAdmin(admin.ModelAdmin):
     list_display = ('expr', 'seq', subclass_instance_type, 'text')
     search_fields = ['text']
 admin_site.register(BooleanToken, BooleanTokenAdmin)
-    
+
 class BooleanExpressionAdmin(admin.ModelAdmin):
     list_display = ('label', subclass_instance_type, 'num_tokens')
     def num_tokens(self, obj):
@@ -164,7 +166,11 @@ class VolunteerOfferInline(admin.StackedInline):
 class VolunteerRequestAdmin(admin.ModelAdmin):
     def description(obj):
         return obj.timeslot.description
-    list_display = ('id', 'program', description, 'timeslot', 'num_volunteers')
+    def time(obj):
+        return obj.timeslot.short_time()
+    def date(obj):
+        return obj.timeslot.pretty_date()
+    list_display = ('id', 'program', description, time, date, 'num_volunteers')
     list_filter = ('program',)
     inlines = [VolunteerOfferInline,]
 admin_site.register(VolunteerRequest, VolunteerRequestAdmin)
@@ -172,16 +178,18 @@ admin_site.register(VolunteerRequest, VolunteerRequestAdmin)
 class VolunteerOfferAdmin(admin.ModelAdmin):
     def program(obj):
         return obj.request.program
-    list_display = ('id', 'user', 'email', 'name', 'request', program, 'confirmed')
+    def description(obj):
+        return obj.request.timeslot.description
+    def time(obj):
+        return obj.request.timeslot.short_time()
+    def date(obj):
+        return obj.request.timeslot.pretty_date()
+    list_display = ('id', 'user', 'email', 'name', description, time, date, program, 'confirmed')
     list_filter = ('request__program',)
     search_fields = default_user_search() + ['email', 'name']
 admin_site.register(VolunteerOffer, VolunteerOfferAdmin)
 
 ## class_.py
-
-class ProgramCheckItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'program')
-admin_site.register(ProgramCheckItem, ProgramCheckItemAdmin)
 
 class Admin_RegistrationType(admin.ModelAdmin):
     list_display = ('name', 'category', )
@@ -231,23 +239,35 @@ class SectionInline(admin.TabularInline):
     can_delete = False
 
 class SubjectAdmin(admin.ModelAdmin):
-    list_display = ('category', 'id', 'title', 'parent_program', 'pretty_teachers')
+    list_display = ('category', 'id', 'title', 'parent_program',
+                    'pretty_teachers')
     list_display_links = ('title',)
     search_fields = default_user_search('teachers') + ['class_info', 'title', 'id']
     exclude = ('teachers',)
+    readonly_fields = ('timestamp',)
     list_filter = ('parent_program', 'category')
     inlines = (SectionInline,)
-    fieldsets= (
-            (None, {'fields':('title','parent_program', 'category', 'class_info', 'message_for_directors', 'directors_notes', 'purchase_requests')}),
-            ('Registration Info',
-                {'classes': ('collapse',),
-                'fields': (('grade_min', 'grade_max'),'allow_lateness','prereqs', 'hardness_rating')}),
-            ('Scheduling Info',
-                {'classes': ('collapse',),
-                 'fields':('requested_room', 'requested_special_resources', ('allowable_class_size_ranges', 'optimal_class_size_range'), ('class_size_min', 'class_size_optimal', 'class_size_max', 'session_count'))}),
-            ('Advanced',
-                {'fields': ('schedule','checklist_progress', 'custom_form_data')}),
-            )
+    fieldsets = (
+        (None, {
+            'fields': ('title', 'parent_program', 'timestamp', 'category',
+                       'class_info', 'message_for_directors',
+                       'directors_notes', 'purchase_requests')
+        }),
+        ('Registration Info', {
+            'classes': ('collapse',),
+            'fields': (('grade_min', 'grade_max'), 'allow_lateness', 'prereqs',
+                       'hardness_rating')
+        }),
+        ('Scheduling Info', {
+            'classes': ('collapse',),
+            'fields': ('requested_room', 'requested_special_resources',
+                       ('allowable_class_size_ranges',
+                        'optimal_class_size_range'),
+                       ('class_size_min', 'class_size_optimal',
+                        'class_size_max', 'session_count'))
+        }),
+        ('Advanced', {'fields': ('schedule', 'custom_form_data')}),
+    )
 admin_site.register(ClassSubject, SubjectAdmin)
 
 class Admin_ClassCategories(admin.ModelAdmin):
@@ -313,3 +333,9 @@ class ClassFlagAdmin(admin.ModelAdmin):
     search_fields = default_user_search('modified_by') + default_user_search('created_by') + ['flag_type__name', 'flag_type__id', 'subject__id', 'subject__title', 'subject__parent_program__url', 'comment']
     list_filter = ['subject__parent_program','flag_type']
 admin_site.register(ClassFlag, ClassFlagAdmin)
+
+class PhaseZeroRecordAdmin(admin.ModelAdmin):
+    list_display = ('id', 'display_user', 'program')
+    search_fields = ['user__username']
+    list_filter = ['program']
+admin_site.register(PhaseZeroRecord, PhaseZeroRecordAdmin)

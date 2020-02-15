@@ -1,0 +1,37 @@
+New features:
+
+Return top N search results instead of just one
+
+Make default search options configurable
+
+Probably bold special scheduling needs more, and include the text if it exists
+
+Filter for class flags/exclude certain class flags
+
+Implement ResourceMovementScorer
+
+Add a scorer which tries to avoid wasting resources (should be separate from
+existing scorers though)
+
+Bugs:
+
+There's an unknown bug which sometimes causes saving (in particular, swaps) to
+fail because "the room is already occupied" (i.e. check_can_schedule_sections
+complains). However this doesn't happen all the time and I was unable to
+intentionally reproduce it.
+
+Tests and checks:
+db tests should load resource criteria, constraints, scorers?
+db test for save raising if there's a conflict or if someone moved the class
+(??)
+model tests for model functions
+tests for resource checker
+test manipulator, constraints, scoring???
+
+need unittests for schedule operations and saving somehow
+unittest for already-scheduled multihour class
+
+scoring student-class-hours should account for classroom capacity
+
+test to be able to handle sections which don't satsify constraints
+

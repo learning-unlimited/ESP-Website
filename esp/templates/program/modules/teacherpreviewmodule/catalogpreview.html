@@ -14,12 +14,6 @@ function swap_visible(div_id) {
 </script>
 {% endblock %}
 
-{% load subsection %}
-
-{% block subsection %}
-{% autoescape off %}{{ "Catalog Preview"|subsection }}{% endautoescape %}
-{% endblock %}
-
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />

@@ -1,0 +1,15 @@
+{% extends "main.html" %}
+
+{% block title %}Unenroll Students{% endblock %}
+
+{% block content %}
+
+<p>Expired {{ ids|length }} student registrations. If this was a mistake, you can ask a webmin to undo it by running:</p>
+
+<pre><code>ids = {{ ids }}
+StudentRegistration.objects.filter(id__in=ids).update(end_date=None)
+</code></pre>
+
+<p><a href="/onsite/{{ program.getUrlBase }}/unenroll_students">Back</a></p>
+
+{% endblock %}

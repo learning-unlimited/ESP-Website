@@ -30,14 +30,5 @@ django_application = django.core.wsgi.get_wsgi_application()
 
 from django.conf import settings
 
-if settings.USE_PROFILER:
-    from repoze.profile.profiler import AccumulatingProfileMiddleware
-    application = AccumulatingProfileMiddleware(
-      django_application,
-      log_filename='/tmp/djangoprofile.log',
-      discard_first_request=True,
-      flush_at_shutdown=True,
-      path='/__profile__')
-else:
-    application = django_application
+application = django_application
 

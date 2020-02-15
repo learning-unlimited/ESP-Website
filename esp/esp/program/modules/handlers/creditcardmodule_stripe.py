@@ -33,8 +33,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.web.util import render_to_response
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
+from esp.utils.web import render_to_response
 from esp.dbmail.models import send_mail
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
@@ -101,7 +101,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             return {'creditcard':ESPUser.objects.filter(QObj).distinct()}
 
     def studentDesc(self):
-        return {'creditcard': """Students who have filled out the credit card form."""}
+        return {'creditcard': """Students who have filled out the credit card form"""}
 
     def check_setup(self):
         """ Validate the keys specified in the stripe_settings Tag.
@@ -125,11 +125,12 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         valid_pk_re = r'pk_(test|live)_([A-Za-z0-9+/=]){24}'
         valid_sk_re = r'sk_(test|live)_([A-Za-z0-9+/=]){24}'
         if not re.match(valid_pk_re, self.settings['publishable_key']) or not re.match(valid_sk_re, self.settings['secret_key']):
-            raise ESPError('The site has not yet been properly set up for credit card payments.  Administrators should <a href="/admin/tagdict/tag">edit the "stripe_settings" Tag here</a>.', True)
+            raise ESPError('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href="mailto:{{settings.SUPPORT}}">websupport team to get it set up.', True)
 
     @main_call
-    @usercheck_usetl
+    @needs_student
     @meets_deadline('/Payment')
+    @meets_cap
     def payonline(self, request, tl, one, two, module, extra, prog):
 
         #   Check that the user has completed all required modules so that they
@@ -147,7 +148,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   Check for setup of module.  This is also required to initialize settings.
         self.check_setup()
 
-        user = ESPUser(request.user)
+        user = request.user
 
         iac = IndividualAccountingController(self.program, request.user)
         context = {}
@@ -191,7 +192,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 
     def send_error_email(self, request, context):
-        """ Send an e-mail to admins explaining the credit card error.
+        """ Send an email to admins explaining the credit card error.
             (Broken out from charge_payment view for readability.) """
 
         context['request'] = request
@@ -205,6 +206,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         send_mail(msg_subject, msg_content, settings.SERVER_EMAIL, [self.program.getDirectorConfidentialEmail()], bcc=None)
 
     @aux_call
+    @needs_student
     def charge_payment(self, request, tl, one, two, module, extra, prog):
         #   Check for setup of module.  This is also required to initialize settings.
         self.check_setup()
@@ -289,12 +291,13 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                 context['error_type'] = 'generic'
 
         if 'error_type' in context:
-            #   If we got any sort of error, send an e-mail to the admins and render an error page.
+            #   If we got any sort of error, send an email to the admins and render an error page.
             self.send_error_email(request, context)
             return render_to_response(self.baseDir() + 'failure.html', request, context)
 
         #   Render the success page, which doesn't do much except direct back to studentreg.
         context['amount_paid'] = totalcost_dollars
+        context['statement_descriptor'] = group_name[0:22]
         context['can_confirm'] = self.deadline_met('/Confirm')
         return render_to_response(self.baseDir() + 'success.html', request, context)
 

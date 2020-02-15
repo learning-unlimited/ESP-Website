@@ -36,7 +36,7 @@ from django.db import models
 
 from esp.db.fields import AjaxForeignKey
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.cache import cache_function
+from argcache import cache_function
 
 from esp.users.models import ESPUser
 from esp.program.models import Program

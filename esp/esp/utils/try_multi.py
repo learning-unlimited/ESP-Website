@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 def try_multi(n_tries):
     """
@@ -18,4 +18,4 @@ def try_multi(n_tries):
     return try_multi_helper
 
 
-    
+

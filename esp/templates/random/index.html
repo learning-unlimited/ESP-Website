@@ -1,0 +1,20 @@
+{% extends "main.html" %}
+
+{% block title %}Random Class{% endblock %}
+{% block content_title %}Random Class{% endblock %}
+
+{% block js1 %}
+    {{ block.super }}
+    <script src="/media/scripts/random-class.js"></script>
+{% endblock %}
+
+{% block content %}
+	<p>Here is a random class from the {{ settings.ORGANIZATION_SHORT_NAME }} archives! Click the button to pick a new one.</p>
+	<button class="btn btn-primary btn-large" id="random-submit">
+		<span class="glyphicon glyphicon-random" aria-hidden="true"></span>
+		Pick a new random class
+	</button>
+	<h3 id="random-title">{{ cls.title }}</h3>
+	<h4>(Taught in <span id="random-program">{{ cls.parent_program }}</span>)</h4>
+	<p id="random-info">{{ cls.class_info }}</p>
+{% endblock content %}
