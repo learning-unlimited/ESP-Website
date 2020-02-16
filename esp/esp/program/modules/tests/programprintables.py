@@ -145,9 +145,9 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         User must be admin to POST to all_classes_spreadsheet. Responses mimetype must be text/csv
         """
         self._login_admin()
-        #Test invalid fieldname
-        #select all fields
-        post_data = {'subject_fields':[field.name for field in ClassSubject._meta.fields]}
+        exclude_fields = ['session_count']
+        #select all valid fields
+        post_data = {'subject_fields':[field for field in ClassSubject._meta.fields if field.name not in exclude_fields]}
 
         response = self.client.post(self.all_classes_csv_url, post_data)
         self.assertEquals(response.status_code, 200)
