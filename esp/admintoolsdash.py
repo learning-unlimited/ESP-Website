@@ -17,7 +17,8 @@ except ImportError:
     from django.core.urlresolvers import reverse
 
 from admin_tools.dashboard import modules, Dashboard, AppIndexDashboard
-from admin_tools.utils import get_admin_site_name
+from admin_tools.utils import get_admin_site_name, get_avail_models
+from django.apps import apps as django_apps
 
 
 class CustomIndexDashboard(Dashboard):
@@ -41,51 +42,30 @@ class CustomIndexDashboard(Dashboard):
             ]
         ))
 
-        # append an app list module for "Applications"
-        self.children.append(modules.AppList(
-            _('Applications'),
-        ))
+        # separate each app into a separate group
+        items = get_avail_models(context['request'])
+        apps = {}
 
-        # append an app list module for "Administration"
-        # self.children.append(modules.AppList(
-            # _('Administration'),
-            # exclude=('django.contrib.auth.models.User',),
-        # ))
+        for model, perms in items:
+            app_label = model._meta.app_label
+            if app_label not in apps:
+                apps[app_label] = {
+                    'title': django_apps.get_app_config(app_label).verbose_name,
+                    'models': []
+                }
+            apps[app_label]['models'].append('%s.%s' % (model.__module__, model.__name__))
+
+        for app in sorted(apps.keys()):
+            # append an app list module for "Applications"
+            self.children.append(modules.AppList(
+                _(apps[app]['title']),
+                models=apps[app]['models'],
+            ))
 
         # append a recent actions module
         self.children.append(modules.RecentActions(
             _('Recent Actions'),
-            exclude_list=("auth.user",),
-            limit=5
-        ))
-
-        # append a feed module
-        self.children.append(modules.Feed(
-            _('Latest Django News'),
-            feed_url='http://www.djangoproject.com/rss/weblog/',
-            limit=5
-        ))
-
-        # append another link list module for "support".
-        self.children.append(modules.LinkList(
-            _('Support'),
-            children=[
-                {
-                    'title': _('Django documentation'),
-                    'url': 'http://docs.djangoproject.com/',
-                    'external': True,
-                },
-                {
-                    'title': _('Django "django-users" mailing list'),
-                    'url': 'http://groups.google.com/group/django-users',
-                    'external': True,
-                },
-                {
-                    'title': _('Django irc channel'),
-                    'url': 'irc://irc.freenode.net/django',
-                    'external': True,
-                },
-            ]
+            limit=10
         ))
 
 
