@@ -133,7 +133,7 @@ DEFAULT_EMAIL_ADDRESSES = {
     'mailman_moderator': 'esp-moderators@mit.edu'
 }
 # The name of your host institution.
-INSTITUTION_NAME = 'MIT'
+INSTITUTION_NAME = "MIT"
 # A 'slug' used in e-mail titles, like 'ESP' or 'Splash'
 ORGANIZATION_SHORT_NAME = 'ESP'
 # The host for ESP site-supported e-mail lists.
@@ -218,20 +218,12 @@ ROOT_URLCONF = 'esp.urls'
 APPEND_SLASH=False
 
 INSTALLED_APPS = (
-    'admin_tools',
-    'admin_tools.theming',
-    'admin_tools.menu',
-    'admin_tools.dashboard',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.staticfiles',
-    'grappelli',
-    'filebrowser',
-    'django.contrib.admin.apps.SimpleAdminConfig',
-    'django.contrib.admindocs',
     'esp.users.apps.UsersConfig',
     'esp.miniblog',
     'esp.web.apps.WebConfig',
@@ -258,6 +250,14 @@ INSTALLED_APPS = (
     'debug_toolbar',
     'esp.formstack',
     'esp.application.apps.ApplicationConfig',
+    'admin_tools',
+    'admin_tools.theming',
+    'admin_tools.menu',
+    'admin_tools.dashboard',
+    #'grappelli',
+    'filebrowser',
+    'django.contrib.admin.apps.SimpleAdminConfig',
+    'django.contrib.admindocs',
 )
 
 import os
@@ -385,3 +385,7 @@ TWILIO_ACCOUNT_NUMBERS = None
 # Default configuration for themes: set this to True to make recompile_theme
 # and the themes frontend refuse to do anything
 LOCAL_THEME = False
+
+ADMIN_TOOLS_MENU = 'admintoolsmenu.CustomMenu'
+ADMIN_TOOLS_INDEX_DASHBOARD = 'admintoolsdash.CustomIndexDashboard'
+ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
