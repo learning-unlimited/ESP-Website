@@ -56,8 +56,8 @@ class CustomIndexDashboard(Dashboard):
             apps[app_label]['models'].append('%s.%s' % (model.__module__, model.__name__))
 
         for app in sorted(apps.keys()):
-            # append an app list module for "Applications"
-            self.children.append(modules.AppList(
+            # append an app list module for each set of models
+            self.children.append(modules.ModelList(
                 _(apps[app]['title']),
                 models=apps[app]['models'],
             ))
@@ -84,14 +84,12 @@ class CustomAppIndexDashboard(AppIndexDashboard):
         self.children += [
             modules.ModelList(
                 self.app_title,
-                # models = self.get_app_model_classes(),
-                # exclude = ('django.contrib.auth.models.User',)
+                models = self.models,
             ),
             modules.RecentActions(
                 _('Recent Actions'),
-                # include_list=self.get_app_content_types(),
-                # exclude_list=('auth.user',),
-                limit=5
+                #include_list=self.models,
+                limit=10
             )
         ]
 
