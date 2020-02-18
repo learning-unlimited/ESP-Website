@@ -393,6 +393,7 @@ class ChoiceWithOtherWidget(forms.MultiWidget):
 
     def format_output(self, rendered_widgets):
         """Format the output by substituting the "other" choice into the first widget."""
+        rendered_widgets[0] = rendered_widgets[0] + '%s'
         return rendered_widgets[0] % rendered_widgets[1]
 
 
