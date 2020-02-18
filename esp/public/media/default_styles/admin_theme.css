@@ -1,0 +1,47 @@
+/** 
+ * theming styles
+ * 
+ */
+
+#content {
+    padding: 0;
+    margin: 15px;
+}
+
+#header {
+    background: #205067;
+
+    /* Reset the indents of django-flat-theme
+      (need to restore 40px on branding+user-tools instead) */
+    padding-left: 0;
+    padding-right: 0;
+}
+
+#header #branding h1 {
+    margin: 0;
+    padding: 5px 10px;
+    text-indent: -9999px;
+    height: 31px;
+    width: 93px;
+}
+
+#header #user-tools {
+    /* Old Django: 1.2em, flat theme: 40px; */
+    padding-right: 1.2em;
+}
+
+#bookmark-form {
+    clear: both;
+}
+
+div.breadcrumbs {
+    display: block;
+    padding: 10px 15px;
+    border: 0;
+    background-position: 0 -8px;
+    border-bottom: 1px solid #ededed;
+}
+
+div.breadcrumbs a {
+    display: inline;
+}
