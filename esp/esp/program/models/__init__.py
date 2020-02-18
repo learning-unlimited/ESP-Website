@@ -92,7 +92,7 @@ class ProgramModule(models.Model):
 
     # Must the user supply this ProgramModule with data in order to complete program registration?
     required = models.BooleanField(default=False)
-    
+
     # When creating a new program, should this module be available for admins to select (0), included by default (1)
     # or excluded by default (2).
     choosable = models.IntegerField(default=0, validators=[validators.MinValueValidator(0), validators.MaxValueValidator(2)])

@@ -291,7 +291,7 @@ class ProgramModuleObj(models.Model):
     def useTemplate(self):
         """ Use a template if the `mainView' function doesn't exist. """
         return (not self.main_view)
-    
+
     def isAdminPortalFeatured(self):
         """Don't display in the long list of additional modules if it's already featured
         in the main portion of the admin portal"""
