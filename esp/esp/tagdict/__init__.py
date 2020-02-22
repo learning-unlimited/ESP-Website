@@ -70,7 +70,7 @@ all_program_tags = {
     'splashinfo_siblingdiscount': (True, 'Should the sibling discount and sibling name fields be shown in the SplashInfoModule?', True, 'learn', True),
     'splashinfo_lunchsat': (True, 'Should the Saturday lunch field be shown in the SplashInfoModule?', True, 'learn', True),
     'splashinfo_lunchsun': (True, 'Should the Sunday lunch field be shown in the SplashInfoModule?', True, 'learn', True),
-    'catalog_sort_fields': (False, 'A comma-separated list of fields by which to sort the catalog', 'varies by module', 'manage', True),
+    'catalog_sort_fields': (False, 'A comma-separated list of fields by which to sort the course catalog (e.g. \'category__symbol\', \'category__category\', \'sections__meeting_times__start\', \'_num_students\', \'id\')', 'category__symbol', 'manage', True),
     'teacherreg_help_text_duration': (False, 'If set, overrides the help text for the class registration duration field', None, 'teach', True),
     'teacherreg_help_text_num_sections': (False, 'If set, overrides the help text for the class registration number of sections field', None, 'teach', True),
     'teacherreg_help_text_requested_room': (False, 'If set, overrides the help text for the class registration requested room field', None, 'teach', True),
