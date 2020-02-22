@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}{% if program %}{{program.niceName}} {% endif %}Tag Settings{% endblock %}
+{% block title %}{% if program %}{{program.niceName}}{% else %}Global{% endif %} Tag Settings{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
@@ -12,15 +12,15 @@
 
 {% load render_qsd %}
 
-<h1>Tag Settings{% if program %} for {{ program.niceName }} (ID: {{ program.id }}){% endif %}</h1>
+<h1>{% if program %}Tag Settings for {{ program.niceName }} (ID: {{ program.id }}){% else %}Global Tag Settings{% endif %}</h1>
 
 {% if program %}
-{% inline_program_qsd_block program "manage:main_top" %}
-Welcome to the tag settings page for {{ program.niceName }}. This page lists other miscellaneous settings that you may want to change to make the program run how you would like. The main program settings can be found on <a href="/manage/{{ program.getUrlBase }}/settings/">the page here</a>.
+Welcome to the tag settings page for {{ program.niceName }}. This page lists miscellaneous settings that you may want to change to make the program run how you would like. The main program settings can be found on <a href="/manage/{{ program.getUrlBase }}/settings/">the page here</a>, and the global tag settings can be found on <a href="/manage/tags/">the page here</a>.
+{% inline_program_qsd_block program "manage:tags" %}
 {% end_inline_program_qsd_block %}
 {% else %}
-{% inline_qsd_block "manage:main_top" %}
-Welcome to the tag settings page for your website. This page lists miscellaneous settings that you may want to change to make the website run how you would like.
+Welcome to the global tag settings page for your website. This page lists miscellaneous settings that you may want to change to make the website run how you would like.
+{% inline_qsd_block "manage:tags" %}
 {% end_inline_qsd_block %}
 {% endif %}
 
@@ -40,17 +40,17 @@ Welcome to the tag settings page for your website. This page lists miscellaneous
       <p class="description">{{ fieldset.description }}</p>
     {% endif %}
 
-    <table class="contact" align="center">
+    <table class="contact">
     {% for field in fieldset %}
      <tr>
       {% if field.is_hidden %}
-       <td> {{ field }} </td>
+       <td style="padding-bottom: 15px;"> {{ field }} </td>
        {% else %}
       {% if field.label  %}
-      <td style="vertical-align:text-top;">{{ field.label }} </td>
+      <td style="vertical-align:text-top;padding-right: 10px;">{{ field.label }} </td>
       {% endif %}
        {% if field %}
-        <td>  {{ field }} 
+        <td style="padding-bottom: 15px;">  {{ field }} 
       {% endif %}
       {% if field.help_text %}
         <br/>
