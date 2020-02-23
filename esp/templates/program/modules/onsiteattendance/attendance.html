@@ -16,7 +16,9 @@
 
 <p>
 {% if timeslot %}
-Here is an attendance summary for {{ timeslot }}. Here you can see attendance statistics and details for students that have been checked in during this timeslot, students that are not attending class, and students that are attending classes they were not originally enrolled in. If you are looking for a different timeslot, you can select it from the dropdown below.
+<form action="/onsite/{{ one }}/{{ two }}/attendance/{{ timeslot.id }}" method="get">
+Here is an attendance summary for {{ timeslot }} at <input name="when" type="datetime-local" onchange="$j(this).parents('form').submit();return false;" value="{{ when|date:'Y-m-d' }}T{{ when|time:'H:i' }}">. Here you can see attendance statistics and details for students that have been checked in during this timeslot, students that are not attending class, and students that are attending classes they were not originally enrolled in. If you are looking for a different timeslot, you can select it from the dropdown below.
+</form>
 {% else %}
 Please select a timeslot from the dropdown below.
 {% endif %}

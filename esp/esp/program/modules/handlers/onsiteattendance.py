@@ -42,6 +42,8 @@ from esp.users.models import ESPUser
 from esp.cal.models import Event
 from esp.utils.query_utils import nest_Q
 
+import datetime
+
 class OnSiteAttendance(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
@@ -63,10 +65,24 @@ class OnSiteAttendance(ProgramModuleObj):
             if len(timeslots) == 1:
                 timeslot = timeslots[0]
                 context['timeslot'] = timeslot
+                if request.GET and "when" in request.GET:
+                    when = datetime.datetime.strptime(request.GET["when"], "%Y-%m-%dT%H:%M")
+                else:
+                    now = datetime.datetime.now()
+                    start = timeslot.start
+                    end = timeslot.end
+                    # If we are currently sometime in the middle of the timeblock (regardless of date),
+                    # the default when is now
+                    if start.time() < now.time() < end.time():
+                        when = now
+                    # Otherwise, the default when is the end of the timeblock, but today
+                    else:
+                        when = datetime.datetime.combine(datetime.date.today(), end.time())
+                context['when'] = when
                 #Students that are marked as attending a class during this timeslot
-                attended = ESPUser.objects.filter(Q(studentregistration__section__meeting_times=timeslot, studentregistration__relationship__name="Attended") & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'))
+                attended = ESPUser.objects.filter(Q(studentregistration__section__meeting_times=timeslot, studentregistration__relationship__name="Attended") & nest_Q(StudentRegistration.is_valid_qobject(when), 'studentregistration'))
                 #Students that are enrolled in a class for this timeslot
-                enrolled = ESPUser.objects.filter(Q(studentregistration__section__meeting_times=timeslot, studentregistration__relationship__name="Enrolled") & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'))
+                enrolled = ESPUser.objects.filter(Q(studentregistration__section__meeting_times=timeslot, studentregistration__relationship__name="Enrolled") & nest_Q(StudentRegistration.is_valid_qobject(when), 'studentregistration'))
                 #Students that have been checked in for the program
                 checked_in = ESPUser.objects.filter(Q(record__event='attended', record__program=prog))
                 #Students that have been checked in for the program during this timeslot
@@ -74,18 +90,18 @@ class OnSiteAttendance(ProgramModuleObj):
                 #Students that have been checked in for the program but are not attending a class during this timeslot
                 not_attending = checked_in.exclude(id__in=[user.id for user in attended])
                 #Get the classes that they aren't attending (if any)
-                enrolled_srs = {sr.user: sr.section for sr in StudentRegistration.valid_objects().filter(section__meeting_times=timeslot, relationship__name="Enrolled").select_related('user')}
+                enrolled_srs = {sr.user: sr.section for sr in StudentRegistration.valid_objects(when).filter(section__meeting_times=timeslot, relationship__name="Enrolled").select_related('user')}
                 for student in not_attending:
                     student.missed_class = enrolled_srs.get(student, None)
                 #Students attending classes that they were enrolled in because they are attending it (and were not enrolled in beforehand)
-                onsite_srs = {sr.user: sr.section for sr in StudentRegistration.valid_objects().filter(section__meeting_times=timeslot, relationship__name="OnSite/AttendedClass").select_related('user')}
+                onsite_srs = {sr.user: sr.section for sr in StudentRegistration.valid_objects(when).filter(section__meeting_times=timeslot, relationship__name="OnSite/AttendedClass").select_related('user')}
                 onsite = onsite_srs.keys()
                 for student in onsite:
                     student.enrolled = True
                     student.attended_class = onsite_srs.get(student, None)
                     student.enrolled_class = student.attended_class
                 #Add students attending classes they aren't enrolled in
-                attended_srs = {sr.user: sr.section for sr in StudentRegistration.valid_objects().filter(section__meeting_times=timeslot, relationship__name="Attended").select_related('user')}
+                attended_srs = {sr.user: sr.section for sr in StudentRegistration.valid_objects(when).filter(section__meeting_times=timeslot, relationship__name="Attended").select_related('user')}
                 for student in attended:
                     attended_section = attended_srs.get(student, None)
                     enrolled_section = enrolled_srs.get(student, None)
@@ -98,7 +114,7 @@ class OnSiteAttendance(ProgramModuleObj):
                             student.enrolled_class = enrolled_section
                             onsite.append(student)
                 #Sections with no attendance recorded
-                no_attendance = ClassSection.objects.filter(meeting_times=timeslot, status__gt=0).exclude(id__in=StudentRegistration.valid_objects().filter(section__meeting_times=timeslot, relationship__name="Attended").values_list('section__id', flat = True))
+                no_attendance = ClassSection.objects.filter(meeting_times=timeslot, status__gt=0).exclude(id__in=StudentRegistration.valid_objects(when).filter(section__meeting_times=timeslot, relationship__name="Attended").values_list('section__id', flat = True))
                 context.update({
                                 'attended': attended,
                                 'checked_in': checked_in,
