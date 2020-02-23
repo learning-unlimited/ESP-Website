@@ -1287,10 +1287,11 @@ class StudentInfo(models.Model):
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
         form_dict['gender']          = self.gender
-        if Tag.getTag('studentinfo_shirt_options'):
+        if Tag.getBooleanTag('show_student_tshirt_size_options', default=False):
             form_dict['shirt_size']      = self.shirt_size
+        if Tag.getBooleanTag('studentinfo_shirt_type_selection', default=False):
             form_dict['shirt_type']      = self.shirt_type
-        if Tag.getTag('studentinfo_food_options'):
+        if Tag.getBooleanTag('show_student_vegetarianism_options', default=False):
             form_dict['food_preference'] = self.food_preference
         form_dict['heard_about']      = self.heard_about
         form_dict['studentrep_expl'] = self.studentrep_expl
