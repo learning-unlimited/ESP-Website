@@ -26,6 +26,8 @@ We've added the ability to use generic links that redirect to the most recent/cu
 Program Creation and Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Added a page where you can modify all of the settings for a program (``/manage/[one]/[two]/settings``), including settings associated with the program itself, teacher registration, and student registration.
+- Added a page where you can modify the tag settings for a program (``/manage/[one]/[two]/tags``), with documentation and defaults for every tag.
+- Added a page where you can modify the global tag settings (``/manage/tags``), with documentation and defaults for every tag.
 
 Onsite changes
 ~~~~~~~~~~~~~~
