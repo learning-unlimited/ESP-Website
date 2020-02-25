@@ -94,7 +94,7 @@ ADMINS = (
     ('LU Web Team','serverlog@learningu.org'),
 )
 
-GRAPPELLI_ADMIN_TITLE = "ESP administration"
+#GRAPPELLI_ADMIN_TITLE = "ESP administration"
 
 #############################
 # Default database settings #

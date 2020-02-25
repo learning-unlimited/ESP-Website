@@ -28,6 +28,9 @@
 #header #user-tools {
     /* Old Django: 1.2em, flat theme: 40px; */
     padding-right: 1.2em;
+    color: #fff;
+
+
 }
 
 #bookmark-form {
@@ -44,4 +47,12 @@ div.breadcrumbs {
 
 div.breadcrumbs a {
     display: inline;
+}
+#dashboard-title {
+    color:black;
+}
+.dashboard-module h2 {
+    background: #e3f4ff;
+    color:#141414;
+
 }
