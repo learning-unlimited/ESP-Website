@@ -66,41 +66,38 @@ class OnSiteAttendance(ProgramModuleObj):
                 timeslot = timeslots[0]
                 context['timeslot'] = timeslot
                 if request.GET and "when" in request.GET:
-                    when = datetime.datetime.strptime(request.GET["when"], "%Y-%m-%dT%H:%M")
+                    # if a date is specified, use that date and the end time of the timeblock
+                    date = datetime.datetime.strptime(request.GET["when"], "%Y-%m-%d").date()
+                    when = datetime.datetime.combine(date, timeslot.end.time())
                 else:
-                    now = datetime.datetime.now()
-                    start = timeslot.start
-                    end = timeslot.end
-                    # If we are currently sometime in the middle of the timeblock (regardless of date),
-                    # the default when is now
-                    if start.time() < now.time() < end.time():
-                        when = now
-                    # Otherwise, the default when is the end of the timeblock, but today
-                    else:
-                        when = datetime.datetime.combine(datetime.date.today(), end.time())
+                    # otherwise, just use the end time (and date) of the timeblock
+                    when = timeslot.end
+                    date = when.date()
                 context['when'] = when
-                #Students that are marked as attending a class during this timeslot
+                time_min = datetime.datetime.combine(date, timeslot.start_w_buffer().time())
+                time_max = datetime.datetime.combine(date, timeslot.end.time())
+                #Students that are marked as attending a class during this timeslot on the specified day
                 attended = ESPUser.objects.filter(Q(studentregistration__section__meeting_times=timeslot, studentregistration__relationship__name="Attended") & nest_Q(StudentRegistration.is_valid_qobject(when), 'studentregistration'))
-                #Students that are enrolled in a class for this timeslot
+                #Students that are enrolled in a class during this timeslot on the specified day
                 enrolled = ESPUser.objects.filter(Q(studentregistration__section__meeting_times=timeslot, studentregistration__relationship__name="Enrolled") & nest_Q(StudentRegistration.is_valid_qobject(when), 'studentregistration'))
-                #Students that have been checked in for the program
-                checked_in = ESPUser.objects.filter(Q(record__event='attended', record__program=prog))
-                #Students that have been checked in for the program during this timeslot
-                checked_in_during_ts = ESPUser.objects.filter(Q(record__event='attended', record__program=prog, record__time__gt=timeslot.start_w_buffer(), record__time__lt=timeslot.end))
-                #Students that have been checked in for the program but are not attending a class during this timeslot
+                #Students that have been checked in for the program at any time before the end of this timeslot on the specified day
+                checked_in = ESPUser.objects.filter(Q(record__event='attended', record__program=prog, record__time__lt=time_max))
+                #Students that have been checked in for the program during this timeslot on the specified day
+                checked_in_during_ts = ESPUser.objects.filter(Q(record__event='attended', record__program=prog, record__time__range=(time_min, time_max)))
+                #Students that have been checked in for the program at any time but are not attending a class during this timeslot on the specified day
                 not_attending = checked_in.exclude(id__in=[user.id for user in attended])
                 #Get the classes that they aren't attending (if any)
                 enrolled_srs = {sr.user: sr.section for sr in StudentRegistration.valid_objects(when).filter(section__meeting_times=timeslot, relationship__name="Enrolled").select_related('user')}
                 for student in not_attending:
                     student.missed_class = enrolled_srs.get(student, None)
-                #Students attending classes that they were enrolled in because they are attending it (and were not enrolled in beforehand)
+                #Students attending classes during this timeslot on the specified day that they were enrolled in because they are attending it (and were not enrolled in beforehand)
                 onsite_srs = {sr.user: sr.section for sr in StudentRegistration.valid_objects(when).filter(section__meeting_times=timeslot, relationship__name="OnSite/AttendedClass").select_related('user')}
                 onsite = onsite_srs.keys()
                 for student in onsite:
                     student.enrolled = True
                     student.attended_class = onsite_srs.get(student, None)
                     student.enrolled_class = student.attended_class
-                #Add students attending classes they aren't enrolled in
+                #Add students attending classes during this timeslot on the specified day that they aren't enrolled in
                 attended_srs = {sr.user: sr.section for sr in StudentRegistration.valid_objects(when).filter(section__meeting_times=timeslot, relationship__name="Attended").select_related('user')}
                 for student in attended:
                     attended_section = attended_srs.get(student, None)
@@ -113,7 +110,7 @@ class OnSiteAttendance(ProgramModuleObj):
                             student.attended_class = attended_section
                             student.enrolled_class = enrolled_section
                             onsite.append(student)
-                #Sections with no attendance recorded
+                #Sections during this timeslot with no attendance recorded on the specified day
                 no_attendance = ClassSection.objects.filter(meeting_times=timeslot, status__gt=0).exclude(id__in=StudentRegistration.valid_objects(when).filter(section__meeting_times=timeslot, relationship__name="Attended").values_list('section__id', flat = True))
                 context.update({
                                 'attended': attended,
