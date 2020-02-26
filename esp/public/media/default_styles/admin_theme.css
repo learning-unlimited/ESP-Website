@@ -9,7 +9,7 @@
 }
 
 #header {
-    background: #00365c;
+    background: #112E51;
 
     /* Reset the indents of django-flat-theme
       (need to restore 40px on branding+user-tools instead) */
@@ -52,7 +52,56 @@ div.breadcrumbs a {
     color:black;
 }
 .dashboard-module h2 {
-    background: #e3f4ff;
-    color:#141414;
+    background: #205493;
+    color:white;
+    border-radius: 4px;
 
+}
+@font-face {
+  font-family: 'Roboto';
+  src: url('../fonts/Roboto-Bold-webfont.woff');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url('../fonts/Roboto-Regular-webfont.woff');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url('../fonts/Roboto-Light-webfont.woff');
+  font-weight: 300;
+  font-style: normal;
+}
+.dashboard-module-content a {
+	color: #205493;
+}
+div.breadcrumbs {
+	background: #205596;
+}
+a:link, a:visited {
+	color: #205596;
+}
+.module h2, .module caption, .inline-group h2 {
+	background: #205596;
+}
+
+.object-tools a:hover, .object-tools li:hover a {
+	background-color: #112E51;
+}
+.object-tools a:link, .object-tools a:visited {
+    background: #205596;
+}
+#changelist-filter a:hover {
+	color: #112E51;
+}
+#changelist-filter li.selected a {
+	color: #205596;
+}
+#user-tools {
+	text-transform: none;
 }
