@@ -105,3 +105,8 @@ a:link, a:visited {
 #user-tools {
 	text-transform: none;
 }
+.dashboard-module h2 a.toggle-icon, .dashboard-module h2 a.close-icon {
+
+	background-image: url(admin-tools.png);
+
+}
