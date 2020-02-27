@@ -65,9 +65,10 @@ class OnSiteAttendance(ProgramModuleObj):
             if len(timeslots) == 1:
                 timeslot = timeslots[0]
                 context['timeslot'] = timeslot
-                if request.GET and "when" in request.GET:
+                when_get = request.GET.get("when", "")
+                if when_get != "":
                     # if a date is specified, use that date and the end time of the timeblock
-                    date = datetime.datetime.strptime(request.GET["when"], "%Y-%m-%d").date()
+                    date = datetime.datetime.strptime(when_get, "%Y-%m-%d").date()
                     when = datetime.datetime.combine(date, timeslot.end.time())
                 else:
                     # otherwise, just use the end time (and date) of the timeblock

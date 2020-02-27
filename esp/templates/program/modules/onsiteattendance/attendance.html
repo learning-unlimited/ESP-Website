@@ -51,7 +51,7 @@ Please select a timeslot from the dropdown below:
         If this timeslot is for reccuring classes, select the preferred date here:<br />
         (the <a href="/onsite/{{ one }}/{{ two }}/attendance/{{ timeslot.id }}">default</a> is the date associated with the timeslot)
         </p>
-        <input name="when" type="date" onchange="$j(this).parents('form').submit();return false;" value="{{ when|date:'Y-m-d' }}" style="width:auto;">
+        <input name="when" type="date" value="{{ when|date:'Y-m-d' }}" style="width:auto;"><input type="submit" value="Change Date">
     </form>
     {% endif %}
 </center>
@@ -232,7 +232,7 @@ Please select a timeslot from the dropdown below:
 <br />
 <table>
 <tr>
-    <th colspan="6">Sections During This Timeslot with No Attendance Recorded</th>
+    <th colspan="6">Sections During This Timeslot with No Attendance Recorded{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</th>
 </tr>
 <tr>
     <th width="5%">#</th>
