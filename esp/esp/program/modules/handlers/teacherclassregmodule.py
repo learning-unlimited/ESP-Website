@@ -282,9 +282,13 @@ class TeacherClassRegModule(ProgramModuleObj):
                                     for rt in [enrolled, onsite]:
                                         srs = StudentRegistration.objects.filter(user = student, section = section, relationship = rt)
                                         if srs.count() > 0:
-                                            srs[0].unexpire()
+                                            sr = srs[0]
+                                            sr.unexpire()
                                         else:
-                                            StudentRegistration.objects.create(user = student, section = section, relationship = rt)
+                                            sr = StudentRegistration.objects.create(user = student, section = section, relationship = rt)
+                                        if rt.name=='OnSite/AttendedClass':
+                                            sr.end_date = today_max
+                                            sr.save()
 
                 section.enrolled_list = []
                 section.attended_list = []
