@@ -125,13 +125,13 @@ class VolunteerOfferForm(forms.Form):
 
 
         #   Show t-shirt fields if specified by Tag (disabled by default)
-        if not Tag.getTag('volunteer_tshirt_options'):
+        if not Tag.getBooleanTag('volunteer_tshirt_options', default=False):
             del self.fields['shirt_size']
             del self.fields['shirt_type']
-        elif not Tag.getTag('volunteer_tshirt_type_selection'):
+        elif not Tag.getBooleanTag('volunteer_tshirt_type_selection', default=False):
             del self.fields['shirt_type']
 
-        if not Tag.getTag('volunteer_allow_comments'):
+        if not Tag.getBooleanTag('volunteer_allow_comments', default=False):
             del self.fields['comments']
         else:
             tag_data = Tag.getProgramTag('volunteer_help_text_comments', self.program)

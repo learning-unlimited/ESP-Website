@@ -901,8 +901,11 @@ class ClassSection(models.Model):
         Assumes meeting_times is a sorted QuerySet of correct length.
 
         """
-        # if meeting_times[0] not in self.viable_times(ignore_classes=ignore_classes):
-        # This set of error messages deserves a better home
+        # check if proposed times are the same as the current meeting_times
+        current_times = self.meeting_times.all()
+        if all(time in current_times for time in meeting_times):
+            return False
+        # otherwise, check if all teachers are available
         for t in self.teachers:
             available = t.getAvailableTimes(self.parent_program, ignore_classes=ignore_classes)
             for e in meeting_times:
