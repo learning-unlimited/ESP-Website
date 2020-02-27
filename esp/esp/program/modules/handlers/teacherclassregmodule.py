@@ -55,6 +55,7 @@ from django.template.loader      import render_to_string
 from esp.middleware.threadlocalrequest import get_current_request
 
 import json
+import datetime
 from copy import deepcopy
 
 class TeacherClassRegModule(ProgramModuleObj):
@@ -226,6 +227,9 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['user'] = user
         context['not_found'] = []
 
+        today_min = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
+        today_max = datetime.datetime.combine(datetime.date.today(), datetime.time.max)
+
         secid = 0
         if 'secid' in request.POST:
             secid = request.POST['secid']
@@ -245,9 +249,11 @@ class TeacherClassRegModule(ProgramModuleObj):
                     for student in section.students(verbs=["Enrolled","Attended"]):
                         if student.id in attending_students:
                             Record.objects.get_or_create(user=student, program=prog, event='attended')
-                            StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended)[0].unexpire()
+                            sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
+                            sr.end_date = today_max
+                            sr.save()
                         else:
-                            srs = StudentRegistration.objects.filter(user = student, section = section, relationship = attended)
+                            srs = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended)
                             for sr in srs:
                                 sr.expire()
                     misc_students = request.POST.get('misc_students').split()
@@ -262,7 +268,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                                 continue
                         if student.isStudent():
                             Record.objects.get_or_create(user=student, program=prog, event='attended')
-                            StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended)[0].unexpire()
+                            sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
+                            sr.end_date = today_max
+                            sr.save()
                             if student not in section.students():
                                 if 'unenroll' in request.POST:
                                     sm = ScheduleMap(student, prog)
@@ -274,9 +282,13 @@ class TeacherClassRegModule(ProgramModuleObj):
                                     for rt in [enrolled, onsite]:
                                         srs = StudentRegistration.objects.filter(user = student, section = section, relationship = rt)
                                         if srs.count() > 0:
-                                            srs[0].unexpire()
+                                            sr = srs[0]
+                                            sr.unexpire()
                                         else:
-                                            StudentRegistration.objects.create(user = student, section = section, relationship = rt)
+                                            sr = StudentRegistration.objects.create(user = student, section = section, relationship = rt)
+                                        if rt.name=='OnSite/AttendedClass':
+                                            sr.end_date = today_max
+                                            sr.save()
 
                 section.enrolled_list = []
                 section.attended_list = []
