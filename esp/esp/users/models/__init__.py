@@ -2341,6 +2341,7 @@ class Permission(ExpirableModel):
             ("Teacher/Survey", "Teacher Survey"),
             ("Teacher/Profile", "Set profile info"),
             ("Teacher/Survey", "Access to survey"),
+            ("Teacher/Webapp", "Access to teacher onsite webapp"),
         )),
         ("Volunteer Deadlines", (
             ("Volunteer", "Basic volunteer access"),

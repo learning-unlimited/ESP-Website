@@ -56,7 +56,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         user = request.user
         now = datetime.now()
 
-        context = {}
+        context = self.onsitecontext(request, tl, one, two, prog)
 
         classes = [cls for cls in user.getTaughtSections(program = prog)
                    if cls.meeting_times.all().exists()
@@ -66,11 +66,6 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         classes.sort()
 
         context['checkin_note'] = Tag.getProgramTag('teacher_onsite_checkin_note', program = prog, default="Note: Please make sure to check in before your first class today.")
-
-        context['user'] = user
-        context['program'] = prog
-        context['one'] = one
-        context['two'] = two
         context['webapp_page'] = 'schedule'
         context['crmi'] = prog.classregmoduleinfo
         context['classes'] = classes
@@ -82,11 +77,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
     @needs_teacher
     @meets_deadline('/Webapp')
     def onsitemap(self, request, tl, one, two, module, extra, prog):
-        context = {}
-        context['user'] = request.user
-        context['program'] = prog
-        context['one'] = one
-        context['two'] = two
+        context = self.onsitecontext(request, tl, one, two, prog)
         context['webapp_page'] = 'map'
         context['center'] = Tag.getProgramTag('program_center', program = prog, default='{lat: 37.427490, lng: -122.170267}')
         context['API_key'] = Tag.getTag('google_cloud_api_key', default='')
@@ -112,12 +103,8 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
     @needs_teacher
     @meets_deadline('/Webapp')
     def onsitedetails(self, request, tl, one, two, module, extra, prog):
-        context = {}
+        context = self.onsitecontext(request, tl, one, two, prog)
         user = request.user
-        context['user'] = user
-        context['program'] = prog
-        context['one'] = one
-        context['two'] = two
         context['webapp_page'] = 'details'
         context['section_page'] = 'info'
         secid = 0
@@ -138,12 +125,8 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
     @needs_teacher
     @meets_deadline('/Webapp')
     def onsiteroster(self, request, tl, one, two, module, extra, prog):
-        context = {}
+        context = self.onsitecontext(request, tl, one, two, prog)
         user = request.user
-        context['user'] = user
-        context['program'] = prog
-        context['one'] = one
-        context['two'] = two
         context['webapp_page'] = 'details'
         context['section_page'] = 'roster'
         context['not_found'] = []
@@ -170,26 +153,35 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
     @needs_teacher
     @meets_deadline('/Webapp')
     def onsitesurvey(self, request, tl, one, two, module, extra, prog):
-        context = {}
+        context = self.onsitecontext(request, tl, one, two, prog)
         user = request.user
-        context['user'] = user
-        context['program'] = prog
-        context['one'] = one
-        context['two'] = two
         context['webapp_page'] = 'survey'
+        surveys = prog.getSurveys().filter(category = tl).select_related()
         if extra == 'review':
             context['survey_page'] = 'review'
-            return survey_review(request, tl, one, two, self.baseDir()+'survey.html', context)
+            if len(surveys):
+                return survey_review(request, tl, one, two, self.baseDir()+'survey.html', context)
         else:
             context['survey_page'] = 'survey'
             if 'done' in request.GET:
                 context['survey_status'] = "submitted"
-                return render_to_response(self.baseDir()+'survey.html', request, context)
             elif Record.user_completed(user, "teacher_survey", prog):
                 context['survey_status'] = "completed"
-                return render_to_response(self.baseDir()+'survey.html', request, context)
-            else:
+            elif len(surveys):
                 return survey_view(request, tl, one, two, self.baseDir()+'survey.html', context)
+        return render_to_response(self.baseDir()+'survey.html', request, context)
+
+    @staticmethod
+    def onsitecontext(request, tl, one, two, prog):
+        context = {}
+        surveys = prog.getSurveys().filter(category = tl).select_related()
+        if len(surveys) == 0:
+            context['survey_status'] = 'none'
+        context['user'] = request.user
+        context['program'] = prog
+        context['one'] = one
+        context['two'] = two
+        return context
 
     def isStep(self):
         return Tag.getBooleanTag('webapp_isstep', default=False)

@@ -5,6 +5,9 @@
 <center>
   <div class="main">
     {% if survey_page == "review" %}
+        <table style="width:100%">
+            <tr><th>Student Survey Responses for {{ program.niceName }}</th></tr>
+        </table>
         {% for c in perclass_data %}
             <table style="width:100%">
                 <tr>
@@ -16,6 +19,12 @@
                     {% include "survey/answers.html" %}
                 {% endwith %}
             {% endfor %}
+        {% empty %}
+            <table style="width:100%">
+                <tr>
+                    <td>{% if survey_status == "none" %}No survey for this program{% else %}No survey responses available{% endif %}</th>
+                </tr>
+            </table>
         {% endfor %}
     {% else %}
         <table style="width:100%">
@@ -25,6 +34,9 @@
             </table>
         {% elif survey_status == "submitted" %}
             <tr><td>Thanks for filling out the survey!</td></tr>
+            </table>
+        {% elif survey_status == "none" %}
+            <tr><td>No survey for this program</td></tr>
             </table>
         {% else %}
             </table>
