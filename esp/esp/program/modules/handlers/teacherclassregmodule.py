@@ -227,9 +227,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         user.taught_sections = [sec for sec in user.getTaughtSections(program = prog) if sec.meeting_times.count() > 0]
         context['user'] = user
 
-        today_min = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
-        today_max = datetime.datetime.combine(datetime.date.today(), datetime.time.max)
-
         secid = 0
         if 'secid' in request.POST:
             secid = request.POST['secid']
@@ -249,6 +246,8 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     @staticmethod
     def process_attendance(section, request, prog):
+        today_min = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
+        today_max = datetime.datetime.combine(datetime.date.today(), datetime.time.max)
         attended = RegistrationType.objects.get_or_create(name = 'Attended', category = "student")[0]
         enrolled = RegistrationType.objects.get_or_create(name='Enrolled', category = "student")[0]
         onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
