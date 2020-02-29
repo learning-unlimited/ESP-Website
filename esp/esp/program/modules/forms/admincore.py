@@ -1,10 +1,17 @@
+from decimal import Decimal
 from django import forms
 from django.contrib import admin
 from django.utils.safestring import mark_safe
+from form_utils.forms import BetterForm, BetterModelForm
 
+from esp.accounting.models import LineItemType
 from esp.cal.models import Event
-from esp.program.models import RegistrationType
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
+from esp.program.forms import ProgramCreationForm
+from esp.program.models import RegistrationType, Program
+from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.tagdict import all_program_tags, tag_categories
+from esp.tagdict.models import Tag
 
 def get_rt_choices():
     choices = [("All","All")]
@@ -44,3 +51,93 @@ class LunchConstraintsForm(forms.Form):
     autocorrect = forms.BooleanField(initial=True, required=False, help_text="Check this box to attempt automatically adding lunch to a student's schedule so that they are less likely to violate the schedule constraint.")
     include_conditions = forms.BooleanField(initial=True, required=False, help_text="Check this box to allow students to schedule classes through lunch if they do not have morning or afternoon classes.")
 
+class ProgramSettingsForm(ProgramCreationForm):
+    """ Form for changing program-related settings. """
+    #Remove these fields because they are editable on the deadline management page
+    teacher_reg_start = None
+    teacher_reg_end   = None
+    student_reg_start = None
+    student_reg_end   = None
+    def __init__(self, *args, **kwargs):
+        super(ProgramSettingsForm, self).__init__(*args, **kwargs)
+
+    def save(self):
+        prog = self.instance
+        LineItemType.objects.filter(text='Program admission',program=prog
+        ).update(amount_dec=Decimal('%.2f' % self.cleaned_data['base_cost']))
+        prog.sibling_discount = self.cleaned_data['sibling_discount']
+        return super(ProgramSettingsForm, self).save()
+
+    class Meta:
+        fieldsets = [
+                     ('Program Title', {'fields': ['term', 'term_friendly'] }),
+                     ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
+                     ('About Program Creator',{'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
+                     ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
+                     ('Program Internal Details' ,{'fields':['program_type','program_modules','class_categories','flag_types']}),
+                    ]# Here you can also add description for each fieldset.
+        model = Program
+
+class TeacherRegSettingsForm(BetterModelForm):
+    """ Form for changing teacher class registration settings. """
+    def __init__(self, *args, **kwargs):
+        super(TeacherRegSettingsForm, self).__init__(*args, **kwargs)
+
+    class Meta:
+        fieldsets = [
+                     ('Teacher Settings', {'fields': ['allow_coteach', 'set_prereqs', 'num_teacher_questions']}),
+                     ('Class Duration and Size Options', {'fields': ['class_max_duration', 'class_min_cap', 'class_max_size', 'class_size_step', 'class_other_sizes']}),
+                     ('Section Options', {'fields': ['allowed_sections', 'session_counts']}),
+                     ('Other Options', {'fields': ['allow_lateness', 'ask_for_room', 'use_class_size_max', 'use_class_size_optimal', 'use_optimal_class_size_range', 'use_allowable_class_size_ranges', 'open_class_registration']}),
+                     ('Visual Options', {'fields': ['color_code', 'progress_mode']}),
+                    ]# Here you can also add description for each fieldset.
+        model = ClassRegModuleInfo
+
+class StudentRegSettingsForm(BetterModelForm):
+    """ Form for changing student class registration settings. """
+    def __init__(self, *args, **kwargs):
+        super(StudentRegSettingsForm, self).__init__(*args, **kwargs)
+
+    class Meta:
+        fieldsets = [
+                     ('Capacity Settings', {'fields': ['enforce_max', 'class_cap_multiplier', 'class_cap_offset', 'apply_multiplier_to_room_cap']}),
+                     ('Priority Registration Settings', {'fields': ['use_priority', 'priority_limit']}),
+                     ('Enrollment Settings', {'fields': ['use_grade_range_exceptions', 'register_from_catalog', 'visible_enrollments', 'visible_meeting_times', 'show_emailcodes']}),
+                     ('Button Settings', {'fields': ['confirm_button_text', 'view_button_text', 'cancel_button_text', 'temporarily_full_text', 'cancel_button_dereg', 'send_confirmation']}),
+                     ('Visual Options', {'fields': ['progress_mode','force_show_required_modules']}),
+                    ]# Here you can also add description for each fieldset.
+        model = StudentClassRegModuleInfo
+
+class ProgramTagSettingsForm(BetterForm):
+    """ Form for changing tags associated with a program. """
+    def __init__(self, *args, **kwargs):
+        self.program = kwargs.pop('program')
+        self.categories = set()
+        super(ProgramTagSettingsForm, self).__init__(*args, **kwargs)
+        for key in all_program_tags:
+            # generate field for each tag
+            tag_tuple = all_program_tags[key]
+            if tag_tuple[4]:
+                self.categories.add(tag_tuple[3])
+                self.fields[key] = getattr(forms, "BooleanField" if tag_tuple[0] else "CharField")(help_text=tag_tuple[1], initial = tag_tuple[2], required = False)
+                set_val = Tag.getBooleanTag(key, program = self.program) if tag_tuple[0] else Tag.getProgramTag(key, program = self.program)
+                if set_val != None and set_val != self.fields[key].initial:
+                    self.fields[key].initial = set_val
+
+    def save(self):
+        prog = self.program
+        for key in all_program_tags:
+            # Update tags if necessary
+            tag_tuple = all_program_tags[key]
+            if tag_tuple[4]:
+                set_val = self.cleaned_data[key]
+                global_val = Tag.getBooleanTag(key, default = tag_tuple[2]) if tag_tuple[0] else Tag.getProgramTag(key, default = tag_tuple[2])
+                if not set_val in ("", "None", None, global_val):
+                    # Set a [new] tag if a value was provided and the value is not the default (or if it is but there is also a global tag set)
+                    Tag.setTag(key, prog, set_val)
+                else:
+                    # Otherwise, delete the old tag, if there is one
+                    Tag.unSetTag(key, prog)
+
+    class Meta:
+        fieldsets = [(cat, {'fields': [key for key in sorted(all_program_tags.keys()) if all_program_tags[key][3] == cat], 'legend': tag_categories[cat]}) for cat in sorted(tag_categories.keys())]

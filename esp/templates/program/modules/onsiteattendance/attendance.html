@@ -14,17 +14,24 @@
 
 <div id="program_form">
 
+{% if timeslot %}
+<p>
+Here is an attendance summary for {{ timeslot }}. Here you can see attendance statistics and details for students that have been checked in during this timeslot, students that are not attending class, and students that are attending classes they were not originally enrolled in.
+</p>
+{% endif %}
+<center>
 <p>
 {% if timeslot %}
-Here is an attendance summary for {{ timeslot }}. Here you can see attendance statistics and details for students that have been checked in during this timeslot, students that are not attending class, and students that are attending classes they were not originally enrolled in. If you are looking for a different timeslot, you can select it from the dropdown below.
+If you are looking for a different timeslot, you can select it from the dropdown below:
 {% else %}
-Please select a timeslot from the dropdown below.
+Please select a timeslot from the dropdown below:
 {% endif %}
-<br />
 </p>
+</center>
+
 
 <center>
-    <select name="tsid" onchange="location.href='/onsite/{{ one }}/{{ two }}/attendance/'+$j(this).children('option:selected').val()" style="width: 400px;">
+    <select name="tsid" onchange="location.href='/onsite/{{ one }}/{{ two }}/attendance/'+$j(this).children('option:selected').val(){% if when %}+'?when={{ when|date:'Y-m-d' }}'{% endif %}" style="width:auto;">
         {% if not timeslot %}
             <option disabled selected="selected">
                 (Select a timeslot)
@@ -36,15 +43,26 @@ Please select a timeslot from the dropdown below.
             </option>
         {% endfor %}
     </select>
+
+    {% if timeslot %}
+    <!--Could possibly hide this with a tag-->
+    <form action="/onsite/{{ one }}/{{ two }}/attendance/{{ timeslot.id }}" method="get">
+        <p>
+        If this timeslot is for reccuring classes, select the preferred date here:<br />
+        (the <a href="/onsite/{{ one }}/{{ two }}/attendance/{{ timeslot.id }}">default</a> is the date associated with the timeslot)
+        </p>
+        <input name="when" type="date" value="{{ when|date:'Y-m-d' }}" style="width:auto;"><input type="submit" value="Change Date">
+    </form>
+    {% endif %}
 </center>
 
 {% if timeslot %}
 <center>
 <table>
 <tr>
-    <th width="33%"># Students<br />Checked In<br />To the Program</th>
-    <th width="33%"># Students<br />Enrolled in Classes<br />This Timeslot</th>
-    <th width="33%"># Students<br />Attending Classes<br />This Timeslot</th>
+    <th width="33%"># Students<br />Checked In<br />To the Program<br />Before {{ timeslot.end|date:"g:i A" }}{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</th>
+    <th width="33%"># Students<br />Enrolled in Classes<br />During This Timeslot</th>
+    <th width="33%"># Students<br />Attending Classes<br />During This Timeslot{% if when != timeslot.end %}<br />on {{ when|date:'n/j/Y' }}{% endif %}</th>
 </tr>
 <tr>
     <td align="center">{{ checked_in.count }}</td>
@@ -55,7 +73,7 @@ Please select a timeslot from the dropdown below.
 <br />
 <table>
 <tr>
-    <th colspan="6">Students Checked In Between {{ timeslot.start_w_buffer|date:"g:i A" }} and {{ timeslot.end|date:"g:i A" }} </th>
+    <th colspan="6">Students Checked In Between {{ timeslot.start_w_buffer|date:"g:i A" }} and {{ timeslot.end|date:"g:i A" }}{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</th>
 </tr>
 <tr>
     <th width="5%">#</th>
@@ -106,7 +124,7 @@ Please select a timeslot from the dropdown below.
 <br />
 <table>
 <tr>
-    <th colspan="7">Students Checked In But Not Attending Class</th>
+    <th colspan="7">Students Checked In Before {{ timeslot.end|date:"g:i A" }} But Not Attending Class During This Timeslot{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</th>
 </tr>
 <tr>
     <th width="5%">#</th>
@@ -159,7 +177,7 @@ Please select a timeslot from the dropdown below.
 <br />
 <table>
 <tr>
-    <th colspan="8">Students Attending Classes In Which They Weren't Originally Enrolled</th>
+    <th colspan="8">Students Attending Classes In Which They Weren't Originally Enrolled During This Timeslot{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</th>
 </tr>
 <tr>
     <th width="5%">#</th>
@@ -214,7 +232,7 @@ Please select a timeslot from the dropdown below.
 <br />
 <table>
 <tr>
-    <th colspan="6">Sections with No Attendance Recorded</th>
+    <th colspan="6">Sections During This Timeslot with No Attendance Recorded{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</th>
 </tr>
 <tr>
     <th width="5%">#</th>

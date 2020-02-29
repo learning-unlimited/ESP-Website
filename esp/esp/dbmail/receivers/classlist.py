@@ -22,6 +22,8 @@ class ClassList(BaseHandler):
         except ESPUser.DoesNotExist:
             return
 
+        self.emailcode = cls.emailcode()
+
         program = cls.parent_program
         self.recipients = ['%s Directors <%s>' % (program.niceName(), program.director_email)]
 
