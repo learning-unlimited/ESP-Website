@@ -40,6 +40,7 @@ from django.db.models.query   import Q
 from esp.middleware     import ESPError
 from esp.survey.models  import QuestionType, Question, Answer, SurveyResponse, Survey
 from esp.survey.views   import survey_view, survey_review, survey_graphical, survey_review_single, top_classes, survey_dump
+from esp.program.modules.forms.surveys import SurveyForm
 
 import operator
 
@@ -57,28 +58,26 @@ class SurveyManagement(ProgramModuleObj):
         return False
 
     @needs_admin
-    def survey_create(self, request, tl, one, two, module, extra, prog):
+    def survey_manage(self, request, tl, one, two, module, extra, prog):
+        if request.POST:
+            form = SurveyForm(request.POST)
+            if form.is_valid():
+                form.save(program = prog)
+        else:
+            form = SurveyForm()
+        
+        # form = SurveyForm(request.POST, instance = crmi)
+        context = {'program': prog, 'form': form}
 
-        context = {'program': prog}
-
-        return render_to_response('program/modules/surveymanagement/create.html', request, context)
-
-    @needs_admin
-    def survey_edit(self, request, tl, one, two, module, extra, prog):
-
-        context = {'program': prog}
-
-        return render_to_response('program/modules/surveymanagement/edit.html', request, context)
+        return render_to_response('program/modules/surveymanagement/manage.html', request, context)
 
     @main_call
     @needs_admin
     def surveys(self, request, tl, one, two, module, extra, prog):
         if extra is None or extra == '':
             return render_to_response('program/modules/surveymanagement/main.html', request, {'program': prog, 'surveys': prog.getSurveys()})
-        elif extra == 'edit':
-            return self.survey_edit(request, tl, one, two, module, extra, prog)
-        elif extra == 'create':
-            return self.survey_create(request, tl, one, two, module, extra, prog)
+        elif extra == 'manage':
+            return self.survey_manage(request, tl, one, two, module, extra, prog)
         elif extra == 'review':
             return survey_review(request, tl, one, two)
         elif extra == 'dump':

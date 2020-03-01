@@ -1,0 +1,27 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Survey Administration{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+<h1>Survey Management for {{ program.niceName }}</h1>
+
+<div id="program_form">
+    <form method="post" action="/manage/{{ program.url }}/surveys/manage">
+        <table align="center" cellpadding="0" cellspacing="0" width="100%">
+            <tr><th colspan="2" class="small">Add/modify a survey</th></tr>
+            {{ form.as_table }}
+            <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Create/Save Survey" /></td></tr>
+        </table>
+    </form>
+</div>
+
+<script id="resourcesscript" src="/media/scripts/program/modules/surveys.js" data-prog_url="{{ prog.url }}"></script>
+<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
+
+{% endblock %}
