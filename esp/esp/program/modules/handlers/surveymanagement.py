@@ -40,9 +40,9 @@ from django.db.models.query   import Q
 from esp.middleware     import ESPError
 from esp.survey.models  import QuestionType, Question, Answer, SurveyResponse, Survey
 from esp.survey.views   import survey_view, survey_review, survey_graphical, survey_review_single, top_classes, survey_dump
-from esp.program.modules.forms.surveys import SurveyForm
+from esp.program.modules.forms.surveys import SurveyForm, QuestionForm
 
-import operator
+from collections import OrderedDict
 
 class SurveyManagement(ProgramModuleObj):
     @classmethod
@@ -59,15 +59,54 @@ class SurveyManagement(ProgramModuleObj):
 
     @needs_admin
     def survey_manage(self, request, tl, one, two, module, extra, prog):
-        if request.POST:
-            form = SurveyForm(request.POST)
-            if form.is_valid():
-                form.save(program = prog)
-        else:
-            form = SurveyForm()
-        
-        # form = SurveyForm(request.POST, instance = crmi)
-        context = {'program': prog, 'form': form}
+        context = {'program': prog}
+        context['survey_form'] = SurveyForm()
+        context['question_form'] = QuestionForm()
+        if request.GET:
+            obj = request.GET.get("obj", None)
+            op = request.GET.get("op", None)
+            id = request.GET.get("id", None)
+            if obj == "survey":
+                context['open_section'] = 'survey'
+                survey = None
+                surveys = Survey.objects.filter(id = id)
+                if len(surveys) == 1:
+                    survey = surveys[0]
+                if op == "edit":
+                    form = SurveyForm(instance = survey)
+                    form.id = id
+                    context['survey_form'] = form
+                elif op == "delete":
+                    # show confirmation page?
+                    pass
+                elif request.POST:
+                    form = SurveyForm(request.POST, instance = survey)
+                    form.id = id
+                    context['survey_form'] = form
+                    if form.is_valid():
+                        form.save(program = prog)
+            elif obj == "question":
+                context['open_section'] = 'question'
+                question = None
+                questions = Question.objects.filter(id = id)
+                if len(questions) == 1:
+                    question = questions[0]
+                if op == "edit":
+                    form = QuestionForm(instance = question)
+                    form.id = id
+                    context['question_form'] = form
+                elif op == "delete":
+                    # show confirmation page?
+                    pass
+                elif request.POST:
+                    form = QuestionForm(request.POST, instance = question)
+                    form.id = id
+                    context['question_form'] = form
+                    if form.is_valid():
+                        form.save()
+
+        context['surveys'] = Survey.objects.filter(program = prog)
+        context['questions'] = Question.objects.filter(survey__program = prog).order_by('survey', 'seq')
 
         return render_to_response('program/modules/surveymanagement/manage.html', request, context)
 

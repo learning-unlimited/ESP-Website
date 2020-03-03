@@ -1,6 +1,6 @@
 from django import forms
 
-from esp.survey.models  import QuestionType, Question, Answer, SurveyResponse, Survey
+from esp.survey.models  import QuestionType, Question, Survey
 
 class SurveyForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -16,6 +16,14 @@ class SurveyForm(forms.ModelForm):
     class Meta:
         model = Survey
         exclude = ['program']
+
+class QuestionForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(QuestionForm, self).__init__(*args, **kwargs)
+
+    class Meta:
+        model = Question
+        exclude = ['param_values']
 
 # class ClassroomImportForm(forms.Form):
     # program = forms.ModelChoiceField(queryset=None)
