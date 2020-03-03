@@ -68,30 +68,47 @@ class ProgramCreationForm(BetterModelForm):
                           widget=forms.CheckboxSelectMultiple(attrs={'class': 'input-xxlarge'}),
                           help_text=Program.program_modules.field.help_text)
 
-
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current modules. """
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
+        self.program_module_ids = [[x.id for x in ProgramModule.objects.filter(admin_title__in=['Accounting', 'Student Optional Fees', 'Credit Card Payment Module (Stripe)', 'Financial Aid Application',                                                                                        'Easily Approve Financial Aid Requests'])],
+                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Accounting', 'Credit Card Payment Module (Stripe)', 'Financial Aid Application',
+                                                                                                'Easily Approve Financial Aid Requests'])],
+                                   [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Logistics Quiz')],
+                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Custom Form', 'Teacher Surveys', 'Survey Management'])],
+                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Custom Form', 'Student Surveys', 'Survey Management'])],
+                                   [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Custom Form')],
+                                   [x.id for x in ProgramModule.objects.filter(admin_title='Student Custom Form')],
+                                   [x.id for x in ProgramModule.objects.filter(admin_title='Student Lunch Period Selection')],
+                                   [x.id for x in ProgramModule.objects.filter(admin_title='Donation Module')],
+                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Training and Interview Signups', 'Manage Teacher Training and Interviews'])],
+                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Two-Phase Student Registration', 'Lottery Frontend'])],
+                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Registration Phase Zero', 'Manage Student Registration Phase Zero'])],
+                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Application Review for Admin', 'Admin Admissions Dashboard'])],
+                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Admissions Dashboard', 'Application Reviews for Teachers', 'Application Review for Admin', 'Admin Admissions Dashboard'])]
+                                   ]
         program_modules_questions = ['Will you have extra costs (shirts or lunch)?', # Accounting, Student Optional Fees, Credit Card Payment Module (Stripe), Financial Aid Application, Easily Approve Financial Aid Requests
-                                     'Will you charge for the program?', # Accounting, Credit Card Payment Module (Stripe, Financial Aid Application, Easily Approve Financial Aid Requests
-                                     'Do you want a pre-program quiz for teachers?', # Teacher logistics quiz
+                                     'Will you charge for the program?', # Accounting, Credit Card Payment Module (Stripe), Financial Aid Application, Easily Approve Financial Aid Requests
+                                     'Do you want a pre-program quiz for teachers?', # Teacher Logistics Quiz
                                      'Will you send any surveys to teachers?', # Teacher Custom Form, Teacher Surveys, Survey Management
                                      'Will you send any surveys to students?', # Student Custom Form, Student Surveys, Survey Management
-                                     'Will you have any additional forms that teachers should fill out?', # Teacher Custom Form
-                                     'Will you have any additional forms that teachers should fill out?', # Student Custom Form
+                                     'Will you have any additional (non-survey) forms that teachers should fill out?', # Teacher Custom Form
+                                     'Will you have any additional (non-survey) forms that teachers should fill out?', # Student Custom Form
                                      'Will you have more than one lunch period (per day)?', # Student Lunch Period Selection
-                                     'Would you be willing to solicit donations for LU?',
+                                     'Would you be willing to solicit donations for LU?', # Donation Module
                                      'Do you plan to have teacher training or interviews?', # Teacher Training and Interview Signups, Manage Teacher Training and Interviews
-                                     'Will you use lottery registration (as opposed to first come, first served)?', # Two-Phase Student Registration, Lottery Frontend
-                                        'If yes, do you want to use the "phase zero" admission lottery before class lottery?', # Student Registration Phase Zero, Manage Student Registration Phase Zero
-                                     'Do students have to apply to individual classes?',
-                                        'If yes, can teachers admit them (as opposed to just admins)?' #Teacher Admissions Dashboard', Application Reviews for Teachers, Application Review for Admin,Admin Admissions Dashboard
+                                     'Will you use lottery registration (as opposed to first come, first served) for classes?', # Two-Phase Student Registration, Lottery Frontend
+                                     'Will you use lottery admission to the program?', # Student Registration Phase Zero, Manage Student Registration Phase Zero
+                                     'Do students have to apply to individual classes?', # Application Review for Admin, Admin Admissions Dashboard
+                                        'If yes, can teachers admit them (as opposed to just admins)?' # Teacher Admissions Dashboard, Application Reviews for Teachers, Application Review for Admin, Admin Admissions Dashboard
                                     ]
-        self.program_module_ids = [['72', '48', '10', '40', '62'], ['72', '10', '40', '62'], ['19'], ['3', '8', '28'], ['4', '7', '28'], ['3'], ['4'], ['44'], ['50'], ['63', '64'], ['41', '66'], ['49', '9'], ['17'], ['68', '70']]
-                                
+        # Include additional or new modules that haven't been added to the list
+        for x in ProgramModule.objects.filter(choosable=0):
+            if x.id not in sum(self.program_module_ids, []):
+                program_modules_questions.append('Would you like to include the {} module?'.format(x.admin_title))
+                self.program_module_ids.append([str(x.id)])
         self.fields['program_modules'].choices = enumerate(program_modules_questions)
-        
-        
+
         #   Enable validation on other fields
         self.fields['program_size_max'].required = True
         self.fields['program_size_max'].validators.append(validators.MaxValueValidator((1 << 31) - 1))
