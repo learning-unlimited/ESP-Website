@@ -56,7 +56,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 
 @login_required
-def survey_view(request, tl, program, instance):
+def survey_view(request, tl, program, instance, template = 'survey/survey.html', context = {}):
 
     try:
         prog = Program.by_prog_inst(program, instance)
@@ -135,7 +135,7 @@ def survey_view(request, tl, program, instance):
             classes = user.getTaughtClasses(prog)
             sections = user.getTaughtSections(prog).order_by('parent_class__title')
 
-        context = {
+        context.update({
             'survey': survey,
             'questions': questions,
             'perclass_questions': perclass_questions,
@@ -143,9 +143,9 @@ def survey_view(request, tl, program, instance):
             'classes': classes,
             'sections': sections,
             'timeslots': timeslots,
-        }
+        })
 
-        return render_to_response('survey/survey.html', request, context)
+        return render_to_response(template, request, context)
 
 def get_survey_info(request, tl, program, instance):
     try:
@@ -185,7 +185,7 @@ def get_survey_info(request, tl, program, instance):
     return (user, prog, surveys)
 
 
-def display_survey(user, prog, surveys, request, tl, format):
+def display_survey(user, prog, surveys, request, tl, format, template = 'survey/review.html', context = {}):
     """ Wrapper doing the necessary work for the survey output. """
     from esp.program.models import ClassSubject, ClassSection
 
@@ -223,13 +223,13 @@ def display_survey(user, prog, surveys, request, tl, format):
         section_ct=ContentType.objects.get(app_label="program",model="classsection")
         perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(Q(content_type=section_ct,object_id=x.id) | Q(content_type=subject_ct,object_id=x.parent_class.id)) } for y in perclass_questions ] } for x in classes ]
 
-    context = {'user': user, 'surveys': surveys, 'program': prog, 'perclass_data': perclass_data, 'tl': tl}
+    context.update({'user': user, 'surveys': surveys, 'program': prog, 'perclass_data': perclass_data, 'tl': tl})
 
     #   Choose+use appropriate output format
     if format == 'html':
-        return render_to_response('survey/review.html', request, context)
+        return render_to_response(template, request, context)
     elif format == 'tex':
-        return render_to_latex('survey/review.tex', context, 'pdf')
+        return render_to_latex(template, context, 'pdf')
 
 def delist(x):
     if isinstance(x,list):
@@ -340,21 +340,21 @@ def survey_dump(request, tl, program, instance):
     return dump_survey_xlwt(user, prog, surveys, request, tl)
 
 @login_required
-def survey_review(request, tl, program, instance):
+def survey_review(request, tl, program, instance, template = 'survey/review.html', context = {}):
     """ A view of all the survey results pertaining to a particular user in the given program. """
 
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
-    return display_survey(user, prog, surveys, request, tl, 'html')
+    return display_survey(user, prog, surveys, request, tl, 'html', template, context)
 
 @login_required
-def survey_graphical(request, tl, program, instance):
+def survey_graphical(request, tl, program, instance, template = 'survey/review.tex', context = {}):
     """ A PDF view of the survey results with histograms. """
 
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
-    return display_survey(user, prog, surveys, request, tl,'tex')
+    return display_survey(user, prog, surveys, request, tl, 'tex', template, context)
 
 @login_required
-def survey_review_single(request, tl, program, instance):
+def survey_review_single(request, tl, program, instance, template = 'survey/review_single.html', context = {}):
     """ View a single survey response. """
     try:
         prog = Program.by_prog_inst(program, instance)
@@ -388,9 +388,9 @@ def survey_review_single(request, tl, program, instance):
     else:
         raise ESPError('You need to be a teacher or administrator of this program to review survey responses.', log=False)
 
-    context = {'user': user, 'program': prog, 'response': survey_response, 'answers': answers, 'classes_only': classes_only, 'other_responses': other_responses }
+    context.update({'user': user, 'program': prog, 'response': survey_response, 'answers': answers, 'classes_only': classes_only, 'other_responses': other_responses })
 
-    return render_to_response('survey/review_single.html', request, context)
+    return render_to_response(template, request, context)
 
 # To be replaced with something more useful, eventually.
 @login_required

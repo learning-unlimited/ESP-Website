@@ -55,6 +55,7 @@ from django.template.loader      import render_to_string
 from esp.middleware.threadlocalrequest import get_current_request
 
 import json
+import re
 import datetime
 from copy import deepcopy
 
@@ -225,10 +226,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         user = request.user
         user.taught_sections = [sec for sec in user.getTaughtSections(program = prog) if sec.meeting_times.count() > 0]
         context['user'] = user
-        context['not_found'] = []
-
-        today_min = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
-        today_max = datetime.datetime.combine(datetime.date.today(), datetime.time.max)
 
         secid = 0
         if 'secid' in request.POST:
@@ -241,71 +238,79 @@ class TeacherClassRegModule(ProgramModuleObj):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
             else:
                 section = sections[0]
-                attended = RegistrationType.objects.get_or_create(name = 'Attended', category = "student")[0]
-                enrolled = RegistrationType.objects.get_or_create(name='Enrolled', category = "student")[0]
-                onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
-                if request.POST and 'submitted' in request.POST:
-                    attending_students = [int(student) for student in request.POST.getlist('attending')]
-                    for student in section.students(verbs=["Enrolled","Attended"]):
-                        if student.id in attending_students:
-                            Record.objects.get_or_create(user=student, program=prog, event='attended')
-                            sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
-                            sr.end_date = today_max
-                            sr.save()
-                        else:
-                            srs = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended)
-                            for sr in srs:
-                                sr.expire()
-                    misc_students = request.POST.get('misc_students').split()
-                    for code in misc_students:
-                        try:
-                            student = ESPUser.objects.get(id=code)
-                        except (ValueError, ESPUser.DoesNotExist):
-                            try:
-                                student = ESPUser.objects.get(username=code)
-                            except (ValueError, ESPUser.DoesNotExist):
-                                context['not_found'].append(code)
-                                continue
-                        if student.isStudent():
-                            Record.objects.get_or_create(user=student, program=prog, event='attended')
-                            sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
-                            sr.end_date = today_max
-                            sr.save()
-                            if student not in section.students():
-                                if 'unenroll' in request.POST:
-                                    sm = ScheduleMap(student, prog)
-                                    for ts in [ts.id for ts in section.get_meeting_times()]:
-                                        if ts in sm.map and len(sm.map[ts]) > 0:
-                                            for sm_sec in sm.map[ts]:
-                                                sm_sec.unpreregister_student(student)
-                                if 'enroll' in request.POST:
-                                    for rt in [enrolled, onsite]:
-                                        srs = StudentRegistration.objects.filter(user = student, section = section, relationship = rt)
-                                        if srs.count() > 0:
-                                            sr = srs[0]
-                                            sr.unexpire()
-                                        else:
-                                            sr = StudentRegistration.objects.create(user = student, section = section, relationship = rt)
-                                        if rt.name=='OnSite/AttendedClass':
-                                            sr.end_date = today_max
-                                            sr.save()
-
-                section.enrolled_list = []
-                section.attended_list = []
-                for student in section.students():
-                    student.checked_in = Record.user_completed(student, "attended", prog)
-                    student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended).exists()
-                    section.enrolled_list.append(student)
-                for student in section.students(["Attended"]):
-                    if student not in section.students():
-                        student.checked_in = Record.user_completed(student, "attended", prog)
-                        student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended).exists()
-                        section.attended_list.append(student)
-                context['section'] = section
+                context['section'], context['not_found'] = self.process_attendance(section, request, prog)
         elif len(sections) > 1:
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
         return render_to_response(self.baseDir()+'section_attendance.html', request, context)
+
+    @staticmethod
+    def process_attendance(section, request, prog):
+        today_min = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
+        today_max = datetime.datetime.combine(datetime.date.today(), datetime.time.max)
+        attended = RegistrationType.objects.get_or_create(name = 'Attended', category = "student")[0]
+        enrolled = RegistrationType.objects.get_or_create(name='Enrolled', category = "student")[0]
+        onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
+        not_found = []
+        if request.POST and 'submitted' in request.POST:
+            attending_students = [int(student) for student in request.POST.getlist('attending')]
+            for student in section.students(verbs=["Enrolled","Attended"]):
+                if student.id in attending_students:
+                    Record.objects.get_or_create(user=student, program=prog, event='attended')
+                    sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
+                    sr.end_date = today_max
+                    sr.save()
+                else:
+                    srs = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended)
+                    for sr in srs:
+                        sr.expire()
+            # split with delimiters comma, semicolon, and space followed by any amount of extra whitespace
+            misc_students = filter(None, re.split(r'[;,\s]\s*', request.POST.get('misc_students')))
+            for code in misc_students:
+                try:
+                    student = ESPUser.objects.get(id=code)
+                except (ValueError, ESPUser.DoesNotExist):
+                    try:
+                        student = ESPUser.objects.get(username=code)
+                    except (ValueError, ESPUser.DoesNotExist):
+                        not_found.append(code)
+                        continue
+                if student.isStudent():
+                    Record.objects.get_or_create(user=student, program=prog, event='attended')
+                    sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
+                    sr.end_date = today_max
+                    sr.save()
+                    if student not in section.students():
+                        if 'unenroll' in request.POST:
+                            sm = ScheduleMap(student, prog)
+                            for ts in [ts.id for ts in section.get_meeting_times()]:
+                                if ts in sm.map and len(sm.map[ts]) > 0:
+                                    for sm_sec in sm.map[ts]:
+                                        sm_sec.unpreregister_student(student)
+                        if 'enroll' in request.POST:
+                            for rt in [enrolled, onsite]:
+                                srs = StudentRegistration.objects.filter(user = student, section = section, relationship = rt)
+                                if srs.count() > 0:
+                                    sr = srs[0]
+                                    sr.unexpire()
+                                else:
+                                    sr = StudentRegistration.objects.create(user = student, section = section, relationship = rt)
+                                if rt.name=='OnSite/AttendedClass':
+                                    sr.end_date = today_max
+                                    sr.save()
+
+        section.enrolled_list = []
+        section.attended_list = []
+        for student in section.students():
+            student.checked_in = Record.user_completed(student, "attended", prog)
+            student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended).exists()
+            section.enrolled_list.append(student)
+        for student in section.students(["Attended"]):
+            if student not in section.students():
+                student.checked_in = Record.user_completed(student, "attended", prog)
+                student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended).exists()
+                section.attended_list.append(student)
+        return (section, not_found)
 
     @aux_call
     @needs_teacher
