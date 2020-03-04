@@ -98,6 +98,9 @@
                 Teacher links<br/>
                 (for {{program.niceName}})
             </h2>
+            <!-- FIXME(bpchen): the merge split the module, without a migration the new one doesn't exist, i'm not sure what the intended behavior is exactly though because i want check_availability and not edit_availability ? -->
+            <a class="sidelink{% if not avail_set %} stripes{% endif %}" href="/manage/{{program.getUrlBase}}/check_availability?user={{user.id}}">
+                Check availability</a>
             {% if program|hasModule:"CheckAvailabilityModule" %}
                 <a class="sidelink{% if not avail_set %} stripes{% endif %}" href="/manage/{{program.getUrlBase}}/edit_availability?user={{user.username}}">
                 Check/edit availability{% if not avail_set %} (not set){% endif %}</a>
