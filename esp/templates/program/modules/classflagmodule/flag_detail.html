@@ -1,5 +1,5 @@
 <div class="flag-detail{% if flag.comment %} flag-has-comment{% endif %}" id="flag-detail-{{flag.id}}">
-    <div style="background: {{flag.flag_type.getColor}};" onclick="$j('#flag-detail-{{flag.id}}').toggle('blink');">{{flag.flag_type.name}}</div>
+    <div style="background: {{flag.flag_type.getColor}};" title="Click to toggle flag details" onclick="$j('#flag-detail-{{flag.id}}').toggle('blink');$j('#fqr-flag-header-{{flag.id}}').toggleClass('active');">{{flag.flag_type.name}}</div>
     <form method="post" class="flag-form" action="/manage/{{program.getUrlBase}}/editflag/{{flag.id}}/">{% csrf_token %}
         <table>
             <tbody>

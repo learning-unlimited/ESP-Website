@@ -2,7 +2,7 @@
           {% if class.got_index_qsd %}
            <a href="Classes/{{ class.emailcode }}/index.html">{% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape }}</a>
           {% else %}
-           {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape }} {% if class.hasScheduledSections and class.isFull and collapse_full %}<font color="#990000" style="font-size: 14px">Full!</font>{% else %}{% if class.isRegClosed %}<font color="#990000" style="font-size: 14px">Closed!</font>{% endif %}{% endif %}
+           {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape }} {% if class.hasScheduledSections and collapse_full %}{% if class.isFull %}<font color="#990000" style="font-size: 14px">Full!</font>{% elif class.isRegClosed %}<font color="#990000" style="font-size: 14px">Closed!</font>{% elif class.isFullOrClosed %}<font color="#990000" style="font-size: 14px">Full/Closed!</font>{% endif %}{% endif %}
           {% endif %}
 	 </div>
      <div class="class_subtitle_row">
@@ -124,7 +124,7 @@
     </div>
     
 {% if collapse_full %}
-{% if class.isFull or class.isRegClosed %}
+{% if class.isFullOrClosed %}
 <!-- This class is already full; start it off as invisible -->
 <script type="text/javascript">
 swap_visible('class_{{ class.id }}_content');

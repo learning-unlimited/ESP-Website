@@ -494,9 +494,9 @@ class TestChangeRequestView(TestCase):
         c.login(username=self.user.username, password=self.password)
 
         #   Submit a valid grade change request
-        response = c.post("/myesp/grade_change_request", { "reason": 'I should not get this e-mail', 'claimed_grade': 10 })
+        response = c.post("/myesp/grade_change_request", { "reason": 'I should not get this email', 'claimed_grade': 10 })
 
-        #   Check that an e-mail was sent with the right from/to
+        #   Check that an email was sent with the right from/to
         self.assertEqual(len(mail.outbox), 1)
         msg = mail.outbox[0]
         self.assertEqual(msg.to, [settings.DEFAULT_EMAIL_ADDRESSES['default']])

@@ -625,7 +625,7 @@ class FormHandler:
         if not form.anonymous:
             response_data['questions'].append(['user_id', 'User ID', 'fk'])
             response_data['questions'].append(['user_display', 'User', 'textField'])
-            response_data['questions'].append(['user_email', 'User e-mail', 'textField'])
+            response_data['questions'].append(['user_email', 'User email', 'textField'])
             response_data['questions'].append(['username', 'Username', 'textField'])
 
         # Add in the column for link fields, if any
@@ -657,7 +657,7 @@ class FormHandler:
             link_instances_cache={}
 
             # Add in user if form is not anonymous
-            if not form.anonymous:
+            if not form.anonymous and response['user_id']:
                 user = users[response['user_id']]
                 response['user_id'] = unicode(response['user_id'])
                 response['user_display'] = user.name()

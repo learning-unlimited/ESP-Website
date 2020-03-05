@@ -13,7 +13,7 @@
 {% if accounts or awaitings%}
 <p>
 <b>You may already have an account:</b> Listed below are other accounts that already exist for this
-e-mail address.  If you are sure you want a new account, please click "Proceed to Account Creation" again below.
+email address.  If you are sure you want a new account, please click "Proceed to Account Creation" again below.
 </p>
 
 <ul>
@@ -46,12 +46,13 @@ e-mail address.  If you are sure you want a new account, please click "Proceed t
 {% load render_qsd %}
 {% inline_qsd_block "myesp/create_new_account_phase1_headertext" %}
 <p>
-  Welcome to ESP! To do almost anything with ESP, you first need to register
+  Welcome to {{ settings.ORGANIZATION_SHORT_NAME }}! To do almost anything with us, you first need to register
 an account with us. After you register account, you will be allowed to register
 for programs, sign up for classes, among other things.
 </p>
 <p>
-  If you just want to receive e-mail announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> announcements list. If you create an account, you will be automatically subscribed to our main Announcements list.
+  If you just want to receive email announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> announcements list.
+  If you create an account, you will be automatically subscribed to our main announcements.
 </p>
 {% end_inline_qsd_block %}
 {% endif %}

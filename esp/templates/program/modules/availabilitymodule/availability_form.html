@@ -21,6 +21,7 @@ $j(document).ready(function() {
 {% block content %}
 
 {% load render_qsd %}
+{% load modules %}
 
 <h1>{% if isAdmin %}Manage{% else %}Your{% endif %} Availability for {{ prog.niceName }}</h1>
 
@@ -52,7 +53,7 @@ We have detected that you are currently signed up to teach more hours of class t
 {% if conflict_found %}
 {% inline_program_qsd_block prog "teacher_conflict" %}
 <p style="color: red;">
-You are scheduled to teach a class during at least one timeslot in which you are not marked as available.  Please <a href="mailto:{{ prog.director_email }}">contact the directors</a> immediately to resolve this conflict.
+You are scheduled to teach a class during at least one timeslot in which you are not marked as available (indicated with a red border below).  Please <a href="mailto:{{ prog.director_email }}">contact the directors</a> immediately to resolve this conflict.
 </p>
 {% end_inline_program_qsd_block %}
 {% endif %}
@@ -101,7 +102,7 @@ You submitted a schedule with no available times.  You can't register a class wi
 </div>
 {% endif %}
 
-{% if search_form %}
+{% if search_form and program|hasModule:"CheckAvailabilityModule" %}
 <br><br>
 <form method="POST" action="/manage/{{ program.getUrlBase }}/edit_availability">
 {{ search_form.as_p }}

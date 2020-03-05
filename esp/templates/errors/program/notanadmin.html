@@ -7,12 +7,12 @@
 <h1>Program Management</h1>
 
 <p>
-Sorry {{ request.user.name }}, it does not seem you are an administrator of this program.
+Sorry {{ request.user.name }}, you are not an administrator of this program.
 <br />
-Please feel free to help out with ESP though! We can always use help.
-
+If you're interested in helping out with {{ settings.ORGANIZATION_SHORT_NAME }},
+just <a href="/contact/contact/">contact us</a>.
+We can always use an extra hand!
 </p>
-
 
 
 {% endblock %}

@@ -36,7 +36,7 @@ from collections import defaultdict
 
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, user_passes_test
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
-from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType
+from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType, RegistrationProfile, ScheduleMap
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
 from esp.resources.models        import ResourceRequest
 from esp.tagdict.models          import Tag
@@ -44,7 +44,7 @@ from esp.utils.web               import render_to_response
 from esp.dbmail.models           import send_mail
 from esp.middleware              import ESPError
 from django.db.models.query      import Q
-from esp.users.models            import User, ESPUser
+from esp.users.models            import User, ESPUser, Record, TeacherInfo
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.conf                 import settings
@@ -55,6 +55,8 @@ from django.template.loader      import render_to_string
 from esp.middleware.threadlocalrequest import get_current_request
 
 import json
+import re
+import datetime
 from copy import deepcopy
 
 class TeacherClassRegModule(ProgramModuleObj):
@@ -218,11 +220,111 @@ class TeacherClassRegModule(ProgramModuleObj):
     @aux_call
     @needs_teacher
     @meets_deadline("/Classes/View")
+    def section_attendance(self, request, tl, one, two, module, extra, prog):
+        context = {'program': prog, 'one': one, 'two': two}
+
+        user = request.user
+        user.taught_sections = [sec for sec in user.getTaughtSections(program = prog) if sec.meeting_times.count() > 0]
+        context['user'] = user
+
+        secid = 0
+        if 'secid' in request.POST:
+            secid = request.POST['secid']
+        else:
+            secid = extra
+        sections = ClassSection.objects.filter(id = secid)
+        if len(sections) == 1:
+            if not request.user.canEdit(sections[0].parent_class):
+                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+            else:
+                section = sections[0]
+                context['section'], context['not_found'] = self.process_attendance(section, request, prog)
+        elif len(sections) > 1:
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+
+        return render_to_response(self.baseDir()+'section_attendance.html', request, context)
+
+    @staticmethod
+    def process_attendance(section, request, prog):
+        today_min = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
+        today_max = datetime.datetime.combine(datetime.date.today(), datetime.time.max)
+        attended = RegistrationType.objects.get_or_create(name = 'Attended', category = "student")[0]
+        enrolled = RegistrationType.objects.get_or_create(name='Enrolled', category = "student")[0]
+        onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
+        not_found = []
+        if request.POST and 'submitted' in request.POST:
+            attending_students = [int(student) for student in request.POST.getlist('attending')]
+            for student in section.students(verbs=["Enrolled","Attended"]):
+                if student.id in attending_students:
+                    Record.objects.get_or_create(user=student, program=prog, event='attended')
+                    sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
+                    sr.end_date = today_max
+                    sr.save()
+                else:
+                    srs = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended)
+                    for sr in srs:
+                        sr.expire()
+            # split with delimiters comma, semicolon, and space followed by any amount of extra whitespace
+            misc_students = filter(None, re.split(r'[;,\s]\s*', request.POST.get('misc_students')))
+            for code in misc_students:
+                try:
+                    student = ESPUser.objects.get(id=code)
+                except (ValueError, ESPUser.DoesNotExist):
+                    try:
+                        student = ESPUser.objects.get(username=code)
+                    except (ValueError, ESPUser.DoesNotExist):
+                        not_found.append(code)
+                        continue
+                if student.isStudent():
+                    Record.objects.get_or_create(user=student, program=prog, event='attended')
+                    sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
+                    sr.end_date = today_max
+                    sr.save()
+                    if student not in section.students():
+                        if 'unenroll' in request.POST:
+                            sm = ScheduleMap(student, prog)
+                            for ts in [ts.id for ts in section.get_meeting_times()]:
+                                if ts in sm.map and len(sm.map[ts]) > 0:
+                                    for sm_sec in sm.map[ts]:
+                                        sm_sec.unpreregister_student(student)
+                        if 'enroll' in request.POST:
+                            for rt in [enrolled, onsite]:
+                                srs = StudentRegistration.objects.filter(user = student, section = section, relationship = rt)
+                                if srs.count() > 0:
+                                    sr = srs[0]
+                                    sr.unexpire()
+                                else:
+                                    sr = StudentRegistration.objects.create(user = student, section = section, relationship = rt)
+                                if rt.name=='OnSite/AttendedClass':
+                                    sr.end_date = today_max
+                                    sr.save()
+
+        section.enrolled_list = []
+        section.attended_list = []
+        for student in section.students():
+            student.checked_in = Record.user_completed(student, "attended", prog)
+            student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended).exists()
+            section.enrolled_list.append(student)
+        for student in section.students(["Attended"]):
+            if student not in section.students():
+                student.checked_in = Record.user_completed(student, "attended", prog)
+                student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended).exists()
+                section.attended_list.append(student)
+        return (section, not_found)
+
+    @aux_call
+    @needs_teacher
+    @meets_deadline("/Classes/View")
     def section_students(self, request, tl, one, two, module, extra, prog):
-        try:
-            section = ClassSection.objects.get(id=extra)
-        except (ValueError, ClassSection.DoesNotExist):
-            raise ESPError('Could not find that class section; please contact the webmasters.', log=False)
+        secid = 0
+        if 'secid' in request.POST:
+            secid = request.POST['secid']
+        else:
+            secid = extra
+        sections = ClassSection.objects.filter(id = secid)
+        if len(sections) != 1 or not request.user.canEdit(sections[0].parent_class):
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+        section = sections[0]
 
         return render_to_response(self.baseDir()+'class_students.html', request, {'section': section, 'cls': section})
 
@@ -230,10 +332,15 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/Classes/View")
     def class_students(self, request, tl, one, two, module, extra, prog):
-        try:
-            cls = ClassSubject.objects.get(id=extra)
-        except (ValueError, ClassSubject.DoesNotExist):
-            raise ESPError('Could not find that class subject; please contact the webmasters.', log=False)
+        clsid = 0
+        if 'clsid' in request.POST:
+            clsid = request.POST['clsid']
+        else:
+            clsid = extra
+        classes = ClassSubject.objects.filter(id = clsid)
+        if len(classes) != 1 or not request.user.canEdit(classes[0]):
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+        cls = classes[0]
 
         return render_to_response(self.baseDir()+'class_students.html', request, {'cls': cls})
 
@@ -416,6 +523,19 @@ class TeacherClassRegModule(ProgramModuleObj):
             if cls.conflicts(teacher):
                 conflictinguser = (teacher.first_name+' '+teacher.last_name)
             else:
+                lastProf = RegistrationProfile.getLastForProgram(teacher, prog)
+                if not lastProf.teacher_info:
+                    anyInfo = teacher.getLastProfile().teacher_info
+                    if anyInfo:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(teacher, lastProf,
+                                                                        {'graduation_year': anyInfo.graduation_year,
+                                                                         'affiliation': anyInfo.affiliation,
+                                                                         'major': anyInfo.major,
+                                                                         'shirt_size': anyInfo.shirt_size,
+                                                                         'shirt_type': anyInfo.shirt_type})
+                    else:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(teacher, lastProf, {})
+                lastProf.save()
                 coteachers.append(teacher)
                 txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
                 ccc.associate_teacher_with_class(cls, teacher)
@@ -588,13 +708,9 @@ class TeacherClassRegModule(ProgramModuleObj):
             # that we didn't start out with
             # Thus, if default_restype isn't set, we display everything
             # potentially relevant
-            if Tag.getTag('allow_global_restypes'):
-                resource_types = prog.getResourceTypes(include_classroom=True,
-                                                       include_global=True,
-                                                       include_hidden=False)
-            else:
-                resource_types = prog.getResourceTypes(include_classroom=True,
-                                                       include_hidden=False)
+            resource_types = prog.getResourceTypes(include_classroom=True,
+                                                   include_global=Tag.getBooleanTag('allow_global_restypes', default = False),
+                                                   include_hidden=False)
             resource_types = list(resource_types)
             resource_types.reverse()
 

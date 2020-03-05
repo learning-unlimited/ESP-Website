@@ -21,8 +21,8 @@ After creating the program template using this form, you will still need to set 
 <p>
 Please enter the date ranges (bottom 3 rows) in one of the following formats:
 <ul>
-<li><tt>9/1/2007</tt> (September 1, 2007 at midnight)</li>
-<li><tt>9/1/2007 17:30</tt> (September 1, 2007 5:30 pm)</li>
+<li><tt><font style="background-color:lightgray;">9/1/2007</font></tt> (for September 1<sup>st</sup>, 2007 at midnight)</li>
+<li><tt><font style="background-color:lightgray;">9/1/2007 17:30</font></tt> (for September 1<sup>st</sup>, 2007 5:30 pm)</li>
 </ul>
 </p>
 
@@ -39,7 +39,7 @@ Use a past program as a template:
 {% endfor %}
 </select>
 <br />
-<font color="red">If you use a program as a template, make sure to carefully look through and update all fields below!</font>
+<font color="#4CC417">If you use a program as a template, make sure to carefully look through and update all fields below!</font>
 </p>
 
 <div id="alumni_form">
@@ -47,7 +47,7 @@ Use a past program as a template:
   {% autoescape off %}
   {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
 {% for fieldset in form.fieldsets %}
-  
+
   <fieldset class="fieldset_{{ fieldset.name }}">
   {% if fieldset.legend %}
     <legend>{{ fieldset.legend }}</legend>
@@ -57,7 +57,7 @@ Use a past program as a template:
   {% endif %}
   <table class="contact" align="center" width="550">
   {% for field in fieldset %}
-   
+
    <tr>
     {% if field.is_hidden %}
      <td> {{ field }} </td>
@@ -74,24 +74,24 @@ Use a past program as a template:
     {% endif %}
     {% for error in  field.errors %}
     <br/>
-     <span> {{ error }} </span>
+     <span class='form_error'> {{ error }} </span>
     {% endfor %}
      </td>
      </tr>
-      
+
     {% endif %}
   {% endfor %}
   </table>
-  
+
   </fieldset>
 {% endfor %}
 
   {% endautoescape %}
-  <table>
+  <table align="center">
     <tr> 
-      <td colspan="2" class="submit" align="center">
-        When finished, click here: <br /><br />
-        <input class="fancybutton" type="submit" value="Make Program Happen!" />
+      <td colspan="2" class="submit">
+        <br /><br /><br />
+        <center><input class="fancybutton" type="submit" value="Make Program Happen!" /></center>
       </td>
     </tr>
   </table>

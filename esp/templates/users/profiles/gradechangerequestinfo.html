@@ -1,8 +1,9 @@
 {% load i18n %}
 <!-- Begin Grade Change Request Section -->
 <div class="alert" id="id-grade-change-request-info">
-	<p> 
-		<a href="{% url 'grade_change_request' %}" id="id-grade-change-request" title="{% trans "Send Grade Change Request" %}">{% trans "Send Grade Change Request" %}</a>
-	</p>
+<button type="button" class="close" data-dismiss="alert">x</button>
+You may not change your grade or age. Your grade level will update automatically every August.
+If you skipped a grade or took a year off, please click this link to request a grade change:<br /> <br />
+<a href="{% url 'grade_change_request' %}" id="id-grade-change-request" title="{% trans "Send Grade Change Request" %}">{% trans "Send Grade Change Request" %}</a>
 </div>
 <!-- End Grade Change Request Section -->

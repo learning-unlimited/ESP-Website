@@ -37,6 +37,7 @@ from django.db.models import ProtectedError
 from esp.cal.models import Event
 from esp.middleware import ESPError
 from esp.resources.models import ResourceType, Resource
+from esp.program.models import ClassSection
 
 class ResourceController(object):
     """ Controller for managing program resources.
@@ -85,9 +86,15 @@ class ResourceController(object):
         return new_restype
 
     def delete_classroom(self, id):
-        #   delete classroom with specified ID, and associated resources
         target_resource = Resource.objects.get(id=id)
         rooms = self.program.getClassrooms().filter(name=target_resource.name)
+        #   unschedule sections scheduled in classroom
+        secs = ClassSection.objects.filter(resourceassignment__resource__in=rooms).distinct()
+        for sec in secs:
+            sec.clearRooms()
+            sec.clearFloatingResources()
+            sec.meeting_times.clear()
+        #   delete classroom with specified ID and associated resources
         for room in rooms:
             room.associated_resources().delete()
         rooms.delete()

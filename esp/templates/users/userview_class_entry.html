@@ -1,8 +1,10 @@
-<li style="color: {% if not class.isReviewed %}gray{% else %}{% if class.isRejected or class.isCancelled %}red{% else %}black{% endif %}{% endif %}">
+<li>
+<span style="color: {% if not class.isReviewed %}gray{% else %}{% if class.isRejected or class.isCancelled %}red{% else %}black{% endif %}{% endif %}">
 {% if not class.isReviewed %}(Unreviewed){% endif %}
 {% if class.isRejected %}(Rejected){% endif %}
 {% if class.isCancelled %}(Cancelled){% endif %}
-{{ class.emailcode }}: {{ class.title }}
+</span>
+<a href="{{class.parent_program.get_learn_url}}catalog#class_{{class.id}}"  style="color: #000000">{{class.emailcode}}: {{ class.title }}</a>
 (<a href="{{ class.get_absolute_url|urlencode }}">manage</a> | <a href="{{ class.get_edit_absolute_url|urlencode }}">edit</a>)
 {% if show_class_details %}
 {% if class.get_sections %}
@@ -10,11 +12,15 @@
 {% for sec in class.get_sections %}
     <br />
     {{ sec.emailcode }} ({{ sec.num_students }}/{{ sec.capacity }}): 
-    {% if sec.friendly_times|length_is:0 %}
+    <span style="color: {% if not sec.isReviewed %}gray{% else %}{% if sec.isRejected or sec.isCancelled %}red{% else %}black{% endif %}{% endif %}">
+    {% if sec.isRejected or sec.isCancelled %}
+        Cancelled
+    {% elif sec.friendly_times|length_is:0 %}
         Not scheduled
     {% else %}
         {% for time in sec.friendly_times %}{{ time }}{% if not forloop.last %}, {% endif %}{% endfor %} in {% for room in sec.prettyrooms %}{{ room }}{% if not forloop.last %} and{% endif %}{% endfor %}
     {% endif %}
+    </span>
 {% endfor %}
 {% else %}
 {# This is a ClassSection #}
