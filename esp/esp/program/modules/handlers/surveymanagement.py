@@ -43,6 +43,7 @@ from esp.survey.views   import survey_view, survey_review, survey_graphical, sur
 from esp.program.modules.forms.surveys import SurveyForm, QuestionForm, SurveyImportForm
 
 from collections import OrderedDict
+import json
 
 class SurveyManagement(ProgramModuleObj):
     @classmethod
@@ -63,6 +64,7 @@ class SurveyManagement(ProgramModuleObj):
         context['survey_form'] = SurveyForm()
         context['question_form'] = QuestionForm(cur_prog = prog)
         context['import_survey_form'] = SurveyImportForm(cur_prog = prog)
+        context['question_types'] = json.dumps({str(qt.id): qt.param_names for qt in QuestionType.objects.all()})
         if request.GET:
             obj = request.GET.get("obj", None)
             op = request.GET.get("op", None)
@@ -143,14 +145,18 @@ class SurveyManagement(ProgramModuleObj):
                             return render_to_response('program/modules/surveymanagement/question_delete.html', request, context)
                     elif request.POST:
                         # submitted question form to edit an existing question
-                        form = QuestionForm(request.POST, instance = question, cur_prog = prog)
+                        POST = request.POST.copy()
+                        POST['_param_values'] = "|".join(POST.getlist("param_val", ""))
+                        form = QuestionForm(POST, instance = question, cur_prog = prog)
                         form.id = id
                         context['question_form'] = form
                         if form.is_valid():
                             form.save()
                 elif request.POST:
                     # submitted question form to create new question
-                    form = QuestionForm(request.POST, cur_prog = prog)
+                    POST = request.POST.copy()
+                    POST['_param_values'] = "|".join(POST.getlist("param_val", ""))
+                    form = QuestionForm(POST, cur_prog = prog)
                     form.id = id
                     context['survey_form'] = form
                     if form.is_valid():

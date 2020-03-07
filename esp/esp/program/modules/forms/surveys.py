@@ -37,6 +37,7 @@ class QuestionForm(forms.ModelForm):
             'name': ('This is the question that will be displayed to the user'),
             'per_class': ('Should this question be shown once for each class?'),
             'seq': ('Determines the order of the questions'),
+            '_param_values': (),
         }
         labels = {
             'seq': ('Sequence'),
