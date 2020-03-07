@@ -16,6 +16,9 @@ class SurveyForm(forms.ModelForm):
     class Meta:
         model = Survey
         exclude = ['program']
+        help_texts = {
+            'category': ('e.g. teach or learn'),
+        }
 
 class QuestionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -30,6 +33,14 @@ class QuestionForm(forms.ModelForm):
     class Meta:
         model = Question
         exclude = ['param_values']
+        help_texts = {
+            'name': ('This is the question that will be displayed to the user'),
+            'per_class': ('Should this question be shown once for each class?'),
+            'seq': ('Determines the order of the questions'),
+        }
+        labels = {
+            'seq': ('Sequence'),
+        }
 
 class SurveyImportForm(forms.Form):
     survey = forms.ModelChoiceField(queryset=None)
