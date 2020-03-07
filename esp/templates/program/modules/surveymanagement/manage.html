@@ -11,6 +11,14 @@
 {% block content %}
 <h1>Survey Management for {{ program.niceName }}</h1>
 
+<p>
+You can use this page to set up surveys for teachers or students of the program. You will first need to create a survey, then you can add questions to it.
+</p>
+
+<p>
+Each step below is a form that you can expand or contract by clicking on the header. If you'd like to import a survey from a previous program, you can do that in Step 1.
+</p>
+
 <div id="program_form">
     {% ifequal open_section "survey" %}
     <button class="dsphead active">
@@ -33,7 +41,10 @@
     </table>
     </form>
     <br />
-    <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=survey{% if survey_form.id %}&id={{ survey_form.id }}{% endif %}">
+    <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=survey">
+        {% if survey_form.id %}
+        <input type="hidden" name="survey" value="{{ survey_form.id }}" />
+        {{ survey_form.id }}{% endif %}
         <table align="center" cellpadding="0" cellspacing="0" width="100%">
             <tr><th colspan="2">Add/modify a Survey</th></tr>
             {{ survey_form.as_table }}
@@ -75,7 +86,10 @@
 
     <div class="dspcont">
     {% endifequal %}
-    <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=question{% if question_form.id %}&id={{ question_form.id }}{% endif %}">
+    <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=question">
+        {% if question_form.id %}
+        <input type="hidden" name="question" value="{{ question_form.id }}" />
+        {% endif %}
         <table align="center" cellpadding="0" cellspacing="0" width="100%">
             <tr><th colspan="2">Add/modify a Question</th></tr>
             {{ question_form.as_table }}
@@ -87,12 +101,12 @@
         <tr><th colspan="6">Questions for {{ program.niceName }}</th></tr>
         <tr><td colspan="6"><table width="100%" cellpadding="0" cellspacing="0">
         <tr>
-            <td width="5%" class="underline"><b>Seq</b></td>
-            <td width="30%" class="underline"><b>Name</b></td>
-            <td width="25%" class="underline"><b>Question Type</b></td>
-            <td width="25%" class="underline"><b>Parameter Values</b></td>
-            <td width="5%" class="underline"><b>Per Class</b></td>
-            <td width="10%" class="underline"></td>
+            <td width="5%"><b>Seq</b></td>
+            <td width="30%"><b>Name</b></td>
+            <td width="25%"><b>Question Type</b></td>
+            <td width="25%"><b>Parameter Values</b></td>
+            <td width="5%"><b>Per Class</b></td>
+            <td width="10%"></td>
         </tr>
         {% for question in questions %}
             {% ifchanged question.survey %}
@@ -104,7 +118,7 @@
                 <td class="underline">{{ question.question_type.name }}</td>
                 <td class="underline">
                     {% for key, value in question.get_params.items %}
-                        {{ key }}: {% if value %}{{ value }}{% endif %}
+                        <i>{{ key }}</i>: {% if value %}{{ value }}{% endif %}
                         {% if not forloop.last %}<br />{% endif %}
                     {% endfor %}
                 </td>
@@ -120,7 +134,7 @@
     </div>
 </div>
 
-<!-- Link back to main surveys page -->
+<a class="btn" href="/onsite/{{ program.getUrlBase }}/surveys">Return to the main survey page</a>
 
 <script type="text/javascript" src="/media/scripts/program/modules/surveys.js" data-prog_url="{{ program.url }}"></script>
 <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
