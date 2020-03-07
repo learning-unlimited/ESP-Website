@@ -130,7 +130,7 @@ class SurveyManagement(ProgramModuleObj):
                     question = questions[0]
                     if op == "edit":
                         # clicked edit link
-                        form = QuestionForm(instance = question)
+                        form = QuestionForm(instance = question, cur_prog = prog)
                         form.id = id
                         context['question_form'] = form
                     elif op == "delete":

@@ -23,6 +23,9 @@ class QuestionForm(forms.ModelForm):
         surveys = Survey.objects.filter(program=cur_prog)
         self.base_fields['survey'].choices = ((str(survey.id), survey.name + " (" + survey.category + ")") for survey in surveys)
         super(QuestionForm, self).__init__(*args, **kwargs)
+        instance = kwargs.pop('instance', None)
+        if instance:
+            self.base_fields['survey'].initial = str(instance.id)
 
     class Meta:
         model = Question
