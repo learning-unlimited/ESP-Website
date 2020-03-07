@@ -42,6 +42,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 
 from argcache import cache_function
+from collections import OrderedDict
 
 try:
     import cPickle as pickle
@@ -231,7 +232,7 @@ class Question(models.Model):
         " Get the parameters for this question, as a dictionary. "
 
         a, b = self.question_type.param_names, self.param_values
-        params = dict(zip(map(lambda x: x.replace(' ', '_').lower(), a),
+        params = OrderedDict(zip(map(lambda x: x.replace(' ', '_').lower(), a),
                           b))
         min_length = min(len(a), len(b))
         params['list'] = b[min_length:]
