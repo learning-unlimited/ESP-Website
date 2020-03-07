@@ -30,6 +30,8 @@ import string
 
 from os.path import join
 
+env.encrypted_name = 'encrypted_uSbDW8tk5kvDrSIQ'
+
 # Remote base directory, with trailing /
 env.rbase = "/home/vagrant/devsite/"
 
@@ -57,8 +59,7 @@ env.encfab = "/mnt/encrypted/fabric/"
 #
 if not env.hosts:
     try:
-        from fabtools.vagrant import vagrant
-        vagrant()
+        env.hosts = ['localhost']
     except SystemExit:
         print ""
         print "***** "
@@ -81,7 +82,7 @@ def setup():
     # Install Ubuntu packages, create a virtualenv and install Python packages.
     # The script uses sudo to elevate as needed, so we can use run() here
     # instead of sudo().
-    run(env.rbase + "esp/update_deps.sh --virtualenv=" + env.venv)
+    #run(env.rbase + "esp/update_deps.sh --virtualenv=" + env.venv)
 
     # Create and mount the encrypted partition (requires user input)
     from fabtools import require
@@ -93,10 +94,10 @@ def setup():
     print "***** "
 
     sudo("cryptsetup luksFormat -q /dev/mapper/%s" % env.encvg)
-    sudo("cryptsetup luksOpen /dev/mapper/%s encrypted" % env.encvg)
-    sudo("mkfs.ext4 /dev/mapper/encrypted")
+    sudo("cryptsetup luksOpen /dev/mapper/%s %s" % (env.encvg, env.encrypted_name))
+    sudo("mkfs.ext4 /dev/mapper/%s" % env.encrypted_name)
     sudo("mkdir -p /mnt/encrypted")
-    sudo("mount /dev/mapper/encrypted /mnt/encrypted")
+    sudo("mount /dev/mapper/%s /mnt/encrypted" % env.encrypted_name)
 
     # Create the encrypted tablegroup in Postgres
     sudo("chown -R postgres /mnt/encrypted")
@@ -171,8 +172,8 @@ def ensure_environment():
             print "***** Opening the encrypted partition for data storage."
             print "***** Please enter your passphrase when prompted."
             print "***** "
-            sudo("cryptsetup luksOpen /dev/mapper/%s encrypted" % env.encvg)
-            sudo("mount /dev/mapper/encrypted /mnt/encrypted")
+            sudo("cryptsetup luksOpen /dev/mapper/%s %s" % (env.encvg, env.encrypted_name))
+            sudo("mount /dev/mapper/%s /mnt/encrypted" % env.encrypted_name)
         else:
             print "***** "
             print "***** Something went wrong when mounting the encrypted partition."
