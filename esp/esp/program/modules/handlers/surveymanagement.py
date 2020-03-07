@@ -40,7 +40,7 @@ from django.db.models.query   import Q
 from esp.middleware     import ESPError
 from esp.survey.models  import QuestionType, Question, Answer, SurveyResponse, Survey
 from esp.survey.views   import survey_view, survey_review, survey_graphical, survey_review_single, top_classes, survey_dump
-from esp.program.modules.forms.surveys import SurveyForm, QuestionForm
+from esp.program.modules.forms.surveys import SurveyForm, QuestionForm, SurveyImportForm
 
 from collections import OrderedDict
 
@@ -61,26 +61,63 @@ class SurveyManagement(ProgramModuleObj):
     def survey_manage(self, request, tl, one, two, module, extra, prog):
         context = {'program': prog}
         context['survey_form'] = SurveyForm()
-        context['question_form'] = QuestionForm()
+        context['question_form'] = QuestionForm(cur_prog = prog)
+        context['import_survey_form'] = SurveyImportForm(cur_prog = prog)
         if request.GET:
             obj = request.GET.get("obj", None)
             op = request.GET.get("op", None)
-            id = request.GET.get("id", None)
+            id = request.GET.get("id", None) or request.POST.get("survey", None) or request.POST.get("question", None)
             if obj == "survey":
                 context['open_section'] = 'survey'
                 survey = None
                 surveys = Survey.objects.filter(id = id)
                 if len(surveys) == 1:
                     survey = surveys[0]
-                if op == "edit":
-                    form = SurveyForm(instance = survey)
-                    form.id = id
-                    context['survey_form'] = form
-                elif op == "delete":
-                    # show confirmation page?
-                    pass
+                    if op == "edit":
+                        # clicked edit link
+                        form = SurveyForm(instance = survey)
+                        form.id = id
+                        context['survey_form'] = form
+                    elif op == "delete":
+                        if 'delete_confirm' in request.POST and request.POST['delete_confirm'] == 'yes':
+                            # confirmed deletion
+                            # delete questions
+                            survey.questions.all().delete()
+                            # delete survey
+                            survey.delete()
+                        else:
+                            # clicked delete link
+                            context['survey'] = survey
+                            context['questions'] = survey.questions.order_by('seq')
+                            return render_to_response('program/modules/surveymanagement/survey_delete.html', request, context)
+                    elif op == "import":
+                        if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
+                            # confirmed import
+                            to_import = request.POST.getlist('to_import')
+
+                            # Create new survey
+                            newsurvey, created = Survey.objects.get_or_create(name=survey.name, program=prog, category=survey.category)
+
+                            # Create new questions for the new survey, if they were selected
+                            questions = survey.questions.order_by('id')
+                            for q in questions:
+                                if str(q.id) in to_import:
+                                    newq, created = Question.objects.get_or_create(survey=newsurvey, name=q.name, question_type=q.question_type, _param_values=q._param_values, per_class=q.per_class, seq=q.seq)
+                        else:
+                            # submitted import form
+                            context['survey'] = survey
+                            context['questions'] = survey.questions.order_by('seq')
+                            return render_to_response('program/modules/surveymanagement/import.html', request, context)
+                    elif request.POST:
+                        # submitted survey form to edit an existing survey
+                        form = SurveyForm(request.POST, instance = survey)
+                        form.id = id
+                        context['survey_form'] = form
+                        if form.is_valid():
+                            form.save(program = prog)
                 elif request.POST:
-                    form = SurveyForm(request.POST, instance = survey)
+                    # submitted survey form to create new survey
+                    form = SurveyForm(request.POST)
                     form.id = id
                     context['survey_form'] = form
                     if form.is_valid():
@@ -91,17 +128,31 @@ class SurveyManagement(ProgramModuleObj):
                 questions = Question.objects.filter(id = id)
                 if len(questions) == 1:
                     question = questions[0]
-                if op == "edit":
-                    form = QuestionForm(instance = question)
-                    form.id = id
-                    context['question_form'] = form
-                elif op == "delete":
-                    # show confirmation page?
-                    pass
+                    if op == "edit":
+                        # clicked edit link
+                        form = QuestionForm(instance = question)
+                        form.id = id
+                        context['question_form'] = form
+                    elif op == "delete":
+                        if 'delete_confirm' in request.POST and request.POST['delete_confirm'] == 'yes':
+                            # confirmed deletion
+                            question.delete()
+                        else:
+                            # clicked delete link
+                            context['question'] = question
+                            return render_to_response('program/modules/surveymanagement/question_delete.html', request, context)
+                    elif request.POST:
+                        # submitted question form to edit an existing question
+                        form = QuestionForm(request.POST, instance = question, cur_prog = prog)
+                        form.id = id
+                        context['question_form'] = form
+                        if form.is_valid():
+                            form.save()
                 elif request.POST:
-                    form = QuestionForm(request.POST, instance = question)
+                    # submitted question form to create new question
+                    form = QuestionForm(request.POST, cur_prog = prog)
                     form.id = id
-                    context['question_form'] = form
+                    context['survey_form'] = form
                     if form.is_valid():
                         form.save()
 

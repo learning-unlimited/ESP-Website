@@ -19,22 +19,19 @@ class SurveyForm(forms.ModelForm):
 
 class QuestionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
+        cur_prog = kwargs.pop('cur_prog', None)
+        surveys = Survey.objects.filter(program=cur_prog)
+        self.base_fields['survey'].choices = ((str(survey.id), survey.name + " (" + survey.category + ")") for survey in surveys)
         super(QuestionForm, self).__init__(*args, **kwargs)
 
     class Meta:
         model = Question
         exclude = ['param_values']
 
-# class ClassroomImportForm(forms.Form):
-    # program = forms.ModelChoiceField(queryset=None)
-    # complete_availability = forms.BooleanField(required=False, help_text='Check this box if you would like the new classrooms to be available at all times during the program, rather than attempting to replicate their availability from the previous program.')
-    # import_furnishings = forms.BooleanField(required=False, help_text='Check this box if you would like the new classrooms to have the same furnishings as they did for the previous program.')
+class SurveyImportForm(forms.Form):
+    survey = forms.ModelChoiceField(queryset=None)
 
-    # def __init__(self, *args, **kwargs):
-        # cur_prog = kwargs.pop('cur_prog', None)
-        # super(ClassroomImportForm, self).__init__(*args, **kwargs)
-        # progs = Resource.objects.filter(res_type=ResourceType.get_or_create('Classroom')).values_list('event__program', flat = True).distinct()
-        # qs = Program.objects.filter(id__in=progs)
-        # if cur_prog is not None:
-            # qs = qs.exclude(id=cur_prog.id)
-        # self.fields['program'].queryset = qs
+    def __init__(self, *args, **kwargs):
+        cur_prog = kwargs.pop('cur_prog', None)
+        super(SurveyImportForm, self).__init__(*args, **kwargs)
+        self.fields['survey'].queryset = Survey.objects.exclude(program=cur_prog)

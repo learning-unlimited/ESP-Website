@@ -25,10 +25,17 @@
 
     <div class="dspcont">
     {% endifequal %}
-    <!-- Import form -->
+    <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=survey&op=import">
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="2">Import a survey from a previous program</th></tr>
+        {{ import_survey_form }}
+        <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Import Survey" /></td></tr>
+    </table>
+    </form>
+    <br />
     <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=survey{% if survey_form.id %}&id={{ survey_form.id }}{% endif %}">
         <table align="center" cellpadding="0" cellspacing="0" width="100%">
-            <tr><th colspan="2" class="small">Add/modify a Survey</th></tr>
+            <tr><th colspan="2">Add/modify a Survey</th></tr>
             {{ survey_form.as_table }}
             <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Create/Save Survey" /></td></tr>
         </table>
@@ -70,7 +77,7 @@
     {% endifequal %}
     <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=question{% if question_form.id %}&id={{ question_form.id }}{% endif %}">
         <table align="center" cellpadding="0" cellspacing="0" width="100%">
-            <tr><th colspan="2" class="small">Add/modify a Question</th></tr>
+            <tr><th colspan="2">Add/modify a Question</th></tr>
             {{ question_form.as_table }}
             <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Create/Save Question" /></td></tr>
         </table>

@@ -1,0 +1,64 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Survey Administration{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% block xtrajs %}
+<script>
+function toggle(source) {
+  $j('input[name=to_import]').prop('checked', source.checked);
+}
+</script>
+{% endblock %}
+
+{% block content %}
+
+<h1>Survey Management for {{ program.niceName }}</h1>
+
+<h2>Confirm Survey Import</h2>
+
+<p>
+You have chosen to import {{ survey.name }} ({{ survey.category }}) from {{ survey.program.niceName }} to {{ program.niceName }}. Please choose which questions you would like to keep, then press the "Complete Import" button.
+</p>
+
+<div id="program_form">
+<form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=survey&op=import">
+<input type="hidden" name="import_confirm" value="yes" />
+<input type="hidden" name="survey" value="{{ survey.id }}" />
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
+    <tr><th colspan="6">Questions for {{ program.niceName }}</th></tr>
+    <tr><td colspan="6"><table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+        <td width="5%" class="underline"><b>Seq</b></td>
+        <td width="30%" class="underline"><b>Name</b></td>
+        <td width="25%" class="underline"><b>Question Type</b></td>
+        <td width="25%" class="underline"><b>Parameter Values</b></td>
+        <td width="5%" class="underline"><b>Per Class</b></td>
+        <td width="10%" class="underline" align="center"><b>Import? <input type="checkbox" onclick=toggle(this) checked></b></td>
+    </tr>
+    {% for question in questions %}
+        <tr>
+            <td class="underline">{{ question.seq }}</td>
+            <td class="underline">{{ question.name }}</td>
+            <td class="underline">{{ question.question_type.name }}</td>
+            <td class="underline">
+                {% for key, value in question.get_params.items %}
+                    {{ key }}: {% if value %}{{ value }}{% endif %}
+                    {% if not forloop.last %}<br />{% endif %}
+                {% endfor %}
+            </td>
+            <td class="underline">{% if question.per_class %}&#10003;{% endif %}</td>
+            <td class="underline" align="center"><input type="checkbox" name="to_import" value="{{ question.id }}" checked></td>
+        </tr>
+    {% endfor %}
+    </table></td></tr>
+    <tr><td colspan="6" align="center"><input class="fancybutton" type="submit" value="Complete Import" /></td></tr>
+</table>
+</form>
+</div>
+
+{% endblock %}
