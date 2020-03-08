@@ -5,14 +5,7 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
-{% endblock %}
-
-{% block xtrajs %}
-<script>
-function toggle(source) {
-  $j('input[name=to_import]').prop('checked', source.checked);
-}
-</script>
+    <link rel="stylesheet" href="/media/styles/survey_manage.css" type="text/css" />
 {% endblock %}
 
 {% block content %}
@@ -30,15 +23,19 @@ You have chosen to import {{ survey.name }} ({{ survey.category }}) from {{ surv
 <input type="hidden" name="import_confirm" value="yes" />
 <input type="hidden" name="survey" value="{{ survey.id }}" />
 <table align="center" cellpadding="0" cellspacing="0" width="100%">
-    <tr><th colspan="6">Questions for {{ program.niceName }}</th></tr>
-    <tr><td colspan="6"><table width="100%" cellpadding="0" cellspacing="0">
+    <tr><th colspan="6">Questions for {{ survey.name }} ({{ survey.category }})</th></tr>
     <tr>
-        <td width="5%" class="underline"><b>Seq</b></td>
-        <td width="30%" class="underline"><b>Name</b></td>
-        <td width="25%" class="underline"><b>Question Type</b></td>
-        <td width="25%" class="underline"><b>Parameter Values</b></td>
-        <td width="5%" class="underline"><b>Per Class</b></td>
-        <td width="10%" class="underline" align="center"><b>Import? <input type="checkbox" onclick=toggle(this) checked></b></td>
+        <th class="selector active" colspan="3" width="50%" data-panel="details">Question Details</th>
+        <th class="selector" colspan="3" width="50%" data-panel="rendered">Rendered Questions</th>
+    </tr>
+    <tr id="details-panel"><td colspan="6"><table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+        <th width="5%">Seq</th>
+        <th width="30%">Name</th>
+        <th width="25%">Question Type</b></th>
+        <th width="25%">Parameter Values</th>
+        <th width="5%">Per Class</th>
+        <th width="10%" align="center">Import? <input type="checkbox" class="toggleall" onclick=toggleAll(this) checked></th>
     </tr>
     {% for question in questions %}
         <tr>
@@ -52,7 +49,21 @@ You have chosen to import {{ survey.name }} ({{ survey.category }}) from {{ surv
                 {% endfor %}
             </td>
             <td class="underline">{% if question.per_class %}&#10003;{% endif %}</td>
-            <td class="underline" align="center"><input type="checkbox" name="to_import" value="{{ question.id }}" checked></td>
+            <td class="underline" align="center"><input type="checkbox" name="to_import" value="{{ question.id }}" onclick=toggle(this) checked></td>
+        </tr>
+    {% endfor %}
+    </table></td></tr>
+    <tr hidden id="rendered-panel"><td colspan="6"><table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+        <th width="5%">Seq</th>
+        <th width="85%" colspan="4" align="center">Rendered Question</th>
+        <th width="10%" align="center">Import? <input type="checkbox" class="toggleall" onclick=toggleAll(this) checked></th>
+    </tr>
+    {% for question in questions %}
+        <tr>
+            <td class="underline">{{ question.seq }}</td>
+            <td class="underline" colspan="4">{{ question.render }}</td>
+            <td class="underline" align="center"><input type="checkbox" name="to_import" value="{{ question.id }}" onclick=toggle(this) checked></td>
         </tr>
     {% endfor %}
     </table></td></tr>
@@ -60,5 +71,9 @@ You have chosen to import {{ survey.name }} ({{ survey.category }}) from {{ surv
 </table>
 </form>
 </div>
+
+<a class="btn" href="/manage/{{ program.getUrlBase }}/surveys">Return to the main survey page</a>
+
+<script type="text/javascript" src="/media/scripts/program/modules/survey_manage.js"></script>
 
 {% endblock %}
