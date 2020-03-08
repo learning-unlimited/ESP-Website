@@ -43,7 +43,10 @@ td>ul { list-style-type: none; padding: 0px }
 
 <br />
 
-{% if errors %}<div class="formerror">There was a problem recording your choices.  Please review the form and make sure that it is filled out completely.</div>{% endif %}
+{% if error_custom %}<div class="formerror">You selected a choice with a custom amount but did not specify an amount; please do so below. </div>
+{% elif errors %}<div class="formerror">There was a problem recording your choices.  Please review the form and make sure that it is filled out completely.</div>{% endif %}
+
+<br />
 
 <div id="program_form">
 <form action="" method="post">

@@ -56,6 +56,8 @@ class MultiCostItem(forms.Form):
 class MultiSelectCostItem(forms.Form):
     def __init__(self, *args, **kwargs):
         choices = kwargs.pop('choices')
+        print("choices:")
+        print(choices)
         required = kwargs.pop('required')
         is_custom = kwargs.pop('is_custom', False)
         super(MultiSelectCostItem, self).__init__(*args, **kwargs)
@@ -148,6 +150,7 @@ class StudentExtraCosts(ProgramModuleObj):
         prefs = iac.get_preferences()
 
         forms_all_valid = True
+        error_custom = False
 
         ## Another dirty hack, left as an exercise to the reader
         if request.method == 'POST':
@@ -191,11 +194,17 @@ class StudentExtraCosts(ProgramModuleObj):
                                 option_id = form.cleaned_data['option']
                                 option_amount = None
                             if option_id:
-                                #   Use default amount if none was typed in, or if this option doesn't allow a custom amount
                                 option = LineItemOptions.objects.get(id=option_id)
-                                if not option_amount or not option.is_custom:
-                                    option_amount = option.amount_dec_inherited
-                                form_prefs.append((lineitem_type.text, 1, float(option_amount), int(option_id)))
+                                #   Give error if no amount was typed in
+                                if option.is_custom and not option_amount:
+                                    preserve_items.append(lineitem_type.text)
+                                    forms_all_valid = False
+                                    error_custom = True
+                                else:
+                                    #   Use default amount if this option doesn't allow a custom amount
+                                    if not option.is_custom:
+                                        option_amount = option.amount_dec_inherited
+                                    form_prefs.append((lineitem_type.text, 1, float(option_amount), int(option_id)))
                 else:
                     #   Preserve selected quantity for any items that we don't have a valid form for
                     preserve_items.append(lineitem_type.text)
@@ -274,7 +283,7 @@ class StudentExtraCosts(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'extracosts.html',
                                   request,
-                                  { 'errors': not forms_all_valid, 'forms': forms, 'financial_aid': request.user.hasFinancialAid(prog), 'select_qty': len(multicosts_list) > 0 })
+                                  { 'errors': not forms_all_valid, 'error_custom': error_custom, 'forms': forms, 'financial_aid': request.user.hasFinancialAid(prog), 'select_qty': len(multicosts_list) > 0 })
 
     class Meta:
         proxy = True

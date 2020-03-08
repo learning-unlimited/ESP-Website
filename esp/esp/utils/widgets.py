@@ -365,7 +365,7 @@ class ChoiceWithOtherRenderer(forms.RadioSelect.renderer):
     """RadioFieldRenderer that renders its last choice with a placeholder."""
     def __init__(self, *args, **kwargs):
         super(ChoiceWithOtherRenderer, self).__init__(*args, **kwargs)
-        self.choices, self.other = self.choices[:-1], self.choices[-1]
+        self.choices, self.other = self.choices, self.choices[-1]
 
     def __iter__(self):
         for input in super(ChoiceWithOtherRenderer, self).__iter__():
