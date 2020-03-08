@@ -62,21 +62,21 @@ import re
 
 class DonationForm(forms.Form):
     amount_donation = forms.ChoiceField(widget=forms.RadioSelect())
-    custom_amount = forms.IntegerField(min_value=1, max_value=1000, required=False)
+    custom_amount = forms.DecimalField(decimal_places=2, min_value=1, max_value=1000, required=False)
 
     def __init__(self, *args, **kwargs):
         super(DonationForm, self).__init__(*args, **kwargs)
         self.amount = None
 
-    def clean(self):
-        super(DonationForm, self).clean()
+    def clean_custom_amount(self):
         amount_donation = self.cleaned_data.get('amount_donation','')
         custom_amount = self.cleaned_data.get('custom_amount','')
 
-        if amount_donation == -1:
+        if amount_donation == "-1":
             if custom_amount:
                 self.amount = custom_amount
-                raise forms.ValidationError("Please enter a donation amount")
+            else:
+                raise forms.ValidationError('Please enter a donation amount.')
         else:
             self.amount = amount_donation
         return self.cleaned_data
@@ -203,6 +203,7 @@ class DonationModule(ProgramModuleObj):
         context['institution'] = settings.INSTITUTION_NAME
 
         context['form'] = form and form or self.get_form()
+
         return render_to_response(self.baseDir() + 'donation.html', request, context)
 
     class Meta:

@@ -28,6 +28,18 @@ $j(document).ready(function () {
 {% block content %}
 <style type="text/css">
 
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
 #custom_amount_section {
     text-align: center;
 }
@@ -40,21 +52,31 @@ label input {
     list-style: none;
 }
 
+.errorlist {
+    list-style: none;
+}
+
 </style>
 <div class="row">
   <div class="span7">
  
     <h1>{% trans "Optional Donation for " %}{{ program.niceName }}</h1>
-    {{form.errors}}
     <form method="post">
         {% inline_program_qsd_block program "learningu_donation" %}
         {% trans "Please support " %}<a href="http://www.learningu.org/about" target="_blank">{% trans "Learning Unlimited" %}</a> {% trans "with an additional donation. Learning Unlimited supports " %}{{ institution }} {% trans "and dozens of other Splashes with mentoring and maintains this website. Your gift helps start new Splashes and provide support to existing ones across the country." %}
         {% end_inline_program_qsd_block %}
         <div id="donation_choices_wrapper">
             <h3>{% trans "Donation amount:" %}</h3>
+                {{form.amount_donation.errors}}
                 {{form.amount_donation}}
                 <div id="custom_amount_section" class="alert hide">
+                {{form.custom_amount.errors}}
                 {{form.custom_amount}}
+                {% if form.custom_amount.errors %}
+                    <script type="text/javascript">
+                        $j('#custom_amount_section').removeClass('hide')
+                    </script>
+                {% endif %}
                 </div>
     
             <div class="btn-group text-center">
