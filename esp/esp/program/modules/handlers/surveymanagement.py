@@ -145,18 +145,14 @@ class SurveyManagement(ProgramModuleObj):
                             return render_to_response('program/modules/surveymanagement/question_delete.html', request, context)
                     elif request.POST:
                         # submitted question form to edit an existing question
-                        POST = request.POST.copy()
-                        POST['_param_values'] = "|".join(POST.getlist("param_val", ""))
-                        form = QuestionForm(POST, instance = question, cur_prog = prog)
+                        form = QuestionForm(request.POST, instance = question, cur_prog = prog)
                         form.id = id
                         context['question_form'] = form
                         if form.is_valid():
                             form.save()
                 elif request.POST:
                     # submitted question form to create new question
-                    POST = request.POST.copy()
-                    POST['_param_values'] = "|".join(POST.getlist("param_val", ""))
-                    form = QuestionForm(POST, cur_prog = prog)
+                    form = QuestionForm(request.POST, cur_prog = prog)
                     form.id = id
                     context['survey_form'] = form
                     if form.is_valid():

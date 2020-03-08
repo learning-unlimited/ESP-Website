@@ -130,7 +130,7 @@ Each step below is a form that you can expand or contract by clicking on the hea
                 <td class="underline">{{ question.question_type.name }}</td>
                 <td class="underline">
                     {% for key, value in question.get_params.items %}
-                        <i>{{ key }}</i>: {% if value %}{{ value }}{% endif %}
+                        <i>{% if key == "list" %}other{% else %}{{ key }}{% endif %}</i>: {% if value %}{{ value }}{% endif %}
                         {% if not forloop.last %}<br />{% endif %}
                     {% endfor %}
                 </td>

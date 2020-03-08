@@ -14,3 +14,7 @@
 #id__param_values {
     display: none;
 }
+
+select {
+    width: auto;
+}
