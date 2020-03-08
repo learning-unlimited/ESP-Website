@@ -56,7 +56,7 @@ if (typeof question_types != 'undefined') {
             //We want to prevent people from submitting the form by pressing enter
             $td.append("<button class='param_extra_field' type='submit' disabled hidden></button>");
             //Add fields for rating labels
-            for (i = 1; i < (num_ratings + 1); i++) {
+            for (let i = 1; i < (num_ratings + 1); i++) {
                 var par_value = (i in par_values)? par_values[i] : "";
                 $td.append("<span class='param_field'>Rating " + i + ": <input type='text' name='param_val' value='" + par_value + "'><br/></span>");
             }
