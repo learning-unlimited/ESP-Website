@@ -1,6 +1,6 @@
 from django import forms
 
-from esp.survey.models  import QuestionType, Question, Survey
+from esp.survey.models  import Question, Survey
 
 class SurveyForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
