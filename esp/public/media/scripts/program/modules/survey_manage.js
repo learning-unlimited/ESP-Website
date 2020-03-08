@@ -1,7 +1,7 @@
 $j("th.selector").click(function() {
-    $details = $j("tr#details-panel");
-    $rendered = $j("tr#rendered-panel");
-    panel = $j(this).data("panel");
+    var $details = $j("tr#details-panel");
+    var $rendered = $j("tr#rendered-panel");
+    var panel = $j(this).data("panel");
     $j(this).addClass("active");
     if (panel == "details"){
         $details.show();
@@ -30,7 +30,7 @@ if (typeof question_types != 'undefined') {
             //We want to prevent people from submitting the form by pressing enter
             $td.append("<button class='param_extra_field' type='submit' disabled hidden></button>");
             //Add fields for choices
-            for (i = 0; i < num_choices; i++) {
+            for (let i = 0; i < num_choices; i++) {
                 var par_value = (i in par_values)? par_values[i] : "";
                 $td.append("<span class='param_field'>Choice " + (i + 1) + ": <input type='text' name='param_val' value='" + par_value + "'><br/></span>");
             }
@@ -39,7 +39,7 @@ if (typeof question_types != 'undefined') {
                 num_choices = $j(this).val();
                 var $fields = $j(".param_field");
                 //Add extra fields if necessary
-                for (i = 0; i < num_choices; i++) {
+                for (let i = 0; i < num_choices; i++) {
                     if ($fields[i] === undefined){
                         $td.append("<span class='param_field'>Choice " + (i + 1) + ": <input type='text' name='param_val'><br/></span>");
                     }
@@ -66,7 +66,7 @@ if (typeof question_types != 'undefined') {
                 num_ratings = $j(this).val();
                 var $fields = $j(".param_field");
                 //Add extra fields if necessary
-                for (i = 0; i < num_ratings; i++) {
+                for (let i = 0; i < num_ratings; i++) {
                     if ($fields[i] === undefined){
                         $td.append("<span class='param_field'>Rating " + (i + 1) + ": <input type='text' name='param_val'><br/></span>");
                     }
