@@ -80,7 +80,7 @@ if (typeof question_types != 'undefined') {
             //One field for each parameter
             var params = question_types[quest_ind];
             if (params && params.length > 0) {
-                for (i = 0; i < params.length; i++) {
+                for (let i = 0; i < params.length; i++) {
                     var par_value = (i in par_values)? par_values[i] : "";
                     $td.append("<span class='param_field'>" + params[i] + ": <input type='text' name='param_val' value='" + par_value + "'><br/></span>");
                 }
