@@ -11,9 +11,16 @@ Attendance
 ~~~~~~~~~~
 We've implemented a set of tools for teachers and admins to manage student class attendance:
 
-1. We've added a new page ``/manage/[one]/[two]/section_attendance`` that allows teachers to take attendance for a particular section (including unenrolled students). Teachers can either use a checkbox interface or scan barcodes (with their phones) like at student check-in to mark students as attending the class. Options are provided to allow teachers to enroll students in their class if they were not previously enrolled. The page is linked to from the main teacher registration page (for sections that are approved and scheduled). The page has a dropdown menu for the teacher to select one of their sections for attendance.
-2. We've added an onsite module that summarizes attendance statistics/details. The page has a similar dropdown to select a particular timeslot for attendance. The page is linked to from the main onsite page (provided the module is enabled).
+1. We've added a new page ``/teach/[one]/[two]/section_attendance`` that allows teachers to take attendance for a particular section (including unenrolled students). Teachers can either use a checkbox interface or scan barcodes (with their phones) like at student check-in to mark students as attending the class. Options are provided to allow teachers to enroll students in their class if they were not previously enrolled. The page is linked to from the main teacher registration page (for sections that are approved and scheduled). The page also has a dropdown menu for the teacher to select one of their sections for attendance. Attendance records for a class expire at midnight of the day they were set (this is useful for recurring classes, such that teachers can mark separate attendance for each instance of the same section).
+2. We've added an onsite module that summarizes attendance statistics/details. The page has a similar dropdown to select a particular timeslot for attendance. The page is linked to from the main onsite page (provided the module is enabled). The module will assume that you are interested in attendance records for the present day, but you can use the date picker to see a summary of attendance for a previous day (in the case of recurring classes). This page also has links to email, text, or get information for users that are checked in, playing hooky, or attending the wrong class.
 3. We've added an onsite module that allows you to check\ **out** individual students (in the case where a student is leaving for lunch, etc.) or all students (in the case where the day has finished and you want to record checkin again for the next day). The module also allows admins to unenroll students from the classes that will be missed when they are checked out from the program.
+
+Onsite Webapps
+~~~~~~~~~~~~~~
+We've added mobile-friendly interfaces for teachers and students for tools that are commonly used at Splash events.
+
+1. The teacher interface, available at ``/teach/[one]/[two]/teacheronsite`` (if enabled), has a live schedule, Google maps of campus (with directions to classrooms if set up), section details (including email addresses), section rosters (with attendance functionality), and a page for the Splash teacher survey and student survey responses. If no surveys are setup, this navigation panel is hidden (the new survey creation page can be used to set these up).
+2. Placeholder for student webapp
 
 Student Acknowledgement
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -50,6 +57,7 @@ Printables changes
 - The ``studentchecklist`` printable now updates the statuses in the checklist based on the records through the website of whether students have been checked-in, have paid, or have turned in forms.
 - Admins can now use an arbitrary list of users (like that used in the comm panel or schedule generator) to generate nametags.
 - Nametags now have the option to have barcodes on the backs (or really anything, with template overrides).
+- Reorganized the printables page and condensed the "Class and Section Lists" section by implementing dropdown menus.
 
 Scheduler changes
 ~~~~~~~~~~~~~~~~~
