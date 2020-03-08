@@ -130,8 +130,10 @@ Each step below is a form that you can expand or contract by clicking on the hea
                 <td class="underline">{{ question.question_type.name }}</td>
                 <td class="underline">
                     {% for key, value in question.get_params.items %}
-                        <i>{% if key == "list" %}other{% else %}{{ key }}{% endif %}</i>: {% if value %}{{ value }}{% endif %}
-                        {% if not forloop.last %}<br />{% endif %}
+                        {% if key != "list" or value %}
+                            <i>{% if key == "list" %}other{% else %}{{ key }}{% endif %}</i>: {% if value %}{{ value }}{% endif %}
+                            {% if not forloop.last %}<br />{% endif %}
+                        {% endif %}
                     {% endfor %}
                 </td>
                 <td class="underline">{% if question.per_class %}&#10003;{% endif %}</td>
@@ -143,13 +145,19 @@ Each step below is a form that you can expand or contract by clicking on the hea
         {% endfor %}
         </table></td></tr>
         <tr hidden id="rendered-panel"><td colspan="6"><table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+            <td width="5%"><b>Seq</b></td>
+            <td width="85%" colspan="4" align="center"><b>Rendered Question</b></td>
+            <td width="10%"></td>
+        </tr>
         {% for question in questions %}
             {% ifchanged question.survey %}
             <tr><th colspan="6">Questions for {{ question.survey.name }} ({{ question.survey.category }})</th></tr>
             {% endifchanged %}
             <tr>
-                <td class="underline" colspan="5">{{ question.render }}</td>
-                <td class="underline" width="10%">
+                <td class="underline">{{ question.seq }}</td>
+                <td class="underline" colspan="4">{{ question.render }}</td>
+                <td class="underline">
                     <a href="/manage/{{ program.url }}/surveys/manage?obj=question&op=edit&id={{ question.id }}">[Edit]</a>
                     <a href="/manage/{{ program.url }}/surveys/manage?obj=question&op=delete&id={{ question.id }}">[Delete]</a>
                 </td>
