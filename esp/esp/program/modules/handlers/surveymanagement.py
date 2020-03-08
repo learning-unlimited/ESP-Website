@@ -104,7 +104,7 @@ class SurveyManagement(ProgramModuleObj):
                             questions = survey.questions.order_by('id')
                             for q in questions:
                                 if str(q.id) in to_import:
-                                    newq, created = Question.objects.get_or_create(survey=newsurvey, name=q.name, question_type=q.question_type, _param_values=q._param_values, per_class=q.per_class, seq=q.seq)
+                                    Question.objects.get_or_create(survey=newsurvey, name=q.name, question_type=q.question_type, _param_values=q._param_values, per_class=q.per_class, seq=q.seq)
                         else:
                             # submitted import form
                             context['survey'] = survey
