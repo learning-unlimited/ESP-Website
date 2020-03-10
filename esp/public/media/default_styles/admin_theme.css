@@ -55,6 +55,7 @@ div.breadcrumbs a {
     background: #205493;
     color:white;
     border-radius: 4px;
+    text-transform: uppercase;
 
 }
 @font-face {
