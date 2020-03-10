@@ -1252,13 +1252,20 @@ class ClassSection(models.Model):
                     ## That's the bare minimum to reg someone; we're done!
                     return True
 
-                # If the registration was placed through OnSite Reg, annotate it as an OnSite registration
+                webapp_verb = "Onsite/Webapp"
                 onsite_verb = 'OnSite/ChangedClasses'
                 request = get_current_request()
-                if request and request.user and isinstance(request.user, ESPUser) and request.user.is_morphed(request):
+                # If using the webapp to enroll in a class, annotate it as such
+                if webapp:
+                    rt, created = RegistrationType.objects.get_or_create(name=webapp_verb, category='student')
+                    sr = StudentRegistration(user=user, section=self, relationship=rt)
+                    sr.save()
+                # If the registration was placed through OnSite Reg, annotate it as an OnSite registration
+                elif request and request.user and isinstance(request.user, ESPUser) and request.user.is_morphed(request):
                     rt, created = RegistrationType.objects.get_or_create(name=onsite_verb, category='student')
                     sr = StudentRegistration(user=user, section=self, relationship=rt)
                     sr.save()
+                
             else:
                 pass
 
