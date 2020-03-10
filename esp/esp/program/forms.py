@@ -75,8 +75,8 @@ class ProgramCreationForm(BetterModelForm):
                                    [x.id for x in ProgramModule.objects.filter(admin_title__in=['Accounting', 'Credit Card Payment Module (Stripe)', 'Financial Aid Application',
                                                                                                 'Easily Approve Financial Aid Requests'])],
                                    [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Logistics Quiz')],
-                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Custom Form', 'Teacher Surveys', 'Survey Management'])],
-                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Custom Form', 'Student Surveys', 'Survey Management'])],
+                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Surveys', 'Survey Management'])],
+                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Surveys', 'Survey Management'])],
                                    [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Custom Form')],
                                    [x.id for x in ProgramModule.objects.filter(admin_title='Student Custom Form')],
                                    [x.id for x in ProgramModule.objects.filter(admin_title='Student Lunch Period Selection')],
@@ -90,8 +90,8 @@ class ProgramCreationForm(BetterModelForm):
         program_modules_questions = ['Will you have extra costs (shirts or lunch)?', # Accounting, Student Optional Fees, Credit Card Payment Module (Stripe), Financial Aid Application, Easily Approve Financial Aid Requests
                                      'Will you charge for the program?', # Accounting, Credit Card Payment Module (Stripe), Financial Aid Application, Easily Approve Financial Aid Requests
                                      'Do you want a pre-program quiz for teachers?', # Teacher Logistics Quiz
-                                     'Will you send any surveys to teachers?', # Teacher Custom Form, Teacher Surveys, Survey Management
-                                     'Will you send any surveys to students?', # Student Custom Form, Student Surveys, Survey Management
+                                     'Will you send any surveys to teachers?', # Teacher Surveys, Survey Management
+                                     'Will you send any surveys to students?', # Student Surveys, Survey Management
                                      'Will you have any additional (non-survey) forms that teachers should fill out?', # Teacher Custom Form
                                      'Will you have any additional (non-survey) forms that teachers should fill out?', # Student Custom Form
                                      'Will you have more than one lunch period (per day)?', # Student Lunch Period Selection
@@ -106,7 +106,7 @@ class ProgramCreationForm(BetterModelForm):
         for x in ProgramModule.objects.filter(choosable=0):
             if x.id not in sum(self.program_module_ids, []):
                 program_modules_questions.append('Would you like to include the {} module?'.format(x.admin_title))
-                self.program_module_ids.append([str(x.id)])
+                self.program_module_ids.append([x.id])
         self.fields['program_modules'].choices = enumerate(program_modules_questions)
 
         #   Enable validation on other fields
@@ -139,8 +139,7 @@ class ProgramCreationForm(BetterModelForm):
         value = self.cleaned_data['program_modules']
         final = []
         for v in value:
-            final.extend(self.program_module_ids[int(v)])
-        final = map(int, final)
+            final.extend(self.program_module_ids[v])
         default_modules = ProgramModule.objects.filter(choosable=1)
         for m in default_modules:
             final.append(m.id)
