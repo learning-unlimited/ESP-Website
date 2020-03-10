@@ -21,6 +21,92 @@ function Matrix(
 
     this.timeslots = timeslots;
     this.rooms = rooms;
+    
+    // Set up filtering
+    this.filter = {
+        roomCapacityMin: {active: false, el: $j("input#room-filter-capacity-min"), type: "number"},
+        roomCapacityMax: {active: false, el: $j("input#room-filter-capacity-max"), type: "number"},
+        roomResource: {active: false, el: $j("input#room-filter-resource-text"), type: "string"},
+        roomName: {active: false, el: $j("input#room-filter-name-text"), type: "string"},
+    };
+    this.filter.roomCapacityMin.valid = function(a) {
+        return Math.ceil(a.num_students) >= this.filter.roomCapacityMin.val;
+    }.bind(this);
+    this.filter.roomCapacityMax.valid = function(a) {
+        return Math.ceil(a.num_students) <= this.filter.roomCapacityMax.val;
+    }.bind(this);
+    this.filter.roomResource.valid = function(a) {
+        var result = false;
+        $j.each(a.resource_lines, function(index, resource) {
+            if((resource).toLowerCase().search(this.filter.roomResource.val)>-1) {
+                result = true;
+            }
+        }.bind(this));
+        return result;
+    }.bind(this);
+    this.filter.roomName.valid = function(a) {
+        return (a.text).toLowerCase().search(this.filter.roomName.val)>-1
+    }.bind(this);
+
+    $j.each(this.filter, function(filterName, filterObject) {
+        filterObject.el.change(function() {
+            filterObject.val = filterObject.el.val().trim();
+            if(filterObject.type==="number") {
+                filterObject.val = parseInt(filterObject.val);
+            } else if(filterObject.type==="string") {
+                filterObject.val = filterObject.val.toLowerCase()
+            } else if(filterObject.type==="boolean") {
+                filterObject.val = filterObject.el.prop('checked');
+            }
+            if((filterObject.type==="number" && isNaN(filterObject.val))
+                || (filterObject.type==="string" && filterObject.val.trim()==="")
+                || (filterObject.type==="boolean" && !filterObject.val)) {
+                filterObject.active = false;
+            } else {
+                filterObject.active = true;
+            }
+            $j("body").trigger("room-filters-changed");
+        });
+    }.bind(this));
+    
+    /**
+     * Get the rooms satisfying the search criteria.
+     */
+    this.filtered_rooms = function(allowScheduled){
+        var returned_rooms = [];
+        $j.each(this.rooms, function(index, room) {
+            var roomValid;
+            // check every criterion in the room filter tab, short-circuiting if possible
+            roomValid = true;
+            for (var filterName in this.filter) {
+                if (this.filter.hasOwnProperty(filterName)) {
+                    var filterObject = this.filter[filterName];
+                    // this loops over properties in this.filter
+                    if (filterObject.active && !filterObject.valid(room)) {
+                        roomValid = false;
+                        break;
+                    }
+                }
+            }
+            if (roomValid) {
+                returned_rooms.push(room);
+            }
+        }.bind(this));
+        return returned_rooms;
+    };
+    
+    this.update = function(){
+        var filt_rooms = this.filtered_rooms()
+        $j.each(this.rooms, function(index, room) {
+            // get rows to show or hide
+            var rows = $j(".room[data-id='" + room.id + "']").parent();
+            if (filt_rooms.includes(room)) {
+                rows.css("display", "table-row");
+            } else {
+                rows.css("display", "none");
+            }
+        }.bind(this));
+    };
 
     this.sections = sections;
     this.sections.bindMatrix(this);
@@ -33,21 +119,22 @@ function Matrix(
      * Initialize the matrix
      */
     this.init = function(){
+        $j("body").on("room-filters-changed", this.update.bind(this));
         // set up cells
         var matrix = this;
         this.cells = function(){
-            // cells has room names as keys to the outer object and timeslots as keys to the
+            // cells has room ids as keys to the outer object and timeslots as keys to the
             // inner object
             var cells = {};
-            $j.each(rooms, function(room_name, room){
-                cells[room_name] = [];
+            $j.each(rooms, function(room_id, room){
+                cells[room_id] = [];
                 $j.each(this.timeslots.timeslots, function(timeslot_id_string, timeslot){
                     var timeslot_id = parseInt(timeslot_id_string);
                     if (room.availability.indexOf(timeslot_id) >= 0){
-                        cells[room_name][timeslot.order] = new Cell($j("<td/>"), null, room_name,
+                        cells[room_id][timeslot.order] = new Cell($j("<td/>"), null, room_id,
                             timeslot_id, matrix);
                     } else {
-                        cells[room_name][timeslot.order] = new DisabledCell($j("<td/>"), room_name,
+                        cells[room_id][timeslot.order] = new DisabledCell($j("<td/>"), room_id,
                             timeslot_id)
                     }
                 }.bind(this));
@@ -159,13 +246,13 @@ function Matrix(
         // Associated already scheduled classes with rooms
         $j.each(this.sections.scheduleAssignments, function(class_id, assignmentData){
             $j.each(assignmentData.timeslots, function(j, timeslot_id){
-                var cell = this.getCell(assignmentData.room_name, timeslot_id);
+                var cell = this.getCell(assignmentData.room_id, timeslot_id);
                 if(cell && !cell.disabled) {
                     cell.addSection(sections.getById(class_id));
                 } else {
                     if(!cell) {
-                        var errorMessage = "Error: Could not find cell with room "
-                            + assignmentData.room_name
+                        var errorMessage = "Error: Could not find cell with room with id "
+                            + assignmentData.room_id
                             + " and timeslot with id "
                             + timeslot_id
                             + " to schedule section with id "
@@ -174,8 +261,8 @@ function Matrix(
                         messagePanel.addMessage(errorMessage);
                     }
                     else {
-                        var errorMessage = "Error: Room "
-                            + assignmentData.room_name
+                        var errorMessage = "Error: Room with id "
+                            + assignmentData.room_id
                             + " appears to be unavailable during timeslot with id "
                             + timeslot_id
                             + " but section with id "
@@ -191,28 +278,28 @@ function Matrix(
 
 
     /**
-     * Gets the cell that represents room_name and timeslot_id.
+     * Gets the cell that represents room_id and timeslot_id.
      *
-     * @param room_name: The name of the room corresponding to the cell
+     * @param room_id: The id of the room corresponding to the cell
      * @param timeslot_id: The ID of the timeslot corresponding to the cell
      */
-    this.getCell = function(room_name, timeslot_id){
-        return this.cells[room_name][this.timeslots.get_by_id(timeslot_id).order];
+    this.getCell = function(room_id, timeslot_id){
+        return this.cells[room_id][this.timeslots.get_by_id(timeslot_id).order];
     };
 
 
     /**
-     * Checks a section we want to schedule in room_name during schedule_timeslots
+     * Checks a section we want to schedule in room_id during schedule_timeslots
      * to make sure the room is available during that time and the length is nonzero.
      *
      * Returns an object with property valid that is set to whether the assignment is valid
      * and reason which contains a message if valid is false.
      *
      * @param section: The section to validate.
-     * @param room_name: The name of the room we want to put the section into.
+     * @param room_id: The name of the room we want to put the section into.
      * @param schedule_timeslots: The array of timeslots we want to put the section into.
      */
-    this.validateAssignment = function(section, room_name, schedule_timeslots){
+    this.validateAssignment = function(section, room_id, schedule_timeslots){
         var result = {
             valid: true,
             reason: null,
@@ -231,7 +318,7 @@ function Matrix(
                     availableTimeslots.indexOf(schedule_timeslots[index]) == -1);
         };
 
-        var firstCell = this.getCell(room_name, schedule_timeslots[0]);
+        var firstCell = this.getCell(room_id, schedule_timeslots[0]);
         if (section.length <= 1 && !validateIndividualCell(0, firstCell)) {
             result.valid = false;
             result.reason = "first cell is not valid"
@@ -240,11 +327,11 @@ function Matrix(
 
         // Check to make sure all the cells are available
         for(var timeslot_index in schedule_timeslots){
-            var cell = this.getCell(room_name, schedule_timeslots[timeslot_index]);
+            var cell = this.getCell(room_id, schedule_timeslots[timeslot_index]);
             if (!validateIndividualCell(timeslot_index, cell)){
                 result.valid = false;
                 result.reason = "Error: timeslot" +  schedule_timeslots[timeslot_index] +
-                    " already has a class in " + room_name + "."
+                    " already has a class in " + room_id + "."
                 return result;
             }
         }
@@ -303,18 +390,18 @@ function Matrix(
         var room_ids = Object.keys(this.rooms);
         room_ids.sort(function (room1, room2) {
             // sort by building number
-            var bldg1 = parseInt(room1, 10);
-            var bldg2 = parseInt(room2, 10);
+            var bldg1 = parseInt(room1.text, 10);
+            var bldg2 = parseInt(room2.text, 10);
             if (!isNaN(bldg1) && !isNaN(bldg2) && bldg1 != bldg2) {
                 return bldg1 - bldg2;
             }
-            return room1.localeCompare(room2);
+            return rooms[room1].text.localeCompare(rooms[room2].text);
         });
         $j.each(this.rooms, function(id, room){
             room = this.rooms[id];
             var room_header = $j("<td>")
                 .addClass('room')
-                .text(id + " [" + room['num_students'] + "]")
+                .text(room.text + " [" + room['num_students'] + "]")
                 .attr('data-id', id);
             var row = $j("<tr></tr>");
             room_header.appendTo(row);
@@ -337,18 +424,10 @@ function Matrix(
         this.el.tooltip({
             content: function() {
                 var room = that.rooms[$j(this).data('id')];
-                var resource_lines = [];
-                $j.each(room.resources, function(index, resource) {
-                    var desc = resource.resource_type.name;
-                    if(resource.value) {
-                        desc += ': ' + resource.value;
-                    }
-                    resource_lines.push(desc);
-                });
                 var tooltipParts = [
                     "<b>" + room.text + "</b>",
                     "Capacity: " + room.num_students + " students",
-                    "Resources: " + "<ul><li>"+ resource_lines.join("</li><li>") + "</li></ul>",
+                    "Resources: " + "<ul><li>"+ room.resource_lines.join("</li><li>") + "</li></ul>",
                 ];
                 return tooltipParts.join("</br>");
             },

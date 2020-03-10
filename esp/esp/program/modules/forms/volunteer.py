@@ -33,6 +33,8 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
+from django.utils.safestring import mark_safe
+from django.db.models import Count
 from esp.cal.models import Event, EventType
 from esp.program.models import VolunteerRequest, VolunteerOffer
 from esp.utils.widgets import DateTimeWidget, DateWidget
@@ -93,21 +95,24 @@ class VolunteerOfferForm(forms.Form):
     user = forms.IntegerField(required=False, widget=forms.HiddenInput)
 
     name = forms.CharField(max_length=80, label='Your Name')
-    email = forms.EmailField(label='E-mail address')
+    email = forms.EmailField(label='Email address')
     phone = USPhoneNumberField(label='Phone number')
 
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
 
-    requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text='Sign up for one or more shifts; remember to avoid conflicts with your classes if you\'re teaching!', widget=forms.CheckboxSelectMultiple, required=False)
+    requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text="Sign up for one or more shifts; remember to avoid conflicts with your classes if you're teaching!", widget=forms.CheckboxSelectMultiple, required=False)
     has_previous_requests = forms.BooleanField(widget=forms.HiddenInput, required=False, initial=False)
     clear_requests = forms.BooleanField(widget=forms.HiddenInput, required=False, initial=False)
 
     comments = forms.CharField(widget=forms.Textarea(attrs={'rows': 3, 'cols': 60}), help_text='Any comments or special circumstances you would like us to know about?', required=False)
 
-    confirm = forms.BooleanField(help_text='<span style="color: red; font-weight: bold;"> I agree to show up at the time(s) selected above.</span>', required=False)
+    confirm = forms.BooleanField(help_text=mark_safe('<span style="color: red; font-weight: bold;">I agree to show up at the time(s) selected above.</span>'), required=False)
 
     def __init__(self, *args, **kwargs):
+        def positive_or_no(n):
+            return (n > 0) and ('%d' % n) or 'no'
+
         if 'program' in kwargs:
             self.program = kwargs['program']
             del kwargs['program']
@@ -116,18 +121,22 @@ class VolunteerOfferForm(forms.Form):
 
         super(VolunteerOfferForm, self).__init__(*args, **kwargs)
         vrs = self.program.getVolunteerRequests()
-        self.fields['requests'].choices = [(v.id, '%s: %s (%d more needed)' % (v.timeslot.pretty_time(), v.timeslot.description, v.num_volunteers - v.num_offers())) for v in vrs if v.num_offers() < v.num_volunteers] + [(v.id, '%s: %s (no more needed)' % (v.timeslot.pretty_time(), v.timeslot.description)) for v in vrs if v.num_offers() >= v.num_volunteers]
+        self.fields['requests'].choices = [(v.id, '%s: %s (%s more needed)' % (v.timeslot.pretty_time(), v.timeslot.description, positive_or_no(v.num_volunteers - v.num_offers()))) for v in vrs]
 
 
         #   Show t-shirt fields if specified by Tag (disabled by default)
-        if not Tag.getTag('volunteer_tshirt_options'):
+        if not Tag.getBooleanTag('volunteer_tshirt_options', default=False):
             del self.fields['shirt_size']
             del self.fields['shirt_type']
-        elif not Tag.getTag('volunteer_tshirt_type_selection'):
+        elif not Tag.getBooleanTag('volunteer_tshirt_type_selection', default=False):
             del self.fields['shirt_type']
 
-        if not Tag.getTag('volunteer_allow_comments'):
+        if not Tag.getBooleanTag('volunteer_allow_comments', default=False):
             del self.fields['comments']
+        else:
+            tag_data = Tag.getProgramTag('volunteer_help_text_comments', self.program)
+            if tag_data:
+                self.fields['comments'].help_text = tag_data
 
     def load(self, user):
         self.fields['user'].initial = user.id
@@ -158,7 +167,7 @@ class VolunteerOfferForm(forms.Form):
             return []
 
         #   Create user if one doesn't already exist, otherwise associate a user.
-        #   Note that this will create a new user account if they enter an e-mail
+        #   Note that this will create a new user account if they enter an email
         #   address different from the one on file.
         if not self.cleaned_data['user']:
             user_data = {'first_name': self.cleaned_data['name'].split()[0],
@@ -168,13 +177,15 @@ class VolunteerOfferForm(forms.Form):
             existing_users = ESPUser.objects.filter(**user_data).order_by('-id')
             if existing_users.exists():
                 #   Arbitrarily pick the most recent account
-                #   This is not too important, we just need a link to an e-mail address.
+                #   This is not too important, we just need a link to an email address.
                 user = existing_users[0]
             else:
                 auto_username = ESPUser.get_unused_username(user_data['first_name'], user_data['last_name'])
                 user = ESPUser.objects.create_user(auto_username, user_data['email'])
                 user.__dict__.update(user_data)
                 user.save()
+                #   Send them an email so they can set their password
+                user.recoverPassword()
 
         #   Record this user account as a volunteer
         user.makeVolunteer()
@@ -221,5 +232,13 @@ class VolunteerOfferForm(forms.Form):
         return self.cleaned_data
 
 class VolunteerImportForm(forms.Form):
-    program = forms.ModelChoiceField(queryset=Program.objects.all())
+    program = forms.ModelChoiceField(queryset=None)
     start_date = forms.DateField(label='First Day of New Program', widget=DateWidget)
+
+    def __init__(self, *args, **kwargs):
+        cur_prog = kwargs.pop('cur_prog', None)
+        super(VolunteerImportForm, self).__init__(*args, **kwargs)
+        qs = Program.objects.annotate(vr_count = Count('volunteerrequest')).filter(vr_count__gt=0)
+        if cur_prog is not None:
+            qs = qs.exclude(id=cur_prog.id)
+        self.fields['program'].queryset = qs

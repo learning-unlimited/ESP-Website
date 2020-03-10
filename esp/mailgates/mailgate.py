@@ -77,11 +77,8 @@ try:
         if hasattr(instance, "direct_send") and instance.direct_send:
             if message['Bcc']:
                 bcc_recipients = [x.strip() for x in message['Bcc'].split(',')]
-                bcc_recipients += [ARCHIVE]
                 del(message['Bcc'])
                 message['Bcc'] = ", ".join(bcc_recipients)
-            else:
-                message['Bcc'] = ARCHIVE
 
             send_mail(str(message))
             continue
@@ -89,13 +86,14 @@ try:
         del(message['to'])
         del(message['cc'])
         message['X-ESP-SENDER'] = 'version 2'
-        message['Bcc'] = ARCHIVE
 
+        subject = message['subject']
+        del(message['subject'])
+        if instance.emailcode:
+            subject = '[%s] %s' % (instance.emailcode, subject)
         if handler.subject_prefix:
-            subject = message['subject']
-            del(message['subject'])
-            message['Subject'] = '%s%s' % (handler.subject_prefix,
-                                           subject)
+            subject = '[%s] %s' % (handler.subject_prefix, subject)
+        message['Subject'] = subject
 
         if handler.from_email:
             del(message['from'])

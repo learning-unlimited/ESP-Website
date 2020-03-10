@@ -22,7 +22,16 @@
 
 <h1>Setting Coteachers for &quot;<u>{{ class|escape }}</u>&quot;</h1>
 
-<p>Please list all others that will be helping you teach this class.  They will need to create accounts and mark their available times through the teacher registration page (for scheduling purposes).</p>
+<h2>To add a co-teacher, please follow these steps:</h2>
+<ol>
+<li>Have your co-teacher register a teacher account on our website (if they do not have one already).</li>
+
+<li>Have your co-teacher update their teacher profile at <a href="/teach/{{ program.getUrlBase }}/profile">this page</a>.</li>
+
+<li>Have your co-teacher update their availability for {{ program.name }} at  <a href="/teach/{{ program.getUrlBase }}/availability">this page</a>. Please make sure that your co-teacher and you share an overlapping schedule that is able to cover the entire duration of your class(es) that you are co-teaching.</li>
+
+<li>Finally, return to this co-teachers page and add your co-teacher using the tool below.</li>
+</ol>
 
 {% if conflict %}
     <p>

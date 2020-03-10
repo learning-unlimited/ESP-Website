@@ -26,7 +26,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
             "admin_title": "Teacher Acknowledgement",
             "link_title": "Teacher Acknowledgement",
             "module_type": "teach",
-            "required": False,
+            "required": True,
         }
 
     def isCompleted(self):
@@ -66,7 +66,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
         return {'acknowledgement': teacher_list }
 
     def teacherDesc(self):
-        return {'acknowledgement': """Teachers who have submitted the acknowledgement for the program."""}
+        return {'acknowledgement': """Teachers who have submitted the acknowledgement for the program"""}
 
     class Meta:
         proxy = True

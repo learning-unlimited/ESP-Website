@@ -3,11 +3,14 @@
 {% block title %}Sign up to volunteer{% endblock %}
 
 {% block stylesheets %}
-    {{ block.super }}
-    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{{ block.super }}
+<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+<link rel="stylesheet" href="/media/default_styles/availability.css" type="text/css" />
 {% endblock %}    
 
 {% block xtrajs %}
+<script type="text/javascript" src="/media/scripts/program/modules/availability.js"></script>
+
 <script type="text/javascript">
 function confirm_cancellation() {
     $j("input[name=clear_requests]").val("True");
@@ -20,6 +23,8 @@ function decline_cancellation() {
 }
 
 $j(document).ready(function () {
+    Availability.init({{ isAdmin|yesno:"true,false" }});
+
     $j("#confirm_cancellation_dialog").dialog({
         autoOpen: false,
         buttons: [ { text: "Confirm", click: confirm_cancellation }, {text: "Cancel", click: decline_cancellation} ]
@@ -41,10 +46,12 @@ $j(document).ready(function () {
         }
     });
 });
+
 </script>
 {% endblock %}
 
 {% block content %}
+<h1>{% if isAdmin %}Manage {% endif %}Volunteer for {{ program.niceName }}</h1>
 
 {% if complete %}
 <div class="alert alert-success">
@@ -73,26 +80,47 @@ The directors have been notified that you are no longer able to volunteer at {{ 
 
 <div id="program_form">
 <form method="POST" id="volunteer_shift_form" action="{{ request.path }}">
+{% for hidden in form.hidden_fields %}
+    {{ hidden }}
+{% endfor %}
 <center>
-<table width="500">
-<tr>
-    <th colspan="2">Volunteer for {{ program.niceName }}</th>
-</tr>
-<tr>
-    <td colspan="2">{% if request.user.email %}Since you are logged in, your information is pre-filled but you can change it for the purposes of contacting you about volunteering.{% else %}If you have an account, please <a href="/myesp/login?next={{ request.path }}">click here</a> to log in and return to this page.{% endif %}</td>
-</tr>
+<p>{% if request.user.email %}Since you are logged in, your information is pre-filled but you can change it for the purposes of contacting you about volunteering.{% else %}If you have an account, please <a href="/myesp/login?next={{ request.path }}">click here</a> to log in and return to this page.{% endif %}</p>
 {% if form.errors %}
-<tr>
-    <td colspan="2"><span style="color: red;">Please correct the errors in the form.</span></td>
-</tr>
+<p><span style="color: red;">Please correct the errors in the form.</span></p>
 {% endif %}
-    {{ form }}
-<tr>
-    <td colspan="2" align="center"><input id="volunteer_form_submit" type="submit" value="Submit" class="btn btn-primary" /></td>
-</tr>
-</table>
+<div class="noclick">
+{{ form.name.label_tag }}
+{{ form.name.errors }}
+{{ form.name }}
+{{ form.email.label_tag }}
+{{ form.email.errors }}
+{{ form.email }}
+{{ form.phone.label_tag }}
+{{ form.phone.errors }}
+{{ form.phone }}
+</div>
+
+  {% include "program/modules/availability.html" %}
+  <div hidden id="checkboxes">
+    {% for request in form.requests %}
+      <input {% if request.is_checked %}checked="checked" {% endif %}id="{{ request.id_for_label }}" name="{{ request.name }}" type="checkbox" value="{{ request.choice_value }}" data-hover="{{ request.choice_label }}">
+    {% endfor %}
+  </div>
+  {{ form.requests.errors }}
+<br><br>
+<div class="noclick">
+{{ form.confirm }}<span style="color: red; font-weight: bold;"> I agree to show up at the time(s) selected above.</span>
+</div>
+{{ form.non_field_errors }}
+<br><br>
+<input style="display: block" id="volunteer_form_submit" type="submit" value="Submit" class="btn btn-primary" />
 </center>
 </form>
 </div>
 <div id="confirm_cancellation_dialog" title="Confirm Cancellation">You have unchecked all volunteer shifts.  If you must cancel your volunteer commitments, please click "Confirm" to notify the directors.  Otherwise, click "Cancel".</div>
+
+<div class="side right" hidden>
+  <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
+  <span class="summary" style="background-color: #00FF00;">Available</span>
+</div>
 {% endblock %}

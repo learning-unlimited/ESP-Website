@@ -89,27 +89,28 @@ class CommModule(ProgramModuleObj):
         try:
             filterid = int(filterid)
         except:
-            raise ESPError("Corrupted POST data!  Please contact us at esp-web@mit.edu and tell us how you got this error, and we'll look into it.")
+            raise ESPError("Corrupted POST data!  Please contact us at" +
+            "websupport@learningu.org and tell us how you got this error," +
+            "and we'll look into it.")
 
         userlist = PersistentQueryFilter.getFilterFromID(filterid, ESPUser).getList(ESPUser)
 
         try:
             firstuser = userlist[0]
         except:
-            raise ESPError("You seem to be trying to email 0 people!  Please go back, edit your search, and try again.")
+            raise ESPError("You seem to be trying to email 0 people!  " +
+            "Please go back, edit your search, and try again.")
 
         MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
-        #   If they were trying to use HTML, don't sanitize the content.
+        # If they used the rich-text editor, we'll need to add <html> tags
         if '<html>' not in body:
-            htmlbody = body.replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br />')
-        else:
-            htmlbody = body
+            body = '<html>' + body + '</html>'
 
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
                        'program': ActionHandler(self.program, firstuser) }
 
-        renderedtext = Template(htmlbody).render(DjangoContext(contextdict))
+        renderedtext = Template(body).render(DjangoContext(contextdict))
 
         return render_to_response(self.baseDir()+'preview.html', request,
                                               {'filterid': filterid,
@@ -122,7 +123,8 @@ class CommModule(ProgramModuleObj):
                                                'body': body,
                                                'renderedtext': renderedtext})
 
-    def approx_num_of_recipients(self, filterObj, sendto_fn):
+    @staticmethod
+    def approx_num_of_recipients(filterObj, sendto_fn):
         """
         Approximates the number of recipients of a message, given the filter
         and the sendto function.
@@ -162,7 +164,9 @@ class CommModule(ProgramModuleObj):
         try:
             filterid = int(filterid)
         except:
-            raise ESPError("Corrupted POST data!  Please contact us at esp-web@mit.edu and tell us how you got this error, and we'll look into it.")
+            raise ESPError("Corrupted POST data!  Please contact us at " +
+            "websupport@learningu and tell us how you got this error, " +
+            "and we'll look into it.")
 
         filterobj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
 
@@ -176,7 +180,7 @@ class CommModule(ProgramModuleObj):
                                                       sendto_fn_name  = sendto_fn_name,
                                                       sender     = fromemail,
                                                       creator    = request.user,
-                                                      msgtext    = body,
+                                                      msgtext = body,
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )
 

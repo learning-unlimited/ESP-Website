@@ -72,7 +72,7 @@ def render_to_response(template, request, context, content_type=None, use_reques
     context['theme'] = tc.get_template_settings()
     context['settings'] = settings
 
-    context['current_program'] = Program.current_program()
+    context['current_programs'] = Program.current_programs()
 
     # create nav bar list
     if not 'navbar_list' in context:

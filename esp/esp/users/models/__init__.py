@@ -61,7 +61,7 @@ from django.template.loader import render_to_string
 from django_extensions.db.models import TimeStampedModel
 from django.core import urlresolvers
 from django.utils.functional import SimpleLazyObject
-
+from django.utils.safestring import mark_safe
 
 
 from esp.cal.models import Event, EventType
@@ -89,7 +89,7 @@ DEFAULT_USER_TYPES = [
     ['Teacher', {'label': 'Volunteer Teacher', 'profile_form': 'TeacherProfileForm'}],
     ['Guardian', {'label': 'Guardian of Student', 'profile_form': 'GuardianProfileForm'}],
     ['Educator', {'label': 'K-12 Educator', 'profile_form': 'EducatorProfileForm'}],
-    ['Volunteer', {'label': 'On-site Volunteer', 'profile_form': 'VolunteerProfileForm'}]
+    ['Volunteer', {'label': 'Onsite Volunteer', 'profile_form': 'VolunteerProfileForm'}]
 ]
 
 def admin_required(func):
@@ -122,6 +122,9 @@ class UserAvailability(models.Model):
         if (not hasattr(self, 'role')) or self.role is None:
             self.role = self.user.getUserTypes()[0]
         return super(UserAvailability, self).save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return self.event.program.get_manage_url()+"edit_availability?user="+str(self.user.id)
 
 
 class ESPUserManager(UserManager):
@@ -180,7 +183,7 @@ class BaseESPUser(object):
 
 
     @classmethod
-    def ajax_autocomplete(cls, data):
+    def ajax_autocomplete(cls, data, group = None):
         #q_name assumes data is a comma separated list of names
         #lastname first
         #q_username is username
@@ -202,17 +205,31 @@ class BaseESPUser(object):
 
         query_set = cls.objects.filter(q_names | q_username | q_id)
 
+        if group:
+            query_set = query_set.filter(groups=group)
+
         values = query_set.order_by('last_name','first_name','id').values('first_name', 'last_name', 'username', 'id')
 
         for value in values:
             value['ajax_str'] = '%s, %s (%s)' % (value['last_name'], value['first_name'], value['username'])
         return values
 
+    @classmethod
+    def ajax_autocomplete_student(cls, data):
+        return cls.ajax_autocomplete(data, group = Group.objects.get(name="Student"))
+
+    @classmethod
+    def ajax_autocomplete_teacher(cls, data):
+        return cls.ajax_autocomplete(data, group = Group.objects.get(name="Teacher"))
+
     def ajax_str(self):
         return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)
 
     def name(self):
         return u'%s %s' % (self.first_name, self.last_name)
+
+    def name_last_first(self):
+        return u'%s, %s' % (self.last_name, self.first_name)
 
     def nonblank_name(self):
         name = self.name()
@@ -427,6 +444,16 @@ class BaseESPUser(object):
             if (include_scheduled or (s.start_time() is None)) and (s.status >= 0 and s.parent_class.status >= 0):
                 total_time = total_time + timedelta(hours=rounded_hours(s.duration))
         return total_time
+
+    def getTaughtTimes(self, program = None, exclude = []):
+        """ Return the times taught as a set. If a program is specified, return the times taught for that program.
+            If exclude is specified (as a list of classes), exclude sections from the specified classes. """
+        user_sections = self.getTaughtSections(program)
+        times = set()
+        for s in user_sections:
+            if s.parent_class not in exclude:
+                times.update(s.meeting_times.all())
+        return times
 
     @staticmethod
     def getUserFromNum(first, last, num):
@@ -1028,6 +1055,9 @@ class ESPUser(User, BaseESPUser):
         self.makeRole("Administrator")
         self.save()
 
+    def get_absolute_url(self):
+        return "/manage/userview?username="+self.username
+
 class AnonymousESPUser(BaseESPUser, AnonymousUser):
     pass
 
@@ -1188,7 +1218,10 @@ def update_email(**kwargs):
 
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
 shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
-shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))
+# Until someone writes a new migration, we'll have to go with the sex-based 'M'
+# key for straight cut shirts. Let this comment acknowledge that unfortunately
+# state of affairs until that time.
+shirt_types = (('M', 'Straight cut'), ('F', 'Fitted cut'))
 food_choices = ('Anything', 'Vegetarian', 'Vegan')
 food_choices = zip(food_choices, food_choices)
 
@@ -1254,10 +1287,11 @@ class StudentInfo(models.Model):
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
         form_dict['gender']          = self.gender
-        if Tag.getTag('studentinfo_shirt_options'):
+        if Tag.getBooleanTag('show_student_tshirt_size_options', default=False):
             form_dict['shirt_size']      = self.shirt_size
+        if Tag.getBooleanTag('studentinfo_shirt_type_selection', default=False):
             form_dict['shirt_type']      = self.shirt_type
-        if Tag.getTag('studentinfo_food_options'):
+        if Tag.getBooleanTag('show_student_vegetarianism_options', default=False):
             form_dict['food_preference'] = self.food_preference
         form_dict['heard_about']      = self.heard_about
         form_dict['studentrep_expl'] = self.studentrep_expl
@@ -1277,7 +1311,10 @@ class StudentInfo(models.Model):
         if not studentInfo.user:
             studentInfo.user = curUser
         elif studentInfo.user != curUser: # this should never happen, but you never know....
-            raise ESPError("Your registration profile is corrupted. Please contact esp-web@mit.edu, with your name and username in the message, to correct this issue.")
+            raise ESPError("Your registration profile is corrupted. Please contact" +
+                            "{}".format(settings.DEFAULT_EMAIL_ADDRESSES['support']) +
+                            " with your name and username in the message to " +
+                            "correct this issue.")
 
         studentInfo.graduation_year = new_data['graduation_year']
         try:
@@ -1314,7 +1351,7 @@ class StudentInfo(models.Model):
         studentInfo.transportation = new_data.get('transportation', '')
         studentInfo.save()
         if new_data.get('studentrep', False):
-            #   E-mail membership notifying them of the student rep request.
+            #   Email membership notifying them of the student rep request.
             subj = '[%s Membership] Student Rep Request: %s %s' % (settings.ORGANIZATION_SHORT_NAME, curUser.first_name, curUser.last_name)
             to_email = [settings.DEFAULT_EMAIL_ADDRESSES['membership']]
             from_email = 'ESP Profile Editor <regprofile@%s>' % settings.DEFAULT_HOST
@@ -1346,6 +1383,8 @@ class StudentInfo(models.Model):
             username = self.user.username
         return u'ESP Student Info (%s) -- %s' % (username, unicode(self.school))
 
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
 
 AFFILIATION_UNDERGRAD = 'Undergrad'
 AFFILIATION_GRAD = 'Grad'
@@ -1458,6 +1497,9 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
             username = self.user.username
         return u'ESP Teacher Info (%s)' % username
 
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
+
     class Meta:
         app_label = 'users'
 
@@ -1519,6 +1561,8 @@ class GuardianInfo(models.Model):
             username = self.user.username
         return u'ESP Guardian Info (%s)' % username
 
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
 
 class EducatorInfo(models.Model):
     """ ESP Educator-specific contact information """
@@ -1593,6 +1637,9 @@ class EducatorInfo(models.Model):
         if self.user != None:
             username = self.user.username
         return u'ESP Educator Info (%s)' % username
+
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
 
 class ZipCode(models.Model):
     """ Zip Code information """
@@ -1685,7 +1732,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     form_link_name = 'ContactInfo'
     link_fields_list = [
         ('phone_day','Phone number'),
-        ('e_mail','E-mail address'),
+        ('e_mail','Email address'),
         ('address', 'Address'),
         ('name', 'Name'),
         ('receive_txt_message', 'Text message request'),
@@ -1715,7 +1762,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
-    e_mail = models.EmailField('E-mail address', blank=True, null=True, max_length=75)
+    e_mail = models.EmailField('Email address', blank=True, null=True, max_length=75)
     phone_day = PhoneNumberField('Home phone',blank=True, null=True)
     phone_cell = PhoneNumberField('Cell phone',blank=True, null=True)
     receive_txt_message = models.BooleanField(default=False)
@@ -1824,6 +1871,8 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
             last_name = self.last_name
         return first_name + ' ' + last_name + ' (' + username + ')'
 
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
 
 class K12SchoolManager(models.Manager):
     def other(self):
@@ -1836,7 +1885,7 @@ class K12School(models.Model):
     All the schools that we know about.
     """
     contact = AjaxForeignKey(ContactInfo, null=True,blank=True,
-        help_text='A set of contact information for this school. Type to search by name (Last, First), or <a href="/admin/users/contactinfo/add/">go edit a new one</a>.')
+        help_text=mark_safe('A set of contact information for this school. Type to search by name (Last, First), or <a href="/admin/users/contactinfo/add/">go edit a new one</a>.'))
     school_type = models.TextField(blank=True, null=True,
         help_text='i.e. Public, Private, Charter, Magnet, ...')
     grades      = models.TextField(blank=True, null=True,
@@ -2137,15 +2186,17 @@ class Record(models.Model):
         ("teacher_survey", "Completed teacher survey"),
         ("reg_confirmed", "Confirmed registration"),
         ("attended", "Attended program"),
+        ("checked_out", "Checked out of program"),
         ("conf_email","Was sent confirmation email"),
         ("teacher_quiz_done","Completed teacher quiz"),
         ("paid","Paid for program"),
         ("med","Submitted medical form"),
         ("med_bypass","Recieved medical bypass"),
         ("liab","Submitted liability form"),
-        ("onsite","Registered for program on-site"),
-        ("schedule_printed","Printed student schedule on-site"),
+        ("onsite","Registered for program onsite"),
+        ("schedule_printed","Printed student schedule onsite"),
         ("teacheracknowledgement","Did teacher acknowledgement"),
+        ("studentacknowledgement", "Did student acknowledgement"),
         ("lunch_selected","Selected a lunch block"),
         ("extra_form_done","Filled out Custom Form"),
         ("extra_costs_done","Filled out Student Extra Costs Form"),
@@ -2251,6 +2302,7 @@ class Permission(ExpirableModel):
         ("Student Deadlines", (
             ("Student", "Basic student access"),
             ("Student/All", "All student deadlines"),
+            ("Student/Acknowledgement", "Student acknowledgement"),
             ("Student/Applications", "Apply for classes"),
             ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Register for classes"),
@@ -2292,6 +2344,7 @@ class Permission(ExpirableModel):
             ("Teacher/Survey", "Teacher Survey"),
             ("Teacher/Profile", "Set profile info"),
             ("Teacher/Survey", "Access to survey"),
+            ("Teacher/Webapp", "Access to teacher onsite webapp"),
         )),
         ("Volunteer Deadlines", (
             ("Volunteer", "Basic volunteer access"),

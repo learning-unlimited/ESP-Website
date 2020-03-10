@@ -129,21 +129,21 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         # Fetch two consecutive vacancies in two different rooms
         rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
         self.assertTrue(rooms.count() >= 2, "Not enough timeslots to run this test.")
-        a1 = '\n'.join(['%s,%s' % (r.event.id, r.name) for r in rooms[0:2]])
+        a1 = '\n'.join(['%s,%s' % (r.event.id, r.identical_id()) for r in rooms[0:2]])
         rooms = self.rooms.exclude(name=rooms[0].name)[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
         self.assertTrue(rooms.count() >= 2, "Not enough timeslots to run this test.")
-        a2 = '\n'.join(['%s,%s' % (r.event.id, r.name) for r in rooms[0:2]])
+        a2 = '\n'.join(['%s,%s' % (r.event.id, r.identical_id()) for r in rooms[0:2]])
 
         # Schedule one class.
         ajax_url = '/manage/%s/ajax_schedule_class' % self.program.getUrlBase()
         s1, s2 = t.getTaughtSections(self.program)[:2]
         timeslots = self.program.getTimeSlots().order_by('start')
         self.client.post(ajax_url, {'action': 'deletereg', 'cls': s1.id})
-        self.client.post(ajax_url, {'action': 'assignreg', 'cls': s1.id, 'block_room_assignments': a1})
+        self.client.post(ajax_url, {'action': 'assignreg', 'cls': s1.id, 'block_room_assignments': a1, 'override': 'false'})
         self.assertTrue(set(s1.get_meeting_times()) == set(timeslots[0:2]), "Failed to assign meeting times.")
         # Try to schedule the other class.
         self.client.post(ajax_url, {'action': 'deletereg', 'cls': s2.id})
-        self.client.post(ajax_url, {'action': 'assignreg', 'cls': s2.id, 'block_room_assignments': a2})
+        self.client.post(ajax_url, {'action': 'assignreg', 'cls': s2.id, 'block_room_assignments': a2, 'override': 'false'})
         self.assertTrue(set(s1.get_meeting_times()) == set(timeslots[0:2]), "Existing meeting times clobbered.")
         self.assertTrue(set(s2.get_meeting_times()) == set(), "Failed to prevent teacher conflict.")
 

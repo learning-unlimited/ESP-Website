@@ -41,7 +41,10 @@ from esp.program.models import Program, ProgramModule, ClassFlag
 from esp.utils.widgets import DateTimeWidget
 from django import forms
 from django.core import validators
-from form_utils.forms import BetterModelForm
+from form_utils.forms import BetterModelForm, BetterForm
+from django.utils.safestring import mark_safe
+from esp.tagdict import all_global_tags, tag_categories
+from esp.tagdict.models import Tag
 
 
 def make_id_tuple(object_list):
@@ -50,16 +53,17 @@ def make_id_tuple(object_list):
 class ProgramCreationForm(BetterModelForm):
     """ Massive form for creating a new instance of a program. """
 
-    term = forms.SlugField(label='Term or year, in URL form (i.e. "2007_Fall")', widget=forms.TextInput(attrs={'size': '40'}))
-    term_friendly = forms.CharField(label='Term, in English (i.e. "Fall 07")', widget=forms.TextInput(attrs={'size': '40'}))
+    term = forms.SlugField(label=mark_safe('Term or year, in URL form (e.g. <tt>2007_Fall</tt>)'), widget=forms.TextInput(attrs={'size': '40'}))
+    term_friendly = forms.CharField(label=mark_safe('Term, in English (e.g. <tt>Fall 2007</tt>)'), widget=forms.TextInput(attrs={'size': '40'}))
 
     teacher_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     teacher_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
-    base_cost         = forms.IntegerField( label = 'Cost of Program Admission $', min_value = 0 )
-    sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None, help_text='The amount of the sibling discount. Leave blank to disable sibling discounts.')
-    program_type      = forms.CharField(label = "Program Type")
+    base_cost         = forms.IntegerField(label = 'Cost of Program Admission $', min_value = 0 )
+    sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None,
+                                                help_text="The amount of the sibling discount. Leave blank if you don't use sibling discounts.")
+    program_type      = forms.CharField(label = "Program Type", help_text='e.g. Splash or Cascade')
     program_modules   = forms.MultipleChoiceField(
                           choices=[],
                           label='Program Modules',
@@ -116,8 +120,8 @@ class ProgramCreationForm(BetterModelForm):
                      ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
                      ('About Program Creator',{'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
                      ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
-                     ('Program Internal details' ,{'fields':['program_type','program_modules','class_categories','flag_types']}),
-                     ('Registrations Date',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
+                     ('Program Internal Details' ,{'fields':['program_type','program_modules','class_categories','flag_types']}),
+                     ('Registration Dates',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
 
 
 ]                      # Here You can also add description for each fieldset.
@@ -359,3 +363,34 @@ class ClassFlagForm(forms.ModelForm):
     class Meta:
         model = ClassFlag
         fields = ['subject','flag_type','comment']
+
+class TagSettingsForm(BetterForm):
+    """ Form for changing global tags. """
+    def __init__(self, *args, **kwargs):
+        self.categories = set()
+        super(TagSettingsForm, self).__init__(*args, **kwargs)
+        for key in all_global_tags:
+            # generate field for each tag
+            tag_tuple = all_global_tags[key]
+            if tag_tuple[4]:
+                self.categories.add(tag_tuple[3])
+                self.fields[key] = getattr(forms, "BooleanField" if tag_tuple[0] else "CharField")(help_text=tag_tuple[1], initial = tag_tuple[2], required = False)
+                set_val = Tag.getBooleanTag(key) if tag_tuple[0] else Tag.getTag(key)
+                if set_val != None and set_val != self.fields[key].initial:
+                    self.fields[key].initial = set_val
+
+    def save(self):
+        for key in all_global_tags:
+            # Update tags if necessary
+            tag_tuple = all_global_tags[key]
+            if tag_tuple[4]:
+                set_val = self.cleaned_data[key]
+                if not set_val in ("", "None", None, tag_tuple[2]):
+                    # Set a [new] tag if a value was provided and the value is not the default
+                    Tag.setTag(key, value=set_val)
+                else:
+                    # Otherwise, delete the old tag, if there is one
+                    Tag.unSetTag(key)
+
+    class Meta:
+        fieldsets = [(cat, {'fields': [key for key in sorted(all_global_tags.keys()) if all_global_tags[key][3] == cat], 'legend': tag_categories[cat]}) for cat in sorted(tag_categories.keys())]

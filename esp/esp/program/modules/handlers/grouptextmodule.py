@@ -45,6 +45,7 @@ from esp.middleware import ESPError
 
 from django.conf import settings
 
+from twilio import TwilioRestException
 from twilio.rest import TwilioRestClient
 
 class GroupTextModule(ProgramModuleObj):
@@ -175,9 +176,12 @@ class GroupTextModule(ProgramModuleObj):
                     formattedNumber = '+1' + formattedNumber
 
                 send_log.append("Sending text message to "+formattedNumber)
-                client.sms.messages.create(body=body,
+                try:
+                    client.sms.messages.create(body=body,
                                            to=formattedNumber,
                                            from_=ourNumbers[numberIndex])
+                except TwilioRestException as error:
+                    send_log.append(error.msg)
                 numberIndex = (numberIndex + 1) % len(ourNumbers)
 
         return "\n".join(send_log)

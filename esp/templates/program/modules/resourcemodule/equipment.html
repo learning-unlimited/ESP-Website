@@ -1,31 +1,44 @@
 {% ifequal open_section "equipment" %}
-<!-- Not in a dspcont div. The section below always shows -->
-<h2>Step 4: Floating Resources</h2>
-<br />
+<button class="dsphead active">
+   <b>Step 4: Floating Resources</b> (click to expand/contract)
+</button>
+
+<div class="dspcont active">
 {% else %}
-<p class="dspsection">
-<a href="javascript:void(0)" class="dsphead" onclick="expand_disp(this)">
-   <span class="dspchar">+</span> <b>Step 4: Floating Resources</b> (click to expand/contract)
-</a>
+<button class="dsphead">
+   <b>Step 4: Floating Resources</b> (click to expand/contract)
+</button>
 
 <div class="dspcont">
 {% endifequal %}
 
-<p>The following are resources that ESP administrators or teachers can carry from room to room (LCD projectors, art supplies, etc).</p>
+<p>The following are resources that {{ settings.ORGANIZATION_SHORT_NAME }} administrators or teachers can carry from room to room (LCD projectors, art supplies, etc).</p>
 
 <div id="program_form">
+<form method="post" action="/manage/{{ prog.url }}/resources/equipment_import">
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
+    <tr><th colspan="2" class="small">Import floating resources from a previous program</th></tr>
+    {{ import_equipment_form }}
+    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Start" /></td></tr>
+</table>
+</form>
 <form method="post" action="/manage/{{ prog.url }}/resources/equipment">
 <input type="hidden" name="command" value="addedit" />
-<table align="center" cellpadding="0" cellspacing="0" width="450">
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
     <tr><th colspan="2" class="small">Add/modify a floating resource</th></tr>
     {{ equipment_form }}
     <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Update Resource" /></td></tr>
-    
-    <tr><th colspan="2">Floating Resources for {{ prog.niceName }}</th></tr>
-    <tr><td colspan="2"><table cellpadding="0" cellspacing="0" width="100%">
+</table>
+</form>
+
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
+    <tr><th colspan="5">Floating Resources for {{ prog.niceName }}</th></tr>
+    <tr><td colspan="5"><table cellpadding="0" cellspacing="0" width="100%">
     <tr>
         <td class="underline"><b>Name</b></td>
+        <td class="underline"><b>Number</b></td>
         <td class="underline"><b>Type</b></td>
+        <td class="underline"><b>Choice</b></td>
         <td class="underline"><b>Available Times</b></td>
     </tr>
     {% for r in prog.getFloatingResources %}
@@ -35,20 +48,13 @@
                 <a href="/manage/{{ prog.url }}/resources/equipment?op=edit&id={{ r.id }}">[Edit]</a>
                 <a href="/manage/{{ prog.url }}/resources/equipment?op=delete&id={{ r.id }}">[Delete]</a>
             </td>
+            <td class="underline">{{ r.num_items }}</td>
             <td class="underline">{{ r.res_type.name }}{% if r.res_type.hidden %} (Hidden){% endif %}</td>
+            <td class="underline">{{ r.attribute_value }}</td>
             <td class="underline">{% for t in r.timegroup %}{{ t }}<br />{% endfor %}</td>
         </tr>
     {% endfor %}
     </table></td></tr>
 </table>
-</form>
 </div>
-
-{% ifequal open_section "equipment" %}
-<!-- Not in a dspcont div. -->
-{% else %}
 </div>
-</p>
-{% endifequal %}
-
-<br />

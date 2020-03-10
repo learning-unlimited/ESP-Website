@@ -37,9 +37,12 @@ import codecs
 from esp.program.models import VolunteerRequest
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.forms.volunteer import VolunteerRequestForm, VolunteerImportForm
+from esp.program.modules.handlers.volunteersignup import VolunteerSignup
+from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 from esp.cal.models import Event
-from django.http import HttpResponse
+from esp.middleware import ESPError
+from django.http import HttpResponse, HttpResponseRedirect
 import csv
 
 class VolunteerManage(ProgramModuleObj):
@@ -72,11 +75,11 @@ class VolunteerManage(ProgramModuleObj):
             response = HttpResponse(content_type="text/csv")
             requests = self.program.getVolunteerRequests()
             write_csv = csv.writer(response)
-            write_csv.writerow(("Activity","Time","Name","Phone Number","E-mail Address"))
+            write_csv.writerow(("Activity","Time","Name","Phone Number","Email Address","Comments"))
             for request in requests:
                 for offer in request.get_offers():
                     write_csv.writerow([codecs.encode(entry, 'utf-8') for entry in
-                        (request.timeslot.description, request.timeslot.pretty_time(), offer.name, offer.phone, offer.email)])
+                        (request.timeslot.description, request.timeslot.pretty_time(), offer.name, offer.phone, offer.email, offer.comments)])
             response['Content-Disposition'] = 'attachment; filename=volunteers.csv'
             return response
 
@@ -104,7 +107,7 @@ class VolunteerManage(ProgramModuleObj):
 
         context['shift_form'] = form
         if 'import_request_form' not in context:
-            context['import_request_form'] = VolunteerImportForm()
+            context['import_request_form'] = VolunteerImportForm(cur_prog = prog)
         context['requests'] = self.program.getVolunteerRequests()
         return render_to_response('program/modules/volunteermanage/main.html', request, context)
 
@@ -112,7 +115,7 @@ class VolunteerManage(ProgramModuleObj):
         context = {}
         response = None
 
-        import_form = VolunteerImportForm(request.POST)
+        import_form = VolunteerImportForm(request.POST, cur_prog = prog)
         if not import_form.is_valid():
             context['import_request_form'] = import_form
         else:
@@ -150,6 +153,34 @@ class VolunteerManage(ProgramModuleObj):
                     new_request.save()
 
         return context
+
+    @aux_call
+    @needs_admin
+    def check_volunteer(self, request, tl, one, two, module, extra, prog):
+        """
+        View and edit volunteer signups of the specified user.
+        """
+        target_id = None
+
+        if 'user' in request.GET:
+            target_id = request.GET['user']
+        elif 'user' in request.POST:
+            target_id = request.POST['user']
+        else:
+            context = {}
+            return HttpResponseRedirect( '/manage/%s/%s/volunteering' % (one, two) )
+
+        try:
+            volunteer = ESPUser.objects.get(id=target_id)
+        except:
+            try:
+                volunteer = ESPUser.objects.get(username=target_id)
+            except:
+                raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
+
+        vs = VolunteerSignup
+        return vs.signupForm(request, tl, one, two, prog, volunteer, isAdmin=True)
+
 
     class Meta:
         proxy = True

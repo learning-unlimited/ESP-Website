@@ -47,11 +47,10 @@ from esp.users.models    import ESPUser, PersistentQueryFilter, Record, ContactI
 from esp.cal.models import Event
 from django              import forms
 from django.http import HttpResponse, HttpResponseRedirect
-from django.template.loader import render_to_string, select_template
+from django.template.loader import render_to_string, get_template
 from django.db.models.aggregates import Min
 from django.db.models.query   import Q
 from datetime import datetime, timedelta
-from twilio.rest import TwilioRestClient
 
 import collections
 import json
@@ -61,7 +60,7 @@ class TeacherCheckinModule(ProgramModuleObj):
     def module_properties(cls):
         return {
             "admin_title": "Teacher Check-In",
-            "link_title": "Check-in teachers",
+            "link_title": "Check in teachers",
             "module_type": "onsite",
             "seq": 10
             }
@@ -158,7 +157,7 @@ class TeacherCheckinModule(ProgramModuleObj):
     @needs_onsite
     def ajaxteachertext(self, request, tl, one, two, module, extra, prog):
         """
-        POST to this view to text a teacher a reminder to check-in.
+        POST to this view to text a teacher a reminder to check in.
 
         POST data:
           'username':       The teacher's username.
@@ -168,9 +167,14 @@ class TeacherCheckinModule(ProgramModuleObj):
             if 'username' in request.POST and 'section' in request.POST:
                 sec = ClassSection.objects.get(id=request.POST['section'])
                 teacher = PersistentQueryFilter.create_from_Q(ESPUser, Q(username=request.POST['username']))
-                message = "Don't forget to check-in for your " + one + " class that is scheduled for " + sec.friendly_times(include_date = True)[0] + "!"
-                GroupTextModule.sendMessages(teacher, message, True)
-                return {'message': "Texted teacher"}
+                template = get_template(self.baseDir() + 'teachertext.txt')
+                context = {'prog': prog, 'one': one, 'two': two, 'sec': sec, 'teacher': teacher}
+                message = template.render(context)
+                log = GroupTextModule.sendMessages(teacher, message, True)
+                if "error" in log:
+                    return {'message': "Error texting teacher"}
+                else:
+                    return {'message': "Texted teacher"}
             else:
                 return {'message': "Username and/or section not provided"}
         else:
@@ -191,13 +195,11 @@ class TeacherCheckinModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'classdetail.html', request, context)
 
     @staticmethod
-    def get_phones(users):
+    def get_phones(users, default = '(missing contact info)'):
         """
         Given a list or QuerySet of users, create a dictionary that maps user
         ids to phone numbers for displaying.
         """
-
-        default = '(missing contact info)'
 
         # This is an optimized version of doing this for each user:
 
@@ -218,7 +220,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         return collections.defaultdict(lambda _: default, phone_entries)
 
     def getMissingTeachers(self, prog, date=None, starttime=None, when=None,
-                           show_flags=True):
+                           show_flags=True, default_phone = '(missing contact info)'):
         """Return a list of class sections with missing teachers as of 'when'.
 
         Parameters:
@@ -243,6 +245,8 @@ class TeacherCheckinModule(ProgramModuleObj):
           show_flags (bool, optional):  If True, prefetch class flags
                                         information for the list of class
                                         sections.
+          default_phone (string, opt):  A string that should be used if there
+                                        is no valid phone number for a teacher.
 
         NOTE: For multi-week programs, classes are only scheduled once on the
         website, even though they meet multiple times and teachers need to be
@@ -307,10 +311,10 @@ class TeacherCheckinModule(ProgramModuleObj):
 
         # To save multiple calls to getLastProfile, precompute the teacher
         # phones.
-        teacher_phones = self.get_phones(teachers)
+        teacher_phones = self.get_phones(teachers, default_phone)
         arrived = dict()
         for teacher in arrived_teachers:
-            teacher.phone = teacher_phones[teacher.id]
+            teacher.phone = teacher_phones.get(teacher.id, default_phone)
             arrived[teacher.id] = teacher
 
         sections_by_class = {}
@@ -328,7 +332,7 @@ class TeacherCheckinModule(ProgramModuleObj):
                     # make a new list and then modify that.
                     section.teachers_list = list(section.teachers)
                     for teacher in section.teachers_list:
-                        teacher.phone = teacher_phones[teacher.id]
+                        teacher.phone = teacher_phones.get(teacher.id, default_phone)
                     sections_by_class[section.parent_class_id] = section
 
         sections = [
@@ -356,8 +360,11 @@ class TeacherCheckinModule(ProgramModuleObj):
           'when' (optional):  See documentation for getMissingTeachers().
                               getMissingTeachers(). Should be given in the
                               format "%m/%d/%Y %H:%M".
+          'default_phone' (optional): A string that should be used if there
+                              is no valid phone number for a teacher.
         """
         starttime = date = next = previous = None
+        default_phone = request.GET.get('default_phone', '(missing contact info)')
         if 'start' in request.GET:
             starttime = Event.objects.get(id=request.GET['start'])
             date = starttime.start.date()
@@ -376,6 +383,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             if i < len(dates) - 1:
                 next = dates[i + 1].strftime('%m/%d/%Y')
         context = {}
+        context['default_phone'] = default_phone
         context['text_configured'] = GroupTextModule.is_configured()
         form = TeacherCheckinForm(request.GET)
         if form.is_valid():
@@ -388,7 +396,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         show_flags = self.program.program_modules.filter(handler='ClassFlagModule').exists()
         context['date'] = date
         context['sections'], context['arrived'] = self.getMissingTeachers(
-            prog, date, starttime, when, show_flags)
+            prog, date, starttime, when, show_flags, default_phone)
         if show_flags:
             context['show_flags'] = True
             context['flag_types'] = ClassFlagType.get_flag_types(self.program)

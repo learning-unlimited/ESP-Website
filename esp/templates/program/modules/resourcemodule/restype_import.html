@@ -1,0 +1,88 @@
+{% extends "main.html" %}
+
+{% block title %}Manage Resources for {{ prog.niceName }}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% block xtrajs %}
+<script>
+function toggle(source) {
+  $j('input[name=to_import]').prop('checked', source.checked);
+}
+</script>
+{% endblock %}
+
+{% block content %}
+
+<h1>Manage Resources for {{ prog.niceName }}</h1>
+
+{% if new_restypes %}
+    <h2>Confirm Resource Type Import</h2>
+
+    {% load render_qsd %}
+    {% inline_program_qsd_block program "restype_import_instructions" %}
+    <p>
+    You have chosen to import the resource types from {{ past_program.niceName }} to {{ prog.niceName }}.  Please review the table below carefully before clicking "Submit" to complete the import.  In particular, check that each resource type has the appropriate priority, hidden-ness, and choices.  If any of this data is not correct, please <a href="/manage/{{ prog.getUrlBase }}/resources">GO BACK</a>; add the resource types manually or contact <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}">technical support</a> for assistance in automating the process.
+    </p>
+    {% end_inline_program_qsd_block %}
+
+    <div id="program_form">
+    <form method="post" action="{{ request.path }}">
+    <input type="hidden" name="import_confirm" value="yes" />
+    <input type="hidden" name="program" value="{{ past_program.id }}" />
+    <table align="center" cellpadding="0" cellspacing="0" width="550">
+        <tr><th colspan="6">Proposed resource types for {{ prog.niceName }}</th></tr>
+        <tr><td colspan="6"><table cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+            <td width="20%" class="underline"><b>Type</b></td>
+            <td width="32.5%" class="underline"><b>Description</b></td>
+            <td width="10%" class="underline"><b>Priority</b></td>
+            <td width="5%" class="underline"><b>Only<br/>One</b></td>
+            <td width="32.5%" class="underline"><b>Choices</b></td>
+            <td class="underline"><b>Import? <input type="checkbox" onclick=toggle(this) checked></b></td>
+        </tr>
+        {% for r in new_restypes %}
+        {% ifchanged r.hidden %}{% if r.hidden %}
+        <tr><th colspan="6">Resource Types Hidden During Teacher Registration</th></tr>
+        {% endif %}{% endifchanged %}
+        <tr>
+            <td class="underline">
+                {{ r.name }}</div>{% if r.is_global %} (global){% endif %}
+            </td>
+            <td class="underline">{{ r.description }}</td>
+            <td class="underline">{{ r.priority_default }}</td>
+            <td class="underline">{% if r.only_one %}&#10003;{% endif %}</td>
+            <td class="underline">
+            {% for choice in r.choices %}
+                {{ forloop.counter }}. {{ choice }}{% if not forloop.last %}<br>{% endif %}
+            {% endfor %}
+            </td>
+            <td class="underline"><input type="checkbox" name="to_import" value="{{r.old_id}}" checked></td>
+        </tr>
+        {% endfor %}
+        </table></td></tr>
+        <tr><td colspan="6" align="center"><input class="fancybutton" type="submit" value="Complete Import" /></td></tr>
+    </table>
+    </form>
+    </div>
+
+{% else %}
+
+    <h2>Resource Type Import Not Available</h2>
+
+    {% load render_qsd %}
+    {% inline_program_qsd_block program "restype_import_empty" %}
+    <p>
+    You have chosen to import the resource types from {{ past_program.niceName }}, but this program does not have any resource types to import. Please <a href="/manage/{{ prog.getUrlBase }}/resources">go back</a> and add resource types manually or select a different program from which to import resource types.
+    </p>
+    {% end_inline_program_qsd_block %}
+
+{% endif %}
+
+<br>
+<a class="btn btn-primary" href="/manage/{{ prog.getUrlBase }}/resources">Return to the resource management page</a>
+
+{% endblock %}
