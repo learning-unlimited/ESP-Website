@@ -162,7 +162,7 @@ body.login {
 	padding: 1em 0 0 0;
 	text-align: center;
 }
-
-a:link, a:visited {
+div.breadcrumbs a:link, div.breadcrumbs a:visited {
 	color: white;
 }
+
