@@ -31,20 +31,15 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, CoreModule, main_call, aux_call, _checkDeadline_helper, meets_cap
-from esp.program.models  import Program, ClassSubject
+from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, CoreModule, main_call, aux_call, meets_cap
+from esp.program.models  import ClassSubject
 from esp.resources.models import Resource
 from esp.utils.web import render_to_response
-from esp.users.models    import ESPUser, Permission, Record
+from esp.users.models    import Record
 from esp.cal.models import Event
 from esp.middleware   import ESPError
 from esp.tagdict.models  import Tag
-from datetime import datetime
-from django.db import models
-from django.contrib import admin
 from django.http import HttpResponseRedirect
-from django.template import Template
-from django.template.loader import render_to_string, get_template, select_template
 
 from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
 
