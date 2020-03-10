@@ -169,7 +169,10 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @meets_deadline('/Webapp')
     def onsiteclearslot(self, request, tl, one, two, module, extra, prog):
         result = StudentClassRegModule.clearslot_logic(request, tl, one, two, module, extra, prog)
-        return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+        if isinstance(result, basestring):
+            raise ESPError(result, log=False)
+        else:
+            return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
 
     def isStep(self):
         return Tag.getBooleanTag('webapp_isstep', default=False)
