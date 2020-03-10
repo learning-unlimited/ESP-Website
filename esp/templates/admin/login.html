@@ -1,4 +1,5 @@
 {% extends "admin/base_site.html" %}
+
 {% load i18n admin_static %}
 
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" type="text/css" href="{% static "admin/css/login.css" %}" />{% endblock %}
@@ -10,7 +11,8 @@
 {% block nav-global %}{% endblock %}
 
 {% block content_title %}
-<div id="login-header">Admin Login Page </div>
+<div id="login-header">Admin Login <br></div>
+<div id="make-a-space"></div>
 {% endblock %}
 
 {% block breadcrumbs %}{% endblock %}
