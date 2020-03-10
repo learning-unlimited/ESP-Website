@@ -1265,7 +1265,7 @@ class ClassSection(models.Model):
                     rt, created = RegistrationType.objects.get_or_create(name=onsite_verb, category='student')
                     sr = StudentRegistration(user=user, section=self, relationship=rt)
                     sr.save()
-                
+
             else:
                 pass
 
