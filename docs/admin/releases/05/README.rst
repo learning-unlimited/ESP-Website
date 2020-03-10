@@ -25,7 +25,7 @@ Group texting with Twilio
 
 The new Twilio group texting module enables mass texting messages to users who
 have opted to receive text messages, under the same filtering constraints
-available in the e-mail communications panel. Currently the only supported
+available in the email communications panel. Currently the only supported
 back-end is Twilio, so a Twilio account is needed and Twilio configuration
 options need to be set.
 

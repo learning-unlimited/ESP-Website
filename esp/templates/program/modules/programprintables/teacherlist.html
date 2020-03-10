@@ -43,6 +43,7 @@ table.sortable thead {
 <tr>
  <th />
  <th>Name</th>
+ <th>Email</th>
  <th>Home Phone #</th>
  <th>Cell Phone #</th>
  <th>First Class</th>
@@ -57,6 +58,7 @@ table.sortable thead {
 <tr>
  <td>{{forloop.counter}}</td>
  <td>{{ scheditem.user.last_name }}, {{ scheditem.user.first_name}}</td>
+ <td>{{ scheditem.user.email }}</td>
  <td>{{ scheditem.phone_day }}</td>
  <td>{{ scheditem.phone_cell }}</td>
  <td>{{ scheditem.cls.title }}</td>

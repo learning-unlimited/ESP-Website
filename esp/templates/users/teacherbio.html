@@ -21,11 +21,14 @@ img.biophoto { border: 1px solid black; }
 {% endblock %}
 
 {% block content %}
-<h1 style="font-size: 120%;">ESP Biography</h1>
+<h1 style="font-size: 120%;">{{ settings.ORGANIZATION_SHORT_NAME }} Biography</h1>
 {% if biouser.id == request.user.id or request.user.isAdministrator %}
-<a href="{{ bio.edit_url }}" title="Edit this bio!">
-  Edit this biography!
-</a>
+<a class="btn btn-primary" href="{{ bio.edit_url }}">Edit this biography</a>
+{% endif %}
+{% if request.user.isAdministrator %}
+    <a class="btn btn-primary" href="/manage/userview?username={{biouser.username}}">Go to teacher profile</a>
+    <a class="btn btn-primary" href="/myesp/morph?morph_user={{biouser.id}}">Morph into teacher</a>
+    <a class="btn btn-primary" href="/admin/users/espuser/{{biouser.id}}/">View on admin panel</a>
 {% endif %}
 <br /><br />
 <h2>{{biouser.name|upper}}, {{bio.slugbio}}</h2>
@@ -55,10 +58,8 @@ img.biophoto { border: 1px solid black; }
   </p>
   <br />
   <br />
-  <h2>Past Classes</h2> &nbsp; 
-  <small>(Look at the <a href="/archives/classes/" title="Past ESP Classes">class archive</a> for more.)</small>
-  
-  <br />
+  <h2>Past Classes</h2> &nbsp;
+  <span>(Clicking a class title will bring you to the course's section of the corresponding course catalog)</span>
   <br />
   <br />
   {% if classes|length_is:0 %}{% if recent_classes|length_is:0 %}
@@ -68,7 +69,7 @@ img.biophoto { border: 1px solid black; }
   {# Archive Classes get auto-HTML-ized quite nicely; but we have to render regular classes on our own #}
 
   {% for cls in recent_classes %}
-  <u>{{ cls.title }}</u> in {{ cls.parent_program.niceName }} ({{ cls.parent_program.date_range }})
+  <a href="{{cls.parent_program.get_learn_url}}catalog#class_{{cls.id}}"  style="color: #000000">{{cls.emailcode}}: {{ cls.title }}</a> in {{ cls.parent_program.niceName }} ({{ cls.parent_program.date_range }})
 <br />
 <div style="font-size: 80%; font-style: italic; margin: 0 0 0 20px;">
 {{ cls.class_info }}
@@ -80,9 +81,6 @@ img.biophoto { border: 1px solid black; }
   {% autoescape off %}
   {{ classes|join:"<br /><br />" }}
   {% endautoescape %}
-
-  <br />  <br />  <br />  <br />
-
   </td>
   
 </tr>

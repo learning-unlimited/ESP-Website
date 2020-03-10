@@ -37,6 +37,7 @@ Learning Unlimited, Inc.
 
 import datetime
 import xlwt
+import re
 from cStringIO import StringIO
 from django.db import models
 from django.db.models import Q
@@ -47,6 +48,7 @@ from esp.utils.web import render_to_response
 from esp.utils.latex import render_to_latex
 from esp.program.modules.base import needs_admin
 from esp.middleware import ESPError
+from esp.tagdict.models import Tag
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.core.servers.basehttp import FileWrapper
 from django.contrib.auth.decorators import login_required
@@ -54,7 +56,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 
 @login_required
-def survey_view(request, tl, program, instance):
+def survey_view(request, tl, program, instance, template = 'survey/survey.html', context = {}):
 
     try:
         prog = Program.by_prog_inst(program, instance)
@@ -63,8 +65,16 @@ def survey_view(request, tl, program, instance):
 
     user = request.user
 
-    if (tl == 'teach' and not user.isTeacher()) or (tl == 'learn' and not user.isStudent()):
-        raise ESPError('You need to be a program participant (i.e. student or teacher, not parent or educator) to participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
+    if tl in ['teach', 'learn']:
+        filters = [x.strip() for x in Tag.getProgramTag('survey_' + {'learn': "student", 'teach': "teacher"}[tl] + '_filter', prog, default = {'learn': "classreg", 'teach': "class_submitted"}[tl]).split(",") if x.strip()]
+        if len(filters) > 0:
+            if tl == 'learn':
+                users = prog.students()
+            else:
+                users = prog.teachers()
+            if not user.isAdmin() and user not in {item for sublist in [users[filter] for filter in filters] for item in sublist}:
+                descs = prog.getListDescriptions()
+                raise ESPError('Only ' + " or ".join([descs[filter].lower() for filter in filters]) + ' may participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
 
     if 'done' in request.GET:
         return render_to_response('survey/completed_survey.html', request, {'prog': prog})
@@ -125,7 +135,7 @@ def survey_view(request, tl, program, instance):
             classes = user.getTaughtClasses(prog)
             sections = user.getTaughtSections(prog).order_by('parent_class__title')
 
-        context = {
+        context.update({
             'survey': survey,
             'questions': questions,
             'perclass_questions': perclass_questions,
@@ -133,9 +143,9 @@ def survey_view(request, tl, program, instance):
             'classes': classes,
             'sections': sections,
             'timeslots': timeslots,
-        }
+        })
 
-        return render_to_response('survey/survey.html', request, context)
+        return render_to_response(template, request, context)
 
 def get_survey_info(request, tl, program, instance):
     try:
@@ -175,7 +185,7 @@ def get_survey_info(request, tl, program, instance):
     return (user, prog, surveys)
 
 
-def display_survey(user, prog, surveys, request, tl, format):
+def display_survey(user, prog, surveys, request, tl, format, template = 'survey/review.html', context = {}):
     """ Wrapper doing the necessary work for the survey output. """
     from esp.program.models import ClassSubject, ClassSection
 
@@ -213,13 +223,13 @@ def display_survey(user, prog, surveys, request, tl, format):
         section_ct=ContentType.objects.get(app_label="program",model="classsection")
         perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(Q(content_type=section_ct,object_id=x.id) | Q(content_type=subject_ct,object_id=x.parent_class.id)) } for y in perclass_questions ] } for x in classes ]
 
-    context = {'user': user, 'surveys': surveys, 'program': prog, 'perclass_data': perclass_data, 'tl': tl}
+    context.update({'user': user, 'surveys': surveys, 'program': prog, 'perclass_data': perclass_data, 'tl': tl})
 
     #   Choose+use appropriate output format
     if format == 'html':
-        return render_to_response('survey/review.html', request, context)
+        return render_to_response(template, request, context)
     elif format == 'tex':
-        return render_to_latex('survey/review.tex', context, 'pdf')
+        return render_to_latex(template, context, 'pdf')
 
 def delist(x):
     if isinstance(x,list):
@@ -227,15 +237,34 @@ def delist(x):
     else:
         return x
 
+def _encode_ascii(cell_label):
+    if isinstance(cell_label, basestring):
+        return str(cell_label.encode('ascii', 'xmlcharrefreplace'))
+    else:
+        return cell_label
+
+def _worksheet_write(worksheet, r, c, label="", style=None):
+    if style is None:
+        worksheet.write(r, c, _encode_ascii(label))
+    else:
+        worksheet.write(r, c, _encode_ascii(label), style)
+
 def dump_survey_xlwt(user, prog, surveys, request, tl):
     from esp.program.models import ClassSubject, ClassSection
     if tl == 'manage' and not 'teacher_id' in request.GET and not 'classsection_id' in request.GET and not 'classsubject_id' in request.GET:
         # Styles yoinked from <http://www.djangosnippets.org/snippets/1151/>
         datetime_style = xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss')
         wb=xlwt.Workbook()
+        survey_index = 0
         for s in surveys:
+            # Certain characters are forbidden in sheet names
+            # See <https://github.com/python-excel/xlwt/blob/8f0afdc9b322129600d81e754cabd2944e7064f2/xlwt/Utils.py#L154>
+            s.name = re.sub(r"['\[\]:\\?/*\x00]", "", s.name.encode('ascii', 'ignore'))
+            s.category = re.sub(r"['\[\]:\\?/*\x00]", "", s.category.encode('ascii', 'ignore'))
+            # The length of sheet names is limited to 31 characters
+            survey_index += 1
             if len(s.name)>31:
-                ws=wb.add_sheet(s.name[:28] + "...")
+                ws=wb.add_sheet("%d %s... (%s)" % (survey_index, s.name[:17], s.category[:5]))
             else:
                 ws=wb.add_sheet(s.name)
             ws.write(0,0,'Response ID')
@@ -246,20 +275,21 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
             q_dict={}
             for q in qs:
                 q_dict[q.id]=i
-                ws.write(0,i,q.name)
+                _worksheet_write(ws,0,i,q.name)
                 i+=1
             i=1
             sr_dict={}
             for sr in srs:
                 sr_dict[sr.id]=i
-                ws.write(i,0,sr.id)
-                ws.write(i,1,sr.time_filled,datetime_style)
+                _worksheet_write(ws,i,0,sr.id)
+                _worksheet_write(ws,i,1,sr.time_filled,datetime_style)
                 i+=1
             for a in Answer.objects.filter(question__in=qs).order_by('id'):
-                ws.write(sr_dict[a.survey_response_id],q_dict[a.question_id],delist(a.answer))
+                _worksheet_write(ws,sr_dict[a.survey_response_id],q_dict[a.question_id],delist(a.answer))
             #PER-CLASS QUESTIONS
+            # The length of sheet names is limited to 31 characters
             if len(s.name)>19:
-                ws_perclass=wb.add_sheet(s.name[:16] + "... (per-class)")
+                ws_perclass=wb.add_sheet("%d %s... (%s, per-class)" % (survey_index, s.name[:5], s.category[:5]))
             else:
                 ws_perclass=wb.add_sheet(s.name + " (per-class)")
             ws_perclass.write(0,0,"Response ID")
@@ -271,7 +301,7 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
             q_dict_perclass={}
             for q in qs_perclass:
                 q_dict_perclass[q.id]=i
-                ws_perclass.write(0,i,q.name)
+                _worksheet_write(ws_perclass,0,i,q.name)
                 i+=1
             i=1
             src_dict_perclass={}
@@ -287,17 +317,17 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
                 else:
                     row=i
                     src_dict_perclass[key]=i
-                    ws_perclass.write(i,0,sr.id)
-                    ws_perclass.write(i,1,sr.time_filled,datetime_style)
+                    _worksheet_write(ws_perclass,i,0,sr.id)
+                    _worksheet_write(ws_perclass,i,1,sr.time_filled,datetime_style)
                     if cs:
-                        ws_perclass.write(i,2,cs.emailcode())
-                        ws_perclass.write(i,3,cs.title())
+                        _worksheet_write(ws_perclass,i,2,cs.emailcode())
+                        _worksheet_write(ws_perclass,i,3,cs.title())
                     i+=1
-                ws_perclass.write(row,q_dict_perclass[a.question_id],delist(a.answer))
+                _worksheet_write(ws_perclass,row,q_dict_perclass[a.question_id],delist(a.answer))
         out=StringIO()
         wb.save(out)
         response=HttpResponse(out.getvalue(),content_type='application/vnd.ms-excel')
-        response['Content-Disposition']='attachment; filename=dump.xls'
+        response['Content-Disposition']='attachment; filename=dump-%s.xls' % (prog.name)
         return response
     else:
         raise ESPError("You need to be an administrator to dump survey results.", log=False)
@@ -310,21 +340,21 @@ def survey_dump(request, tl, program, instance):
     return dump_survey_xlwt(user, prog, surveys, request, tl)
 
 @login_required
-def survey_review(request, tl, program, instance):
+def survey_review(request, tl, program, instance, template = 'survey/review.html', context = {}):
     """ A view of all the survey results pertaining to a particular user in the given program. """
 
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
-    return display_survey(user, prog, surveys, request, tl, 'html')
+    return display_survey(user, prog, surveys, request, tl, 'html', template, context)
 
 @login_required
-def survey_graphical(request, tl, program, instance):
+def survey_graphical(request, tl, program, instance, template = 'survey/review.tex', context = {}):
     """ A PDF view of the survey results with histograms. """
 
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
-    return display_survey(user, prog, surveys, request, tl,'tex')
+    return display_survey(user, prog, surveys, request, tl, 'tex', template, context)
 
 @login_required
-def survey_review_single(request, tl, program, instance):
+def survey_review_single(request, tl, program, instance, template = 'survey/review_single.html', context = {}):
     """ View a single survey response. """
     try:
         prog = Program.by_prog_inst(program, instance)
@@ -358,9 +388,9 @@ def survey_review_single(request, tl, program, instance):
     else:
         raise ESPError('You need to be a teacher or administrator of this program to review survey responses.', log=False)
 
-    context = {'user': user, 'program': prog, 'response': survey_response, 'answers': answers, 'classes_only': classes_only, 'other_responses': other_responses }
+    context.update({'user': user, 'program': prog, 'response': survey_response, 'answers': answers, 'classes_only': classes_only, 'other_responses': other_responses })
 
-    return render_to_response('survey/review_single.html', request, context)
+    return render_to_response(template, request, context)
 
 # To be replaced with something more useful, eventually.
 @login_required
@@ -420,10 +450,10 @@ def top_classes(request, tl, program, instance):
 
         categories = prog.class_categories.all().order_by('category')
 
-        subject_ct=ContentType.objects.get(app_label="program",model="classsubject")
+        section_ct=ContentType.objects.get(app_label="program",model="classsection")
 
         perclass_data = []
-        initclass_data = [ { 'class': x, 'ratings': [ x.answer for x in Answer.objects.filter(object_id=x.id, content_type=subject_ct, question=rating_question) ] } for x in classes ]
+        initclass_data = [ { 'class': cls, 'ratings': [ float(x.answer) for sec in cls.get_sections() for x in Answer.objects.filter(object_id=sec.id, content_type=section_ct, question=rating_question)] } for cls in classes ]
         for c in initclass_data:
             c['numratings'] = len(c['ratings'])
             if c['numratings'] < num_cut:
@@ -432,8 +462,8 @@ def top_classes(request, tl, program, instance):
             if c['avg'] < rating_cut:
                 continue
             teachers = list(c['class'].get_teachers())
-            c['teacher'] = teachers[0]
-            c['numteachers'] = len(teachers)
+            c['teacher'] = teachers[0] if len(teachers) > 0 else None
+            c['numteachers'] = max(len(teachers), 1) #in case there are no teachers
             if c['numteachers'] > 1:
                 c['coteachers'] = teachers[1:]
             del c['ratings']

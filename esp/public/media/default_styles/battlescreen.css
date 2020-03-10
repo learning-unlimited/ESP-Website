@@ -33,7 +33,7 @@ font-size: 12px;
 color: #006600;
 }
 
-#battlescreen a.abutton, #battlescreen input.button {
+#battlescreen a.abutton, #battlescreen input.button, #battlescreen button.button {
    color: #000000;
    font-family:Arial,helvetica,sans-serif;
    font-size:12px;
@@ -51,7 +51,7 @@ color: #006600;
    border-radius: 0;
 }
 
-#battlescreen a.abutton:hover, #battlescreen input.button:hover
+#battlescreen a.abutton:hover, #battlescreen input.button:hover, #battlescreen button.button:hover
 {
    color:#0000cc;
    border: #000000 1px solid;
@@ -207,24 +207,6 @@ color: #006600;
 
 .clsmiddle {
     vertical-align: middle;
-}
-
-.cancelbutton {
-    color: #000000;
-    font-family: Arial,helvetica,sans-serif;
-    font-size: 11px;
-    font-weight: bold;
-    border: #cccccc 1px solid;
-    background-color: #cccccc;
-    cursor: default;
-    padding: 2px 5px 2px 5px;
-    text-decoration: none;
-    margin: 0px;
-    line-height: normal;
-    cursor: pointer;
-    box-shadow: none;
-    transition: border linear 0.2s, box-shadow linear 0.2s;
-    border-radius: 0;
 }
 
 .teachbutton {

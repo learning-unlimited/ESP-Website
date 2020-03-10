@@ -8,7 +8,7 @@
         <div style="padding-left:2em; text-indent:-2em;">
         <input type="checkbox" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}"
                id="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}_{{ choice|slugify }}" value="{{ choice }}" />
-        <label for="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}_{{ choice|slugify }}">{{ choice }}</label>
+        <label for="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}_{{ choice|slugify }}" class="no_float">{{ choice }}</label>
         </div>
     {% endfor %}
     </td>

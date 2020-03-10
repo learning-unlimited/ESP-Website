@@ -522,6 +522,11 @@ class OnSiteClassList(ProgramModuleObj):
         return render_to_response(self.baseDir()+'allclasslist.html', request,
             {'classes': classes, 'prog': self.program, 'one': one, 'two': two, 'categories': categories.values(), 'printers': printers})
 
+    def makeLink(self):
+        calls = [("classchange_grid","Grid-based Class Changes Interface"), ("classList","Scrolling Class List"), (self.get_main_view(),self.module.link_title)]
+        strings = [u'<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
+                ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1], call[1]) for call in calls]
+        return "</li><li>".join(strings)
 
 
 

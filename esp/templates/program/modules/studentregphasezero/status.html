@@ -1,5 +1,6 @@
 {% extends "main.html" %}
 {% load render_qsd %}
+{% load users %}
 
 {% block title %} Manage Phase Zero for {{program.niceName}} {% endblock %}
 
@@ -74,7 +75,7 @@ Number of students that have entered the student lottery:
 </br>
 <ul id="applicants">
 {% for entrant in entrants %}
-<li>{{entrant}} - {{entrant.getGrade}}</li>
+<li>{{entrant}} - {{entrant|getGradeForProg:program.id}}</li>
 {% endfor %}
 </ul>
 </div>
@@ -92,7 +93,7 @@ Number of students that have entered the student lottery:
 <form action="#" method="POST">
 <!--<b>Specify Role Name for Winners: </b>--><input type="hidden" name="rolename" value="{{role}}"></br></br>
 <input type="checkbox" name="confirm">  I confirm that I would like to run the student lottery.</br></br>
-<input type="submit" value="Run Student Lottery" />
+<input type="submit" style="float:none" value="Run Student Lottery" />
 </form>
 </center>
 

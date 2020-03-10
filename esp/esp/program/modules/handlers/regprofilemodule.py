@@ -95,7 +95,7 @@ class RegProfileModule(ProgramModuleObj):
         else:
             role = user_roles[0]
 
-        #   Reset e-mail address for program registrations.
+        #   Reset email address for program registrations.
         if prog is None:
             regProf = RegistrationProfile.getLastProfile(request.user)
         else:
@@ -114,7 +114,7 @@ class RegProfileModule(ProgramModuleObj):
         return response
 
     def isCompleted(self):
-        regProf = RegistrationProfile.getLastForProgram(get_current_request().user, self.program)
+        regProf = RegistrationProfile.getLastForProgram(get_current_request().user, self.program, self.module.module_type)
         return regProf.id is not None
 
     class Meta:

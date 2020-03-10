@@ -84,6 +84,8 @@ function TableRow(section, el, directory){
             "manageclass/" + this.section.parent_class +
             "'>Manage</a>" + " <a target='_blank' href='" + baseURL +
             "editclass/" + this.section.parent_class + "'>Edit</a>" +
+            " <a target='_blank' href='" + baseURL +
+            "classavailability/" + this.section.parent_class + "'>Class Availability</a>" +
             autoschedulerLink + "</td>";
         this.el.append(this.cell.el);
     };

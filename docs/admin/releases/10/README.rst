@@ -268,8 +268,9 @@ as some performance improvements.  Other improvements and bug fixes include:
 - The lunch constraint page now clobbers old lunch blocks, allowing lunch
   constraints to be edited.
 
-- The address field in teacher profile may be made optional by setting the
-  ``teacher_address_required`` Tag to ``False``.
+- The address field in teacher profile is no longer required by default. It can
+  be made required by setting the
+  ``teacher_address_required`` Tag to ``True``.
 
 - Medical bypasses can be added, removed, or queried with a new interface.
 

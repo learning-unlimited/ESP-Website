@@ -40,7 +40,7 @@
 <input type="hidden" name="merchant_id" value="{{ merchant_id }}" />
 <input type="hidden" name="amount" value="{{ itemizedcosttotal|floatformat:2 }}" />
 <input type="hidden" name="merchantDefinedData1" value="{{ identifier }}" />
-<input type="hidden" name="comments" value="ESP Invoice {{ module.program.id }}/{{ user.id }} (for {{ program.niceName }})" />
+<input type="hidden" name="comments" value="{{ settings.ORGANIZATION_SHORT_NAME }} Invoice {{ module.program.id }}/{{ user.id }} (for {{ program.niceName }})" />
 <input type="hidden" name="billTo_country" value="US" />
 <center><input id="submit_form" class="btn btn-primary" type="submit" value="Continue to Payment"></center>
 </form>

@@ -40,8 +40,8 @@ body { font-family: georgia; }
    <th>Checked In?</th>
    <th>Paid?</th>
    <th>Amount Due</th>
-   <th>Med/Liability?</th>
-   <th>Agreement?</th>
+   <th>Medical Form?</th>
+   <th>Liability Form?</th>
    <th>Aid Status</th>
    <th>Name</th>
    <th>Email</th>
@@ -51,11 +51,11 @@ body { font-family: georgia; }
 {% for student in studentList %}
 <tr>
    <td>{{forloop.counter}}</td>
-   <td><div class="box">&nbsp;</div></td>
-   <td><div class="box">{{ student.paid }}</div></td>
+   <td><div class="box">{% if student.checked_in %}X{% endif %}</div></td>
+   <td><div class="box">{% if student.paid %}X{% endif %}</div></td>
    <td>${{ student.amount_due|floatformat:2 }}</td>
-   <td><div class="box">&nbsp;</div></td>
-   <td><div class="box">&nbsp;</div></td>
+   <td><div class="box">{% if student.med %}X{% endif %}</div></td>
+   <td><div class="box">{% if student.liab %}X{% endif %}</div></td>
    <td>{{ student.finaid }}</td>
    <td>{{ student.user.name }}</td>
    <td>{{ student.user.email}}</td>
