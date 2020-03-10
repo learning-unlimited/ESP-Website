@@ -323,3 +323,11 @@ i.pointer {
 .main form {
   margin: 0px;
 }
+
+.survey table {
+    width: 100%;
+}
+
+.main input, .main select {
+    max-width: 100%;
+}

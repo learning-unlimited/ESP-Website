@@ -3,13 +3,13 @@
 {% block body %}
 {% load survey %}
 <center>
-  <div class="main">
+  <div class="main survey">
     {% if survey_page == "review" %}
-        <table style="width:100%">
+        <table>
             <tr><th>Student Survey Responses for {{ program.niceName }}</th></tr>
         </table>
         {% for c in perclass_data %}
-            <table style="width:100%">
+            <table>
                 <tr>
                     <th>Responses for {{ c.class.emailcode }}: {{ c.class.title }}</th>
                 </tr>
@@ -20,14 +20,14 @@
                 {% endwith %}
             {% endfor %}
         {% empty %}
-            <table style="width:100%">
+            <table>
                 <tr>
                     <td>{% if survey_status == "none" %}No survey for this program{% else %}No survey responses available{% endif %}</th>
                 </tr>
             </table>
         {% endfor %}
     {% else %}
-        <table style="width:100%">
+        <table>
             <tr><th>Survey for {{ program.niceName }}</th></tr>
         {% if survey_status == "completed" %}
             <tr><td>You've already filled out the survey. Thanks for responding!</td></tr>
@@ -45,16 +45,48 @@
             {% csrf_token %}
             {% for question in questions %}{{ question.render|uselist:classes }}{% endfor %}
             
-            {% for sec in sections %}
-              <table style="width:100%">
-                <tr>
-                    <th>Questions for {{ sec.emailcode }}: {{ sec.title }} ({% for tm in sec.friendly_times %}{% if forloop.counter > 1 %},{% endif %}{{ tm }}{% endfor %})</th>
-                </tr>
-                </table>
-                {% for question in perclass_questions %}
-                    {{ question.render|substitute:sec }}
+            {% if perclass_questions %}
+            {% if timeslots %}
+                {% for ts in timeslots %}
+                    <table class="fullwidth">
+                    <tr>
+                        <th>Questions for {{ ts.description }}</th>
+                    </tr>
+                    </table>
+                    <table class="fullwidth">
+                    <tr>
+                        <td width="35%">
+                            <label for="id_attendance_{{ ts.id }}"><b>Which class did you attend in this timeblock?</b></label>
+                        </td>
+                        <td>
+                            <select name="attendance_{{ ts.id }}" id="id_attendance_{{ ts.id }}">
+                                <option value="0">[None]</option>
+                                {% for sec in ts.classsections %}
+                                    <option value="{{ sec.id }}" {% if sec.selected %}selected="selected"{% endif %}>{{ sec.parent_class.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+                    </table>
+                    <div id="perclass_questions_{{ ts.id }}">
+                    {% for question in perclass_questions %}
+                        {{ question.render|substitute:ts }}
+                    {% endfor %}
+                    </div>
                 {% endfor %}
-            {% endfor %}
+            {% else %}
+                {% for sec in sections %}
+                  <table class="fullwidth">
+                   <tr>
+                        <th>Questions for {{ sec.emailcode }}: {{ sec.title }} ({% for tm in sec.friendly_times %}{% if forloop.counter > 1 %},{% endif %}{{ tm }}{% endfor %})</th>
+                    </tr>
+                    </table>
+                    {% for question in perclass_questions %}
+                        {{ question.render|substitute:sec }}
+                    {% endfor %}
+                {% endfor %}
+            {% endif %}
+            {% endif %}
             
             <table style="width:100%">
                 <tr>
@@ -63,7 +95,7 @@
                 <tr>
                     <td align="center">
                         Click the button below to finish your survey.  Thank you so much for your time!<br /><br />
-                        <input type="Submit" class="fancybutton" value="Submit Survey" /><br />
+                        <input style="font-size: 3vh !important;" type="Submit" class="btn" value="Submit Survey" /><br />
                     </td>
                 </tr>
             </table>
