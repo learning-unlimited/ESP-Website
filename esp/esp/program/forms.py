@@ -158,7 +158,7 @@ class ProgramCreationForm(BetterModelForm):
         value = self.cleaned_data['program_modules']
         final = []
         for v in value:
-            final.extend(self.program_module_ids[v])
+            final.extend(self.program_module_ids[int(v)])
         default_modules = ProgramModule.objects.filter(choosable=1)
         for m in default_modules:
             final.append(m.id)
