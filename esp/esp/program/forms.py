@@ -60,18 +60,16 @@ class ProgramCreationForm(BetterModelForm):
     student_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     base_cost         = forms.IntegerField(label = 'Cost of Program Admission $', min_value = 0 )
     sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None,
-                                                help_text="The amount of the sibling discount. Leave blank if you don't use sibling discounts.")
+                                           help_text="The amount of the sibling discount. Leave blank if you don't use sibling discounts.")
     program_type      = forms.CharField(label = "Program Type", help_text='e.g. Splash or Cascade')
-    program_modules   = forms.MultipleChoiceField(
-                          choices=[],
-                          label='Program Modules',
-                          widget=forms.CheckboxSelectMultiple(attrs={'class': 'input-xxlarge'}),
-                          help_text=Program.program_modules.field.help_text)
+    program_modules   = forms.MultipleChoiceField(choices=[],
+                                                  label='Program Modules',
+                                                  widget=forms.CheckboxSelectMultiple(attrs={'class': 'input-xxlarge'}),
+                                                  help_text=Program.program_modules.field.help_text)
 
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current modules. """
-        super(ProgramCreationForm, self).__init__(*args, **kwargs)
-        self.program_module_ids = [[x.id for x in ProgramModule.objects.filter(admin_title__in=['Accounting', 'Student Optional Fees', 'Credit Card Payment Module (Stripe)', 'Financial Aid Application',                                                                                        'Easily Approve Financial Aid Requests'])],
+        program_module_ids = [[x.id for x in ProgramModule.objects.filter(admin_title__in=['Accounting', 'Student Optional Fees', 'Credit Card Payment Module (Stripe)', 'Financial Aid Application',                                                                                        'Easily Approve Financial Aid Requests'])],
                                    [x.id for x in ProgramModule.objects.filter(admin_title__in=['Accounting', 'Credit Card Payment Module (Stripe)', 'Financial Aid Application',
                                                                                                 'Easily Approve Financial Aid Requests'])],
                                    [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Logistics Quiz')],
@@ -102,6 +100,27 @@ class ProgramCreationForm(BetterModelForm):
                                      'Do students have to apply to individual classes?', # Application Review for Admin, Admin Admissions Dashboard
                                         'If yes, can teachers admit them (as opposed to just admins)?' # Teacher Admissions Dashboard, Application Reviews for Teachers, Application Review for Admin, Admin Admissions Dashboard
                                     ]
+        # Get 'initial' argument if any
+        initial_arguments = kwargs.get('initial', None)
+        updated_initial = {}
+        if initial_arguments:
+            # We have initial arguments, fetch 'program_modules' placeholder variable if any
+            progmods = initial_arguments.get('program_modules', None)
+            # Now update the form's initial values if there was an initial value passed
+            if progmods:
+                updated_initial['program_modules'] = getattr(progmods, 'choices', None)
+        # Turn these module ids into indices for the questions to pre-populate the list
+        question_ix = [0 for _ in program_module_ids]
+        for mod in updated_initial:
+            for i, lst in enumerate(program_module_ids):
+                if mod in lst:
+                    question_ix[i] = 1
+        updated_initial['program_modules'] = question_ix
+        # Finally update the kwargs initial reference
+        kwargs.update(initial=updated_initial)
+        # Now initialize the form
+        super(ProgramCreationForm, self).__init__(*args, **kwargs)
+        self.program_module_ids = program_module_ids
         # Include additional or new modules that haven't been added to the list
         for x in ProgramModule.objects.filter(choosable=0):
             if x.id not in sum(self.program_module_ids, []):
