@@ -72,9 +72,9 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
                 users = prog.students()
             else:
                 users = prog.teachers()
-            if not user.isAdmin() and user not in {item for sublist in [users[filter] for filter in filters] for item in sublist}:
+            if not user.isAdmin() and user not in {item for sublist in [users[filter] for filter in filters if filter in users] for item in sublist}:
                 descs = prog.getListDescriptions()
-                raise ESPError('Only ' + " or ".join([descs[filter].lower() for filter in filters]) + ' may participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
+                raise ESPError('Only ' + " or ".join([descs[filter].lower() for filter in filters if filter in descs]) + ' may participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
 
     if 'done' in request.GET:
         return render_to_response('survey/completed_survey.html', request, {'prog': prog})
