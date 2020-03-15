@@ -38,7 +38,7 @@ from django.db.models.query      import Q
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
 from esp.program.models import StudentRegistration, ClassSection
 from esp.utils.web import render_to_response
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, Record
 from esp.cal.models import Event
 from esp.utils.query_utils import nest_Q
 
@@ -78,14 +78,16 @@ class OnSiteAttendance(ProgramModuleObj):
                 time_min = datetime.datetime.combine(date, timeslot.start_w_buffer().time())
                 time_max = datetime.datetime.combine(date, timeslot.end.time())
                 #Students that are marked as attending a class during this timeslot on the specified day
-                attended = ESPUser.objects.filter(Q(studentregistration__section__meeting_times=timeslot, studentregistration__relationship__name="Attended") & nest_Q(StudentRegistration.is_valid_qobject(when), 'studentregistration'))
+                attended = ESPUser.objects.filter(Q(studentregistration__section__meeting_times=timeslot, studentregistration__relationship__name="Attended") & nest_Q(StudentRegistration.is_valid_qobject(when), 'studentregistration')).distinct()
                 #Students that are enrolled in a class during this timeslot on the specified day
-                enrolled = ESPUser.objects.filter(Q(studentregistration__section__meeting_times=timeslot, studentregistration__relationship__name="Enrolled") & nest_Q(StudentRegistration.is_valid_qobject(when), 'studentregistration'))
-                #Students that have been checked in for the program at any time before the end of this timeslot on the specified day
-                checked_in = ESPUser.objects.filter(Q(record__event='attended', record__program=prog, record__time__lt=time_max))
+                enrolled = ESPUser.objects.filter(Q(studentregistration__section__meeting_times=timeslot, studentregistration__relationship__name="Enrolled") & nest_Q(StudentRegistration.is_valid_qobject(when), 'studentregistration')).distinct()
+                #Checked-out students
+                checked_out = [rec.user for rec in Record.objects.filter(program = prog, event__in=["attended", "checked_out"], time__lt=time_max).order_by('user', '-time').distinct('user').select_related('user') if rec.event == "checked_out"]
+                #Students that have been checked in for the program at any time before the end of this timeslot on the specified day, excluding students that have been checked out
+                checked_in = ESPUser.objects.filter(Q(record__event='attended', record__program=prog, record__time__lt=time_max)).exclude(id__in=[user.id for user in checked_out]).distinct()
                 #Students that have been checked in for the program during this timeslot on the specified day
-                checked_in_during_ts = ESPUser.objects.filter(Q(record__event='attended', record__program=prog, record__time__range=(time_min, time_max)))
-                #Students that have been checked in for the program at any time but are not attending a class during this timeslot on the specified day
+                checked_in_during_ts = ESPUser.objects.filter(Q(record__event='attended', record__program=prog, record__time__range=(time_min, time_max))).distinct()
+                #Students that have been checked in for the program at any time before the end of this timeslot on the specified day (and are not checked out) but are not attending a class during this timeslot on the specified day
                 not_attending = checked_in.exclude(id__in=[user.id for user in attended])
                 #Get the classes that they aren't attending (if any)
                 enrolled_srs = {sr.user: sr.section for sr in StudentRegistration.valid_objects(when).filter(section__meeting_times=timeslot, relationship__name="Enrolled").select_related('user')}
