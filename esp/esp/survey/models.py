@@ -53,6 +53,7 @@ from esp.db.fields import AjaxForeignKey
 # Models to depend on.
 from esp.middleware import ESPError
 from esp.program.models import Program
+from esp.tagdict.models import Tag
 
 class ListField(object):
     """ Create a list type field descriptor. Allows you to
@@ -110,9 +111,11 @@ class Survey(models.Model):
         prog = self.program
         if prog:
             if self.category == 'teach':
-                return prog.teachers()['class_approved'].count()
+                filters = [x.strip() for x in Tag.getProgramTag('survey_teacher_filter', prog, default = "class_submitted").split(",") if x.strip()]
+                return len(set().union(*[prog.teachers().get(filter, []) for filter in filters]))
             elif self.category == 'learn':
-                return prog.students()['confirmed'].count()
+                filters = [x.strip() for x in Tag.getProgramTag('survey_student_filter', prog, default = "classreg").split(",") if x.strip()]
+                return len(set().union(*[prog.students().get(filter, []) for filter in filters]))
             else:
                 return 0
         else:
