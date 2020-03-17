@@ -49,13 +49,16 @@
 {% else %}
 <div style="margin:10px">
   <p>
-    {{module.student.name}} already checked in at <b>{{module.timeCheckedIn}}</b>.
+    {{module.student.name}} first checked in at <b>{{module.timeCheckedIn}}</b>.
+    {% if module.timeCheckedIn != module.lastCheckedIn %}
+    <br />{{module.student.name}} last checked in at <b>{{module.lastCheckedIn}}</b>.
+    {% endif %}
   </p>
   <form name="checkin" method="POST" action="{{request.path}}">
     <table>
       <tr>
 	<td><label for="attended"><strong>Attending? (i.e. here right now?)</strong></label></td>
-	<td><input type="checkbox" name="attended" id="attended" {% if module.hasAttended %}checked="checked"{% endif %} /></td>
+	<td><input type="checkbox" name="attended" id="attended" {% if module.isAttending %}checked="checked"{% endif %} /></td>
       </tr>
       <tr>
 	<td><label for="medical"><strong>Medical Form?</strong></label></td>

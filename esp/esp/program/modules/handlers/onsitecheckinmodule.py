@@ -69,26 +69,41 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 iac.submit_payment(iac.amount_due())
 
     def create_record(self, event):
-        if event=="paid":
-            self.updatePaid(True)
+        created = False
+        if event=="attended":
+            if not self.program.isCheckedIn(self.student):
+                rec = Record(user=self.student, event="attended", program=self.program)
+                rec.save()
+                created = True
+        else:
+            if event=="paid":
+                self.updatePaid(True)
 
-        recs, created = Record.objects.get_or_create(user=self.student,
-                                                     event=event,
-                                                     program=self.program)
+            recs, created = Record.objects.get_or_create(user=self.student,
+                                                         event=event,
+                                                         program=self.program)
         return created
 
     def delete_record(self, event):
-        if event=="paid":
-            self.updatePaid(False)
+        if event=="attended":
+            if self.program.isCheckedIn(self.student):
+                rec = Record(user=self.student, event="checked_out", program=self.program)
+                rec.save()
+        else:
+            if event=="paid":
+                self.updatePaid(False)
 
-        recs, created = Record.objects.get_or_create(user=self.student,
-                                            event=event,
-                                            program=self.program)
-        recs.delete()
+            recs, created = Record.objects.get_or_create(user=self.student,
+                                                event=event,
+                                                program=self.program)
+            recs.delete()
         return True
 
     def hasAttended(self):
         return Record.user_completed(self.student, "attended",self.program)
+
+    def isAttending(self):
+        return self.program.isCheckedIn(self.student)
 
     def hasPaid(self):
         iac = IndividualAccountingController(self.program, self.student)
@@ -103,7 +118,11 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
     def timeCheckedIn(self):
         u = Record.objects.filter(event="attended",program=self.program, user=self.student).order_by("time")
-        return str(u[0].time.strftime("%H:%M %d/%m/%y"))
+        return str(u[0].time.strftime("%H:%M %m/%d/%y"))
+
+    def lastCheckedIn(self):
+        u = Record.objects.filter(event="attended",program=self.program, user=self.student).order_by("-time")
+        return str(u[0].time.strftime("%H:%M %m/%d/%y"))
 
     @aux_call
     @needs_onsite
@@ -160,9 +179,9 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 student = form.cleaned_data['target_user']
                 #   Check that this is a student user who is not also teaching (e.g. an admin)
                 if student.isStudent() and student not in self.program.teachers()['class_approved']:
-                    recs = Record.objects.filter(user=student, event="attended", program=prog)
-                    if not recs.exists():
-                        rec, created = Record.objects.get_or_create(user=student, event="attended", program=prog)
+                    if not prog.isCheckedIn(student):
+                        rec = Record(user=student, event="attended", program=prog)
+                        rec.save()
                     context['message'] = '%s %s marked as attended.' % (student.first_name, student.last_name)
                     if request.is_ajax():
                         return self.ajax_status(request, tl, one, two, module, extra, prog, context)
@@ -195,8 +214,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
                         continue
 
                     if student.isStudent():
-                        existing = Record.user_completed(student, 'attended', prog)
-                        if existing:
+                        if prog.isCheckedIn(student):
                             results['existing'].append(code)
                         else:
                             new = Record(user=student, program=prog, event='attended')
@@ -230,8 +248,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 student = students[0]
                 info_string = student.name() + " (" + str(code) + ")"
                 if student.isStudent():
-                    existing = Record.user_completed(student, 'attended', prog)
-                    if existing:
+                    if prog.isCheckedIn(student):
                         json_data['message'] = '%s is already checked in!' % info_string
                     else:
                         new = Record(user=student, program=prog, event='attended')
