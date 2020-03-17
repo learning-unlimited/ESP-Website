@@ -98,7 +98,7 @@ ESP.registerAdminModule({
 content_html:
     '<form id="usersearchform" name="usersearchform" method="get" action="/manage/usersearch">' +
     '<div class="input-append">' +
-    '<input type="text" id="user_search_field" name="usrstr" placeholder="Find User" />' +
+    '<input type="text" id="user_search_field" name="userstr" placeholder="Find User" />' +
     '<button type="submit" id="user_search_submit" name="search_submit" aria-label="Search" class="btn-admin"><span class="glyphicon glyphicon-search glyphicon-btn-height" aria-hidden="true"></span></button>' +
     '</div>' +
     '</form>',
@@ -129,7 +129,7 @@ if (currentPrograms && currentPrograms.forEach) {
 }
 
 ESP.registerAdminModule({
-    content_html: '<a href="/manage/programs/">Manage other programs</a><br/><a href="/manage/pages">Manage static pages</a><br /><a href="/admin/">Administration pages</a><br /><a href="/admin/filebrowser/browse/">Manage theme settings</a><br /><a href="/themes/">Manage media files</a>',
+    content_html: '<a href="/manage/programs/">Manage other programs</a><br/><a href="/manage/pages">Manage static pages</a><br /><a href="/admin/">Administration pages</a><br /><a href="/admin/filebrowser/browse/">Manage media files</a><br /><a href="/themes/">Manage theme settings</a>',
     name: 'Other',
     displayName: 'Other Important Links'
 });
