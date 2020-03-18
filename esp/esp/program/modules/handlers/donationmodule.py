@@ -132,10 +132,11 @@ class DonationModule(ProgramModuleObj):
     def studentDesc(self):
         return {'donation': """Students who have chosen to make an optional donation"""}
 
-    def get_form(self, form_data=None):
+    @staticmethod
+    def get_form(settings, form_data=None):
         form = DonationForm(form_data)
         form.fields['amount_donation'].choices = [(0, "I won't be making a donation at this time")] + \
-                                  [(option, '$%d'%option) for option in self.settings['donation_options']] + \
+                                  [(option, '$%d'%option) for option in settings['donation_options']] + \
                                   [(-1, "I would like to donate a different amount")]
         return form
 
@@ -167,7 +168,7 @@ class DonationModule(ProgramModuleObj):
         if request.method == 'POST':
 
             self.apply_settings()
-            form = self.get_form(form_data=request.POST)
+            form = DonationModule.get_form(settings=self.settings, form_data=request.POST)
 
             if form.is_valid():
                 #   Clear the Transfers by specifying quantity 0
@@ -202,7 +203,7 @@ class DonationModule(ProgramModuleObj):
 
         context['institution'] = settings.INSTITUTION_NAME
 
-        context['form'] = form and form or self.get_form()
+        context['form'] = form and form or DonationModule.get_form(settings=self.settings)
 
         return render_to_response(self.baseDir() + 'donation.html', request, context)
 

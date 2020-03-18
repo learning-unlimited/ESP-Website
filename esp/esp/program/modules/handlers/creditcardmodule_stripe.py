@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -7,21 +6,17 @@ __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
   (see AUTHORS file)
-
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU Affero General Public License
 as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.
-
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Affero General Public License for more details.
-
 You should have received a copy of the GNU Affero General Public
 License along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-
 Contact information:
 MIT Educational Studies Program
   84 Massachusetts Ave W20-467, Cambridge, MA 02139
@@ -42,6 +37,7 @@ from esp.accounting.models import LineItemType
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
+from esp.program.modules.handlers.donationmodule import DonationModule
 
 from django.conf import settings
 from django.db import transaction
@@ -172,6 +168,16 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         context['sibling_discount'] = iac.amount_siblingdiscount()
         context['amount_paid'] = iac.amount_paid()
 
+        #   Set donation transfer
+        form = None
+        if request.method == 'POST':
+            form = DonationModule.get_form(settings=self.settings, form_data=request.POST)
+            if form.is_valid():
+                #   Clear the Transfers by specifying quantity 0
+                iac.set_preference('Donation to Learning Unlimited', 0)
+                if form.amount:
+                    iac.set_preference('Donation to Learning Unlimited', 1, amount=form.amount)
+
         #   Load donation amount separately, since the client-side code needs to know about it separately.
         donation_prefs = iac.get_preferences([donate_type,]) if offer_donation else None
         if donation_prefs:
@@ -188,6 +194,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             context['hostname'] = Site.objects.get_current().domain
         context['institution'] = settings.INSTITUTION_NAME
         context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
+
+        context['form'] = form and form or DonationModule.get_form(settings=self.settings)
 
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 
