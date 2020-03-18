@@ -168,16 +168,6 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         context['sibling_discount'] = iac.amount_siblingdiscount()
         context['amount_paid'] = iac.amount_paid()
 
-        #   Set donation transfer
-        form = None
-        if request.method == 'POST':
-            form = DonationModule.get_form(settings=self.settings, form_data=request.POST)
-            if form.is_valid():
-                #   Clear the Transfers by specifying quantity 0
-                iac.set_preference('Donation to Learning Unlimited', 0)
-                if form.amount:
-                    iac.set_preference('Donation to Learning Unlimited', 1, amount=form.amount)
-
         #   Load donation amount separately, since the client-side code needs to know about it separately.
         donation_prefs = iac.get_preferences([donate_type,]) if offer_donation else None
         if donation_prefs:
@@ -195,7 +185,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         context['institution'] = settings.INSTITUTION_NAME
         context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
 
-        context['form'] = form and form or DonationModule.get_form(settings=self.settings)
+        context['form'] = DonationModule.get_form(settings=self.settings)
 
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 
@@ -224,6 +214,16 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         group_name = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
 
         iac = IndividualAccountingController(self.program, request.user)
+
+        #   Set donation transfer
+        form = None
+        if request.method == 'POST':
+            form = DonationModule.get_form(settings=self.settings, form_data=request.POST)
+            if form.is_valid():
+                #   Clear the Transfers by specifying quantity 0
+                iac.set_preference('Donation to Learning Unlimited', 0)
+                if form.amount:
+                    iac.set_preference('Donation to Learning Unlimited', 1, amount=form.amount)
 
         #   Set Stripe key based on settings.  Also require the API version
         #   which our code is designed for.
@@ -284,6 +284,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                     #   transaction ID for our records.
                     transfer.transaction_id = charge.id
                     transfer.save()
+
             except stripe.error.CardError, e:
                 context['error_type'] = 'declined'
                 context['error_info'] = e.json_body['error']

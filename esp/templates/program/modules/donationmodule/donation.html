@@ -14,7 +14,9 @@
     {% inline_program_qsd_block program "learningu_donation" %}
     {% trans "Please support " %}<a href="http://www.learningu.org/about" target="_blank">{% trans "Learning Unlimited" %}</a> {% trans "with an additional donation. Learning Unlimited supports " %}{{ institution }} {% trans "and dozens of other Splashes with mentoring and maintains this website. Your gift helps start new Splashes and provide support to existing ones across the country." %}
     {% end_inline_program_qsd_block %}
-    {% include "program/modules/donationmodule/donation_form.html" %}
+    <form method="post">
+      {% include "program/modules/donationmodule/donation_form.html" %}
+    </form>
     <br />
   </div>
 </div>
