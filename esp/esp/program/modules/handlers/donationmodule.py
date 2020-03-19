@@ -142,7 +142,6 @@ class DonationModule(ProgramModuleObj):
         form.fields['amount_donation'].choices = [(0, "I won't be making a donation at this time")] + \
                                   [(option, '$%d'%option) for option in settings['donation_options']] + \
                                   [(-1, "I would like to donate a different amount")]
-        print(donation_initial)
         if donation_initial:
             if donation_initial == 0 or donation_initial % 1 == 0 and int(donation_initial) in settings['donation_options']:
                 amount_donation_initial = int(donation_initial)
@@ -153,8 +152,6 @@ class DonationModule(ProgramModuleObj):
         else:
             amount_donation_initial = None
             custom_amount_initial = None
-        print(amount_donation_initial)
-        print(custom_amount_initial)
         form.load_donation(amount_donation_initial=amount_donation_initial, custom_amount_initial=custom_amount_initial)
         return form
 
