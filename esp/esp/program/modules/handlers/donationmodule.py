@@ -68,6 +68,10 @@ class DonationForm(forms.Form):
         super(DonationForm, self).__init__(*args, **kwargs)
         self.amount = None
 
+    def load_donation(self, amount_donation_initial=None, custom_amount_initial=None):
+        self.fields['amount_donation'].initial = amount_donation_initial
+        self.fields['custom_amount'].initial = custom_amount_initial
+
     def clean_custom_amount(self):
         amount_donation = self.cleaned_data.get('amount_donation','')
         custom_amount = self.cleaned_data.get('custom_amount','')
@@ -133,11 +137,25 @@ class DonationModule(ProgramModuleObj):
         return {'donation': """Students who have chosen to make an optional donation"""}
 
     @staticmethod
-    def get_form(settings, form_data=None):
+    def get_form(settings, donation_initial=None, form_data=None):
         form = DonationForm(form_data)
         form.fields['amount_donation'].choices = [(0, "I won't be making a donation at this time")] + \
                                   [(option, '$%d'%option) for option in settings['donation_options']] + \
                                   [(-1, "I would like to donate a different amount")]
+        print(donation_initial)
+        if donation_initial:
+            if donation_initial == 0 or donation_initial % 1 == 0 and int(donation_initial) in settings['donation_options']:
+                amount_donation_initial = int(donation_initial)
+                custom_amount_initial = None
+            else:
+                amount_donation_initial = -1
+                custom_amount_initial = donation_initial
+        else:
+            amount_donation_initial = None
+            custom_amount_initial = None
+        print(amount_donation_initial)
+        print(custom_amount_initial)
+        form.load_donation(amount_donation_initial=amount_donation_initial, custom_amount_initial=custom_amount_initial)
         return form
 
 
@@ -168,7 +186,12 @@ class DonationModule(ProgramModuleObj):
         if request.method == 'POST':
 
             self.apply_settings()
-            form = DonationModule.get_form(settings=self.settings, form_data=request.POST)
+            current_donation_prefs = iac.get_preferences([self.line_item_type(), ])
+            if current_donation_prefs:
+                current_donation = Decimal(iac.get_preferences([self.line_item_type(), ])[0][2])
+            else:
+                current_donation = None
+            form = DonationModule.get_form(settings=self.settings, donation_initial=current_donation, form_data=request.POST)
 
             if form.is_valid():
                 #   Clear the Transfers by specifying quantity 0
@@ -197,13 +220,14 @@ class DonationModule(ProgramModuleObj):
         if donation_prefs:
             context['amount_donation'] = Decimal(donation_prefs[0][2])
             context['has_donation'] = True
+            context['form'] = form and form or DonationModule.get_form(settings=self.settings, donation_initial=context['amount_donation'])
         else:
             context['amount_donation'] = Decimal('0.00')
             context['has_donation'] = False
+            context['form'] = form and form or DonationModule.get_form(settings=self.settings, donation_initial=None)
 
         context['institution'] = settings.INSTITUTION_NAME
 
-        context['form'] = form and form or DonationModule.get_form(settings=self.settings)
 
         return render_to_response(self.baseDir() + 'donation.html', request, context)
 

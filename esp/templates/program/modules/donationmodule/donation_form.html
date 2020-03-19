@@ -4,7 +4,7 @@
 <script type="text/javascript">
 <!--
 function toggleDonationAmount() {
-    var donationAmount = parseFloat($j(this).val());
+    var donationAmount = parseFloat($j("input:radio[name='amount_donation']:checked").val());
     if (donationAmount == -1) {
         $j('#custom_amount_section').removeClass('hide')
     } else {
@@ -14,6 +14,7 @@ function toggleDonationAmount() {
 }
 
 $j(document).ready(function () {
+    toggleDonationAmount();
     $j("input:radio[name='amount_donation']").click(toggleDonationAmount);
 });
 -->

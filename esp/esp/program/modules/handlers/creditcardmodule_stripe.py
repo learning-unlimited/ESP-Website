@@ -173,9 +173,11 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         if donation_prefs:
             context['amount_donation'] = Decimal(donation_prefs[0][2])
             context['has_donation'] = True
+            context['form'] = DonationModule.get_form(settings=self.settings, donation_initial=context['amount_donation'])
         else:
             context['amount_donation'] = Decimal('0.00')
             context['has_donation'] = False
+            context['form'] = DonationModule.get_form(settings=self.settings, donation_initial=None)
         context['amount_without_donation'] = context['itemizedcosttotal'] - context['amount_donation']
 
         if 'HTTP_HOST' in request.META:
@@ -185,7 +187,6 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         context['institution'] = settings.INSTITUTION_NAME
         context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
 
-        context['form'] = DonationModule.get_form(settings=self.settings)
 
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 
@@ -218,7 +219,14 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   Set donation transfer
         form = None
         if request.method == 'POST':
-            form = DonationModule.get_form(settings=self.settings, form_data=request.POST)
+
+            current_donation_prefs = iac.get_preferences([self.line_item_type(), ])
+            if current_donation_prefs:
+                current_donation = Decimal(iac.get_preferences([self.line_item_type(), ])[0][2])
+            else:
+                current_donation = None
+            form = DonationModule.get_form(settings=self.settings, donation_initial=current_donation, form_data=request.POST)
+
             if form.is_valid():
                 #   Clear the Transfers by specifying quantity 0
                 iac.set_preference('Donation to Learning Unlimited', 0)
