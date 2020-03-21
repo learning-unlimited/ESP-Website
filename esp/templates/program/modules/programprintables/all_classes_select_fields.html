@@ -22,6 +22,9 @@ You can use this form to download information about all of the classes for this 
       </div>
     </fieldset>
     <br />
+    <button type="button" id='select-all'>Select All</button> <button type="button" id='deselect-all'>Deselect All</button>
+    <br />
+    <br />
     <div>
       <button type="submit" class="btn btn-large btn-primary">Export CSV</button>
     </div>
@@ -31,7 +34,18 @@ You can use this form to download information about all of the classes for this 
 <a class="btn" href="/manage/{{ program.getUrlBase }}/printoptions">Return to the main printables page</a>
 <script type="text/javascript">
 $j(function() {
-    $j('#id_subject_fields').multiSelect();
+    $j('#id_subject_fields').multiSelect({
+        selectableHeader: "<div class='custom-header'>Available  Fields</div>",
+        selectionHeader: "<div class='custom-header'>Selected Fields</div>"
+    });
+    $j('#select-all').click(function(){
+        $j('#id_subject_fields').multiSelect('select_all');
+        return false;
+    });
+    $j('#deselect-all').click(function(){
+        $j('#id_subject_fields').multiSelect('deselect_all');
+        return false;
+    });
 });
 </script>
 {% endblock %}
