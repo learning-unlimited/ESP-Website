@@ -78,12 +78,13 @@ Flag and classsearch changes
 
 Survey changes
 ~~~~~~~~~~~~~~
-- Admins can now specify which students and teachers have access to the built-in program surveys with the tags "survey_teacher_filter" and "survey_student_filter".
+- Admins can now specify which students and teachers have access to the built-in program surveys with the tags "survey_teacher_filter" and "survey_student_filter". These tags will also be used to calculate the number of potential participants when displaying survey results.
 
 Theme changes
 ~~~~~~~~~~~~~
 - Links on the barebones and bigpictures themes that previously said "Admin Home", now correctly say "Administration Pages" like other themes
 - Fixed the fruit salad header for instances where the program name was very long and overlapped with the login information. Also changed styling associated with the login box to make things symmetrical (and removed the text "Hello,").
+- Fixed the colors of the buttons presented when editing a QSD/editable text on the bigpicture theme. Button colors will also now properly change when updated in the bigpicture theme settings.
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
