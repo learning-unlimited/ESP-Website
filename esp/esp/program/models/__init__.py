@@ -387,7 +387,8 @@ class Program(models.Model, CustomFormsLinkModel):
         section_ids = sections_in_program_by_id(self)
 
         counts = {}
-        checked_in_ids = self.students()['attended'].values_list('id', flat=True)
+        students = self.students(True)
+        checked_in_ids = ESPUser.objects.filter(students['attended'] & ~students['checked_out']).distinct().values_list('id', flat = True)
 
         reg_type = RegistrationType.get_map()['Enrolled']
 
