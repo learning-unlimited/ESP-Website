@@ -76,11 +76,13 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         q_confirmed = Q(record__event = "reg_confirmed", record__program=self.program)
         q_attended = Q(record__event= "attended", record__program=self.program)
+        q_checked_out = Q(id__in=self.program.checkedOutStudents())
         q_studentrep = Q(groups__name="StudentRep")
 
         if QObject:
             retVal = {'confirmed': q_confirmed,
                       'attended' : q_attended,
+                      'checked_out': q_checked_out,
                       'studentrep': q_studentrep}
 
 
@@ -91,6 +93,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         retVal = {'confirmed': ESPUser.objects.filter(q_confirmed).distinct(),
                   'attended' : ESPUser.objects.filter(q_attended).distinct(),
+                  'checked_out': ESPUser.objects.filter(q_checked_out).distinct(),
                   'studentrep': ESPUser.objects.filter(q_studentrep).distinct()}
 
         if self.program.program_allow_waitlist:
@@ -101,6 +104,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     def studentDesc(self):
         retVal = {'confirmed': """Students who have clicked on the `Confirm Registration' button""",
                   'attended' : """Students who attended %s""" % self.program.niceName(),
+                  'checked_out': """Students who are currently checked out of %s""" % self.program.niceName(),
                   'studentrep': """Student Representatives"""}
 
         if self.program.program_allow_waitlist:
