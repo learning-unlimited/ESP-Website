@@ -240,10 +240,10 @@ class OnSiteClassList(ProgramModuleObj):
             result['messages'].append('Error: could not parse requested sections %s' % request.GET.get('sections', None))
             desired_sections = None
 
-        #   Check in student, since if they're using this view they must be onsite
-        q = Record.objects.filter(user=user, program=prog, event='attended')
-        if not q.exists():
-            new_rec, created = Record.objects.get_or_create(user=user, program=prog, event='attended')
+        #   Check in student if not currently checked in, since if they're using this view they must be onsite
+        if not prog.isCheckedIn(user):
+            rec = Record(user=user, program=prog, event='attended')
+            rec.save()
 
         if user and desired_sections is not None:
             override_full = (request.GET.get("override", "") == "true")
