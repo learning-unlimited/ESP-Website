@@ -7,7 +7,7 @@ def create_question_types(apps, schema_editor):
     db_alias = schema_editor.connection.alias
     QuestionType = apps.get_model("survey", "QuestionType")
     QuestionType.objects.using(db_alias).get_or_create(name="Instruction Text", _param_names = "Text")
-    QuestionType.objects.using(db_alias).get_or_create(name="Long Answer", _param_names = "Rows|Columns")
+    QuestionType.objects.using(db_alias).get_or_create(name="Long Answer", _param_names = "Rows")
     QuestionType.objects.using(db_alias).get_or_create(name="Short Answer", _param_names = "Input length")
     QuestionType.objects.using(db_alias).get_or_create(name="Labeled Numeric Rating", _param_names = "Number of ratings", is_numeric=True, is_countable=True)
     QuestionType.objects.using(db_alias).get_or_create(name="Numeric Rating", _param_names = "Number of ratings|Lower text|Middle text|Upper text", is_numeric=True, is_countable=True)

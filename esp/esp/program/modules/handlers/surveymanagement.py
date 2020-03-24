@@ -61,9 +61,6 @@ class SurveyManagement(ProgramModuleObj):
     @needs_admin
     def survey_manage(self, request, tl, one, two, module, extra, prog):
         context = {'program': prog}
-        context['survey_form'] = SurveyForm()
-        context['question_form'] = QuestionForm(cur_prog = prog)
-        context['import_survey_form'] = SurveyImportForm(cur_prog = prog)
         context['question_types'] = json.dumps({str(qt.id): qt.param_names for qt in QuestionType.objects.all()})
         if request.GET:
             obj = request.GET.get("obj", None)
@@ -157,9 +154,14 @@ class SurveyManagement(ProgramModuleObj):
                     context['survey_form'] = form
                     if form.is_valid():
                         form.save()
-
+        if 'survey_form' not in context:
+            context['survey_form'] = SurveyForm()
+        if 'question_form' not in context:
+            context['question_form'] = QuestionForm(cur_prog = prog)
+        if 'import_survey_form' not in context:
+            context['import_survey_form'] = SurveyImportForm(cur_prog = prog)
         context['surveys'] = Survey.objects.filter(program = prog)
-        context['questions'] = Question.objects.filter(survey__program = prog).order_by('survey', 'seq')
+        context['questions'] = Question.objects.filter(survey__program = prog).order_by('survey__category', 'survey', 'per_class', 'seq')
 
         return render_to_response('program/modules/surveymanagement/manage.html', request, context)
 

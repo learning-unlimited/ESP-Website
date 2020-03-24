@@ -3,7 +3,7 @@
 }
 
 .selector {
-    border-bottom: solid 5px #c6def7;
+    border-bottom: solid 5px #ccc;
 }
 
 .selector.active {
@@ -17,4 +17,8 @@
 
 select {
     width: auto;
+}
+
+.subheader {
+    background-color: #ccc !important;
 }

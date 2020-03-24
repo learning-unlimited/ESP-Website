@@ -40,6 +40,10 @@ class QuestionForm(forms.ModelForm):
             '_param_values': (),
         }
         labels = {
+            'name': ('Question'),
+            'question_type': ('Question Type'),
+            'per_class': ('Per Class'),
+            '_param_values': ('Parameter Values'),
             'seq': ('Sequence'),
         }
 

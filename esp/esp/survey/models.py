@@ -215,7 +215,10 @@ class QuestionType(models.Model):
         return 'survey/questions/%s.html' % self.name.replace(' ', '_').lower()
 
     def __unicode__(self):
-        return '%s: includes %s' % (self.name, self._param_names.replace('|', ', '))
+        if len(self.param_names) > 0:
+            return '%s: includes %s' % (self.name, self._param_names.replace('|', ', '))
+        else:
+            return '%s' % (self.name)
 
 
 class Question(models.Model):

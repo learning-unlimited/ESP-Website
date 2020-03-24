@@ -64,7 +64,7 @@ Each step below is a form that you can expand or contract by clicking on the hea
         <tr><th colspan="3">Surveys for {{ program.niceName }}</th></tr>
         <tr><td colspan="3"><table width="100%" cellpadding="0" cellspacing="0">
         <tr>
-            <td width="75%" class="underline"><b>Name</b></td>
+            <td width="75%" class="underline"><b>Question</b></td>
             <td width="15%" class="underline"><b>Category</b></td>
             <td width="10%" class="underline"></td>
         </tr>
@@ -106,23 +106,25 @@ Each step below is a form that you can expand or contract by clicking on the hea
     </form>
     <br />
     <table align="center" cellpadding="0" cellspacing="0" width="100%">
-        <tr><th colspan="6">Questions for {{ program.niceName }}</th></tr>
+        <tr><th colspan="5">Questions for {{ program.niceName }}</th></tr>
         <tr>
             <th class="selector active" colspan="3" width="50%" data-panel="details">Question Details</th>
-            <th class="selector" colspan="3" width="50%" data-panel="rendered">Rendered Questions</th>
+            <th class="selector" colspan="2" width="50%" data-panel="rendered">Rendered Questions</th>
         </tr>
-        <tr id="details-panel"><td colspan="6"><table width="100%" cellpadding="0" cellspacing="0">
+        <tr id="details-panel"><td colspan="5"><table width="100%" cellpadding="0" cellspacing="0">
         <tr>
             <td width="5%"><b>Seq</b></td>
-            <td width="30%"><b>Name</b></td>
+            <td width="30%"><b>Question</b></td>
             <td width="25%"><b>Question Type</b></td>
-            <td width="25%"><b>Parameter Values</b></td>
-            <td width="5%"><b>Per Class</b></td>
+            <td width="30%"><b>Parameter Values</b></td>
             <td width="10%"></td>
         </tr>
         {% for question in questions %}
             {% ifchanged question.survey %}
-            <tr><th colspan="6">Questions for {{ question.survey.name }} ({{ question.survey.category }})</th></tr>
+            <tr><th colspan="5">{{ question.survey.name }} ({{ question.survey.category|capfirst }})</th></tr>
+            {% endifchanged %}
+            {% ifchanged question.survey and question.per_class %}
+            <tr><th colspan="5" class="subheader">{% if question.per_class %}Per Class{% else %}Individual{% endif %} Questions</th></tr>
             {% endifchanged %}
             <tr>
                 <td class="underline">{{ question.seq }}</td>
@@ -136,7 +138,6 @@ Each step below is a form that you can expand or contract by clicking on the hea
                         {% endif %}
                     {% endfor %}
                 </td>
-                <td class="underline">{% if question.per_class %}&#10003;{% endif %}</td>
                 <td class="underline">
                     <a href="/manage/{{ program.url }}/surveys/manage?obj=question&op=edit&id={{ question.id }}">[Edit]</a>
                     <a href="/manage/{{ program.url }}/surveys/manage?obj=question&op=delete&id={{ question.id }}">[Delete]</a>
@@ -144,19 +145,22 @@ Each step below is a form that you can expand or contract by clicking on the hea
             </tr>
         {% endfor %}
         </table></td></tr>
-        <tr hidden id="rendered-panel"><td colspan="6"><table width="100%" cellpadding="0" cellspacing="0">
+        <tr hidden id="rendered-panel"><td colspan="5"><table width="100%" cellpadding="0" cellspacing="0">
         <tr>
             <td width="5%"><b>Seq</b></td>
-            <td width="85%" colspan="4" align="center"><b>Rendered Question</b></td>
+            <td width="85%" colspan="3" align="center"><b>Rendered Question</b></td>
             <td width="10%"></td>
         </tr>
         {% for question in questions %}
             {% ifchanged question.survey %}
-            <tr><th colspan="6">Questions for {{ question.survey.name }} ({{ question.survey.category }})</th></tr>
+            <tr><th colspan="5">{{ question.survey.name }} ({{ question.survey.category|capfirst }})</th></tr>
+            {% endifchanged %}
+            {% ifchanged question.survey and question.per_class %}
+            <tr><th colspan="5" class="subheader">{% if question.per_class %}Per Class{% else %}Individual{% endif %} Questions</th></tr>
             {% endifchanged %}
             <tr>
                 <td class="underline">{{ question.seq }}</td>
-                <td class="underline" colspan="4">{{ question.render }}</td>
+                <td class="underline" colspan="3">{{ question.render }}</td>
                 <td class="underline">
                     <a href="/manage/{{ program.url }}/surveys/manage?obj=question&op=edit&id={{ question.id }}">[Edit]</a>
                     <a href="/manage/{{ program.url }}/surveys/manage?obj=question&op=delete&id={{ question.id }}">[Delete]</a>
