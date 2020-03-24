@@ -269,7 +269,7 @@
   border-radius: 1vh !important;
   font-size: 2.25vh !important;
   width: calc(100% - 1vh);
-  height: 7.5vh;
+  min-height: 7.5vh;
 }
 
 .add_button {
