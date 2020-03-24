@@ -1,54 +1,3 @@
-<!-- <li class="hidden nav-header admin">Admin</li>
-
-{# TODO(benkraft): Allow configuring these too. #}
-<li class="admin hidden"><a href="/admin/">
-    <i class="glyphicon glyphicon-cog"></i> Administration Pages
-</a></li>
-<li class="admin hidden"><a href="/manage/programs/">
-    <i class="glyphicon glyphicon-time"></i> Programs
-</a></li>
-<li class="admin hidden"><a href="/admin/filebrowser/browse/">
-    <i class="glyphicon glyphicon-film"></i> Media Files
-</a></li>
-<li class="admin hidden"><a href="/themes/">
-    <i class="glyphicon glyphicon-eye-open"></i> Themes
-</a></li>
--->
-<li class="unmorph hidden"><a href="/myesp/switchback/">
-    <i class="glyphicon glyphicon-user"></i> Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script>
-</a></li>
-<!--
-<li class="onsite hidden"><a href="/myesp/onsite/">
-    <i class="glyphicon glyphicon-pencil"></i> Onsite Registration
-</a></li>
-<li class="admin hidden">
-  <a>
-    <i class="glyphicon glyphicon-user"></i> Find User
-  </a>
-  <form id="user_search_form" name="user_search_form" method="get" action="/manage/usersearch">
-    <input type="text" id="user_search_field" name="userstr">
-  </form>
-</li> -->
-
-{% comment %} === Admin Toolbar (includes user search) === {% endcomment %}
-<link rel="stylesheet" type="text/css" href="/media/default_styles/admin_bar.css">
-<div id="adminbar" class="admin hidden" style="position: fixed !important">
-  <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
-  <div id="adminbar_content"></div>
-</div>
-<script type="text/javascript">
-var currentPrograms = [
-{% for current_program in current_programs %}
-    {
-        urlBase: "{{ current_program.getUrlBase }}",
-        name: "{{ current_program.niceName }}",
-    },
-{% endfor %}
-];
-</script>
-<script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
-
-<!--<script type="text/javascript">
 ESP = (function(){
   var loaded = false;
   var queued_modules = [];
@@ -104,7 +53,7 @@ content_html:
     '<form id="usersearchform" name="usersearchform" method="get" action="/manage/usersearch">' +
     '<div class="input-append">' +
     '<input type="text" id="user_search_field" name="userstr" placeholder="Find User" />' +
-    '<button type="submit" id="user_search_submit" name="search_submit" aria-label="Search" class="btn-admin"><span class="glyphicon glyphicon-search glyphicon-btn-height" aria-hidden="true"></span></button>' +
+    '<button type="submit" id="user_search_submit" name="search_submit" aria-label="Search" class="btn btn-default"><span class="glyphicon glyphicon-search glyphicon-btn-height" aria-hidden="true"></span></button>' +
     '</div>' +
     '</form>',
     name: 'user_search',
@@ -118,7 +67,7 @@ if (currentPrograms && currentPrograms.forEach) {
                 '<form id="class_search_form" name="class_search_form" method="get" action="/manage/' + currentProgram.urlBase + '/classsearch">' +
                 '<div class="input-append">' +
                 '<input type="text" id="class_search_field" name="namequery" placeholder="Find Class by Title" />' +
-                '<button type="submit" id="class_search_submit" name="class_search_submit" aria-label="Search" class="btn-admin"><span class="glyphicon glyphicon-search glyphicon-btn-height" aria-hidden="true"></span></button>' +
+                '<button type="submit" id="class_search_submit" name="class_search_submit" aria-label="Search" class="btn btn-default"><span class="glyphicon glyphicon-search glyphicon-btn-height" aria-hidden="true"></span></button>' +
                 '</div>' +
                 '</form>',
             name: 'class_search',
@@ -138,5 +87,4 @@ ESP.registerAdminModule({
     name: 'Other',
     displayName: 'Other Important Links'
 });
-</script> -->
-{% comment %} === End Admin Toolbar === {% endcomment %}
+

@@ -70,7 +70,7 @@
 
 {% block body %}
 
-<div id="adminbar" class="admin hidden">
+<div id="adminbar" class="admin hidden" style="position: fixed !important">
   <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
   <div id="adminbar_content"></div>
 </div>
@@ -85,7 +85,7 @@ var currentPrograms = [
 {% endfor %}
 ]; 
 </script>
-<script type="text/javascript" src="/media/scripts/theme/mit_usersearch.js"> </script>
+<script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
     <div id="page" class="{{ request.path|extract_theme }}">
     <div id="tab_sidebar">
       <ul id="menu">
