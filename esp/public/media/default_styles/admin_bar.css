@@ -7,11 +7,12 @@
 	width: 200px;
 	z-index: 1000000;
 	text-align: center;
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 #adminbar > .title {
 	color: black;
     font-size: 12pt;
-	padding: 2px;
+	padding: 5px 0px;
 	text-align: center;
 	font-weight: bold;
 	cursor: pointer;
@@ -67,11 +68,12 @@
 }
 
 #adminbar_content .title {
-	padding: 2px;
 	background: #ccc;
 	border-top: 1px solid #aaa;
 	cursor: pointer;
 	font-size: 12pt;
+	color: black;
+	padding: 3px 0px;
 }
 #adminbar_content .title:hover {
 	background: #bbb;
@@ -122,4 +124,10 @@
 }
 .glyphicon.glyphicon-btn-height::before {
 	line-height: 18px;
+}
+#adminbar_content .content {
+	padding: 5px;
+}
+#adminbar_Manage_content, #adminbar_other_content {
+	font-size: 13px
 }
