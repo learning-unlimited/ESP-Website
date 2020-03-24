@@ -334,4 +334,5 @@ i.pointer {
 
 .survey textarea {
     width: 100%;
+    resize: vertical;
 }
