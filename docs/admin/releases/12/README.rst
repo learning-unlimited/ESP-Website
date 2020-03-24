@@ -20,7 +20,7 @@ Onsite Webapps
 We've added mobile-friendly interfaces for teachers and students for tools that are commonly used at Splash events.
 
 1. The teacher interface, available at ``/teach/[one]/[two]/teacheronsite`` (if enabled), has a live schedule, Google maps of campus (with directions to classrooms if set up), section details (including email addresses), section rosters (with attendance functionality), and a page for the Splash teacher survey and student survey responses. If no surveys are setup, this navigation panel is hidden (the new survey creation page can be used to set these up).
-2. Placeholder for student webapp
+2. The student interface, available at ``/learn/[one]/[two]/studentonsite`` (if enabled), has a live schedule (with class changes), Google maps of campus (with directions to classrooms if set up), a course catalog, and an interface to fill out the student survey. If no survey is setup, this navigation panel is hidden (the new survey creation page can be used to set these up).
 
 Student Acknowledgement
 ~~~~~~~~~~~~~~~~~~~~~~~
