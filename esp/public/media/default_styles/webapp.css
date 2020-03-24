@@ -331,3 +331,7 @@ i.pointer {
 .main input, .main select {
     max-width: 100%;
 }
+
+.survey textarea {
+    width: 100%;
+}
