@@ -12,11 +12,23 @@
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 </style>
-<br /><br />
 <h1>Survey Responses for {{ program.niceName }} </h1>
+
+{% if teacher_form %}
+<form method="POST" action="{{ request.get_full_path }}">
+<h2>Search for a teacher to retirieve their specific survey results:</h2>
+{{ teacher_form.target_user }}
+<input type="submit" value="Search" />
+</form>
+<br><br>
+{% endif %}
 
 <div id="program_form">
 <center>
+
+{% if teacher %}
+<h2>Survey results for {{ teacher.name }}</h2>
+{% endif %}
 
 {% for s in surveys %}
     <table class="fullwidth">

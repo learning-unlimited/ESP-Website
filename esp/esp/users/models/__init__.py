@@ -183,7 +183,12 @@ class BaseESPUser(object):
 
 
     @classmethod
-    def ajax_autocomplete(cls, data, group = None):
+    def ajax_autocomplete(cls, data, QObject = None):
+        """
+        Filter is a dictionary, where the keys are ESPUser model fields
+        and the values are the filters on those fields
+        (e.g. {})
+        """
         #q_name assumes data is a comma separated list of names
         #lastname first
         #q_username is username
@@ -205,8 +210,8 @@ class BaseESPUser(object):
 
         query_set = cls.objects.filter(q_names | q_username | q_id)
 
-        if group:
-            query_set = query_set.filter(groups=group)
+        if QObject:
+            query_set = query_set.filter(QObject).distinct()
 
         values = query_set.order_by('last_name','first_name','id').values('first_name', 'last_name', 'username', 'id')
 
@@ -216,11 +221,19 @@ class BaseESPUser(object):
 
     @classmethod
     def ajax_autocomplete_student(cls, data):
-        return cls.ajax_autocomplete(data, group = Group.objects.get(name="Student"))
+        return cls.ajax_autocomplete(data, QObject = Q(groups=Group.objects.get(name="Student")))
 
     @classmethod
     def ajax_autocomplete_teacher(cls, data):
-        return cls.ajax_autocomplete(data, group = Group.objects.get(name="Teacher"))
+        return cls.ajax_autocomplete(data, QObject = Q(groups=Group.objects.get(name="Teacher")))
+
+    @classmethod
+    def ajax_autocomplete_approved_teacher(cls, data, prog = None):
+        if prog:
+            QObject = Q(classsubject__status__gt=0, classsubject__parent_program__id=prog)
+        else:
+            QObject = Q(classsubject__status__gt=0)
+        return cls.ajax_autocomplete(data, QObject)
 
     def ajax_str(self):
         return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)

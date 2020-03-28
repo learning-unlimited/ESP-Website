@@ -49,6 +49,7 @@ from esp.utils.latex import render_to_latex
 from esp.program.modules.base import needs_admin
 from esp.middleware import ESPError
 from esp.tagdict.models import Tag
+from esp.users.forms.generic_search_form import ApprovedTeacherSearchForm
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.core.servers.basehttp import FileWrapper
 from django.contrib.auth.decorators import login_required
@@ -160,8 +161,12 @@ def get_survey_info(request, tl, program, instance):
     elif (tl == 'manage' and user.isAdmin(prog)):
         #   Meerp, no problem... I took care of it.   -Michael
         surveys = prog.getSurveys().select_related()
+        t_id = None
         if 'teacher_id' in request.GET:
             t_id = int( request.GET['teacher_id'] )
+        elif 'teacher_id' in request.POST:
+            t_id = int( request.POST['teacher_id'] )
+        if t_id:
             teachers = ESPUser.objects.filter(id=t_id)
             if len(teachers) > 0:
                 user = teachers[0]
@@ -195,12 +200,16 @@ def display_survey(user, prog, surveys, request, tl, format, template = 'survey/
         q = model.objects.filter(id = request.GET.get(key, None))[:1]
         if q:
             return q[0]
+        q = model.objects.filter(id = request.POST.get(key, None))[:1]
+        if q:
+            return q[0]
         return None
 
     sec = getByIdOrNone(ClassSection, 'classsection_id')
     cls = getByIdOrNone(ClassSubject, 'classsubject_id')
+    teacher = getByIdOrNone(ESPUser, 'teacher_id') or getByIdOrNone(ESPUser, 'target_user')
 
-    if tl == 'manage' and not 'teacher_id' in request.GET and sec is None and cls is None:
+    if tl == 'manage' and teacher is None and sec is None and cls is None:
         #   In the manage category, pack the data in as extra attributes to the surveys
         surveys = list(surveys)
         for s in surveys:
@@ -223,7 +232,12 @@ def display_survey(user, prog, surveys, request, tl, format, template = 'survey/
         section_ct=ContentType.objects.get(app_label="program",model="classsection")
         perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(Q(content_type=section_ct,object_id=x.id) | Q(content_type=subject_ct,object_id=x.parent_class.id)) } for y in perclass_questions ] } for x in classes ]
 
-    context.update({'user': user, 'surveys': surveys, 'program': prog, 'perclass_data': perclass_data, 'tl': tl})
+    if teacher:
+        teacher_form = ApprovedTeacherSearchForm(initial={'target_user': teacher.id}, prog = prog)
+        context['teacher'] = teacher
+    else:
+        teacher_form = ApprovedTeacherSearchForm(prog = prog)
+    context.update({'user': user, 'surveys': surveys, 'program': prog, 'perclass_data': perclass_data, 'tl': tl, 'teacher_form': teacher_form})
 
     #   Choose+use appropriate output format
     if format == 'html':
