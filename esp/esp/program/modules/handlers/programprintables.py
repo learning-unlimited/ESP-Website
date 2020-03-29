@@ -48,6 +48,7 @@ from esp.middleware import ESPError
 from esp.utils.query_utils import nest_Q
 from esp.program.models import VolunteerOffer
 
+from django import forms
 from django.conf import settings
 from django.http import HttpResponse
 from django.db.models import IntegerField, Case, When, Count
@@ -61,6 +62,7 @@ from decimal import Decimal
 import json
 import collections
 import copy
+import csv
 
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
@@ -1032,7 +1034,6 @@ class ProgramPrintables(ProgramModuleObj):
 
             students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
-        import csv
         from django.http import HttpResponse
         response = HttpResponse(content_type='text/csv')
         writer = csv.writer(response)
@@ -1526,36 +1527,27 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def all_classes_spreadsheet(self, request, tl, one, two, module, extra, prog):
-        import csv
-        from django.http import HttpResponse
-        from django.utils.encoding import smart_str
+        form = AllClassesSelectionForm()
+        converter = form.converter
 
-        response = HttpResponse(content_type="text/csv")
-        write_cvs = csv.writer(response)
+        if request.method == 'POST':
+            form = AllClassesSelectionForm(request.POST)
+            if form.is_valid():
+                response = HttpResponse(content_type="text/csv")
+                write_cvs = csv.writer(response)
+                selected_fields = form.cleaned_data['subject_fields']
+                csv_headings = [converter.field_dict[fieldname] for fieldname in selected_fields]
+                write_cvs.writerow(csv_headings)
 
-        write_cvs.writerow(("ID", "Teachers", "Title", "Duration", "GradeMin", "GradeMax", "ClsSizeMin", "ClsSizeMax", "Category", "Class Info", "Requests", "Msg for Directors", "Prereqs", "Directors Notes", "Assigned Times", "Assigned Rooms"))
-        for cls in ClassSubject.objects.filter(parent_program=prog):
-            write_cvs.writerow(
-                (cls.id,
-                 ", ".join([smart_str(t.name()) for t in cls.get_teachers()]),
-                 smart_str(cls.title),
-                 cls.prettyDuration(),
-                 cls.grade_min,
-                 cls.grade_max,
-                 cls.class_size_min,
-                 cls.class_size_max,
-                 cls.category,
-                 smart_str(cls.class_info),
-                 ", ".join(set(x.res_type.name for x in cls.getResourceRequests())),
-                 smart_str(cls.message_for_directors),
-                 smart_str(cls.prereqs),
-                 smart_str(cls.directors_notes),
-                 ", ".join(cls.friendly_times()),
-                 ", ".join(cls.prettyrooms()),
-                 ))
+                for cls in ClassSubject.objects.filter(parent_program=prog):
+                    write_cvs.writerow([converter.fieldvalue(cls,f) for f in selected_fields])
 
-        response['Content-Disposition'] = 'attachment; filename=all_classes.csv'
-        return response
+                response['Content-Disposition'] = 'attachment; filename=all_classes.csv'
+                return response
+
+        context = {}
+        context['form'] = form
+        return render_to_response(self.baseDir()+'all_classes_select_fields.html', request, context)
 
     @aux_call
     @needs_admin
@@ -1568,8 +1560,6 @@ class ProgramPrintables(ProgramModuleObj):
         unscheduled classes, taking into account the classes the teacher
         is already teaching and have been scheduled.
         """
-        import csv
-        from django.http import HttpResponse
 
         response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
@@ -1650,8 +1640,6 @@ class ProgramPrintables(ProgramModuleObj):
         conflicts (other classes taught by same teacher)
         room requests and comments
         """
-        import csv
-        from django.http import HttpResponse
         from esp.resources.models import ResourceType
 
         response = HttpResponse(content_type="text/csv")
@@ -1723,8 +1711,6 @@ class ProgramPrintables(ProgramModuleObj):
                 -   ID of the timeslot
                 -   Lock level (usually 0 for unlocked, 1 or higher for locked)
         """
-        import csv
-        from django.http import HttpResponse
         from esp.resources.models import ResourceAssignment
         response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
@@ -1739,3 +1725,60 @@ class ProgramPrintables(ProgramModuleObj):
     class Meta:
         proxy = True
         app_label = 'modules'
+
+
+class AllClassesFieldConverter(object):
+    """
+    Handles value extraction and formatting of CLassSubject instances. This is
+    used as 'pre-processing' step when generating the records for the All Classes
+    CSV spreadsheet.
+    """
+    TEACHERS = 'teachers'
+    TIMES = 'times'
+    ROOMS = 'rooms'
+    NUM_SECTIONS = "number of sections"
+    exclude_fields = ['session_count']
+
+    def __init__(self):
+        field_list = [field for field in ClassSubject._meta.fields if field.name not in self.exclude_fields]
+        #field_list.sort(key=lambda x: x.name)
+        self.field_choices = [(f, f.title()) for f in (self.TEACHERS, self.TIMES, self.ROOMS, self.NUM_SECTIONS)]
+        self.field_choices += [(field.name, field.verbose_name.title()) for field in field_list]
+
+        #sort tuple list by field name
+        sorted(self.field_choices,key=lambda x: x[0])
+        self.field_dict = dict(self.field_choices)
+
+        #a dict of field names and asscoiated formatting lambdas to handle generation
+        #of field data that should have a different format than the default.
+        self.field_converters = {
+            self.TEACHERS: lambda x: ", ".join([smart_str(t.name()) for t in x.get_teachers()]),
+            self.TIMES: lambda x: ", ".join(x.friendly_times()),
+            self.ROOMS: lambda x: ", ".join(x.prettyrooms()),
+            self.NUM_SECTIONS: lambda x: x.sections.count()
+        }
+
+    def fieldvalue(self, class_subject, fieldname):
+        """
+        Returns the value of the specified field for the supplied class_subject instance.
+        Fields that are defined in the field_converters dict will have an associated
+        formatting function which will be executed to return the appropriate format.
+        """
+        fieldvalue = ''
+        if fieldname in self.field_converters:
+            fieldvalue = self.field_converters[fieldname](class_subject)
+        elif hasattr(class_subject, fieldname):
+            fieldvalue = getattr(class_subject, fieldname)
+        else:
+            raise ValueError('Invalid fieldname supplied {0}'.format(fieldname))
+        return fieldvalue
+
+
+class AllClassesSelectionForm(forms.Form):
+    subject_fields = forms.MultipleChoiceField()
+
+    def __init__(self, *args, **kwargs):
+        super(AllClassesSelectionForm, self).__init__(*args, **kwargs)
+
+        self.converter = AllClassesFieldConverter()
+        self.fields['subject_fields'].choices = self.converter.field_choices
