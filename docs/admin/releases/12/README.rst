@@ -58,6 +58,7 @@ Printables changes
 - Admins can now use an arbitrary list of users (like that used in the comm panel or schedule generator) to generate nametags.
 - Nametags now have the option to have barcodes on the backs (or really anything, with template overrides).
 - Reorganized the printables page and condensed the "Class and Section Lists" section by implementing dropdown menus.
+- The "All Classes Spreadsheet" now has a form that allows admins to choose which fields to include in the CSV download.
 
 Scheduler changes
 ~~~~~~~~~~~~~~~~~
@@ -101,6 +102,7 @@ Minor new features
 - Added duration-from-now labels next to deadline form fields.
 - Made the text on the profile form clearer when users can not change their grade/dob.
 - Added emailcodes to the subjects of all emails to class/section lists (i.e. "[prefix] [emailcode] Subject"). The prefix can be changed in the admin pages (and will be omited from the subject if not set).
+- Changed the theme of the administration pages. Each section on the main page is now moveable, collapsible, and closable.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
