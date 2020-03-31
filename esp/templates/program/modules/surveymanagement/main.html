@@ -6,10 +6,7 @@
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 </style>
-<br />
-<br />
 
-<br /><br />
 <h1>Surveys for {{ program.niceName }}</h1>
 
 <p>
@@ -18,7 +15,7 @@ Surveys for students and teachers can be associated with {{ program.program_type
 
 <h3>Possibilities</h3>
 <ul>
-<li><a href="/manage/{{ program.getUrlBase }}/surveys/create" title="Create">Create a new survey</a></li>
+<li><a href="/manage/{{ program.getUrlBase }}/surveys/manage" title="Create">Create a new survey</a></li>
 <li><a href="/manage/{{ program.getUrlBase }}/surveys/review" title="Review">Review survey results</a></li>
 <li><a href="/manage/{{ program.getUrlBase }}/surveys/review_pdf" title="Review PDF">Review survey results (PDF format)</a></li>
 <li><a href="/manage/{{ program.getUrlBase }}/surveys/dump" title="Dump XLS">Export survey results (XLS format)</a></li>
@@ -28,7 +25,7 @@ Surveys for students and teachers can be associated with {{ program.program_type
 <h3>Existing Surveys</h3>
 <ul>
 {% for s in program.getSurveys %}
-    <li><a href="/manage/{{ program.getUrlBase }}/surveys/edit?id={{ s.id }}">{{ s.name }}</a> (click to edit)
+    <li><a href="/manage/{{ program.getUrlBase }}/surveys/manage?obj=survey&op=edit&id={{ s.id }}">{{ s.name }}</a> (click to edit)
 {% endfor %}
 </ul>
 
