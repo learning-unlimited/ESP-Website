@@ -101,18 +101,22 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 submitted_form = request.POST['form_name']
                 if submitted_form == "Program Settings":
                     form = ProgramSettingsForm(request.POST, instance = prog)
+                    if form.is_valid():
+                        form.save()
+                        #If the url for the program is now different, redirect to the new settings page
+                        if prog.url is not old_url:
+                            return HttpResponseRedirect( '/manage/%s/settings' % (prog.url))
                     prog_form = form
                 elif submitted_form == "Teacher Registration Settings":
                     form = TeacherRegSettingsForm(request.POST, instance = crmi)
+                    if form.is_valid():
+                        form.save()
                     crmi_form = form
                 elif submitted_form == "Student Registration Settings":
                     form = StudentRegSettingsForm(request.POST, instance = scrmi)
+                    if form.is_valid():
+                        form.save()
                     scrmi_form = form
-                if form.is_valid():
-                    form.save()
-                    #If the url for the program is now different, redirect to the new settings page
-                    if prog.url is not old_url:
-                        return HttpResponseRedirect( '/manage/%s/settings' % (prog.url))
 
         #Set up any other forms on the page
         if submitted_form != "Program Settings":
@@ -126,9 +130,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
             line_items = pac.get_lineitemtypes(required_only=True).values('amount_dec')
             prog_dict['base_cost'] = int(sum(x["amount_dec"] for x in line_items))
             prog_dict["sibling_discount"] = prog.sibling_discount
-            prog_dict['program_modules'] = prog.program_modules.all().values_list("id", flat=True)
             prog_dict['class_categories'] = prog.class_categories.all().values_list("id", flat=True)
             prog_dict['flag_types'] = prog.flag_types.all().values_list("id", flat=True)
+            # prog_dict['program_modules'] is initialized in the __init__method of ProgramSettingsForm
             prog_form = ProgramSettingsForm(prog_dict, instance = prog)
 
         if submitted_form != "Teacher Registration Settings":
