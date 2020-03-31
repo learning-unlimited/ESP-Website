@@ -79,7 +79,10 @@ Flag and classsearch changes
 
 Survey changes
 ~~~~~~~~~~~~~~
+- Added a user interface for admins to build surveys for students and teachers to fill out after a program is over. Built-in question types include "Yes-No Response", "Multiple Choice", "Checkboxes", "Short Answer", "Long Answer", "Numeric Rating", and "Labeled Numeric Rating". Survey questions can be viewed in their rendered layout to see how they'll ultimately look in the survey. Once surveys have been created, they can be imported for future programs.
+- Built-in surveys are now shown in the student and teacher onsite webapp interfaces. Additionally, teachers can see surveys responses for their classes in the teacher onsite webapp interface.
 - Admins can now specify which students and teachers have access to the built-in program surveys with the tags "survey_teacher_filter" and "survey_student_filter". These tags will also be used to calculate the number of potential participants when displaying survey results.
+- All survey questions are now bolded (previously some question types were not).
 
 Theme changes
 ~~~~~~~~~~~~~
