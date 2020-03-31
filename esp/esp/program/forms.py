@@ -69,7 +69,7 @@ class ProgramCreationForm(BetterModelForm):
 
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current modules. """
-        program_module_ids = [[x.id for x in ProgramModule.objects.filter(admin_title__in=['Accounting', 'Student Optional Fees', 'Credit Card Payment Module (Stripe)', 'Financial Aid Application',                                                                                        'Easily Approve Financial Aid Requests'])],
+        self.program_module_ids = [[x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Optional Fees', 'Accounting', 'Credit Card Payment Module (Stripe)', 'Financial Aid Application',                                                                                        'Easily Approve Financial Aid Requests'])],
                                    [x.id for x in ProgramModule.objects.filter(admin_title__in=['Accounting', 'Credit Card Payment Module (Stripe)', 'Financial Aid Application',
                                                                                                 'Easily Approve Financial Aid Requests'])],
                                    [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Logistics Quiz')],
@@ -85,52 +85,44 @@ class ProgramCreationForm(BetterModelForm):
                                    [x.id for x in ProgramModule.objects.filter(admin_title__in=['Application Review for Admin', 'Admin Admissions Dashboard'])],
                                    [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Admissions Dashboard', 'Application Reviews for Teachers', 'Application Review for Admin', 'Admin Admissions Dashboard'])]
                                    ]
-        program_modules_questions = ['Will you have extra costs (shirts or lunch)?', # Accounting, Student Optional Fees, Credit Card Payment Module (Stripe), Financial Aid Application, Easily Approve Financial Aid Requests
-                                     'Will you charge for the program?', # Accounting, Credit Card Payment Module (Stripe), Financial Aid Application, Easily Approve Financial Aid Requests
-                                     'Do you want a pre-program quiz for teachers?', # Teacher Logistics Quiz
-                                     'Will you send any surveys to teachers?', # Teacher Surveys, Survey Management
-                                     'Will you send any surveys to students?', # Student Surveys, Survey Management
-                                     'Will you have any additional (non-survey) forms that teachers should fill out?', # Teacher Custom Form
-                                     'Will you have any additional (non-survey) forms that teachers should fill out?', # Student Custom Form
-                                     'Will you have more than one lunch period (per day)?', # Student Lunch Period Selection
-                                     'Would you be willing to solicit donations for LU?', # Donation Module
-                                     'Do you plan to have teacher training or interviews?', # Teacher Training and Interview Signups, Manage Teacher Training and Interviews
-                                     'Will you use lottery registration (as opposed to first come, first served) for classes?', # Two-Phase Student Registration, Lottery Frontend
-                                     'Will you use lottery admission to the program?', # Student Registration Phase Zero, Manage Student Registration Phase Zero
-                                     'Do students have to apply to individual classes?', # Application Review for Admin, Admin Admissions Dashboard
-                                        'If yes, can teachers admit them (as opposed to just admins)?' # Teacher Admissions Dashboard, Application Reviews for Teachers, Application Review for Admin, Admin Admissions Dashboard
-                                    ]
-        # Get 'initial' argument if any
-        initial_arguments = kwargs.get('initial', None)
-        updated_initial = {}
-        if initial_arguments:
-            # We have initial arguments, fetch 'program_modules' placeholder variable if any
-            progmods = initial_arguments.get('program_modules', None)
-            # Now update the form's initial values if there was an initial value passed
-            if progmods:
-                updated_initial['program_modules'] = getattr(progmods, 'choices', None)
-        # Turn these module ids into indices for the questions to pre-populate the list
-        question_ix = [0 for _ in program_module_ids]
-        for mod in updated_initial:
-            for i, lst in enumerate(program_module_ids):
-                if mod in lst:
-                    question_ix[i] = 1
-        updated_initial['program_modules'] = question_ix
-        # Finally update the kwargs initial reference
-        kwargs.update(initial=updated_initial)
-        # Now initialize the form
-        super(ProgramCreationForm, self).__init__(*args, **kwargs)
-        self.program_module_ids = program_module_ids
+        self.program_modules_questions = ['Will you have extra costs (shirts or lunch)?', # Accounting, Student Optional Fees, Credit Card Payment Module (Stripe), Financial Aid Application, Easily Approve Financial Aid Requests
+                                          'Will you charge for the program?', # Accounting, Credit Card Payment Module (Stripe), Financial Aid Application, Easily Approve Financial Aid Requests
+                                          'Do you want a pre-program quiz for teachers?', # Teacher Logistics Quiz
+                                          'Will you send any surveys to teachers?', # Teacher Surveys, Survey Management
+                                          'Will you send any surveys to students?', # Student Surveys, Survey Management
+                                          'Will you have any additional (non-survey) forms that teachers should fill out?', # Teacher Custom Form
+                                          'Will you have any additional (non-survey) forms that students should fill out?', # Student Custom Form
+                                          'Will you have more than one lunch period (per day)?', # Student Lunch Period Selection
+                                          'Would you be willing to solicit donations for LU?', # Donation Module
+                                          'Do you plan to have teacher training or interviews?', # Teacher Training and Interview Signups, Manage Teacher Training and Interviews
+                                          mark_safe('Will you use lottery admission (as opposed to first come, first served) to the <b>program</b>?'), # Two-Phase Student Registration, Lottery Frontend
+                                          mark_safe('Will you use lottery registration (as opposed to first come, first served) for <b>classes</b>?'), # Student Registration Phase Zero, Manage Student Registration Phase Zero
+                                          'Do students have to apply to individual classes?', # Application Review for Admin, Admin Admissions Dashboard
+                                          'If yes, can teachers admit them (as opposed to just admins)?' # Teacher Admissions Dashboard, Application Reviews for Teachers, Application Review for Admin, Admin Admissions Dashboard
+                                        ]
         # Include additional or new modules that haven't been added to the list
         for x in ProgramModule.objects.filter(choosable=0):
             if x.id not in sum(self.program_module_ids, []):
                 program_modules_questions.append('Would you like to include the {} module?'.format(x.admin_title))
                 self.program_module_ids.append([x.id])
-        self.fields['program_modules'].choices = enumerate(program_modules_questions)
-
+        # Get template program (first argument), if any
+        if len(args) > 0:
+            updated_initial = {'program_modules': []}
+            template_program = args[0]
+            # We have initial arguments, so fetch 'program_modules' placeholder variable (if any)
+            progmods = template_program.get('program_modules', None)
+            # Now update the form's initial values if there was an initial value passed
+            if progmods:
+                updated_initial['program_modules'] = self.lookup_modules(progmods)
+            # Finally update the args initial reference
+            args[0].update(updated_initial)
+        # Now initialize the form
+        super(ProgramCreationForm, self).__init__(*args, **kwargs)
+        self.fields['program_modules'].choices = enumerate(self.program_modules_questions)
         #   Enable validation on other fields
         self.fields['program_size_max'].required = True
         self.fields['program_size_max'].validators.append(validators.MaxValueValidator((1 << 31) - 1))
+
 
     def save(self, commit=True):
         '''
@@ -138,6 +130,7 @@ class ProgramCreationForm(BetterModelForm):
         fields, and constructs the url and name fields on the Program instance;
         then calls the superclass's save() method.
         '''
+        self.fields['program_modules'].initial = self.lookup_modules(self.program_module_ids[:])
         #   Filter out unwanted characters from program type to form URL
         ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
         self.instance.url = u'%(type)s/%(instance)s' \
@@ -149,6 +142,21 @@ class ProgramCreationForm(BetterModelForm):
               ,'instance': self.cleaned_data['term_friendly']
               }
         return super(ProgramCreationForm, self).save(commit=commit)
+
+
+    def lookup_modules(self, initial_mods):
+        # Turn these module ids into indices for the questions to pre-populate the list
+        question_ix = []
+        for mod in initial_mods:
+            # Hack for OptionalFees (ExtraCosts) module; it alone should activate the first checkbox since all the other modules associated with it could also indicate just admission fee
+            if mod == ProgramModule.objects.filter(admin_title='Student Optional Fees')[0].id:
+                question_ix.append(0)
+                continue
+            for i, lst in enumerate(self.program_module_ids):
+                if i > 0 and mod in lst:
+                    question_ix.append(i)
+        return sorted(set(question_ix))
+
 
     def load_program(self, program):
         #   Copy the data in the program into the form so that we don't have to re-select modules and stuff.
