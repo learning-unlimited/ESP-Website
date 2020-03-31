@@ -23,6 +23,10 @@ Expects:
                         {% with "format=html&max="|concat:params.number_of_ratings as args %}
                             {{ q.answers|unpack_answers|histogram:args|safe }}
                         {% endwith %}
+                    {% elif q.question.question_type.name == "Yes-No Response" %}
+                        {% with "format=html&opts=Yes|No" as args %}
+                            {{ q.answers|unpack_answers|histogram:args|safe }}
+                        {% endwith %}
                     {% else %}
                         {% with params.list|join:"|" as opts %}
                             {% with "format=html&opts="|concat:opts as args %}
