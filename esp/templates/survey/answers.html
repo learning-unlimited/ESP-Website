@@ -24,7 +24,11 @@ Expects:
                             {{ q.answers|unpack_answers|histogram:args|safe }}
                         {% endwith %}
                     {% else %}
-                        {{ q.answers|unpack_answers|histogram:"format=html"|safe }}
+                        {% with params.list|join:"|" as opts %}
+                            {% with "format=html&opts="|concat:opts as args %}
+                                {{ q.answers|unpack_answers|histogram:args|safe }}
+                            {% endwith %}
+                        {% endwith %}
                     {% endif %}
                     {% if params.lower_text %}
                     <div style="font-weight:bold; font-size:0.8em; width:216px;margin-bottom: 20px;">
