@@ -163,6 +163,7 @@ var SchedulingCheck = React.createClass({
     return <div className="scheduling-check">
       <div className="scheduling-check-title">
         <span onClick={this.handleClick}>{this.props.title}</span>
+        <ScheduleButton onClick={this.handleClick} />
         <RefreshButton onClick={this.loadData} />
         <ResetButton onClick={this.resetTable} />
       </div>
@@ -170,6 +171,21 @@ var SchedulingCheck = React.createClass({
         {body}
       </div>
     </div>;
+  },
+});
+
+/**
+ * A load button, which calls its onClick prop
+ */
+var ScheduleButton = React.createClass({
+  propTypes: {
+    onClick: React.PropTypes.func.isRequired,
+  },
+
+  render: function () {
+    return <button onClick={this.props.onClick} className="reset-button">
+      Run Diagnostic
+    </button>;
   },
 });
 
