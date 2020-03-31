@@ -65,12 +65,24 @@ class SurveyManagement(ProgramModuleObj):
         if request.GET:
             obj = request.GET.get("obj", None)
             op = request.GET.get("op", None)
-            id = request.GET.get("id", None) or request.POST.get("survey", None) or request.POST.get("question", None)
+            id = request.GET.get("id", None) or request.POST.get("survey_id", None) or request.POST.get("question_id", None)
             if obj == "survey":
                 context['open_section'] = 'survey'
                 survey = None
                 surveys = Survey.objects.filter(id = id)
-                if len(surveys) == 1:
+                if request.POST and not op:
+                    if len(surveys) == 1:
+                        # submitted question form to edit an existing question
+                        form = SurveyForm(request.POST, instance = surveys[0])
+                        form.id = id
+                    else:
+                        # submitted question form to create new question
+                        form = SurveyForm(request.POST)
+                    if form.is_valid():
+                        form.save(program = prog)
+                    else:
+                        context['survey_form'] = form
+                elif len(surveys) == 1:
                     survey = surveys[0]
                     if op == "edit":
                         # clicked edit link
@@ -107,25 +119,23 @@ class SurveyManagement(ProgramModuleObj):
                             context['survey'] = survey
                             context['questions'] = survey.questions.order_by('seq')
                             return render_to_response('program/modules/surveymanagement/import.html', request, context)
-                    elif request.POST:
-                        # submitted survey form to edit an existing survey
-                        form = SurveyForm(request.POST, instance = survey)
-                        form.id = id
-                        context['survey_form'] = form
-                        if form.is_valid():
-                            form.save(program = prog)
-                elif request.POST:
-                    # submitted survey form to create new survey
-                    form = SurveyForm(request.POST)
-                    form.id = id
-                    context['survey_form'] = form
-                    if form.is_valid():
-                        form.save(program = prog)
             elif obj == "question":
                 context['open_section'] = 'question'
                 question = None
                 questions = Question.objects.filter(id = id)
-                if len(questions) == 1:
+                if request.POST and not op:
+                    if len(questions) == 1:
+                        # submitted question form to edit an existing question
+                        form = QuestionForm(request.POST, instance = questions[0], cur_prog = prog)
+                        form.id = id
+                    else:
+                        # submitted question form to create new question
+                        form = QuestionForm(request.POST, cur_prog = prog)
+                    if form.is_valid():
+                        form.save()
+                    else:
+                        context['question_form'] = form
+                elif len(questions) == 1:
                     question = questions[0]
                     if op == "edit":
                         # clicked edit link
@@ -140,20 +150,6 @@ class SurveyManagement(ProgramModuleObj):
                             # clicked delete link
                             context['question'] = question
                             return render_to_response('program/modules/surveymanagement/question_delete.html', request, context)
-                    elif request.POST:
-                        # submitted question form to edit an existing question
-                        form = QuestionForm(request.POST, instance = question, cur_prog = prog)
-                        form.id = id
-                        context['question_form'] = form
-                        if form.is_valid():
-                            form.save()
-                elif request.POST:
-                    # submitted question form to create new question
-                    form = QuestionForm(request.POST, cur_prog = prog)
-                    form.id = id
-                    context['survey_form'] = form
-                    if form.is_valid():
-                        form.save()
         if 'survey_form' not in context:
             context['survey_form'] = SurveyForm()
         if 'question_form' not in context:

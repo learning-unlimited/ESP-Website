@@ -51,8 +51,8 @@ Each step below is a form that you can expand or contract by clicking on the hea
     <br />
     <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=survey">
         {% if survey_form.id %}
-        <input type="hidden" name="survey" value="{{ survey_form.id }}" />
-        {{ survey_form.id }}{% endif %}
+        <input type="hidden" name="survey_id" value="{{ survey_form.id }}" />
+        {% endif %}
         <table align="center" cellpadding="0" cellspacing="0" width="100%">
             <tr><th colspan="2">Add/modify a Survey</th></tr>
             {{ survey_form.as_table }}
@@ -96,7 +96,7 @@ Each step below is a form that you can expand or contract by clicking on the hea
     {% endifequal %}
     <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=question">
         {% if question_form.id %}
-        <input type="hidden" name="question" value="{{ question_form.id }}" />
+        <input type="hidden" name="question_id" value="{{ question_form.id }}" />
         {% endif %}
         <table align="center" cellpadding="0" cellspacing="0" width="100%">
             <tr><th colspan="2">Add/modify a Question</th></tr>

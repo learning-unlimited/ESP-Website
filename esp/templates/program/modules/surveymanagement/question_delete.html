@@ -20,7 +20,7 @@ You have chosen to delete the following survey question. Please confirm the deta
 <div id="program_form">
 <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=question&op=delete">
 <input type="hidden" name="delete_confirm" value="yes" />
-<input type="hidden" name="question" value="{{ question.id }}" />
+<input type="hidden" name="question_id" value="{{ question.id }}" />
 <table align="center" cellpadding="0" cellspacing="0" width="100%">
     <tr><th colspan="2">
         Question Information
@@ -32,8 +32,10 @@ You have chosen to delete the following survey question. Please confirm the deta
     <tr><th width="35%">Parameter Values:</th>
         <td>
         {% for key, value in question.get_params.items %}
-            {{ key }}: {% if value %}{{ value }}{% endif %}
-            {% if not forloop.last %}<br />{% endif %}
+            {% if key != "list" or value %}
+                <i>{% if key == "list" %}other{% else %}{{ key }}{% endif %}</i>: {% if value %}{{ value }}{% endif %}
+                {% if not forloop.last %}<br />{% endif %}
+            {% endif %}
         {% endfor %}
         </td>
     </tr>
