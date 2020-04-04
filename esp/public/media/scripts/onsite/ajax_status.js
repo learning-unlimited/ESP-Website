@@ -778,10 +778,8 @@ function clear_table()
 
     for (var ts_id in data.timeslots)
     {
-        var div_name = "timeslot_" + ts_id;
-        var ts_div = $j("#" + div_name);
-        
-        ts_div.html("");
+        $j("table#timeslots > * > tr.sections").remove();
+        $j(".timeslot_header, .timeslot_footer").remove();
     }
 }
 
@@ -809,9 +807,70 @@ function render_table(display_mode, student_id)
         }
 
         var div_name = "timeslot_" + ts_id;
-        var ts_div = $j("#" + div_name);
+        var headers = $j(".timeslot_headers");
+        var footers = $j(".timeslot_footers");
         
-        ts_div.append($j("<div/>").addClass("timeslot_header timeslot_top").html(timeSlotHeader));
+        headers.append($j("<th/>").addClass("timeslot_" + ts_id + " timeslot_header timeslot_top").html(timeSlotHeader));
+        footers.append($j("<th/>").addClass("timeslot_" + ts_id + " timeslot_header").html(timeSlotHeader));
+    }
+    
+    var sec_height = 20; // if you change this, make sure to change it in the css, too
+    for (var sec_id in data.sections)
+    {
+        var row = 0;
+        var new_row = false;
+        section = data.sections[sec_id];
+        //find row closest to the top that can contain the event
+        if (section.event_ids.length > 0) {
+            Loop1: while (true) {
+                if (row >= $j("table#timeslots > * > tr.sections").length) {
+                    //we've run out of existing rows, need to make a new row
+                    new_row = true;
+                    break Loop1;
+                }
+                Loop2: for (var ts_id of section.event_ids) {
+                    var ts_tds = document.querySelectorAll('.timeslot_'+ ts_id +':not(.timeslot_header)');
+                    if ($j(ts_tds[row]).hasClass('section')) {
+                        //conflict in this row, check next row
+                        row += 1;
+                        break Loop2;
+                    }
+                    if (ts_id == section.event_ids[section.event_ids.length - 1]) {
+                        //no conflicts in this row, use it
+                        break Loop1;
+                    }
+                }
+            }
+            
+            if (new_row) {
+                //make new row
+                var new_tr = $j("<tr/>").addClass("sections").insertBefore($j(".timeslot_footers"));
+                //loop through timeslots
+                for (var ts_id in data.timeslots) {
+                    if (section.event_ids.includes(parseInt(ts_id))) {                    
+                        //make section tds if timeslot in event_ids
+                        var new_td = $j("<td/>").addClass("section timeslot_" + ts_id).html('section' + sec_id);
+                        //Customize cell with other attributes from code below
+                        
+                    } else {
+                        //blank tds otherwise
+                        var new_td = $j("<td/>").addClass("timeslot_" + ts_id);
+                    }
+                    new_tr.append(new_td);
+                }
+            } else {
+                //find existing blank cells and replace them
+                for (var ts_id of section.event_ids) {
+                    var new_td = $j("<td/>").addClass("section timeslot_" + ts_id).html('section' + sec_id);
+                    //Customize cell with other attributes
+                    var ts_tds = document.querySelectorAll('.timeslot_'+ ts_id +':not(.timeslot_header)');
+                    $j(ts_tds[row]).replaceWith(new_td);
+                    
+                }
+            }
+        }
+    }
+    if (false) {
         var classes_div = $j("<div/>");
         for (var i in data.timeslots[ts_id].sections)
         {
@@ -842,8 +901,8 @@ function render_table(display_mode, student_id)
                     new_div.addClass("section_hidden");
             }
             
-	    //  Hide the class if its registration is closed (and we're not showing closed classes)
-	    if ((!(settings.show_closed_reg)) && (section.registration_status != 0))
+            //  Hide the class if its registration is closed (and we're not showing closed classes)
+            if ((!(settings.show_closed_reg)) && (section.registration_status != 0))
                 new_div.addClass("section_hidden");
             
             new_div.append($j("<span/>").addClass("emailcode").html(section.emailcode));
@@ -920,7 +979,6 @@ function render_table(display_mode, student_id)
 
 
         ts_div.append(classes_div);
-        ts_div.append($j("<div/>").addClass("timeslot_header").html(data.timeslots[ts_id].label));
     }
     if (display_mode == "classchange") {
         update_checkboxes();

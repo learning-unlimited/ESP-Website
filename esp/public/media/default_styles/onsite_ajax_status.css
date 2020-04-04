@@ -86,13 +86,13 @@ tr.narrow {
 }
 
 table.bordered {
-    border: 1px solid #cccccc;
+    /*border: 1px solid #cccccc;*/
 }
 
 table.narrow {
     margin: 0px;
     padding: 0px;
-    border-spacing: 0em;
+    /*border-spacing: 0em;*/
     table-layout:fixed;
 }
 
@@ -100,7 +100,7 @@ table.narrow {
     font-weight: bold;
     text-align: center;
     background-color: #cccccc;
-    width: 200px;
+    min-width: 200px;
     padding-top: 10px;
     height: 30px;
     font-size: 1.1em;
