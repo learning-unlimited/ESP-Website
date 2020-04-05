@@ -85,14 +85,20 @@ tr.narrow {
     height: 20px;
 }
 
+.sections > td:not(.section) {
+    height: 0px;
+    line-height: 0;
+    padding: 0px;
+}
+
 table.bordered {
-    /*border: 1px solid #cccccc;*/
+    border: 1px solid #777;
+    border-collapse: collapse;
 }
 
 table.narrow {
     margin: 0px;
     padding: 0px;
-    /*border-spacing: 0em;*/
     table-layout:fixed;
 }
 
@@ -100,7 +106,9 @@ table.narrow {
     font-weight: bold;
     text-align: center;
     background-color: #cccccc;
-    min-width: 200px;
+    border: 1px solid #777;
+    min-width: 220px;
+    max-width: 220px;
     padding-top: 10px;
     height: 30px;
     font-size: 1.1em;
@@ -111,8 +119,17 @@ table.narrow {
 }
 
 .section {
-    border: 1px solid hsla(0, 0%, 0%, 0.05);
+    border: 1px solid #777;
     background-color: #ccccff;
+    width: 220px;
+}
+
+.section_left_open {
+    border-left: none;
+}
+
+.section_right_open {
+    border-right: none;
 }
 
 .section_highlight {
@@ -133,28 +150,13 @@ table.narrow {
     border: 1px solid #666666;
 }
 
-.section_hidden {
+.section_hidden, .section_search_hidden, .section_category_hidden, .section_conflict_hidden {
     visibility: hidden;
     height: 0px;
     border: 0px;
-}
-
-.section_search_hidden {
-    visibility: hidden;
-    height: 0px;
-    border: 0px;
-}
-
-.section_category_hidden {
-    visibility: hidden;
-    height: 0px;
-    border: 0px;
-}
-
-.section_conflict_hidden {
-    visibility: hidden;
-    height: 0px;
-    border: 0px;
+    line-height: 0;
+    padding: 0px;
+    overflow: hidden;
 }
 
 #student_selector_area {
@@ -269,4 +271,9 @@ span {
 
 .tooltip_wide span {
     width: 600px !important;
+}
+
+.title {
+    padding-left: 5px;
+    padding-right: 5px;
 }
