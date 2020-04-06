@@ -1,0 +1,62 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Survey Administration{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+
+<h1>Survey Management for {{ program.niceName }}</h1>
+
+<h2>Confirm Survey Delete</h2>
+
+<p>
+You have chosen to delete the following survey. Please confirm the details below and click the "Delete" button.
+</p>
+
+<div id="program_form">
+<form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=survey&op=delete">
+<input type="hidden" name="delete_confirm" value="yes" />
+<input type="hidden" name="survey_id" value="{{ survey.id }}" />
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
+    <tr><th colspan="5">
+        Survey Information
+    </th></tr>
+    <tr><th width="15%">Name:</th><td colspan="4">{{ survey.name }}</td></tr>
+    <tr><th width="15%">Category:</th><td colspan="4">{{ survey.category }}</td></tr>
+    <tr><th colspan="5">The following questions will also be deleted:</th></tr>
+    <tr><td colspan="5"><table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+        <td width="5%" class="underline"><b>Seq</b></td>
+        <td width="30%" class="underline"><b>Name</b></td>
+        <td width="25%" class="underline"><b>Question Type</b></td>
+        <td width="25%" class="underline"><b>Parameter Values</b></td>
+        <td width="5%" class="underline"><b>Per Class</b></td>
+    </tr>
+    {% for question in questions %}
+        <tr>
+            <td class="underline">{{ question.seq }}</td>
+            <td class="underline">{{ question.name }}</td>
+            <td class="underline">{{ question.question_type.name }}</td>
+            <td class="underline">
+                {% for key, value in question.get_params.items %}
+                    {{ key }}: {% if value %}{{ value }}{% endif %}
+                    {% if not forloop.last %}<br />{% endif %}
+                {% endfor %}
+            </td>
+            <td class="underline">{% if question.per_class %}&#10003;{% endif %}</td>
+        </tr>
+    {% endfor %}
+    </table></td></tr>
+    <tr>
+        <td colspan="5" align="center"><a href="/manage/{{ prog.getUrlBase }}/surveys/manage">Return to survey management</a>, or click here:
+        <input class="fancybutton" value="Delete" type="submit" /></td>
+    </tr>
+</table>
+</form>
+</div>
+
+{% endblock %}
