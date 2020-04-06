@@ -83,12 +83,16 @@ Survey changes
 - Built-in surveys are now shown in the student and teacher onsite webapp interfaces. Additionally, teachers can see surveys responses for their classes in the teacher onsite webapp interface.
 - Admins can now specify which students and teachers have access to the built-in program surveys with the tags "survey_teacher_filter" and "survey_student_filter". These tags will also be used to calculate the number of potential participants when displaying survey results.
 - All survey questions are now bolded (previously some question types were not).
+- Survey result histograms for countable questions now show the entire possible range of answers.
+- The ``top_classes`` page for program surveys works again.
+- Fixed survey dumps in cases where survey names had certain forbidden characters.
 
 Theme changes
 ~~~~~~~~~~~~~
 - Links on the barebones and bigpictures themes that previously said "Admin Home", now correctly say "Administration Pages" like other themes
 - Fixed the fruit salad header for instances where the program name was very long and overlapped with the login information. Also changed styling associated with the login box to make things symmetrical (and removed the text "Hello,").
 - Fixed the colors of the buttons presented when editing a QSD/editable text on the bigpicture theme. Button colors will also now properly change when updated in the bigpicture theme settings.
+- Fixed the width of the class edit form and the teacher preview table in the bigpicture theme.
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
@@ -96,7 +100,6 @@ Minor new features
 - You can now sort the results of a user search. The results also now include the last program for which a user has a profile (has registered).
 - The teacher major and affiliation fields are now included as options in the arbitrary user list module.
 - Phase zero is no longer included in the student registration checkboxes interface. More details are now included on the lottery confirmation page.
-- Histograms for numerical questions in the built-in surveys now show the entire possible range of answers
 - The teacher availability search bar now only searches teachers (for the autocomplete). The rapid check-in and formstack medical/liability student search bars now only search students (for the autocomplete).
 - Added a new page where admins can check the status of comm panel emails (``/manage/emails/``).
 - Moved the grade change request link in the profile form to just under the grade field.
@@ -112,9 +115,7 @@ Minor bug fixes
 - The debug toolbar remains active (if specified by the admin) when morphing into users.
 - All required fields are now marked as such in the profile form.
 - Cancellation emails now permit symbols, such as apostrophes.
-- The ``top_classes`` page for program surveys works again.
 - The background for the userview page will always be at least as long as the content on the page.
-- Fixed survey dumps in cases where survey names had certain forbidden characters.
 - You can now actually sort the classes on the dashboard by many fields.
 - Fixed a bug that allowed teachers to see the rosters for any sections/classes, even if they weren't teachers for them.
 - Fixed some bugs in the class catalog related to hiding classes and registration buttons. Unscheduled sections are now considered "Full".
