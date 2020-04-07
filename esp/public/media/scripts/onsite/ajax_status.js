@@ -801,15 +801,8 @@ function setup_autocomplete()
 
 function clear_table()
 {
-    $j(".section").removeClass("section_highlight");
-    $j(".section").removeClass("section_conflict");
-    $j(".section").removeClass("student_enrolled");
-
-    for (var ts_id in data.timeslots)
-    {
-        $j("tr.sections, tr.schedule").remove();
-        $j(".timeslot_header, .timeslot_footer").remove();
-    }
+    $j("tr.sections, tr.schedule").remove();
+    $j(".timeslot_header, .timeslot_footer").remove();
 }
 
 
@@ -823,8 +816,11 @@ function render_table(display_mode, student_id)
     clear_table();
     if (display_mode == "classchange") {
         $j("<tr/>").addClass("schedule").insertAfter($j(".timeslot_headers"));
+	var schedule = $j(".schedule");
     }
-    timeslots_ordered = Object.keys(data.timeslots)
+    var headers = $j(".timeslot_headers");
+    var footers = $j(".timeslot_footers");
+    var timeslots_ordered = Object.keys(data.timeslots)
     timeslots_ordered.sort((a, b) => (data.timeslots[a].startTimeMillis > data.timeslots[b].startTimeMillis) ? 1 : -1)
     for (var ts_id of timeslots_ordered)
     {
@@ -842,13 +838,12 @@ function render_table(display_mode, student_id)
             }
         }
 
-        var headers = $j(".timeslot_headers");
-        var schedule = $j(".schedule");
-        var footers = $j(".timeslot_footers");
-        
         headers.append($j("<th/>").addClass("timeslot_" + ts_id + " timeslot_header timeslot_top").html(timeSlotHeader));
-        schedule.append($j("<td/>").addClass("timeslot_" + ts_id));
         footers.append($j("<th/>").addClass("timeslot_" + ts_id + " timeslot_header").html(timeSlotHeader));
+	
+	if (display_mode == "classchange") {
+	    schedule.append($j("<td/>").addClass("timeslot_" + ts_id));
+	}
     }
     
     for (var sec_id in data.sections)
