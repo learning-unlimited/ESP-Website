@@ -321,12 +321,24 @@ function update_checkboxes()
         for (var j in section.timeslots)
         {
             occupied_timeslots[section.timeslots[j]] = section.id;
+            var section_td = $j("#section_" + section.id + "_" + section.timeslots[j]);
+            var section_td_old = section_td.clone(true);
+            section_td_old.addClass("student_enrolled");
+            var sched_td = $j(".schedule > .timeslot_" + section.timeslots[j]);
+            sched_td_old = sched_td.clone(true);
+            sched_td.replaceWith(section_td_old);
+            // Need to figure out how to put the unenrolled class back into schedule
+            // Maybe easiest way would 
+            if (sched_td_old.data("section") != undefined){
+                // If same timeslots, just replace
+                if (section.event_ids.toString() == data.sections[sched_td_old.data("section")].event_ids.toString()) {
+                    section_td.replaceWith(sched_td_old);
+                }
+            } else {
+                // If not replacing anything
+                section_td.replaceWith(sched_td_old);
+            }
             var studentcheckbox = $j("#classchange_" + section.id + "_" + state.student_id + "_" + section.timeslots[j]);
-            var section_elem = $j("#section_" + section.id + "_" + section.timeslots[j]);
-            section_elem.addClass("student_enrolled");
-            var section_col = section_elem.parent();
-            section_elem.detach();
-            section_col.prepend(section_elem);
             studentcheckbox.attr("checked", "checked");
             studentcheckbox.removeAttr("disabled");
             studentcheckbox.unbind("change");
@@ -778,7 +790,7 @@ function clear_table()
 
     for (var ts_id in data.timeslots)
     {
-        $j("table#timeslots > * > tr.sections").remove();
+        $j("tr.sections, tr.schedule").remove();
         $j(".timeslot_header, .timeslot_footer").remove();
     }
 }
@@ -792,7 +804,12 @@ function render_table(display_mode, student_id)
 {
     render_category_options();
     clear_table();
-    for (var ts_id in data.timeslots)
+    if (display_mode == "classchange") {
+        $j("<tr/>").addClass("schedule").insertAfter($j(".timeslot_headers"));
+    }
+    timeslots_ordered = Object.keys(data.timeslots)
+    timeslots_ordered.sort((a, b) => (data.timeslots[a].startTimeMillis > data.timeslots[b].startTimeMillis) ? 1 : -1)
+    for (var ts_id of timeslots_ordered)
     {
         var timeSlotHeader = data.timeslots[ts_id].label;
 
@@ -809,13 +826,14 @@ function render_table(display_mode, student_id)
         }
 
         var headers = $j(".timeslot_headers");
+        var schedule = $j(".schedule");
         var footers = $j(".timeslot_footers");
         
         headers.append($j("<th/>").addClass("timeslot_" + ts_id + " timeslot_header timeslot_top").html(timeSlotHeader));
+        schedule.append($j("<td/>").addClass("timeslot_" + ts_id));
         footers.append($j("<th/>").addClass("timeslot_" + ts_id + " timeslot_header").html(timeSlotHeader));
     }
     
-    var sec_height = 20; // if you change this, make sure to change it in the css, too
     for (var sec_id in data.sections)
     {
         var row = 0;
@@ -832,7 +850,7 @@ function render_table(display_mode, student_id)
                     break Loop1;
                 }
                 Loop2: for (var ts_id of section.event_ids) {
-                    var ts_tds = document.querySelectorAll('.timeslot_'+ ts_id +':not(.timeslot_header)');
+                    var ts_tds = document.querySelectorAll('tr.sections .timeslot_'+ ts_id);
                     if ($j(ts_tds[row]).hasClass('section')) {
                         //conflict in this row, check next row
                         row += 1;
@@ -850,6 +868,7 @@ function render_table(display_mode, student_id)
                 var new_td = $j("<td/>").addClass("section");
                 new_td.addClass("timeslot_" + ts_id);
                 new_td.addClass("section_category_" + parent_class.category__id);
+                new_td.data("section", section.id);
                 
                 if (display_mode == "classchange")
                 {
@@ -944,15 +963,12 @@ function render_table(display_mode, student_id)
                 new_td.attr("id", "section_" + section.id + "_" + ts_id);
                 
                 //Style the td based on its position within all event_ids
-                var event_ids = Array.from(section.event_ids);
-                event_ids.sort();
-                
-                if (event_ids.length > 1) {
-                    var ts_ind = event_ids.indexOf(parseInt(ts_id));
+                if (section.event_ids.length > 1) {
+                    var ts_ind = section.event_ids.indexOf(parseInt(ts_id));
                     if (ts_ind > 0) {
                         new_td.addClass("section_left_open");
                     }
-                    if (ts_ind < (event_ids.length - 1)){
+                    if (ts_ind < (section.event_ids.length - 1)){
                         new_td.addClass("section_right_open");
                     }
                 }
@@ -963,7 +979,7 @@ function render_table(display_mode, student_id)
                 //make new row
                 var new_tr = $j("<tr/>").addClass("sections").insertBefore($j(".timeslot_footers"));
                 //loop through timeslots
-                for (var ts_id in data.timeslots) {
+                for (var ts_id of timeslots_ordered) {
                     if (section.event_ids.includes(parseInt(ts_id))) {                    
                         //make section tds if timeslot in event_ids
                         var new_td = custom_td(ts_id);
@@ -978,7 +994,7 @@ function render_table(display_mode, student_id)
                 for (var ts_id of section.event_ids) {
                     var new_td = custom_td(ts_id);
                     //Customize cell with other attributes
-                    var ts_tds = document.querySelectorAll('.timeslot_'+ ts_id +':not(.timeslot_header)');
+                    var ts_tds = document.querySelectorAll('tr.sections .timeslot_'+ ts_id);
                     $j(ts_tds[row]).replaceWith(new_td);
                     
                 }
@@ -1150,6 +1166,8 @@ function populate_classes()
             new_sec.capacity = parent_class.class_size_max_optimal;
         if ((new_sec.max_class_capacity) && (new_sec.max_class_capacity < new_sec.capacity))
             new_sec.capacity = new_sec.max_class_capacity;
+        // Sort event_ids by start time of timeslots
+        new_sec.event_ids.sort((a, b) => (data.timeslots[a].startTimeMillis > data.timeslots[b].startTimeMillis) ? 1 : -1)
         new_sec.timeslots = new_sec.event_ids;
         for (var j in new_sec.timeslots)
         {
