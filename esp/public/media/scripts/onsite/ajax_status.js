@@ -311,6 +311,22 @@ function update_checkboxes()
             }
         }
     }
+    
+    function return_section(sched_td) {
+        // Move entire old section back to original row
+        if (sched_td.data("section") != undefined & sched_td.data("row") != undefined){
+            var sec_id = sched_td.data("section");
+            var sec_row = sched_td.data("row");
+            for (var ts_id of data.sections[sec_id].event_ids) {
+                var sched_td_old = $j(".schedule > .timeslot_" + ts_id);
+                var section_td_blank = $j(".sections").eq(sec_row).children(".timeslot_" + ts_id);
+                // Move old section into original row
+                section_td_blank.replaceWith(sched_td_old.clone(true));
+                // Clear spot in schedule
+                sched_td_old.replaceWith($j("<td/>").addClass("timeslot_" + ts_id));
+            }
+        }
+    }
 
     // Find the classes that the student is enrolled in,
     // highlight them and bring them to the top.
@@ -320,24 +336,20 @@ function update_checkboxes()
         var section = data.sections[state.student_schedule[i]];
         for (var j in section.timeslots)
         {
+            // Get current section in schedule
+            var sched_td = $j(".schedule > .timeslot_" + section.timeslots[j]);
+            if (sched_td.hasClass("section")){
+                return_section(sched_td);
+            }
             occupied_timeslots[section.timeslots[j]] = section.id;
             var section_td = $j("#section_" + section.id + "_" + section.timeslots[j]);
             var section_td_old = section_td.clone(true);
+            // Replace section td with blank td
+            section_td.replaceWith($j("<td/>").addClass("timeslot_" + section.timeslots[j]));
             section_td_old.addClass("student_enrolled");
-            var sched_td = $j(".schedule > .timeslot_" + section.timeslots[j]);
-            sched_td_old = sched_td.clone(true);
+            // Move section into schedule
+            sched_td = $j(".schedule > .timeslot_" + section.timeslots[j]);
             sched_td.replaceWith(section_td_old);
-            // Need to figure out how to put the unenrolled class back into schedule
-            // Maybe easiest way would 
-            if (sched_td_old.data("section") != undefined){
-                // If same timeslots, just replace
-                if (section.event_ids.toString() == data.sections[sched_td_old.data("section")].event_ids.toString()) {
-                    section_td.replaceWith(sched_td_old);
-                }
-            } else {
-                // If not replacing anything
-                section_td.replaceWith(sched_td_old);
-            }
             var studentcheckbox = $j("#classchange_" + section.id + "_" + state.student_id + "_" + section.timeslots[j]);
             studentcheckbox.attr("checked", "checked");
             studentcheckbox.removeAttr("disabled");
@@ -345,6 +357,11 @@ function update_checkboxes()
             studentcheckbox.change(handle_checkbox);
         }
     }
+    
+    // Move other sections back into grid
+    $j(".schedule > .section:not(.student_enrolled)").each(function() {
+        return_section($j(this));
+    });
 
     if (settings.hide_conflicting)
     {
@@ -869,6 +886,7 @@ function render_table(display_mode, student_id)
                 new_td.addClass("timeslot_" + ts_id);
                 new_td.addClass("section_category_" + parent_class.category__id);
                 new_td.data("section", section.id);
+                new_td.data("row", row);
                 
                 if (display_mode == "classchange")
                 {

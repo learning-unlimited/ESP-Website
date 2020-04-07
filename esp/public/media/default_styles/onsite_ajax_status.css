@@ -126,12 +126,10 @@ table.narrow {
 
 .section_left_open {
     border-left: none !important;
-    clip-path: inset(-3px -3px -3px 0px) !important;
 }
 
 .section_right_open {
     border-right: none !important;
-    clip-path: inset(-3px 0px -3px -3px) !important;
 }
 
 .section_highlight {
@@ -142,7 +140,6 @@ table.narrow {
 .student_enrolled {
     border: 1px solid #000099;
     background-color: #FFFF00 !important;
-    box-shadow: 1px 1px 3px hsla(0, 0%, 0%, 0.6);
 }
 
 .section_conflict {
@@ -157,6 +154,10 @@ table.narrow {
     line-height: 0;
     padding: 0px;
     overflow: hidden;
+}
+.section_hidden > input, .section_search_hidden > input,
+.section_category_hidden > input, .section_conflict_hidden > input {
+    display: none;
 }
 
 #student_selector_area {
