@@ -124,6 +124,21 @@ class OnSiteCheckinModule(ProgramModuleObj):
         u = Record.objects.filter(event="attended",program=self.program, user=self.student).order_by("-time")
         return str(u[0].time.strftime("%H:%M %m/%d/%y"))
 
+    def checkinPairs(self):
+        recs = Record.objects.filter(program = self.program, user = self.student, event__in=["attended", "checked_out"]).order_by('time')
+        pairs = []
+        checked_in = False
+        ind = 0
+        for rec in recs:
+            if not checked_in and rec.event == "attended":
+                pairs.append([rec])
+                checked_in = True
+            elif checked_in and rec.event == "checked_out":
+                pairs[ind].append(rec)
+                checked_in = False
+                ind += 1
+        return pairs
+
     @aux_call
     @needs_onsite
     def ajax_status(self, request, tl, one, two, module, extra, prog, context={}):
@@ -272,6 +287,10 @@ class OnSiteCheckinModule(ProgramModuleObj):
                         self.create_record(key)
                     else:
                         self.delete_record(key)
+                if "undocheckin" in request.POST:
+                    Record.objects.filter(event="attended",program=self.program, user=self.student).order_by("-time")[0].delete()
+                if "undocheckout" in request.POST:
+                    Record.objects.filter(event="checked_out",program=self.program, user=self.student).order_by("-time")[0].delete()
                 message = "Check-in updated for " + user.username
             else:
                 error = True

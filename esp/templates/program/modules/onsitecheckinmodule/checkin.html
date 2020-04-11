@@ -49,10 +49,10 @@
 {% else %}
 <div style="margin:10px">
   <p>
-    {{module.student.name}} first checked in at <b>{{module.timeCheckedIn}}</b>.
-    {% if module.timeCheckedIn != module.lastCheckedIn %}
-    <br />{{module.student.name}} last checked in at <b>{{module.lastCheckedIn}}</b>.
-    {% endif %}
+    <b>Student checked in during the following times:</b></br>
+    {% for pair in module.checkinPairs %}
+        {{ pair.0.time }} to {% if pair.1 %}{{ pair.1.time }}{% else %}<i>present</i>{% endif %}</br>
+    {% endfor %}
   </p>
   <form name="checkin" method="POST" action="{{request.path}}">
     <table>
@@ -60,6 +60,18 @@
 	<td><label for="attended"><strong>Attending? (i.e. here right now?)</strong></label></td>
 	<td><input type="checkbox" name="attended" id="attended" {% if module.isAttending %}checked="checked"{% endif %} /></td>
       </tr>
+      {% if module.isAttending %}
+      <tr>
+	<td><label for="attended"><strong>Undo Last Checkin</strong></label></td>
+	<td><input type="checkbox" name="undocheckin" id="undocheckin"/></td>
+      </tr>
+      {% endif %}
+      {% if module.hasAttended and not module.isAttending %}
+      <tr>
+	<td><label for="attended"><strong>Undo Last Checkout</strong></label></td>
+	<td><input type="checkbox" name="undocheckout" id="undocheckout"/></td>
+      </tr>
+      {% endif %}
       <tr>
 	<td><label for="medical"><strong>Medical Form?</strong></label></td>
 	<td><input type="checkbox" name="med" id="medical" {% if module.hasMedical %}checked="checked"{% endif %} /></td>
