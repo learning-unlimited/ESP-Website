@@ -167,7 +167,9 @@ def get_survey_info(request, tl, program, instance):
         elif 'teacher_id' in request.POST:
             t_id = int( request.POST['teacher_id'] )
         elif 'target_user' in request.POST:
-            t_id = int( request.POST['target_user'] )
+            form = ApprovedTeacherSearchForm(request.POST)
+            if form.is_valid():
+                t_id = form.cleaned_data['target_user'].id
         if t_id:
             teachers = ESPUser.objects.filter(id=t_id)
             if len(teachers) > 0:
@@ -196,8 +198,6 @@ def display_survey(user, prog, surveys, request, tl, format, template = 'survey/
     """ Wrapper doing the necessary work for the survey output. """
     from esp.program.models import ClassSubject, ClassSection
 
-    perclass_data = []
-
     def getByIdOrNone(model, key):
         q = model.objects.filter(id = request.GET.get(key, None))[:1]
         if q:
@@ -207,19 +207,33 @@ def display_survey(user, prog, surveys, request, tl, format, template = 'survey/
             return q[0]
         return None
 
+    teacher_form = None
     sec = getByIdOrNone(ClassSection, 'classsection_id')
     cls = getByIdOrNone(ClassSubject, 'classsubject_id')
-    teacher = getByIdOrNone(ESPUser, 'teacher_id') or getByIdOrNone(ESPUser, 'target_user')
+    if tl == 'manage' and 'target_user' in request.POST:
+        teacher_form = ApprovedTeacherSearchForm(request.POST, prog = prog)
+        if teacher_form.is_valid():
+            teacher = teacher_form.cleaned_data['target_user']
+        else:
+            teacher = None
+    else:
+        teacher = getByIdOrNone(ESPUser, 'teacher_id')
 
+    survey_list = []
+    perclass_data = []
+    subject_ct=ContentType.objects.get(app_label="program",model="classsubject")
+    section_ct=ContentType.objects.get(app_label="program",model="classsection")
     if tl == 'manage' and teacher is None and sec is None and cls is None:
         #   In the manage category, pack the data in as extra attributes to the surveys
-        surveys = list(surveys)
-        for s in surveys:
-            questions = s.questions.all().order_by('per_class', '-question_type__is_numeric', 'seq')
+        survey_list = list(surveys)
+        for s in survey_list:
+            questions = s.questions.filter(per_class=False).order_by('-question_type__is_numeric', 'seq')
             s.display_data = {'questions': [ { 'question': y, 'answers': y.answer_set.all() } for y in questions ]}
+            classes = prog.sections().order_by('parent_class', 'id')
+            perclass_questions = s.questions.filter(per_class=True).order_by('-question_type__is_numeric', 'seq')
+            s.perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(Q(content_type=section_ct,object_id=x.id) | Q(content_type=subject_ct,object_id=x.parent_class.id)) } for y in perclass_questions ] } for x in classes ]
     else:
-        perclass_questions = surveys[0].questions.filter(per_class=True).order_by('seq')
-        surveys = []
+        perclass_questions = surveys[0].questions.filter(per_class=True).order_by('-question_type__is_numeric', 'seq')
         classes = []
         if sec is not None:
             classes = [ sec ]
@@ -230,18 +244,16 @@ def display_survey(user, prog, surveys, request, tl, format, template = 'survey/
         elif tl == 'teach':
             #   In the teach category, show only class-specific questions
             classes = user.getTaughtSections(prog).order_by('parent_class', 'id')
-        subject_ct=ContentType.objects.get(app_label="program",model="classsubject")
-        section_ct=ContentType.objects.get(app_label="program",model="classsection")
         perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(Q(content_type=section_ct,object_id=x.id) | Q(content_type=subject_ct,object_id=x.parent_class.id)) } for y in perclass_questions ] } for x in classes ]
 
     if tl == 'manage':
         if teacher:
             teacher_form = ApprovedTeacherSearchForm(initial={'target_user': teacher.id}, prog = prog)
             context['teacher'] = teacher
-        else:
+        elif teacher_form is None:
             teacher_form = ApprovedTeacherSearchForm(prog = prog)
-        context['teacher_form'] = teacher_form
-    context.update({'user': user, 'surveys': surveys, 'program': prog, 'perclass_data': perclass_data, 'tl': tl})
+    context['teacher_form'] = teacher_form
+    context.update({'user': user, 'surveys': survey_list, 'program': prog, 'perclass_data': perclass_data, 'tl': tl})
 
     #   Choose+use appropriate output format
     if format == 'html':

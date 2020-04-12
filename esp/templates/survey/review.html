@@ -17,9 +17,15 @@
 {% if teacher_form %}
 <form method="POST" action="{{ request.get_full_path }}">
 <h2>Search for a teacher to retrieve their specific survey results:</h2>
+{% for error in teacher_form.target_user.errors %}
+<span style="color:red;">{{ error|escape }}</span></br>
+{% endfor %}
 {{ teacher_form.target_user }}
 <input type="submit" value="Search" />
 </form>
+{% if teacher %}
+</br>(<a href="{{ request.path }}">Return To All Survey Results</a>)
+{% endif %}
 <br><br>
 {% endif %}
 
@@ -38,9 +44,14 @@
     <li><a href="#survey{{ s.id }}">Responses for: {{ s.name }}</a>
     <ul style="list-style-type:circle;">
     {% for q in s.display_data.questions %}
-        {% ifchanged q.question.per_class %}
-            <li><a href="#survey{{ s.id }}-{{ q.question.per_class }}">{% if q.question.per_class %}Per Class{% else %}Individual{% endif %} Questions</a></li>
-        {% endifchanged %}
+        {% if forloop.first %}
+            <li><a href="#survey{{ s.id }}-individual">Individual Questions</a></li>
+        {% endif %}
+    {% endfor %}
+    {% for c in s.perclass_data %}
+        {% if forloop.first %}
+            <li><a href="#survey{{ s.id }}-perclass">Per Class Questions</a></li>
+        {% endif %}
     {% endfor %}
     </ul>
     </li>
@@ -67,16 +78,32 @@
 {% for s in surveys %}
     <table class="fullwidth">
     <tr>
-        <th><h2><a name="survey{{ s.id }}"></a>Responses for: {{ s.name }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2></th>
+        <th><h1><a name="survey{{ s.id }}"></a>Responses for: {{ s.name }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h1></th>
     </tr>
     </table>
     {% for q in s.display_data.questions %}
-        {% ifchanged q.question.per_class %}
-            <h2><a name="survey{{ s.id }}-{{ q.question.per_class }}"></a>{% if q.question.per_class %}Per Class{% else %}Individual{% endif %} Questions<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2>
-        {% endifchanged %}
+        {% if forloop.first %}
+            <h2><a name="survey{{ s.id }}-individual"></a>Individual Questions<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2>
+        {% endif %}
         {% with s.num_participants as num_participants %}
             {% include "survey/answers.html" %}
         {% endwith %}
+    {% endfor %}
+    {% for c in s.perclass_data %}
+        {% if forloop.first %}
+        <h2><a name="survey{{ s.id }}-perclass"></a>Per Class Questions<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2>
+        {% endif %}
+        <table class="fullwidth">
+            {% ifchanged c.class.parent_class %}
+            <tr><th><h2><a name="class{{ c.class.parent_class.id }}"></a>Responses for {{ c.class.parent_class.emailcode }}: {{ c.class.title }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2></th></tr>
+            {% endifchanged %}
+            <tr><th><h3><a name="class{{ c.class.parent_class.id }}-{{ c.class.index }}"></a>Responses for Section {{ c.class.index }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h3></th></tr>
+        </table>
+        {% for q in c.questions %}
+            {% with c.class.num_students as num_participants %}
+                {% include "survey/answers.html" %}
+            {% endwith %}
+        {% endfor %}
     {% endfor %}
 {% endfor %}
 
@@ -86,7 +113,7 @@
         {% ifchanged c.class.parent_class %}
         <tr><th><h2><a name="class{{ c.class.parent_class.id }}"></a>Responses for {{ c.class.parent_class.emailcode }}: {{ c.class.title }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2></th></tr>
         {% endifchanged %}
-        <tr><th><h2><a name="class{{ c.class.parent_class.id }}-{{ c.class.index }}"></a>Responses for Section {{ c.class.index }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2></th></tr>
+        <tr><th><h3><a name="class{{ c.class.parent_class.id }}-{{ c.class.index }}"></a>Responses for Section {{ c.class.index }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h3></th></tr>
     </table>
     {% for q in c.questions %}
         {% with c.class.num_students as num_participants %}
