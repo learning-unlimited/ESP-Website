@@ -249,11 +249,10 @@ def display_survey(user, prog, surveys, request, tl, format, template = 'survey/
     if tl == 'manage':
         if teacher:
             teacher_form = ApprovedTeacherSearchForm(initial={'target_user': teacher.id}, prog = prog)
-            context['teacher'] = teacher
         elif teacher_form is None:
             teacher_form = ApprovedTeacherSearchForm(prog = prog)
     context['teacher_form'] = teacher_form
-    context.update({'user': user, 'surveys': survey_list, 'program': prog, 'perclass_data': perclass_data, 'tl': tl})
+    context.update({'user': user, 'teacher': teacher, 'surveys': survey_list, 'program': prog, 'perclass_data': perclass_data, 'tl': tl})
 
     #   Choose+use appropriate output format
     if format == 'html':
