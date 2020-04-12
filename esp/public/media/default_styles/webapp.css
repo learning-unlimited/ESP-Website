@@ -269,7 +269,7 @@
   border-radius: 1vh !important;
   font-size: 2.25vh !important;
   width: calc(100% - 1vh);
-  height: 7.5vh;
+  min-height: 7.5vh;
 }
 
 .add_button {
@@ -285,7 +285,7 @@ a.anchor {
 }
 
 #map {
-  height: 100%;
+  height: 92vh;
   width: 100%;
 }
 
@@ -322,4 +322,17 @@ i.pointer {
 
 .main form {
   margin: 0px;
+}
+
+.survey table {
+    width: 100%;
+}
+
+.main input, .main select {
+    max-width: 100%;
+}
+
+.survey textarea {
+    width: 100%;
+    resize: vertical;
 }

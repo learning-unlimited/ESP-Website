@@ -134,6 +134,8 @@ def histogram(answer_list, args='format=html'):
 
     if args_dict.get('max'):
         context['results'] = [{'value': str(x), 'freq': 0} for x in range(1, int(args_dict.get('max')) + 1)]
+    elif args_dict.get('opts'):
+        context['results'] = [{'value': str(x), 'freq': 0} for x in args_dict.get('opts').split("|")]
     else:
         context['results'] = []
     max_answer_length = 0

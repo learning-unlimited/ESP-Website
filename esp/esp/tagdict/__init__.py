@@ -57,6 +57,8 @@ all_global_tags = {
     'random_constraints': (False, 'Constraints for /random in a JSON dictionary (e.g. {"bad_program_names": ["Delve", "SATPrep", "9001", "Test"], "bad_titles": ["Lunch Period"]})', '{}', 'manage', True),
     'admin_home_page': (False, 'The page to which admins get redirected after logging in (can be a relative or absolute page)', None, 'manage', True),
     'default_restypes': (False, 'A JSON list of the resource types (by name) to create when making a new program', None, 'manage', True),
+    'webapp_isstep': (True, 'Should the student and teacher onsite webapps be shown as a step in student registration?', False, 'learn', True),
+    'google_cloud_api_key': (False, 'An API key for use with the Google Cloud Platform. Used for the student and teacher onsite webapps.', '', 'manage', True),
 }
 
 # Any tag used with Tag.getProgramTag(),
@@ -121,6 +123,8 @@ all_program_tags = {
     'survey_student_filter': (False, 'Which sets of students are allowed to fill out the post-program survey? Specified as a comma-separated list of options in program.students().', 'classreg', 'learn', True),
     'volunteer_help_text_comments': (False, 'If set, overrides the help text for the comments field for the volunteer form', None, 'volunteer', True),
     'volunteer_require_auth': (True, 'Do volunteers need to have accounts before signing up? (If not, one will be created when they sign up)', False, 'volunteer', True),
+    'program_center': (False, 'The geographic center for a program, following the form {lat: 37.427490, lng: -122.170267}. Used for the teacher and student onsite webapps.', '{lat: 37.427490, lng: -122.170267}', 'manage', True),
+    'count_checked_in_only': (True, 'Should the student onsite webapp use checked in students (instead of registered students) to determine if a class is full?', False, 'learn', True),
 }
 
 # Dictionary of categories that tags fall into (for grouping on the tag settings page)
