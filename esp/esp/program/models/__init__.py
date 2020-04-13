@@ -387,7 +387,8 @@ class Program(models.Model, CustomFormsLinkModel):
         section_ids = sections_in_program_by_id(self)
 
         counts = {}
-        checked_in_ids = self.students()['attended'].values_list('id', flat=True)
+        students = self.students(True)
+        checked_in_ids = ESPUser.objects.filter(students['attended'] & ~students['checked_out']).distinct().values_list('id', flat = True)
 
         reg_type = RegistrationType.get_map()['Enrolled']
 
@@ -694,6 +695,30 @@ class Program(models.Model, CustomFormsLinkModel):
     def isConfirmed(self, espuser):
         return Record.objects.filter(event="reg_confirmed",user=espuser,
                                      program=self).exists()
+
+    def isCheckedIn(self, espuser, verbose = False):
+        status = 0
+        verbose_names = ["not_checked_in", "checked_in", "checked_out"]
+        recs = Record.objects.filter(event__in=["attended","checked_out"],user=espuser,
+                                     program=self).order_by("-time")
+        if recs.count() > 0:
+            # Check if student has ever been checked_in
+            if recs.filter(event="attended").exists():
+                status = 1
+                # Check if most recent record is checked_out
+                if recs[0].event == "checked_out":
+                    status = 2
+        if verbose:
+            return verbose_names[status]
+        else:
+            return status == 1
+
+    """ Returns a queryset of students that checked out of the program at the specified time """
+    @cache_function
+    def checkedOutStudents(self, time_max = datetime.now()):
+        recs = Record.objects.filter(program = self, event__in=["attended", "checked_out"], time__lt=time_max).order_by('user', '-time').distinct('user')
+        return ESPUser.objects.filter(record__id__in=recs, record__event="checked_out")
+    checkedOutStudents.depend_on_model('users.Record')
 
     """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
     "Classrooms."  So, if you try to call the old functions (which have no point anymore), then

@@ -256,7 +256,9 @@ class TeacherClassRegModule(ProgramModuleObj):
             attending_students = [int(student) for student in request.POST.getlist('attending')]
             for student in section.students(verbs=["Enrolled","Attended"]):
                 if student.id in attending_students:
-                    Record.objects.get_or_create(user=student, program=prog, event='attended')
+                    if not prog.isCheckedIn(student):
+                        rec = Record(user=student, program=prog, event='attended')
+                        rec.save()
                     sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
                     sr.end_date = today_max
                     sr.save()
@@ -276,7 +278,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                         not_found.append(code)
                         continue
                 if student.isStudent():
-                    Record.objects.get_or_create(user=student, program=prog, event='attended')
+                    if not prog.isCheckedIn(student):
+                        rec = Record(user=student, program=prog, event='attended')
+                        rec.save()
                     sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
                     sr.end_date = today_max
                     sr.save()
@@ -302,12 +306,12 @@ class TeacherClassRegModule(ProgramModuleObj):
         section.enrolled_list = []
         section.attended_list = []
         for student in section.students():
-            student.checked_in = Record.user_completed(student, "attended", prog)
+            student.checked_in = prog.isCheckedIn(student)
             student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended).exists()
             section.enrolled_list.append(student)
         for student in section.students(["Attended"]):
             if student not in section.students():
-                student.checked_in = Record.user_completed(student, "attended", prog)
+                student.checked_in = prog.isCheckedIn(student)
                 student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended).exists()
                 section.attended_list.append(student)
         return (section, not_found)
