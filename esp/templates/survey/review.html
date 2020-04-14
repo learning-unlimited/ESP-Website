@@ -92,7 +92,7 @@ td, th {
             <tr><td>{% include "survey/answers.html" %}</td></tr>
         {% endwith %}
     {% endfor %}
-    </table>
+    </table></br></br>
     {% for c in s.perclass_data %}
         {% if forloop.first %}
         <h2><a name="survey{{ s.id }}-perclass"></a>Per Class Questions<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2>
