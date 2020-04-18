@@ -259,6 +259,7 @@ INSTALLED_APPS = (
     'filebrowser',
     'django.contrib.admin.apps.SimpleAdminConfig',
     'django.contrib.admindocs',
+    'easy_timezones',
 )
 
 for app in ('django_evolution', 'django_command_extensions'):

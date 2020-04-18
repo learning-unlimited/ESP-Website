@@ -14,7 +14,7 @@ django-selenium==0.9.8 # Runs selenium tests which probably don't work anymore
 django-sendgrid-v5==0.9.0 # Provides support for using SendGrid as the EmailBackend
 django-vanilla-views==1.0.4 # Provides simpler generic views, currently used only for grade change requests
 git+https://github.com/learning-unlimited/django-admin-tools.git@esp # Extends Django Admin
-
+django-easy-timezones #Converts times to local time in templates
 
 # Non-Django-specific packages
 docutils==0.12 # Needed for django.contrib.admindocs
@@ -29,7 +29,7 @@ pydns==2.3.6 # Used for validating email addresses; imports as "DNS", not "pydns
 Pygments==2.0.2 # django-extensions dependency
 pyinotify # Makes dev servers auto-reload
 pylibmc==1.5.0 # Talks to memcached
-pytz==2015.4 # Required for timezone support
+pytz==2016.6 # Required for timezone support
 raven # Required for Sentry error reporting
 selenium==2.44.0 # Runs selenium tests which probably don't work anymore
 shortuuid==0.4.2 # django-extensions dependency

@@ -375,7 +375,7 @@ class TeacherEventSignupForm(FormWithRequiredCss):
 
         training_times = module.getTimes('training')
         if training_times.count() > 0:
-            self.fields['training'].choices = [ (x.id, x.description) for x in training_times if not self._slot_too_late(x) ]
+            self.fields['training'].choices = [ (x.id, x) for x in training_times if not self._slot_too_late(x) ]
         else:
             self.fields['training'].widget = forms.HiddenInput()
 
