@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 """
 
 import json
-import colorsys
 from datetime import datetime, timedelta
 
 from django.db.models import Min
