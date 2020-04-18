@@ -352,21 +352,22 @@ class TeacherInfoForm(FormWithRequiredCss):
         super(TeacherInfoForm, self).clean()
         cleaned_data = self.cleaned_data
 
-        affiliation_field = self.fields['affiliation']
-        affiliation, school = affiliation_field.widget.decompress(cleaned_data.get('affiliation'))
-        if affiliation == '':
-            msg = u'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
-            self.add_error('affiliation', msg)
-        elif affiliation in (AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC):
-            cleaned_data['affiliation'] = affiliation_field.compress([affiliation, '']) # ignore the box
-        else: # OTHER or NONE -- Make sure they entered something into the other box
-            if school.strip() == '':
+        if 'affiliation' in self.fields:
+            affiliation_field = self.fields['affiliation']
+            affiliation, school = affiliation_field.widget.decompress(cleaned_data.get('affiliation'))
+            if affiliation == '':
                 msg = u'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
-                if affiliation == AFFILIATION_OTHER:
-                    msg = u'Please enter your affiliation with %s.' % settings.INSTITUTION_NAME
-                elif affiliation == AFFILIATION_NONE:
-                    msg = u'Please enter your school or employer.'
                 self.add_error('affiliation', msg)
+            elif affiliation in (AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC):
+                cleaned_data['affiliation'] = affiliation_field.compress([affiliation, '']) # ignore the box
+            else: # OTHER or NONE -- Make sure they entered something into the other box
+                if school.strip() == '':
+                    msg = u'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
+                    if affiliation == AFFILIATION_OTHER:
+                        msg = u'Please enter your affiliation with %s.' % settings.INSTITUTION_NAME
+                    elif affiliation == AFFILIATION_NONE:
+                        msg = u'Please enter your school or employer.'
+                    self.add_error('affiliation', msg)
         return cleaned_data
 
 TeacherInfoForm.base_fields['graduation_year'].widget.attrs['size'] = 4
@@ -398,7 +399,7 @@ class TeacherProfileForm(UserContactForm, TeacherInfoForm):
     """ Form for teacher profiles """
     def __init__(self, *args, **kwargs):
         super(TeacherProfileForm, self).__init__(*args, **kwargs)
-        for field_name in Tag.getTag('teacher_profile_hide_fields', default='').split(','):
+        for field_name in [x.strip() for x in Tag.getTag('teacher_profile_hide_fields', default='').split(',')]:
             if field_name in self.fields:
                 del self.fields[field_name]
 
