@@ -89,7 +89,7 @@ Flag and classsearch changes
 Survey changes
 ~~~~~~~~~~~~~~
 - Added a user interface for admins to build surveys for students and teachers to fill out after a program is over. Built-in question types include "Yes-No Response", "Multiple Choice", "Checkboxes", "Short Answer", "Long Answer", "Numeric Rating", and "Labeled Numeric Rating". Survey questions can be viewed in their rendered layout to see how they'll ultimately look in the survey. Once surveys have been created, they can be imported for future programs.
-- Built-in surveys are now shown in the student and teacher onsite webapp interfaces. Additionally, teachers can see surveys responses for their classes in the teacher onsite webapp interface.
+- Built-in surveys are now shown in the student and teacher onsite webapp interfaces. Additionally, teachers can see survey responses for their classes in the teacher onsite webapp interface.
 - Admins can now specify which students and teachers have access to the built-in program surveys with the tags "survey_teacher_filter" and "survey_student_filter". These tags will also be used to calculate the number of potential participants when displaying survey results.
 - All survey questions are now bolded (previously some question types were not).
 - Survey result histograms for countable questions now show the entire possible range of answers.
@@ -118,6 +118,7 @@ Minor new features
 - Made the text on the profile form clearer when users can not change their grade/dob.
 - Added emailcodes to the subjects of all emails to class/section lists (i.e. "[prefix] [emailcode] Subject"). The prefix can be changed in the admin pages (and will be omited from the subject if not set).
 - Changed the theme of the administration pages. Each section on the main page is now moveable, collapsible, and closable.
+- The student lottery can now support lottery groups of any size (specified by the "student_lottery_group_max" tag). If the tag is set to 1, options to join groups will not be shown to students.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -134,6 +135,7 @@ Minor bug fixes
 - The grade change request link is no longer displayed in the profile form for new users or users that can change their grade in the form.
 - Unscheduled sections and classes with no sections are no longer shown in the two-phase student lottery registration.
 - The "allow_change_grade_level" tag is now treated as a boolean tag.
+- Removed deprecated onsite status page
 
 Known issues of new features
 ============================
