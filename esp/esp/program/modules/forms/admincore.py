@@ -51,7 +51,7 @@ class LunchConstraintsForm(forms.Form):
 
 class ProgramSettingsForm(ProgramCreationForm):
     """ Form for changing program-related settings. """
-    #Remove these fields because they are editable on the deadline management page
+    # Remove these fields because they are editable on the deadline management page
     teacher_reg_start = None
     teacher_reg_end   = None
     student_reg_start = None

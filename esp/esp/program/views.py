@@ -566,7 +566,7 @@ def newprogram(request):
     else:
         #   Otherwise, the default view is a blank form.
         if template_prog:
-            form = ProgramCreationForm(template_prog)
+            form = ProgramCreationForm(dict(template_prog), template_prog_mods=list(template_prog['program_modules']))
         else:
             form = ProgramCreationForm()
 
