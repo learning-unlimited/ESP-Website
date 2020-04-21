@@ -15,7 +15,7 @@
 \vspace{0.25in}
 {% if not forloop.first %}\clearpage{% endif %}
     \begin{center}
-    \begin{longtable}{|p{0.5\linewidth}|p{0.5\linewidth}|} \hline
+    \begin{longtable}{|p{0.48\linewidth}|p{0.48\linewidth}|} \hline
     \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} ~ } \\
     \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} \Large {Responses for {{ s.name }}} } \\ 
     \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} ~ } \\\hline
@@ -29,7 +29,7 @@
     {% for c in s.perclass_data %}
         \clearpage
         \begin{center}
-        \begin{longtable}{|p{0.5\linewidth}|p{0.5\linewidth}|} \hline
+        \begin{longtable}{|p{0.48\linewidth}|p{0.48\linewidth}|} \hline
         \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} ~ } \\
         \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} \Large {Responses for {{ c.class.emailcode }}: {{ c.class.title|texescape }}} } \\ 
         \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} ~ } \\\hline
@@ -57,7 +57,7 @@ Students were also asked a few questions about each of their classes.  The resul
 {% for c in perclass_data %}
 {% if not forloop.first %}\clearpage{% endif %}
     \begin{center}
-    \begin{longtable}{|p{0.5\linewidth}|p{0.5\linewidth}|} \hline
+    \begin{longtable}{|p{0.48\linewidth}|p{0.48\linewidth}|} \hline
     \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} ~ } \\
     \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} \Large {Responses for {{ c.class.emailcode }}: {{ c.class.title|texescape }}} } \\ 
     \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} ~ } \\\hline
