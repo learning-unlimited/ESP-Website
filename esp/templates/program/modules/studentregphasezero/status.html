@@ -7,6 +7,7 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
 
 <style>
 .button1 {
@@ -28,6 +29,7 @@
     -webkit-column-gap: 20px;
     column-count: 3;
     column-gap: 20px;
+    margin: 0px;
 }
 
 #record
@@ -54,6 +56,9 @@ table, th, td {
 td {
     text-align: center;
 }
+.dsphead {
+    text-align: center !important;
+}
 </style>
 {% endblock %}
 
@@ -69,7 +74,7 @@ Number of students that have entered the student lottery:
 </h2>
 
 </br>
-<center><input type="button" class="button1" value="Show/Hide Lottery Entrants" id="toggle" /></center>
+<input type="button" class="button1" value="Show/Hide Lottery Entrants" id="toggle" />
 
 <div id="lotteryentries">
 </br>
@@ -80,21 +85,63 @@ Number of students that have entered the student lottery:
 </ul>
 </div>
 
-<hr>
 <center>
-<h2>
-<u>To Run Student Lottery:</u>
-</h2>
-(Do not do this unless you know what you are doing)
-
-</br></br>
 {% if error %}<p><font color="red">{{ error }}</font></p>{% endif %}
-{% if success %}<p><font color="blue">{{ success }}</font></p>{% endif %}
-<form action="#" method="POST">
-<!--<b>Specify Role Name for Winners: </b>--><input type="hidden" name="rolename" value="{{role}}"></br></br>
-<input type="checkbox" name="confirm">  I confirm that I would like to run the student lottery.</br></br>
-<input type="submit" style="float:none" value="Run Student Lottery" />
-</form>
+{% autoescape off %}
+{% if lottery_messages %}<p><font color="blue">{{ lottery_messages|join:"<br/>" }}</font></p>{% endif %}
+{% endautoescape %}
+
+<hr>
+<button class="dsphead">
+    <b><u>Run Default Student Lottery Algorithm:</u></b>
+</button>
+<div class="dspcont">
+    (Do not do this unless you know what you are doing)<br/><br/>
+    <form action="#" method="POST">
+        <input type="hidden" name="mode" value="default">
+        {% if grade_caps %}
+            The following grade capacities will be used</br>(as specified by the <i>program_size_by_grade</i> <a href="/manage/{{ program.getUrlBase }}/tags">tag</a>):</br>
+            <table align="center" width="200">
+                <tr>
+                    <th>Grade(s)</th>
+                    <th>Capacity</th>
+                </tr>
+                {% for grades, cap in grade_caps %}
+                    <tr>
+                        <td>
+                            {{ grades|join:" - " }}
+                        </td>
+                        <td>
+                            {{ cap }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            You must set the <i>program_size_by_grade</i> <a href="/manage/{{ program.getUrlBase }}/tags">tag</a>.
+        {% endif %}
+        <!--<b>Specify Role Name for Winners: </b>--><input type="hidden" name="rolename" value="{{role}}"></br></br>
+        <input type="checkbox" name="confirm">  I confirm that I would like to run the default student lottery algorithm.</br></br>
+        <input {% if not grade_caps %}disabled {% endif %}type="submit" style="float:none" value="Run Default Student Lottery Algorithm" />
+    </form>
+</div>
+
+
+<button class="dsphead">
+    <b><u>Run Manual Student Lottery:</u></b>
+</button>
+<div class="dspcont">
+    (Do not do this unless you know what you are doing)<br/><br/>
+    <form action="#" method="POST">
+        <input type="hidden" name="mode" value="manual">
+        <textarea name="usernames" rows="6" placeholder="Enter comma-separated or space-separated student usernames here"></textarea>
+        <!--<b>Specify Role Name for Winners: </b>--><input type="hidden" name="rolename" value="{{role}}"></br></br>
+        <input type="checkbox" name="groups">  I would also like to accept any students in the same lottery groups.</br></br>
+        <input type="checkbox" name="confirm">  I confirm that I would like to use the above list of students for a manual student lottery.</br></br>
+        <input type="submit" style="float:none" value="Run Manual Student Lottery" />
+    </form>
+</div>
+
 </center>
 
 {% if stats %}
@@ -126,6 +173,7 @@ Number of students that have entered the student lottery:
 </table>
 {% endif %}
 
+<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 
 <script>
 var toggle  = document.getElementById("toggle");
