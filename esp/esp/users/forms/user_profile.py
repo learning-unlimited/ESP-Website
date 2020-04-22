@@ -399,7 +399,7 @@ class TeacherProfileForm(UserContactForm, TeacherInfoForm):
     """ Form for teacher profiles """
     def __init__(self, *args, **kwargs):
         super(TeacherProfileForm, self).__init__(*args, **kwargs)
-        for field_name in [x.strip() for x in Tag.getTag('teacher_profile_hide_fields', default='').split(',')]:
+        for field_name in [x.strip().lower() for x in Tag.getTag('teacher_profile_hide_fields', default='').split(',')]:
             if field_name in self.fields:
                 del self.fields[field_name]
 
