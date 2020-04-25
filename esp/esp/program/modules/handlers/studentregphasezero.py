@@ -100,8 +100,10 @@ class StudentRegPhaseZero(ProgramModuleObj):
             lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
             in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
             lottery_run = Tag.getBooleanTag('student_lottery_run', prog, default=False)
+            num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog, default=4))
             context['lottery_perm'] = lottery_perm
             context['lottery_run'] = lottery_run
+            context['num_allowed_users'] = num_allowed_users
 
             if not in_lottery:
                 if lottery_run:
@@ -145,7 +147,13 @@ class StudentRegPhaseZero(ProgramModuleObj):
         context['one'] = one
         context['two'] = two
         user = request.user
+        lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
         in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
+        lottery_run = Tag.getBooleanTag('student_lottery_run', prog, default=False)
+        num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog, default=4))
+        context['lottery_perm'] = lottery_perm
+        context['lottery_run'] = lottery_run
+        context['num_allowed_users'] = num_allowed_users
 
         join_error = False
         if len(request.POST.get('student_selected', '').strip()) == 0:
@@ -165,7 +173,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                     join_error = 'Error - You can not select yourself.'
                 elif in_lottery and old_group==group:
                     join_error = 'Error - You are already in this lottery group.'
-                elif num_users < 4:
+                elif num_users < num_allowed_users:
                     group.user.add(user)
                     group.save()
                     self.send_confirmation_email(user)
@@ -175,7 +183,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                         if not old_group.user.exists():
                             old_group.delete()
                 else:
-                    join_error = 'Error - This group already contains the maximum number of students.'
+                    join_error = 'Error - This group already contains the maximum number of students (%s).' % (num_allowed_users)
 
         context['join_error'] = join_error
         if join_error and not in_lottery:
