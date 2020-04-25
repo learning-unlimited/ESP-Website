@@ -2,6 +2,7 @@
 
 <h3>Additional Guardian Information</h3>
 
+{% if form.year_finished %}
 <div class="control-group"
  <label for="id_year_finished" class="control-label">Estimated year you finished with {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}<br /> (if applicable):</label>
  <div class="controls">
@@ -10,7 +11,9 @@
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.num_kids %}
 <div class="control-group">
  <label for="id_num_kids" class="control-label">Number of kids (to be involved in our programs):</label>
  <div class="controls">
@@ -19,5 +22,6 @@
    {% endif %}
 </div>
 </div>
+{% endif %}
 
 <!-- End Guardian Info Portion -->

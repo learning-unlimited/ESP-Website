@@ -70,8 +70,9 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     def clean(self):
         super(UserContactForm, self).clean()
         if self.user.isTeacher() or (self.user.isStudent() and Tag.getBooleanTag('require_student_phonenum', default=True)):
-            if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
-                raise forms.ValidationError("Please provide either a day phone or cell phone number in your personal contact information.")
+            if 'phone_day' in self.fields or 'phone_cell' in self.fields:
+                if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
+                    raise forms.ValidationError("Please provide either a day phone or cell phone number in your personal contact information.")
         if self.cleaned_data.get('receive_txt_message', None) and self.cleaned_data.get('phone_cell','') == '':
             raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages.")
         return self.cleaned_data
@@ -94,8 +95,9 @@ class EmergContactForm(FormUnrestrictedOtherUser):
 
     def clean(self):
         super(EmergContactForm, self).clean()
-        if self.cleaned_data.get('emerg_phone_day','') == '' and self.cleaned_data.get('emerg_phone_cell','') == '':
-            raise forms.ValidationError("Please provide either a day phone or cell phone for your emergency contact.")
+        if 'emerg_phone_day' in self.fields or 'emerg_phone_cell' in self.fields:
+            if self.cleaned_data.get('emerg_phone_day','') == '' and self.cleaned_data.get('emerg_phone_cell','') == '':
+                raise forms.ValidationError("Please provide either a day phone or cell phone for your emergency contact.")
         return self.cleaned_data
 
 
@@ -110,8 +112,9 @@ class GuardContactForm(FormUnrestrictedOtherUser):
 
     def clean(self):
         super(GuardContactForm, self).clean()
-        if self.cleaned_data.get('guard_phone_day','') == '' and self.cleaned_data.get('guard_phone_cell','') == '':
-            raise forms.ValidationError("Please provide either a day phone or cell phone for your parent/guardian.")
+        if 'guard_phone_day' in self.fields or 'guard_phone_cell' in self.fields:
+            if self.cleaned_data.get('guard_phone_day','') == '' and self.cleaned_data.get('guard_phone_cell','') == '':
+                raise forms.ValidationError("Please provide either a day phone or cell phone for your parent/guardian.")
         return self.cleaned_data
 
 HEARD_ABOUT_ESP_CHOICES = (
@@ -306,7 +309,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                 cleaned_data['dob'] = orig_prof.student_info.dob
 
 
-        if Tag.getBooleanTag('require_school_field', default=False):
+        if Tag.getBooleanTag('require_school_field', default=False) and 'k12school' in self.fields:
             if not cleaned_data['k12school'] and not cleaned_data['unmatched_school']:
                 raise forms.ValidationError("Please select your school from the dropdown list that appears as you type its name.  You will need to click on an entry to select it.  If you cannot find your school, please type in its full name and check the box below; we will do our best to add it to our database.")
 
@@ -394,6 +397,13 @@ GuardianInfoForm.base_fields['num_kids'].widget.attrs['maxlength'] = 16
 
 class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
     """ Form for student profiles """
+    def __init__(self, *args, **kwargs):
+        super(StudentProfileForm, self).__init__(*args, **kwargs)
+        for field_name in [x.strip().lower() for x in Tag.getTag('student_profile_hide_fields', default='').split(',')]:
+            if field_name in self.fields:
+                del self.fields[field_name]
+            if field_name == 'phone_cell':
+                del self.fields['receive_txt_message']
 
 class TeacherProfileForm(UserContactForm, TeacherInfoForm):
     """ Form for teacher profiles """
@@ -405,12 +415,26 @@ class TeacherProfileForm(UserContactForm, TeacherInfoForm):
 
 class GuardianProfileForm(UserContactForm, GuardianInfoForm):
     """ Form for guardian profiles """
+    def __init__(self, *args, **kwargs):
+        super(GuardianProfileForm, self).__init__(*args, **kwargs)
+        for field_name in [x.strip().lower() for x in Tag.getTag('guardian_profile_hide_fields', default='').split(',')]:
+            if field_name in self.fields:
+                del self.fields[field_name]
 
 class EducatorProfileForm(UserContactForm, EducatorInfoForm):
     """ Form for educator profiles """
+    def __init__(self, *args, **kwargs):
+        super(EducatorProfileForm, self).__init__(*args, **kwargs)
+        for field_name in [x.strip().lower() for x in Tag.getTag('educator_profile_hide_fields', default='').split(',')]:
+            if field_name in self.fields:
+                del self.fields[field_name]
 
 class VolunteerProfileForm(UserContactForm):
-    pass
+    def __init__(self, *args, **kwargs):
+        super(VolunteerProfileForm, self).__init__(*args, **kwargs)
+        for field_name in [x.strip().lower() for x in Tag.getTag('volunteer_profile_hide_fields', default='').split(',')]:
+            if field_name in self.fields:
+                del self.fields[field_name]
 
 class VisitingUserInfo(FormUnrestrictedOtherUser):
     profession = SizedCharField(length=12, max_length=64, required=False)
