@@ -187,9 +187,9 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                 regProf.educator_info = EducatorInfo.addOrUpdate(curUser, regProf, new_data)
             regProf.save()
 
-            curUser.first_name = new_data['first_name']
-            curUser.last_name  = new_data['last_name']
-            curUser.email     = new_data['e_mail']
+            curUser.first_name = new_data.get('first_name')
+            curUser.last_name  = new_data.get('last_name')
+            curUser.email     = new_data.get('e_mail')
             curUser.save()
             if responseuponCompletion == True:
                 return registration_redirect(request)
