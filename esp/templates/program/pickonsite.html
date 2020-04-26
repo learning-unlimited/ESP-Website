@@ -1,30 +1,25 @@
 {% extends "main.html" %}
 
-{% block title %}On-Site Registration{% endblock %}
-
+{% block title %}Onsite Registration{% endblock %}
 
 {% block content %}
-<style type="text/css">
-.nocheckmark { border: 1px solid black; }
-</style>
-<br />
-<br />
+{% if progs|length == 0 %}
+<h1>No onsite programs available</h1>
 
-<br /><br />
-<h1>Select Program to run onsite registration for!</h1>
+Sorry, it looks like you aren't an onsite user for any programs.
+If you believe you got this message in error, check with the program directors.
 
-
-<br />
-<h2>It seems there are multiple programs that are having registrations on the same day?</h2>
-<br />
-Please choose the program you want to run onsite registration for below:<br />
+{% else %}
+<h1>Select Program for which you'd like to run onsite registration!</h1>
+There are {{progs|length}} programs available for you.
+Please choose the program for which you want to run onsite registration below:<br />
 
 <br />
 {% for prog in progs %}
-<span style="font-size: 16pt; font-weight: bold;">
+<h2>
  <a href="/onsite/{{prog.getUrlBase}}/main">{{prog.niceName}}</a>
-</span>
-<br />
+</h2>
 {% endfor %}
+{% endif %}
 
 {% endblock %}
