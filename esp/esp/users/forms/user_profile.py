@@ -396,7 +396,7 @@ GuardianInfoForm.base_fields['num_kids'].widget.attrs['size'] = 3
 GuardianInfoForm.base_fields['num_kids'].widget.attrs['maxlength'] = 16
 
 # A list of fields (across all profile forms) that can not be deleted via profile_hide_fields tags
-_undeletable_fields = ['graduation_year']
+_undeletable_fields = ['graduation_year', 'e_mail']
 
 class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
     """ Form for student profiles """
