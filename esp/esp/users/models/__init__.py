@@ -1318,20 +1318,20 @@ class StudentInfo(models.Model):
 
         studentInfo.graduation_year = new_data['graduation_year']
         try:
-            if isinstance(new_data['k12school'], K12School):
-                studentInfo.k12school = new_data['k12school']
+            if isinstance(new_data.get('k12school'), K12School):
+                studentInfo.k12school = new_data.get('k12school')
             else:
-                if isinstance(new_data['k12school'], int):
-                    studentInfo.k12school = K12School.objects.get(id=int(new_data['k12school']))
+                if isinstance(new_data.get('k12school'), int):
+                    studentInfo.k12school = K12School.objects.get(id=int(new_data.get('k12school')))
                 else:
-                    studentInfo.k12school = K12School.objects.filter(name__icontains=new_data['k12school'])[0]
+                    studentInfo.k12school = K12School.objects.filter(name__icontains=new_data.get('k12school'))[0]
 
         except:
-            logger.warning('Could not find k12school for "%s"', new_data['k12school'])
+            logger.warning('Could not find k12school for "%s"', new_data.get('k12school'))
             studentInfo.k12school = None
 
-        studentInfo.school          = new_data['school'] if not studentInfo.k12school else studentInfo.k12school.name
-        studentInfo.dob             = new_data['dob']
+        studentInfo.school          = new_data.get('school') if not studentInfo.k12school else studentInfo.k12school.name
+        studentInfo.dob             = new_data.get('dob')
         studentInfo.gender          = new_data.get('gender', None)
 
         studentInfo.heard_about      = new_data.get('heard_about', '')
