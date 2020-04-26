@@ -395,14 +395,17 @@ GuardianInfoForm.base_fields['year_finished'].widget.attrs['maxlength'] = 4
 GuardianInfoForm.base_fields['num_kids'].widget.attrs['size'] = 3
 GuardianInfoForm.base_fields['num_kids'].widget.attrs['maxlength'] = 16
 
+# A list of fields (across all profile forms) that can not be deleted via profile_hide_fields tags
+_undeletable_fields = ['graduation_year']
+
 class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
     """ Form for student profiles """
     def __init__(self, *args, **kwargs):
         super(StudentProfileForm, self).__init__(*args, **kwargs)
         for field_name in [x.strip().lower() for x in Tag.getTag('student_profile_hide_fields', default='').split(',')]:
-            if field_name in self.fields:
+            if field_name in self.fields and field_name not in _undeletable_fields:
                 del self.fields[field_name]
-            if field_name == 'phone_cell':
+            if field_name == 'phone_cell' and 'receive_txt_message' in self.fields:
                 del self.fields['receive_txt_message']
 
 class TeacherProfileForm(UserContactForm, TeacherInfoForm):
@@ -410,7 +413,7 @@ class TeacherProfileForm(UserContactForm, TeacherInfoForm):
     def __init__(self, *args, **kwargs):
         super(TeacherProfileForm, self).__init__(*args, **kwargs)
         for field_name in [x.strip().lower() for x in Tag.getTag('teacher_profile_hide_fields', default='').split(',')]:
-            if field_name in self.fields:
+            if field_name in self.fields and field_name not in _undeletable_fields:
                 del self.fields[field_name]
 
 class GuardianProfileForm(UserContactForm, GuardianInfoForm):
@@ -418,7 +421,7 @@ class GuardianProfileForm(UserContactForm, GuardianInfoForm):
     def __init__(self, *args, **kwargs):
         super(GuardianProfileForm, self).__init__(*args, **kwargs)
         for field_name in [x.strip().lower() for x in Tag.getTag('guardian_profile_hide_fields', default='').split(',')]:
-            if field_name in self.fields:
+            if field_name in self.fields and field_name not in _undeletable_fields:
                 del self.fields[field_name]
 
 class EducatorProfileForm(UserContactForm, EducatorInfoForm):
@@ -426,14 +429,14 @@ class EducatorProfileForm(UserContactForm, EducatorInfoForm):
     def __init__(self, *args, **kwargs):
         super(EducatorProfileForm, self).__init__(*args, **kwargs)
         for field_name in [x.strip().lower() for x in Tag.getTag('educator_profile_hide_fields', default='').split(',')]:
-            if field_name in self.fields:
+            if field_name in self.fields and field_name not in _undeletable_fields:
                 del self.fields[field_name]
 
 class VolunteerProfileForm(UserContactForm):
     def __init__(self, *args, **kwargs):
         super(VolunteerProfileForm, self).__init__(*args, **kwargs)
         for field_name in [x.strip().lower() for x in Tag.getTag('volunteer_profile_hide_fields', default='').split(',')]:
-            if field_name in self.fields:
+            if field_name in self.fields and field_name not in _undeletable_fields:
                 del self.fields[field_name]
 
 class VisitingUserInfo(FormUnrestrictedOtherUser):
