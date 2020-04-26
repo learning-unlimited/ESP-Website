@@ -136,6 +136,8 @@ Minor bug fixes
 - Unscheduled sections and classes with no sections are no longer shown in the two-phase student lottery registration.
 - The "allow_change_grade_level" tag is now treated as a boolean tag.
 - Removed deprecated onsite status page
+- Fixed multiple bugs associated with the "teacher_profile_hide_fields" tag
+- Fixed the handling of the "num_stars" tag
 
 Known issues of new features
 ============================
