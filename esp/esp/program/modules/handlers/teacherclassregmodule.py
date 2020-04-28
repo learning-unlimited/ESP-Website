@@ -221,11 +221,10 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/Classes/View")
     def section_attendance(self, request, tl, one, two, module, extra, prog):
-        context = {'program': prog, 'one': one, 'two': two}
+        context = {'program': prog, 'tl': tl, 'one': one, 'two': two}
 
         user = request.user
-        user.taught_sections = [sec for sec in user.getTaughtSections(program = prog) if sec.meeting_times.count() > 0]
-        context['user'] = user
+        context['sched_sections'] = [sec for sec in user.getTaughtSections(program = prog) if sec.meeting_times.count() > 0]
 
         secid = 0
         if 'secid' in request.POST:

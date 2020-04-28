@@ -56,13 +56,11 @@ Please select a section from the dropdown below.
 </p>
 
 <center>
-    <select name="secid" onchange="location.href='/teach/{{ one }}/{{ two }}/section_attendance/'+$j(this).children('option:selected').val()" style="width: 400px;">
-        {% if sec != section %}
-            <option disabled selected="selected">
-                (Select a section)
-            </option>
-        {% endif %}
-        {% for sec in user.taught_sections %}
+    <select name="secid" onchange="location.href='/{{ tl }}/{{ one }}/{{ two }}/section_attendance/'+$j(this).children('option:selected').val()" style="width: 400px;">
+        <option disabled{% if not section %} selected="selected"{% endif %}>
+            (Select a section)
+        </option>
+        {% for sec in sched_sections %}
             <option value="{{ sec.id }}" {% if sec == section %}selected="selected"{% endif %}>
                 {{ sec }}: {{ sec.friendly_times_with_date|join:", " }}
             </option>
@@ -72,7 +70,7 @@ Please select a section from the dropdown below.
 
 {% if section %}
 <div id="program_form">
-<form action="/teach/{{ one }}/{{ two }}/section_attendance/{{ section.id }}" method="post">
+<form action="/{{ tl }}/{{ one }}/{{ two }}/section_attendance/{{ section.id }}" method="post">
 <input type="hidden" name="submitted">
 <table align="center" width="100%">
 <thead>
