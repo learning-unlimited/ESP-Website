@@ -100,7 +100,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
             if 'form_name' in request.POST:
                 submitted_form = request.POST['form_name']
                 if submitted_form == "Program Settings":
-                    form = ProgramSettingsForm(request.POST, instance = prog)
+                    form = ProgramSettingsForm(request.POST, instance = prog,
+                                               template_prog_mods = prog.program_modules.all())
                     if form.is_valid():
                         form.save()
                         #If the url for the program is now different, redirect to the new settings page
@@ -132,7 +133,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             prog_dict["sibling_discount"] = prog.sibling_discount
             prog_dict['class_categories'] = prog.class_categories.all().values_list("id", flat=True)
             prog_dict['flag_types'] = prog.flag_types.all().values_list("id", flat=True)
-            # prog_dict['program_modules'] is initialized in the __init__method of ProgramSettingsForm
+            prog_dict['program_modules'] = prog.program_modules.all().values_list("id", flat=True)
             prog_form = ProgramSettingsForm(prog_dict, instance = prog)
 
         if submitted_form != "Teacher Registration Settings":

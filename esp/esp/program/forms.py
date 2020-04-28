@@ -43,7 +43,7 @@ from django import forms
 from django.core import validators
 from form_utils.forms import BetterModelForm
 from django.utils.safestring import mark_safe
-
+from django.db.models.query import ValuesListQuerySet
 
 def make_id_tuple(object_list):
     return tuple([(o.id, str(o)) for o in object_list])
@@ -105,17 +105,22 @@ class ProgramCreationForm(BetterModelForm):
             if x.id not in sum(self.program_module_ids, []):
                 program_modules_questions.append('Would you like to include the {} module?'.format(x.admin_title))
                 self.program_module_ids.append([x.id])
-        # Get template program (first argument), if any
-        if len(args) > 0:
-            updated_initial = {'program_modules': []}
-            template_program = args[0]
-            # We have initial arguments, so fetch 'program_modules' placeholder variable (if any)
-            progmods = template_program.get('program_modules', None)
-            # Now update the form's initial values if there was an initial value passed
-            if progmods:
-                updated_initial['program_modules'] = self.lookup_modules(progmods)
+        # Get template program, if any
+        if len(args) > 0 and 'program_modules' in args[0].keys():
+            template_mods = list(args[0]['program_modules'])
+            template_mods = self.lookup_modules(template_mods)
+            if 'template_prog_mods' in kwargs.keys():
+                kwargs.pop('template_prog_mods')
             # Finally update the args initial reference
-            args[0].update(updated_initial)
+            tmp = args[0].copy() # make a mutable copy
+            tmp.update({'program_modules': template_mods}) # update it before passing to the BetterForm
+            # update only if it hasn't already been updated (updated version will be a plain old `list`)
+            # this is in case a user refreshed the page and the looked_up modules are already stored
+            if type(args[0]['program_modules']) is ValuesListQuerySet:
+                args = (tmp,) + args[1:]
+        elif 'template_prog_mods' in kwargs.keys():
+            template_mods = list(kwargs.pop('template_prog_mods'))
+            template_mods = self.lookup_modules(template_mods)
         # Now initialize the form
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
         self.fields['program_modules'].choices = enumerate(self.program_modules_questions)
@@ -130,7 +135,6 @@ class ProgramCreationForm(BetterModelForm):
         fields, and constructs the url and name fields on the Program instance;
         then calls the superclass's save() method.
         '''
-        self.fields['program_modules'].initial = self.lookup_modules(self.program_module_ids[:])
         #   Filter out unwanted characters from program type to form URL
         ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
         self.instance.url = u'%(type)s/%(instance)s' \
