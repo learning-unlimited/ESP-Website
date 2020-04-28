@@ -103,7 +103,7 @@ class ProgramCreationForm(BetterModelForm):
         # Include additional or new modules that haven't been added to the list
         for x in ProgramModule.objects.filter(choosable=0):
             if x.id not in sum(self.program_module_ids, []):
-                program_modules_questions.append('Would you like to include the {} module?'.format(x.admin_title))
+                self.program_modules_questions.append('Would you like to include the {} module?'.format(x.admin_title))
                 self.program_module_ids.append([x.id])
         # Get template program, if any
         if len(args) > 0 and 'program_modules' in args[0].keys():
