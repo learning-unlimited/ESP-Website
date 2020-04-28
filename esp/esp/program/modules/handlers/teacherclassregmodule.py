@@ -238,8 +238,6 @@ class TeacherClassRegModule(ProgramModuleObj):
             else:
                 section = sections[0]
                 context['section'], context['not_found'] = self.process_attendance(section, request, prog)
-        elif len(sections) > 1:
-            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
         return render_to_response(self.baseDir()+'section_attendance.html', request, context)
 

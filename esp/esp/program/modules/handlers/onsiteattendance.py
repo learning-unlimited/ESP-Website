@@ -144,8 +144,6 @@ class OnSiteAttendance(ProgramModuleObj):
         if len(sections) == 1:
             section = sections[0]
             context['section'], context['not_found'] = TeacherClassRegModule.process_attendance(section, request, prog)
-        elif len(sections) > 1:
-            return render_to_response('program/modules/teacherclassregmodule/cannoteditclass.html', request, {})
 
         return render_to_response('program/modules/teacherclassregmodule/section_attendance.html', request, context)
 
