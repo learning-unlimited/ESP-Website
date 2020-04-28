@@ -133,17 +133,21 @@ class OnSiteAttendance(ProgramModuleObj):
     def section_attendance(self, request, tl, one, two, module, extra, prog):
         context = {'program': prog, 'tl': tl, 'one': one, 'two': two}
 
-        context['sched_sections'] = ClassSection.objects.filter(parent_class__parent_program=prog).distinct().order_by('id')
+        timeslots = Event.objects.filter(id=extra, program = prog)
+        if len(timeslots) == 1:
+            timeslot = timeslots[0]
+            context['timeslot'] = timeslot
+            context['sched_sections'] = ClassSection.objects.filter(parent_class__parent_program=prog, meeting_times=timeslot).distinct().order_by('id')
 
-        secid = 0
-        if 'secid' in request.POST:
-            secid = request.POST['secid']
-        else:
-            secid = extra
-        sections = ClassSection.objects.filter(id = secid)
-        if len(sections) == 1:
-            section = sections[0]
-            context['section'], context['not_found'] = TeacherClassRegModule.process_attendance(section, request, prog)
+            secid = 0
+            if 'secid' in request.POST:
+                secid = request.POST['secid']
+            elif 'secid' in request.GET:
+                secid = request.GET['secid']
+            sections = ClassSection.objects.filter(id = secid)
+            if len(sections) == 1:
+                section = sections[0]
+                context['section'], context['not_found'] = TeacherClassRegModule.process_attendance(section, request, prog)
 
         return render_to_response('program/modules/teacherclassregmodule/section_attendance.html', request, context)
 

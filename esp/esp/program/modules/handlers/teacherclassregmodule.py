@@ -229,6 +229,8 @@ class TeacherClassRegModule(ProgramModuleObj):
         secid = 0
         if 'secid' in request.POST:
             secid = request.POST['secid']
+        elif 'secid' in request.GET:
+            secid = request.GET['secid']
         else:
             secid = extra
         sections = ClassSection.objects.filter(id = secid)
