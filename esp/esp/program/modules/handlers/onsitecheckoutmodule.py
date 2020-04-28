@@ -48,7 +48,8 @@ class OnSiteCheckoutModule(ProgramModuleObj):
             "admin_title": "On-Site User Check-Out",
             "link_title": "Check-out Students",
             "module_type": "onsite",
-            "seq": 1
+            "seq": 1,
+            "choosable": 1
             }
 
     @main_call
