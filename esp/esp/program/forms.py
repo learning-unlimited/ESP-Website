@@ -69,6 +69,7 @@ class ProgramCreationForm(BetterModelForm):
 
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current modules. """
+        # These modules are the "choosable" ones that admins will usually want to choose to select or exclude (i.e. not automatically include or exclude)
         self.program_module_ids = [[x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Optional Fees', 'Accounting', 'Credit Card Payment Module (Stripe)', 'Financial Aid Application',                                                                                        'Easily Approve Financial Aid Requests'])],
                                    [x.id for x in ProgramModule.objects.filter(admin_title__in=['Accounting', 'Credit Card Payment Module (Stripe)', 'Financial Aid Application',
                                                                                                 'Easily Approve Financial Aid Requests'])],

@@ -50,6 +50,7 @@ from django.contrib.auth.models import Group
 from django.test import LiveServerTestCase
 from django.test.client import Client
 from django import forms
+from django.db.models.query import ValuesListQuerySet
 
 from esp.program.controllers.classreg import get_custom_fields
 from esp.program.controllers.lottery import LotteryAssignmentController
@@ -570,7 +571,7 @@ class ProgramFrameworkTest(TestCase):
                     'sections_per_class': 1,
                     'num_students': 10,
                     'num_admins': 1,
-                    'modules':[x.id for x in ProgramModule.objects.all()],
+                    'modules': ValuesListQuerySet([x.id for x in ProgramModule.objects.all()]), # needs to be ValuesListQuerySet for ProgramCreationForm internal logic
                     'program_type': 'TestProgram',
                     'program_instance_name': '2222_Summer',
                     'program_instance_label': 'Summer 2222',
@@ -638,7 +639,7 @@ class ProgramFrameworkTest(TestCase):
             }
 
         #   Create the program much like the /manage/newprogram view does
-        pcf = ProgramCreationForm(prog_form_values)
+        pcf = ProgramCreationForm(prog_form_values, template_prog_mods = prog_form_values['program_modules'])
         if not pcf.is_valid():
             logger.info("ProgramCreationForm errors")
             logger.info(pcf.data)
@@ -787,7 +788,7 @@ class ProgramFrameworkTest(TestCase):
                 'director_email': '123456789-223456789-323456789-423456789-523456789-623456789-7234568@mit.edu',
                 'program_size_max': '3000',
                 'program_type': 'TestProgramPast',
-                'program_modules': [x.id for x in ProgramModule.objects.all()],
+                'program_modules': ValuesListQuerySet([x.id for x in ProgramModule.objects.all()]), # needs to be ValuesListQuerySet for ProgramCreationForm internal logic
                 'class_categories': [x.id for x in self.categories],
                 'admins': [x.id for x in self.admins],
                 'teacher_reg_start': '1111-01-01 00:00:00',
@@ -799,13 +800,13 @@ class ProgramFrameworkTest(TestCase):
                 'base_cost':         '666',
                 'finaid_cost':       '37',
             }
-        pcf = ProgramCreationForm(prog_form_values)
+        pcf = ProgramCreationForm(prog_form_values, template_prog_mods = prog_form_values['program_modules'])
         if not pcf.is_valid():
             logger.info("ProgramCreationForm errors")
             logger.info(pcf.data)
             logger.info(pcf.errors)
             logger.info(prog_form_values)
-            raise Exception()
+            raise Exception('Problem creating a past program')
 
         temp_prog = pcf.save(commit=False)
         (perms, modules) = prepare_program(temp_prog, pcf.cleaned_data)
