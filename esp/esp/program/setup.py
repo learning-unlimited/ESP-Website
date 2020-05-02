@@ -48,7 +48,6 @@ def prepare_program(program, data):
     modules = []
 
     perms += [('Student/All', None, data['student_reg_start'], data['student_reg_end'])] #it is recursive
-    perms += [('Student/Catalog', None, data['student_reg_start'], None)]
     perms += [('Student/Profile', None, data['student_reg_start'], None)]
     perms += [('Teacher/All', None, data['teacher_reg_start'], data['teacher_reg_end'])]
     perms += [('Teacher/Classes/View', None, data['teacher_reg_start'], None)]

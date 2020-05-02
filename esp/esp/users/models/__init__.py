@@ -2304,7 +2304,6 @@ class Permission(ExpirableModel):
             ("Student/All", "All student deadlines"),
             ("Student/Acknowledgement", "Student acknowledgement"),
             ("Student/Applications", "Apply for classes"),
-            ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Register for classes"),
             ("Student/Classes/Lunch", "Register for lunch"),
             ("Student/Classes/Lottery", "Enter the lottery"),
