@@ -39,6 +39,7 @@ from esp.users.models import Record, ESPUser, Permission
 from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import SubmitForm
 from esp.tagdict.models import Tag
+from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
@@ -106,8 +107,12 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         context['role'] = role
         q_phasezero = Q(phasezerorecord__program=self.program)
         entrants = ESPUser.objects.filter(q_phasezero).distinct()
-        context['entrants'] = entrants
-        context['nentrants'] = len(entrants)
+
+        recs = PhaseZeroRecord.objects.filter(program=prog)
+        timess = [("number of lottery students", [(rec.user.count(), rec.time) for rec in recs])]
+        timess_data, start = BigBoardModule.make_graph_data(timess)
+        context["left_axis_data"] = [{"axis_name": "#", "series_data": timess_data}]
+        context["first_hour"] = start
 
         grades = range(prog.grade_min, prog.grade_max + 1)
         stats = {}
