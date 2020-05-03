@@ -122,8 +122,8 @@ class VolunteerOfferForm(forms.Form):
         super(VolunteerOfferForm, self).__init__(*args, **kwargs)
         vrs = self.program.getVolunteerRequests()
         self.fields['requests'].choices = [(v.id, '%s: %s (%s more needed)' % (v.timeslot.pretty_time(), v.timeslot.description, positive_or_no(v.num_volunteers - v.num_offers()))) for v in vrs]
-        self.fields['shirt_size'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('volunteer_shirt_sizes', default = ('XS, S, M, L, XL, XXL')).split(',')]
-        self.fields['shirt_type'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types', default = ('Straight cut, Fitted cut')).split(',')]
+        self.fields['shirt_size'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('volunteer_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
+        self.fields['shirt_type'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types', default = 'Straight cut, Fitted cut').split(',')]
 
         #   Show t-shirt fields if specified by Tag (disabled by default)
         if not Tag.getBooleanTag('volunteer_tshirt_options', default=False):

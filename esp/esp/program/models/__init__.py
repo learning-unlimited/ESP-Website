@@ -1146,8 +1146,8 @@ class Program(models.Model, CustomFormsLinkModel):
                     shirt_type, shirt_size, count = row
                     shirt_count[shirt_type][shirt_size] = count
 
-        shirt_sizes = [x.strip() for x in Tag.getTag('teacher_shirt_sizes', default = ('XS, S, M, L, XL, XXL')).split(',')]
-        shirt_types = [x.strip() for x in Tag.getTag('shirt_types', default = ('Straight cut, Fitted cut')).split(',')]
+        shirt_sizes = [x.strip() for x in Tag.getTag('teacher_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
+        shirt_types = [x.strip() for x in Tag.getTag('shirt_types', default = 'Straight cut, Fitted cut').split(',')]
         shirts = {}
         shirts['teachers'] = [ { 'type': shirt_type, 'distribution':[ shirt_count[shirt_type][shirt_size] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
 

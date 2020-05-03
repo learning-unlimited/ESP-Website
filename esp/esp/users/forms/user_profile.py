@@ -180,9 +180,9 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         from esp.users.models import ESPUser
         super(StudentInfoForm, self).__init__(user, *args, **kwargs)
 
-        self.fields['shirt_size'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('student_shirt_sizes', default = ('XS, S, M, L, XL, XXL')).split(',')]
-        self.fields['shirt_type'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types', default = ('Straight cut, Fitted cut')).split(',')]
-        self.fields['food_preference'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('food_choices', default = ('Anything, Vegetarian, Vegan')).split(',')]
+        self.fields['shirt_size'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('student_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
+        self.fields['shirt_type'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types', default = 'Straight cut, Fitted cut').split(',')]
+        self.fields['food_preference'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('food_choices', default = 'Anything, Vegetarian, Vegan').split(',')]
 
         self.allow_change_grade_level = Tag.getBooleanTag('allow_change_grade_level', default = False)
 
@@ -345,8 +345,8 @@ class TeacherInfoForm(FormWithRequiredCss):
     def __init__(self, *args, **kwargs):
         super(TeacherInfoForm, self).__init__(*args, **kwargs)
 
-        self.fields['shirt_size'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('teacher_shirt_sizes', default = ('XS, S, M, L, XL, XXL')).split(',')]
-        self.fields['shirt_type'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types', default = ('Straight cut, Fitted cut')).split(',')]
+        self.fields['shirt_size'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('teacher_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
+        self.fields['shirt_type'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types', default = 'Straight cut, Fitted cut').split(',')]
 
         if not Tag.getBooleanTag('teacherinfo_shirt_options', default=True):
             del self.fields['shirt_size']
