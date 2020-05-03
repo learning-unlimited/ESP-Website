@@ -44,11 +44,11 @@ from esp.accounting.controllers import ProgramAccountingController, IndividualAc
 from esp.middleware      import ESPError
 from argcache            import cache_function
 
-class CreditCardViewer_Cybersource(ProgramModuleObj):
+class CreditCardViewer(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
-            "admin_title": "Credit Card View Module (Cybersource)",
+            "admin_title": "Credit Card View Module",
             "link_title": "View Credit Card Transactions",
             "module_type": "manage",
             "seq": 10000
@@ -56,7 +56,7 @@ class CreditCardViewer_Cybersource(ProgramModuleObj):
 
     @main_call
     @needs_admin
-    def viewpay_cybersource(self, request, tl, one, two, module, extra, prog):
+    def viewpay(self, request, tl, one, two, module, extra, prog):
         pac = ProgramAccountingController(prog)
         student_list = list(pac.all_students())
         payment_table = []
@@ -76,7 +76,7 @@ class CreditCardViewer_Cybersource(ProgramModuleObj):
             'total_payment': total_payment,
         }
 
-        return render_to_response(self.baseDir() + 'viewpay_cybersource.html', request, context)
+        return render_to_response(self.baseDir() + 'viewpay.html', request, context)
 
     @staticmethod
     @cache_function
