@@ -32,15 +32,9 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web       import render_to_response
-from django.db.models.query     import Q
-from django.db.models    import Sum
-from esp.users.models    import User, ESPUser
-from esp.accounting.models import Transfer
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
-from esp.middleware      import ESPError
 from argcache            import cache_function
 
 class CreditCardViewer(ProgramModuleObj):
