@@ -386,7 +386,10 @@ class BaseESPUser(object):
 
     @cache_function
     def getTaughtClassesAll(self, include_rejected = False):
-        return self.classsubject_set.all()
+        if include_rejected:
+            return self.classsubject_set.all()
+        else:
+            return self.classsubject_set.exclude(status=-10)
     getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {'self': cls})
     getTaughtClassesAll.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
 
@@ -2304,7 +2307,6 @@ class Permission(ExpirableModel):
             ("Student/All", "All student deadlines"),
             ("Student/Acknowledgement", "Student acknowledgement"),
             ("Student/Applications", "Apply for classes"),
-            ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Register for classes"),
             ("Student/Classes/Lunch", "Register for lunch"),
             ("Student/Classes/Lottery", "Enter the lottery"),
