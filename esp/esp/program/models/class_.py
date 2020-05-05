@@ -950,10 +950,14 @@ class ClassSection(models.Model):
         return result.distinct()
 
     def students_checked_in(self):
-        return self.students() & ESPUser.objects.filter(record__event="attended", record__program=self.parent_program).distinct()
+        time_now = datetime.datetime.now()
+        return self.students() & ESPUser.objects.filter(Q(record__event="attended", record__program=self.parent_program)).exclude(id__in=self.parent_program.checkedOutStudents(time_now)).distinct()
 
     def num_students_checked_in(self):
         return self.students_checked_in().count()
+
+    def num_students_attending(self):
+        return self.students(verbs=['Attended']).count()
 
     @cache_function
     def num_students_prereg(self):
@@ -1111,7 +1115,27 @@ class ClassSection(models.Model):
     def isFull(self, ignore_changes=False, webapp=False):
         if len(self.get_meeting_times()) == 0:
             return True
-        if webapp and Tag.getBooleanTag('count_checked_in_only', program = self.parent_program, default = False):
+
+        now = datetime.datetime.now()
+        switch_time = None
+        if Tag.getProgramTag('switch_time_program_attendance', program=self.parent_program):
+            try:
+                switch_hour, switch_min = [int(x) for x in Tag.getProgramTag('switch_time_program_attendance', program=self.parent_program).split(":")]
+                switch_time = datetime.datetime(now.year, now.month, now.day, switch_hour, switch_min)
+            # TODO: Is this the best way to deal with someone specifying the tag incorrectly?
+            except ValueError:
+                pass
+        switch_lag = None
+        if Tag.getProgramTag('switch_lag_class_attendance', program = self.parent_program):
+            try:
+                switch_lag = int(Tag.getProgramTag('switch_lag_class_attendance', program = self.parent_program))
+            except ValueError:
+                pass
+        # TODO: Don't call num_students_attending() twice, but also don't call it unless needed?
+        if webapp and switch_lag and now >= (self.start_time_prefetchable() + timedelta(minutes=switch_lag)) and self.num_students_attending() >= 1:
+            num_students = self.num_students_attending()
+        # TODO: Don't count the number of students attending the program for every class...
+        elif webapp and switch_time and now >= switch_time and ESPUser.objects.filter(record__event="attended", record__program=self.parent_program).distinct().count() >= 1:
             num_students = self.num_students_checked_in()
         else:
             num_students = self.num_students()
