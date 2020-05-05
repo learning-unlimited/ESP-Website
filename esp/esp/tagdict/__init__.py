@@ -39,7 +39,7 @@ all_global_tags = {
     'studentinfo_shirt_type_selection': (True, 'Show shirt type field in the student profile?', False, 'learn', True),
     'student_shirt_sizes': (False, 'Comma-separated list of shirt size options for students', 'XS, S, M, L, XL, XXL', 'learn', True),
     'show_student_vegetarianism_options': (True, 'Ask students about their dietary restrictions as part of the student profile?', False, 'learn', True),
-    'food_choices': (False, 'Comma-separated list of food choices for students (requires \'show_student_vegetarianism_options\' to be enabled)', 'Straight cut, Fitted cut', 'manage', True),
+    'food_choices': (False, 'Comma-separated list of food choices for students (requires \'show_student_vegetarianism_options\' to be enabled)', 'Anything, Vegetarian, Vegan', 'learn', True),
     'show_student_graduation_years_not_grades': (True, 'List graduation years rather than grade numbers in the student profile?', False, 'learn', True),
     'ask_student_about_post_hs_plans':  (True, 'Ask in the student profile about a student\'s post-high-school plans (go to college, go to trade school, get a job, etc)? (deprecated)', False, 'learn', False),
     'ask_student_about_transportation_to_program': (True, 'Ask in the student profile about how the student is going to get to the upcoming program?', False, 'learn', True),
