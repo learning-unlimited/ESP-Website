@@ -135,9 +135,13 @@ Minor bug fixes
 - The grade change request link is no longer displayed in the profile form for new users or users that can change their grade in the form.
 - Unscheduled sections and classes with no sections are no longer shown in the two-phase student lottery registration.
 - The "allow_change_grade_level" tag is now treated as a boolean tag.
-- Removed deprecated onsite status page
-- Fixed multiple bugs associated with the "teacher_profile_hide_fields" tag
-- Fixed the handling of the "num_stars" tag
+- Removed deprecated onsite status page.
+- Fixed multiple bugs associated with the "teacher_profile_hide_fields" tag.
+- Fixed the handling of the "num_stars" tag.
+- Fixed cases where the list of a teacher's classes would include rejected classes even when specified to not include rejected classes.
+- Removed the "Classrooms have been imported" message on the resources page which would appear when any kind of resource was imported.
+- Removed the "Catalog" deadline because it didn't do anything.
+- Fixed erroneous cases where "(not required)" should have been listed next to modules in student and teacher registration but wasn't.
 
 Known issues of new features
 ============================
