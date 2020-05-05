@@ -119,6 +119,8 @@ Minor new features
 - Added emailcodes to the subjects of all emails to class/section lists (i.e. "[prefix] [emailcode] Subject"). The prefix can be changed in the admin pages (and will be omited from the subject if not set).
 - Changed the theme of the administration pages. Each section on the main page is now moveable, collapsible, and closable.
 - The student lottery can now support lottery groups of any size (specified by the "student_lottery_group_max" tag). If the tag is set to 1, options to join groups will not be shown to students.
+- Added credit card transaction IDs to the Credit Card Viewpay Module.
+- Added global tags to change the options for the shirt size (one tag each for teachers, students, and volunteers), shirt style (universal tag), and food preference (only applicable to students) profile form fields.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -142,6 +144,7 @@ Minor bug fixes
 - Removed the "Classrooms have been imported" message on the resources page which would appear when any kind of resource was imported.
 - Removed the "Catalog" deadline because it didn't do anything.
 - Fixed erroneous cases where "(not required)" should have been listed next to modules in student and teacher registration but wasn't.
+- Removed all mentions of "Cybersource" in the Credit Card Viewpay Module to reduce confusion.
 
 Known issues of new features
 ============================
