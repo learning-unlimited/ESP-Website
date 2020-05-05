@@ -386,7 +386,10 @@ class BaseESPUser(object):
 
     @cache_function
     def getTaughtClassesAll(self, include_rejected = False):
-        return self.classsubject_set.all()
+        if include_rejected:
+            return self.classsubject_set.all()
+        else:
+            return self.classsubject_set.exclude(status=-10)
     getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {'self': cls})
     getTaughtClassesAll.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
 
