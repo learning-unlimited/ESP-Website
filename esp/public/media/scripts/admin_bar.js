@@ -69,16 +69,18 @@ if (currentPrograms && currentPrograms.forEach) {
                 '<input type="text" id="class_search_field" name="namequery" placeholder="Find Class by Title" />' +
                 '<button type="submit" id="class_search_submit" name="class_search_submit" aria-label="Search" class="btn btn-default"><span class="glyphicon glyphicon-search glyphicon-btn-height" aria-hidden="true"></span></button>' +
                 '</div>' +
-                '</form>',
+                '</form>' +
+                '<div id="adminbar_Manage_content" class="content">' +
+                '    <a href="/manage/' + currentProgram.urlBase +'/main">Main Management Page</a><br /><a href="/manage/' + currentProgram.urlBase +'/dashboard">Program Dashboard</a><br /><a href="/onsite/' + currentProgram.urlBase +'/main">Main Onsite Page</a>' +
+                '</div>',
             name: 'class_search',
-            displayName: 'Class Search' +
-                ' <small>(' + currentProgram.name + ')</small>'
-        });
-        ESP.registerAdminModule({
-            content_html: '    <a href="/manage/' + currentProgram.urlBase +'/main">Main Management Page</a><br /><a href="/manage/' + currentProgram.urlBase +'/dashboard">Program Dashboard</a><br /><a href="/onsite/' + currentProgram.urlBase +'/main">Main Onsite Page</a>',
-            name: 'Manage',
             displayName: 'Manage ' + currentProgram.name
-});
+        });
+        //ESP.registerAdminModule({
+           // content_html: '    <a href="/manage/' + currentProgram.urlBase +'/main">Main Management Page</a><br /><a href="/manage/' + currentProgram.urlBase +'/dashboard">Program Dashboard</a><br /><a href="/onsite/' + currentProgram.urlBase +'/main">Main Onsite Page</a>',
+           // name: 'Manage',
+          //  displayName: 'Manage ' + currentProgram.name
+//});
     });
 }
 
