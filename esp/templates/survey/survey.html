@@ -36,9 +36,12 @@
             var id, func;
             for ( var i = 0; i < timeslot_ids.length; i++ ) {
                 id = timeslot_ids[i];
-                func = updateTimeSlot( id );
-                func()
-                document.getElementById('id_attendance_' + id).onchange = func;
+                elem = document.getElementById('id_attendance_' + id);
+                if (elem) {
+                    func = updateTimeSlot( id );
+                    func()
+                    elem.onchange = func;
+                }
             }
         }
         
@@ -59,55 +62,69 @@
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 </style>
-<br /><br />
-<h1>Survey for {{ program.niceName }} </h1>
+<h1>Survey for {% if section %}{{ section }}{% else %}{{ program.niceName }}{% endif %}</h1>
 
 <div id="program_form">
 <form method="post" action="{{ request.get_full_path }}">
-
-{% for question in questions %}{{ question.render|uselist:classes }}{% endfor %}
-
-{% if perclass_questions %}
-{% if timeslots %}
-    {% for ts in timeslots %}
-        <table class="fullwidth">
-        <tr>
-            <th>Questions for {{ ts.description }}</th>
-        </tr>
-        </table>
-        <table class="fullwidth">
-        <tr>
-            <td width="35%">
-                <label for="id_attendance_{{ ts.id }}"><b>Which class did you attend in this timeblock?</b></label>
-            </td>
-            <td>
-                <select name="attendance_{{ ts.id }}" id="id_attendance_{{ ts.id }}">
-                    <option value="0">[None]</option>
-                    {% for sec in ts.classsections %}
-                        <option value="{{ sec.id }}" {% if sec.selected %}selected="selected"{% endif %}>{{ sec.parent_class.title }}</option>
-                    {% endfor %}
-                </select>
-            </td>
-        </tr>
-        </table>
-        <div id="perclass_questions_{{ ts.id }}">
-        {% for question in perclass_questions %}
-            {{ question.render|substitute:ts }}
-        {% endfor %}
-        </div>
+{% if section %}
+    {% for question in perclass_questions %}
+        {{ question.render|substitute:section }}
     {% endfor %}
 {% else %}
-    {% for sec in sections %}
-      <table class="fullwidth">
-       <tr>
-            <th>Questions for {{ sec.emailcode }}: {{ sec.title }} ({% for tm in sec.friendly_times %}{% if forloop.counter > 1 %},{% endif %}{{ tm }}{% endfor %})</th>
-        </tr>
-        </table>
-        {% for question in perclass_questions %}
-            {{ question.render|substitute:sec }}
+
+    {% for question in questions %}{{ question.render|uselist:classes }}{% endfor %}
+
+    {% if perclass_questions %}
+    {% if timeslots %}
+        {% for ts in timeslots %}
+            <table class="fullwidth">
+            <tr>
+                <th>Questions for {% if ts.description %}{{ ts.description }}{% else %}{{ ts }}{% endif %}</th>
+            </tr>
+            </table>
+            {% if not ts.completed %}
+                <table class="fullwidth">
+                <tr>
+                    
+                    <td width="35%">
+                        <label for="id_attendance_{{ ts.id }}"><b>Which class did you attend in this timeblock?</b></label>
+                    </td>
+                    <td>
+                        <select name="attendance_{{ ts.id }}" id="id_attendance_{{ ts.id }}">
+                            <option value="0">[None]</option>
+                            {% for sec in ts.classsections %}
+                                <option value="{{ sec.id }}" {% if sec.selected %}selected="selected"{% endif %}>{{ sec.parent_class.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                </table>
+                <div id="perclass_questions_{{ ts.id }}">
+                {% for question in perclass_questions %}
+                    {{ question.render|substitute:ts }}
+                {% endfor %}
+                </div>
+            {% else %}
+                <table class="fullwidth">
+                <tr><td style="text-align: center;">You have already filled out a survey for a section at this time.</td></tr>
+                </tr>
+                </table>
+            {% endif %}
         {% endfor %}
-    {% endfor %}
-{% endif %}
+    {% else %}
+        {% for sec in sections %}
+          <table class="fullwidth">
+           <tr>
+                <th>Questions for {{ sec.emailcode }}: {{ sec.title }} ({% for tm in sec.friendly_times %}{% if forloop.counter > 1 %},{% endif %}{{ tm }}{% endfor %})</th>
+            </tr>
+            </table>
+            {% for question in perclass_questions %}
+                {{ question.render|substitute:sec }}
+            {% endfor %}
+        {% endfor %}
+    {% endif %}
+    {% endif %}
+
 {% endif %}
 
 <table class="fullwidth">

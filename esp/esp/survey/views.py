@@ -41,8 +41,9 @@ import re
 from cStringIO import StringIO
 from django.db import models
 from django.db.models import Q
+from esp.cal.models import Event
 from esp.users.models import ESPUser, Record, admin_required
-from esp.program.models import Program, ClassCategories
+from esp.program.models import Program, ClassCategories, StudentRegistration, RegistrationType, ClassSection
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
 from esp.utils.web import render_to_response
 from esp.utils.latex import render_to_latex
@@ -84,9 +85,16 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
     else:
         event = "teacher_survey"
 
-    if Record.user_completed(user, event ,prog):
-        raise ESPError("You've already filled out the survey.  Thanks for responding!", log=False)
+    # Section-specific survey
+    section = None
+    if 'sec' in request.GET:
+        sections = ClassSection.objects.filter(id=request.GET['sec'], parent_class__parent_program=prog)
+        if len(sections) == 1:
+            # TODO: should we check to make sure the student was enrolled/attended the section?
+            section = sections[0]
 
+    if Record.user_completed(user, event, prog) or (section and not request.POST and StudentRegistration.objects.filter(section=section, user=user, relationship__name="SurveyCompleted").exists()):
+        raise ESPError("You've already filled out the survey. Thanks for responding!", log=False)
 
     surveys = prog.getSurveys().filter(category = tl).select_related()
 
@@ -104,14 +112,22 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
         return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
 
     survey = surveys[0]
+    survey_completed = RegistrationType.objects.get_or_create(name = 'SurveyCompleted', category = "student")[0]
 
     if request.POST:
         response = SurveyResponse()
         response.survey = survey
         response.save()
 
-        r = Record(user=user, event=event, program=prog, time=datetime.datetime.now())
-        r.save()
+        # If this was a section-specific survey, set the student registration for the section
+        if section:
+            sr = StudentRegistration(user = user, section = section, relationship = survey_completed)
+            sr.save()
+            sr.expire()
+        # Otherwise, set the record for the full survey
+        else:
+            r = Record(user=user, event=event, program=prog, time=datetime.datetime.now())
+            r.save()
 
         response.set_answers(request.POST, save=True)
 
@@ -125,18 +141,26 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
             classes = user.getEnrolledClasses(prog)
             enrolled_secs = user.getEnrolledSections(prog)
             timeslots = prog.getTimeSlots().order_by('start')
+            # Find timeslots for which the student has already filled out a section survey
+            secs_completed = ClassSection.objects.filter(studentregistration__relationship=survey_completed,
+                                                         studentregistration__user=user,
+                                                         studentregistration__section__parent_class__parent_program=prog)
+            ts_completed = Event.objects.filter(meeting_times__in=secs_completed)
             for ts in timeslots:
                 # The order by string really means "title"
                 ts.classsections = prog.sections().filter(meeting_times=ts).exclude(meeting_times__start__lt=ts.start).order_by('parent_class__title').distinct()
                 for sec in ts.classsections:
                     if sec in enrolled_secs:
                         sec.selected = True
+                if ts in ts_completed:
+                    ts.completed = True
         elif tl == 'teach':
             classes = user.getTaughtClasses(prog)
             sections = user.getTaughtSections(prog).order_by('parent_class__title')
 
         context.update({
             'survey': survey,
+            'section': section,
             'questions': questions,
             'perclass_questions': perclass_questions,
             'program': prog,
