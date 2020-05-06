@@ -386,7 +386,10 @@ class BaseESPUser(object):
 
     @cache_function
     def getTaughtClassesAll(self, include_rejected = False):
-        return self.classsubject_set.all()
+        if include_rejected:
+            return self.classsubject_set.all()
+        else:
+            return self.classsubject_set.exclude(status=-10)
     getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {'self': cls})
     getTaughtClassesAll.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
 
@@ -1216,15 +1219,6 @@ def update_email(**kwargs):
                 mailman.remove_list_member(l, old_email)
 
 
-shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
-shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
-# Until someone writes a new migration, we'll have to go with the sex-based 'M'
-# key for straight cut shirts. Let this comment acknowledge that unfortunately
-# state of affairs until that time.
-shirt_types = (('M', 'Straight cut'), ('F', 'Fitted cut'))
-food_choices = ('Anything', 'Vegetarian', 'Vegan')
-food_choices = zip(food_choices, food_choices)
-
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
@@ -1236,9 +1230,9 @@ class StudentInfo(models.Model):
     studentrep = models.BooleanField(blank=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
     heard_about = models.TextField(blank=True, null=True)
-    food_preference = models.CharField(max_length=256,blank=True,null=True)
-    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
-    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
+    food_preference = models.TextField(blank=True, null=True)
+    shirt_size = models.TextField(blank=True, null=True)
+    shirt_type = models.TextField(blank=True, null=True)
 
     medical_needs = models.TextField(blank=True, null=True)
 
@@ -1421,8 +1415,8 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     college = models.CharField(max_length=128,blank=True, null=True)
     major = models.CharField(max_length=32,blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
-    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
-    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
+    shirt_size = models.TextField(blank=True, null=True)
+    shirt_type = models.TextField(blank=True, null=True)
 
     @classmethod
     def cf_link_instance(cls, request):
@@ -2304,7 +2298,6 @@ class Permission(ExpirableModel):
             ("Student/All", "All student deadlines"),
             ("Student/Acknowledgement", "Student acknowledgement"),
             ("Student/Applications", "Apply for classes"),
-            ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Register for classes"),
             ("Student/Classes/Lunch", "Register for lunch"),
             ("Student/Classes/Lottery", "Enter the lottery"),
