@@ -35,12 +35,13 @@ Learning Unlimited, Inc.
 
 from django.db.models.query      import Q
 
-from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
 from esp.program.models import StudentRegistration, ClassSection
 from esp.utils.web import render_to_response
 from esp.users.models import ESPUser
 from esp.cal.models import Event
 from esp.utils.query_utils import nest_Q
+from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
 import datetime
 
@@ -126,6 +127,29 @@ class OnSiteAttendance(ProgramModuleObj):
                                })
 
         return render_to_response(self.baseDir()+'attendance.html', request, context)
+
+    @aux_call
+    @needs_onsite
+    def section_attendance(self, request, tl, one, two, module, extra, prog):
+        context = {'program': prog, 'tl': tl, 'one': one, 'two': two}
+
+        timeslots = Event.objects.filter(id=extra, program = prog)
+        if len(timeslots) == 1:
+            timeslot = timeslots[0]
+            context['timeslot'] = timeslot
+            context['sched_sections'] = ClassSection.objects.filter(parent_class__parent_program=prog, meeting_times=timeslot).distinct().order_by('id')
+
+            secid = 0
+            if 'secid' in request.POST:
+                secid = request.POST['secid']
+            elif 'secid' in request.GET:
+                secid = request.GET['secid']
+            sections = ClassSection.objects.filter(id = secid)
+            if len(sections) == 1:
+                section = sections[0]
+                context['section'], context['not_found'] = TeacherClassRegModule.process_attendance(section, request, prog)
+
+        return render_to_response('program/modules/teacherclassregmodule/section_attendance.html', request, context)
 
     class Meta:
         proxy = True
