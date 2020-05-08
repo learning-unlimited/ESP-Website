@@ -567,19 +567,11 @@ class StudentClassRegModule(ProgramModuleObj):
         json.dump(reg_bits_data, resp)
         return resp
 
-    # This function exists only to apply the @meets_deadline decorator.
-    @meets_deadline('/Catalog')
-    def catalog_student(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        """ Return the program class catalog, after checking the deadline """
-        return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
-
-    # This function gets called and branches off to the two above depending on the user's role
     @disable_csrf_cookie_update
     @aux_call
     @no_auth
     @cache_control(public=True, max_age=120)
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        """ Check user role and maybe return the program class catalog """
         return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
 
     @disable_csrf_cookie_update

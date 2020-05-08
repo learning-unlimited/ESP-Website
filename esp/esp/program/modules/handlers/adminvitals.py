@@ -32,18 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
-from esp.program.modules import module_ext
-from esp.utils.web import render_to_response
-from django.contrib.auth.decorators import login_required
-from esp.program.models import ClassSubject, ClassSection, Program, ClassCategories
-from esp.users.models import shirt_sizes, shirt_types
-from django.core.cache import cache
-from django.db.models import Count, Sum
-from django.db.models.query      import Q
-from collections import defaultdict
-import math
-from decimal import Decimal
+from esp.program.modules.base import ProgramModuleObj
 
 class KeyDoesNotExist(Exception):
     pass

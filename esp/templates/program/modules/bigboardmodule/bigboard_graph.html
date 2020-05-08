@@ -1,0 +1,100 @@
+<div class="bigboard-graph">
+  <div id="highcharts-placeholder"></div>
+  <script type="text/javascript">
+  var left_axes = 0;
+  {% if left_axis_data %}
+    left_axes = {{ left_axis_data|length }}
+  {% endif %}
+  var chart = Highcharts.chart('highcharts-placeholder', {
+    credits: {
+        enabled: false
+    },
+    legend: {
+      align: "left",
+      x: 40,
+      floating: true,
+      layout: "vertical",
+      verticalAlign: "top",
+      //backgroundColor: '#FFFFFF'
+    },
+    plotOptions: {
+      line: {
+        marker: {enabled: false},
+      },
+    },
+    title: {
+      text: null,
+    },
+    tooltip: {
+      shared: true,
+    },
+    xAxis: {
+      type: 'datetime',
+      minRange: 24 * 60 * 60 * 1000, // one day
+    },
+    yAxis: [
+      {% for axis in left_axis_data %}
+      {
+        title: {text: '{{ axis.axis_name}}'},
+        min: 0,
+        maxPadding: 0.01,
+        endOnTick: false,
+      },
+      {% endfor %}
+      {% for axis in right_axis_data %}
+      {
+        title: {text: '{{ axis.axis_name}}'},
+        min: 0,
+        maxPadding: 0.01,
+        endOnTick: false,
+        opposite: true,
+      },
+      {% endfor %}
+    ],
+    series: [
+      {% for axis in left_axis_data %}
+        {% for series in axis.series_data %}
+        {
+          type: 'line',
+          yAxis: {{ forloop.parentloop.counter0 }},
+          name: '{{series.description}}',
+          pointInterval: 60 * 60 * 1000, // one hour
+          pointStart: Date.UTC(
+              {{first_hour.year}}, {{first_hour.month}} - 1,
+              {{first_hour.day}}, {{first_hour.hour}}),
+          data: {{series.data}},
+        },
+        {% empty %}
+        {
+          type: 'line',
+          yAxis: {{ forloop.counter0 }},
+          name: 'No data',
+          data: []
+        },
+        {% endfor %}
+      {% endfor %}
+      {% for axis in right_axis_data %}
+        {% for series in axis.series_data %}
+        {
+          type: 'line',
+          yAxis: {{ forloop.parentloop.counter0 }} + left_axes,
+          name: '{{series.description}}',
+          pointInterval: 60 * 60 * 1000, // one hour
+          pointStart: Date.UTC(
+              {{first_hour.year}}, {{first_hour.month}} - 1,
+              {{first_hour.day}}, {{first_hour.hour}}),
+          data: {{series.data}},
+        },
+        {% empty %}
+        {
+          type: 'line',
+          yAxis: {{ forloop.counter0 }},
+          name: 'No data',
+          data: []
+        },
+        {% endfor %}
+      {% endfor %}
+    ],
+  });
+  </script>
+</div>
