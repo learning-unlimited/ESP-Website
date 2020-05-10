@@ -339,17 +339,17 @@ i.pointer {
 
 .fancybutton {
   border-radius: 1.5vh;
-  background-color: #efefef;
-  color: black;
+  background-color: black;
+  color: white;
   border: 2px solid black;
   font-size: 3vh !important;
 }
 
 .fancybutton:hover {
-  background-color: black;
-  color: white;
+  background-color: #efefef;
+  color: black;
 }
 
-#program_form th, th.grey {
+.survey td {
   background: #efefef;
 }
