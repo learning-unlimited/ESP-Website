@@ -90,7 +90,7 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
     if 'sec' in request.GET:
         sections = ClassSection.objects.filter(id=request.GET['sec'], parent_class__parent_program=prog)
         if len(sections) == 1:
-            # TODO: should we check to make sure the student was enrolled/attended the section?
+            # should we check to make sure the student was enrolled in/attended the section?
             section = sections[0]
 
     if Record.user_completed(user, event, prog) or (section and not request.POST and StudentRegistration.objects.filter(section=section, user=user, relationship__name="SurveyCompleted").exists()):

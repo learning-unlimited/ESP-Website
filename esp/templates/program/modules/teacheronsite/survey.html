@@ -11,7 +11,7 @@
         {% for c in perclass_data %}
             <table>
                 <tr>
-                    <th>Responses for {{ c.class.emailcode }}: {{ c.class.title }}</th>
+                    <th class="grey">Responses for {{ c.class.emailcode }}: {{ c.class.title }}</th>
                 </tr>
             </table>
             {% for q in c.questions %}
@@ -40,67 +40,7 @@
             </table>
         {% else %}
             </table>
-            <div id="program_form">
-            <form method="post" action="{{ request.get_full_path }}">
-            {% csrf_token %}
-            {% for question in questions %}{{ question.render|uselist:classes }}{% endfor %}
-            
-            {% if perclass_questions %}
-            {% if timeslots %}
-                {% for ts in timeslots %}
-                    <table class="fullwidth">
-                    <tr>
-                        <th>Questions for {{ ts.description }}</th>
-                    </tr>
-                    </table>
-                    <table class="fullwidth">
-                    <tr>
-                        <td width="35%">
-                            <label for="id_attendance_{{ ts.id }}"><b>Which class did you attend in this timeblock?</b></label>
-                        </td>
-                        <td>
-                            <select name="attendance_{{ ts.id }}" id="id_attendance_{{ ts.id }}">
-                                <option value="0">[None]</option>
-                                {% for sec in ts.classsections %}
-                                    <option value="{{ sec.id }}" {% if sec.selected %}selected="selected"{% endif %}>{{ sec.parent_class.title }}</option>
-                                {% endfor %}
-                            </select>
-                        </td>
-                    </tr>
-                    </table>
-                    <div id="perclass_questions_{{ ts.id }}">
-                    {% for question in perclass_questions %}
-                        {{ question.render|substitute:ts }}
-                    {% endfor %}
-                    </div>
-                {% endfor %}
-            {% else %}
-                {% for sec in sections %}
-                  <table class="fullwidth">
-                   <tr>
-                        <th>Questions for {{ sec.emailcode }}: {{ sec.title }} ({% for tm in sec.friendly_times %}{% if forloop.counter > 1 %},{% endif %}{{ tm }}{% endfor %})</th>
-                    </tr>
-                    </table>
-                    {% for question in perclass_questions %}
-                        {{ question.render|substitute:sec }}
-                    {% endfor %}
-                {% endfor %}
-            {% endif %}
-            {% endif %}
-            
-            <table style="width:100%">
-                <tr>
-                    <th>Submit</th>
-                </tr>
-                <tr>
-                    <td align="center">
-                        Click the button below to finish your survey.  Thank you so much for your time!<br /><br />
-                        <input style="font-size: 3vh !important;" type="Submit" class="btn" value="Submit Survey" /><br />
-                    </td>
-                </tr>
-            </table>
-            </form>
-            </div>
+            {% include "survey/survey_form.html" %}
         {% endif %}
     {% endif %}
   <table style="height:8vh; border:none;"><tr style="border:none;"><td style="border:none;"></td></tr></table>

@@ -336,3 +336,20 @@ i.pointer {
     width: 100%;
     resize: vertical;
 }
+
+.fancybutton {
+  border-radius: 1.5vh;
+  background-color: #efefef;
+  color: black;
+  border: 2px solid black;
+  font-size: 3vh !important;
+}
+
+.fancybutton:hover {
+  background-color: black;
+  color: white;
+}
+
+#program_form th, th.grey {
+  background: #efefef;
+}

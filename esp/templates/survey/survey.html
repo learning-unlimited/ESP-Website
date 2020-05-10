@@ -8,138 +8,13 @@
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
 {% endblock %}
 
-{% block xtrajs %}
-    {{ block.super }}
-    <script type="text/javascript">
-        <!-- Does anybody still care if javascript isn't in HTML comments?  -ageng 2009-09-19
-        
-        // This actually returns a function that updates said timeslot
-        // The returned function is intended to be used as an event handler
-        function updateTimeSlot(id) {
-            function _func() {
-                var newstyle = 'block';
-                formfield = document.getElementById('id_attendance_' + id);
-                
-                if ( formfield.value == 0 ) {
-                    newstyle = 'none';
-                }
-                
-                document.getElementById('perclass_questions_' + id).style.display = newstyle;
-            }
-            return _func;
-        }
-        
-        // Show/hide per-class questions and attach onchange event handlers
-        function setupTimeSlots() {
-            if ( ! document.getElementById ) { return true; }
-            var timeslot_ids = [{% for ts in timeslots %}{{ ts.id }}{% if not forloop.last %},{% endif %}{% endfor %}];
-            var id, func;
-            for ( var i = 0; i < timeslot_ids.length; i++ ) {
-                id = timeslot_ids[i];
-                elem = document.getElementById('id_attendance_' + id);
-                if (elem) {
-                    func = updateTimeSlot( id );
-                    func()
-                    elem.onchange = func;
-                }
-            }
-        }
-        
-        // Can't use window.onload=foo since <body onload="foo()"> overrides it.
-        if ( window.addEventListener ) {
-            window.addEventListener( 'load', setupTimeSlots, false );
-        } else if ( window.attachEvent ) {
-            window.attachEvent( 'onload', setupTimeSlots );
-        }
-        
-        //-->
-    </script>
-{% endblock %}
-
 {% block content %}
-{% load survey %}
 
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 </style>
 <h1>Survey for {% if section %}{{ section }}{% else %}{{ program.niceName }}{% endif %}</h1>
 
-<div id="program_form">
-<form method="post" action="{{ request.get_full_path }}">
-{% if section %}
-    {% for question in perclass_questions %}
-        {{ question.render|substitute:section }}
-    {% endfor %}
-{% else %}
-
-    {% for question in questions %}{{ question.render|uselist:classes }}{% endfor %}
-
-    {% if perclass_questions %}
-    {% if timeslots %}
-        {% for ts in timeslots %}
-            <table class="fullwidth">
-            <tr>
-                <th>Questions for {% if ts.description %}{{ ts.description }}{% else %}{{ ts }}{% endif %}</th>
-            </tr>
-            </table>
-            {% if not ts.completed %}
-                <table class="fullwidth">
-                <tr>
-                    
-                    <td width="35%">
-                        <label for="id_attendance_{{ ts.id }}"><b>Which class did you attend in this timeblock?</b></label>
-                    </td>
-                    <td>
-                        <select name="attendance_{{ ts.id }}" id="id_attendance_{{ ts.id }}">
-                            <option value="0">[None]</option>
-                            {% for sec in ts.classsections %}
-                                <option value="{{ sec.id }}" {% if sec.selected %}selected="selected"{% endif %}>{{ sec.parent_class.title }}</option>
-                            {% endfor %}
-                        </select>
-                    </td>
-                </tr>
-                </table>
-                <div id="perclass_questions_{{ ts.id }}">
-                {% for question in perclass_questions %}
-                    {{ question.render|substitute:ts }}
-                {% endfor %}
-                </div>
-            {% else %}
-                <table class="fullwidth">
-                <tr><td style="text-align: center;">You have already filled out a survey for a section at this time.</td></tr>
-                </tr>
-                </table>
-            {% endif %}
-        {% endfor %}
-    {% else %}
-        {% for sec in sections %}
-          <table class="fullwidth">
-           <tr>
-                <th>Questions for {{ sec.emailcode }}: {{ sec.title }} ({% for tm in sec.friendly_times %}{% if forloop.counter > 1 %},{% endif %}{{ tm }}{% endfor %})</th>
-            </tr>
-            </table>
-            {% for question in perclass_questions %}
-                {{ question.render|substitute:sec }}
-            {% endfor %}
-        {% endfor %}
-    {% endif %}
-    {% endif %}
-
-{% endif %}
-
-<table class="fullwidth">
-    <tr>
-        <th>Submit</th>
-    </tr>
-    <tr>
-        <td align="center">
-            Click the button below to finish your survey.  Thank you so much for your time!<br /><br />
-            <input type="Submit" class="fancybutton" value="Submit Survey" /><br />
-        </td>
-    </tr>
-</table>
-
-</form>
-</div>
+{% include "survey/survey_form.html" %}
 
 {% endblock %}
