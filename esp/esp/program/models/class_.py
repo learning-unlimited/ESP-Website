@@ -950,14 +950,17 @@ class ClassSection(models.Model):
         return result.distinct()
 
     def students_checked_in(self):
-        time_now = datetime.datetime.now()
-        return self.students() & ESPUser.objects.filter(Q(record__event="attended", record__program=self.parent_program)).exclude(id__in=self.parent_program.checkedOutStudents(time_now)).distinct()
+        return self.students() & self.parent_program.currentlyCheckedInStudents()
 
+    @cache_function
     def num_students_checked_in(self):
         return self.students_checked_in().count()
+    num_students_checked_in.depend_on_model('users.Record')
 
+    @cache_function
     def num_students_attending(self):
         return self.students(verbs=['Attended']).count()
+    num_students_attending.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     @cache_function
     def num_students_prereg(self):
@@ -979,6 +982,13 @@ class ClassSection(models.Model):
     count_enrolled_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
+
+    @cache_function
+    def count_attending_students(self):
+        return self.num_students(verbs=['Attended'], use_cache=False)
+    count_attending_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
+
+    attending_students = DerivedField(models.IntegerField, count_attending_students)(null=False, default=0)
 
     def cancel(self, email_students=True, include_lottery_students=False, text_students=False, email_teachers=True, explanation=None, unschedule=False):
         # To avoid circular imports
@@ -1116,13 +1126,13 @@ class ClassSection(models.Model):
         if len(self.get_meeting_times()) == 0:
             return True
 
+        # Get time and tag values to determine what number to base class changes on
         now = datetime.datetime.now()
         switch_time = None
         if Tag.getProgramTag('switch_time_program_attendance', program=self.parent_program):
             try:
-                switch_hour, switch_min = [int(x) for x in Tag.getProgramTag('switch_time_program_attendance', program=self.parent_program).split(":")]
-                switch_time = datetime.datetime(now.year, now.month, now.day, switch_hour, switch_min)
-            # TODO: Is this the best way to deal with someone specifying the tag incorrectly?
+                switch_time_str = now.strftime("%Y/%m/%d ") + Tag.getProgramTag('switch_time_program_attendance', program=self.parent_program)
+                switch_time = datetime.datetime.strptime(switch_time_str, "%Y/%m/%d %H:%M")
             except ValueError:
                 pass
         switch_lag = None
@@ -1131,12 +1141,20 @@ class ClassSection(models.Model):
                 switch_lag = int(Tag.getProgramTag('switch_lag_class_attendance', program = self.parent_program))
             except ValueError:
                 pass
-        # TODO: Don't call num_students_attending() twice, but also don't call it unless needed?
+
+        # Mode 1: Base "fullness" on class attendance numbers if:
+        # 1) using webapp, 2) 'switch_lag_class_attendance' tag is set properly
+        # 3) it is currently past the class start time + however many minutes specified in tag
+        # 4) at least one student has been marked as attending the class
         if webapp and switch_lag and now >= (self.start_time_prefetchable() + timedelta(minutes=switch_lag)) and self.num_students_attending() >= 1:
             num_students = self.num_students_attending()
-        # TODO: Don't count the number of students attending the program for every class...
-        elif webapp and switch_time and now >= switch_time and ESPUser.objects.filter(record__event="attended", record__program=self.parent_program).distinct().count() >= 1:
+        # Mode 2: Base "fullness" on program attendance numbers if:
+        # 1) using webapp, 2) 'switch_time_program_attendance' tag is set properly
+        # 3) it is currently past the time specified in tag
+        # 4) at least one student has been marked as attending the program
+        elif webapp and switch_time and now >= switch_time and self.parent_program.currentlyCheckedInStudents().count() >= 1:
             num_students = self.num_students_checked_in()
+        # Mode 3: Base "fullness" on enrollment numbers
         else:
             num_students = self.num_students()
         if (self.num_students() == self._get_capacity(ignore_changes) == 0):

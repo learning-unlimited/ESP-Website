@@ -914,7 +914,7 @@ function render_table(display_mode, student_id)
                     new_td.append($j("<span/>").addClass("room").html(section.rooms));
                 }
                 //  TODO: make this snap to the right reliably
-                new_td.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
+                new_td.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_attending.toString() + "/" + section.num_students_checked_in + "/" + section.num_students_enrolled + "/" + section.capacity));
 
                 //  Hide the class if it started in the past (and we're not showing past timeblocks)
                 if (settings.hide_past_time_blocks)
@@ -951,7 +951,7 @@ function render_table(display_mode, student_id)
                 var end_time = data.timeslots[last_timeslot].label.split("--")[1];
                 var friendly_times = start_time + "--" + end_time + " (" + section.timeslots.length + " blocks)";
                 tooltip_div.append($j("<div/>").html(friendly_times));
-                tooltip_div.append($j("<div/>").html(section.num_students_checked_in.toString() + " students checked in, " + section.num_students_enrolled + " enrolled; capacity = " + section.capacity));
+                tooltip_div.append($j("<div/>").html(section.num_students_attending.toString() + " students attending class, " + section.num_students_checked_in + " students checked in to program, " + section.num_students_enrolled + " enrolled; capacity = " + section.capacity));
                 tooltip_div.append($j("<div/>").addClass("tooltip_teachers").html(class_data.teacher_names));
                 tooltip_div.append($j("<div/>").attr("id", "tooltip_" + section.id + "_" + ts_id + "_desc").addClass("tooltip_description").html(class_data.class_info));
                 if(class_data.prereqs)
@@ -1211,6 +1211,7 @@ function populate_students()
         new_student.first_name = data.students_list[i][2];
         new_student.grade = 0;
         new_student.sections = [];
+        new_student.sections_attending = [];
         new_student.checked_in = null;
         data.students[new_student.id] = new_student;
     }
@@ -1293,15 +1294,19 @@ function populate_counts()
     {
         var sec_id = data.counts[i][0];
         var num_students = data.counts[i][1];
+        var num_students_attending = data.counts[i][2];
         
         //  If we have a conflict, assume the larger number of students are enrolled.
         if (!data.sections[sec_id])
             console.log("Could not find section " + sec_id);
-        else if (data.sections[sec_id].num_students_enrolled != num_students)
-        {
-            //  console.log("Warning: Section " + sec_id + " claims to have " + num_students + " students but " + data.sections[sec_id].num_students_enrolled + " are enrolled.");
-            if (num_students > data.sections[sec_id].num_students_enrolled)
-                data.sections[sec_id].num_students_enrolled = num_students;
+        else {
+            data.sections[sec_id].num_students_attending = num_students_attending;
+            if (data.sections[sec_id].num_students_enrolled != num_students)
+            {
+                //  console.log("Warning: Section " + sec_id + " claims to have " + num_students + " students but " + data.sections[sec_id].num_students_enrolled + " are enrolled.");
+                if (num_students > data.sections[sec_id].num_students_enrolled)
+                    data.sections[sec_id].num_students_enrolled = num_students;
+            }
         }
     }
 }
