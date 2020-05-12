@@ -10,12 +10,9 @@
 <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
 
 <style>
-.button1 {
-    text-align: center !important;
-    float: none !important;
-    height: 40px !important;
-    width: 250px !important;
-    font-size: 13px !important;
+#highcharts-placeholder {
+  width: 100%;
+  height: 250px;
 }
 
 #applicants
@@ -62,28 +59,18 @@ td {
 </style>
 {% endblock %}
 
+{% block xtrajs %}
+  <script type="text/javascript" src="//code.highcharts.com/highcharts.js"></script>
+  <script type="text/javascript" src="//code.highcharts.com/highcharts-more.js"></script>
+  <script type="text/javascript" src="//code.highcharts.com/modules/no-data-to-display.js"></script>
+{% endblock xtrajs %}
+
 {% block content %}
 <h1>Manage Phase Zero (Student Lottery) for {{program.niceName}}</h1>
 
 <center>
-<h2>
-Number of students that have entered the student lottery:
-</h2>
-<h2 style="font-family:sans-serif">
-<u>{{ nentrants }}</u>
-</h2>
-
-</br>
-<input type="button" class="button1" value="Show/Hide Lottery Entrants" id="toggle" />
-
-<div id="lotteryentries">
-</br>
-<ul id="applicants">
-{% for entrant in entrants %}
-<li>{{entrant}} - {{entrant|getGradeForProg:program.id}}</li>
-{% endfor %}
-</ul>
-</div>
+{% include "program/modules/bigboardmodule/bigboard_graph.html" %}
+</center>
 
 <center>
 {% if error %}<p><font color="red">{{ error }}</font></p>{% endif %}
@@ -172,15 +159,5 @@ Number of students that have entered the student lottery:
     {% endfor %}
 </table>
 {% endif %}
-
 <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
-
-<script>
-var toggle  = document.getElementById("toggle");
-var content = document.getElementById("lotteryentries");
-
-toggle.addEventListener("click", function(){
-  content.classList.toggle("show");
-}, false);
-</script>
 {% endblock %}

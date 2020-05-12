@@ -11,6 +11,7 @@
 
 {% block javascript %}
     {{ block.super }}
+    {% if section %}
     <script src="https://webrtc.github.io/adapter/adapter-latest.js" type="text/javascript"></script>
     <script src="https://cdn.jsdelivr.net/gh/serratus/quaggaJS@e96eb9f7888507689cf33f1e6ce325959dde314e/dist/quagga.min.js" type="text/javascript"></script>
     <script src="/media/scripts/barcodescanner.js" type="text/javascript"></script>
@@ -39,40 +40,59 @@
             }
         });
     </script>
+    {% endif %}
 {% endblock %}
 
 {% block content %}
 {% load users %}
+
+{% if tl == "onsite" %}
+<br />
+<a class="btn" style="float: left" href="/onsite/{{ one }}/{{ two }}/attendance/">&lt;&lt;Back to Program Attendance</a>
+<select name="tsid" onchange="location.href='/onsite/{{ one }}/{{ two }}/section_attendance/'+$j(this).children('option:selected').val()" style="width: 200px; float: right;">
+    <option disabled{% if not timeslot %} selected="selected"{% endif %}>
+        (Select a timeslot)
+    </option>
+    {% for ts in program.getTimeSlotList %}
+        <option value="{{ ts.id }}" {% if ts == timeslot %}selected="selected"{% endif %}>
+            {{ ts }}
+        </option>
+    {% endfor %}
+</select>
+<br /><br /><br />
+{% endif %}
 
 <h1>Section Attendance{% if section %} for <u>{{ section }}</u>{% endif %}</h1>
 
 <p>
 {% if section %}
 Here is an attendance sheet for your section's students. Here you can see which students have checked in and submit attendance for your section. This section is scheduled for {{ section.friendly_times_with_date|join:", " }}. If you are looking for a different section, you can select it from the dropdown below.
+{% elif tl == "onsite" and not timeslot %}
+Please select a timeslot above.
 {% else %}
 Please select a section from the dropdown below.
 {% endif %}
 <br />
 </p>
 
+{% if tl == "teach" or timeslot %}
 <center>
-    <select name="secid" onchange="location.href='/teach/{{ one }}/{{ two }}/section_attendance/'+$j(this).children('option:selected').val()" style="width: 400px;">
-        {% if sec != section %}
-            <option disabled selected="selected">
-                (Select a section)
-            </option>
-        {% endif %}
-        {% for sec in user.taught_sections %}
+    <select name="secid" onchange="location.href='{{ request.path }}?secid='+$j(this).children('option:selected').val()" style="width: 400px;">
+        <option disabled{% if not section %} selected="selected"{% endif %}>
+            (Select a section)
+        </option>
+        {% for sec in sched_sections %}
             <option value="{{ sec.id }}" {% if sec == section %}selected="selected"{% endif %}>
                 {{ sec }}: {{ sec.friendly_times_with_date|join:", " }}
             </option>
         {% endfor %}
     </select>
 </center>
+{% endif %}
 
 {% if section %}
 <div id="program_form">
-<form action="/teach/{{ one }}/{{ two }}/section_attendance/{{ section.id }}" method="post">
+<form action="/{{ tl }}/{{ one }}/{{ two }}/section_attendance/{{ section.id }}" method="post">
 <input type="hidden" name="submitted">
 <table align="center" width="100%">
 <thead>

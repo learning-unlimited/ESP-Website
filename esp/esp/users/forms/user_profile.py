@@ -156,7 +156,6 @@ HOW_TO_GET_TO_PROGRAM = (
 class StudentInfoForm(FormUnrestrictedOtherUser):
     """ Extra student-specific information """
     from esp.users.models import ESPUser
-    from esp.users.models import shirt_sizes, shirt_types, food_choices
 
     gender = forms.ChoiceField(choices=[('', ''), ('M', 'Male'), ('F', 'Female')], required=False)
     graduation_year = forms.ChoiceField(choices=[('', '')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
@@ -167,9 +166,9 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
     heard_about = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HEARD_ABOUT_ESP_CHOICES, HEARD_ABOUT_ESP_CHOICES)))#forms.CharField(required=False)
-    shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
-    shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
-    food_preference = forms.ChoiceField(choices=([('','')]+list(food_choices)), required=False)
+    shirt_size = forms.ChoiceField(choices=[], required=False)
+    shirt_type = forms.ChoiceField(choices=[], required=False)
+    food_preference = forms.ChoiceField(choices=[], required=False)
 
     medical_needs = forms.CharField(required=False)
 
@@ -180,6 +179,10 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     def __init__(self, user=None, *args, **kwargs):
         from esp.users.models import ESPUser
         super(StudentInfoForm, self).__init__(user, *args, **kwargs)
+
+        self.fields['shirt_size'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('student_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
+        self.fields['shirt_type'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types', default = 'Straight cut, Fitted cut').split(',')]
+        self.fields['food_preference'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('food_choices', default = 'Anything, Vegetarian, Vegan').split(',')]
 
         self.allow_change_grade_level = Tag.getBooleanTag('allow_change_grade_level', default = False)
 
@@ -329,7 +332,6 @@ AFFILIATION_CHOICES = (
 class TeacherInfoForm(FormWithRequiredCss):
     """ Extra teacher-specific information """
 
-    from esp.users.models import shirt_sizes, shirt_types
     reimbursement_choices = [(False, 'I will pick up my reimbursement.'),
                              (True,  'Please mail me my reimbursement.')]
     from_here_answers = [ (True, "Yes"), (False, "No") ]
@@ -337,11 +339,15 @@ class TeacherInfoForm(FormWithRequiredCss):
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
     affiliation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=AFFILIATION_CHOICES), label ='What is your affiliation with %s?' % settings.INSTITUTION_NAME)
     major = SizedCharField(length=30, max_length=32, required=False)
-    shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
-    shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
+    shirt_size = forms.ChoiceField(choices=[], required=False)
+    shirt_type = forms.ChoiceField(choices=[], required=False)
 
     def __init__(self, *args, **kwargs):
         super(TeacherInfoForm, self).__init__(*args, **kwargs)
+
+        self.fields['shirt_size'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('teacher_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
+        self.fields['shirt_type'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types', default = 'Straight cut, Fitted cut').split(',')]
+
         if not Tag.getBooleanTag('teacherinfo_shirt_options', default=True):
             del self.fields['shirt_size']
             del self.fields['shirt_type']
@@ -352,21 +358,22 @@ class TeacherInfoForm(FormWithRequiredCss):
         super(TeacherInfoForm, self).clean()
         cleaned_data = self.cleaned_data
 
-        affiliation_field = self.fields['affiliation']
-        affiliation, school = affiliation_field.widget.decompress(cleaned_data.get('affiliation'))
-        if affiliation == '':
-            msg = u'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
-            self.add_error('affiliation', msg)
-        elif affiliation in (AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC):
-            cleaned_data['affiliation'] = affiliation_field.compress([affiliation, '']) # ignore the box
-        else: # OTHER or NONE -- Make sure they entered something into the other box
-            if school.strip() == '':
+        if 'affiliation' in self.fields:
+            affiliation_field = self.fields['affiliation']
+            affiliation, school = affiliation_field.widget.decompress(cleaned_data.get('affiliation'))
+            if affiliation == '':
                 msg = u'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
-                if affiliation == AFFILIATION_OTHER:
-                    msg = u'Please enter your affiliation with %s.' % settings.INSTITUTION_NAME
-                elif affiliation == AFFILIATION_NONE:
-                    msg = u'Please enter your school or employer.'
                 self.add_error('affiliation', msg)
+            elif affiliation in (AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC):
+                cleaned_data['affiliation'] = affiliation_field.compress([affiliation, '']) # ignore the box
+            else: # OTHER or NONE -- Make sure they entered something into the other box
+                if school.strip() == '':
+                    msg = u'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
+                    if affiliation == AFFILIATION_OTHER:
+                        msg = u'Please enter your affiliation with %s.' % settings.INSTITUTION_NAME
+                    elif affiliation == AFFILIATION_NONE:
+                        msg = u'Please enter your school or employer.'
+                    self.add_error('affiliation', msg)
         return cleaned_data
 
 TeacherInfoForm.base_fields['graduation_year'].widget.attrs['size'] = 4
@@ -398,7 +405,7 @@ class TeacherProfileForm(UserContactForm, TeacherInfoForm):
     """ Form for teacher profiles """
     def __init__(self, *args, **kwargs):
         super(TeacherProfileForm, self).__init__(*args, **kwargs)
-        for field_name in Tag.getTag('teacher_profile_hide_fields', default='').split(','):
+        for field_name in [x.strip().lower() for x in Tag.getTag('teacher_profile_hide_fields', default='').split(',')]:
             if field_name in self.fields:
                 del self.fields[field_name]
 
