@@ -1,6 +1,6 @@
 /* Make CheckboxSelectMultiple and FilteredSelectMultiple render sanely. */
 
-input[name="program_modules"] {
+input[name="program_module_questions"] {
   display: inline;
 }
 

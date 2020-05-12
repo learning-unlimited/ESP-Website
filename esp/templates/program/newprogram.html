@@ -8,6 +8,11 @@
 <link rel="stylesheet" type="text/css" href="/media/styles/admin.css" /> <!-- to render checkbox list -->
 {% endblock %}
 
+{% block javascript %}
+{{ block.super }}
+<script src="/media/scripts/program/modules/modulequestions.js" />
+{% endblock %}
+
 {% block content %}
 <h1>Program Creation Form</h1>
 
@@ -95,7 +100,7 @@ Use a past program as a template:
     <tr> 
       <td colspan="2" class="submit">
         <br /><br /><br />
-        <center><input class="fancybutton" type="submit" value="Make Program Happen!" /></center>
+        <center><input class="fancybutton" type="submit" value="Make Program Happen!" onclick="questionsToModules();" /></center>
       </td>
     </tr>
   </table>
