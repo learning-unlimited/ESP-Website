@@ -221,15 +221,16 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/Classes/View")
     def section_attendance(self, request, tl, one, two, module, extra, prog):
-        context = {'program': prog, 'one': one, 'two': two}
+        context = {'program': prog, 'tl': tl, 'one': one, 'two': two}
 
         user = request.user
-        user.taught_sections = [sec for sec in user.getTaughtSections(program = prog) if sec.meeting_times.count() > 0]
-        context['user'] = user
+        context['sched_sections'] = [sec for sec in user.getTaughtSections(program = prog) if sec.meeting_times.count() > 0]
 
         secid = 0
         if 'secid' in request.POST:
             secid = request.POST['secid']
+        elif 'secid' in request.GET:
+            secid = request.GET['secid']
         else:
             secid = extra
         sections = ClassSection.objects.filter(id = secid)
@@ -239,8 +240,6 @@ class TeacherClassRegModule(ProgramModuleObj):
             else:
                 section = sections[0]
                 context['section'], context['not_found'] = self.process_attendance(section, request, prog)
-        elif len(sections) > 1:
-            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
         return render_to_response(self.baseDir()+'section_attendance.html', request, context)
 
