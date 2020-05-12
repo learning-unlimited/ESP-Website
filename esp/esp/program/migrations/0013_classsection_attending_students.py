@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('program', '0013_auto_20200502_1312'),
+        ('program', '0012_remove_phasezerorecord_lottery_number'),
     ]
 
     operations = [
