@@ -2542,6 +2542,10 @@ class Permission(ExpirableModel):
         implies = [perm]
         implies+=[x for x,y in cls.implications.items() if perm in y]
 
+        #Check for global permissions (should only work for non-deadlines and admins)
+        if any([cls.user_has_perm(user, x) for x in implies]):
+            return Program.objects.all()
+
         direct = Program.objects.filter(nest_Q(Permission.is_valid_qobject(), 'permission'),
                                        permission__user=user,
                                        permission__permission_type__in=implies)
