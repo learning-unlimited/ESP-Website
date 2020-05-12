@@ -115,7 +115,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         ###############################################################################
         # Post lottery, assign permissions to people in the lottery winners group
         # Assign OverridePhaseZero permission and Student/All permissions
-        if messages.length == 0:
+        if len(messages) == 0:
             #Add users to winners group once we are sure there were no problems
             winners.user_set.add(*students)
             override_perm = Permission(permission_type='OverridePhaseZero', role=winners, start_date=datetime.datetime.now(), program=prog)
