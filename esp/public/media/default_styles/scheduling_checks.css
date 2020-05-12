@@ -49,3 +49,12 @@ color: lightgray;
   margin: 10px;
   font-style: italic;
 }
+.load_ready{
+     background-color: #00CC00;
+}
+.load_yellow{
+     background-color: yellow;
+}
+.load_fail{
+     background-color: red;
+}

@@ -96,6 +96,7 @@ var SchedulingCheck = React.createClass({
   loadData: function () {
     // remove any existing data, so we see a loading thing again
     this.setState({data: undefined});
+    this.setState({timestamp: "loading"});
 
     $j.get("scheduling_checks/" + this.props.slug)
     .done(function (data) {
@@ -113,18 +114,29 @@ var SchedulingCheck = React.createClass({
     }.bind(this));
   },
 
+/*loads all of the scheduling checks */
+  componentDidMount() {
+    this.loadData();
+  },
+
   render: function () {
     var body;
     if (this.state.failed) {
-      body = <div className="placeholder">
+      body = <div className="placeholder load_fail">
         (loaded {this.state.timestamp}, loading failed ☹)
       </div>;
-    } else if (!this.state.open) {
-      body = <div className="placeholder">
-        (loaded {this.state.timestamp}, click title to open)
+    } else if (!this.state.open && this.state.timestamp =="never") {
+      body = <div className="placeholder load_fail">
+        (loaded {this.state.timestamp})
       </div>;
-    } else if (!this.state.data) {
-      body = <div className="placeholder">loading...</div>;
+    }else if (this.state.timestamp == "loading") {
+      body = <div className="placeholder load_yellow">loading...</div>;
+    }else if (!this.state.open) {
+      body = <div className="placeholder load_ready">
+        (loaded {this.state.timestamp})
+      </div>;
+    }else if (!this.state.data) {
+      body = <div className="placeholder load_yellow">loading...</div>;
     } else {
       var data = JSON.parse(this.state.data); // Might not work on old browsers
       var table;
@@ -152,8 +164,8 @@ var SchedulingCheck = React.createClass({
         helpText = <div className="help-text">{data.help_text}</div>;
       }
       body = <div>
-        <div className="placeholder">
-          (loaded {this.state.timestamp}, click title to close)
+        <div className="placeholder load_ready">
+          (loaded {this.state.timestamp})
         </div>
         {helpText}
         {table}
@@ -184,7 +196,7 @@ var ScheduleButton = React.createClass({
 
   render: function () {
     return <button onClick={this.props.onClick} className="reset-button">
-      Run Diagnostic
+      Open/Close
     </button>;
   },
 });
