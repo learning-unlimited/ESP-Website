@@ -21,7 +21,7 @@ function togglePopup() {
         <th colspan="3" class="user_info">
             <i>Classes for {{user.first_name}} {{user.last_name}} - ID: {{user.id}}</i>
             {% if not checked_in %}
-                <p class="checkinnote">Note: You will not be able to change any classes until after your check-in has been processed by the admin team.</p>
+                <p class="checkinnote">Note: You will not be able to change any classes or see your classrooms until after your check-in has been processed by the admin team.</p>
             {% endif %}
         </th>
         {% for timeslot in timeslots %}
@@ -35,8 +35,8 @@ function togglePopup() {
                 <td rowspan="2" class="time">{{ timeslot.0.short_time }}</td>
                 <td class="cls">
                 {% if cls %}
-                    <!--link to course details?-->
-                    <b>{{ cls.section.title }}{% if not cls.first_meeting_time %} (continued){% endif %}</b>
+                    <!--link to course details-->
+                    <b>{{ cls.section.title }}{% if not cls.first_meeting_time %} (continued){% else %}&nbsp;<a class="no-dec" title="More Details" href="/learn/{{one}}/{{two}}/onsitedetails/{{ cls.section.id }}"><i class="material-icons md-3">list</i></a>{% endif %}</b>
                 {% else %}
                     No class
                 {% endif %}

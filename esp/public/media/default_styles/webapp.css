@@ -109,7 +109,7 @@
   padding-top: .25vh !important;
 }
 
-.location > * {
+.location > *, .cls a {
   vertical-align: middle;
 }
 
@@ -352,4 +352,8 @@ i.pointer {
 
 .survey td {
   background: #efefef;
+}
+
+.sectioninfo td {
+  background-color: #efefef;
 }

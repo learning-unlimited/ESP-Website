@@ -4,7 +4,7 @@
 <center>
   <div class="main survey">
     <table>
-        <tr><th>Survey for {{ program.niceName }}</th></tr>
+        <tr><th>Survey for {% if section %}{{ section }}{% else %}{{ program.niceName }}{% endif %}</th></tr>
     {% if survey_status == "completed" %}
         <tr><td>You've already filled out the survey. Thanks for responding!</td></tr>
         </table>

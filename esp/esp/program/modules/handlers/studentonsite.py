@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, CoreModule, main_call, aux_call, meets_cap
-from esp.program.models  import ClassSubject
+from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
 from esp.resources.models import Resource
 from esp.utils.web import render_to_response
 from esp.users.models    import Record
@@ -67,9 +67,31 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
 
         context['webapp_page'] = 'schedule'
         context['scrmi'] = prog.studentclassregmoduleinfo
-        context['checked_in'] = Record.objects.filter(program=prog, event='attended', user=user).exists()
+        context['checked_in'] = prog.isCheckedIn(user)
 
         return render_to_response(self.baseDir()+'schedule.html', request, context)
+
+    @main_call
+    @needs_student
+    @meets_grade
+    @meets_deadline('/Webapp')
+    @meets_cap
+    def onsitedetails(self, request, tl, one, two, module, extra, prog):
+        context = self.onsitecontext(request, tl, one, two, prog)
+        user = request.user
+        context['webapp_page'] = 'schedule'
+        if extra:
+            secid = extra
+            sections = ClassSection.objects.filter(id = secid)
+            if len(sections) == 1:
+                section = sections[0]
+                if StudentRegistration.valid_objects().filter(section=section, user=user, relationship__name="Enrolled"):
+                    context['checked_in'] = prog.isCheckedIn(user)
+                    surveys = prog.getSurveys().filter(category = tl)
+                    context['has_survey'] = surveys.count() > 0 and surveys[0].questions.filter(per_class = True).exists()
+                    context['section'] = section
+                    return render_to_response(self.baseDir()+'sectioninfo.html', request, context)
+        return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
 
     @aux_call
     @needs_student
