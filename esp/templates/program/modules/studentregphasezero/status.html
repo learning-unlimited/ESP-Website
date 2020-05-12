@@ -73,12 +73,12 @@ td {
 </center>
 
 <center>
+<hr>
 {% if error %}<p><font color="red">{{ error }}</font></p>{% endif %}
 {% autoescape off %}
 {% if lottery_messages %}<p><font color="blue">{{ lottery_messages|join:"<br/>" }}</font></p>{% endif %}
 {% endautoescape %}
 
-<hr>
 <button class="dsphead">
     <b><u>Run Default Student Lottery Algorithm:</u></b>
 </button>
