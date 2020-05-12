@@ -36,7 +36,7 @@
 </ul>
 
 <div id="program_form">
-<table>
+<table width="100%">
 
 <tr>
 <th>
@@ -47,15 +47,15 @@ Payments:
 </th>
 </tr>
 {% for payment in payment_table %}
-<tr>
+<tr{% if not forloop.last %} style="border-bottom: 1px dashed #699;"{% endif %}>
 <td>
-<b>{{ payment.0.get_full_name }}</b> (ID: {{ payment.0.id }}) <br />
+<b><a href="/manage/userview?username={{ payment.0.username}}">{{ payment.0.get_full_name }}</a></b> (ID: {{ payment.0.id }}) <br />
 ${{ payment.2 }} billed; ${{ payment.3 }} owed
 </td>
 <td>
-<ul>
+<ul style="margin: 0px;">
 {% for transfer in payment.1 %}
-<li>${{ transfer.amount|floatformat:2 }} - {{ transfer.line_item.text }}
+<li>${{ transfer.amount|floatformat:2 }} - {{ transfer.line_item.text }}{% if transfer.transaction_id %} (CC Transaction ID: {{ transfer.transaction_id }}){% endif %}
 </div></li> <!-- div.( doc.getDoctypeStr ) -->
 {% endfor %}
 </ul>

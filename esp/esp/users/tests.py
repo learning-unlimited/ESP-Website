@@ -152,13 +152,17 @@ class PasswordRecoveryTicketTest(TestCase):
 
 class TeacherInfo__validationtest(TestCase):
     def setUp(self):
+        Tag.setTag('teacher_shirt_sizes', value='XS, S, M, L, XL, XXL')
+        Tag.setTag('student_shirt_sizes', value='XS, S, M, L, XL, XXL')
+        Tag.setTag('volunteer_shirt_sizes', value='XS, S, M, L, XL, XXL')
+        Tag.setTag('shirt_types', value='Straight cut, Fitted cut')
         self.user, created = ESPUser.objects.get_or_create(username='teacherinfo_teacher')
         self.user.profile = self.user.getLastProfile()
         self.info_data = {
             'graduation_year': '2000',
             'major': 'Underwater Basket Weaving',
             'shirt_size': 'XXL',
-            'shirt_type': 'M'
+            'shirt_type': 'Straight cut'
         }
 
     def useData(self, data):

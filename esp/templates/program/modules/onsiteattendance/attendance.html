@@ -54,6 +54,9 @@ Please select a timeslot from the dropdown below:
         <input name="when" type="date" value="{{ when|date:'Y-m-d' }}" style="width:auto;"><input type="submit" value="Change Date">
     </form>
     {% endif %}
+    <br />
+    <a class="btn" href="/onsite/{{ one }}/{{ two }}/section_attendance/{{ timeslot.id }}">See or record section attendance{% if timeslot %} for this timeslot{% endif %}</a>
+    <br /><br />
 </center>
 
 {% if timeslot %}

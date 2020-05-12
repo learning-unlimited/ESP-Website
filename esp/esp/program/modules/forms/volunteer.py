@@ -39,7 +39,7 @@ from esp.cal.models import Event, EventType
 from esp.program.models import VolunteerRequest, VolunteerOffer
 from esp.utils.widgets import DateTimeWidget, DateWidget
 from localflavor.us.forms import USPhoneNumberField
-from esp.users.models import ESPUser, shirt_sizes, shirt_types
+from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
 from esp.program.models import Program
 
@@ -98,8 +98,8 @@ class VolunteerOfferForm(forms.Form):
     email = forms.EmailField(label='Email address')
     phone = USPhoneNumberField(label='Phone number')
 
-    shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
-    shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
+    shirt_size = forms.ChoiceField(choices=[], required=False)
+    shirt_type = forms.ChoiceField(choices=[], required=False)
 
     requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text="Sign up for one or more shifts; remember to avoid conflicts with your classes if you're teaching!", widget=forms.CheckboxSelectMultiple, required=False)
     has_previous_requests = forms.BooleanField(widget=forms.HiddenInput, required=False, initial=False)
@@ -122,7 +122,8 @@ class VolunteerOfferForm(forms.Form):
         super(VolunteerOfferForm, self).__init__(*args, **kwargs)
         vrs = self.program.getVolunteerRequests()
         self.fields['requests'].choices = [(v.id, '%s: %s (%s more needed)' % (v.timeslot.pretty_time(), v.timeslot.description, positive_or_no(v.num_volunteers - v.num_offers()))) for v in vrs]
-
+        self.fields['shirt_size'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('volunteer_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
+        self.fields['shirt_type'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types', default = 'Straight cut, Fitted cut').split(',')]
 
         #   Show t-shirt fields if specified by Tag (disabled by default)
         if not Tag.getBooleanTag('volunteer_tshirt_options', default=False):
