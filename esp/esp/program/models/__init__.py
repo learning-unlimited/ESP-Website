@@ -254,7 +254,6 @@ class Program(models.Model, CustomFormsLinkModel):
                          'the documentation</a> for details.')
     class_categories = models.ManyToManyField('ClassCategories')
 
-
     #so we don't have to delete old ones and don't end up with
     # 3 seemingly-identical flags in the same program.
     flag_types = models.ManyToManyField('ClassFlagType',
