@@ -50,11 +50,27 @@ color: lightgray;
   font-style: italic;
 }
 .load_ready{
-     background-color: #00CC00;
+    background-color: #00CC00;
+    border-radius: 3px;
+	width: 200px;
+	text-align: center;
+	margin-left: 140px;
+	margin-right: auto;
 }
+
 .load_yellow{
-     background-color: yellow;
+    background-color: yellow;
+    border-radius: 3px;
+	width: 200px;
+	text-align: center;
+	margin-left: 140px;
+	margin-right: auto;
 }
 .load_fail{
-     background-color: red;
+    background-color: red;
+    border-radius: 3px;
+	width: 200px;
+	text-align: center;
+	margin-left: 140px;
+	margin-right: auto;
 }
