@@ -30,7 +30,7 @@ function updateDocs(docs) {
 {% include "program/modules/admincore/returnlink.html" %}
 
 <h1>Schedule Diagnostic Output for {{program.niceName}} </h1>
-<a class="btn" href="scheduling_checks{% if unreviewed %}">Exclude{% else %}?unreviewed">Include{% endif %} unreviewed classes</a>
+<a class="btn move_left" href="scheduling_checks{% if unreviewed %}">Exclude{% else %}?unreviewed">Include{% endif %} unreviewed classes</a>
 
 <div id="scheduling-check-wrapper" />
 <script type="text/jsx">
