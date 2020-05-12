@@ -108,9 +108,9 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                         else:
                             students.append(student)
                     else:
-                        messages.append(username + "is not in the lottery")
+                        messages.append(username + " is not in the lottery")
                 else:
-                    messages.append(username + "is not a student")
+                    messages.append(username + " is not a student")
 
         ###############################################################################
         # Post lottery, assign permissions to people in the lottery winners group
