@@ -123,6 +123,7 @@ Minor new features
 - Added credit card transaction IDs to the Credit Card Viewpay Module.
 - Added global tags to change the options for the shirt size (one tag each for teachers, students, and volunteers), shirt style (universal tag), and food preference (only applicable to students) profile form fields.
 - Added a big board to the phase zero management page to track student lottery registration over time.
+- Added an option to supply a list of winners for the phase zero student lottery (instead of the default random algorithm).
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -147,6 +148,7 @@ Minor bug fixes
 - Removed the "Catalog" deadline because it didn't do anything.
 - Fixed erroneous cases where "(not required)" should have been listed next to modules in student and teacher registration but wasn't.
 - Removed all mentions of "Cybersource" in the Credit Card Viewpay Module to reduce confusion.
+- Fixed /myesp/onsite for admins.
 
 Known issues of new features
 ============================
