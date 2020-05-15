@@ -92,7 +92,7 @@ Please select a section from the dropdown below.
 
 {% if section %}
 <div id="program_form">
-<form action="/{{ tl }}/{{ one }}/{{ two }}/section_attendance/{{ section.id }}" method="post">
+<form action="{{ request.get_full_path }}" method="post">
 <input type="hidden" name="submitted">
 <table align="center" width="100%">
 <thead>
