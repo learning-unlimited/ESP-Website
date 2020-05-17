@@ -713,12 +713,26 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             return status == 1
 
-    """ Returns a queryset of students that checked out of the program at the specified time """
-    @cache_function
+    """ Returns a queryset of students that are checked out of the program at the specified time """
     def checkedOutStudents(self, time_max = datetime.now()):
         recs = Record.objects.filter(program = self, event__in=["attended", "checked_out"], time__lt=time_max).order_by('user', '-time').distinct('user')
         return ESPUser.objects.filter(record__id__in=recs, record__event="checked_out")
-    checkedOutStudents.depend_on_model('users.Record')
+
+    """ Returns a queryset of students that are CURRENTLY checked out of the program at the specified time """
+    @cache_function
+    def currentlyCheckedOutStudents(self):
+        return self.checkedOutStudents(time_max=datetime.now())
+    currentlyCheckedOutStudents.depend_on_model('users.Record')
+
+    """ Returns a queryset of students that are checked in to the program at the specified time """
+    def checkedInStudents(self, time_max = datetime.now()):
+        return ESPUser.objects.filter(Q(record__event="attended", record__program=self)).exclude(id__in=self.checkedOutStudents(time_max)).distinct()
+
+    """ Returns a queryset of students that are CURRENTLY checked in to the program at the specified time """
+    @cache_function
+    def currentlyCheckedInStudents(self):
+        return self.checkedInStudents(time_max=datetime.now())
+    currentlyCheckedInStudents.depend_on_model('users.Record')
 
     """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
     "Classrooms."  So, if you try to call the old functions (which have no point anymore), then
