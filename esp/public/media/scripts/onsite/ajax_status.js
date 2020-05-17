@@ -1211,7 +1211,6 @@ function populate_students()
         new_student.first_name = data.students_list[i][2];
         new_student.grade = 0;
         new_student.sections = [];
-        new_student.sections_attending = [];
         new_student.checked_in = null;
         data.students[new_student.id] = new_student;
     }

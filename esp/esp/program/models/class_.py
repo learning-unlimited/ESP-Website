@@ -956,6 +956,7 @@ class ClassSection(models.Model):
     def num_students_checked_in(self):
         return self.students_checked_in().count()
     num_students_checked_in.depend_on_model('users.Record')
+    num_students_checked_in.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     @cache_function
     def num_students_prereg(self):

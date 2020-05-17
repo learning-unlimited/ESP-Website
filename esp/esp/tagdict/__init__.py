@@ -129,7 +129,7 @@ all_program_tags = {
     'volunteer_help_text_comments': (False, 'If set, overrides the help text for the comments field for the volunteer form', None, 'volunteer', True),
     'volunteer_require_auth': (True, 'Do volunteers need to have accounts before signing up? (If not, one will be created when they sign up)', False, 'volunteer', True),
     'program_center': (False, 'The geographic center for a program, following the form {lat: 37.427490, lng: -122.170267}. Used for the teacher and student onsite webapps.', '{lat: 37.427490, lng: -122.170267}', 'manage', True),
-    'switch_time_program_attendance': (False, 'At what time should the student onsite webapp use program attendance if available (instead of enrollment) to determine if a class is full? If blank, program attendance numbers will not be used. Format: HH:MM', None, 'learn', True),
+    'switch_time_program_attendance': (False, 'At what time should the student onsite webapp use program attendance if available (instead of enrollment) to determine if a class is full? If blank, program attendance numbers will not be used. Format: HH:MM where HH is in 24 hour time.', None, 'learn', True),
     'switch_lag_class_attendance': (False, 'How many minutes into a class should the student onsite webapp use class attendance numbers if available (instead of enrollment or program attendance) to determine if a class is full? If blank, class attendance numbers will not be used.', None, 'learn', True),
     'student_lottery_group_max': (False, 'What is the maximum number of students that can be in the same lottery group? (set to 1 to not allow groups)', '4', 'learn', True),
 }
