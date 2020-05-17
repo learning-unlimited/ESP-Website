@@ -390,7 +390,7 @@ class ClassSection(models.Model):
 
     def _get_room_capacity(self, rooms = None):
         if rooms == None:
-            rooms = self.initial_rooms()
+            rooms = self.classrooms()
 
         rc = 0
         for r in rooms:
@@ -405,7 +405,7 @@ class ClassSection(models.Model):
     @cache_function
     def _get_capacity(self, ignore_changes=False):
         ans = None
-        rooms = self.initial_rooms()
+        rooms = self.classrooms()
         if self.max_class_capacity is not None:
             ans = self.max_class_capacity
         else:
