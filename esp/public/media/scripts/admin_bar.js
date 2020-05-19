@@ -76,11 +76,6 @@ if (currentPrograms && currentPrograms.forEach) {
             name: 'class_search',
             displayName: 'Manage ' + currentProgram.name
         });
-        //ESP.registerAdminModule({
-           // content_html: '    <a href="/manage/' + currentProgram.urlBase +'/main">Main Management Page</a><br /><a href="/manage/' + currentProgram.urlBase +'/dashboard">Program Dashboard</a><br /><a href="/onsite/' + currentProgram.urlBase +'/main">Main Onsite Page</a>',
-           // name: 'Manage',
-          //  displayName: 'Manage ' + currentProgram.name
-//});
     });
 }
 
