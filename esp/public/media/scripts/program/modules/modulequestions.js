@@ -1,5 +1,5 @@
 
-$(document).ready(function(){
+$j(document).ready(function(){
     // when the page loads, check/select the questions induced by the modules
     // that are already selected (if any, from a template program e.g.)
     modulesToQuestions();
@@ -12,10 +12,13 @@ function questionsToModules() {
     var nQuestions = $j("#id_program_module_questions").children().length;
     var modules = [];
     for (i=0; i < nQuestions; i++) {
-        modules += $j("#id_program_module_questions_"+i).val().split(",")
+        // record which questions are checked (and save their corresponding modules)
+        if $j("#id_program_module_questions_" + i).prop("checked")
+            $j.merge(modules, $j("#id_program_module_questions_"+i).val().split(","))
     }
-    // Now just check those in the list.
-    $j.uniqueSort(modules);
+    // Now just check those modules in the list.
+    modules = $j.unique(modules)
+    modules.sort() // $j.uniqueSort doesn't exist for jQuery < 2.2
     $j("#id_program_modules").val(modules);
     return
 };
@@ -29,7 +32,7 @@ function modulesToQuestions() {
     // the IDs of the modules currently selected
     var currentlySelectedIds = $j("select#id_program_modules").val();
     // if there are none, skip the rest of this
-    if (currentlySelectedIds.length == 0)
+    if (currentlySelectedIds == null || currentlySelectedIds.length == 0)
         return
     // otherwise, get the questions and see whether we should check them
     var questions = $j("#id_program_module_questions").children()
@@ -54,4 +57,5 @@ function modulesToQuestions() {
             $j("#id_program_module_questions_" + i).prop("checked", include);
         }
     return
+    }
 };
