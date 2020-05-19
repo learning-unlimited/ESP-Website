@@ -14,12 +14,6 @@
 <div id="divnav">
   <p align="center">
     {% include "users/loginbox_userinfo.html" %}
-    <div class="admin hidden">
-        <a href="/admin/">Administration pages</a> <br />
-        <a href="/manage/programs/">Manage programs</a> <br />
-        <a href="/admin/filebrowser/browse/">Manage static files</a> <br />
-        <a href="/themes/">Theme settings</a> <br />
-    </div>
     <div class="unmorph hidden">
        <br /><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a><br /><div id="unmorph_text"></div>
     </div>
@@ -58,3 +52,22 @@
 </td></tr>
 </table>
 </div>
+
+{% comment %} === Admin Toolbar (includes user search) === {% endcomment %}
+<link rel="stylesheet" type="text/css" href="/media/default_styles/admin_bar.css">
+<div id="adminbar" class="admin hidden" style="position: fixed !important">
+  <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
+  <div id="adminbar_content"></div>
+</div>
+<script type="text/javascript">
+var currentPrograms = [
+{% for current_program in current_programs %}
+    {
+        urlBase: "{{ current_program.getUrlBase }}",
+        name: "{{ current_program.niceName }}",
+    },
+{% endfor %}
+];
+</script>
+<script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
+{% comment %} === End Admin Toolbar === {% endcomment %}
