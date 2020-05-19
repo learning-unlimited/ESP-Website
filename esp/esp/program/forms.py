@@ -61,10 +61,12 @@ class ProgramCreationForm(BetterModelForm):
     sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None,
                                            help_text="The amount of the sibling discount. Leave blank if you don't use sibling discounts.")
     program_type      = forms.CharField(label = "Program Type", help_text='e.g. Splash or Cascade')
-    program_modules   = forms.MultipleChoiceField(choices=[],
-                                                  label='Program Modules',
-                                                  widget=forms.CheckboxSelectMultiple(attrs={'class': 'input-xxlarge'}),
-                                                  help_text=Program.program_modules.field.help_text)
+    program_module_questions   = forms.MultipleChoiceField(choices=[],
+                                                           label='Program Modules',
+                                                           widget=forms.CheckboxSelectMultiple(attrs={'class': 'input-xxlarge'}), # widget = forms.HiddenInput()
+                                                           help_text=Program.program_modules.field.help_text)
+    
+    program_modules   = forms.MultipleChoiceField(choices=[])
 
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current modules. """
@@ -104,26 +106,11 @@ class ProgramCreationForm(BetterModelForm):
         for x in ProgramModule.objects.filter(choosable=0):
             if x.id not in sum(self.program_module_ids, []):
                 self.program_modules_questions.append('Would you like to include the {} module?'.format(x.admin_title))
-                self.program_module_ids.append([x.id])
-        # Get template program, if any
-        if len(args) > 0 and 'program_modules' in args[0].keys():
-            template_mods = list(args[0]['program_modules'])
-            template_mods = self.lookup_modules(template_mods)
-            if 'template_prog_mods' in kwargs.keys():
-                kwargs.pop('template_prog_mods')
-            # Finally update the args initial reference
-            tmp = args[0].copy() # make a mutable copy
-            tmp.update({'program_modules': template_mods}) # update it before passing to the BetterForm
-            # update only if it hasn't already been updated (updated version will be a plain old `list`)
-            # this is in case a user refreshed the page and the looked_up modules are already stored
-            if type(args[0]['program_modules']) is ValuesListQuerySet:
-                args = (tmp,) + args[1:]
-        elif 'template_prog_mods' in kwargs.keys():
-            template_mods = list(kwargs.pop('template_prog_mods'))
-            template_mods = self.lookup_modules(template_mods)
+                self.program_module_ids.append([x.id])        
         # Now initialize the form
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
-        self.fields['program_modules'].choices = enumerate(self.program_modules_questions)
+        self.fields['program_module_questions'].choices = [(','.join(map(str, ids)), q) for ids, q in zip(self.program_module_ids, self.program_modules_questions)]
+        self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())
         #   Enable validation on other fields
         self.fields['program_size_max'].required = True
         self.fields['program_size_max'].validators.append(validators.MaxValueValidator((1 << 31) - 1))
@@ -184,7 +171,7 @@ class ProgramCreationForm(BetterModelForm):
                      ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
                      ('About Program Creator',{'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
                      ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
-                     ('Program Internal Details' ,{'fields':['program_type','program_modules','class_categories','flag_types']}),
+                     ('Program Internal Details' ,{'fields':['program_type','program_modules','program_module_questions','class_categories','flag_types']}),
                      ('Registration Dates',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
 
 
