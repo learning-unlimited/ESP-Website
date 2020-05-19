@@ -135,20 +135,6 @@ class ProgramCreationForm(BetterModelForm):
         return super(ProgramCreationForm, self).save(commit=commit)
 
 
-    def lookup_modules(self, initial_mods):
-        # Turn these module ids into indices for the questions to pre-populate the list
-        question_ix = []
-        for mod in initial_mods:
-            # Hack for OptionalFees (ExtraCosts) module; it alone should activate the first checkbox since all the other modules associated with it could also indicate just admission fee
-            if mod == ProgramModule.objects.filter(admin_title='Student Optional Fees')[0].id:
-                question_ix.append(0)
-                continue
-            for i, lst in enumerate(self.program_module_ids):
-                if i > 0 and mod in lst:
-                    question_ix.append(i)
-        return sorted(set(question_ix))
-
-
     def load_program(self, program):
         #   Copy the data in the program into the form so that we don't have to re-select modules and stuff.
         pass
