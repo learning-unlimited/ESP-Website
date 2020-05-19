@@ -164,13 +164,13 @@ class SchedulingCheckRunner:
          ('teachers_teaching_two_classes_same_time', 'Teachers teaching two classes at once'),
          ('teachers_who_like_running', 'Teachers who like running'),
          ('hungry_teachers', 'Hungry Teachers'),
-         ('hosed_teachers', 'Hosed Teachers')
+         ('hosed_teachers', 'Hosed Teachers'),
          #Information Diagnostics
          ('classes_by_category', 'Number of classes in each block by category'),
          ('capacity_by_category', 'Total capacity in each block by category'),
          ('classes_by_grade', 'Number of classes in each block by grade'),
          ('capacity_by_grade', 'Total capacity in each block by grade'),
-         ('admins_teaching_per_timeblock', 'Admins teaching per timeslot'),
+         ('admins_teaching_per_timeblock', 'Admins teaching per timeslot')
 
 
 
