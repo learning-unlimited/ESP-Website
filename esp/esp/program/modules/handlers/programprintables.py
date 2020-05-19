@@ -53,10 +53,9 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.db.models import IntegerField, Case, When, Count
 from django.template import Context, loader
-from django.template.loader import render_to_string
+from django.template.loader import render_to_string, get_template
 from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
-from django.utils.html import format_html
 
 from decimal import Decimal
 import json
@@ -905,7 +904,6 @@ class ProgramPrintables(ProgramModuleObj):
     def getTranscript(program, student, format='text'):
         from django.template import Template
         from esp.middleware.threadlocalrequest import AutoRequestContext as Context
-        from django.template.loader import get_template
 
         template_keys = {   'text': 'program/modules/programprintables/transcript.txt',
                             'latex': 'program/modules/programprintables/transcript.tex',
@@ -935,74 +933,28 @@ class ProgramPrintables(ProgramModuleObj):
             elif user.isVolunteer():
                 schedule_type = u'Volunteer'
 
-        schedule = u''
-        if schedule_type in [u'Student', u'Teacher']:
 
-            if schedule_type == u'Student':
-                classes = ProgramPrintables.get_student_classlist(program, user)
-                classes.sort()
-            elif schedule_type == u'Teacher':
-                classes = ProgramPrintables.get_teacher_classlist(program, user)
-                classes.sort()
-
-            schedule = format_html(u"<p> {} {} {} {} {} {} </p>",
-                                    schedule_type,
-                                    " schedule for ",
-                                    user.name(),
-                                    " for ",
-                                    program.niceName(),
-                                    ":")
-            schedule += format_html(u" {} {} {} {} </th>",
-                                    mark_safe("<table cellspacing=0 cellpadding=10 border=1 width=100%><tr><th width=20%>"),
-                                    "Time",
-                                    mark_safe("</th><th width=60%>"),
-                                    "Class")
-            if room_numbers:
-                schedule += format_html(u"{} {} </th>",
-                                        mark_safe("<th width=20%>"),
-                                        "Room")
-            schedule += format_html(u"</tr>")
-            for cls in classes:
-                times = cls.friendly_times(include_date=include_date)
-                if len(times) == 0:
-                    # don't show classes with no times
-                    continue
-                else:
-                    times = ' ' + ', '.join(times)
-                schedule += format_html(u"<tr><td> {} </td><td> {} </td>",
-                                        str(times),
-                                        cls.title())
-                if room_numbers:
-                    rooms = cls.prettyrooms()
-                    if len(rooms) == 0:
-                        rooms = 'N/A'
-                    else:
-                        rooms = ' ' + ', '.join(rooms)
-                    schedule += format_html(u"<td> {} </td>",
-                                            str(rooms))
-                schedule += format_html(u"</tr>")
-            schedule += format_html(u"</table>")
-
+        if schedule_type == u'Student':
+            template = get_template('program/modules/programprintables/studentschedule_email.html')
+            sched_items = ProgramPrintables.get_student_classlist(program, user)
+            sched_items.sort()
+        elif schedule_type == u'Teacher':
+            template = get_template('program/modules/programprintables/teacherschedule_email.html')
+            sched_items = ProgramPrintables.get_teacher_classlist(program, user)
+            sched_items.sort()
         elif schedule_type == u'Volunteer':
-            schedule = format_html(u"<p> {} {} {} {} {} {} </p>",
-                                   schedule_type,
-                                   " schedule for ",
-                                   user.name(),
-                                   " for ",
-                                   program.niceName(),
-                                   ":")
-            schedule += format_html(u" {} {} {} {} </th>",
-                                    mark_safe("<table cellspacing=0 cellpadding=10 border=1 width=100%><tr><th width=35%>"),
-                                    "Time",
-                                    mark_safe("</th><th width=65%>"),
-                                    "Shift")
-            schedule += format_html(u"</tr>")
-            shifts = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
-            for shift in shifts:
-                schedule += format_html(u"<tr><td> {} </td><td> {} </td></tr>",
-                                        str(shift.request.timeslot.pretty_time(include_date=include_date)),
-                                        str(shift.request.timeslot.description))
-            schedule += format_html(u"</table>")
+            template = get_template('program/modules/programprintables/volunteerschedule_email.html')
+            sched_items = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
+
+        context = {
+                   'program': program,
+                   'user': user,
+                   'schedule_type': schedule_type,
+                   'room_numbers': room_numbers,
+                   'include_date': include_date,
+                   'sched_items': sched_items,
+                   }
+        schedule = template.render(context)
 
         return mark_safe(schedule)
 
