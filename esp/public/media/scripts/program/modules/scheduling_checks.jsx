@@ -211,7 +211,7 @@ var RefreshButton = React.createClass({
 
   render: function () {
     return <button onClick={this.props.onClick} className="refresh-button">
-      ↻
+      Refresh
     </button>;
   },
 });
