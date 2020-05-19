@@ -500,7 +500,6 @@ def newprogram(request):
         # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
         # Don't bother trying to fix the form; just re-set the anchor when we're done.
         context = pickle.loads(request.session['context_str'])
-        context['prog_form_raw']['program_modules'] = context['prog_form_raw']['program_modules']
         pcf = ProgramCreationForm(context['prog_form_raw'])
         if pcf.is_valid():
 
@@ -567,7 +566,7 @@ def newprogram(request):
     else:
         #   Otherwise, the default view is a blank form.
         if template_prog:
-            form = ProgramCreationForm(dict(template_prog), template_prog_mods=list(template_prog['program_modules']))
+            form = ProgramCreationForm(template_prog)
         else:
             form = ProgramCreationForm()
 

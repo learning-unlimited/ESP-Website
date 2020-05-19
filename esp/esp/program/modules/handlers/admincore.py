@@ -100,8 +100,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             if 'form_name' in request.POST:
                 submitted_form = request.POST['form_name']
                 if submitted_form == "Program Settings":
-                    form = ProgramSettingsForm(request.POST, instance = prog,
-                                               template_prog_mods = prog.program_modules.all())
+                    form = ProgramSettingsForm(request.POST, instance = prog)
                     if form.is_valid():
                         form.save()
                         #If the url for the program is now different, redirect to the new settings page

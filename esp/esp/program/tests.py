@@ -638,7 +638,7 @@ class ProgramFrameworkTest(TestCase):
             }
 
         #   Create the program much like the /manage/newprogram view does
-        pcf = ProgramCreationForm(prog_form_values, template_prog_mods = prog_form_values['program_modules'])
+        pcf = ProgramCreationForm(prog_form_values)
         if not pcf.is_valid():
             logger.info("ProgramCreationForm errors")
             logger.info(pcf.data)
@@ -799,7 +799,7 @@ class ProgramFrameworkTest(TestCase):
                 'base_cost':         '666',
                 'finaid_cost':       '37',
             }
-        pcf = ProgramCreationForm(prog_form_values, template_prog_mods = prog_form_values['program_modules'])
+        pcf = ProgramCreationForm(prog_form_values)
         if not pcf.is_valid():
             logger.info("ProgramCreationForm errors")
             logger.info(pcf.data)
