@@ -56,7 +56,6 @@ from django.template import Context, loader
 from django.template.loader import render_to_string, get_template
 from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
-from django.utils.html import format_html
 
 from decimal import Decimal
 import json
