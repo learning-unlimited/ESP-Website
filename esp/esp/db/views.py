@@ -12,11 +12,15 @@ user_is_staff = user_passes_test(lambda u: u.is_authenticated() and u.is_staff a
 @user_is_staff
 """
 
-def autocomplete_wrapper(function, data, is_staff):
+def autocomplete_wrapper(function, data, is_staff, prog):
     if is_staff:
+        if prog:
+            return function(data, prog)
         return function(data)
     else:
         if 'allow_non_staff' in function.im_func.func_code.co_varnames:
+            if prog:
+                return function(data, prog)
             return function(data)
         else:
             return []
@@ -33,6 +37,7 @@ def ajax_autocomplete(request):
         model_name   = request.GET['model_name']
         ajax_func    = request.GET.get('ajax_func', 'ajax_autocomplete')
         data         = request.GET['ajax_data']
+        prog         = request.GET['prog']
     except KeyError, ValueError:
         # bad request
         response = HttpResponse('Malformed Input')
@@ -43,9 +48,9 @@ def ajax_autocomplete(request):
     Model = getattr(__import__(model_module,(),(),[str(model_name)]),model_name)
 
     if hasattr(Model.objects, ajax_func):
-        query_set = autocomplete_wrapper(getattr(Model.objects, ajax_func), data, request.user.is_staff)
+        query_set = autocomplete_wrapper(getattr(Model.objects, ajax_func), data, request.user.is_staff, prog)
     else:
-        query_set = autocomplete_wrapper(getattr(Model, ajax_func), data, request.user.is_staff)
+        query_set = autocomplete_wrapper(getattr(Model, ajax_func), data, request.user.is_staff, prog)
 
     if type(query_set) is QuerySet:
         raise NotImplementedError
