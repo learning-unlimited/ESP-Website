@@ -65,7 +65,7 @@ class ProgramCreationForm(BetterModelForm):
                                                            label='Program Modules',
                                                            widget=forms.CheckboxSelectMultiple(attrs={'class': 'input-xxlarge'}), # widget = forms.HiddenInput()
                                                            help_text=Program.program_modules.field.help_text)
-    
+
     program_modules   = forms.MultipleChoiceField(choices=[])
 
     def __init__(self, *args, **kwargs):
@@ -106,7 +106,7 @@ class ProgramCreationForm(BetterModelForm):
         for x in ProgramModule.objects.filter(choosable=0):
             if x.id not in sum(self.program_module_ids, []):
                 self.program_modules_questions.append('Would you like to include the {} module?'.format(x.admin_title))
-                self.program_module_ids.append([x.id])        
+                self.program_module_ids.append([x.id])
         # Now initialize the form
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
         self.fields['program_module_questions'].choices = [(','.join(map(str, ids)), q) for ids, q in zip(self.program_module_ids, self.program_modules_questions)]

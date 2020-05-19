@@ -23,7 +23,7 @@ function questionsToModules() {
 
 // Given the list of selected modules in the program_modules MultipleChoiceField,
 // check the checkboxes in the program modules questions list that they induce
-// This is hard-coded based on our knowledge of modules and needs to be 
+// This is hard-coded based on our knowledge of modules and needs to be
 // updated as new modules are introduced.
 function modulesToQuestions() {
     // the IDs of the modules currently selected
@@ -35,7 +35,7 @@ function modulesToQuestions() {
     var questions = $j("#id_program_module_questions").children()
     // start by clearing all selections
     for (i=0; i < nQuestions; i++)
-    // get the 
+    // get the
     for (i=0; i < questions.length; i++) {
         var q = questions[i];
         var qvalslist = q.firstChild.firstChild.value.split(",");
