@@ -48,7 +48,7 @@ from django.core.mail import send_mail
 from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability
 
 from django.contrib.auth.decorators import login_required
-from django.db.models.query import Q, ValuesListQuerySet
+from django.db.models.query import Q
 from django.db.models import Min
 from django.db import transaction
 from django.core.mail import mail_admins
@@ -500,7 +500,7 @@ def newprogram(request):
         # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
         # Don't bother trying to fix the form; just re-set the anchor when we're done.
         context = pickle.loads(request.session['context_str'])
-        context['prog_form_raw']['program_modules'] = ValuesListQuerySet(context['prog_form_raw']['program_modules']) # hack in how modules are displayed needs this to be a ValuesListQuerySet
+        context['prog_form_raw']['program_modules'] = context['prog_form_raw']['program_modules']
         pcf = ProgramCreationForm(context['prog_form_raw'])
         if pcf.is_valid():
 

@@ -50,7 +50,6 @@ from django.contrib.auth.models import Group
 from django.test import LiveServerTestCase
 from django.test.client import Client
 from django import forms
-from django.db.models.query import ValuesListQuerySet
 
 from esp.program.controllers.classreg import get_custom_fields
 from esp.program.controllers.lottery import LotteryAssignmentController
@@ -571,7 +570,7 @@ class ProgramFrameworkTest(TestCase):
                     'sections_per_class': 1,
                     'num_students': 10,
                     'num_admins': 1,
-                    'modules': ValuesListQuerySet([x.id for x in ProgramModule.objects.all()]), # needs to be ValuesListQuerySet for ProgramCreationForm internal logic
+                    'modules': [x.id for x in ProgramModule.objects.all()],
                     'program_type': 'TestProgram',
                     'program_instance_name': '2222_Summer',
                     'program_instance_label': 'Summer 2222',
@@ -788,7 +787,7 @@ class ProgramFrameworkTest(TestCase):
                 'director_email': '123456789-223456789-323456789-423456789-523456789-623456789-7234568@mit.edu',
                 'program_size_max': '3000',
                 'program_type': 'TestProgramPast',
-                'program_modules': ValuesListQuerySet([x.id for x in ProgramModule.objects.all()]), # needs to be ValuesListQuerySet for ProgramCreationForm internal logic
+                'program_modules': [x.id for x in ProgramModule.objects.all()],
                 'class_categories': [x.id for x in self.categories],
                 'admins': [x.id for x in self.admins],
                 'teacher_reg_start': '1111-01-01 00:00:00',

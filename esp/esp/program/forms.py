@@ -43,7 +43,6 @@ from django import forms
 from django.core import validators
 from form_utils.forms import BetterModelForm
 from django.utils.safestring import mark_safe
-from django.db.models.query import ValuesListQuerySet
 
 def make_id_tuple(object_list):
     return tuple([(o.id, str(o)) for o in object_list])
@@ -172,6 +171,7 @@ class ProgramCreationForm(BetterModelForm):
         final = []
         for v in value:
             final.extend(self.program_module_ids[int(v)])
+        # Add "include by default" modules (choosable property = 1)
         default_modules = ProgramModule.objects.filter(choosable=1)
         for m in default_modules:
             final.append(m.id)
