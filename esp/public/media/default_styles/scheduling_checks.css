@@ -50,11 +50,11 @@ color: lightgray;
   font-style: italic;
 }
 .load_ready{
-    background-color: #00CC00;
+    background-color: rgba(3, 121, 0, 0.23);
     border-radius: 3px;
 	width: 200px;
 	text-align: center;
-	margin-left: 140px;
+	margin-left: 120px;
 	margin-right: auto;
 }
 

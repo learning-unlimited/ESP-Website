@@ -145,29 +145,45 @@ class SchedulingCheckRunner:
 
      # Update this to add a scheduling check.
      all_diagnostics = [
-          ('lunch_blocks_setup', 'Lunch blocks'),
-          ('incompletely_scheduled_classes', 'Classes not completely scheduled or with gaps'),
-          ('inconsistent_rooms_and_times', 'Mismatched rooms and meeting times'),
-          ('wrong_classroom_type', 'Classes in wrong classroom type'),
-          ('classes_missing_resources', 'Unfulfilled resource requests'),
-          ('missing_resources_by_hour', 'Unfulfilled resource requests by hour'),
-          ('multiple_classes_same_resource_same_time', 'Double-booked resources'),
-          ('teachers_unavailable', "Teachers teaching when they aren't available"),
-          ('teachers_teaching_two_classes_same_time', 'Teachers teaching two classes at once'),
-          ('classes_which_cover_lunch', 'Classes which are scheduled over lunch'),
-          ('classes_wrong_length', 'Classes which are the wrong length'),
-          ('unapproved_scheduled_classes', 'Classes which are scheduled but aren\'t approved'),
-          ('room_capacity_mismatch', 'Class max size/room max size mismatches'),
-          ('classes_by_category', 'Number of classes in each block by category'),
-          ('capacity_by_category', 'Total capacity in each block by category'),
-          ('classes_by_grade', 'Number of classes in each block by grade'),
-          ('capacity_by_grade', 'Total capacity in each block by grade'),
-          ('admins_teaching_per_timeblock', 'Admins teaching per timeslot'),
-          ('teachers_who_like_running', 'Teachers who like running'),
-          ('hungry_teachers', 'Hungry Teachers'),
-          ('no_overlap_classes', "Classes which shouldn't overlap"),
-          ('special_classroom_types', 'Special Classroom Types'),
-          ('hosed_teachers', 'Hosed Teachers')
+          #Block Diagnostics
+         ('lunch_blocks_setup', 'Lunch blocks'),
+         ('inconsistent_rooms_and_times', 'Mismatched rooms and meeting times'),
+         ('special_classroom_types', 'Special Classroom Types'),
+         ('room_capacity_mismatch', 'Class max size/room max size mismatches'),
+         #Class Diagnostiscs
+         ('incompletely_scheduled_classes', 'Classes not completely scheduled or with gaps'),
+         ('wrong_classroom_type', 'Classes in wrong classroom type'),
+         ('classes_missing_resources', 'Unfulfilled resource requests'),
+         ('missing_resources_by_hour', 'Unfulfilled resource requests by hour'),
+         ('classes_which_cover_lunch', 'Classes which are scheduled over lunch'),
+         ('classes_wrong_length', 'Classes which are the wrong length'),
+         ('no_overlap_classes', "Classes which shouldn't overlap"),
+         ('unapproved_scheduled_classes', 'Classes which are scheduled but aren\'t approved'),
+         #Teacher Diagnostics
+         ('teachers_unavailable', "Teachers teaching when they aren't available"),
+         ('teachers_teaching_two_classes_same_time', 'Teachers teaching two classes at once'),
+         ('teachers_who_like_running', 'Teachers who like running'),
+         ('hungry_teachers', 'Hungry Teachers'),
+         ('hosed_teachers', 'Hosed Teachers')
+         #Information Diagnostics
+         ('classes_by_category', 'Number of classes in each block by category'),
+         ('capacity_by_category', 'Total capacity in each block by category'),
+         ('classes_by_grade', 'Number of classes in each block by grade'),
+         ('capacity_by_grade', 'Total capacity in each block by grade'),
+         ('admins_teaching_per_timeblock', 'Admins teaching per timeslot'),
+
+
+
+
+
+
+
+
+
+
+
+
+
      ]
 
      #################################################
