@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}{{ prog.niceName }} Survey{% endblock %}
+{% block title %}{{ program.niceName }} Survey{% endblock %}
 
 {% block keywords %}{% endblock %}
 
@@ -8,12 +8,12 @@
 
 <h2>Thank you!</h2>
 <br />
-<p>Your survey responses for {{ prog.niceName }} have been saved.  We appreciate the help.</p>
+<p>Your survey responses for {{ program.niceName }} have been saved.  We appreciate the help.</p>
 
 {% if "teach" in request.path %}
-<p><a href="/teach/{{ prog.program_type }}/index.html">Click here</a> to return to the program's main page.</p>
+<p><a href="/teach/{{ program.program_type }}/index.html">Click here</a> to return to the program's main page.</p>
 {% elif "learn" in request.path %}
-<p><a href="/learn/{{ prog.program_type }}/index.html">Click here</a> to return to the program's main page.</p>
+<p><a href="/learn/{{ program.program_type }}/index.html">Click here</a> to return to the program's main page.</p>
 {% endif %}
 
 {% endblock %}

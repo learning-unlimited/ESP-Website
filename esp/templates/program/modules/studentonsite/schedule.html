@@ -36,7 +36,7 @@ function togglePopup() {
                 <td class="cls">
                 {% if cls %}
                     <!--link to course details-->
-                    <b>{{ cls.section.title }}{% if not cls.first_meeting_time %} (continued){% else %}&nbsp;<a class="no-dec" title="More Details" href="/learn/{{one}}/{{two}}/onsitedetails/{{ cls.section.id }}"><i class="material-icons md-3">list</i></a>{% endif %}</b>
+                    <a class="no-dec" title="More Details" href="/learn/{{one}}/{{two}}/onsitedetails/{{ cls.section.id }}"><b>{{ cls.section.title }}{% if not cls.first_meeting_time %} (continued){% else %}&nbsp;<i class="material-icons md-3">list</i></a>{% endif %}</b>
                 {% else %}
                     No class
                 {% endif %}
@@ -62,7 +62,7 @@ function togglePopup() {
             <tr class="schedule_row">
                 <td class="location">
                     {% if checked_in and cls and not cls.section.initial_rooms.count == 0 %}
-                        {{ cls.section.prettyrooms|join:", " }}&nbsp;<a class="no-dec" title="Directions" href="/learn/{{one}}/{{two}}/onsitemap/{{ cls.section.initial_rooms.0.id }}"><i class="material-icons md-3">directions</i></a>
+                        <a class="no-dec" title="Directions" href="/learn/{{one}}/{{two}}/onsitemap/{{ cls.section.initial_rooms.0.id }}">{{ cls.section.prettyrooms|join:", " }}&nbsp;<i class="material-icons md-3">directions</i></a>
                     {% endif %}
                 </td>
             </tr>

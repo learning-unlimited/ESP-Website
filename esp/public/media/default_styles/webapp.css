@@ -109,8 +109,8 @@
   padding-top: .25vh !important;
 }
 
-.location > *, .cls a {
-  vertical-align: middle;
+.location i, .cls i {
+  vertical-align: bottom;
 }
 
 .edit, .list {
@@ -354,6 +354,14 @@ i.pointer {
   background: #efefef;
 }
 
+.survey .message {
+  font-size: 2.5vh;
+}
+
 .sectioninfo td {
   background-color: #efefef;
+}
+
+.btn.fancybutton.no-dec {
+  padding: .5vh;
 }

@@ -54,17 +54,17 @@ from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.core.servers.basehttp import FileWrapper
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
+from django.db.models import Q, Min
 
 @login_required
 def survey_view(request, tl, program, instance, template = 'survey/survey.html', context = {}):
-
     try:
         prog = Program.by_prog_inst(program, instance)
     except Program.DoesNotExist:
         raise Http404
 
     user = request.user
+    view_list = True
 
     if tl in ['teach', 'learn']:
         filters = [x.strip() for x in Tag.getProgramTag('survey_' + {'learn': "student", 'teach': "teacher"}[tl] + '_filter', prog, default = {'learn': "classreg", 'teach': "class_submitted"}[tl]).split(",") if x.strip()]
@@ -77,24 +77,10 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
                 descs = prog.getListDescriptions()
                 raise ESPError('Only ' + " or ".join([descs[filter].lower() for filter in filters if filter in descs]) + ' may participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
 
-    if 'done' in request.GET:
-        return render_to_response('survey/completed_survey.html', request, {'prog': prog})
-
     if tl == 'learn':
         event = "student_survey"
     else:
         event = "teacher_survey"
-
-    # Section-specific survey
-    section = None
-    if 'sec' in request.GET:
-        sections = ClassSection.objects.filter(id=request.GET['sec'], parent_class__parent_program=prog)
-        if len(sections) == 1:
-            # should we check to make sure the student was enrolled in/attended the section?
-            section = sections[0]
-
-    if Record.user_completed(user, event, prog) or (section and not request.POST and StudentRegistration.objects.filter(section=section, user=user, relationship__name="SurveyCompleted").exists()):
-        raise ESPError("You've already filled out the survey. Thanks for responding!", log=False)
 
     surveys = prog.getSurveys().filter(category = tl).select_related()
 
@@ -112,64 +98,93 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
         return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
 
     survey = surveys[0]
-    survey_completed = RegistrationType.objects.get_or_create(name = 'SurveyCompleted', category = "student")[0]
 
-    if request.POST:
-        response = SurveyResponse()
-        response.survey = survey
-        response.save()
+    # Section-specific survey
+    section = None
+    questions = perclass_questions = classes = []
+    submitted = general = general_available = completed = False
+    if 'sec' in request.GET:
+        sections = ClassSection.objects.filter(id=request.GET['sec'], parent_class__parent_program=prog)
+        if len(sections) == 1:
+            section = sections[0]
+            if StudentRegistration.objects.filter(section=section, user=user, relationship__name="SurveyCompleted").exists():
+                completed = True
+            else:
+                if request.POST:
+                    response = SurveyResponse()
+                    response.survey = survey
+                    response.save()
 
-        # If this was a section-specific survey, set the student registration for the section
-        if section:
-            sr = StudentRegistration(user = user, section = section, relationship = survey_completed)
-            sr.save()
-            sr.expire()
-        # Otherwise, set the record for the full survey
+                    # Set Student Registration to mark section survey as completed
+                    survey_completed = RegistrationType.objects.get_or_create(name = 'SurveyCompleted', category = "student")[0]
+                    sr = StudentRegistration(user = user, section = section, relationship = survey_completed)
+                    sr.save()
+                    sr.expire()
+
+                    response.set_answers(request.POST, save=True)
+                    submitted = True
+                else:
+                    perclass_questions = survey.questions.filter(per_class = True)
+                    view_list = False
+
+    # General program survey
+    elif 'general' in request.GET:
+        general = True
+        if Record.user_completed(user, event, prog):
+            completed = True
         else:
-            r = Record(user=user, event=event, program=prog, time=datetime.datetime.now())
-            r.save()
+            if request.POST:
+                response = SurveyResponse()
+                response.survey = survey
+                response.save()
 
-        response.set_answers(request.POST, save=True)
+                # Set record to mark general survey as completed
+                r = Record(user=user, event=event, program=prog, time=datetime.datetime.now())
+                r.save()
 
-        return HttpResponseRedirect(request.path + "?done")
-    else:
-        questions = survey.questions.filter(per_class = False).order_by('seq')
-        perclass_questions = survey.questions.filter(per_class = True)
+                response.set_answers(request.POST, save=True)
+                submitted = True
+            else:
+                questions = survey.questions.filter(per_class = False).order_by('seq')
+                if tl == 'learn':
+                    classes = user.getEnrolledClasses(prog)
+                elif tl == 'teach':
+                    classes = user.getTaughtClasses(prog)
+                view_list = False
 
-        classes = sections = timeslots = []
+    sections = []
+    if view_list:
+        completed_sections = ClassSection.objects.filter(parent_class__parent_program=prog, studentregistration__user=user, studentregistration__relationship__name="SurveyCompleted")
         if tl == 'learn':
-            classes = user.getEnrolledClasses(prog)
-            enrolled_secs = user.getEnrolledSections(prog)
-            timeslots = prog.getTimeSlots().order_by('start')
-            # Find timeslots for which the student has already filled out a section survey
-            secs_completed = ClassSection.objects.filter(studentregistration__relationship=survey_completed,
-                                                         studentregistration__user=user,
-                                                         studentregistration__section__parent_class__parent_program=prog)
-            ts_completed = Event.objects.filter(meeting_times__in=secs_completed)
-            for ts in timeslots:
-                # The order by string really means "title"
-                ts.classsections = prog.sections().filter(meeting_times=ts).exclude(meeting_times__start__lt=ts.start).order_by('parent_class__title').distinct()
-                for sec in ts.classsections:
-                    if sec in enrolled_secs:
-                        sec.selected = True
-                if ts in ts_completed:
-                    ts.completed = True
-        elif tl == 'teach':
-            classes = user.getTaughtClasses(prog)
-            sections = user.getTaughtSections(prog).order_by('parent_class__title')
+            # Get a student's enrolled sections
+            sections = ClassSection.objects.filter(id__in=[sec.id for sec in user.getEnrolledSections(prog)], status__gt=0).annotate(start=Min('meeting_times__start')).order_by('start')
+        else:
+            # Get a teacher's taught sections 
+            sections = user.getTaughtSections(prog).filter(status__gt=0).annotate(start=Min('meeting_times__start')).order_by('start')
+            sections = [sec for sec in sections if sec.meeting_times.count() > 0]
+        # Mark sections for whether they've started yet and whether the user has filled out a survey for them yet
+        for sec in sections:
+            sec.started = sec.start < datetime.datetime.now()
+            sec.completed = sec in completed_sections
 
-        context.update({
-            'survey': survey,
-            'section': section,
-            'questions': questions,
-            'perclass_questions': perclass_questions,
-            'program': prog,
-            'classes': classes,
-            'sections': sections,
-            'timeslots': timeslots,
+        context['general_done'] = Record.user_completed(user, event, prog)
+        # Is this the best way to trigger the availability of the general program survey?
+        general_available = any([sec.started for sec in sections])
+
+    context.update({
+        'program': prog,
+        'questions': questions,
+        'perclass_questions': perclass_questions,
+        'section': section,
+        'sections': sections,
+        'view_list': view_list,
+        'submitted': submitted,
+        'general': general,
+        'general_available': general_available,
+        'completed': completed,
+        'classes': classes
         })
-
-        return render_to_response(template, request, context)
+    return render_to_response(template, request, context)
 
 def get_survey_info(request, tl, program, instance):
     try:

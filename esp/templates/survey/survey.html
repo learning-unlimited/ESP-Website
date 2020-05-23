@@ -13,7 +13,7 @@
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 </style>
-<h1>Survey for {% if section %}{{ section }}{% else %}{{ program.niceName }}{% endif %}</h1>
+<h1>{% if not view_list and general %}General {% endif %}Survey for {% if not view_list and section %}{{ section }}{% else %}{{ program.niceName }}{% endif %}</h1>
 
 {% include "survey/survey_form.html" %}
 

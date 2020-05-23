@@ -28,22 +28,11 @@
         {% endfor %}
     {% else %}
         <table>
-            <tr><th>Survey for {% if section %}{{ section }}{% else %}{{ program.niceName }}{% endif %}</th></tr>
-        {% if survey_status == "completed" %}
-            <tr><td>You've already filled out the survey. Thanks for responding!</td></tr>
-            </table>
-        {% elif survey_status == "submitted" %}
-            <tr><td>Thanks for filling out the survey!</td></tr>
-            </table>
-        {% elif survey_status == "none" %}
-            <tr><td>No survey for this program</td></tr>
-            </table>
-        {% else %}
-            </table>
-            {% include "survey/survey_form.html" %}
-        {% endif %}
+            <tr><th>{% if not view_list and general %}General {% endif %}Survey for {% if not view_list and section %}{{ section }}{% else %}{{ program.niceName }}{% endif %}</th></tr>
+        </table>
+        {% include "survey/survey_form.html" %}
     {% endif %}
-  <table style="height:8vh; border:none;"><tr style="border:none;"><td style="border:none;"></td></tr></table>
+  <table style="height:8vh; border:none;"><tr style="border:none;"><td style="border:none; background: none;"></td></tr></table>
   </div>
 </center>
 <div class="navbar bottom">
