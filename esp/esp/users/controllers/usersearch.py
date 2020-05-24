@@ -103,7 +103,7 @@ class UserSearchController(object):
                     student_verbs = ['Enrolled']
                 Q_include &= Q(studentregistration__section__parent_class__id__in=clsid,
                                studentregistration__relationship__name__in=student_verbs) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
-                
+
             if 'group' in criteria and criteria['group'] != "":
                 group = criteria['group']
                 #Can't just filter by group because we are already filtering by group with user_type above. - willgearty, 2016-11-23
