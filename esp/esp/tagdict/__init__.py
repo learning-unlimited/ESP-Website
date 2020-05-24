@@ -17,7 +17,8 @@ all_global_tags = {
     'class_style_choices': (False, 'If set, adds a \'class style\' field to the class creation form. Options are set with the tag, with the value in the JSON format, where the first element of each list is the value stored in the database, and the second value is the option shown on the form (e.g. [["Lecture", "Lecture Style Class"], ["Seminar", "Seminar Style Class"]])', None, 'teach', True),
     'volunteer_tshirt_options': (True, 'Should the volunteer form include t-shirt fields (size and type)?', False, 'volunteer', True),
     'volunteer_tshirt_type_selection': (True, 'Should the volunteer form include the t-shirt type field?', False, 'volunteer', True),
-    'volunteer_allow_comments': (True, 'Should the volunteer form include a comments field?', None, 'volunteer', False),
+    'volunteer_shirt_sizes': (False, 'Comma-separated list of shirt size options for volunteers', 'XS, S, M, L, XL, XXL', 'volunteer', True),
+    'volunteer_allow_comments': (True, 'Should the volunteer form include a comments field?', False, 'volunteer', True),
     'min_available_timeslots': (False, 'If set, requires teachers to offer availability for at least this many timeslots before allowing them to proceed to registering a class. (Needs to be a plain integer of 0 or higher.)', None, 'teach', True),
     'availability_group_timeslots': (True, 'Should timeslots be grouped into contiguous blocks in the availability interface?', True, 'teach', True),
     'group_phone_number': (False, 'Phone number that will be displayed on nametags and room rosters', None, 'manage', True),
@@ -36,7 +37,9 @@ all_global_tags = {
     'show_studentrep_application': (False, 'If tag exists, the student-rep application is shown as a part of the student profile. If it exists but is set to \'no_expl\', don\'t show the explanation textbox in the form.', None, 'learn', True),
     'show_student_tshirt_size_options': (True, 'Show shirt size field in the student profile?', False, 'learn', True),
     'studentinfo_shirt_type_selection': (True, 'Show shirt type field in the student profile?', False, 'learn', True),
+    'student_shirt_sizes': (False, 'Comma-separated list of shirt size options for students', 'XS, S, M, L, XL, XXL', 'learn', True),
     'show_student_vegetarianism_options': (True, 'Ask students about their dietary restrictions as part of the student profile?', False, 'learn', True),
+    'food_choices': (False, 'Comma-separated list of food choices for students (requires \'show_student_vegetarianism_options\' to be enabled)', 'Anything, Vegetarian, Vegan', 'learn', True),
     'show_student_graduation_years_not_grades': (True, 'List graduation years rather than grade numbers in the student profile?', False, 'learn', True),
     'ask_student_about_post_hs_plans':  (True, 'Ask in the student profile about a student\'s post-high-school plans (go to college, go to trade school, get a job, etc)? (deprecated)', False, 'learn', False),
     'ask_student_about_transportation_to_program': (True, 'Ask in the student profile about how the student is going to get to the upcoming program?', False, 'learn', True),
@@ -44,6 +47,7 @@ all_global_tags = {
     'require_school_field': (True, 'Should the \'School\' field be required in the student profile form?', False, 'learn', True),
     'teacherinfo_shirt_options': (True, 'Include t-shirt fields (size and type) on the teacher profile form?', True, 'teach', True),
     'teacherinfo_shirt_type_selection': (True, 'Include the t-shirt type field on the teacher profile form? (overrides \'teacherinfo_shirt_options\')', True, 'teach', True),
+    'teacher_shirt_sizes': (False, 'Comma-separated list of shirt size options for teachers', 'XS, S, M, L, XL, XXL', 'teach', True),
     'teacher_profile_hide_fields': (False, 'Comma-separated list of fields to hide in the teacher profile form', '', 'teach', True),
     'student_grade_options': (False, 'A JSON list of grade choices that can be used to override the defaults', '[7,8,9,10,11,12]', 'learn', True),
     'user_types': (False, 'A JSON list of user types that can be used to override the defaults', '[["Student", {"label": "Student (up through 12th grade)", "profile_form": "StudentProfileForm"}],["Teacher", {"label": "Volunteer Teacher", "profile_form": "TeacherProfileForm"}],["Guardian", {"label": "Guardian of Student", "profile_form": "GuardianProfileForm"}],["Educator", {"label": "K-12 Educator", "profile_form": "EducatorProfileForm"}],["Volunteer", {"label": "Onsite Volunteer", "profile_form": "VolunteerProfileForm"}]]', 'manage', True),
@@ -59,6 +63,7 @@ all_global_tags = {
     'default_restypes': (False, 'A JSON list of the resource types (by name) to create when making a new program', None, 'manage', True),
     'webapp_isstep': (True, 'Should the student and teacher onsite webapps be shown as a step in student registration?', False, 'learn', True),
     'google_cloud_api_key': (False, 'An API key for use with the Google Cloud Platform. Used for the student and teacher onsite webapps.', '', 'manage', True),
+    'shirt_types': (False, 'Comma-separated list of shirt type options', 'Straight cut, Fitted cut', 'manage', True),
 }
 
 # Any tag used with Tag.getProgramTag(),
@@ -124,7 +129,8 @@ all_program_tags = {
     'volunteer_help_text_comments': (False, 'If set, overrides the help text for the comments field for the volunteer form', None, 'volunteer', True),
     'volunteer_require_auth': (True, 'Do volunteers need to have accounts before signing up? (If not, one will be created when they sign up)', False, 'volunteer', True),
     'program_center': (False, 'The geographic center for a program, following the form {lat: 37.427490, lng: -122.170267}. Used for the teacher and student onsite webapps.', '{lat: 37.427490, lng: -122.170267}', 'manage', True),
-    'count_checked_in_only': (True, 'Should the student onsite webapp use checked in students (instead of registered students) to determine if a class is full?', False, 'learn', True),
+    'switch_time_program_attendance': (False, 'At what time should the student onsite webapp use program attendance if available (instead of enrollment) to determine if a class is full? If blank, program attendance numbers will not be used. Format: HH:MM where HH is in 24 hour time.', None, 'learn', True),
+    'switch_lag_class_attendance': (False, 'How many minutes into a class should the student onsite webapp use class attendance numbers if available (instead of enrollment or program attendance) to determine if a class is full? If blank, class attendance numbers will not be used.', None, 'learn', True),
     'student_lottery_group_max': (False, 'What is the maximum number of students that can be in the same lottery group? (set to 1 to not allow groups)', '4', 'learn', True),
 }
 

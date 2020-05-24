@@ -192,7 +192,7 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def counts_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(content_type='application/json')
-        data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).values_list('id', 'enrolled_students')
+        data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).values_list('id', 'enrolled_students', 'attending_students')
         json.dump(list(data), resp)
         return resp
 

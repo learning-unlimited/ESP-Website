@@ -70,7 +70,7 @@ class ProgramModuleObj(models.Model):
     module   = models.ForeignKey(ProgramModule)
     seq      = models.IntegerField()
     required = models.BooleanField(default=False)
-    required_label = models.CharField(max_length=80, blank=True, null=True)
+    required_label = models.CharField(max_length=80, blank=True, null=False, default="")
 
     def docs(self):
         if hasattr(self, 'doc') and self.doc is not None and str(self.doc).strip() != '':

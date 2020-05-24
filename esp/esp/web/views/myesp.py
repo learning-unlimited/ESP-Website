@@ -262,10 +262,7 @@ def myesp_onsite(request):
     progs = Permission.program_by_perm(user,"Onsite")
 
     # Order them decreasing by id
-    # - Currently reverse the list in Python, otherwise fbap's cache is ignored
-    # TODO: Fix this
-    progs = list(progs)
-    progs.reverse()
+    progs = list(progs.order_by("-id"))
 
     if len(progs) == 1:
         return HttpResponseRedirect('/onsite/%s/main' % progs[0].getUrlBase())

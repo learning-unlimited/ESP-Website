@@ -59,6 +59,7 @@
   border-collapse: collapse;
   table-layout:fixed;
   margin: 0px !important;
+  width: calc(100vh * 9 / 16);
 }
 
 .main tbody, tr, th, td {

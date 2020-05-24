@@ -183,7 +183,12 @@ class BaseESPUser(object):
 
 
     @classmethod
-    def ajax_autocomplete(cls, data, group = None):
+    def ajax_autocomplete(cls, data, QObject = None):
+        """
+        Filter is a dictionary, where the keys are ESPUser model fields
+        and the values are the filters on those fields
+        (e.g. {})
+        """
         #q_name assumes data is a comma separated list of names
         #lastname first
         #q_username is username
@@ -205,8 +210,8 @@ class BaseESPUser(object):
 
         query_set = cls.objects.filter(q_names | q_username | q_id)
 
-        if group:
-            query_set = query_set.filter(groups=group)
+        if QObject:
+            query_set = query_set.filter(QObject).distinct()
 
         values = query_set.order_by('last_name','first_name','id').values('first_name', 'last_name', 'username', 'id')
 
@@ -216,11 +221,19 @@ class BaseESPUser(object):
 
     @classmethod
     def ajax_autocomplete_student(cls, data):
-        return cls.ajax_autocomplete(data, group = Group.objects.get(name="Student"))
+        return cls.ajax_autocomplete(data, QObject = Q(groups=Group.objects.get(name="Student")))
 
     @classmethod
     def ajax_autocomplete_teacher(cls, data):
-        return cls.ajax_autocomplete(data, group = Group.objects.get(name="Teacher"))
+        return cls.ajax_autocomplete(data, QObject = Q(groups=Group.objects.get(name="Teacher")))
+
+    @classmethod
+    def ajax_autocomplete_approved_teacher(cls, data, prog = None):
+        if prog:
+            QObject = Q(classsubject__status__gt=0, classsubject__parent_program__id=prog)
+        else:
+            QObject = Q(classsubject__status__gt=0)
+        return cls.ajax_autocomplete(data, QObject)
 
     def ajax_str(self):
         return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)
@@ -386,7 +399,10 @@ class BaseESPUser(object):
 
     @cache_function
     def getTaughtClassesAll(self, include_rejected = False):
-        return self.classsubject_set.all()
+        if include_rejected:
+            return self.classsubject_set.all()
+        else:
+            return self.classsubject_set.exclude(status=-10)
     getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {'self': cls})
     getTaughtClassesAll.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
 
@@ -1216,15 +1232,6 @@ def update_email(**kwargs):
                 mailman.remove_list_member(l, old_email)
 
 
-shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
-shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
-# Until someone writes a new migration, we'll have to go with the sex-based 'M'
-# key for straight cut shirts. Let this comment acknowledge that unfortunately
-# state of affairs until that time.
-shirt_types = (('M', 'Straight cut'), ('F', 'Fitted cut'))
-food_choices = ('Anything', 'Vegetarian', 'Vegan')
-food_choices = zip(food_choices, food_choices)
-
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
@@ -1236,9 +1243,9 @@ class StudentInfo(models.Model):
     studentrep = models.BooleanField(blank=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
     heard_about = models.TextField(blank=True, null=True)
-    food_preference = models.CharField(max_length=256,blank=True,null=True)
-    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
-    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
+    food_preference = models.TextField(blank=True, null=True)
+    shirt_size = models.TextField(blank=True, null=True)
+    shirt_type = models.TextField(blank=True, null=True)
 
     medical_needs = models.TextField(blank=True, null=True)
 
@@ -1421,8 +1428,8 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     college = models.CharField(max_length=128,blank=True, null=True)
     major = models.CharField(max_length=32,blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
-    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
-    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
+    shirt_size = models.TextField(blank=True, null=True)
+    shirt_type = models.TextField(blank=True, null=True)
 
     @classmethod
     def cf_link_instance(cls, request):
@@ -2304,7 +2311,6 @@ class Permission(ExpirableModel):
             ("Student/All", "All student deadlines"),
             ("Student/Acknowledgement", "Student acknowledgement"),
             ("Student/Applications", "Apply for classes"),
-            ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Register for classes"),
             ("Student/Classes/Lunch", "Register for lunch"),
             ("Student/Classes/Lottery", "Enter the lottery"),
@@ -2548,6 +2554,10 @@ class Permission(ExpirableModel):
         """Find all program that user has perm"""
         implies = [perm]
         implies+=[x for x,y in cls.implications.items() if perm in y]
+
+        #Check for global permissions (should only work for non-deadlines and admins)
+        if any([cls.user_has_perm(user, x) for x in implies]):
+            return Program.objects.all()
 
         direct = Program.objects.filter(nest_Q(Permission.is_valid_qobject(), 'permission'),
                                        permission__user=user,
