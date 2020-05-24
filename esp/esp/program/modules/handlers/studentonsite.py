@@ -159,7 +159,6 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @meets_cap
     def onsitesurvey(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
-        user = request.user
         context['webapp_page'] = 'survey'
         return survey_view(request, tl, one, two, template = self.baseDir()+'survey.html', context = context)
 

@@ -41,7 +41,6 @@ import re
 from cStringIO import StringIO
 from django.db import models
 from django.db.models import Q
-from esp.cal.models import Event
 from esp.users.models import ESPUser, Record, admin_required
 from esp.program.models import Program, ClassCategories, StudentRegistration, RegistrationType, ClassSection
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
@@ -50,7 +49,7 @@ from esp.utils.latex import render_to_latex
 from esp.program.modules.base import needs_admin
 from esp.middleware import ESPError
 from esp.tagdict.models import Tag
-from django.http import Http404, HttpResponseRedirect, HttpResponse
+from django.http import Http404, HttpResponse
 from django.core.servers.basehttp import FileWrapper
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
@@ -159,7 +158,7 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
             # Get a student's enrolled sections
             sections = ClassSection.objects.filter(id__in=[sec.id for sec in user.getEnrolledSections(prog)], status__gt=0).annotate(start=Min('meeting_times__start')).order_by('start')
         else:
-            # Get a teacher's taught sections 
+            # Get a teacher's taught sections
             sections = user.getTaughtSections(prog).filter(status__gt=0).annotate(start=Min('meeting_times__start')).order_by('start')
             sections = [sec for sec in sections if sec.meeting_times.count() > 0]
         # Mark sections for whether they've started yet and whether the user has filled out a survey for them yet

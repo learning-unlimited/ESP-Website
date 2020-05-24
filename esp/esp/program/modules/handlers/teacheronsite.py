@@ -154,7 +154,6 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
     @meets_deadline('/Webapp')
     def onsitesurvey(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
-        user = request.user
         context['webapp_page'] = 'survey'
         surveys = prog.getSurveys().filter(category = tl).select_related()
         if extra == 'review':
