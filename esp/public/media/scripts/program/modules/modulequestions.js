@@ -13,7 +13,7 @@ function questionsToModules() {
     var modules = [];
     for (i=0; i < nQuestions; i++) {
         // record which questions are checked (and save their corresponding modules)
-        if $j("#id_program_module_questions_" + i).prop("checked")
+        if ($j("#id_program_module_questions_" + String(i)).prop("checked"))
             $j.merge(modules, $j("#id_program_module_questions_"+i).val().split(","))
     }
     // Now just check those modules in the list.
@@ -29,6 +29,7 @@ function questionsToModules() {
 // This is hard-coded based on our knowledge of modules and needs to be
 // updated as new modules are introduced.
 function modulesToQuestions() {
+    var nQuestions = $j("#id_program_module_questions").children().length;
     // the IDs of the modules currently selected
     var currentlySelectedIds = $j("select#id_program_modules").val();
     // if there are none, skip the rest of this
