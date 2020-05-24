@@ -96,6 +96,7 @@ Survey changes
 - Survey result histograms for countable questions now show the entire possible range of answers.
 - The ``top_classes`` page for program surveys works again.
 - Fixed survey dumps in cases where survey names had certain forbidden characters.
+- All per-class survey results are now shown on the admin survey review page (before only numerical questions were shown). Also cleaned up the HTML and PDF versions of the admin survey review page, made them prettier, and made it possible to filter the HTML survey results to a particular teacher.
 
 Theme changes
 ~~~~~~~~~~~~~
@@ -103,6 +104,7 @@ Theme changes
 - Fixed the fruit salad header for instances where the program name was very long and overlapped with the login information. Also changed styling associated with the login box to make things symmetrical (and removed the text "Hello,").
 - Fixed the colors of the buttons presented when editing a QSD/editable text on the bigpicture theme. Button colors will also now properly change when updated in the bigpicture theme settings.
 - Fixed the width of the class edit form and the teacher preview table in the bigpicture theme.
+- Added a new admin bar to all themes that didn't have it before and modified the admin bar of themes that already had one. This admin bar has more helpful links for admins and current program section(s).
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
@@ -124,6 +126,7 @@ Minor new features
 - Added global tags to change the options for the shirt size (one tag each for teachers, students, and volunteers), shirt style (universal tag), and food preference (only applicable to students) profile form fields.
 - Added a big board to the phase zero management page to track student lottery registration over time.
 - Added an option to supply a list of winners for the phase zero student lottery (instead of the default random algorithm).
+- Moved the schedule snippets that you can include in comm panel emails to templates, allowing them to be overriden.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
