@@ -3,8 +3,10 @@ $j(document).ready(function(){
     // when the page loads, check/select the questions induced by the modules
     // that are already selected (if any, from a template program e.g.)
     modulesToQuestions();
-
-    // questionsToModules should be called when the form gets submitted
+    $j("input[name='program_module_questions']" ).change(function() {
+        questionsToModules();
+    });
+    // questionsToModules should also be called when the form gets submitted
 });
 
 
@@ -29,7 +31,6 @@ function questionsToModules() {
 // This is hard-coded based on our knowledge of modules and needs to be
 // updated as new modules are introduced.
 function modulesToQuestions() {
-    var nQuestions = $j("#id_program_module_questions").children().length;
     // the IDs of the modules currently selected
     var currentlySelectedIds = $j("select#id_program_modules").val();
     // if there are none, skip the rest of this
@@ -37,9 +38,11 @@ function modulesToQuestions() {
         return
     // otherwise, get the questions and see whether we should check them
     var questions = $j("#id_program_module_questions").children()
-    // start by clearing all selections
-    for (i=0; i < nQuestions; i++)
-    // get the
+    // clear all selections
+    for (i=0; i < questions.length; i++)
+        $j("#id_program_module_questions_" + String(i)).prop("checked", false)
+    // check if all the modules associated with a given question are selected
+    // if so, check that box
     for (i=0; i < questions.length; i++) {
         var q = questions[i];
         var qvalslist = q.firstChild.firstChild.value.split(",");
@@ -57,6 +60,6 @@ function modulesToQuestions() {
             }
             $j("#id_program_module_questions_" + i).prop("checked", include);
         }
-    return
     }
+    return
 };
