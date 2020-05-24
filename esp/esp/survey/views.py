@@ -119,7 +119,6 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
                     survey_completed = RegistrationType.objects.get_or_create(name = 'SurveyCompleted', category = "student")[0]
                     sr = StudentRegistration(user = user, section = section, relationship = survey_completed)
                     sr.save()
-                    sr.expire()
 
                     response.set_answers(request.POST, save=True)
                     submitted = True
