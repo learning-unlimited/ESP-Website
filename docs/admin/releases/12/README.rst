@@ -21,7 +21,7 @@ We've implemented a set of tools for teachers and admins to manage student class
    - Checked out students are accounted for in the onsite attendance module (#2 above).
    - The barcode checkin page will not raise an error if a student is checked out (and will then check them back in).
    - Attendance numbers in the grid-based class canges and grid-based status pages are now based on attending students that are not checked out.
-   - There is a new "Currently checked out students" option for the comm panel, arbitrary user list, and group text panel.
+   - There are now new "Currently checked out students" and "Currently checked in students" options for the comm panel, arbitrary user list, and group text panel.
    - The teacher attendance page (#1 above) will only mark a student as checked in if they are not checked out.
 
 Onsite Webapps
