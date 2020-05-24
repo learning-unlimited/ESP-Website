@@ -366,7 +366,11 @@ class ListGenModule(ProgramModuleObj):
             #   Turn multi-valued QueryDict into standard dictionary
             data = {}
             for key in request.POST:
-                data[key] = request.POST[key]
+                #   Some keys have list values
+                if key in ['regtypes']:
+                    data[key] = request.POST.getlist(key)
+                else:
+                    data[key] = request.POST[key]
             filterObj = usc.filter_from_postdata(prog, data)
 
             #   Display list generation options

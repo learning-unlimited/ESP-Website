@@ -235,7 +235,11 @@ class CommModule(ProgramModuleObj):
             #   Turn multi-valued QueryDict into standard dictionary
             data = {}
             for key in request.POST:
-                data[key] = request.POST[key]
+                #   Some keys have list values
+                if key in ['regtypes']:
+                    data[key] = request.POST.getlist(key)
+                else:
+                    data[key] = request.POST[key]
 
             ##  Handle normal list selecting submissions
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
