@@ -3,10 +3,12 @@ $j(document).ready(function(){
     // when the page loads, check/select the questions induced by the modules
     // that are already selected (if any, from a template program e.g.)
     modulesToQuestions();
+    // questionsToModules is called when the form gets submitted, but the following
+    // is useful for debugging
+    /*
     $j("input[name='program_module_questions']" ).change(function() {
         questionsToModules();
-    });
-    // questionsToModules should also be called when the form gets submitted
+    });*/
 });
 
 
@@ -38,9 +40,6 @@ function modulesToQuestions() {
         return
     // otherwise, get the questions and see whether we should check them
     var questions = $j("#id_program_module_questions").children()
-    // clear all selections
-    for (i=0; i < questions.length; i++)
-        $j("#id_program_module_questions_" + String(i)).prop("checked", false)
     // check if all the modules associated with a given question are selected
     // if so, check that box
     for (i=0; i < questions.length; i++) {
