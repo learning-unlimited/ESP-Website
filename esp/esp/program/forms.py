@@ -140,15 +140,12 @@ class ProgramCreationForm(BetterModelForm):
         pass
 
     def clean_program_modules(self):
-        value = self.cleaned_data['program_modules']
-        final = []
-        for v in value:
-            final.extend(self.program_module_ids[int(v)])
+        mods = self.cleaned_data['program_modules'][:]
         # Add "include by default" modules (choosable property = 1)
         default_modules = ProgramModule.objects.filter(choosable=1)
         for m in default_modules:
-            final.append(m.id)
-        return final
+            mods.append(m.id)
+        return mods
 
 
     class Meta:
