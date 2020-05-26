@@ -64,7 +64,8 @@ class ProgramCreationForm(BetterModelForm):
     program_module_questions   = forms.MultipleChoiceField(choices=[],
                                                            label='Program Modules',
                                                            widget=forms.CheckboxSelectMultiple(attrs={'class': 'input-xxlarge'}), # widget = forms.HiddenInput()
-                                                           help_text=Program.program_modules.field.help_text)
+                                                           help_text=Program.program_modules.field.help_text,
+                                                           required=False)
 
     program_modules   = forms.MultipleChoiceField(choices=[])
 
