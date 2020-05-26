@@ -21,7 +21,7 @@ Welcome to the program settings page for {{ program.niceName }}. This page lists
 
 {% for title, form in forms %}
 <button class="dsphead">
-   <b>{{ title }}</b> (click to expand/contract)
+   <b>{{ title }}</b> (click to expand/collapse)
 </button>
 
 <div class="dspcont">
@@ -75,7 +75,7 @@ Welcome to the program settings page for {{ program.niceName }}. This page lists
       <tr> 
         <td colspan="2" class="submit">
           <br /><br /><br />
-          <center><input class="fancybutton" type="submit" value="Save {{ title }}" /></center>
+          <center><input class="fancybutton" type="submit" value="Save {{ title }}" onclick="questionsToModules();" /></center>
         </td>
       </tr>
     </table>
@@ -85,6 +85,7 @@ Welcome to the program settings page for {{ program.niceName }}. This page lists
 {% endfor %}
 
 <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
+<script src="/media/scripts/program/modules/modulequestions.js"></script>
 
 {% include "program/modules/admincore/returnlink.html" %}
 
