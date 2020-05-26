@@ -102,7 +102,7 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
     # Section-specific survey
     section = None
     questions = perclass_questions = classes = []
-    submitted = general = general_available = completed = False
+    submitted = general = general_available = completed = section_surveys = general_survey = False
     if 'sec' in request.GET:
         sections = ClassSection.objects.filter(id=request.GET['sec'], parent_class__parent_program=prog)
         if len(sections) == 1:
@@ -169,6 +169,8 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
         context['general_done'] = Record.user_completed(user, event, prog)
         # Is this the best way to trigger the availability of the general program survey?
         general_available = any([sec.started for sec in sections])
+        general_survey = survey.questions.filter(per_class = False).exists()
+        section_surveys = survey.questions.filter(per_class = True).exists()
 
     context.update({
         'program': prog,
@@ -181,7 +183,9 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
         'general': general,
         'general_available': general_available,
         'completed': completed,
-        'classes': classes
+        'classes': classes,
+        'section_surveys': section_surveys,
+        'general_survey': general_survey
         })
     return render_to_response(template, request, context)
 

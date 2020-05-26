@@ -344,6 +344,8 @@ i.pointer {
   color: white;
   border: 2px solid black;
   font-size: 3vh !important;
+  padding: .5vh;
+  font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
 }
 
 .fancybutton:hover {

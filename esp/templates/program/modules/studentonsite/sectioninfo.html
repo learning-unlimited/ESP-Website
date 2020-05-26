@@ -54,7 +54,11 @@
             <tr>
                 <td>Class Survey:</td>
                 <td>
-                    <a href="/learn/{{one}}/{{two}}/onsitesurvey?sec={{ section.id }}" title="{{ section }}...">Take survey for this class</a>
+                    {% if has_started %}
+                        <a href="/learn/{{one}}/{{two}}/onsitesurvey?sec={{ section.id }}" title="{{ section }}...">Take survey for this class</a>
+                    {% else %}
+                        Survey not available until class has begun
+                    {% endif %}
                 </td>
             </tr>
             {% endif %}
