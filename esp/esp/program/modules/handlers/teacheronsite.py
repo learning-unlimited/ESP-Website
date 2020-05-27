@@ -154,22 +154,17 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
     @meets_deadline('/Webapp')
     def onsitesurvey(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
-        user = request.user
         context['webapp_page'] = 'survey'
         surveys = prog.getSurveys().filter(category = tl).select_related()
         if extra == 'review':
             context['survey_page'] = 'review'
             if len(surveys):
                 return survey_review(request, tl, one, two, self.baseDir()+'survey.html', context)
+            else:
+                return render_to_response(self.baseDir()+'survey.html', request, context)
         else:
             context['survey_page'] = 'survey'
-            if 'done' in request.GET:
-                context['survey_status'] = "submitted"
-            elif Record.user_completed(user, "teacher_survey", prog):
-                context['survey_status'] = "completed"
-            elif len(surveys):
-                return survey_view(request, tl, one, two, self.baseDir()+'survey.html', context)
-        return render_to_response(self.baseDir()+'survey.html', request, context)
+            return survey_view(request, tl, one, two, self.baseDir()+'survey.html', context)
 
     @staticmethod
     def onsitecontext(request, tl, one, two, prog):

@@ -110,8 +110,8 @@
   padding-top: .25vh !important;
 }
 
-.location > * {
-  vertical-align: middle;
+.location i, .cls i {
+  vertical-align: bottom;
 }
 
 .edit, .list {
@@ -336,4 +336,35 @@ i.pointer {
 .survey textarea {
     width: 100%;
     resize: vertical;
+}
+
+.fancybutton {
+  border-radius: 1.5vh;
+  background-color: black;
+  color: white;
+  border: 2px solid black;
+  font-size: 3vh !important;
+  padding: .5vh;
+  font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
+}
+
+.fancybutton:hover {
+  background-color: #efefef;
+  color: black;
+}
+
+.survey td {
+  background: #efefef;
+}
+
+.survey .message {
+  font-size: 2.5vh;
+}
+
+.sectioninfo td {
+  background-color: #efefef;
+}
+
+.btn.fancybutton.no-dec {
+  padding: .5vh;
 }

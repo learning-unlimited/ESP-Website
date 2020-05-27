@@ -31,8 +31,10 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import datetime
+
 from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, CoreModule, main_call, aux_call, meets_cap
-from esp.program.models  import ClassSubject
+from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
 from esp.resources.models import Resource
 from esp.utils.web import render_to_response
 from esp.users.models    import Record
@@ -67,9 +69,34 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
 
         context['webapp_page'] = 'schedule'
         context['scrmi'] = prog.studentclassregmoduleinfo
-        context['checked_in'] = Record.objects.filter(program=prog, event='attended', user=user).exists()
+        context['checked_in'] = prog.isCheckedIn(user)
 
         return render_to_response(self.baseDir()+'schedule.html', request, context)
+
+    @main_call
+    @needs_student
+    @meets_grade
+    @meets_deadline('/Webapp')
+    @meets_cap
+    def onsitedetails(self, request, tl, one, two, module, extra, prog):
+        context = self.onsitecontext(request, tl, one, two, prog)
+        user = request.user
+        context['webapp_page'] = 'schedule'
+        if extra:
+            secid = extra
+            sections = ClassSection.objects.filter(id = secid)
+            if len(sections) == 1:
+                section = sections[0]
+                if StudentRegistration.valid_objects().filter(section=section, user=user, relationship__name="Enrolled"):
+                    context['checked_in'] = prog.isCheckedIn(user)
+                    surveys = prog.getSurveys().filter(category = tl)
+                    context['has_survey'] = surveys.count() > 0 and surveys[0].questions.filter(per_class = True).exists()
+                    first_block = section.firstBlockEvent()
+                    if first_block:
+                        context['has_started'] =  first_block.start < datetime.datetime.now()
+                    context['section'] = section
+                    return render_to_response(self.baseDir()+'sectioninfo.html', request, context)
+        return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
 
     @aux_call
     @needs_student
@@ -137,16 +164,8 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @meets_cap
     def onsitesurvey(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
-        user = request.user
         context['webapp_page'] = 'survey'
-        surveys = prog.getSurveys().filter(category = tl).select_related()
-        if 'done' in request.GET:
-            context['survey_status'] = "submitted"
-        elif Record.user_completed(user, "student_survey", prog):
-            context['survey_status'] = "completed"
-        elif len(surveys):
-            return survey_view(request, tl, one, two, self.baseDir()+'survey.html', context)
-        return render_to_response(self.baseDir()+'survey.html', request, context)
+        return survey_view(request, tl, one, two, template = self.baseDir()+'survey.html', context = context)
 
     @aux_call
     @needs_student
