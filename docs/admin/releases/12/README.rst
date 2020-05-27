@@ -99,6 +99,7 @@ Flag and classsearch changes
 
 Survey changes
 ~~~~~~~~~~~~~~
+- Overhauled the survey interface for students and teachers. These users will now be shown a list of survey components that they can fill out in any order. These components consist of independent surveys for each class the user is registered for (if there are any 'per_class' survey questions) and a general program survey (if there are any non 'per_class' survey questions). The former are available once each class has begun and the latter is available once any of the classes has begun.
 - Added a user interface for admins to build surveys for students and teachers to fill out after a program is over. Built-in question types include "Yes-No Response", "Multiple Choice", "Checkboxes", "Short Answer", "Long Answer", "Numeric Rating", and "Labeled Numeric Rating". Survey questions can be viewed in their rendered layout to see how they'll ultimately look in the survey. Once surveys have been created, they can be imported for future programs.
 - Built-in surveys are now shown in the student and teacher onsite webapp interfaces. Additionally, teachers can see survey responses for their classes in the teacher onsite webapp interface.
 - Admins can now specify which students and teachers have access to the built-in program surveys with the tags "survey_teacher_filter" and "survey_student_filter". These tags will also be used to calculate the number of potential participants when displaying survey results.
@@ -137,6 +138,8 @@ Minor new features
 - Added a big board to the phase zero management page to track student lottery registration over time.
 - Added an option to supply a list of winners for the phase zero student lottery (instead of the default random algorithm).
 - Moved the schedule snippets that you can include in comm panel emails to templates, allowing them to be overriden.
+- Added a class registration filter to the comm panel, group text, and arbitrary user list modules.
+- Added tags "student_profile_hide_fields", "volunteer_profile_hide_fields", "educator_profile_hide_fields", and "guardian_profile_hide_fields" that allow any fields in the profile forms to be hidden (except for email address all profile forms and grade for the student profile form).
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
