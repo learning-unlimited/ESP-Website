@@ -85,9 +85,14 @@ function Timeslots(timeslots_data, lunch_timeslots){
         var hours = end[3] - start[3];
         var minutes = end[4] - start[4];
 
-        if (minutes > 0){
-            hours = hours + 1;
-        }
+        if (minutes === -30){ // special case for HSSP
+            hours = hours - 0.5;
+        } else if (minutes === 30) {
+	    hours = hours + 0.5;
+	} else if (minutes > 0) {
+	    hours = hours + 1;
+	}
+
         return hours;
     };
 
