@@ -6,6 +6,7 @@
     {{ block.super }}
     <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
     <link rel='stylesheet' type='text/css' href='/media/styles/flags.css' />
+    <link rel='stylesheet' type='text/css' href='/media/styles/assignments.css' />
     <style type="text/css">
         #shortcuts-box {
             position: fixed;
@@ -95,6 +96,7 @@
 {% block javascript %}
     {{ block.super }}
     <script src="/media/scripts/program/modules/flag-edit.js"></script>
+    <script src="/media/scripts/onsite/assignment-edit.js"></script>
     <script src="/media/scripts/onsite/teacher_checkin.js"></script>
 {% endblock %}
 
@@ -211,6 +213,12 @@
                 </div>
                 <button class="add-flag btn">add flag</button>
             {% endif %}
+            <div class="assignment-name-list fqr-class-assignments">
+                {% for assignment in section.resourceassignments.all %}
+                    {% include "program/modules/resourcemodule/assignment_name.html" %}
+                {% endfor %}
+            </div>
+            <button class="add-assignment btn">checkout resource</button>
             <div class="section-detail-info"
                  style="display: none;"
                  data-class-id="{{section.parent_class.id}}"
@@ -222,9 +230,17 @@
                     {% for flag in section.parent_class.flags.all %}
                         {% include "program/modules/classflagmodule/flag_detail.html" %}
                     {% endfor %}
-                    {% include "program/modules/classflagmodule/new_flag_form.html" %}
+                    {% with section.parent_class as class %}
+                        {% include "program/modules/classflagmodule/new_flag_form.html" %}
+                    {% endwith %}
                 </div>
             {% endif %}
+            <div class="fqr-class-assignments-detail">
+                {% for assignment in section.resourceassignments.all %}
+                    {% include "program/modules/resourcemodule/assignment_detail.html" %}
+                {% endfor %}
+                {% include "program/modules/resourcemodule/new_assignment_form.html" %}
+            </div>
         </div>
     </td>
 </tr>

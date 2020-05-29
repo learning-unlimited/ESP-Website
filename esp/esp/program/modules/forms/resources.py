@@ -324,3 +324,8 @@ class EquipmentImportForm(forms.Form):
         if cur_prog is not None:
             qs = qs.exclude(id=cur_prog.id)
         self.fields['program'].queryset = qs
+
+class EquipmentAssignmentForm(forms.ModelForm):
+    class Meta:
+        model = ResourceAssignment
+        fields = ['resource','target']

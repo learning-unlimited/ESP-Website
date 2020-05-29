@@ -400,6 +400,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         if show_flags:
             context['show_flags'] = True
             context['flag_types'] = ClassFlagType.get_flag_types(self.program)
+        context['res_types'] = prog.getFloatingResources()
         context['start_time'] = starttime
         context['next'] = next
         context['previous'] = previous

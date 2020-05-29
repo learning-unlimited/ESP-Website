@@ -347,6 +347,7 @@ class ResourceAssignment(models.Model):
     target = models.ForeignKey('program.ClassSection', null=True)
     target_subj = models.ForeignKey('program.ClassSubject', null=True)
     lock_level = models.IntegerField(default=0)
+    returned = models.BooleanField(default=False) # Only really relevant for floating resources
 
     def __unicode__(self):
         result = u'Resource assignment for %s' % unicode(self.getTargetOrSubject())

@@ -33,8 +33,12 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import json
+
 from django.contrib.auth.decorators import login_required
 from django.forms import formset_factory
+from django.http import HttpResponseBadRequest, HttpResponse
+from django.template.loader import render_to_string
 
 from esp.utils.web import render_to_response
 from esp.utils.decorators import json_response
@@ -49,7 +53,7 @@ from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 
-from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, ResourceChoiceForm, EquipmentForm, FurnishingFormForProgram, ClassroomImportForm, TimeslotImportForm, ResTypeImportForm, EquipmentImportForm
+from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, ResourceChoiceForm, EquipmentForm, FurnishingFormForProgram, ClassroomImportForm, TimeslotImportForm, ResTypeImportForm, EquipmentImportForm, EquipmentAssignmentForm
 
 from esp.program.controllers.resources import ResourceController
 
@@ -674,6 +678,52 @@ class ResourceModule(ProgramModuleObj):
         #   Display default form
         return render_to_response(self.baseDir()+'resource_main.html', request, context)
 
+    @aux_call
+    @needs_admin
+    def newassignment(self, request, tl, one, two, module, extra, prog):
+        '''Create a resource assignment from the POST data, and return its detail display.'''
+        if request.method != 'POST':
+            return HttpResponseBadRequest('')
+        form = EquipmentAssignmentForm(request.POST)
+        if form.is_valid():
+            assignment = form.save()
+            context = { 'assignment' : assignment }
+            response = json.dumps({
+                'assignment_name': render_to_string(self.baseDir()+'assignment_name.html', context = context, request = request),
+                'assignment_detail': render_to_string(self.baseDir()+'assignment_detail.html', context = context, request = request),
+            })
+            return HttpResponse(response, content_type='application/json')
+        else:
+            # The user shouldn't be able to get here unless they're doing something really weird, so let's not bother to try to tell them where the error was; since this is asynchronous that would be a bit tricky.
+            return HttpResponseBadRequest('')
+
+    @aux_call
+    @needs_admin
+    def editassignment(self, request, tl, one, two, module, extra, prog):
+        '''Given a post request, take extra as the id of the resource assignment, update whether it's returned using the post data, and return its new detail display.'''
+        if not extra or request.method != 'POST':
+            return HttpResponseBadRequest('')
+        results = ResourceAssignment.objects.filter(id=extra)
+        if not len(results): #Use len() since we will evaluate it anyway
+            return HttpResponseBadRequest('')
+        assignment = results[0]
+        assignment.returned = 'returned' in request.POST
+        assignment.save()
+        context = { 'assignment' : assignment }
+        return render_to_response(self.baseDir()+'assignment_detail.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def deleteassignment(self, request, tl, one, two, module, extra, prog):
+        '''Given a post request with the ID, delete the resource assignment.'''
+        if request.method != 'POST' or 'id' not in request.POST:
+            return HttpResponseBadRequest('')
+        results = ResourceAssignment.objects.filter(id=request.POST['id'])
+        if not len(results): #Use len() since we will evaluate it anyway
+            return HttpResponseBadRequest('')
+        assignment = results[0]
+        assignment.delete()
+        return HttpResponse('')
 
     class Meta:
         proxy = True

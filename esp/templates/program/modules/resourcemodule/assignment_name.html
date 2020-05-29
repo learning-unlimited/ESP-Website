@@ -1,0 +1,12 @@
+<span style="background: {% if assignment.returned %}green{% else %}red{% endif %};" class="assignment-header"
+      id="fqr-assignment-header-{{ assignment.id }}">
+    <span class="assignment-name"
+          title="Click to toggle assignment details"
+          onclick="$j('#assignment-detail-{{ assignment.id }}').toggle('blink');$j('#fqr-assignment-header-{{ assignment.id }}').toggleClass('active');">
+        {{ assignment.resource.name }}
+    </span>
+    <span class="assignment-remove"
+          title="Click to remove resource"
+          onclick="removeAssignment('/manage/{{program.getUrlBase}}/deleteassignment/',{{ assignment.id }});">
+    </span>
+</span>
