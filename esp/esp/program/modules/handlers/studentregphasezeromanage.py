@@ -39,11 +39,12 @@ from esp.users.models import Record, ESPUser, Permission
 from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import SubmitForm
 from esp.tagdict.models import Tag
+from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
 
-import copy, datetime, json
+import copy, datetime, json, re
 
 class StudentRegPhaseZeroManage(ProgramModuleObj):
     def isCompleted(self):
@@ -59,45 +60,74 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
             'choosable': 0,
         }
 
-    def lottery(self, prog, role):
-        # Run lottery algorithm.
-        # Get grade caps
-        grade_caps_str = prog.grade_caps()
-        grade_caps = {int(key[0]): value for key, value in grade_caps_str.iteritems()}
-
-        #Get lottery records and randomize them
-        records = PhaseZeroRecord.objects.filter(program=prog).order_by('?')
-
-        ###############################################################################
-        # The lottery algorithm is run, with randomization and processing in order.
-        # If any one in the group doesn't get in (due to cap size), no one in that group gets in.
-        counts = {key:0 for key in grade_caps}
+    def lottery(self, prog, role, post):
+        messages = []
         winners, _ = Group.objects.get_or_create(name=role)
+        students = []
 
-        for i in records:
-            sibs = i.user.all()
-            newcounts = copy.copy(counts)
-            for j in sibs:
-                newcounts[j.getGrade(prog)] += 1
+        if post.get('mode') == 'default':
+            # Get grade caps
+            grade_caps_str = prog.grade_caps()
+            if grade_caps_str:
+                grade_caps = {int(key[0]): value for key, value in grade_caps_str.iteritems()}
+                ###############################################################################
+                # The default lottery algorithm is run, with randomization and processing in order.
+                # If any one in the group doesn't get in (due to cap size), no one in that group gets in.
+                records = PhaseZeroRecord.objects.filter(program=prog).order_by('?')
 
-            cpass = not any(newcounts[c] > grade_caps[c] for c in counts)
+                counts = {key:0 for key in grade_caps}
 
-            if cpass:
-                winners.user_set.add(*sibs)
-                counts = newcounts
+                for i in records:
+                    sibs = i.user.all()
+                    newcounts = copy.copy(counts)
+                    for j in sibs:
+                        newcounts[j.getGrade(prog)] += 1
+
+                    cpass = not any(newcounts[c] > grade_caps[c] for c in counts)
+
+                    if cpass:
+                        students.extend(sibs)
+                        counts = newcounts
+            else:
+                messages.append("<i>program_size_by_grade</i> <a href='/manage/" + prog.getUrlBase() + "/tags'>tag</a> is not set. Lottery not run.")
+
+        elif post.get('mode') == 'manual':
+            usernames = filter(None, re.split(r'[;,\s]\s*', post.get('usernames')))
+
+            #check that all usernames are valid
+            for username in usernames:
+                try:
+                    student = ESPUser.objects.get(username=username)
+                except (ValueError, ESPUser.DoesNotExist):
+                    messages.append("Could not find a user with username " + username)
+                    continue
+                if student.isStudent():
+                    records = PhaseZeroRecord.objects.filter(program=prog, user=student).order_by('time')
+                    if records.count() > 0:
+                        if post.get('groups'):
+                            students.extend(records[0].user.all())
+                        else:
+                            students.append(student)
+                    else:
+                        messages.append(username + " is not in the lottery")
+                else:
+                    messages.append(username + " is not a student")
 
         ###############################################################################
         # Post lottery, assign permissions to people in the lottery winners group
         # Assign OverridePhaseZero permission and Student/All permissions
+        if len(messages) == 0:
+            #Add users to winners group once we are sure there were no problems
+            winners.user_set.add(*students)
+            override_perm = Permission(permission_type='OverridePhaseZero', role=winners, start_date=datetime.datetime.now(), program=prog)
+            studentAll_perm = Permission(permission_type='Student/All', role=winners, start_date=datetime.datetime.now(), program=prog)
+            override_perm.save()
+            studentAll_perm.save()
+            # Add tag to indicate student lottery has been run
+            Tag.setTag('student_lottery_run', target=prog, value='True')
+            messages.append("The student lottery has been run successfully")
 
-        override_perm = Permission(permission_type='OverridePhaseZero', role=winners, start_date=datetime.datetime.now(), program=prog)
-        studentAll_perm = Permission(permission_type='Student/All', role=winners, start_date=datetime.datetime.now(), program=prog)
-        override_perm.save()
-        studentAll_perm.save()
-        # Add tag to indicate student lottery has been run
-        Tag.setTag('student_lottery_run', target=prog, value='True')
-
-        return True
+        return messages
 
     @main_call
     @needs_admin
@@ -107,8 +137,13 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         context['role'] = role
         q_phasezero = Q(phasezerorecord__program=self.program)
         entrants = ESPUser.objects.filter(q_phasezero).distinct()
-        context['entrants'] = entrants
-        context['nentrants'] = len(entrants)
+        context['grade_caps'] = sorted(prog.grade_caps().iteritems())
+
+        recs = PhaseZeroRecord.objects.filter(program=prog)
+        timess = [("number of lottery students", [(rec.user.count(), rec.time) for rec in recs])]
+        timess_data, start = BigBoardModule.make_graph_data(timess)
+        context["left_axis_data"] = [{"axis_name": "#", "series_data": timess_data}]
+        context["first_hour"] = start
 
         grades = range(prog.grade_min, prog.grade_max + 1)
         stats = {}
@@ -126,13 +161,9 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                 context['error'] = "You've already run the student lottery!"
             else:
                 if "confirm" in request.POST:
-                    if Tag.getProgramTag('program_size_by_grade', prog):
-                        role = request.POST['rolename']
-                        context['role'] = role
-                        self.lottery(prog, role)
-                        context['success'] = "The student lottery has been run successfully."
-                    else:
-                        context['error'] = "You haven't set the grade caps tag yet."
+                    role = request.POST['rolename']
+                    context['role'] = role
+                    context['lottery_messages'] = self.lottery(prog, role, request.POST)
                 else:
                     context['error'] = "You did not confirm that you would like to run the lottery"
 

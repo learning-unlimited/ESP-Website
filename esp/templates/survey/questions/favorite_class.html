@@ -2,7 +2,7 @@
 {% load survey %}
 <table class="fullwidth">
 <tr>
-    <td width="30%">{{ name }}</td>
+    <td width="30%"><b>{{ name }}</b></td>
     <td width="70%">
         {% templatetag openblock %} for l in lst {% templatetag closeblock %}
         <input type="checkbox" name="question_{{ id }}" value="{% templatetag openvariable %} l.id {% templatetag closevariable %}" />{% templatetag openvariable %} l.emailcode {% templatetag closevariable %}: {% templatetag openvariable %} l.title {% templatetag closevariable %}<br />

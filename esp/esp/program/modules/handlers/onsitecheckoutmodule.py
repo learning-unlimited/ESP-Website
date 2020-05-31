@@ -87,9 +87,8 @@ class OnSiteCheckoutModule(ProgramModuleObj):
             form = StudentSearchForm(initial={'target_user': student.id})
 
             # Get most recent check-in record
-            recs = Record.objects.filter(user=student, event="attended", program=prog)
-            if recs.count() == 0:
-                context['checkout_message'] = "Caution: %s (%s) is not checked in for this program!" % (student.name(), student.username)
+            if not prog.isCheckedIn(student):
+                context['checkout_message'] = "Caution: %s (%s) is not currently checked in for this program!" % (student.name(), student.username)
 
             if 'checkout_student' in request.POST:
                 # Make checked_out record

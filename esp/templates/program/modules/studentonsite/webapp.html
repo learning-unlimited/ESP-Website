@@ -1,0 +1,30 @@
+<head>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link href="https://fonts.googleapis.com/css?family=Josefin+Sans" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="/media/default_styles/webapp.css" />
+    <title>
+        {% block title %}Student Webapp for {{program.niceName}}{% endblock %}
+    </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+<div class="navbar">
+  <table>
+    <tr>
+      <td{% if webapp_page == "schedule" %} class="selected"{% endif %}><a class="no-dec" href="/learn/{{one}}/{{two}}/studentonsite/" style="display:block;"><i class="material-icons md-5">event_note</i>
+        <br>Schedule</td>
+      <td{% if webapp_page == "map" %} class="selected"{% endif %}><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitemap" style="display:block;"><i class="material-icons md-5">map</i>
+        <br>Map</a></td>
+      <td{% if webapp_page == "catalog" %} class="selected"{% endif %}><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog" style="display:block;"><i class="material-icons md-5">event</i>
+        <br>Catalog</td>
+      {% if survey_status != "none" %}
+      <td{% if webapp_page == "survey" %} class="selected"{% endif %}><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitesurvey" style="display:block;"><i class="material-icons md-5">question_answer</i>
+        <br>Survey</td>
+      {% endif %}
+    </tr>
+  </table>
+</div>
+{% block body %}{% endblock %}
+</body>

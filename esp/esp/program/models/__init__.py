@@ -61,7 +61,7 @@ from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError, AjaxError
 from esp.tagdict.models import Tag
-from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types, Record
+from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, Record
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
@@ -392,7 +392,8 @@ class Program(models.Model, CustomFormsLinkModel):
         section_ids = sections_in_program_by_id(self)
 
         counts = {}
-        checked_in_ids = self.students()['attended'].values_list('id', flat=True)
+        students = self.students(True)
+        checked_in_ids = ESPUser.objects.filter(students['attended'] & ~students['checked_out']).distinct().values_list('id', flat = True)
 
         reg_type = RegistrationType.get_map()['Enrolled']
 
@@ -699,6 +700,44 @@ class Program(models.Model, CustomFormsLinkModel):
     def isConfirmed(self, espuser):
         return Record.objects.filter(event="reg_confirmed",user=espuser,
                                      program=self).exists()
+
+    def isCheckedIn(self, espuser, verbose = False):
+        status = 0
+        verbose_names = ["not_checked_in", "checked_in", "checked_out"]
+        recs = Record.objects.filter(event__in=["attended","checked_out"],user=espuser,
+                                     program=self).order_by("-time")
+        if recs.count() > 0:
+            # Check if student has ever been checked_in
+            if recs.filter(event="attended").exists():
+                status = 1
+                # Check if most recent record is checked_out
+                if recs[0].event == "checked_out":
+                    status = 2
+        if verbose:
+            return verbose_names[status]
+        else:
+            return status == 1
+
+    """ Returns a queryset of students that are checked out of the program at the specified time """
+    def checkedOutStudents(self, time_max = datetime.now()):
+        recs = Record.objects.filter(program = self, event__in=["attended", "checked_out"], time__lt=time_max).order_by('user', '-time').distinct('user')
+        return ESPUser.objects.filter(record__id__in=recs, record__event="checked_out")
+
+    """ Returns a queryset of students that are CURRENTLY checked out of the program at the specified time """
+    @cache_function
+    def currentlyCheckedOutStudents(self):
+        return self.checkedOutStudents(time_max=datetime.now())
+    currentlyCheckedOutStudents.depend_on_model('users.Record')
+
+    """ Returns a queryset of students that are checked in to the program at the specified time """
+    def checkedInStudents(self, time_max = datetime.now()):
+        return ESPUser.objects.filter(Q(record__event="attended", record__program=self)).exclude(id__in=self.checkedOutStudents(time_max)).distinct()
+
+    """ Returns a queryset of students that are CURRENTLY checked in to the program at the specified time """
+    @cache_function
+    def currentlyCheckedInStudents(self):
+        return self.checkedInStudents(time_max=datetime.now())
+    currentlyCheckedInStudents.depend_on_model('users.Record')
 
     """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
     "Classrooms."  So, if you try to call the old functions (which have no point anymore), then
@@ -1109,7 +1148,7 @@ class Program(models.Model, CustomFormsLinkModel):
         if 'class_approved' in teacher_dict:
             query = teacher_dict['class_approved']
             query = query.filter(registrationprofile__most_recent_profile=True)
-            if not Tag.getBooleanTag('teacherinfo_shirt_type_selection'):
+            if not Tag.getBooleanTag('teacherinfo_shirt_type_selection', default=True):
                 query = query.values_list('registrationprofile__teacher_info__shirt_size')
                 query = query.annotate(people=Count('id', distinct=True))
 
@@ -1126,8 +1165,10 @@ class Program(models.Model, CustomFormsLinkModel):
                     shirt_type, shirt_size, count = row
                     shirt_count[shirt_type][shirt_size] = count
 
+        shirt_sizes = [x.strip() for x in Tag.getTag('teacher_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
+        shirt_types = [x.strip() for x in Tag.getTag('shirt_types', default = 'Straight cut, Fitted cut').split(',')]
         shirts = {}
-        shirts['teachers'] = [ { 'type': shirt_type[1], 'distribution':[ shirt_count[shirt_type[0]][shirt_size[0]] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
+        shirts['teachers'] = [ { 'type': shirt_type, 'distribution':[ shirt_count[shirt_type][shirt_size] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
 
         return {'shirts' : shirts, 'shirt_sizes' : shirt_sizes, 'shirt_types' : shirt_types }
 
@@ -1953,8 +1994,8 @@ class VolunteerOffer(models.Model):
     name = models.CharField(max_length=80, blank=True, null=True)
     phone = PhoneNumberField(blank=True, null=True)
 
-    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
-    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
+    shirt_size = models.TextField(blank=True, null=True)
+    shirt_type = models.TextField(blank=True, null=True)
 
     comments = models.TextField(blank=True, null=True)
 

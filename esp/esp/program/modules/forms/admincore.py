@@ -2,7 +2,7 @@ from decimal import Decimal
 from django import forms
 from django.contrib import admin
 from django.utils.safestring import mark_safe
-from form_utils.forms import BetterModelForm
+from form_utils.forms import BetterForm, BetterModelForm
 
 from esp.accounting.models import LineItemType
 from esp.cal.models import Event
@@ -10,6 +10,8 @@ from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
 from esp.program.models import RegistrationType, Program
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.tagdict import all_program_tags, tag_categories
+from esp.tagdict.models import Tag
 
 def get_rt_choices():
     choices = [("All","All")]
@@ -105,3 +107,37 @@ class StudentRegSettingsForm(BetterModelForm):
                      ('Visual Options', {'fields': ['progress_mode','force_show_required_modules']}),
                     ]# Here you can also add description for each fieldset.
         model = StudentClassRegModuleInfo
+
+class ProgramTagSettingsForm(BetterForm):
+    """ Form for changing tags associated with a program. """
+    def __init__(self, *args, **kwargs):
+        self.program = kwargs.pop('program')
+        self.categories = set()
+        super(ProgramTagSettingsForm, self).__init__(*args, **kwargs)
+        for key in all_program_tags:
+            # generate field for each tag
+            tag_tuple = all_program_tags[key]
+            if tag_tuple[4]:
+                self.categories.add(tag_tuple[3])
+                self.fields[key] = getattr(forms, "BooleanField" if tag_tuple[0] else "CharField")(help_text=tag_tuple[1], initial = tag_tuple[2], required = False)
+                set_val = Tag.getBooleanTag(key, program = self.program) if tag_tuple[0] else Tag.getProgramTag(key, program = self.program)
+                if set_val != None and set_val != self.fields[key].initial:
+                    self.fields[key].initial = set_val
+
+    def save(self):
+        prog = self.program
+        for key in all_program_tags:
+            # Update tags if necessary
+            tag_tuple = all_program_tags[key]
+            if tag_tuple[4]:
+                set_val = self.cleaned_data[key]
+                global_val = Tag.getBooleanTag(key, default = tag_tuple[2]) if tag_tuple[0] else Tag.getProgramTag(key, default = tag_tuple[2])
+                if not set_val in ("", "None", None, global_val):
+                    # Set a [new] tag if a value was provided and the value is not the default (or if it is but there is also a global tag set)
+                    Tag.setTag(key, prog, set_val)
+                else:
+                    # Otherwise, delete the old tag, if there is one
+                    Tag.unSetTag(key, prog)
+
+    class Meta:
+        fieldsets = [(cat, {'fields': [key for key in sorted(all_program_tags.keys()) if all_program_tags[key][3] == cat], 'legend': tag_categories[cat]}) for cat in sorted(tag_categories.keys())]

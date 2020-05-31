@@ -1,0 +1,70 @@
+{% extends "program/modules/studentonsite/webapp.html" %}
+
+{% block body %}
+<center>
+  <div class="main">
+    <table class="sectioninfo">
+        <thead>
+            <th colspan="2" class="sectiontitle">
+                <i>Info for {{ section }}</i>
+            </th>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="width:35%">Description:</td>
+                <td style="font-size: 2vh;">
+                    {{ section.parent_class.class_info }}
+                </td>
+            </tr>
+            <tr>
+                <td>Room:</td>
+                <td>
+                    {% if checked_in %}{% if section.initial_rooms %}{% for r in section.initial_rooms %}{{ r.name }} (<a href="/learn/{{one}}/{{two}}/onsitemap/{{ r.id }}">map</a>){% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %}{% else %}You are not checked in{% endif %}
+                </td>
+            </tr>
+                <td>Time:</td>
+                <td>{% if section.friendly_times|length_is:0 %}Unassigned{% else %}{% for f in section.friendly_times_with_date %}{{ f }}{% endfor %}{% endif %}</td>
+            </tr>
+            <tr>
+                <td>Teacher(s):</td>
+                <td>
+                    {% for t in section.parent_class.get_teachers %}{% ifnotequal t user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}<br />
+                    (<a href="mailto:{{ section.emailcode }}-teachers@{{ EMAIL_HOST_SENDER }}">email</a>)
+                </td>
+            </tr>
+            {% if section.parent_class.documents.count > 0 %}
+            <tr>
+                <td>Document uploads:</td>
+                <td>
+                    {% for doc in section.parent_class.documents.all %}
+                        <a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a><br />
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endif %}
+            {% if section.parent_class.got_index_qsd %}
+            <tr>
+                <td>Website:</td>
+                <td>
+                    <a href="/learn/{{ section.parent_class.url }}/index.html" title="{{ section }}...">Visit web page</a>
+                </td>
+            </tr>
+            {% endif %}
+            {% if has_survey %}
+            <tr>
+                <td>Class Survey:</td>
+                <td>
+                    {% if has_started %}
+                        <a href="/learn/{{one}}/{{two}}/onsitesurvey?sec={{ section.id }}" title="{{ section }}...">Take survey for this class</a>
+                    {% else %}
+                        Survey not available until class has begun
+                    {% endif %}
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+  </div>
+</center>
+
+{% endblock %}

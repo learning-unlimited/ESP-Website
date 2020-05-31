@@ -311,6 +311,22 @@ function update_checkboxes()
             }
         }
     }
+    
+    function return_section(sched_td) {
+        // Move entire old section back to original row
+        if (sched_td.data("section") != undefined & sched_td.data("row") != undefined){
+            var sec_id = sched_td.data("section");
+            var sec_row = sched_td.data("row");
+            for (var ts_id of data.sections[sec_id].event_ids) {
+                var sched_td_old = $j(".schedule > .timeslot_" + ts_id);
+                var section_td_blank = $j(".sections").eq(sec_row).children(".timeslot_" + ts_id);
+                // Move old section into original row
+                section_td_blank.replaceWith(sched_td_old.clone(true));
+                // Clear spot in schedule
+                sched_td_old.replaceWith($j("<td/>").addClass("timeslot_" + ts_id));
+            }
+        }
+    }
 
     // Find the classes that the student is enrolled in,
     // highlight them and bring them to the top.
@@ -320,19 +336,32 @@ function update_checkboxes()
         var section = data.sections[state.student_schedule[i]];
         for (var j in section.timeslots)
         {
+            // Get current section in schedule
+            var sched_td = $j(".schedule > .timeslot_" + section.timeslots[j]);
+            if (sched_td.hasClass("section")){
+                return_section(sched_td);
+            }
             occupied_timeslots[section.timeslots[j]] = section.id;
+            var section_td = $j("#section_" + section.id + "_" + section.timeslots[j]);
+            var section_td_old = section_td.clone(true);
+            // Replace section td with blank td
+            section_td.replaceWith($j("<td/>").addClass("timeslot_" + section.timeslots[j]));
+            section_td_old.addClass("student_enrolled");
+            // Move section into schedule
+            sched_td = $j(".schedule > .timeslot_" + section.timeslots[j]);
+            sched_td.replaceWith(section_td_old);
             var studentcheckbox = $j("#classchange_" + section.id + "_" + state.student_id + "_" + section.timeslots[j]);
-            var section_elem = $j("#section_" + section.id + "_" + section.timeslots[j]);
-            section_elem.addClass("student_enrolled");
-            var section_col = section_elem.parent();
-            section_elem.detach();
-            section_col.prepend(section_elem);
             studentcheckbox.attr("checked", "checked");
             studentcheckbox.removeAttr("disabled");
             studentcheckbox.unbind("change");
             studentcheckbox.change(handle_checkbox);
         }
     }
+    
+    // Move other sections back into grid
+    $j(".schedule > .section:not(.student_enrolled)").each(function() {
+        return_section($j(this));
+    });
 
     if (settings.hide_conflicting)
     {
@@ -772,18 +801,11 @@ function setup_autocomplete()
 
 function clear_table()
 {
-    $j(".section").removeClass("section_highlight");
-    $j(".section").removeClass("section_conflict");
-    $j(".section").removeClass("student_enrolled");
-
-    for (var ts_id in data.timeslots)
-    {
-        var div_name = "timeslot_" + ts_id;
-        var ts_div = $j("#" + div_name);
-        
-        ts_div.html("");
-    }
+    $j("tr.sections, tr.schedule").remove();
+    $j(".timeslot_header, .timeslot_footer").remove();
 }
+
+
 
 /*  This function turns the data structure populated by handle_completed() (below)
     into a table displaying the enrollment and check-in status of all sections. 
@@ -792,7 +814,15 @@ function render_table(display_mode, student_id)
 {
     render_category_options();
     clear_table();
-    for (var ts_id in data.timeslots)
+    if (display_mode == "classchange") {
+        $j("<tr/>").addClass("schedule").insertAfter($j(".timeslot_headers"));
+	var schedule = $j(".schedule");
+    }
+    var headers = $j(".timeslot_headers");
+    var footers = $j(".timeslot_footers");
+    var timeslots_ordered = Object.keys(data.timeslots)
+    timeslots_ordered.sort((a, b) => (data.timeslots[a].startTimeMillis > data.timeslots[b].startTimeMillis) ? 1 : -1)
+    for (var ts_id of timeslots_ordered)
     {
         var timeSlotHeader = data.timeslots[ts_id].label;
 
@@ -808,119 +838,181 @@ function render_table(display_mode, student_id)
             }
         }
 
-        var div_name = "timeslot_" + ts_id;
-        var ts_div = $j("#" + div_name);
+        headers.append($j("<th/>").addClass("timeslot_" + ts_id + " timeslot_header timeslot_top").html(timeSlotHeader));
+        footers.append($j("<th/>").addClass("timeslot_" + ts_id + " timeslot_header").html(timeSlotHeader));
+	
+	if (display_mode == "classchange") {
+	    schedule.append($j("<td/>").addClass("timeslot_" + ts_id));
+	}
+    }
+    
+    for (var sec_id in data.sections)
+    {
+        var row = 0;
+        var new_row = false;
+        var section = data.sections[sec_id];
+        var parent_class = data.classes[section.class_id];
         
-        ts_div.append($j("<div/>").addClass("timeslot_header timeslot_top").html(timeSlotHeader));
-        var classes_div = $j("<div/>");
-        for (var i in data.timeslots[ts_id].sections)
-        {
-            var section = data.sections[data.timeslots[ts_id].sections[i]];
-            var parent_class = data.classes[section.class_id];
-            
-            var new_div = $j("<div/>").addClass("section");
-            new_div.addClass("section_category_" + parent_class.category__id);
-            
-            if (display_mode == "classchange")
-            {
-                var studentcheckbox = $j("<input/>").attr("type", "checkbox").attr("id", "classchange_" + section.id + "_" + student_id + "_" + ts_id).addClass("classchange_checkbox");
-                //  Parameters of these checkboxes will be set in the update_checkboxes() function above
-                new_div.append(studentcheckbox);
-            }
-            
-            //  Hide the class if the current student is outside the grade range (and we are filtering by grade)
-            if ((display_mode == "classchange") && ((section.grade_min > data.students[student_id].grade) || (section.grade_max < data.students[student_id].grade)))
-            {
-                if ((!(settings.disable_grade_filter)) && (data.students[student_id].sections.indexOf(section.id) == -1))
-                    new_div.addClass("section_hidden");
-            }
-            
-            //  Hide the class if it's full (and we are filtering full classes)
-            if (section.num_students_enrolled >= section.capacity)
-            {
-                if ((!(settings.show_full_classes)) && ((display_mode == "status") || (data.students[student_id].sections.indexOf(section.id) == -1)))
-                    new_div.addClass("section_hidden");
-            }
-            
-	    //  Hide the class if its registration is closed (and we're not showing closed classes)
-	    if ((!(settings.show_closed_reg)) && (section.registration_status != 0))
-                new_div.addClass("section_hidden");
-            
-            new_div.append($j("<span/>").addClass("emailcode").html(section.emailcode));
-            if (settings.show_class_rooms)
-            {
-                new_div.append($j("<span/>").addClass("room").html(section.rooms));
-            }
-            //  TODO: make this snap to the right reliably
-            new_div.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
-
-            //  Hide the class if it started in the past (and we're not showing past timeblocks)
-            if (settings.hide_past_time_blocks && section.timeslots.length > 1)
-            {
-                for (var j in section.timeslots)
-                {
-                    var sec_ts_id = section.timeslots[j];
-                    var startTimeMillis = data.timeslots[sec_ts_id].startTimeMillis;
-                    //excludes timeslots that have a start time 20 minutes prior to the current time
-                    var differenceInMinutes = Math.floor((Date.now() - startTimeMillis)/60000);
-
-                    if (differenceInMinutes > minMinutesToHideTimeSlot)
-                        new_div.addClass("section_hidden");
+        //find row closest to the top that can contain the event
+        if (section.event_ids.length > 0) {
+            Loop1: while (true) {
+                if (row >= $j("table#timeslots > * > tr.sections").length) {
+                    //we've run out of existing rows, need to make a new row
+                    new_row = true;
+                    break Loop1;
+                }
+                Loop2: for (var ts_id of section.event_ids) {
+                    var ts_tds = document.querySelectorAll('tr.sections .timeslot_'+ ts_id);
+                    if ($j(ts_tds[row]).hasClass('section')) {
+                        //conflict in this row, check next row
+                        row += 1;
+                        break Loop2;
+                    }
+                    if (ts_id == section.event_ids[section.event_ids.length - 1]) {
+                        //no conflicts in this row, use it
+                        break Loop1;
+                    }
                 }
             }
+            
+            //Make a custom td for the section in the specified timeslot
+            function custom_td(ts_id) {
+                var new_td = $j("<td/>").addClass("section");
+                new_td.addClass("timeslot_" + ts_id);
+                new_td.addClass("section_category_" + parent_class.category__id);
+                new_td.data("section", section.id);
+                new_td.data("row", row);
+                
+                if (display_mode == "classchange")
+                {
+                    var studentcheckbox = $j("<input/>").attr("type", "checkbox").attr("id", "classchange_" + section.id + "_" + student_id + "_" + ts_id).addClass("classchange_checkbox");
+                    //  Parameters of these checkboxes will be set in the update_checkboxes() function above
+                    new_td.append(studentcheckbox);
+                }
+                
+                //  Hide the class if the current student is outside the grade range (and we are filtering by grade)
+                if ((display_mode == "classchange") && ((section.grade_min > data.students[student_id].grade) || (section.grade_max < data.students[student_id].grade)))
+                {
+                    if ((!(settings.disable_grade_filter)) && (data.students[student_id].sections.indexOf(section.id) == -1))
+                        new_td.addClass("section_hidden");
+                }
+                
+                //  Hide the class if it's full (and we are filtering full classes)
+                if (section.num_students_enrolled >= section.capacity)
+                {
+                    if ((!(settings.show_full_classes)) && ((display_mode == "status") || (data.students[student_id].sections.indexOf(section.id) == -1)))
+                        new_td.addClass("section_hidden");
+                }
+                
+                //  Hide the class if its registration is closed (and we're not showing closed classes)
+                if ((!(settings.show_closed_reg)) && (section.registration_status != 0))
+                    new_td.addClass("section_hidden");
+                
+                new_td.append($j("<span/>").addClass("emailcode").html(section.emailcode));
+                if (settings.show_class_rooms)
+                {
+                    new_td.append($j("<span/>").addClass("room").html(section.rooms));
+                }
+                //  TODO: make this snap to the right reliably
+                new_td.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_attending.toString() + "/" + section.num_students_checked_in + "/" + section.num_students_enrolled + "/" + section.capacity));
 
-            // Show the class title if we're not in compact mode
-            if (settings.show_class_titles)
-            {
-                new_div.append($j("<div/>").addClass("title").html(section.title));
+                //  Hide the class if it started in the past (and we're not showing past timeblocks)
+                if (settings.hide_past_time_blocks)
+                {
+                    for (var j in section.timeslots)
+                    {
+                        var sec_ts_id = section.timeslots[j];
+                        var startTimeMillis = data.timeslots[sec_ts_id].startTimeMillis;
+                        //excludes timeslots that have a start time 20 minutes prior to the current time
+                        var differenceInMinutes = Math.floor((Date.now() - startTimeMillis)/60000);
+
+                        if (differenceInMinutes > minMinutesToHideTimeSlot)
+                            new_td.addClass("section_hidden");
+                    }
+                }
+
+                // Show the class title if we're not in compact mode
+                if (settings.show_class_titles)
+                {
+                    new_td.append($j("<div/>").addClass("title").html(section.title));
+                }
+                
+                //  Create a tooltip with more information about the class
+                new_td.addClass("tooltip");
+                var tooltip_div = $j("<span/>").addClass("tooltip_hover");
+                var class_data = data.classes[section.class_id];
+                var short_data = section.title + " - Grades " + class_data.grade_min.toString() + "--" + class_data.grade_max.toString();
+                if(class_data.hardness_rating) short_data = class_data.hardness_rating + " " + short_data;
+                tooltip_div.append($j("<div/>").addClass("tooltip_title").html(short_data));
+                // TODO: more reliable way to compute friendly_times?
+                var first_timeslot = section.timeslots[0];
+                var last_timeslot = section.timeslots[section.timeslots.length-1];
+                var start_time = data.timeslots[first_timeslot].label.split("--")[0];
+                var end_time = data.timeslots[last_timeslot].label.split("--")[1];
+                var friendly_times = start_time + "--" + end_time + " (" + section.timeslots.length + " blocks)";
+                tooltip_div.append($j("<div/>").html(friendly_times));
+                tooltip_div.append($j("<div/>").html(section.num_students_attending.toString() + " students attending class, " + section.num_students_checked_in + " students checked in to program, " + section.num_students_enrolled + " enrolled; capacity = " + section.capacity));
+                tooltip_div.append($j("<div/>").addClass("tooltip_teachers").html(class_data.teacher_names));
+                tooltip_div.append($j("<div/>").attr("id", "tooltip_" + section.id + "_" + ts_id + "_desc").addClass("tooltip_description").html(class_data.class_info));
+                if(class_data.prereqs)
+                {
+                    tooltip_div.append($j("<div/>").attr("id", "tooltip_" + section.id + "_" + ts_id + "_prereq").addClass("tooltip_prereq").html("Prereqs: " + class_data.prereqs));
+                }
+                new_td.append(tooltip_div);
+                
+                //  Set color of the cell based on check-in and enrollment of the section
+                var hue = 0.4 + 0.4 * (section.num_students_enrolled / section.capacity);
+                if (section.num_students_enrolled >= section.capacity)
+                    hue = 1.0;
+                var lightness = 0.9;
+                if (settings.checkin_colors)
+                    lightness -= 0.5 * (section.num_students_checked_in / section.num_students_enrolled);
+                var saturation = 0.8;
+                if (hue > 1.0)
+                    hue = 1.0;
+                if (section.num_students_enrolled == 0)
+                    lightness = 0.9;
+                new_td.css("background", hslToHTML(hue, saturation, lightness));
+                new_td.attr("id", "section_" + section.id + "_" + ts_id);
+                
+                //Style the td based on its position within all event_ids
+                if (section.event_ids.length > 1) {
+                    var ts_ind = section.event_ids.indexOf(parseInt(ts_id));
+                    if (ts_ind > 0) {
+                        new_td.addClass("section_left_open");
+                    }
+                    if (ts_ind < (section.event_ids.length - 1)){
+                        new_td.addClass("section_right_open");
+                    }
+                }
+                return new_td;
             }
             
-            //  Create a tooltip with more information about the class
-            new_div.addClass("tooltip");
-            var tooltip_div = $j("<span/>").addClass("tooltip_hover").attr("id", div_name);
-            var class_data = data.classes[section.class_id];
-            var short_data = section.title + " - Grades " + class_data.grade_min.toString() + "--" + class_data.grade_max.toString();
-            if(class_data.hardness_rating) short_data = class_data.hardness_rating + " " + short_data;
-            tooltip_div.append($j("<div/>").addClass("tooltip_title").html(short_data));
-            // TODO: more reliable way to compute friendly_times?
-            var first_timeslot = section.timeslots[0];
-            var last_timeslot = section.timeslots[section.timeslots.length-1];
-            var start_time = data.timeslots[first_timeslot].label.split("--")[0];
-            var end_time = data.timeslots[last_timeslot].label.split("--")[1];
-            var friendly_times = start_time + "--" + end_time + " (" + section.timeslots.length + " blocks)";
-            tooltip_div.append($j("<div/>").html(friendly_times));
-            tooltip_div.append($j("<div/>").html(section.num_students_checked_in.toString() + " students checked in, " + section.num_students_enrolled + " enrolled; capacity = " + section.capacity));
-            tooltip_div.append($j("<div/>").addClass("tooltip_teachers").html(class_data.teacher_names));
-            tooltip_div.append($j("<div/>").attr("id", "tooltip_" + section.id + "_" + ts_id + "_desc").addClass("tooltip_description").html(class_data.class_info));
-            if(class_data.prereqs)
-            {
-                tooltip_div.append($j("<div/>").attr("id", "tooltip_" + section.id + "_" + ts_id + "_prereq").addClass("tooltip_prereq").html("Prereqs: " + class_data.prereqs));
+            if (new_row) {
+                //make new row
+                var new_tr = $j("<tr/>").addClass("sections").insertBefore($j(".timeslot_footers"));
+                //loop through timeslots
+                for (var ts_id of timeslots_ordered) {
+                    if (section.event_ids.includes(parseInt(ts_id))) {                    
+                        //make section tds if timeslot in event_ids
+                        var new_td = custom_td(ts_id);
+                    } else {
+                        //blank tds otherwise
+                        var new_td = $j("<td/>").addClass("timeslot_" + ts_id);
+                    }
+                    new_tr.append(new_td);
+                }
+            } else {
+                //find existing blank cells and replace them
+                for (var ts_id of section.event_ids) {
+                    var new_td = custom_td(ts_id);
+                    //Customize cell with other attributes
+                    var ts_tds = document.querySelectorAll('tr.sections .timeslot_'+ ts_id);
+                    $j(ts_tds[row]).replaceWith(new_td);
+                    
+                }
             }
-            new_div.append(tooltip_div);
-            
-            //  Set color of the cell based on check-in and enrollment of the section
-            var hue = 0.4 + 0.4 * (section.num_students_enrolled / section.capacity);
-            if (section.num_students_enrolled >= section.capacity)
-                hue = 1.0;
-            var lightness = 0.9;
-            if (settings.checkin_colors)
-                lightness -= 0.5 * (section.num_students_checked_in / section.num_students_enrolled);
-            var saturation = 0.8;
-            if (hue > 1.0)
-                hue = 1.0;
-            if (section.num_students_enrolled == 0)
-                lightness = 0.9;
-            new_div.css("background", hslToHTML(hue, saturation, lightness));
-            new_div.attr("id", "section_" + section.id + "_" + ts_id);
-
-            classes_div.append(new_div);
         }
-
-        
-
-
-        ts_div.append(classes_div);
-        ts_div.append($j("<div/>").addClass("timeslot_header").html(data.timeslots[ts_id].label));
     }
     if (display_mode == "classchange") {
         update_checkboxes();
@@ -1087,6 +1179,8 @@ function populate_classes()
             new_sec.capacity = parent_class.class_size_max_optimal;
         if ((new_sec.max_class_capacity) && (new_sec.max_class_capacity < new_sec.capacity))
             new_sec.capacity = new_sec.max_class_capacity;
+        // Sort event_ids by start time of timeslots
+        new_sec.event_ids.sort((a, b) => (data.timeslots[a].startTimeMillis > data.timeslots[b].startTimeMillis) ? 1 : -1)
         new_sec.timeslots = new_sec.event_ids;
         for (var j in new_sec.timeslots)
         {
@@ -1199,15 +1293,19 @@ function populate_counts()
     {
         var sec_id = data.counts[i][0];
         var num_students = data.counts[i][1];
+        var num_students_attending = data.counts[i][2];
         
         //  If we have a conflict, assume the larger number of students are enrolled.
         if (!data.sections[sec_id])
             console.log("Could not find section " + sec_id);
-        else if (data.sections[sec_id].num_students_enrolled != num_students)
-        {
-            //  console.log("Warning: Section " + sec_id + " claims to have " + num_students + " students but " + data.sections[sec_id].num_students_enrolled + " are enrolled.");
-            if (num_students > data.sections[sec_id].num_students_enrolled)
-                data.sections[sec_id].num_students_enrolled = num_students;
+        else {
+            data.sections[sec_id].num_students_attending = num_students_attending;
+            if (data.sections[sec_id].num_students_enrolled != num_students)
+            {
+                //  console.log("Warning: Section " + sec_id + " claims to have " + num_students + " students but " + data.sections[sec_id].num_students_enrolled + " are enrolled.");
+                if (num_students > data.sections[sec_id].num_students_enrolled)
+                    data.sections[sec_id].num_students_enrolled = num_students;
+            }
         }
     }
 }

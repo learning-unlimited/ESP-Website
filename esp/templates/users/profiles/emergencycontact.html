@@ -16,18 +16,19 @@ if (document.getElementById("id_phone_cell") && document.getElementById("id_guar
   document.getElementById("id_copy_parent_info").style.display = '';
 }
 function copy_parent_info() {
-  document.getElementById("id_emerg_first_name").value = document.getElementById("id_guard_first_name").value;
-  document.getElementById("id_emerg_last_name").value = document.getElementById("id_guard_last_name").value;
-  document.getElementById("id_emerg_e_mail").value = document.getElementById("id_guard_e_mail").value;
-  document.getElementById("id_emerg_phone_cell").value = document.getElementById("id_guard_phone_cell").value;
-  document.getElementById("id_emerg_address_street").value = document.getElementById("id_address_street").value;
-  document.getElementById("id_emerg_address_city").value = document.getElementById("id_address_city").value;
-  document.getElementById("id_emerg_address_state").value = document.getElementById("id_address_state").value;
-  document.getElementById("id_emerg_address_zip").value = document.getElementById("id_address_zip").value;
-  document.getElementById("id_emerg_phone_day").value = document.getElementById("id_guard_phone_day").value;
+  $j("#id_emerg_first_name").val($j("#id_guard_first_name").val());
+  $j("#id_emerg_last_name").val($j("#id_guard_last_name").val());
+  $j("#id_emerg_e_mail").val($j("#id_guard_e_mail").val());
+  $j("#id_emerg_phone_cell").val($j("#id_guard_phone_cell").val());
+  $j("#id_emerg_address_street").val($j("#id_address_street").val());
+  $j("#id_emerg_address_city").val($j("#id_address_city").val());
+  $j("#id_emerg_address_state").val($j("#id_address_state").val());
+  $j("#id_emerg_address_zip").val($j("#id_address_zip").val());
+  $j("#id_emerg_phone_day").val($j("#id_guard_phone_day").val());
 }
 </script>
 
+{% if form.emerg_first_name %}
 <div class="control-group">
  <label class="control-label" for="id_emerg_first_name">First Name:</label>
  <div class="controls">
@@ -36,7 +37,9 @@ function copy_parent_info() {
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.emerg_last_name %}
 <div class="control-group">
  <label class="control-label" for="id_emerg_last_name">Last Name:</label>
  <div class="controls">
@@ -45,7 +48,9 @@ function copy_parent_info() {
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.emerg_e_mail %}
 <div class="control-group">
  <label class="control-label" for="id_emerg_e_mail">Email address:</label>
  <div class="controls">
@@ -54,9 +59,13 @@ function copy_parent_info() {
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.emerg_address_street or form.emerg_address_city or form.emerg_address_state or form.emerg_address_zip %}
 <h4>Address:</h4>
+{% endif %}
 
+{% if form.emerg_address_street %}
 <div class="control-group">
     <label class="control-label" for="id_emerg_address_street">
     <small><i>street</i></small>
@@ -67,10 +76,12 @@ function copy_parent_info() {
     {% endif %}
     </div>
 </div>
+{% endif %}
 
+{% if form.emerg_address_city or form.emerg_address_state or form.emerg_address_zip %}
 <div class="control-group">
     <label class="control-label" for="id_emerg_address_city">
-    <small><i>city/state/zip</i></small>
+    <small><i>{% if form.emerg_address_city %}city/{% endif %}{% if form.emerg_address_state %}state/{% endif %}{% if form.emerg_address_zip %}zip{% endif %}</i></small>
     </label>
     <div class="controls controls-row">
         {{ form.emerg_address_city }} {% if form.emerg_address_city.errors %}
@@ -86,9 +97,13 @@ function copy_parent_info() {
         {% endif %}
     </div>
 </div>
+{% endif %}
 
+{% if form.emerg_phone_day or form.emerg_phone_cell %}
 <h4>Phone numbers:</h4>
+{% endif %}
 
+{% if form.emerg_phone_day %}
 <div class="control-group">
  <small><i><label class="control-label" for="id_emerg_phone_day">home</label></i></small>
  <div class="controls">
@@ -97,7 +112,9 @@ function copy_parent_info() {
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.emerg_phone_cell %}
 <div class="control-group">
  <small><i><label class="control-label" for="id_emerg_phone_cell">cell</label></i></small>
  <div class="controls">
@@ -106,5 +123,6 @@ function copy_parent_info() {
    {% endif %}
 </div>
 </div>
+{% endif %}
 
 <!-- End Emergency Contact -->
