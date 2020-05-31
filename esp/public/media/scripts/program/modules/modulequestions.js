@@ -15,7 +15,7 @@ $j(document).ready(function(){
 function questionsToModules() {
     var nQuestions = $j("#id_program_module_questions").children().length;
     var modules = [];
-    for (int i=0; i < nQuestions; i++) {
+    for (var i=0; i < nQuestions; i++) {
         // record which questions are checked (and save their corresponding modules)
         if ($j("#id_program_module_questions_" + String(i)).prop("checked"))
             $j.merge(modules, $j("#id_program_module_questions_"+i).val().split(","))
@@ -42,7 +42,7 @@ function modulesToQuestions() {
     var questions = $j("#id_program_module_questions").children()
     // check if all the modules associated with a given question are selected
     // if so, check that box
-    for (int i=0; i < questions.length; i++) {
+    for (var i=0; i < questions.length; i++) {
         var q = questions[i];
         var qvalslist = q.firstChild.firstChild.value.split(",");
         var include = true;
@@ -52,7 +52,7 @@ function modulesToQuestions() {
                   + q.textContent);
         }
         else {
-            for (int j=0; j < qvalslist.length; j++) {
+            for (var j=0; j < qvalslist.length; j++) {
                 if (!currentlySelectedIds.includes(qvalslist[j])) {
                     include = false;
                 }
