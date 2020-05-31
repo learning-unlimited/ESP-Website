@@ -45,7 +45,8 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
             "link_title": "Teacher Onsite",
             "admin_title": "Teacher Onsite Webapp",
             "module_type": "teach",
-            "seq": -9999
+            "seq": -9999,
+            "choosable": 1
             }
 
     @main_call

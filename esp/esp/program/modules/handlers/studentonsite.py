@@ -53,7 +53,8 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
             "link_title": "Student Onsite",
             "admin_title": "Student Onsite Webapp",
             "module_type": "learn",
-            "seq": 9999
+            "seq": 9999,
+            "choosable": 1
             }
 
     @main_call
