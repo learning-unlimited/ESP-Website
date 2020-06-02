@@ -690,7 +690,6 @@ class ResourceModule(ProgramModuleObj):
             context = { 'assignment' : assignment }
             response = json.dumps({
                 'assignment_name': render_to_string(self.baseDir()+'assignment_name.html', context = context, request = request),
-                'assignment_detail': render_to_string(self.baseDir()+'assignment_detail.html', context = context, request = request),
             })
             return HttpResponse(response, content_type='application/json')
         else:
@@ -701,16 +700,35 @@ class ResourceModule(ProgramModuleObj):
     @needs_admin
     def editassignment(self, request, tl, one, two, module, extra, prog):
         '''Given a post request, take extra as the id of the resource assignment, update whether it's returned using the post data, and return its new detail display.'''
-        if not extra or request.method != 'POST':
+        if request.method != 'POST' or 'id' not in request.POST or 'returned' not in request.POST:
             return HttpResponseBadRequest('')
-        results = ResourceAssignment.objects.filter(id=extra)
+        results = ResourceAssignment.objects.filter(id=request.POST['id'])
         if not len(results): #Use len() since we will evaluate it anyway
             return HttpResponseBadRequest('')
         assignment = results[0]
-        assignment.returned = 'returned' in request.POST
+        assignment.returned = request.POST['returned'] == "true"
         assignment.save()
         context = { 'assignment' : assignment }
-        return render_to_response(self.baseDir()+'assignment_detail.html', request, context)
+        return render_to_response(self.baseDir()+'assignment_name.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def getavailableequipment(self, request, tl, one, two, module, extra, prog):
+        if request.method != 'POST' or 'secid' not in request.POST:
+            return HttpResponseBadRequest('')
+        results = ClassSection.objects.filter(id=request.POST['secid'])
+        if not len(results): #Use len() since we will evaluate it anyway
+            return HttpResponseBadRequest('')
+        section = results[0]
+        resources = prog.getFloatingResources()
+        resource_list = []
+        # filter to only resources available for all timeslots for specified section
+        for resource in resources:
+            if all([ts in resource.available_times(program = prog) for ts in section.meeting_times.all()]):
+                resource_list.append(resource)
+        # Maybe include number remaining of each available resource?
+        response = json.dumps({res.id:res.name for res in resource_list})
+        return HttpResponse(response, content_type='application/json')
 
     @aux_call
     @needs_admin

@@ -71,17 +71,6 @@ select.fqb-type {
 .assignment-header {
     margin: 2px;
     padding: 2px;
-    cursor: pointer;
-}
-
-.assignment-header:not(.active) .assignment-name:after {
-    content: '\002B';
-    font-weight: 900;
-}
-
-.assignment-header.active .assignment-name:after {
-    content: '\2212';
-    font-weight: 900;
 }
 
 .assignment-detail {

@@ -218,7 +218,7 @@
                     {% include "program/modules/resourcemodule/assignment_name.html" %}
                 {% endfor %}
             </div>
-            <button class="add-assignment btn">checkout resource</button>
+            <button class="add-assignment btn" data-section="{{ section.id }}" data-geturl="/manage/{{program.getUrlBase}}/getavailableequipment/">checkout resource</button>
             <div class="section-detail-info"
                  style="display: none;"
                  data-class-id="{{section.parent_class.id}}"
@@ -236,9 +236,6 @@
                 </div>
             {% endif %}
             <div class="fqr-class-assignments-detail">
-                {% for assignment in section.resourceassignments.all %}
-                    {% include "program/modules/resourcemodule/assignment_detail.html" %}
-                {% endfor %}
                 {% include "program/modules/resourcemodule/new_assignment_form.html" %}
             </div>
         </div>
