@@ -50,6 +50,8 @@ We've added the ability to use generic links that redirect to the most recent/cu
 
 Program Creation and Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Simplified interface to select modules when creating or modifying a program. Now users check boxes about what functions you need rather than choosing modules by name, and most modules are automatically selected.
+- Only relevant and non-redundant modules are displayed on the main program management page (admin portal).
 - Added a page where you can modify all of the settings for a program (``/manage/[one]/[two]/settings``), including settings associated with the program itself, teacher registration, and student registration.
 - Added a page where you can modify the tag settings for a program (``/manage/[one]/[two]/tags``), with documentation and defaults for every tag.
 - Added a page where you can modify the global tag settings (``/manage/tags``), with documentation and defaults for every tag.
