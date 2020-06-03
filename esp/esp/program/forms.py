@@ -65,11 +65,11 @@ class ProgramCreationForm(BetterModelForm):
     program_type      = forms.CharField(label = "Program Type", help_text='e.g. Splash or Cascade')
     program_module_questions   = forms.MultipleChoiceField(choices=[],
                                                            label='Program Modules',
-                                                           widget=forms.CheckboxSelectMultiple(attrs={'class': 'input-xxlarge'}), # widget = forms.HiddenInput()
+                                                           widget=forms.CheckboxSelectMultiple(attrs={'class': 'input-xxlarge'}),
                                                            help_text=Program.program_modules.field.help_text,
                                                            required=False)
 
-    program_modules   = forms.MultipleChoiceField(choices=[])
+    program_modules   = forms.MultipleChoiceField(choices=[], widget = forms.HiddenInput())
 
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current modules. """
