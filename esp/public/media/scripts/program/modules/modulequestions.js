@@ -2,6 +2,7 @@
 $j(document).ready(function(){
     // when the page loads, check/select the questions induced by the modules
     // that are already selected (if any, from a template program e.g.)
+    $j(".hidden-field").parents("tr").hide()
     modulesToQuestions();
     // questionsToModules is called when the form gets submitted, but the following
     // is useful for debugging

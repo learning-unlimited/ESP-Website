@@ -69,7 +69,7 @@ class ProgramCreationForm(BetterModelForm):
                                                            help_text=Program.program_modules.field.help_text,
                                                            required=False)
 
-    program_modules   = forms.MultipleChoiceField(choices=[], widget = forms.HiddenInput())
+    program_modules   = forms.MultipleChoiceField(choices=[], widget = forms.SelectMultiple(attrs={'class': 'hidden-field'}))
 
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current modules. """
