@@ -34,7 +34,7 @@ class StudentWaiverModule(ProgramModuleObj):
     def isCompleted(self):
         return Record.objects.filter(user=get_current_request().user,
                                      program=self.program,
-                                     event="waiver").exists()
+                                     event="studentwaiver").exists()
 
     @main_call
     @needs_student
@@ -45,7 +45,7 @@ class StudentWaiverModule(ProgramModuleObj):
             context['form'] = studentwaiverform_factory(prog)(request.POST)
             rec, created = Record.objects.get_or_create(user=request.user,
                                                         program=self.program,
-                                                        event="waiver")
+                                                        event="studentwaiver")
             if context['form'].is_valid():
                 return self.goToCore(tl)
             else:
@@ -59,7 +59,7 @@ class StudentWaiverModule(ProgramModuleObj):
     def students(self, QObject = False):
         """ Returns a list of students who have completed the liability waiver. """
         from datetime import datetime
-        qo = Q(record__program=self.program, record__event="waiver")
+        qo = Q(record__program=self.program, record__event="studentwaiver")
         if QObject is True:
             return {'waiver': qo}
 
