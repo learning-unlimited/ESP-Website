@@ -172,18 +172,6 @@ class SchedulingCheckRunner:
          ('capacity_by_grade', 'Total capacity in each block by grade'),
          ('admins_teaching_per_timeblock', 'Admins teaching per timeslot')
 
-
-
-
-
-
-
-
-
-
-
-
-
      ]
 
      #################################################
