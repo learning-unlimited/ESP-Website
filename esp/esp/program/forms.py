@@ -129,7 +129,7 @@ class ProgramCreationForm(BetterModelForm):
     def clean_program_modules(self):
         mods = self.cleaned_data['program_modules'][:] # take a copy of the list to be safe
         if any([type(x) is not unicode for x in mods]):
-            raise TypeError('Bad type(s) going into PrograCreationForm:', set(type(x) for x in mods))
+            raise TypeError('Bad type(s) going into ProgramCreationForm:', set(type(x) for x in mods))
         # Add "include by default" modules (choosable property = 1)
         default_modules = ProgramModule.objects.filter(choosable=1)
         for m in default_modules:
