@@ -95,7 +95,7 @@ class JSONFormatter:
         output = {}
         output["help_text"] = help_text
         output["headings"] = map(str, headings)
-        output["body"] = [self._table_row([key] + [row[h] for h in headings if h]) for key, row in sorted(d.iteritems())]
+        output["body"] = [self._table_row([key] + [row[h] for h in headings if h]) for key, row in sorted(d.iter())]
         return output
 
 class SchedulingCheckRunner:
@@ -226,7 +226,10 @@ class SchedulingCheckRunner:
      #
      #################################################
      def lunch_blocks_setup(self):
-         lunch_block_strings = [[str(l) for l in lunch_block_list] for lunch_block_list in self.lunch_blocks]
+         lunch_block_strings = []
+         for lunch_block_list in self.lunch_blocks:
+            for l in lunch_block_list:
+                lunch_block_strings.append(str(l))
          return self.formatter.format_list(lunch_block_strings)
 
      def incompletely_scheduled_classes(self):
