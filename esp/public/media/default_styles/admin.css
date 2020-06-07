@@ -11,7 +11,8 @@ li {
 li label {
     float: none !important;
     width: auto !important;
-    text-indent: 0px !important;
+    text-indent: -18px !important;
+    padding-left: 18px;
     color: #000000 !important;
 }
 
