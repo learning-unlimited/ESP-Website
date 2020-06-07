@@ -702,7 +702,6 @@ class ResourceModule(ProgramModuleObj):
             'assignment_name': render_to_string(self.baseDir()+'assignment_name.html', context = context, request = request),
         })
         return HttpResponse(response, content_type='application/json')
-            
 
     @aux_call
     @needs_admin
