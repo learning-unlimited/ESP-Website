@@ -151,10 +151,10 @@ class SchedulingCheckRunner:
          ('special_classroom_types', 'Special Classroom Types'),
          ('room_capacity_mismatch', 'Class max size/room max size mismatches'),
          #Class Diagnostiscs
-         ('incompletely_scheduled_classes', 'Classes not completely scheduled or with gaps'),
          ('wrong_classroom_type', 'Classes in wrong classroom type'),
          ('classes_missing_resources', 'Unfulfilled resource requests'),
          ('missing_resources_by_hour', 'Unfulfilled resource requests by hour'),
+         ('incompletely_scheduled_classes', 'Classes not completely scheduled or with gaps'),
          ('classes_which_cover_lunch', 'Classes which are scheduled over lunch'),
          ('classes_wrong_length', 'Classes which are the wrong length'),
          ('no_overlap_classes', "Classes which shouldn't overlap"),
