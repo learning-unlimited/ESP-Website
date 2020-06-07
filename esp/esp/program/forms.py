@@ -45,6 +45,7 @@ from form_utils.forms import BetterModelForm, BetterForm
 from django.utils.safestring import mark_safe
 from esp.tagdict import all_global_tags, tag_categories
 from esp.tagdict.models import Tag
+from collections import OrderedDict
 
 def make_id_tuple(object_list):
     return tuple([(o.id, str(o)) for o in object_list])
@@ -74,45 +75,28 @@ class ProgramCreationForm(BetterModelForm):
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current modules. """
         # These modules are the "choosable" ones that admins will usually want to choose to select or exclude (i.e. not automatically include or exclude)
-        self.program_module_ids = [[x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Optional Fees', 'Accounting', 'Credit Card Payment Module (Stripe)', 'Financial Aid Application',                                                                                        'Easily Approve Financial Aid Requests'])],
-                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Accounting', 'Credit Card Payment Module (Stripe)', 'Financial Aid Application',
-                                                                                                'Easily Approve Financial Aid Requests'])],
-                                   [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Logistics Quiz')],
-                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Surveys', 'Survey Management'])],
-                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Surveys', 'Survey Management'])],
-                                   [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Custom Form')],
-                                   [x.id for x in ProgramModule.objects.filter(admin_title='Student Custom Form')],
-                                   [x.id for x in ProgramModule.objects.filter(admin_title='Student Lunch Period Selection')],
-                                   [x.id for x in ProgramModule.objects.filter(admin_title='Donation Module')],
-                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Training and Interview Signups', 'Manage Teacher Training and Interviews'])],
-                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Two-Phase Student Registration', 'Lottery Frontend'])],
-                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Registration Phase Zero', 'Manage Student Registration Phase Zero'])],
-                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Application Review for Admin', 'Admin Admissions Dashboard'])],
-                                   [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Admissions Dashboard', 'Application Reviews for Teachers', 'Application Review for Admin', 'Admin Admissions Dashboard'])]
-                                   ]
-        self.program_modules_questions = ['Will you have extra costs (shirts or lunch)?', # Accounting, Student Optional Fees, Credit Card Payment Module (Stripe), Financial Aid Application, Easily Approve Financial Aid Requests
-                                          'Will you charge for the program?', # Accounting, Credit Card Payment Module (Stripe), Financial Aid Application, Easily Approve Financial Aid Requests
-                                          'Do you want a pre-program quiz for teachers?', # Teacher Logistics Quiz
-                                          'Will you send any surveys to teachers?', # Teacher Surveys, Survey Management
-                                          'Will you send any surveys to students?', # Student Surveys, Survey Management
-                                          'Will you have any additional (non-survey) forms that teachers should fill out?', # Teacher Custom Form
-                                          'Will you have any additional (non-survey) forms that students should fill out?', # Student Custom Form
-                                          'Will you have more than one lunch period (per day)?', # Student Lunch Period Selection
-                                          'Would you be willing to solicit donations for LU?', # Donation Module
-                                          'Do you plan to have teacher training or interviews?', # Teacher Training and Interview Signups, Manage Teacher Training and Interviews
-                                          mark_safe('Will you use lottery admission (as opposed to first come, first served) to the <b>program</b>?'), # Two-Phase Student Registration, Lottery Frontend
-                                          mark_safe('Will you use lottery registration (as opposed to first come, first served) for <b>classes</b>?'), # Student Registration Phase Zero, Manage Student Registration Phase Zero
-                                          'Do students have to apply to individual classes?', # Application Review for Admin, Admin Admissions Dashboard
-                                          'If yes, can teachers admit them (as opposed to just admins)?' # Teacher Admissions Dashboard, Application Reviews for Teachers, Application Review for Admin, Admin Admissions Dashboard
-                                        ]
+        self.program_module_question_ids = OrderedDict({'Will you have extra costs (shirts or lunch)?': [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Optional Fees', 'Accounting', 'Credit Card Payment Module (Stripe)', 'Financial Aid Application', 'Easily Approve Financial Aid Requests'])],
+                                                        'Will you charge for the program?': [x.id for x in ProgramModule.objects.filter(admin_title__in=['Accounting', 'Credit Card Payment Module (Stripe)', 'Financial Aid Application', 'Easily Approve Financial Aid Requests'])],
+                                                        'Do you want a pre-program quiz for teachers?': [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Logistics Quiz')],
+                                                        'Will you send any surveys to teachers?': [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Surveys', 'Survey Management'])],
+                                                        'Will you send any surveys to students?': [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Surveys', 'Survey Management'])],
+                                                        'Will you have any additional (non-survey) forms that teachers should fill out?': [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Custom Form')],
+                                                        'Will you have any additional (non-survey) forms that students should fill out?': [x.id for x in ProgramModule.objects.filter(admin_title='Student Custom Form')],
+                                                        'Will you have more than one lunch period (per day)?': [x.id for x in ProgramModule.objects.filter(admin_title='Student Lunch Period Selection')],
+                                                        'Would you be willing to solicit donations for LU?': [x.id for x in ProgramModule.objects.filter(admin_title='Donation Module')],
+                                                        'Do you plan to have teacher training or interviews?': [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Training and Interview Signups', 'Manage Teacher Training and Interviews'])],
+                                                        mark_safe('Will you use lottery admission (as opposed to first come, first served) to the <b>program</b>?'): [x.id for x in ProgramModule.objects.filter(admin_title__in=['Two-Phase Student Registration', 'Lottery Frontend'])],
+                                                        mark_safe('Will you use lottery registration (as opposed to first come, first served) for <b>classes</b>?'): [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Registration Phase Zero', 'Manage Student Registration Phase Zero'])],
+                                                        'Do students have to apply to individual classes?': [x.id for x in ProgramModule.objects.filter(admin_title__in=['Application Review for Admin', 'Admin Admissions Dashboard'])],
+                                                        'If yes, can teachers admit them (as opposed to just admins)?': [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Admissions Dashboard', 'Application Reviews for Teachers', 'Application Review for Admin', 'Admin Admissions Dashboard'])]
+                                                       })
         # Include additional or new modules that haven't been added to the list
         for x in ProgramModule.objects.filter(choosable=0):
-            if x.id not in sum(self.program_module_ids, []):
-                self.program_modules_questions.append('Would you like to include the {} module?'.format(x.admin_title))
-                self.program_module_ids.append([x.id])
+            if x.id not in sum(self.program_module_question_ids.values(), []): # flatten list of modules
+                self.program_module_question_ids['Would you like to include the {} module?'.format(x.admin_title)] = [x.id]
         # Now initialize the form
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
-        self.fields['program_module_questions'].choices = [(','.join(map(str, ids)), q) for ids, q in zip(self.program_module_ids, self.program_modules_questions)]
+        self.fields['program_module_questions'].choices = [(','.join(map(str, ids)), q) for q, ids in self.program_module_question_ids.items()]
         self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())
         #   Enable validation on other fields
         self.fields['program_size_max'].required = True
@@ -143,7 +127,7 @@ class ProgramCreationForm(BetterModelForm):
         pass
 
     def clean_program_modules(self):
-        mods = self.cleaned_data['program_modules'][:]
+        mods = self.cleaned_data['program_modules'][:] # take a copy of the list to be safe
         if any([type(x) is not unicode for x in mods]):
             raise TypeError('Bad type(s) going into PrograCreationForm:', set(type(x) for x in mods))
         # Add "include by default" modules (choosable property = 1)
