@@ -53,7 +53,7 @@ from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 
-from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, ResourceChoiceForm, EquipmentForm, FurnishingFormForProgram, ClassroomImportForm, TimeslotImportForm, ResTypeImportForm, EquipmentImportForm, EquipmentAssignmentForm
+from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, ResourceChoiceForm, EquipmentForm, FurnishingFormForProgram, ClassroomImportForm, TimeslotImportForm, ResTypeImportForm, EquipmentImportForm
 
 from esp.program.controllers.resources import ResourceController
 
@@ -682,19 +682,27 @@ class ResourceModule(ProgramModuleObj):
     @needs_admin
     def newassignment(self, request, tl, one, two, module, extra, prog):
         '''Create a resource assignment from the POST data, and return its detail display.'''
-        if request.method != 'POST':
+        if request.method != 'POST' or 'resource' not in request.POST or 'target' not in request.POST:
             return HttpResponseBadRequest('')
-        form = EquipmentAssignmentForm(request.POST)
-        if form.is_valid():
-            assignment = form.save()
-            context = { 'assignment' : assignment }
-            response = json.dumps({
-                'assignment_name': render_to_string(self.baseDir()+'assignment_name.html', context = context, request = request),
-            })
-            return HttpResponse(response, content_type='application/json')
-        else:
-            # The user shouldn't be able to get here unless they're doing something really weird, so let's not bother to try to tell them where the error was; since this is asynchronous that would be a bit tricky.
+        results = ClassSection.objects.filter(id=request.POST['target'])
+        if not len(results): #Use len() since we will evaluate it anyway
             return HttpResponseBadRequest('')
+        section = results[0]
+        res_name = request.POST['resource']
+        res_list = []
+        for ts in section.meeting_times.all():
+            avail_res = [res for res in prog.getAvailableResources(ts, queryset=True) if res.name==res_name]
+            if not len(avail_res):
+                return HttpResponseBadRequest('')
+            res_list.append(avail_res[0])
+        for res in res_list:
+            res.assign_to_section(section)
+        context = { 'assignment' : ResourceAssignment.objects.get(resource=res_list[0]) }
+        response = json.dumps({
+            'assignment_name': render_to_string(self.baseDir()+'assignment_name.html', context = context, request = request),
+        })
+        return HttpResponse(response, content_type='application/json')
+            
 
     @aux_call
     @needs_admin
@@ -720,14 +728,13 @@ class ResourceModule(ProgramModuleObj):
         if not len(results): #Use len() since we will evaluate it anyway
             return HttpResponseBadRequest('')
         section = results[0]
-        resources = prog.getFloatingResources()
-        resource_list = []
+        ts_res_list = []
         # filter to only resources available for all timeslots for specified section
-        for resource in resources:
-            if all([ts in resource.available_times(program = prog) for ts in section.meeting_times.all()]):
-                resource_list.append(resource)
+        for ts in section.meeting_times.all():
+            ts_res_list.append([res.name for res in prog.getAvailableResources(ts, queryset=True)])
+        resource_list = set.intersection(*[set(x) for x in ts_res_list])
         # Maybe include number remaining of each available resource?
-        response = json.dumps({res.id:res.name for res in resource_list})
+        response = json.dumps({res:res for res in resource_list})
         return HttpResponse(response, content_type='application/json')
 
     @aux_call

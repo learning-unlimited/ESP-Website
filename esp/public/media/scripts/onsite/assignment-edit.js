@@ -1,5 +1,4 @@
 function submitAssignmentForm (event) {
-    console.log("submit");
     var form = $j(this);
     var data = form.serialize();
     $j.post(form.attr("action"), data, function (data) {
@@ -22,10 +21,14 @@ function addAssignment (event) {
     form_select.empty(); // remove old options
     // get and add new options
     $j.post($j(event.target).data("geturl"), {'csrfmiddlewaretoken': csrf_token(), 'secid' : $j(event.target).data("section")}, function (data) {
-        console.log(data)
-        $j.each(data, function(key,value) {
-            form_select.append($j("<option></option>").attr("value", key).text(value));
-        });
+        if (Object.keys(data).length > 0) {
+            $j.each(data, function(key,value) {
+                form_select.append($j("<option></option>").attr("value", key).text(value));
+            });
+        } else {
+            form_select.append($j("<option></option>").prop( "disabled", true ).prop( "selected", true ).text("No resources available"));
+            form_select.prop( "disabled", true );
+        }
     });
     assignmentForm.show().insertBefore(assignmentExtra);
 }

@@ -978,9 +978,9 @@ class Program(models.Model, CustomFormsLinkModel):
             result = self.collapsed_dict(res_list)
             return [result[c] for c in result]
 
-    def getAvailableResources(self, timeslot):
+    def getAvailableResources(self, timeslot, queryset=False):
         #   Filters down the floating resources to those that are not taken.
-        return filter(lambda x: x.is_available(), self.getFloatingResources(timeslot))
+        return filter(lambda x: x.is_available(), self.getFloatingResources(timeslot=timeslot, queryset=queryset))
 
     def getDurations(self, round_15=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
