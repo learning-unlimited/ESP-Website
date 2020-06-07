@@ -139,9 +139,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
             line_items = pac.get_lineitemtypes(required_only=True).values('amount_dec')
             prog_dict['base_cost'] = int(sum(x["amount_dec"] for x in line_items))
             prog_dict["sibling_discount"] = prog.sibling_discount
+            prog_dict['program_modules'] = prog.program_modules.all().values_list("id", flat=True)
             prog_dict['class_categories'] = prog.class_categories.all().values_list("id", flat=True)
             prog_dict['flag_types'] = prog.flag_types.all().values_list("id", flat=True)
-            prog_dict['program_modules'] = prog.program_modules.all().values_list("id", flat=True)
             prog_form = ProgramSettingsForm(prog_dict, instance = prog)
 
         if submitted_form != "crmi":

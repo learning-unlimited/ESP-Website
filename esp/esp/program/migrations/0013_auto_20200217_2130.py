@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.db import migrations, models
+from django.db import migrations
 import django.core.validators
 
 def set_my_defaults(apps, schema_editor):
     ProgramModule = apps.get_model('program', 'ProgramModule')
-    assert ProgramModule.__name__ == 'ProgramModule'
     for pm in ProgramModule.objects.all():
         mod = __import__("esp.program.modules.handlers.%s" % (pm.handler.lower()), (), (), [pm.handler])
         props = getattr(mod, pm.handler).module_properties()
@@ -35,7 +34,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='programmodule',
             name='choosable',
-            field=models.IntegerField(null=True),
+            field=models.IntegerField(null=False),
         ),
         migrations.RunPython(set_my_defaults, reverse_func),
         migrations.AlterField(
