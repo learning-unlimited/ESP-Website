@@ -80,3 +80,15 @@ color: lightgray;
 .jsonHeader{
     text-transform: capitalize;
 }
+.jsonColumn {
+	text-align: center;
+	padding: 10px;
+}
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+tr:hover {
+    background-color: #f2f2f2;
+}
+table td + td { border-left:1px solid black; }
+table th + th { border-left:1px solid black; }
