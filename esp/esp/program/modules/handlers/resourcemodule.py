@@ -747,7 +747,7 @@ class ResourceModule(ProgramModuleObj):
         if not len(results): #Use len() since we will evaluate it anyway
             return HttpResponseBadRequest('')
         assignment = results[0]
-        assignment.delete()
+        ResourceAssignment.objects.filter(target=assignment.target, resource__name=assignment.resource.name).delete()
         return HttpResponse('')
 
     class Meta:
