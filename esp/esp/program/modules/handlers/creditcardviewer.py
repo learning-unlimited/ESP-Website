@@ -45,7 +45,7 @@ class CreditCardViewer(ProgramModuleObj):
             "link_title": "View Credit Card Transactions",
             "module_type": "manage",
             "seq": 10000,
-            "choosable": 2,
+            "choosable": 0,
             }
 
     @main_call

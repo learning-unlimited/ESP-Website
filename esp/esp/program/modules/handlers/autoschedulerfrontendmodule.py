@@ -19,7 +19,7 @@ class AutoschedulerFrontendModule(ProgramModuleObj):
             "link_title": "Use the automatic scheduling tool",
             "module_type": "manage",
             "seq": 50,
-            "choosable": 1,
+            "choosable": 2,
             }
 
     @main_call
