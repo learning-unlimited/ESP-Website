@@ -34,7 +34,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='programmodule',
             name='choosable',
-            field=models.IntegerField(null=False),
+            field=models.IntegerField(null=False, default=0),
         ),
         migrations.RunPython(set_my_defaults, reverse_func),
         migrations.AlterField(
