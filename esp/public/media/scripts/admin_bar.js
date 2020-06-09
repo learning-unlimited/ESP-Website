@@ -80,7 +80,7 @@ if (currentPrograms && currentPrograms.forEach) {
 }
 
 ESP.registerAdminModule({
-    content_html: '<a href="/manage/programs/">Manage other programs</a><br/><a href="/manage/pages">Manage static pages</a><br /><a href="/admin/">Administration pages</a><br /><a href="/admin/filebrowser/browse/">Manage media files</a><br /><a href="/themes/">Manage theme settings</a>',
+    content_html: '<a href="/manage/programs/">Manage all programs</a><br/><a href="/manage/pages">Manage static pages</a><br /><a href="/admin/">Administration pages</a><br /><a href="/admin/filebrowser/browse/">Manage media files</a><br /><a href="/themes/">Manage theme settings</a>',
     name: 'Other',
     displayName: 'Other Important Links'
 });
