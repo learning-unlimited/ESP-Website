@@ -46,7 +46,7 @@ function modulesToQuestions() {
     for (var i=0; i < questions.length; i++) {
         var q = questions[i];
         var qvalslist = q.firstChild.firstChild.value.split(",");
-        var include = true;
+        var include = false;
         if (qvalslist.length == 0) {
             alert("The following question is associated with zero modules! "
                   + "Please contact web support.\n"
@@ -54,8 +54,8 @@ function modulesToQuestions() {
         }
         else {
             for (var j=0; j < qvalslist.length; j++) {
-                if (!currentlySelectedIds.includes(qvalslist[j])) {
-                    include = false;
+                if (currentlySelectedIds.includes(qvalslist[j])) {
+                    include = true;
                 }
             }
             $j("#id_program_module_questions_" + i).prop("checked", include);
