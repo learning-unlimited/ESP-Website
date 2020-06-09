@@ -41,7 +41,7 @@ from django.conf import settings
 person_type = (
     ('Student', 'K-12 Student'),
     ('Parent',  'Parent/Guardian'),
-    ('Teacher', 'Teacher for ESP'),
+    ('Teacher', 'Teacher for Splash'),
     ('K-12 Educator', 'K-12 Educator'),
     ('Other',   'Other'),
     )
