@@ -695,9 +695,12 @@ class ResourceModule(ProgramModuleObj):
             if not len(avail_res):
                 return HttpResponseBadRequest('')
             res_list.append(avail_res[0])
+        group = None
         for res in res_list:
-            res.assign_to_section(section)
-        context = { 'assignment' : ResourceAssignment.objects.get(resource=res_list[0]) }
+            assignment = res.assign_to_section(section, group = group)
+            if group is None:
+                group = assignment.assignment_group
+        context = { 'assignment' : assignment }
         response = json.dumps({
             'assignment_name': render_to_string(self.baseDir()+'assignment_name.html', context = context, request = request),
         })
@@ -712,9 +715,10 @@ class ResourceModule(ProgramModuleObj):
         results = ResourceAssignment.objects.filter(id=request.POST['id'])
         if not len(results): #Use len() since we will evaluate it anyway
             return HttpResponseBadRequest('')
-        assignment = results[0]
-        assignment.returned = request.POST['returned'] == "true"
-        assignment.save()
+        assignments = ResourceAssignment.objects.filter(assignment_group = results[0].assignment_group)
+        for assignment in assignments:
+            assignment.returned = request.POST['returned'] == "true"
+            assignment.save()
         context = { 'assignment' : assignment }
         return render_to_response(self.baseDir()+'assignment_name.html', request, context)
 
@@ -745,8 +749,7 @@ class ResourceModule(ProgramModuleObj):
         results = ResourceAssignment.objects.filter(id=request.POST['id'])
         if not len(results): #Use len() since we will evaluate it anyway
             return HttpResponseBadRequest('')
-        assignment = results[0]
-        ResourceAssignment.objects.filter(target=assignment.target, resource__name=assignment.resource.name).delete()
+        ResourceAssignment.objects.filter(assignment_group = results[0].assignment_group).delete()
         return HttpResponse('')
 
     class Meta:
