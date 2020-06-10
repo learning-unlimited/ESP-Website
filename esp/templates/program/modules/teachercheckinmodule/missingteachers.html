@@ -139,6 +139,65 @@
 
 <p style="text-align: center">
 
+{% if missing_resources %}
+<table width="100%">
+<tr>
+    <th colspan="5">
+        {% if start_time %}
+            Missing resources for sections ending before {{ start_time.pretty_start_time }}
+        {% else %}
+            Missing resources for all sections{% if date %} ending before {{ date|date:"D m/d/Y" }}{% endif %}
+        {% endif %}
+    </th>
+</tr>
+<tr>
+    <th>
+        Section
+    </th>
+    <th>
+        End Time and Location
+    </th>
+    <th colspan="2">
+        Teachers
+    </th>
+    <th>
+        Missing Resources
+    </th>
+</tr>
+{% for section in missing_resources %}
+<tr class="section-first-row" data-sec-id="{{ section.emailcode }}">
+    <td rowspan="{{ section.teachers|length }}" class="section-code" style="border-bottom: 1px solid #ccc;">
+        {{ section }}
+    </td>
+    <td class="room" rowspan="{{ section.teachers|length }}" style="border-bottom: 1px solid #ccc;">
+        {{ section.end_time }} in {{ section.room }}
+    </td>
+    {% for teacher in section.teachers_list %}
+        <td{% if forloop.last %} style="border-bottom: 1px solid #ccc;"{% endif %}>
+            <a href="/manage/userview?username={{ teacher.username }}" target="_blank">{{ teacher.name }}</a>
+        </td>
+        <td class="phone"{% if forloop.last %} style="border-bottom: 1px solid #ccc;"{% endif %}> {{ teacher.phone }} </td>
+        {% if forloop.first %}
+            <td rowspan="{{ section.teachers|length }}" class="section-detail-td" style="border-bottom: 1px solid #ccc;">
+                <div class="section-detail fqr-class">
+                    <div class="assignment-name-list fqr-class-assignments" style="white-space:nowrap;">
+                        {% for assignment in section.missing_resources.all %}
+                            {% if not forloop.first %}<br/>{% endif %}
+                            {% include "program/modules/resourcemodule/assignment_name.html" %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </td>
+        {% endif %}
+        </tr>
+        <tr data-sec-id="{{ section.emailcode }}">
+    {% endfor %}
+</tr>
+{% endfor %}
+</table>
+<br/>
+{% endif %}
+
 <table>
 <tr>
     <th colspan="6">
