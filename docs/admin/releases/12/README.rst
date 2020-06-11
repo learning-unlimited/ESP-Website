@@ -173,3 +173,20 @@ Minor bug fixes
 
 Known issues of new features
 ============================
+- You can not upload files in the new filebrowser.
+- You can not search for a program module on the edit program admin page.
+- Histograms in the PDF version of the survey results do not have the full range of possible choices.
+- Asterisks may still show up even when some fields are not set as required for the profile form.
+- Programs may be created without a student class registration module information object.
+- The line that tracks the number of teachers registered on the teacher big board is incorrect.
+- The arbitrary user list may break when trying to access guardian fields (such as email address or name).
+- The volunteer registration form is missing fields.
+- Documents uploaded via a custom form have the wrong link when viewed by the user.
+- Documents uploaded via a custom form can sometimes have a broken link when viewed by an admin.
+- "Accepted but hidden" sections are listed as "Rejected" in teacher registration.
+- When checking out all students in the checkout module, a random student is then selected and shown after the confirmation page.
+- "Rejected" classes aren't shown on /teacherreg or /userview.
+- Students on the section attendance page are not sorted alphabetically.
+- Survey questions and results are very squished on the webapp.
+- The new Survey UI doesn't hide the raw parameters field.
+- Multiple users taking attendance at the same time can cause the section attendance to break or behave unexpectedly.
