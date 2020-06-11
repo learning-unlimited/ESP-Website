@@ -319,28 +319,32 @@ class TeacherCheckinModule(ProgramModuleObj):
 
         sections_by_class = {}
         for section in sections:
-            if not all(teacher.id in arrived for teacher in section.teachers):
-                # Put the first section of each class into sections_by_class
-                if (section.parent_class.id not in sections_by_class
-                        or sections_by_class[section.parent_class_id].begin_time > section.begin_time):
-                    # Precompute some things and pack them on the section.
-                    section.any_arrived = any(teacher.id in arrived
-                                              for teacher in section.teachers)
-                    section.room = (section.prettyrooms() or [None])[0]
-                    # section.teachers is a property, so we can't add extra
-                    # data to the ESPUser objects and have them stick. We must
-                    # make a new list and then modify that.
-                    section.teachers_list = list(section.teachers)
-                    for teacher in section.teachers_list:
-                        teacher.phone = teacher_phones.get(teacher.id, default_phone)
-                    sections_by_class[section.parent_class_id] = section
+            # Put the first section of each class into sections_by_class
+            if (section.parent_class.id not in sections_by_class
+                    or sections_by_class[section.parent_class_id].begin_time > section.begin_time):
+                # Precompute some things and pack them on the section.
+                teacher_status = [teacher.id in arrived for teacher in section.teachers]
+                section.all_arrived = all(teacher_status)
+                section.any_arrived = any(teacher_status)
+                section.room = (section.prettyrooms() or [None])[0]
+                section.unique_resources = section.resourceassignments().order_by('assignment_group').distinct('assignment_group')
+                # section.teachers is a property, so we can't add extra
+                # data to the ESPUser objects and have them stick. We must
+                # make a new list and then modify that.
+                section.teachers_list = list(section.teachers)
+                for teacher in section.teachers_list:
+                    teacher.phone = teacher_phones.get(teacher.id, default_phone)
+                sections_by_class[section.parent_class_id] = section
 
         sections = [
             section for section in sections_by_class.values()
             if not section.any_arrived
         ] + [
             section for section in sections_by_class.values()
-            if section.any_arrived
+            if section.any_arrived and not section.all_arrived
+        ] + [
+            section for section in sections_by_class.values()
+            if section.all_arrived
         ]
 
         return sections, arrived
