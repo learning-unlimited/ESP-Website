@@ -32,12 +32,12 @@ We've added mobile-friendly interfaces for teachers and students for tools that 
 2. The student interface, available at ``/learn/[one]/[two]/studentonsite`` (if enabled), has a live schedule (with class changes), Google maps of campus (with directions to classrooms if set up), a course catalog, and an interface to fill out the student survey. If no survey is setup, this navigation panel is hidden (the new survey creation page can be used to set these up).
 
    - For class changes on the student webapp, students are allowed by default to enroll in classes that have fewer enrolled students than capacity. You can change two tags to potentially allow students to enroll in classes that are not full based on program attendance or class attendance (see the attendance section above for details of what this means). The tags are as follows:
- 
-      i. 'switch_time_program_attendance': Set this tag to the time at which you'd like to start using program attendance numbers instead of enrollment numbers. The format is HH:MM where HH is in 24 hour time. After this time, if at least 5 students have been checked into the program, students will be able to class change based on program attendance numbers. If this is not set, program attendance numbers will not be used. 
-      ii. 'switch_lag_class_attendance': Set this tag to the amount of minutes into a class at which you'd like to start using class attendance numbers if available (instead of enrollment or program attendance). This many minutes into a class block, if at least 1 student has been marked attending that class, students will be able to class change based on class attendance numbers. If blank, class attendance numbers will not be used.
+
+     i. 'switch_time_program_attendance': Set this tag to the time at which you'd like to start using program attendance numbers instead of enrollment numbers. The format is HH:MM where HH is in 24 hour time. After this time, if at least 5 students have been checked into the program, students will be able to class change based on program attendance numbers. If this is not set, program attendance numbers will not be used. 
+     ii. 'switch_lag_class_attendance': Set this tag to the amount of minutes into a class at which you'd like to start using class attendance numbers if available (instead of enrollment or program attendance). This many minutes into a class block, if at least 1 student has been marked attending that class, students will be able to class change based on class attendance numbers. If blank, class attendance numbers will not be used.
   
-      - Note that if the tags are set, the hierarchy is that class attendance will be used if available; program attendance will be used if class attendance is not available; enrollment will be used if program attendance is not available. 
-      - Note for chapters that were using the beta version of the webapp previously: these new tags replace the old 'count_checked_in_only' tag.
+     - Note that if the tags are set, the hierarchy is that class attendance will be used if available; program attendance will be used if class attendance is not available; enrollment will be used if program attendance is not available. 
+     - Note for chapters that were using the beta version of the webapp previously: these new tags replace the old 'count_checked_in_only' tag.
     
 
 Student Acknowledgement
@@ -118,6 +118,7 @@ Theme changes
 - Fixed the colors of the buttons presented when editing a QSD/editable text on the bigpicture theme. Button colors will also now properly change when updated in the bigpicture theme settings.
 - Fixed the width of the class edit form and the teacher preview table in the bigpicture theme.
 - Added a new admin bar to all themes that didn't have it before and modified the admin bar of themes that already had one. This admin bar has more helpful links for admins and current program section(s).
+- Added links to the LU Terms of Service.
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
@@ -167,6 +168,8 @@ Minor bug fixes
 - Fixed erroneous cases where "(not required)" should have been listed next to modules in student and teacher registration but wasn't.
 - Removed all mentions of "Cybersource" in the Credit Card Viewpay Module to reduce confusion.
 - Fixed /myesp/onsite for admins.
+- The contact form now uses the organization short name for the teacher option.
+- Added a dummy folder for survey histograms. This preemtively fixes any problems sites might have with saving the histogram files.
 
 Known issues of new features
 ============================
