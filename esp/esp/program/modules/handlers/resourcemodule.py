@@ -709,7 +709,7 @@ class ResourceModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def editassignment(self, request, tl, one, two, module, extra, prog):
-        '''Given a post request, take extra as the id of the resource assignment, update whether it's returned using the post data, and return its new detail display.'''
+        '''Given a post request, take extra as the id of the resource assignment, update whether it's returned using the post data, and return its new name display.'''
         if request.method != 'POST' or 'id' not in request.POST or 'returned' not in request.POST:
             return HttpResponseBadRequest('')
         results = ResourceAssignment.objects.filter(id=request.POST['id'])

@@ -359,14 +359,14 @@ class TeacherCheckinModule(ProgramModuleObj):
                                           before this time.
           default_phone (string, opt):    A string that should be used if there
                                           is no valid phone number for a teacher.
-        
+
         Returns:
           sections_list:  A list of all sections that have ended but have not returned
                           their resources as of starttime or date. Each item of the list
                           has an attribute `missing_resources` that is a list of the
                           floating resources that have not been returned.
         """
-    
+
         sections = prog.sections().annotate(end_time=Max("meeting_times__end")) \
                                   .filter(status=10, parent_class__status=10, end_time__isnull=False) \
                                   .order_by('end_time')
@@ -391,7 +391,7 @@ class TeacherCheckinModule(ProgramModuleObj):
                 sections_list.append(section)
 
         return sections_list
-    
+
     @aux_call
     @needs_onsite
     def missingteachers(self, request, tl, one, two, module, extra, prog):
