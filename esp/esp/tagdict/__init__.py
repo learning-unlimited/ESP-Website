@@ -49,6 +49,10 @@ all_global_tags = {
     'teacherinfo_shirt_type_selection': (True, 'Include the t-shirt type field on the teacher profile form? (overrides \'teacherinfo_shirt_options\')', True, 'teach', True),
     'teacher_shirt_sizes': (False, 'Comma-separated list of shirt size options for teachers', 'XS, S, M, L, XL, XXL', 'teach', True),
     'teacher_profile_hide_fields': (False, 'Comma-separated list of fields to hide in the teacher profile form', '', 'teach', True),
+    'student_profile_hide_fields': (False, 'Comma-separated list of fields to hide in the student profile form', '', 'learn', True),
+    'volunteer_profile_hide_fields': (False, 'Comma-separated list of fields to hide in the volunteer profile form', '', 'volunteer', True),
+    'educator_profile_hide_fields': (False, 'Comma-separated list of fields to hide in the educator profile form', '', 'teach', True),
+    'guardian_profile_hide_fields': (False, 'Comma-separated list of fields to hide in the guardian profile form', '', 'learn', True),
     'student_grade_options': (False, 'A JSON list of grade choices that can be used to override the defaults', '[7,8,9,10,11,12]', 'learn', True),
     'user_types': (False, 'A JSON list of user types that can be used to override the defaults', '[["Student", {"label": "Student (up through 12th grade)", "profile_form": "StudentProfileForm"}],["Teacher", {"label": "Volunteer Teacher", "profile_form": "TeacherProfileForm"}],["Guardian", {"label": "Guardian of Student", "profile_form": "GuardianProfileForm"}],["Educator", {"label": "K-12 Educator", "profile_form": "EducatorProfileForm"}],["Volunteer", {"label": "Onsite Volunteer", "profile_form": "VolunteerProfileForm"}]]', 'manage', True),
     'student_profile_gender_field': (True, 'Ask about student gender in profile form?', False, 'learn', True),
@@ -129,7 +133,8 @@ all_program_tags = {
     'volunteer_help_text_comments': (False, 'If set, overrides the help text for the comments field for the volunteer form', None, 'volunteer', True),
     'volunteer_require_auth': (True, 'Do volunteers need to have accounts before signing up? (If not, one will be created when they sign up)', False, 'volunteer', True),
     'program_center': (False, 'The geographic center for a program, following the form {lat: 37.427490, lng: -122.170267}. Used for the teacher and student onsite webapps.', '{lat: 37.427490, lng: -122.170267}', 'manage', True),
-    'count_checked_in_only': (True, 'Should the student onsite webapp use checked in students (instead of registered students) to determine if a class is full?', False, 'learn', True),
+    'switch_time_program_attendance': (False, 'At what time should the student onsite webapp use program attendance if available (instead of enrollment) to determine if a class is full? If blank, program attendance numbers will not be used. Format: HH:MM where HH is in 24 hour time.', None, 'learn', True),
+    'switch_lag_class_attendance': (False, 'How many minutes into a class should the student onsite webapp use class attendance numbers if available (instead of enrollment or program attendance) to determine if a class is full? If blank, class attendance numbers will not be used.', None, 'learn', True),
     'student_lottery_group_max': (False, 'What is the maximum number of students that can be in the same lottery group? (set to 1 to not allow groups)', '4', 'learn', True),
 }
 

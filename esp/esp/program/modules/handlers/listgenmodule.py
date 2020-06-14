@@ -268,7 +268,8 @@ class ListGenModule(ProgramModuleObj):
             "admin_title": "User List Generator",
             "link_title": "Generate List of Users",
             "module_type": "manage",
-            "seq": 500
+            "seq": 500,
+            "choosable": 1,
             }
 
     @aux_call
@@ -366,7 +367,11 @@ class ListGenModule(ProgramModuleObj):
             #   Turn multi-valued QueryDict into standard dictionary
             data = {}
             for key in request.POST:
-                data[key] = request.POST[key]
+                #   Some keys have list values
+                if key in ['regtypes']:
+                    data[key] = request.POST.getlist(key)
+                else:
+                    data[key] = request.POST[key]
             filterObj = usc.filter_from_postdata(prog, data)
 
             #   Display list generation options

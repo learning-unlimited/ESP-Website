@@ -60,7 +60,8 @@ class GroupTextModule(ProgramModuleObj):
             "admin_title": "Group Text Panel for Admin",
             "link_title": "Group Text Panel: Text all the students!",
             "module_type": "manage",
-            "seq": 10
+            "seq": 10,
+            "choosable": 1,
         }
 
     @staticmethod
@@ -110,7 +111,11 @@ class GroupTextModule(ProgramModuleObj):
         if request.method == "POST":
             data = {}
             for key in request.POST:
-                data[key] = request.POST[key]
+                #   Some keys have list values
+                if key in ['regtypes']:
+                    data[key] = request.POST.getlist(key)
+                else:
+                    data[key] = request.POST[key]
             filterObj = UserSearchController().filter_from_postdata(prog, data)
 
             context['filterid'] = filterObj.id

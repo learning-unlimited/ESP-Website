@@ -40,7 +40,11 @@
                 <tr>
                     <td>Document uploads:</td>
                     <td>
-                        {{ section.parent_class.documents.count }} documents<br />
+                        {% for doc in section.parent_class.documents.all %}
+                            <a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a><br />
+                        {% empty %}
+                            No documents uploaded<br />
+                        {% endfor %}
                         (<a href="/teach/{{ program.getUrlBase }}/class_docs/{{section.parent_class.id}}" title="Upload/manage files" class="abutton">manage</a>)
                     </td>
                 </tr>
@@ -48,7 +52,8 @@
                     <td>Website:</td>
                     <td>
                         {% if section.parent_class.got_index_qsd %}
-                        <a href="/learn/{{ section.parent_class.url }}/index.html" title="{{ section }}...">Visit web page</a>
+                        <a href="/learn/{{ section.parent_class.url }}/index.html" title="{{ section }}...">Visit web page</a><br />
+                        <a href="/learn/{{ section.parent_class.url }}/index.edit.html" title="Edit `{{ section }}'...">Edit web page</a>
                         {% else %}
                         <a href="/learn/{{ section.parent_class.url }}/index.edit.html" title="Create `{{ section }}'...">Create web page</a>
                         {% endif %}

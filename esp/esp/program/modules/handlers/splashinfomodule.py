@@ -51,7 +51,8 @@ class SplashInfoModule(ProgramModuleObj):
           "link_title": "Lunch Preferences & Sibling Discount",
           "module_type": "learn",
           "seq": 20,
-          "required": True
+          "required": True,
+          "choosable": 2,
           }
 
     def students(self, QObject=False):

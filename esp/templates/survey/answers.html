@@ -1,6 +1,6 @@
 {% comment %}
 Expects:
-    "q": a list of dictionaries {
+    "q": a dictionary {
         'question': <Question object>,
         'answers': [iterable of <Answer object>s],
         }
@@ -10,13 +10,13 @@ Expects:
 {% load survey %}
 {% load main %}
 
-<table width="100%" style="margin-bottom: 10px;">
+<table width="100%">
 <tr>
-    <td width="100%" valign="top" colspan="2"><b>{{ q.question.name }}</b></td>
+    <td width="100%" valign="top" colspan="2"><b>{{ q.question.name }}</b> ({{ q.answers|length }}/{{ num_participants }} responses)</td>
 </tr>
 {% if q.question.question_type.is_countable %}
     <tr>
-        <td width = "50%">
+        <td {% if q.question.question_type.is_numeric %}width="50%"{% else %}colspan="2"{% endif %}>
             {% if not q.answers|length_is:0 %}
                 {% with q.question.get_params as params %}
                     {% if q.question.question_type.is_numeric and params.number_of_ratings %}
@@ -49,19 +49,18 @@ Expects:
                 There are no responses to this question.
             {% endif %}
         </td>
+        {% if q.question.question_type.is_numeric %}
         <td width = "50%">
             <b>Statistics:</b>
             <ul>
-                <li>Number of responses: {{ q.answers|length }}/{{ num_participants }}</li>
-                {% if q.question.question_type.is_numeric %}
-                    <li>Average: {{ q.answers|unpack_answers|average }}</li>
-                    <li>Std. deviation: {{ q.answers|unpack_answers|stdev }}</li>
-                    {% if q.question.per_class %}
-                        <li>Average for all classes: {{ q.question.global_average }}</li>
-                    {% endif %}
+                <li>Average: {{ q.answers|unpack_answers|average }}</li>
+                <li>Std. deviation: {{ q.answers|unpack_answers|stdev }}</li>
+                {% if q.question.per_class %}
+                    <li>Average for all classes: {{ q.question.global_average }}</li>
                 {% endif %}
             </ul>
         </td>
+        {% endif %}
     </tr>
 {% else %}
     <tr>

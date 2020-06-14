@@ -138,6 +138,7 @@ class StudentClassRegModule(ProgramModuleObj):
             "seq": 10,
             "inline_template": "classlist.html",
             "required": True,
+            "choosable": 1
             }]
 
     @property

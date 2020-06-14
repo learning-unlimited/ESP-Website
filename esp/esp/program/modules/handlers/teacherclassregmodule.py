@@ -71,6 +71,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             "module_type": "teach",
             "seq": 10,
             "inline_template": "listclasses.html",
+            "choosable": 1,
             }
 
     @property

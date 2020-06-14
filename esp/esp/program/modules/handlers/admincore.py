@@ -65,7 +65,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
         return {
             "link_title": "Program Dashboard",
             "module_type": "manage",
-            "seq": -9999
+            "seq": -9999,
+            "choosable": 1,
             }
 
     @aux_call
@@ -101,14 +102,23 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 submitted_form = request.POST['form_name']
                 if submitted_form == "program":
                     form = ProgramSettingsForm(request.POST, instance = prog)
+                    if form.is_valid():
+                        form.save()
+                        #If the url for the program is now different, redirect to the new settings page
+                        if prog.url is not old_url:
+                            return HttpResponseRedirect( '/manage/%s/settings' % (prog.url))
                     prog_form = form
                     context['open_section'] = "program"
                 elif submitted_form == "crmi":
                     form = TeacherRegSettingsForm(request.POST, instance = crmi)
+                    if form.is_valid():
+                        form.save()
                     crmi_form = form
                     context['open_section'] = "crmi"
                 elif submitted_form == "scrmi":
                     form = StudentRegSettingsForm(request.POST, instance = scrmi)
+                    if form.is_valid():
+                        form.save()
                     scrmi_form = form
                     context['open_section'] = "scrmi"
                 if form.is_valid():
