@@ -4,7 +4,7 @@
 
 from django import forms
 from django.conf import settings
-from localflavor.us.forms import *
+from localflavor.us.forms import basestring
 from django.forms import widgets
 from django.template import Template, Context
 from django.utils.encoding import force_unicode
@@ -52,7 +52,6 @@ class DateTimeWidget(forms.widgets.TextInput):
 
         if not 'id' in final_attrs:
             final_attrs['id'] = u'%s_id' % (name)
-        id = final_attrs['id']
         return final_attrs
 
     def render(self, name, value, attrs=None):
@@ -348,7 +347,7 @@ $j(document).ready({{ name }}_setup);
 
     def render(self, name, value, attrs=None):
         if value is None: value = ''
-        final_attrs = self.build_attrs(attrs, name=name)
+        self.build_attrs(attrs, name=name)
         context = {}
         context['name'] = name
         context['value'] = json.dumps(value)
