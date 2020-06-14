@@ -389,12 +389,12 @@ class ClassSection(models.Model):
     category = property(_get_category)
 
     def _get_room_capacity(self, rooms = None):
+        # rooms should be a queryset
         if rooms == None:
-            rooms = self.initial_rooms()
+            rooms = self.classrooms()
 
-        rc = 0
-        for r in rooms:
-            rc += r.num_students
+        # Take the summed classroom capacity for each timeblock, then take the minimum of those sums
+        rc = min(d.get('capacity', 0) for d in rooms.values('event').order_by('event').annotate(capacity=Sum('num_students')))
 
         options = self.parent_program.studentclassregmoduleinfo
         if options.apply_multiplier_to_room_cap:
@@ -405,7 +405,7 @@ class ClassSection(models.Model):
     @cache_function
     def _get_capacity(self, ignore_changes=False):
         ans = None
-        rooms = self.initial_rooms()
+        rooms = self.classrooms()
         if self.max_class_capacity is not None:
             ans = self.max_class_capacity
         else:
