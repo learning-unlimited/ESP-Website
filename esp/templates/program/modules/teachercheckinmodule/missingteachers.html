@@ -202,9 +202,9 @@
 <tr>
     <th colspan="6">
         {% if start_time %}
-            Missing teachers for classes starting at {{ start_time.pretty_start_time }}
+            Teachers for classes starting at {{ start_time.pretty_start_time }}
         {% else %}
-            Missing teachers for all classes{% if date %} on {{ date|date:"D m/d/Y" }}{% endif %}
+            Teachers for all classes{% if date %} on {{ date|date:"D m/d/Y" }}{% endif %}
         {% endif %}
         {% if when %} as of {{ when }} {% endif %}
     </th>
