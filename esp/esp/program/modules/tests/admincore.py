@@ -26,6 +26,10 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         self.adminUser.set_password('password')
         self.adminUser.makeAdmin()
 
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.force_show_required_modules = False
+        scrmi.save()
+
 
     def testAdminInterface(self):
         # Login as admin

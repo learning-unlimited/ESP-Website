@@ -98,10 +98,9 @@
 </div>
 
 <div id='compact-classes-body' class='compact-classes' style="z-index:-900;">
-<table class="narrow bordered">
-<tr>{% for timeslot in timeslots %}
-    <td width="270px" valign="top"><div id="timeslot_{{ timeslot.id }}"></div></td>{% endfor %}
-</tr>
+<table id="timeslots" class="narrow bordered">
+<tr class="timeslot_headers"></tr>
+<tr class="timeslot_footers"></tr>
 </table>
 </div>
 </div>

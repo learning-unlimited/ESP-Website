@@ -59,7 +59,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
         return {
             "link_title": "AJAX Scheduling",
             "module_type": "manage",
-            "seq": 7
+            "seq": 7,
+            "choosable": 1,
             }
     def prepare(self, context={}):
         if context is None: context = {}

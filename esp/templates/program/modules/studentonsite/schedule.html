@@ -1,0 +1,81 @@
+{% extends "program/modules/studentonsite/webapp.html" %}
+
+{% block head %}
+
+<script>
+function togglePopup() {
+    var popup = document.getElementById("myPopup");
+    popup.classList.toggle("show");
+}
+</script>
+
+{% endblock %}
+
+{% block body %}
+
+<center>
+
+  <div class="main">
+    <table class="studentschedule">
+      <tbody>
+        <th colspan="3" class="user_info">
+            <i>Classes for {{user.first_name}} {{user.last_name}} - ID: {{user.id}}</i>
+            {% if not checked_in %}
+                <p class="checkinnote">Note: You will not be able to change any classes or see your classrooms until after your check-in has been processed by the admin team.</p>
+            {% endif %}
+        </th>
+        {% for timeslot in timeslots %}
+            {% ifchanged timeslot.0.start.day %}
+                <tr>
+                    <th colspan="3" class="day">{{ timeslot.0.pretty_date }}</th>
+                </tr>
+            {% endifchanged %}
+            {% with timeslot.1.0 as cls %}
+            <tr class="schedule_row">
+                <td rowspan="2" class="time">{{ timeslot.0.short_time }}</td>
+                <td class="cls">
+                {% if cls %}
+                    <!--link to course details-->
+                    <a class="no-dec" title="More Details" href="/learn/{{one}}/{{two}}/onsitedetails/{{ cls.section.id }}"><b>{{ cls.section.title }}{% if not cls.first_meeting_time %} (continued){% else %}&nbsp;<i class="material-icons md-3">list</i></a>{% endif %}</b>
+                {% else %}
+                    No class
+                {% endif %}
+                </td>
+                <td rowspan="2" class="edit">
+                    {% if checked_in %}
+                        <!--link to filtered course catalog like the fillslot page-->
+                        <a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog/{{timeslot.0.id}}"><i class="material-icons md-4">{% if cls %}create{% else %}add{% endif %}</i></a>
+                        {% if cls %}
+                            <a class="no-dec" href="/learn/{{one}}/{{two}}/onsiteclearslot/{{timeslot.0.id}}"><i class="material-icons md-4">clear</i></a>
+                        {% endif %}
+                    {% else %}
+                        <!--otherwise, grey out icon-->
+                        <div class="popup" onclick="togglePopup()">
+                            <i class="material-icons md-4 greyed">{% if cls %}create{% else %}add{% endif %}</i>
+                            {% if cls %}
+                                <i class="material-icons md-4 greyed">clear</i>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr class="schedule_row">
+                <td class="location">
+                    {% if checked_in and cls and not cls.section.initial_rooms.count == 0 %}
+                        <a class="no-dec" title="Directions" href="/learn/{{one}}/{{two}}/onsitemap/{{ cls.section.initial_rooms.0.id }}">{{ cls.section.prettyrooms|join:", " }}&nbsp;<i class="material-icons md-3">directions</i></a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="popup" onclick="togglePopup()">
+      <span class="popuptext" id="myPopup">Not checked in yet!</span>
+  </div>
+
+</center>
+
+{% endblock %}

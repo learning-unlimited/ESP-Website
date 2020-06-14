@@ -1,0 +1,82 @@
+{% extends "program/modules/teacheronsite/webapp.html" %}
+
+{% block body %}
+<center>
+  <div class="main">
+    {% for section in sections %}
+        <table class="sectioninfo">
+            <thead>
+                <th colspan="2" class="sectiontitle">
+                    <i>Info for {{ section }}</i>
+                </th>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="width:35%">Room:</td>
+                    <td>
+                        {% if section.initial_rooms %}{% for r in section.initial_rooms %}{{ r.name }} (<a href="/teach/{{one}}/{{two}}/onsitemap/{{ r.id }}">map</a>){% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %}
+                    </td>
+                </tr>
+                    <td>Time:</td>
+                    <td>{% if section.friendly_times|length_is:0 %}Unassigned{% else %}{% for f in section.friendly_times_with_date %}{{ f }}{% endfor %}{% endif %}</td>
+                </tr>
+                {% if section.parent_class.get_teachers.count > 1 %}
+                <tr>
+                    <td>Co-Teachers:</td>
+                    <td>
+                        {% for t in section.parent_class.get_teachers %}{% ifnotequal t user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}<br />
+                        (<a href="mailto:{{ section.emailcode }}-teachers@{{ EMAIL_HOST_SENDER }}">email</a>)
+                    </td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td>Enrollment:</td>
+                    <td>
+                        {{ section.num_students }} / {{ section.capacity }} students<br />
+                        (<a href="mailto:{{ section.emailcode }}-students@{{ EMAIL_HOST_SENDER }}" title="Email Section's Students">email</a>)
+                        {% if sections.count > 1 %} (<a href="/teach/{{one}}/{{two}}/onsiteroster/{{ section.id }}" title="Section Roster">roster</a>){% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>Document uploads:</td>
+                    <td>
+                        {% for doc in section.parent_class.documents.all %}
+                            <a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a><br />
+                        {% empty %}
+                            No documents uploaded<br />
+                        {% endfor %}
+                        (<a href="/teach/{{ program.getUrlBase }}/class_docs/{{section.parent_class.id}}" title="Upload/manage files" class="abutton">manage</a>)
+                    </td>
+                </tr>
+                <tr>
+                    <td>Website:</td>
+                    <td>
+                        {% if section.parent_class.got_index_qsd %}
+                        <a href="/learn/{{ section.parent_class.url }}/index.html" title="{{ section }}...">Visit web page</a><br />
+                        <a href="/learn/{{ section.parent_class.url }}/index.edit.html" title="Edit `{{ section }}'...">Edit web page</a>
+                        {% else %}
+                        <a href="/learn/{{ section.parent_class.url }}/index.edit.html" title="Create `{{ section }}'...">Create web page</a>
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        {% if not forloop.last %}
+            <hr size="5" noshade="" style="margin: 0px;">
+        {% endif %}
+    {% endfor %}
+    <table style="height:8vh; border:none;"><tr style="border:none;"><td style="border:none;"></td></tr></table>
+  </div>
+</center>
+<div class="navbar bottom">
+  <table>
+    <tr>
+      <td class="selected"><a class="no-dec" href="/teach/{{one}}/{{two}}/onsitedetails/{% if sections.count == 1 %}{{ sections.0.id }}{% endif %}" style="display:block;"><i class="material-icons md-5">list</i>
+        <br>Section Info{% if sections.count != 1 %}s{% endif %}</td>
+      <td><a class="no-dec" href="/teach/{{one}}/{{two}}/onsiteroster/{% if sections.count == 1 %}{{ sections.0.id }}{% endif %}" style="display:block;"><i class="material-icons md-5">assignment</i>
+        <br>Section Roster{% if sections.count != 1 %}s{% endif %}</td>
+    </tr>
+  </table>
+</div>
+
+{% endblock %}

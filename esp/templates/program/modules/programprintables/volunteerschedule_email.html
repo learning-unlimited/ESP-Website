@@ -1,0 +1,13 @@
+<p>{{ schedule_type }} schedule for {{ user.name }} for {{ program.niceName }}:</p>
+<table cellspacing="0" cellpadding="10" border="1" width="100%">
+    <tr>
+        <th width="35%">Time</th>
+        <th width="65%">Shift</th>
+    </tr>
+    {% for shift in sched_items %}
+        <tr>
+            <td>{% if include_date %}{{ shift.request.timeslot.pretty_time_with_date }}{% else %}{{ shift.request.timeslot.pretty_time }}{% endif %}</td>
+            <td>{{ shift.request.timeslot.description }}</td>
+        </tr>
+    {% endfor %}
+</table>

@@ -21,7 +21,8 @@ class BigBoardModule(ProgramModuleObj):
             "admin_title": "Student Registration Big Board",
             "link_title": "Watch incoming student registrations",
             "module_type": "manage",
-            "seq": 10
+            "seq": 10,
+            "choosable": 1,
             }
 
     class Meta:
@@ -65,7 +66,7 @@ class BigBoardModule(ProgramModuleObj):
             ("signed up for classes", [(1, time) for time in self.times_classes(prog)]),
         ]
 
-        timess_data, start = self.make_graph_data(timess, 10, 10, 25)
+        timess_data, start = self.make_graph_data(timess, 4, 0, 5)
 
         left_axis_data = [
             {"axis_name": "#", "series_data": timess_data},

@@ -5,6 +5,12 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/admin.css" /> <!-- to render checkbox list -->
+{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+<script src="/media/scripts/program/modules/modulequestions.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -46,8 +52,10 @@ Use a past program as a template:
   <form action="{{ request.path }}" method="post">
   {% autoescape off %}
   {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+
 {% for fieldset in form.fieldsets %}
 
+  <br /><br />
   <fieldset class="fieldset_{{ fieldset.name }}">
   {% if fieldset.legend %}
     <legend>{{ fieldset.legend }}</legend>
@@ -66,12 +74,13 @@ Use a past program as a template:
     <td style="vertical-align:text-top;">{{ field.label }} </td>
     {% endif %}
      {% if field %}
-      <td>  {{ field }} 
+      <td>  {{ field }}
     {% endif %}
     {% if field.help_text %}
-      <br/>
-      <span> {{ field.help_text }} </span>
+      <br />
+      <span>{{ field.help_text }}</span>
     {% endif %}
+    <br /><br />
     {% for error in  field.errors %}
     <br/>
      <span class='form_error'> {{ error }} </span>
@@ -91,7 +100,7 @@ Use a past program as a template:
     <tr> 
       <td colspan="2" class="submit">
         <br /><br /><br />
-        <center><input class="fancybutton" type="submit" value="Make Program Happen!" /></center>
+        <center><input class="fancybutton" type="submit" value="Make Program Happen!" onclick="questionsToModules();" /></center>
       </td>
     </tr>
   </table>
