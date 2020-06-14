@@ -10,7 +10,7 @@
 {% block body %}
 
 {% block main %}
-
+<div id="page" style="margin:0 auto; width:920px;">
 <div id="top_area">
 <div id="logo_area">
     <div id="main_logo"><a href="/"><img src="/media/images/theme/generic_logo_short.png"/></a></div>
@@ -21,6 +21,31 @@
 </div>
 
 <div id="nav_area">
+    {% comment %} === Admin Toolbar (includes user search) === {% endcomment %}
+    <style>
+        #content_area h2, h3, p, form {
+	        padding-left: 0px;
+	        padding-right: 0px;
+}
+    </style>
+    <link rel="stylesheet" type="text/css" href="/media/default_styles/admin_bar.css">
+        <div id="adminbar" class="admin hidden" style="position: fixed !important">
+            <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
+            <div id="adminbar_content"></div>
+        </div>
+    <script type="text/javascript">
+    var currentPrograms = [
+    {% for current_program in current_programs %}
+        {
+            urlBase: "{{ current_program.getUrlBase }}",
+            name: "{{ current_program.niceName }}",
+        },
+    {% endfor %}
+    ];
+    </script>
+    <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
+    {% comment %} === Ends Admin Toolbar (includes user search) === {% endcomment %}
+
     <div id="nav_buffer">
         <div id="nav_buffer_background">{{ theme.title_text }}</div>
         <div id="nav_buffer_foreground">{{ theme.subtitle_text }}</div>
@@ -53,6 +78,7 @@
     <!-- Login -->
     <div class="box" style="text-align: right;">
     {% include "users/loginbox_content.html" %}
+        <li class="unmorph hidden"><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a></li>
     </div>
     
     <!-- Announcements -->
@@ -80,7 +106,7 @@
     {% endif %}
     {% endif %}
     
-    <!-- Admin -->
+    <!-- Old Admin
     <div class="box admin hidden">
     <div class="box_header"> Admin</div>	
     <ul>
@@ -95,7 +121,7 @@
 	<li class="admin hidden"><a href="/themes/"><i class="glyphicon glyphicon-pencil" aria-hidden="true"></i> Theme settings</a></li>
     <li class="unmorph hidden"><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a></li>
     </ul>
-    </div>
+    </div --->
 
     <!-- Onsite -->
     <div class="box onsite hidden">
@@ -116,7 +142,7 @@
 </div>
 
 </div>
-
+</div>
 {% endblock %} {# endblock main #}
 
 {% endblock %} {# endblock body #}

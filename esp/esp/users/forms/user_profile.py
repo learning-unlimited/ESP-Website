@@ -59,7 +59,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
         super(UserContactForm, self).__init__(*args, **kwargs)
         if not Tag.getBooleanTag('request_student_phonenum', default=True):
             del self.fields['phone_day']
-        if not Tag.getBooleanTag('text_messages_to_students') or not self.user.isStudent():
+        if not Tag.getBooleanTag('text_messages_to_students', default=False) or not self.user.isStudent():
             del self.fields['receive_txt_message']
         if self.user.isTeacher() and not Tag.getBooleanTag('teacher_address_required', default = False):
             self.fields['address_street'].required = False
@@ -70,8 +70,9 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     def clean(self):
         super(UserContactForm, self).clean()
         if self.user.isTeacher() or (self.user.isStudent() and Tag.getBooleanTag('require_student_phonenum', default=True)):
-            if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
-                raise forms.ValidationError("Please provide either a day phone or cell phone number in your personal contact information.")
+            if 'phone_day' in self.fields or 'phone_cell' in self.fields:
+                if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
+                    raise forms.ValidationError("Please provide either a day phone or cell phone number in your personal contact information.")
         if self.cleaned_data.get('receive_txt_message', None) and self.cleaned_data.get('phone_cell','') == '':
             raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages.")
         return self.cleaned_data
@@ -94,8 +95,9 @@ class EmergContactForm(FormUnrestrictedOtherUser):
 
     def clean(self):
         super(EmergContactForm, self).clean()
-        if self.cleaned_data.get('emerg_phone_day','') == '' and self.cleaned_data.get('emerg_phone_cell','') == '':
-            raise forms.ValidationError("Please provide either a day phone or cell phone for your emergency contact.")
+        if 'emerg_phone_day' in self.fields or 'emerg_phone_cell' in self.fields:
+            if self.cleaned_data.get('emerg_phone_day','') == '' and self.cleaned_data.get('emerg_phone_cell','') == '':
+                raise forms.ValidationError("Please provide either a day phone or cell phone for your emergency contact.")
         return self.cleaned_data
 
 
@@ -110,8 +112,9 @@ class GuardContactForm(FormUnrestrictedOtherUser):
 
     def clean(self):
         super(GuardContactForm, self).clean()
-        if self.cleaned_data.get('guard_phone_day','') == '' and self.cleaned_data.get('guard_phone_cell','') == '':
-            raise forms.ValidationError("Please provide either a day phone or cell phone for your parent/guardian.")
+        if 'guard_phone_day' in self.fields or 'guard_phone_cell' in self.fields:
+            if self.cleaned_data.get('guard_phone_day','') == '' and self.cleaned_data.get('guard_phone_cell','') == '':
+                raise forms.ValidationError("Please provide either a day phone or cell phone for your parent/guardian.")
         return self.cleaned_data
 
 HEARD_ABOUT_ESP_CHOICES = (
@@ -156,7 +159,6 @@ HOW_TO_GET_TO_PROGRAM = (
 class StudentInfoForm(FormUnrestrictedOtherUser):
     """ Extra student-specific information """
     from esp.users.models import ESPUser
-    from esp.users.models import shirt_sizes, shirt_types, food_choices
 
     gender = forms.ChoiceField(choices=[('', ''), ('M', 'Male'), ('F', 'Female')], required=False)
     graduation_year = forms.ChoiceField(choices=[('', '')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
@@ -167,9 +169,9 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
     heard_about = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HEARD_ABOUT_ESP_CHOICES, HEARD_ABOUT_ESP_CHOICES)))#forms.CharField(required=False)
-    shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
-    shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
-    food_preference = forms.ChoiceField(choices=([('','')]+list(food_choices)), required=False)
+    shirt_size = forms.ChoiceField(choices=[], required=False)
+    shirt_type = forms.ChoiceField(choices=[], required=False)
+    food_preference = forms.ChoiceField(choices=[], required=False)
 
     medical_needs = forms.CharField(required=False)
 
@@ -180,6 +182,10 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     def __init__(self, user=None, *args, **kwargs):
         from esp.users.models import ESPUser
         super(StudentInfoForm, self).__init__(user, *args, **kwargs)
+
+        self.fields['shirt_size'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('student_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
+        self.fields['shirt_type'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types', default = 'Straight cut, Fitted cut').split(',')]
+        self.fields['food_preference'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('food_choices', default = 'Anything, Vegetarian, Vegan').split(',')]
 
         self.allow_change_grade_level = Tag.getBooleanTag('allow_change_grade_level', default = False)
 
@@ -192,13 +198,12 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if (not show_studentrep_application) or show_studentrep_application == "no_expl":
             del self.fields['studentrep_expl']
 
-        if not Tag.getTag('show_student_tshirt_size_options'):
+        if not Tag.getBooleanTag('show_student_tshirt_size_options', default=False):
             del self.fields['shirt_size']
-            del self.fields['shirt_type']
-        elif Tag.getTag('studentinfo_shirt_type_selection') == 'False':
+        if not Tag.getBooleanTag('studentinfo_shirt_type_selection', default=False):
             del self.fields['shirt_type']
 
-        if not Tag.getTag('show_student_vegetarianism_options'):
+        if not Tag.getBooleanTag('show_student_vegetarianism_options', default=False):
             del self.fields['food_preference']
 
         #   Allow grade range of students to be customized by a Tag (default is 7-12)
@@ -213,7 +218,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                 self.fields['graduation_year'].choices.insert(0, grade_tup)
 
         #   Honor several possible Tags for customizing the fields that are displayed.
-        if Tag.getBooleanTag('show_student_graduation_years_not_grades'):
+        if Tag.getBooleanTag('show_student_graduation_years_not_grades', default=False):
             current_grad_year = self.ESPUser.current_schoolyear()
             new_choices = []
             for x in self.fields['graduation_year'].choices:
@@ -223,10 +228,10 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                     new_choices.append(x)
             self.fields['graduation_year'].choices = new_choices
 
-        if not Tag.getBooleanTag('student_profile_gender_field'):
+        if not Tag.getBooleanTag('student_profile_gender_field', default=False):
             del self.fields['gender']
 
-        if not Tag.getTag('ask_student_about_transportation_to_program'):
+        if not Tag.getBooleanTag('ask_student_about_transportation_to_program', default=False):
             del self.fields['transportation']
 
         if not Tag.getBooleanTag('allow_change_grade_level', default = False):
@@ -241,7 +246,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                     self.fields['dob'].required = False
 
         #   Add field asking about medical needs if directed by the Tag
-        if Tag.getTag('student_medical_needs'):
+        if Tag.getBooleanTag('student_medical_needs', default=False):
             self.fields['medical_needs'].widget = forms.Textarea(attrs={'cols': 40, 'rows': 3})
         else:
             del self.fields['medical_needs']
@@ -307,7 +312,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                 cleaned_data['dob'] = orig_prof.student_info.dob
 
 
-        if Tag.getBooleanTag('require_school_field'):
+        if Tag.getBooleanTag('require_school_field', default=False) and 'k12school' in self.fields:
             if not cleaned_data['k12school'] and not cleaned_data['unmatched_school']:
                 raise forms.ValidationError("Please select your school from the dropdown list that appears as you type its name.  You will need to click on an entry to select it.  If you cannot find your school, please type in its full name and check the box below; we will do our best to add it to our database.")
 
@@ -330,7 +335,6 @@ AFFILIATION_CHOICES = (
 class TeacherInfoForm(FormWithRequiredCss):
     """ Extra teacher-specific information """
 
-    from esp.users.models import shirt_sizes, shirt_types
     reimbursement_choices = [(False, 'I will pick up my reimbursement.'),
                              (True,  'Please mail me my reimbursement.')]
     from_here_answers = [ (True, "Yes"), (False, "No") ]
@@ -338,36 +342,41 @@ class TeacherInfoForm(FormWithRequiredCss):
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
     affiliation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=AFFILIATION_CHOICES), label ='What is your affiliation with %s?' % settings.INSTITUTION_NAME)
     major = SizedCharField(length=30, max_length=32, required=False)
-    shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
-    shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
+    shirt_size = forms.ChoiceField(choices=[], required=False)
+    shirt_type = forms.ChoiceField(choices=[], required=False)
 
     def __init__(self, *args, **kwargs):
         super(TeacherInfoForm, self).__init__(*args, **kwargs)
-        if Tag.getTag('teacherinfo_shirt_options') == 'False':
+
+        self.fields['shirt_size'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('teacher_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
+        self.fields['shirt_type'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types', default = 'Straight cut, Fitted cut').split(',')]
+
+        if not Tag.getBooleanTag('teacherinfo_shirt_options', default=True):
             del self.fields['shirt_size']
             del self.fields['shirt_type']
-        elif Tag.getTag('teacherinfo_shirt_type_selection') == 'False':
+        elif not Tag.getBooleanTag('teacherinfo_shirt_type_selection', default=True):
             del self.fields['shirt_type']
 
     def clean(self):
         super(TeacherInfoForm, self).clean()
         cleaned_data = self.cleaned_data
 
-        affiliation_field = self.fields['affiliation']
-        affiliation, school = affiliation_field.widget.decompress(cleaned_data.get('affiliation'))
-        if affiliation == '':
-            msg = u'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
-            self.add_error('affiliation', msg)
-        elif affiliation in (AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC):
-            cleaned_data['affiliation'] = affiliation_field.compress([affiliation, '']) # ignore the box
-        else: # OTHER or NONE -- Make sure they entered something into the other box
-            if school.strip() == '':
+        if 'affiliation' in self.fields:
+            affiliation_field = self.fields['affiliation']
+            affiliation, school = affiliation_field.widget.decompress(cleaned_data.get('affiliation'))
+            if affiliation == '':
                 msg = u'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
-                if affiliation == AFFILIATION_OTHER:
-                    msg = u'Please enter your affiliation with %s.' % settings.INSTITUTION_NAME
-                elif affiliation == AFFILIATION_NONE:
-                    msg = u'Please enter your school or employer.'
                 self.add_error('affiliation', msg)
+            elif affiliation in (AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC):
+                cleaned_data['affiliation'] = affiliation_field.compress([affiliation, '']) # ignore the box
+            else: # OTHER or NONE -- Make sure they entered something into the other box
+                if school.strip() == '':
+                    msg = u'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
+                    if affiliation == AFFILIATION_OTHER:
+                        msg = u'Please enter your affiliation with %s.' % settings.INSTITUTION_NAME
+                    elif affiliation == AFFILIATION_NONE:
+                        msg = u'Please enter your school or employer.'
+                    self.add_error('affiliation', msg)
         return cleaned_data
 
 TeacherInfoForm.base_fields['graduation_year'].widget.attrs['size'] = 4
@@ -392,25 +401,59 @@ GuardianInfoForm.base_fields['year_finished'].widget.attrs['maxlength'] = 4
 GuardianInfoForm.base_fields['num_kids'].widget.attrs['size'] = 3
 GuardianInfoForm.base_fields['num_kids'].widget.attrs['maxlength'] = 16
 
+# A list of fields (across all profile forms) that can not be deleted via profile_hide_fields tags
+_undeletable_fields_all = ['e_mail']
+
+# A list of student fields that can not be deleted via profile_hide_fields tags
+_undeletable_fields_students = ['graduation_year']
 class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
     """ Form for student profiles """
+    def __init__(self, *args, **kwargs):
+        super(StudentProfileForm, self).__init__(*args, **kwargs)
+        for field_name in [x.strip().lower() for x in Tag.getTag('student_profile_hide_fields', default='').split(',')]:
+            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_students:
+                del self.fields[field_name]
+            if field_name == 'phone_cell' and 'receive_txt_message' in self.fields:
+                del self.fields['receive_txt_message']
 
+# A list of teacher fields that can not be deleted via profile_hide_fields tags
+_undeletable_fields_teachers = []
 class TeacherProfileForm(UserContactForm, TeacherInfoForm):
     """ Form for teacher profiles """
     def __init__(self, *args, **kwargs):
         super(TeacherProfileForm, self).__init__(*args, **kwargs)
-        for field_name in Tag.getTag('teacher_profile_hide_fields', default='').split(','):
-            if field_name in self.fields:
+        for field_name in [x.strip().lower() for x in Tag.getTag('teacher_profile_hide_fields', default='').split(',')]:
+            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_teachers:
                 del self.fields[field_name]
 
+# A list of guardian fields that can not be deleted via profile_hide_fields tags
+_undeletable_fields_guardians = []
 class GuardianProfileForm(UserContactForm, GuardianInfoForm):
     """ Form for guardian profiles """
+    def __init__(self, *args, **kwargs):
+        super(GuardianProfileForm, self).__init__(*args, **kwargs)
+        for field_name in [x.strip().lower() for x in Tag.getTag('guardian_profile_hide_fields', default='').split(',')]:
+            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_guardians:
+                del self.fields[field_name]
 
+# A list of educator fields that can not be deleted via profile_hide_fields tags
+_undeletable_fields_educators = []
 class EducatorProfileForm(UserContactForm, EducatorInfoForm):
     """ Form for educator profiles """
+    def __init__(self, *args, **kwargs):
+        super(EducatorProfileForm, self).__init__(*args, **kwargs)
+        for field_name in [x.strip().lower() for x in Tag.getTag('educator_profile_hide_fields', default='').split(',')]:
+            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_educators:
+                del self.fields[field_name]
 
+# A list of volunteer fields that can not be deleted via profile_hide_fields tags
+_undeletable_fields_volunteers = []
 class VolunteerProfileForm(UserContactForm):
-    pass
+    def __init__(self, *args, **kwargs):
+        super(VolunteerProfileForm, self).__init__(*args, **kwargs)
+        for field_name in [x.strip().lower() for x in Tag.getTag('volunteer_profile_hide_fields', default='').split(',')]:
+            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_volunteers:
+                del self.fields[field_name]
 
 class VisitingUserInfo(FormUnrestrictedOtherUser):
     profession = SizedCharField(length=12, max_length=64, required=False)

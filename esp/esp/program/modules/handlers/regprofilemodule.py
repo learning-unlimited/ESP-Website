@@ -48,13 +48,15 @@ class RegProfileModule(ProgramModuleObj):
             "link_title": "Update Your Profile",
             "module_type": "learn",
             "seq": 1,
-            "required": True
+            "required": True,
+            "choosable": 1
         }, {
             "admin_title": "Teacher Profile Editor",
             "link_title": "Update Your Profile",
             "module_type": "teach",
             "seq": 1,
-            "required": True
+            "required": True,
+            "choosable": 1,
         } ]
 
     def students(self, QObject = False):

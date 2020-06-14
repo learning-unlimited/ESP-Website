@@ -53,7 +53,8 @@ class NameTagModule(ProgramModuleObj):
             "admin_title": "Nametag Generation",
             "link_title": "Generate Nametags",
             "module_type": "manage",
-            "seq": 100
+            "seq": 100,
+            "choosable": 1,
             }
 
     @main_call

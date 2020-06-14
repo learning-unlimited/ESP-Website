@@ -1,0 +1,49 @@
+{% extends "program/modules/teacheronsite/webapp.html" %}
+
+{% block body %}
+{% load survey %}
+<center>
+  <div class="main survey">
+    {% if survey_page == "review" %}
+        <table>
+            <tr><th>Student Survey Responses for {{ program.niceName }}</th></tr>
+        </table>
+        {% for c in perclass_data %}
+            <table>
+                <tr>
+                    <th>Responses for {{ c.class.emailcode }}: {{ c.class.title }}</th>
+                </tr>
+            </table>
+            {% for q in c.questions %}
+                {% with c.class.num_students as num_participants %}
+                    {% include "survey/answers.html" %}
+                {% endwith %}
+            {% endfor %}
+        {% empty %}
+            <table>
+                <tr>
+                    <td>{% if survey_status == "none" %}No survey for this program{% else %}No survey responses available{% endif %}</th>
+                </tr>
+            </table>
+        {% endfor %}
+    {% else %}
+        <table>
+            <tr><th>{% if not view_list and general %}General {% endif %}Survey for {% if not view_list and section %}{{ section }}{% else %}{{ program.niceName }}{% endif %}</th></tr>
+        </table>
+        {% include "survey/survey_form.html" %}
+    {% endif %}
+  <table style="height:8vh; border:none;"><tr style="border:none;"><td style="border:none; background: none;"></td></tr></table>
+  </div>
+</center>
+<div class="navbar bottom">
+  <table>
+    <tr>
+      <td{% if survey_page == "survey" %} class="selected"{% endif %}><a class="no-dec" href="/teach/{{one}}/{{two}}/onsitesurvey/" style="display:block;"><i class="material-icons md-5">ballot</i>
+        <br>Teacher Survey</td>
+      <td{% if survey_page == "review" %} class="selected"{% endif %}><a class="no-dec" href="/teach/{{one}}/{{two}}/onsitesurvey/review" style="display:block;"><i class="material-icons md-5">receipt</i>
+        <br>Student Survey Results</td>
+    </tr>
+  </table>
+</div>
+
+{% endblock %}

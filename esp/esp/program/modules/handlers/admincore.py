@@ -65,7 +65,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
         return {
             "link_title": "Program Dashboard",
             "module_type": "manage",
-            "seq": -9999
+            "seq": -9999,
+            "choosable": 1,
             }
 
     @aux_call
@@ -93,28 +94,41 @@ class AdminCore(ProgramModuleObj, CoreModule):
         crmi = ClassRegModuleInfo.objects.get(program=prog)
         scrmi = StudentClassRegModuleInfo.objects.get(program=prog)
         old_url = prog.url
+        context['open_section'] = extra
 
         #If one of the forms was submitted, process it and save if valid
         if request.method == 'POST':
             if 'form_name' in request.POST:
                 submitted_form = request.POST['form_name']
-                if submitted_form == "Program Settings":
+                if submitted_form == "program":
                     form = ProgramSettingsForm(request.POST, instance = prog)
+                    if form.is_valid():
+                        form.save()
+                        #If the url for the program is now different, redirect to the new settings page
+                        if prog.url is not old_url:
+                            return HttpResponseRedirect( '/manage/%s/settings' % (prog.url))
                     prog_form = form
-                elif submitted_form == "Teacher Registration Settings":
+                    context['open_section'] = "program"
+                elif submitted_form == "crmi":
                     form = TeacherRegSettingsForm(request.POST, instance = crmi)
+                    if form.is_valid():
+                        form.save()
                     crmi_form = form
-                elif submitted_form == "Student Registration Settings":
+                    context['open_section'] = "crmi"
+                elif submitted_form == "scrmi":
                     form = StudentRegSettingsForm(request.POST, instance = scrmi)
+                    if form.is_valid():
+                        form.save()
                     scrmi_form = form
+                    context['open_section'] = "scrmi"
                 if form.is_valid():
                     form.save()
                     #If the url for the program is now different, redirect to the new settings page
                     if prog.url is not old_url:
-                        return HttpResponseRedirect( '/manage/%s/settings' % (prog.url))
+                        return HttpResponseRedirect( '/manage/%s/settings/%s' % (prog.url, context['open_section']))
 
         #Set up any other forms on the page
-        if submitted_form != "Program Settings":
+        if submitted_form != "program":
             prog_dict = {}
             prog_dict.update(prog.__dict__)
             #We need to populate all of these manually
@@ -130,22 +144,45 @@ class AdminCore(ProgramModuleObj, CoreModule):
             prog_dict['flag_types'] = prog.flag_types.all().values_list("id", flat=True)
             prog_form = ProgramSettingsForm(prog_dict, instance = prog)
 
-        if submitted_form != "Teacher Registration Settings":
+        if submitted_form != "crmi":
             crmi_form = TeacherRegSettingsForm(instance = crmi)
 
-        if submitted_form != "Student Registration Settings":
+        if submitted_form != "scrmi":
             scrmi_form = StudentRegSettingsForm(instance = scrmi)
 
         context['one'] = one
         context['two'] = two
         context['program'] = prog
         context['forms'] = [
-                            ("Program Settings", prog_form),
-                            ("Teacher Registration Settings", crmi_form),
-                            ("Student Registration Settings", scrmi_form),
+                            ("Program Settings", "program", prog_form),
+                            ("Teacher Registration Settings", "crmi", crmi_form),
+                            ("Student Registration Settings", "scrmi", scrmi_form),
                            ]
 
         return render_to_response(self.baseDir()+'settings.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def tags(self, request, tl, one, two, module, extra, prog):
+        from esp.program.modules.forms.admincore import ProgramTagSettingsForm
+        context = {}
+
+        #If one of the forms was submitted, process it and save if valid
+        if request.method == 'POST':
+            form = ProgramTagSettingsForm(request.POST, program = prog)
+            if form.is_valid():
+                form.save()
+
+        form = ProgramTagSettingsForm(program = prog)
+
+        context['one'] = one
+        context['two'] = two
+        context['program'] = prog
+        context['form'] = form
+        context['categories'] = form.categories
+        context['open_section'] = extra
+
+        return render_to_response(self.baseDir()+'tags.html', request, context)
 
     @main_call
     @needs_admin

@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from localflavor.us.models import PhoneNumberField
-from django.core import urlresolvers
+from django.core import urlresolvers, validators
 from django.core.cache import cache
 from django.db import models
 from django.db.models import Count
@@ -61,7 +61,7 @@ from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError, AjaxError
 from esp.tagdict.models import Tag
-from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types, Record
+from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, Record
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
@@ -93,6 +93,10 @@ class ProgramModule(models.Model):
     # Must the user supply this ProgramModule with data in order to complete program registration?
     required = models.BooleanField(default=False)
 
+    # When creating a new program, should this module be available for admins to select (0), included by default (1)
+    # or excluded by default (2).
+    choosable = models.IntegerField(default=0, validators=[validators.MinValueValidator(0), validators.MaxValueValidator(2)])
+
     class Meta:
         app_label = 'program'
         db_table = 'program_programmodule'
@@ -108,7 +112,7 @@ class ProgramModule(models.Model):
         The file 'esp/program/module/handlers/[self.handler]' must contain
         a class named [self.handler]; we return that class.
 
-        Raises a PrograModule.CannotGetClassException() if the class can't be imported.
+        Raises a ProgramModule.CannotGetClassException() if the class can't be imported.
         """
         try:
             path = "esp.program.modules.handlers.%s" % (self.handler.lower())
@@ -252,10 +256,11 @@ class Program(models.Model, CustomFormsLinkModel):
                          help_text='The set of enabled program functionalities. See ' +
                          '<a href="https://github.com/learning-unlimited/ESP-Website/blob/main/docs/admin/program_modules.rst">' +
                          'the documentation</a> for details.')
-    class_categories = models.ManyToManyField('ClassCategories')
+    class_categories = models.ManyToManyField('ClassCategories',
+                                              blank=True,
+                                              help_text=format_lazy('You can add new categories or modify existing ones from <a href="%s">the admin panel</a>.',
+                                                                    urlresolvers.reverse_lazy('admin:program_classcategories_changelist')))
 
-    #so we don't have to delete old ones and don't end up with
-    # 3 seemingly-identical flags in the same program.
     flag_types = models.ManyToManyField('ClassFlagType',
                     blank=True,
                     help_text=format_lazy(
@@ -387,7 +392,8 @@ class Program(models.Model, CustomFormsLinkModel):
         section_ids = sections_in_program_by_id(self)
 
         counts = {}
-        checked_in_ids = self.students()['attended'].values_list('id', flat=True)
+        students = self.students(True)
+        checked_in_ids = ESPUser.objects.filter(students['attended'] & ~students['checked_out']).distinct().values_list('id', flat = True)
 
         reg_type = RegistrationType.get_map()['Enrolled']
 
@@ -694,6 +700,44 @@ class Program(models.Model, CustomFormsLinkModel):
     def isConfirmed(self, espuser):
         return Record.objects.filter(event="reg_confirmed",user=espuser,
                                      program=self).exists()
+
+    def isCheckedIn(self, espuser, verbose = False):
+        status = 0
+        verbose_names = ["not_checked_in", "checked_in", "checked_out"]
+        recs = Record.objects.filter(event__in=["attended","checked_out"],user=espuser,
+                                     program=self).order_by("-time")
+        if recs.count() > 0:
+            # Check if student has ever been checked_in
+            if recs.filter(event="attended").exists():
+                status = 1
+                # Check if most recent record is checked_out
+                if recs[0].event == "checked_out":
+                    status = 2
+        if verbose:
+            return verbose_names[status]
+        else:
+            return status == 1
+
+    """ Returns a queryset of students that are checked out of the program at the specified time """
+    def checkedOutStudents(self, time_max = datetime.now()):
+        recs = Record.objects.filter(program = self, event__in=["attended", "checked_out"], time__lt=time_max).order_by('user', '-time').distinct('user')
+        return ESPUser.objects.filter(record__id__in=recs, record__event="checked_out")
+
+    """ Returns a queryset of students that are CURRENTLY checked out of the program at the specified time """
+    @cache_function
+    def currentlyCheckedOutStudents(self):
+        return self.checkedOutStudents(time_max=datetime.now())
+    currentlyCheckedOutStudents.depend_on_model('users.Record')
+
+    """ Returns a queryset of students that are checked in to the program at the specified time """
+    def checkedInStudents(self, time_max = datetime.now()):
+        return ESPUser.objects.filter(Q(record__event="attended", record__program=self)).exclude(id__in=self.checkedOutStudents(time_max)).distinct()
+
+    """ Returns a queryset of students that are CURRENTLY checked in to the program at the specified time """
+    @cache_function
+    def currentlyCheckedInStudents(self):
+        return self.checkedInStudents(time_max=datetime.now())
+    currentlyCheckedInStudents.depend_on_model('users.Record')
 
     """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
     "Classrooms."  So, if you try to call the old functions (which have no point anymore), then
@@ -1006,7 +1050,7 @@ class Program(models.Model, CustomFormsLinkModel):
                 return 0
         if tl:
             modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
-                 for module in self.program_modules.filter(module_type = tl) ]
+                 for module in self.program_modules.filter(module_type = tl)]
         else:
             modules =  [ base.ProgramModuleObj.getFromProgModule(self, module, old_prog)
                  for module in self.program_modules.all()]
@@ -1104,7 +1148,7 @@ class Program(models.Model, CustomFormsLinkModel):
         if 'class_approved' in teacher_dict:
             query = teacher_dict['class_approved']
             query = query.filter(registrationprofile__most_recent_profile=True)
-            if not Tag.getBooleanTag('teacherinfo_shirt_type_selection'):
+            if not Tag.getBooleanTag('teacherinfo_shirt_type_selection', default=True):
                 query = query.values_list('registrationprofile__teacher_info__shirt_size')
                 query = query.annotate(people=Count('id', distinct=True))
 
@@ -1121,8 +1165,10 @@ class Program(models.Model, CustomFormsLinkModel):
                     shirt_type, shirt_size, count = row
                     shirt_count[shirt_type][shirt_size] = count
 
+        shirt_sizes = [x.strip() for x in Tag.getTag('teacher_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
+        shirt_types = [x.strip() for x in Tag.getTag('shirt_types', default = 'Straight cut, Fitted cut').split(',')]
         shirts = {}
-        shirts['teachers'] = [ { 'type': shirt_type[1], 'distribution':[ shirt_count[shirt_type[0]][shirt_size[0]] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
+        shirts['teachers'] = [ { 'type': shirt_type, 'distribution':[ shirt_count[shirt_type][shirt_size] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
 
         return {'shirts' : shirts, 'shirt_sizes' : shirt_sizes, 'shirt_types' : shirt_types }
 
@@ -1948,8 +1994,8 @@ class VolunteerOffer(models.Model):
     name = models.CharField(max_length=80, blank=True, null=True)
     phone = PhoneNumberField(blank=True, null=True)
 
-    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
-    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
+    shirt_size = models.TextField(blank=True, null=True)
+    shirt_type = models.TextField(blank=True, null=True)
 
     comments = models.TextField(blank=True, null=True)
 
