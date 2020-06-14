@@ -4,7 +4,6 @@
 
 from django import forms
 from django.conf import settings
-from localflavor.us.forms import basestring
 from django.forms import widgets
 from django.template import Template, Context
 from django.utils.encoding import force_unicode
@@ -105,7 +104,7 @@ class ClassAttrMergingSelect(forms.Select):
         #   Merge 'class' attributes - this is the difference from Django's default implementation
         if extra_attrs:
             if 'class' in attrs and 'class' in extra_attrs \
-                    and isinstance(extra_attrs['class'], basestring):
+                    and (isinstance(extra_attrs['class'], str) or isinstance(extra_attrs['class'], unicode)):
                 attrs['class'] += ' ' + extra_attrs['class']
                 del extra_attrs['class']
             attrs.update(extra_attrs)
@@ -207,7 +206,7 @@ class NullCheckboxSelect(forms.CheckboxInput):
             return False
         value = data.get(name)
         values =  {'on': True, 'true': True, 'false': False}
-        if isinstance(value, basestring):
+        if isinstance(value, str) or isinstance(value, unicode):
             value = values.get(value.lower(), value)
         logger.info('NullCheckboxSelect converted %s to %s', data.get(name), value)
         return value
