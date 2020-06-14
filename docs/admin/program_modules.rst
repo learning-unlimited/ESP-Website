@@ -339,6 +339,35 @@ student applications.  For more information, see
 Class Change Request Module (ClassChangeRequest)
 ------------------------------------------------
 
+Student Onsite Webapp (StudentOnsite)
+-------------------------------------
+
+This provides a mobile-friendly interface for students to perform common functions that might be desired onsite at a program, such as viewing their schedule, making class changes, getting directions to their classes, and filling out surveys.
+
+Admin Setup
+~~~~~~~~~~~
+
+The basic functionality of the student webapp should work as soon as the module is enabled. However, in order for the maps to work properly, you'll need to perform the following additional steps:
+1. We use the Google Maps API to display a map with a custom center. You'll need to register a `Google Cloud account <https://console.cloud.google.com/>`_. You'll then need to get an API key for the service. This API key should be set as the value for the 'google_cloud_api_key' tag. Note that this API service requires a payment method, but the good news is that you get a whole bunch of free usage before it charges your card each month.
+2. You'll also need to set the 'program_center' tag to the geographic center of your campus or program location, otherwise the map will be centered on Stanford. The tag should be in the format of "{lat: 37.427490, lng: -122.170267}". This can be a program-specific tag (e.g. if you want the map to focus on different parts of campus for different programs) or just a global tag.
+3. Lastly, to enable the walking directions to class locations, you need a "Lat/Long" (spelling and capitalization matter) resource to be associated with each classroom (you should do this through the resources management page). The 'attribute_value' of each resource should be set to the lat/long from google maps (of the form 37.4268889, -122.172065).
+
+For class changes on the student webapp, students are allowed by default to enroll in classes that have fewer enrolled students than capacity (including any capacity modifiers specified in the program settings). You can change two tags to potentially allow students to enroll in classes that are not full based on program attendance or class attendance. The tags are as follows:
+1. 'switch_time_program_attendance': Set this tag to the time at which you'd like to start using program attendance numbers instead of class enrollment numbers. The format is HH:MM where HH is in 24 hour time. After this time, if at least 5 students have been checked into the program, students will be able to class change based on program attendance numbers. If this is not set, program attendance numbers will not be used. 
+2. 'switch_lag_class_attendance': Set this tag to the amount of minutes into a class at which you'd like to start using class attendance numbers if available (instead of enrollment or program attendance). This many minutes into a class block, if at least 1 student has been marked attending that class, students will be able to class change based on class attendance numbers. If blank, class attendance numbers will not be used.
+Note that if both tags are set, the hierarchy is that class attendance will be used if available; program attendance will be used if class attendance is not available; enrollment will be used if program attendance is not available. 
+
+There's one last tag that may be useful, 'webapp_isstep', which you can set to "True" if you want to list the webapp as a step in student registration (in the checkboxes). Otherwise it won't be shown and you'll need to direct your students to the URL(s) some other way.
+
+Views provided
+~~~~~~~~~~~~~~
+
+* [main] /learn/<program>/studentonsite -- Main student webapp landing page and live student schedule
+* /learn/<program>/onsitemap -- Shows Google map of campus. If this page is accessed by clicking on a classroom on the student schedule, this page shows walking directions to that classroom (provided that is set up, see above).
+* /learn/<program>/onsitecatalog -- Webapp-specific class catalog. When accessed for a specific timeblock from the student schedule, allows for students to enroll in classes that are not full (see above).
+* /learn/<program>/onsitesurvey -- Webapp version of the student survey (see above for more details). Same functionality but with slightly different styling.
+* /learn/<program>/onsitedetails -- Shows the details and links (classrooms, times, teachers, documents, website, survey) for a specific section. Only accessible from the student schedule.
+
 Teacher modules
 ===============
 
@@ -438,6 +467,30 @@ Teacher Admissions Dashboard
 
 Provides an interface for teachers to review applications for their class.
 For more information, see `</docs/admin/student_apps.rst>`_.
+
+Teacher Onsite Webapp (TeacherOnsite)
+-------------------------------------
+
+This provides a mobile-friendly interface for teachers to perform common functions that might be desired onsite at a program, such as viewing their schedule, taking attendance, getting directions to their classes, filling out surveys, and viewing student survey results.
+
+Admin Setup
+~~~~~~~~~~~
+
+The basic functionality of the teacher webapp should work as soon as the module is enabled. However, in order for the maps to work properly, you'll need to perform the following additional steps:
+1. We use the Google Maps API to display a map with a custom center. You'll need to register a `Google Cloud account <https://console.cloud.google.com/>`_. You'll then need to get an API key for the service. This API key should be set as the value for the 'google_cloud_api_key' tag. Note that this API service requires a payment method, but the good news is that you get a whole bunch of free usage before it charges your card each month.
+2. You'll also need to set the 'program_center' tag to the geographic center of your campus or program location, otherwise the map will be centered on Stanford. The tag should be in the format of "{lat: 37.427490, lng: -122.170267}". This can be a program-specific tag (e.g. if you want the map to focus on different parts of campus for different programs) or just a global tag.
+3. Lastly, to enable the walking directions to class locations, you need a "Lat/Long" (spelling and capitalization matter) resource to be associated with each classroom (you should do this through the resources management page). The 'attribute_value' of each resource should be set to the lat/long from google maps (of the form 37.4268889, -122.172065).
+
+There's one last tag that may be useful, 'webapp_isstep', which you can set to "True" if you want to list the webapp as a step in teacher registration (in the checkboxes). Otherwise it won't be shown and you'll need to direct your teacher to the URL(s) some other way.
+
+Views provided
+~~~~~~~~~~~~~~
+
+* [main] /teach/<program>/teacheronsite -- Main teacher webapp landing page and live teacher schedule
+* /teach/<program>/onsitemap -- Shows Google map of campus. If this page is accessed by clicking on a classroom on the teacher schedule, this page shows walking directions to that classroom (provided that is set up, see above).
+* /teach/<program>/onsitesurvey -- Webapp version of the teacher survey (see above for more details). Also has a tab for teachers to view results from the student surveys for their class(es). Both of these interfaces have the same functionality as the main teacher survey pages but with slightly different styling.
+* /teach/<program>/onsitedetails -- Shows the details and links (classrooms, times, teachers, enrollment, documents, website) for a specific section (or all sections).
+* /teach/<program>/onsiteroster -- Shows the roster for a specific section (or all sections). If only a specific section is selected, this page also allows for marking attendance.
 
 Management modules
 ==================
