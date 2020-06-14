@@ -52,7 +52,8 @@ class SurveyManagement(ProgramModuleObj):
             "admin_title": "Survey Management",
             "link_title": "Surveys",
             "module_type": "manage",
-            "seq": 25
+            "seq": 25,
+            'choosable': 1,
             }
 
     def isStep(self):

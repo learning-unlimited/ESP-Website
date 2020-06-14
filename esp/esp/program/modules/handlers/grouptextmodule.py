@@ -60,7 +60,8 @@ class GroupTextModule(ProgramModuleObj):
             "admin_title": "Group Text Panel for Admin",
             "link_title": "Group Text Panel: Text all the students!",
             "module_type": "manage",
-            "seq": 10
+            "seq": 10,
+            "choosable": 1,
         }
 
     @staticmethod

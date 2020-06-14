@@ -47,7 +47,8 @@ class TeacherBioModule(ProgramModuleObj):
             "admin_title": "Teacher Biography Editor",
             "link_title": "Update your teacher biography",
             "module_type": "teach",
-            "seq": -111
+            "seq": -111,
+            "choosable": 1,
             }
 
     def teachers(self, QObject = False):

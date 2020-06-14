@@ -570,7 +570,7 @@ class ProgramFrameworkTest(TestCase):
                     'sections_per_class': 1,
                     'num_students': 10,
                     'num_admins': 1,
-                    'modules':[x.id for x in ProgramModule.objects.all()],
+                    'modules': [x.id for x in ProgramModule.objects.all()],
                     'program_type': 'TestProgram',
                     'program_instance_name': '2222_Summer',
                     'program_instance_label': 'Summer 2222',
@@ -805,7 +805,7 @@ class ProgramFrameworkTest(TestCase):
             logger.info(pcf.data)
             logger.info(pcf.errors)
             logger.info(prog_form_values)
-            raise Exception()
+            raise Exception('Problem creating a past program')
 
         temp_prog = pcf.save(commit=False)
         (perms, modules) = prepare_program(temp_prog, pcf.cleaned_data)

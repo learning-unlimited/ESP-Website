@@ -93,7 +93,7 @@ class ProgramModuleObj(models.Model):
 
         #   Filter out attributes that we don't want to look at: attributes of
         #   ProgramModuleObj, including Django stuff
-        key_set = set(dir(self)) - set(dir(ProgramModuleObj)) - set(self.__class__._meta.get_all_field_names())
+        key_set = set(dir(self)) - set(dir(ProgramModuleObj)) - set(self.__class__._meta.get_fields())
         for key in key_set:
             #   Fetch the attribute, now that we're confident it's safe to look at.
             item = getattr(self, key)
@@ -292,6 +292,11 @@ class ProgramModuleObj(models.Model):
         """ Use a template if the `mainView' function doesn't exist. """
         return (not self.main_view)
 
+    def isAdminPortalFeatured(self):
+        """Don't display in the long list of additional modules if it's already featured
+        in the main portion of the admin portal"""
+        return self.module.admin_title in ["Program Dashboard (AdminCore)", "Course Materials", "Program Vitals (part of Dashboard)", "Volunteer Management", "Manage Classes (part of Dashboard)", "AJAX Scheduling (AJAXSchedulingModule)", "Resource Management", "Communications Panel for Admin", "User Morphing Capability", "Nametag Generation", "User List Generator", "Class Flags"]
+
     def isCompleted(self):
         return False
 
@@ -381,6 +386,7 @@ class ProgramModuleObj(models.Model):
         - "handler"
         - "admin_title" (as "%(link_title)s (%(handler)s)")
         - "seq" (as 200)
+        - "choosable" (as 0, namely that it displays as an option for admins to choose upon creating a new program)
         """
 
         props = cls.module_properties()
@@ -392,6 +398,9 @@ class ProgramModuleObj(models.Model):
                 props["admin_title"] = "%(link_title)s (%(handler)s)" % props
             if not "seq" in props:
                 props["seq"] = 200
+            if not "choosable" in props:
+                props["choosable"] = 0
+                raise AttributeError("Module `{}` doesn't have choosable property.".format(cls.__name__))
 
         if isinstance(props, dict):
             props = [ props ]

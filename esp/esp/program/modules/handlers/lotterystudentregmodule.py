@@ -79,7 +79,8 @@ class LotteryStudentRegModule(ProgramModuleObj):
             "link_title": "Class Registration Lottery",
             "admin_title": "Lottery Student Registration",
             "module_type": "learn",
-            "seq": 7
+            "seq": 7,
+            "choosable": 2,
             }
 
         """ def prepare(self, context={}):

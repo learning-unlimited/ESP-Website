@@ -66,6 +66,7 @@ class OnSiteClassList(ProgramModuleObj):
             "link_title": "List of Open Classes",
             "module_type": "onsite",
             "seq": 32,
+            "choosable": 1,
             }
 
     @cache_function

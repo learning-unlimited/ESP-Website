@@ -1,5 +1,11 @@
 /* Make CheckboxSelectMultiple and FilteredSelectMultiple render sanely. */
 
+input[name="program_module_questions"] {
+  display: inline;
+}
+#id_program_module_questions {
+    margin: 0 !important;
+}
 li {
     list-style-type: none;
 }
@@ -7,6 +13,9 @@ li {
 li label {
     float: none !important;
     width: auto !important;
+    text-indent: -18px !important;
+    padding-left: 18px;
+    color: #000000 !important;
 }
 
 div.form-row {

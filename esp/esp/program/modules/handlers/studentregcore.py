@@ -59,7 +59,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             "link_title": "Student Registration",
             "admin_title": "Core Student Registration",
             "module_type": "learn",
-            "seq": -9999
+            "seq": -9999,
+            "choosable": 1
             }
 
     @cache_function

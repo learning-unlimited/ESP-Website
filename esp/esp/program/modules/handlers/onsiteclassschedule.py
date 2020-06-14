@@ -47,7 +47,8 @@ class OnsiteClassSchedule(ProgramModuleObj):
             "admin_title": "Onsite Scheduling for Students",
             "link_title": "Scheduling and Class Changes",
             "module_type": "onsite",
-            "seq": 30
+            "seq": 30,
+            "choosable": 1,
             }
 
     @aux_call

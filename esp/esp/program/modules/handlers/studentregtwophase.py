@@ -79,7 +79,8 @@ class StudentRegTwoPhase(ProgramModuleObj):
             "admin_title": "Two-Phase Student Registration",
             "module_type": "learn",
             "seq": 3,
-            "required": True
+            "required": True,
+            "choosable": 0,
             }
 
     @main_call

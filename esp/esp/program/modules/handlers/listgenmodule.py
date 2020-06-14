@@ -268,7 +268,8 @@ class ListGenModule(ProgramModuleObj):
             "admin_title": "User List Generator",
             "link_title": "Generate List of Users",
             "module_type": "manage",
-            "seq": 500
+            "seq": 500,
+            "choosable": 1,
             }
 
     @aux_call

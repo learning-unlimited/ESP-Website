@@ -71,7 +71,8 @@ class ProgramPrintables(ProgramModuleObj):
         return {
             "link_title": "Program Printables",
             "module_type": "manage",
-            "seq": 5
+            "seq": 5,
+            "choosable": 1,
             }
 
     @aux_call

@@ -52,7 +52,8 @@ class OnSiteAttendance(ProgramModuleObj):
             "admin_title": "On-Site Student Attendance",
             "link_title": "Check Student Attendance",
             "module_type": "onsite",
-            "seq": 1
+            "seq": 1,
+            "choosable": 1,
             }
 
     @main_call

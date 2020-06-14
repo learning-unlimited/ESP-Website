@@ -52,6 +52,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             "link_title": "Sign Up to Volunteer",
             "module_type": "volunteer",
             "seq": 0,
+            "choosable": 1,
             }
 
     def require_auth(self):

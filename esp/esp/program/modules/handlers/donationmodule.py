@@ -67,6 +67,7 @@ class DonationModule(ProgramModuleObj):
             "link_title": "Optional Donation",
             "module_type": "learn",
             "seq": 50,
+            "choosable": 0,
             }
 
     def apply_settings(self):

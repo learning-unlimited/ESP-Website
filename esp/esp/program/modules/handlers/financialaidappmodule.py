@@ -56,7 +56,8 @@ class FinancialAidAppModule(ProgramModuleObj):
             "admin_title": "Financial Aid Application",
             "link_title": "Financial Aid Application",
             "module_type": "learn",
-            "seq": 25
+            "seq": 25,
+            "choosable": 0,
             }
 
     def students(self, QObject = False):
