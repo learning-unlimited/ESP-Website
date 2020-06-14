@@ -55,6 +55,11 @@ class AjaxForeignKeyFieldBase:
         else:
             shadow_field_javascript = ""
 
+        if hasattr(self, "prog"):
+            prog = self.prog
+        else:
+            prog = ""
+
         javascript = """
 <script type="text/javascript">
 <!--
@@ -70,7 +75,8 @@ $j(function () {
                     model_module: "%(model_module)s",
                     model_name: "%(model_name)s",
                     ajax_func: "%(ajax_func)s",
-                    ajax_data: request.term
+                    ajax_data: request.term,
+                    prog: "%(prog)s",
                 },
                 success: function(data) {
                     var output = $j.map(data.result, function(item) {
@@ -102,7 +108,8 @@ $j(function () {
               shadow_field=self.shadow_field,
               model_module=model_module, model_name=model_name,
               ajax_func=(self.ajax_func or 'ajax_autocomplete'),
-              shadow_field_javascript=shadow_field_javascript)
+              shadow_field_javascript=shadow_field_javascript,
+              prog = prog)
 
         html = """
 <div class="raw_id_admin" style="display: none;">

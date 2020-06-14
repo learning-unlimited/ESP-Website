@@ -73,19 +73,24 @@
             <div id="filter_accordion">
 
                 <h4><a href="#">User ID</a></h4>
-                <div>Enter an ID number: <input type="text" size="6" name="userid" id="userid" /></div>
+                <div>Enter ID number: <input type="text" size="6" name="userid" id="userid" /> <br />
+                <small>(Can be a comma-separated list)</small></div>
 
                 <h4><a href="#">User name</a></h4>
-                <div>Enter a username: <input type="text" size="30" name="username" id="username" autocomplete="new-username" /></div>
+                <div>Enter a username: <input type="text" size="30" name="username" id="username" autocomplete="new-username" /> <br />
+                <small>(Supports regular expressions)</small></div>
 
                 <h4><a href="#">Last name</a></h4>
-                <div>Enter a portion of the last name: <input type="text" size="30" name="last_name" id="last_name" /></div>
+                <div>Enter a portion of the last name: <input type="text" size="30" name="last_name" id="last_name" /> <br />
+                <small>(Supports regular expressions)</small></div>
 
                 <h4><a href="#">First name</a></h4>
-                <div>Enter a portion of the first name: <input type="text" size="30" name="first_name" id="first_name" /></div>
+                <div>Enter a portion of the first name: <input type="text" size="30" name="first_name" id="first_name" /> <br />
+                <small>(Supports regular expressions)</small></div>
 
                 <h4><a href="#">Email address</a></h4>
-                <div>Enter a portion of the email address: <input type="text" size="30" name="email" id="email" /></div>
+                <div>Enter a portion of the email address: <input type="text" size="30" name="email" id="email" /> <br />
+                <small>(Supports regular expressions)</small></div>
 
                 <h4><a href="#">Zip Code</a></h4>
                 <div>
@@ -117,6 +122,16 @@
                 <div><select name="group" id="user-search-group">
                     {% for group in groups %}
                     <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                    <option value="" selected hidden></option>
+                </select></div>
+
+                <h4><a href="#">Class Registrations</a></h4>
+                <div>Enter class ID number: <input type="text" size="6" name="clsid" id="clsid" /> <br />
+                <small>(Can be a comma-separated list)</small> <br /><br />
+                Select registration type(s): <select name="regtypes" id="regtypes" multiple>
+                    {% for regtype in regtypes %}
+                    <option value="{{ regtype.name }}">{{ regtype }}</option>
                     {% endfor %}
                     <option value="" selected hidden></option>
                 </select></div>
@@ -199,19 +214,24 @@
             <div id="combo_filter_accordion">
 
                 <h4><a href="#">User ID</a></h4>
-                <div>Enter an ID number: <input type="text" size="6" name="userid" id="userid" /></div>
+                <div>Enter ID number: <input type="text" size="6" name="userid" id="userid" /> <br />
+                <small>(Can be a comma-separated list)</small></div>
 
                 <h4><a href="#">User name</a></h4>
-                <div>Enter a username: <input type="text" size="30" name="username" id="username" autocomplete="new-username" /></div>
+                <div>Enter a username: <input type="text" size="30" name="username" id="username" autocomplete="new-username" /> <br />
+                <small>(Supports regular expressions)</small></div>
 
                 <h4><a href="#">Last name</a></h4>
-                <div>Enter a portion of the last name: <input type="text" size="30" name="last_name" id="last_name" /></div>
+                <div>Enter a portion of the last name: <input type="text" size="30" name="last_name" id="last_name" /> <br />
+                <small>(Supports regular expressions)</small></div>
 
                 <h4><a href="#">First name</a></h4>
-                <div>Enter a portion of the first name: <input type="text" size="30" name="first_name" id="first_name" /></div>
+                <div>Enter a portion of the first name: <input type="text" size="30" name="first_name" id="first_name" /> <br />
+                <small>(Supports regular expressions)</small></div>
 
                 <h4><a href="#">Email address</a></h4>
-                <div>Enter a portion of the email address: <input type="text" size="30" name="email" id="email" /></div>
+                <div>Enter a portion of the email address: <input type="text" size="30" name="email" id="email" /> <br />
+                <small>(Supports regular expressions)</small></div>
 
                 <h4><a href="#">Zip Code</a></h4>
                 <div>
@@ -243,6 +263,16 @@
                 <div><select name="group" id="user-search-group">
                     {% for group in groups %}
                     <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                    <option value="" selected hidden></option>
+                </select></div>
+
+                <h4><a href="#">Class Registrations</a></h4>
+                <div>Enter class ID number: <input type="text" size="6" name="clsid" id="clsid" /> <br />
+                <small>(Can be a comma-separated list)</small> <br /><br />
+                Select registration type(s): <select name="regtypes" id="regtypes" multiple>
+                    {% for regtype in regtypes %}
+                    <option value="{{ regtype.name }}">{{ regtype }}</option>
                     {% endfor %}
                     <option value="" selected hidden></option>
                 </select></div>

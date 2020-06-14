@@ -28,6 +28,7 @@ Your grade level will update automatically every August.
     {% include "users/profiles/gradechangerequestinfo.html" %}
 {% endif %}
 
+{% if form.dob %}
 <div class="control-group">
     <label for="id_dob_0" class="control-label">Date of Birth:</label>
     <div class="controls controls-row">
@@ -36,7 +37,9 @@ Your grade level will update automatically every August.
     {% endif %}
     </div>
 </div>
+{% endif %}
 
+{% if form.graduation_year %}
 <div class="control-group">
     <label for="id_graduation_year" class="control-label">Grade / Graduation Year:</label>
     <div class="controls">
@@ -45,6 +48,7 @@ Your grade level will update automatically every August.
     {% endif %}
     </div>
 </div>
+{% endif %}
 
 {% if form.gender %}
 <div class="control-group">
@@ -57,6 +61,7 @@ Your grade level will update automatically every August.
 </div>
 {% endif %}
 
+{% if form.k12school %}
 <div class="control-group">
     <label for="id_k12school" class="control-label">School:</label>
     <div class="controls controls-row">
@@ -66,6 +71,7 @@ Your grade level will update automatically every August.
     {% endif %}
     </div>
 </div>
+{% endif %}
 
 {% if form.unmatched_school %}
 <div class="control-group">
@@ -79,6 +85,7 @@ Your grade level will update automatically every August.
 </div>
 {% endif %}
 
+{% if form.heard_about %}
 <div class="control-group">
     <label for="id_heardofesp" class="control-label">How did you hear of this program?
     </label>
@@ -89,6 +96,7 @@ Your grade level will update automatically every August.
     {% endif %}
     </div>
 </div>
+{% endif %}
 
 {% if form.fields.studentrep %}
 <div class="control-group">

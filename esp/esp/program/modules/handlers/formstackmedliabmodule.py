@@ -54,12 +54,14 @@ class FormstackMedliabModule(ProgramModuleObj):
                 "link_title": "Medical and Emergency Contact Information",
                 "module_type": "learn",
                 "seq": 3,
-                "required": True
+                "required": True,
+                "choosable": 2,
                 },
                 {
                 "admin_title": "Formstack Med-liab Bypass Page",
                 "link_title": "Grant Medliab Bypass",
                 "module_type": "manage",
+                "choosable": 2,
                 }]
 
     def isCompleted(self):

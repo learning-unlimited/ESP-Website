@@ -16,7 +16,8 @@ class BulkCreateAccountModule(ProgramModuleObj):
             "admin_title": "Bulk Create Accounts",
             "link_title": "Bulk Create Accounts",
             "module_type": "manage",
-            "seq": 10
+            "seq": 10,
+            "choosable": 2,
         }
 
     @main_call

@@ -26,6 +26,7 @@ class ClassSearchModule(ProgramModuleObj):
             "link_title": "Search for classes",
             "module_type": "manage",
             "seq": 10,
+            "choosable": 1,
         }
 
     class Meta:

@@ -138,6 +138,7 @@ class StudentClassRegModule(ProgramModuleObj):
             "seq": 10,
             "inline_template": "classlist.html",
             "required": True,
+            "choosable": 1
             }]
 
     @property
@@ -199,18 +200,24 @@ class StudentClassRegModule(ProgramModuleObj):
                    super(StudentClassRegModule, self).deadline_met('/Classes/Lottery')
 
     def prepare(self, context={}):
+        user = get_current_request().user
+        program = self.program
+        scrmi = self.program.studentclassregmoduleinfo
+        return self.prepare_static(user, program, context=context, scrm = self)
+
+    @staticmethod
+    def prepare_static(user, program, context={}, scrm = ""):
         from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
-        verbs = RTC.getVisibleRegistrationTypeNames(prog=self.program)
-        regProf = RegistrationProfile.getLastForProgram(get_current_request().user, self.program)
-        timeslots = self.program.getTimeSlots(types=['Class Time Block', 'Compulsory'])
+        verbs = RTC.getVisibleRegistrationTypeNames(prog=program)
+        regProf = RegistrationProfile.getLastForProgram(user, program)
+        timeslots = program.getTimeSlots(types=['Class Time Block', 'Compulsory'])
         classList = ClassSection.prefetch_catalog_data(regProf.preregistered_classes(verbs=verbs))
 
         prevTimeSlot = None
         blockCount = 0
 
-        user = get_current_request().user
-        is_onsite = user.isOnsite(self.program)
-        scrmi = self.program.studentclassregmoduleinfo
+        is_onsite = user.isOnsite(program)
+        scrmi = program.studentclassregmoduleinfo
 
         #   Filter out volunteer timeslots
         timeslots = [x for x in timeslots if x.event_type.description != 'Volunteer']
@@ -267,7 +274,8 @@ class StudentClassRegModule(ProgramModuleObj):
         context['num_classes'] = len(classList)
         context['timeslots'] = schedule
         context['use_priority'] = scrmi.use_priority
-        context['allow_removal'] = self.deadline_met('/Removal')
+        if scrm:
+            context['allow_removal'] = scrm.deadline_met('/Removal')
 
         return context
 
@@ -326,11 +334,12 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return HttpResponse(json.dumps(json_data))
 
-    def addclass_logic(self, request, tl, one, two, module, extra, prog):
+    @staticmethod
+    def addclass_logic(request, tl, one, two, module, extra, prog, webapp=False):
         """ Pre-register the student for the class section in POST['section_id'].
             Return True if there are no errors.
         """
-        scrmi = self.program.studentclassregmoduleinfo
+        scrmi = prog.studentclassregmoduleinfo
 
         #   Explicitly set the user's onsiteness, since we refer to it soon.
         if not hasattr(request.user, "onsite_local"):
@@ -344,10 +353,10 @@ class StudentClassRegModule(ProgramModuleObj):
 
         section = ClassSection.objects.get(id=sectionid)
         if not scrmi.use_priority:
-            error = section.cannotAdd(request.user,self.scrmi.enforce_max)
+            error = section.cannotAdd(request.user,scrmi.enforce_max, webapp=webapp)
         if scrmi.use_priority or not error:
             cobj = ClassSubject.objects.get(id=classid)
-            error = cobj.cannotAdd(request.user,self.scrmi.enforce_max) or section.cannotAdd(request.user, self.scrmi.enforce_max)
+            error = cobj.cannotAdd(request.user,scrmi.enforce_max, webapp=webapp) or section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
 
         if scrmi.use_priority:
             priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
@@ -358,7 +367,7 @@ class StudentClassRegModule(ProgramModuleObj):
             raise ESPError(error, log=False)
 
         #   Desired priority level is 1 above current max
-        if section.preregister_student(request.user, request.user.onsite_local, priority):
+        if section.preregister_student(request.user, request.user.onsite_local, priority, webapp=webapp):
             return True
         else:
             raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
@@ -367,7 +376,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @needs_student
     @meets_deadline('/Classes')
     @meets_cap
-    def addclass(self,request, tl, one, two, module, extra, prog):
+    def addclass(self, request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class, then return to the studentreg page """
         if self.addclass_logic(request, tl, one, two, module, extra, prog):
             return self.goToCore(tl)
@@ -559,19 +568,11 @@ class StudentClassRegModule(ProgramModuleObj):
         json.dump(reg_bits_data, resp)
         return resp
 
-    # This function exists only to apply the @meets_deadline decorator.
-    @meets_deadline('/Catalog')
-    def catalog_student(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        """ Return the program class catalog, after checking the deadline """
-        return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
-
-    # This function gets called and branches off to the two above depending on the user's role
     @disable_csrf_cookie_update
     @aux_call
     @no_auth
     @cache_control(public=True, max_age=120)
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        """ Check user role and maybe return the program class catalog """
         return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
 
     @disable_csrf_cookie_update
@@ -606,8 +607,8 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'class_docs.html', request, context)
 
-
-    def clearslot_logic(self, request, tl, one, two, module, extra, prog):
+    @staticmethod
+    def clearslot_logic(request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return True if there are no errors """
 
         #   Get the sections that the student is registered for in the specified timeslot.

@@ -61,6 +61,7 @@ class FooBarModule(ProgramModuleObj):
             "link_title": "Foo Bar",  # This appears in the manage page
             "module_type": "manage",
             "seq": 26,
+            "choosable": 1,
             }
 
     class Meta:
@@ -104,7 +105,8 @@ Your program module should have:
   * ``admin_title``: the title that will appear in the admin panel
   * ``link_title``: the title that will appear in the manage page, student registration, or teacher registration
   * ``module_type``: manage, teach, learn, or onsite (or json, but you probably won’t need that)
-  * ``seq`` (optional): the default sequence index of the module, for sorting it in various lists
+  * ``seq`` (optional): the default sequence index of the module, for sorting it in various lists. A higher number means a student/teacher/volunteer will see it later in the registration process
+  * ``choosable``: whether the module should be included in all programs by default. Set it equal to ``1`` to include it by default or ``0`` to ask admins if they want to include it every time they set up a new program. Unless your module might confuse admins using the program, you will probably want to include it by default. If your module is extremely niche or difficult, you can set ``choosable=2`` to exclude it by default. If you set ``choosable=0``, then you should also create a new question in `esp/esp/program/forms.py` describing your module and asking admins if they want to include it upon creating a new program.
   * ``required`` (optional, default False): True if the student/teacher should by default be required to complete the module as a part of registration
   * ``class Meta: proxy = True`` (this is a Django thing that tells it not to create a new database table specifically for instances of your module)
   * Optionally, a method ``isCompleted(self)`` that returns a boolean to figure out whether the user has completed the module (e.g. filled out the medical form)

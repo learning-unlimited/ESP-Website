@@ -823,11 +823,11 @@ class ClassSection(models.Model):
                     return u"You can't remove this class from your schedule because it would violate the requirement that you %s.  You can go back and correct this." % exp.requirement.label
         return False
 
-    def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True, ignore_constraints=False):
+    def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True, ignore_constraints=False, webapp=False):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
 
         # Check if section is full
-        if checkFull and self.isFull():
+        if checkFull and self.isFull(webapp=webapp):
             scrmi = self.parent_class.parent_program.studentclassregmoduleinfo
             return scrmi.temporarily_full_text
 
@@ -869,6 +869,10 @@ class ClassSection(models.Model):
         if not self.isRegOpen():
             return u'Registration for this section is not currently open.'
 
+        # check to see if the section has been cancelled
+        if self.isCancelled():
+            return u'This section has been cancelled.'
+
         # check to make sure they haven't already registered for too many classes in this section
         if scrmi.use_priority:
             priority = user.getRegistrationPriority(self.parent_class.parent_program, self.meeting_times.all())
@@ -897,8 +901,11 @@ class ClassSection(models.Model):
         Assumes meeting_times is a sorted QuerySet of correct length.
 
         """
-        # if meeting_times[0] not in self.viable_times(ignore_classes=ignore_classes):
-        # This set of error messages deserves a better home
+        # check if proposed times are the same as the current meeting_times
+        current_times = self.meeting_times.all()
+        if all(time in current_times for time in meeting_times):
+            return False
+        # otherwise, check if all teachers are available
         for t in self.teachers:
             available = t.getAvailableTimes(self.parent_program, ignore_classes=ignore_classes)
             for e in meeting_times:
@@ -942,6 +949,15 @@ class ClassSection(models.Model):
             result = result | self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), studentregistration__relationship__name=verb_str)
         return result.distinct()
 
+    def students_checked_in(self):
+        return self.students() & self.parent_program.currentlyCheckedInStudents()
+
+    @cache_function
+    def num_students_checked_in(self):
+        return self.students_checked_in().count()
+    num_students_checked_in.depend_on_model('users.Record')
+    num_students_checked_in.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
+
     @cache_function
     def num_students_prereg(self):
         return self.students_prereg().count()
@@ -962,6 +978,13 @@ class ClassSection(models.Model):
     count_enrolled_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
+
+    @cache_function
+    def count_attending_students(self):
+        return self.num_students(verbs=['Attended'], use_cache=False)
+    count_attending_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
+
+    attending_students = DerivedField(models.IntegerField, count_attending_students)(null=False, default=0)
 
     def cancel(self, email_students=True, include_lottery_students=False, text_students=False, email_teachers=True, explanation=None, unschedule=False):
         # To avoid circular imports
@@ -1095,13 +1118,48 @@ class ClassSection(models.Model):
         else:
             return eventList[0]
 
-    def isFull(self, ignore_changes=False):
+    def isFull(self, ignore_changes=False, webapp=False):
         if len(self.get_meeting_times()) == 0:
             return True
-        elif (self.num_students() == self._get_capacity(ignore_changes) == 0):
+
+        # Get time and tag values to determine what number to base class changes on
+        now = datetime.datetime.now()
+        switch_time = None
+        if Tag.getProgramTag('switch_time_program_attendance', program=self.parent_program):
+            try:
+                switch_time_str = now.strftime("%Y/%m/%d ") + Tag.getProgramTag('switch_time_program_attendance', program=self.parent_program)
+                switch_time = datetime.datetime.strptime(switch_time_str, "%Y/%m/%d %H:%M")
+            except ValueError:
+                pass
+        switch_lag = None
+        if Tag.getProgramTag('switch_lag_class_attendance', program = self.parent_program):
+            try:
+                switch_lag = int(Tag.getProgramTag('switch_lag_class_attendance', program = self.parent_program))
+            except ValueError:
+                pass
+
+        # Mode 1: Base "fullness" on class attendance numbers if:
+        # 1) using webapp, 2) 'switch_lag_class_attendance' tag is set properly
+        # 3) it is currently past the class start time + however many minutes specified in tag
+        # 4) at least one student has been marked as attending the class
+        if webapp and switch_lag and now >= (self.start_time_prefetchable() + timedelta(minutes=switch_lag)) and self.count_attending_students() >= 1:
+            num_students = self.count_attending_students()
+        # Mode 2: Base "fullness" on program attendance numbers if:
+        # 1) using webapp, 2) 'switch_time_program_attendance' tag is set properly
+        # 3) it is currently past the time specified in tag
+        # 4) at least five students have been marked as attending the program (to account for test users)
+        elif webapp and switch_time and now >= switch_time and self.parent_program.currentlyCheckedInStudents().count() >= 5:
+            num_students = self.num_students_checked_in()
+        # Mode 3: Base "fullness" on enrollment numbers
+        else:
+            num_students = self.num_students()
+        if (self.num_students() == self._get_capacity(ignore_changes) == 0):
             return False
         else:
-            return (self.num_students() >= self._get_capacity(ignore_changes))
+            return (num_students >= self._get_capacity(ignore_changes))
+
+    def isFullWebapp(self, ignore_changes=False):
+        return self.isFull(ignore_changes = ignore_changes, webapp = True)
 
     def time_blocks(self):
         return self.friendly_times(raw=True)
@@ -1213,7 +1271,7 @@ class ClassSection(models.Model):
         for list_name in list_names:
             remove_list_member(list_name, user.email)
 
-    def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False):
+    def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False, webapp=False):
         if prereg_verb == None:
             scrmi = self.parent_program.studentclassregmoduleinfo
             if scrmi and scrmi.use_priority:
@@ -1221,7 +1279,7 @@ class ClassSection(models.Model):
             else:
                 prereg_verb = 'Enrolled'
 
-        if overridefull or fast_force_create or not self.isFull():
+        if overridefull or fast_force_create or not self.isFull(webapp=webapp):
             #    Then, create the registration for this class.
             rt = RegistrationType.get_cached(name=prereg_verb, category='student')
             qs = self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), id=user.id, studentregistration__relationship=rt)
@@ -1232,13 +1290,20 @@ class ClassSection(models.Model):
                     ## That's the bare minimum to reg someone; we're done!
                     return True
 
-                # If the registration was placed through OnSite Reg, annotate it as an OnSite registration
+                webapp_verb = "Onsite/Webapp"
                 onsite_verb = 'OnSite/ChangedClasses'
                 request = get_current_request()
-                if request and request.user and isinstance(request.user, ESPUser) and request.user.is_morphed(request):
+                # If using the webapp to enroll in a class, annotate it as such
+                if webapp:
+                    rt, created = RegistrationType.objects.get_or_create(name=webapp_verb, category='student')
+                    sr = StudentRegistration(user=user, section=self, relationship=rt)
+                    sr.save()
+                # If the registration was placed through OnSite Reg, annotate it as an OnSite registration
+                elif request and request.user and isinstance(request.user, ESPUser) and request.user.is_morphed(request):
                     rt, created = RegistrationType.objects.get_or_create(name=onsite_verb, category='student')
                     sr = StudentRegistration(user=user, section=self, relationship=rt)
                     sr.save()
+
             else:
                 pass
 
@@ -1569,14 +1634,14 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         """ Return a prettified string listing of the class's teachers """
         return u", ".join([ u"%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
 
-    def isFull(self, ignore_changes=False, timeslot=None):
+    def isFull(self, ignore_changes=False, timeslot=None, webapp=False):
         """ A class subject is full if all of its sections are full. """
         if timeslot is not None:
             sections = [self.get_section(timeslot)]
         else:
             sections = self.get_sections()
         for s in sections:
-            if not s.isFull(ignore_changes=ignore_changes):
+            if not s.isFull(ignore_changes=ignore_changes, webapp=webapp):
                 return False
         return True
 
@@ -1625,7 +1690,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             teachers.append(name)
         return teachers
 
-    def cannotAdd(self, user, checkFull=True, which_section=None):
+    def cannotAdd(self, user, checkFull=True, which_section=None, webapp=False):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
         if not user.isStudent():
             return u'You are not a student!'
@@ -1636,7 +1701,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if checkFull and not self.parent_program.user_can_join(user):
             return u'This program cannot accept any more students!  Please try again in its next session.'
 
-        if checkFull and self.isFull():
+        if checkFull and self.isFull(webapp=webapp):
             scrmi = self.parent_program.studentclassregmoduleinfo
             return scrmi.temporarily_full_text
 
@@ -1644,10 +1709,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                user.getGrade(self.parent_program) > self.grade_max:
             if not Permission.user_has_perm(user, "GradeOverride", self.parent_program):
                 return u'You are not in the requested grade range for this class.'
-
-        # student has no classes...no conflict there.
-        if user.getClasses(self.parent_program, verbs=['Enrolled']).count() == 0:
-            return False
 
         for section in self.get_sections():
             if user.isEnrolledInClass(section):
@@ -1660,7 +1721,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         # check to see if there's a conflict with each section of the subject, or if the user
         # has already signed up for one of the sections of this class
         for section in sections:
-            res = section.cannotAdd(user, checkFull, autocorrect_constraints=False)
+            res = section.cannotAdd(user, checkFull, autocorrect_constraints=False, webapp=webapp)
             if not res: # if any *can* be added, then return False--we can add this class
                 return res
         #   Pass on any errors that were triggered by the individual sections

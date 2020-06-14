@@ -62,7 +62,8 @@ class TeacherCheckinModule(ProgramModuleObj):
             "admin_title": "Teacher Check-In",
             "link_title": "Check in teachers",
             "module_type": "onsite",
-            "seq": 10
+            "seq": 10,
+            "choosable": 1,
             }
 
     def checkIn(self, teacher, prog, when=None):

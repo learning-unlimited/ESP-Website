@@ -24,12 +24,14 @@ table, th, tr, td {
 }
 
 th, td {
-    padding: 4px;
+    padding: 4px !important;
 }
 
 .option {
     border: 1px solid black;
     background-color: #f7f7f7;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
 }
 
 .option:hover {
@@ -39,30 +41,34 @@ th, td {
 .button {
     float: none !important;
 }
+
+input {
+    margin: 0px !important;
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <h1>Phase Zero (Student Lottery) for {{program.niceName}}</h1>
 {% inline_program_qsd_block program "learn:studentregphasezero/top" %}
-Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any student that submits interest to the program before the end of phase zero will receive a lottery ticket. We will then select a random portion of these tickets that will then have guaranteed entry into the program. The class lottery and FCFS phases remain as they have been in previous programs. Only students selected in the student lottery may proceed to register for classes.
+Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any student that submits interest to the program before the end of phase zero will receive a lottery ticket. We will then select a random portion of these tickets that will then have guaranteed entry into the program. Only students selected in the student lottery may proceed to register for classes.
 {% end_inline_program_qsd_block %}
 
 <hr>
 
-<center><h2>To enter the student lottery, please complete <u>one</u> of the two options below:</h2></center>
+<center><h2>To enter the student lottery, please complete {% if num_allowed_users > 1 %}<u>one</u> of the two options{% else %}the step{% endif %} below:</h2></center>
 <br>
 
 <table width=100% cellpadding="0" cellspacing="0">
     <td width=46% class="option">
-        <form method="POST" id="submit_form" action="{{ request.path }}">
+        <form method="POST" id="submit_form" action="/learn/{{one}}/{{two}}/studentregphasezero">
             <table width=100%>
             {{ form }}
                 <tr>
                     <th>Create a New Lottery Ticket</th>
                 </tr>
                 <tr>
-                    <td>(Use this option if you want to start a new lottery ticket for yourself or for a group)<br><br>1) Just click the button below:<br><br></td>
+                    <td>{% if num_allowed_users > 1 %}(Use this option if you want to start a new lottery ticket for yourself or for a group)<br><br>{% endif %}1) Just click the button below:<br><br></td>
                 </tr>
                 <tr>
                     <td>
@@ -73,16 +79,17 @@ Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any stu
         </form>
     </td>
 
+    {% if num_allowed_users > 1 %}
     <td width=8%><b><i>OR</i></b></td>
 
     <td width=46% class="option">
         <form action="/learn/{{one}}/{{two}}/joingroup" method="post" name="addstudent">
             <table width=100%>
                 <tr>
-                    <th><br>Join An Existing Lottery Ticket</th>
+                    <th>Join An Existing Lottery Ticket</th>
                 </tr>
                 <tr>
-                    <td>(Use this option if you want to join a ticket that someone else has already made)<br><br>1) Begin typing another student's <u>username</u> below<br>2) Select the correct username<br>3) Click the button<br><br>Note: the student must already have a lottery ticket.<br><br></td>
+                    <td>(Use this option if you want to join a ticket that someone else has already made)<br><br>1) Begin typing another student's <u>username</u> below<br>2) Select the correct username<br>3) Click the button<br><br>Note: the student must already have a lottery ticket and the maximum allowed group size is <b>{{ num_allowed_users }}</b> students</td>
                 </tr>
                 <tr>
                     <td>
@@ -105,6 +112,7 @@ Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any stu
             </table>
         </form>
     </td>
+    {% endif %}
 </table>
 
 

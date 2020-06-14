@@ -55,6 +55,7 @@ class TeacherReviewApps(ProgramModuleObj):
             "module_type": "teach",
             "seq": 1000,
             "inline_template": "teacherreviewapp.html",
+            "choosable": 0,
             }
 
     @aux_call
