@@ -68,6 +68,7 @@ Floating Resources changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Admins can now specify how many of a particular floating resource are available (e.g. 5 VGA adapters or 10 expo markers)
 - When assigning a floating resource on the /manageclass page, a user-friendly error is now displayed if the selected floating resource is not available for the specified timeslots
+- Admins can now checkout floating resources to teachers through the teacher check-in module. This module also now displays which floating resources haven't been returned since their classes ended.
 
 Teacher registration changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -170,6 +171,8 @@ Minor bug fixes
 - Fixed /myesp/onsite for admins.
 - The contact form now uses the organization short name for the teacher option.
 - Added a dummy folder for survey histograms. This preemtively fixes any problems sites might have with saving the histogram files.
+- Fixed the completion certificate printable and added blank default letterhead.
+- Fixed the calculation of a section's capacity for cases where a section takes place in multiple classrooms.
 
 Known issues of new features
 ============================
