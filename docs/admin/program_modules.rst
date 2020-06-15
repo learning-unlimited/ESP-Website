@@ -370,6 +370,11 @@ Views provided
 * /learn/<program>/onsitesurvey -- Webapp version of the student survey (see above for more details). Same functionality but with slightly different styling.
 * /learn/<program>/onsitedetails -- Shows the details and links (classrooms, times, teachers, documents, website, survey) for a specific section. Only accessible from the student schedule.
 
+Student Acknowledgement Module (StudentAcknowledgementModule)
+------------------------------------------------------
+
+Include this module if you would like students to submit a somewhat scary-looking form where they agree to some conditions (e.g. a code of conduct) during student registration.
+
 Teacher modules
 ===============
 
@@ -496,6 +501,16 @@ Views provided
 * /teach/<program>/onsitesurvey -- Webapp version of the teacher survey (see above for more details). Also has a tab for teachers to view results from the student surveys for their class(es). Both of these interfaces have the same functionality as the main teacher survey pages but with slightly different styling.
 * /teach/<program>/onsitedetails -- Shows the details and links (classrooms, times, teachers, enrollment, documents, website) for a specific section (or all sections).
 * /teach/<program>/onsiteroster -- Shows the roster for a specific section (or all sections). If only a specific section is selected, this page also allows for marking attendance.
+
+Volunteer modules
+=================
+
+Volunteer Sign-up Module (VolunteerSignup)
+------------------------------------------
+
+If you are using the site for volunteer registration, add this along with VolunteerManage.  Potential volunteers will see a view (/volunteer/[program]/[instance]/signup) which you will need to link to.  This will allow them to specify which time slots they can commit to volunteering for, and provide their basic contact information.  You will need to create those time slots on the management side.  The time slots for volunteers are distinct from class time slots.
+
+If the user fills out this form without being logged in, an account will be created for them.  Otherwise their current account will be marked as a volunteer.
 
 Management modules
 ==================
@@ -846,12 +861,12 @@ Unenroll Students (UnenrollModule)
 
 This module allows you to find students who are late for their first class, based on whether they have checked in, and unroll them from their current or future classes. The page includes options to select the set of registrations to expire and a counter for how many students and registrations will be affected.
 
-Volunteer modules
-=================
+On-Site Student Attendance Module (OnSiteAttendance)
+----------------------------------------------------
 
-Volunteer Sign-up Module (VolunteerSignup)
-------------------------------------------
+This module can be used to check and mark attendance through the onsite interface. The main page of this module takes the onsite user to a page that summarizes attendance for classes for a selected timeblock and for the entire program. There is also an interface to select a specific class section for which to check or take attendance (just like the teacher interface).
 
-If you are using the site for volunteer registration, add this along with VolunteerManage.  Potential volunteers will see a view (/volunteer/[program]/[instance]/signup) which you will need to link to.  This will allow them to specify which time slots they can commit to volunteering for, and provide their basic contact information.  You will need to create those time slots on the management side.  The time slots for volunteers are distinct from class time slots.
+On-Site User Check-Out (OnSiteCheckoutModule)
+---------------------------------------------
 
-If the user fills out this form without being logged in, an account will be created for them.  Otherwise their current account will be marked as a volunteer.
+This module can be used to keep track of students that have checked *out* of a program (as opposed to check in). The module allows an onsite user to select a student with a search bar, then choose which classes, if any, the student will be unenrolled from when they are checked out. There is also an option to check out all students that have checked in (with multiple confirmation checks), in the case that you want to record program attendance separately for each day/weekend/etc.
