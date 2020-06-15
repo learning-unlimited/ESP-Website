@@ -320,7 +320,7 @@ Views provided
 Student Surveys (SurveyModule)
 ------------------------------
 
-Include this module if you would like to use online surveys.  This module will cause your student survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" student deadline.  Make sure you have created a survey at /admin/survey/ before adding this module.
+Include this module if you would like to use online surveys.  This module will cause your student survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" student deadline.  Make sure you have created a survey at /manage/[program]/[instance]/surveys. By default, only students that registered for a class ('classreg') are allowed to fill out the survey. This can be modified with the 'survey_student_filter' tag, which is a comma-separated list of groups of students as specified in the prog.students() dictionary (this will be more user-friendly in the future).
 
 Text Message Reminders (TextMessageModule)
 ------------------------------------------
@@ -348,11 +348,13 @@ Admin Setup
 ~~~~~~~~~~~
 
 The basic functionality of the student webapp should work as soon as the module is enabled. However, in order for the maps to work properly, you'll need to perform the following additional steps:
+
 1. We use the Google Maps API to display a map with a custom center. You'll need to register a `Google Cloud account <https://console.cloud.google.com/>`_. You'll then need to get an API key for the service. This API key should be set as the value for the 'google_cloud_api_key' tag. Note that this API service requires a payment method, but the good news is that you get a whole bunch of free usage before it charges your card each month.
 2. You'll also need to set the 'program_center' tag to the geographic center of your campus or program location, otherwise the map will be centered on Stanford. The tag should be in the format of "{lat: 37.427490, lng: -122.170267}". This can be a program-specific tag (e.g. if you want the map to focus on different parts of campus for different programs) or just a global tag.
 3. Lastly, to enable the walking directions to class locations, you need a "Lat/Long" (spelling and capitalization matter) resource to be associated with each classroom (you should do this through the resources management page). The 'attribute_value' of each resource should be set to the lat/long from google maps (of the form 37.4268889, -122.172065).
 
 For class changes on the student webapp, students are allowed by default to enroll in classes that have fewer enrolled students than capacity (including any capacity modifiers specified in the program settings). You can change two tags to potentially allow students to enroll in classes that are not full based on program attendance or class attendance. The tags are as follows:
+
 1. 'switch_time_program_attendance': Set this tag to the time at which you'd like to start using program attendance numbers instead of class enrollment numbers. The format is HH:MM where HH is in 24 hour time. After this time, if at least 5 students have been checked into the program, students will be able to class change based on program attendance numbers. If this is not set, program attendance numbers will not be used. 
 2. 'switch_lag_class_attendance': Set this tag to the amount of minutes into a class at which you'd like to start using class attendance numbers if available (instead of enrollment or program attendance). This many minutes into a class block, if at least 1 student has been marked attending that class, students will be able to class change based on class attendance numbers. If blank, class attendance numbers will not be used.
 Note that if both tags are set, the hierarchy is that class attendance will be used if available; program attendance will be used if class attendance is not available; enrollment will be used if program attendance is not available. 
@@ -405,7 +407,7 @@ The questions shown on the teacher profile are configurable via the following ta
 Teacher Surveys (SurveyModule)
 ------------------------------
 
-This module will cause your teacher survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" teacher deadline.  Make sure you have created a survey at /admin/survey/ before adding this module.
+This module will cause your teacher survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" teacher deadline.  Make sure you have created a survey at /manage/[program]/[instance]/surveys. By default, only teachers that submitted a class ('class_submitted') are allowed to fill out the survey. This can be modified with the 'survey_teacher_filter' tag, which is a comma-separated list of groups of students as specified in the prog.students() dictionary (this will be more user-friendly in the future)
 
 Teacher Acknowledgement (TeacherAcknowledgementModule)
 ------------------------------------------------------
@@ -477,9 +479,11 @@ Admin Setup
 ~~~~~~~~~~~
 
 The basic functionality of the teacher webapp should work as soon as the module is enabled. However, in order for the maps to work properly, you'll need to perform the following additional steps:
+
 1. We use the Google Maps API to display a map with a custom center. You'll need to register a `Google Cloud account <https://console.cloud.google.com/>`_. You'll then need to get an API key for the service. This API key should be set as the value for the 'google_cloud_api_key' tag. Note that this API service requires a payment method, but the good news is that you get a whole bunch of free usage before it charges your card each month.
 2. You'll also need to set the 'program_center' tag to the geographic center of your campus or program location, otherwise the map will be centered on Stanford. The tag should be in the format of "{lat: 37.427490, lng: -122.170267}". This can be a program-specific tag (e.g. if you want the map to focus on different parts of campus for different programs) or just a global tag.
 3. Lastly, to enable the walking directions to class locations, you need a "Lat/Long" (spelling and capitalization matter) resource to be associated with each classroom (you should do this through the resources management page). The 'attribute_value' of each resource should be set to the lat/long from google maps (of the form 37.4268889, -122.172065).
+
 Note that you do not need to do any of this again if you've already done this for the student webapp.
 
 There's one last tag that may be useful, 'webapp_isstep', which you can set to "True" if you want to list the webapp as a step in teacher registration (in the checkboxes). Otherwise it won't be shown and you'll need to direct your teacher to the URL(s) some other way.
@@ -552,9 +556,10 @@ Instructions for using the scheduler:
 
 - Click on the class you want to schedule (either in the directory or on the grid) to select it.
 - On the grid, the places you might put the class are highlighted. Legend:
- - Green means you can put the class there.
- - Green with stripes means the class can't start there, but there should be a green square to the left where you can place it (for multi-hour classes).
- - Yellow means the teacher is available then, but teaching another class.
+  
+  - Green means you can put the class there.
+  - Green with stripes means the class can't start there, but there should be a green square to the left where you can place it (for multi-hour classes).
+  - Yellow means the teacher is available then, but teaching another class.
 - Click on a green highlighted square to place the class. Click anywhere else on the grid or directory to unselect the class.
 - When you have a class selected, the pane in the upper right corner displays info about the class as well as links to the manage and edit pages.
 - When no class is selected, the pane in the upper right corner displays scheduling errors.
@@ -655,7 +660,7 @@ page. It can be edited inline by an admin to something more customized.
 Credit Card Viewer
 ------------------
 
-This module provides one view, viewpay_cybersource.  The name is a misnomer as it will display accounting information regardless of how that information was collected (Cybersource, First Data, or manual entry).  The view shows a list of students who have invoices for your program, and summarizes their amounts owed and payment[s] so far.
+This module provides one view, viewpay, that displays accounting information regardless of how that information was collected (Cybersource, First Data, or manual entry).  The view shows a list of students who have invoices for your program, and summarizes their amounts owed and payment[s] so far.
 
 Easily Approve Financial Aid Requests
 -------------------------------------
@@ -721,15 +726,10 @@ are in the works, but for now, the page
 will display a list of links to display the checks individually; most will load
 much more quickly than the entire page.
 
-Old-style scheduling (SchedulingModule)
----------------------------------------
-
-This module is deprecated and will be removed in a future release.
-
 Survey Management (SurveyManagement)
 ------------------------------------
 
-Include this module if you are using online surveys.  Surveys must be created at /admin/survey/, but this module will provide links to viewing the results.
+Include this module if you are using online surveys. This module provides links to create surveys and to view/export the survey results. Surveys can be created at /manage/[program]/[instance]/surveys/manage. Surveys can consist of program-wide and class-specific questions. The former will be shown as a single general program survey form, the latter will be shown as a class-specific survey form for each class a user took/taught.
 
 Manage Teacher Training and Interviews (TeacherEventsModule)
 ------------------------------------------------------------
@@ -744,7 +744,7 @@ Include this module if you will be using the Web site for volunteer registration
 Group Text Module
 -----------------
 
-
+Want to tell all enrolled students about a last-minute lunch location change? Want to inform students about a cancelled class? Once you have Twilio set up (contact websupport for help with this), you can use this module to select a set of users (like in the communications panel) and send them a text message. By default this will respect the users' texting preferences, but you can override this if necessary.
 
 Admin Admissions Dashboard
 --------------------------
