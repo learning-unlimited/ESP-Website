@@ -92,7 +92,7 @@ class StudentExtraCosts(ProgramModuleObj):
         for line_item_type in pac.get_lineitemtypes(optional_only=True):
             student_desc['extracosts_%d' % line_item_type.id] = """Students who have opted for '%s'""" % line_item_type.text
             for option in line_item_type.options:
-                (option_id, option_amount, option_description) = option
+                (option_id, option_amount, option_description, has_custom_amt) = option
                 key = 'extracosts_%d_%d' % (line_item_type.id, option_id)
                 student_desc[key] = """Students who have opted for '%s' for '%s' ($%s)""" % (option_description, line_item_type.text, option_amount or line_item_type.amount_dec)
 
