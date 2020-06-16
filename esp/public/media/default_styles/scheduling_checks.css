@@ -84,12 +84,6 @@ color: lightgray;
 	text-align: center;
 	padding: 10px;
 }
-tr:hover {
-    color: #555555;
-    background-color: #f5f5f5;
-    cursor: pointer;
-}
-
 table td + td {
     border-left:1px solid black;
 
