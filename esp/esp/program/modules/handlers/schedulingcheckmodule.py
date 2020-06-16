@@ -63,10 +63,10 @@ class JSONFormatter:
         else:
             return json.dumps(self._format_dict_table(d, options['headings'], help_text=help_text))
 
-    def format_list(self, l, help_text=""): # needs verify
+    def format_list(self, l, heading="", help_text=""): # needs verify
         output = {}
         output["help_text"] = help_text
-        output["headings"] = [] # no headings
+        output["headings"] = map(str, heading) # no headings
 
         # might be redundant, but it makes sure things aren't in a weird format
         output["body"] = [self._table_row([row]) for row in l]
@@ -232,7 +232,7 @@ class SchedulingCheckRunner:
          for lunch_block_list in self.lunch_blocks:
             for l in lunch_block_list:
                 lunch_block_strings.append(str(l))
-         return self.formatter.format_list(lunch_block_strings)
+         return self.formatter.format_list(lunch_block_strings, ["Lunch Blocks"])
 
      def incompletely_scheduled_classes(self):
         problem_classes = []
@@ -245,7 +245,7 @@ class SchedulingCheckRunner:
                 for i in range(0, len(mt) - 1):
                     if not Event.contiguous(mt[i], mt[i+1]):
                         problem_classes.append(s)
-        return self.formatter.format_list(problem_classes)
+        return self.formatter.format_list(problem_classes, ["Classes"])
 
      def inconsistent_rooms_and_times(self):
         output = []
@@ -268,7 +268,7 @@ class SchedulingCheckRunner:
                         pass
                     elif not (False in [b in mt for b in lunch]):
                          l.append(s)
-          return self.formatter.format_list(l)
+          return self.formatter.format_list(l, ["Classes"])
 
      def classes_wrong_length(self):
          output = []
@@ -278,7 +278,7 @@ class SchedulingCheckRunner:
              length = end_time - start_time
              if abs(length.total_seconds() / 3600.0 - float(sec.duration)) > 0.0:
                  output.append(sec)
-         return self.formatter.format_list(output)
+         return self.formatter.format_list(output, ["Classes"])
 
      def unapproved_scheduled_classes(self):
          output = []
@@ -286,7 +286,7 @@ class SchedulingCheckRunner:
          for sec in sections:
              if sec.get_meeting_times() or sec.getResources():
                  output.append(sec)
-         return self.formatter.format_list(output)
+         return self.formatter.format_list(output, ["Classes"])
 
      def teachers_teaching_two_classes_same_time(self):
           d = self._timeslot_dict(slot=lambda: {})
