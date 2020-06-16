@@ -176,8 +176,6 @@ Minor bug fixes
 
 Known issues of new features
 ============================
-- You can not upload files in the new filebrowser.
-- You can not search for a program module on the edit program admin page.
 - Histograms in the PDF version of the survey results do not have the full range of possible choices.
 - Asterisks may still show up even when some fields are not set as required for the profile form.
 - Programs may be created without a student class registration module information object.
