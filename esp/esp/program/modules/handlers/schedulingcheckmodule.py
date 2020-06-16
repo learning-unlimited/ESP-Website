@@ -15,7 +15,6 @@ from esp.middleware.threadlocalrequest import get_current_request
 import json
 import re
 
-from django.utils.safestring import mark_safe
 
 class SchedulingCheckModule(ProgramModuleObj):
 
