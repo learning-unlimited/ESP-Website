@@ -1173,12 +1173,6 @@ function populate_classes()
         new_sec.students_checked_in = [];
         new_sec.num_students_enrolled = 0;
         new_sec.num_students_checked_in = 0;
-        //  Place max capacity here, and lower it later if it turns out the room is smaller
-        new_sec.capacity = parent_class.class_size_max;
-        if ((parent_class.class_size_max == 0) || ((parent_class.class_size_max_optimal) && (parent_class.class_size_max_optimal < new_sec.capacity)))
-            new_sec.capacity = parent_class.class_size_max_optimal;
-        if ((new_sec.max_class_capacity) && (new_sec.max_class_capacity < new_sec.capacity))
-            new_sec.capacity = new_sec.max_class_capacity;
         // Sort event_ids by start time of timeslots
         new_sec.event_ids.sort((a, b) => (data.timeslots[a].startTimeMillis > data.timeslots[b].startTimeMillis) ? 1 : -1)
         new_sec.timeslots = new_sec.event_ids;
@@ -1225,14 +1219,6 @@ function populate_rooms()
     for (var i in data.rooms)
     {
         data.sections[data.rooms[i][0]].rooms = data.rooms[i][1];
-    
-        //  Lower capacity to that of room if needed
-        if (data.rooms[i][2] < data.sections[data.rooms[i][0]].capacity)
-            data.sections[data.rooms[i][0]].capacity = data.rooms[i][2];
-            
-        //  If section still doesn't have a capacity, mark it as 1000
-        if (!(data.sections[data.rooms[i][0]].capacity))
-            data.sections[data.rooms[i][0]].capacity = 2000;
     }
 }
 
