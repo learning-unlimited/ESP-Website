@@ -151,7 +151,7 @@ var SchedulingCheck = React.createClass({
           if (data.headings[i]) {
             columns[i] = {key: String(i), label: data.headings[i]};
           } else {
-            columns[i] = {key: String(i), label: "--"};
+            columns[i] = {key: String(i), label: "Date/Time"};
           }
         }
         table = <SelectTable rows = {data.body} columns = {columns} 
