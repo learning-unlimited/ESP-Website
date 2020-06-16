@@ -84,14 +84,15 @@ color: lightgray;
 	text-align: center;
 	padding: 10px;
 }
-tr:nth-child(even) {
-    background-color: #f2f2f2;
-}
 tr:hover {
-    background-color: #f2f2f2;
+    color: #555555;
+    background-color: #f5f5f5;
+    cursor: pointer;
 }
+
 table td + td {
     border-left:1px solid black;
+
 }
 table th + th {
     border-left:1px solid black;
@@ -100,9 +101,19 @@ table th + th {
 thead {
     border-bottom: 1px solid black;
     text-transform: capitalize;
+    background: #333333;
+    color: #fff;
 }
 table {
     width: 100%
+    border-spacing: 1;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
 }
 .alittlepspace {
 	padding-top: 8px;
