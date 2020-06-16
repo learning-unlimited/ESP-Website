@@ -15,6 +15,8 @@ from esp.middleware.threadlocalrequest import get_current_request
 import json
 import re
 
+from django.utils.safestring import mark_safe
+
 class SchedulingCheckModule(ProgramModuleObj):
 
     @classmethod
@@ -95,7 +97,7 @@ class JSONFormatter:
         output = {}
         output["help_text"] = help_text
         output["headings"] = map(str, headings)
-        output["body"] = [self._table_row([key] + [row[h] for h in headings if h]) for key, row in sorted(d.iter())]
+        output["body"] = [self._table_row([key] + [row[h] for h in headings if h]) for key, row in sorted(d.iteritems())]
         return output
 
 class SchedulingCheckRunner:
@@ -164,7 +166,7 @@ class SchedulingCheckRunner:
          ('teachers_teaching_two_classes_same_time', 'Teachers teaching two classes at once'),
          ('teachers_who_like_running', 'Teachers who like running'),
          ('hungry_teachers', 'Hungry Teachers'),
-         ('hosed_teachers', 'Hosed Teachers'),
+         ('inflexible_teachers', 'Teachers with Limited Flexibility'),
          #Information Diagnostics
          ('classes_by_category', 'Number of classes in each block by category'),
          ('capacity_by_category', 'Total capacity in each block by category'),
@@ -296,8 +298,8 @@ class SchedulingCheckRunner:
                          if not teach in d[t]:
                               d[t][teach] = s
                          else:
-                              l.append({"Teacher": teach, "Timeslot":t, "Section 1": s, "Section 2": d[t][teach]})
-          return self.formatter.format_table(l, {'headings': ["Teacher", "Timeslot", "Section 1", "Section 2"]})
+                              l.append({"Username": teach, "Teacher Name": teach.name(), "Timeslot":t, "Section 1": s, "Section 2": d[t][teach]})
+          return self.formatter.format_table(l, {'headings': ["Username", "Teacher Name", "Timeslot", "Section 1", "Section 2"]})
 
      def multiple_classes_same_resource_same_time(self):
           d = self._timeslot_dict(slot=lambda: {})
@@ -337,12 +339,16 @@ class SchedulingCheckRunner:
                  for t in q.distinct():
                      classes = [ClassSection.objects.filter(parent_class__teachers=t,meeting_times=block)[0] for block in lunch]
                      if open_class_cat.id not in [c.category.id for c in classes]:
+                         #converts the list of class section objects to a single string
+                         str1 = ' '
+                         classes = str1.join([unicode(c) for c in classes])
                          bads.append({
-                             'Teacher': t,
+                             'Username': t,
+                             'Teacher Name': t.name(),
                              'Classes over lunch': classes,
                              })
          return self.formatter.format_table(bads,
-                         {'headings': ['Teacher','Classes over lunch']},
+                         {'headings': ['Username', 'Teacher Name', 'Classes over lunch']},
                          help_text="A list of teachers scheduled to teach " +
                          "during all lunch blocks of any day. Requires that " +
                          "lunch blocks are set up for the program. Ignores " +
@@ -433,10 +439,11 @@ class SchedulingCheckRunner:
          return  self.formatter.format_table(self.d_grades["classes"], {"headings": self.grades})
 
      def admins_teaching_per_timeblock(self):
-          key_string = "Admins Teaching"
-          num_string = "num"
+          key_string = "Admin Usernames"
+          name_string = "Admin Names"
+          num_string = "Number"
           def admin_dict():
-               return { key_string: [] }
+               return { key_string: [], name_string: [] }
 
           d = self._timeslot_dict(slot=admin_dict)
           for s in self._all_class_sections():
@@ -445,11 +452,16 @@ class SchedulingCheckRunner:
                for a in admin_teachers:
                     mt =  s.get_meeting_times()
                     for t in mt:
+                         d[t][name_string].append(a.name())
                          d[t][key_string].append(str(a))
           for k in d:
                d[k][num_string] = len(d[k][key_string])
+          for l in d:
+               str1 = " "
+               d[l][key_string] = str1.join(d[l][key_string])
+               d[l][name_string] = str1.join(d[l][name_string])
           return self.formatter.format_table(d,
-               {"headings": [num_string, key_string]})
+               {"headings": [num_string, key_string, name_string]})
 
      def _calculate_classes_missing_resources(self):
          if self.calculated_classes_missing_resources:
@@ -535,11 +547,11 @@ class SchedulingCheckRunner:
                      room0 = sections[i].initial_rooms()[0]
                      room1 = sections[i+1].initial_rooms()[0]
                      if (time1.start-time0.end).total_seconds() < 1200 and sections[i].initial_rooms().count() + sections[i+1].initial_rooms().count() and room0.name != room1.name:
-                         l.append({"Teacher": teacher, "Section 1": sections[i], "Section 2": sections[i+1], "Room 1": room0, "Room 2": room1})
+                         l.append({"Username": teacher, "Teacher Name": teacher.name(), "Section 1": sections[i], "Section 2": sections[i+1], "Room 1": room0, "Room 2": room1})
                  except BaseException:
                      continue
          return self.formatter.format_table(l,
-                         {"headings": ["Teacher", "Section 1", "Section 2",
+                         {"headings": ["Username", "Teacher Name", "Section 1", "Section 2",
                                        "Room 1", "Room 2"]},
                          help_text="A list of teachers teaching two " +
                          "back-to-back classes (defined as two classes " +
@@ -616,14 +628,14 @@ class SchedulingCheckRunner:
      # to run before scheduling. But it works well with the format and
      # this way everyone else doesn't have to rediscover the round_to
      # argument to ESPUser.getTaughtTime() every year.
-     def hosed_teachers(self):
+     def inflexible_teachers(self):
          """
          Teachers who have registered almost as many hours of classes
          as hours of availability. Intended to be run before scheduling,
          and will not change as classes are scheduled.
          """
          teachers = self.p.teachers()['class_submitted']
-         hosed = []
+         inflexible = []
          for teacher in teachers:
              # This will break if we ever start having class blocks
              # that aren't an hour long
@@ -632,12 +644,13 @@ class SchedulingCheckRunner:
              delta = availability - class_hours
              # Arbitrary formula, seems to do a good job of catching the cases I care about
              if class_hours/float(availability) >= 2/float(3):
-                 hosed.append({'Teacher': teacher.username,
+                 inflexible.append({'Username': teacher.username,
+                               'Teacher Name': teacher.name(),
                                'Class hours': class_hours,
                                'Available hours': availability,
                                'Free hours': delta})
-         return self.formatter.format_table(hosed,
-                                            {'headings': ['Teacher', 'Class hours',
+         return self.formatter.format_table(inflexible,
+                                            {'headings': ['Username', 'Teacher Name', 'Class hours',
                                                           'Available hours',
                                                           'Free hours']},
-                                            help_text=self.hosed_teachers.__doc__)
+                                            help_text=self.inflexible_teachers.__doc__)

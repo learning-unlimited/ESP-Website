@@ -167,6 +167,7 @@ var SchedulingCheck = React.createClass({
         <div className="placeholder load_ready">
           (loaded {this.state.timestamp})
         </div>
+        <div className="alittlepspace"></div>
         {helpText}
         {table}
       </div>;
