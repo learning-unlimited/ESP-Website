@@ -66,6 +66,7 @@ class AdminClass(ProgramModuleObj):
             "module_type": "manage",
             "inline_template": "listclasses.html",
             "seq": 1,
+            "choosable": 1,
             }
 
     form_choice_types = ['status', 'reg_status', 'room', 'resources', 'times', 'min_grade', 'max_grade', 'duration']

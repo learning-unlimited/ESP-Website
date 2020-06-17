@@ -187,9 +187,9 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                 regProf.educator_info = EducatorInfo.addOrUpdate(curUser, regProf, new_data)
             regProf.save()
 
-            curUser.first_name = new_data['first_name']
-            curUser.last_name  = new_data['last_name']
-            curUser.email     = new_data['e_mail']
+            curUser.first_name = new_data.get('first_name')
+            curUser.last_name  = new_data.get('last_name')
+            curUser.email     = new_data.get('e_mail')
             curUser.save()
             if responseuponCompletion == True:
                 return registration_redirect(request)
@@ -262,10 +262,7 @@ def myesp_onsite(request):
     progs = Permission.program_by_perm(user,"Onsite")
 
     # Order them decreasing by id
-    # - Currently reverse the list in Python, otherwise fbap's cache is ignored
-    # TODO: Fix this
-    progs = list(progs)
-    progs.reverse()
+    progs = list(progs.order_by("-id"))
 
     if len(progs) == 1:
         return HttpResponseRedirect('/onsite/%s/main' % progs[0].getUrlBase())

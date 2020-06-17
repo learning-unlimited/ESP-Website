@@ -3,7 +3,9 @@
 {% load latex %}
 
 {% if q.question.question_type.is_countable %}
-    \begin{minipage}[b]{3in} {{ q.question.name|texescape }}: \\
+    \begin{minipage}[b]{3in}
+        \vspace*{0.1in}
+        {{ q.question.name|texescape }}: \\
         (Numerical responses) \vspace*{0.5in}
 
         \textbf{Number of responses:} {{ q.answers|length }}/{{ num_participants }} \\
@@ -22,9 +24,12 @@
             {{ q.answers|unpack_answers|histogram:"format=tex"|safe }}
         {% endif %}
     {% else %} There are no responses to this question.
-    {% endif %} \\ \hline
+    {% endif %}
+    \vspace*{0.1in}
+    \\ \hline
 {% else %}
-    \begin{minipage}{3in} 
+    \begin{minipage}{3in}
+        \vspace*{0.1in}
         {{ q.question.name|texescape }} \vspace*{0.5in}
 
         \textbf{Number of responses:} {{ q.answers|length }}/{{ num_participants }} \\
@@ -38,7 +43,8 @@
         {% empty %}
             \item There are no responses to this question.
         {% endfor %}
-        \end{enumerate} \vspace*{0.1in}
+        \end{enumerate}
+        \vspace*{0.1in}
     {% else %}
         {% if not q.answers|length_is:0 %}
         \vspace*{0.1in} Responses include: \\ 
@@ -46,9 +52,12 @@
         \begin{itemize2}
         {% for a in q.answers|unpack_answers %}{% if not a|length_is:0 %}\item {{ a|texescape }}
         {% endif %}{% endfor %}
-        \end{itemize2} \vspace*{0.1in} 
-        {% else %} There are no responses to this question.
+        \end{itemize2}
+        {% else %}
+        \vspace*{0.5in}
+        There are no responses to this question.
         {% endif %}
+        \vspace*{0.1in}
     {% endifequal %}
     \end{minipage} \\ \hline
 {% endif %}

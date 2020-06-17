@@ -71,6 +71,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             "module_type": "teach",
             "seq": 10,
             "inline_template": "listclasses.html",
+            "choosable": 1,
             }
 
     @property
@@ -221,15 +222,16 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/Classes/View")
     def section_attendance(self, request, tl, one, two, module, extra, prog):
-        context = {'program': prog, 'one': one, 'two': two}
+        context = {'program': prog, 'tl': tl, 'one': one, 'two': two}
 
         user = request.user
-        user.taught_sections = [sec for sec in user.getTaughtSections(program = prog) if sec.meeting_times.count() > 0]
-        context['user'] = user
+        context['sched_sections'] = [sec for sec in user.getTaughtSections(program = prog) if sec.meeting_times.count() > 0]
 
         secid = 0
         if 'secid' in request.POST:
             secid = request.POST['secid']
+        elif 'secid' in request.GET:
+            secid = request.GET['secid']
         else:
             secid = extra
         sections = ClassSection.objects.filter(id = secid)
@@ -239,8 +241,6 @@ class TeacherClassRegModule(ProgramModuleObj):
             else:
                 section = sections[0]
                 context['section'], context['not_found'] = self.process_attendance(section, request, prog)
-        elif len(sections) > 1:
-            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
         return render_to_response(self.baseDir()+'section_attendance.html', request, context)
 
@@ -256,7 +256,9 @@ class TeacherClassRegModule(ProgramModuleObj):
             attending_students = [int(student) for student in request.POST.getlist('attending')]
             for student in section.students(verbs=["Enrolled","Attended"]):
                 if student.id in attending_students:
-                    Record.objects.get_or_create(user=student, program=prog, event='attended')
+                    if not prog.isCheckedIn(student):
+                        rec = Record(user=student, program=prog, event='attended')
+                        rec.save()
                     sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
                     sr.end_date = today_max
                     sr.save()
@@ -276,7 +278,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                         not_found.append(code)
                         continue
                 if student.isStudent():
-                    Record.objects.get_or_create(user=student, program=prog, event='attended')
+                    if not prog.isCheckedIn(student):
+                        rec = Record(user=student, program=prog, event='attended')
+                        rec.save()
                     sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
                     sr.end_date = today_max
                     sr.save()
@@ -302,12 +306,12 @@ class TeacherClassRegModule(ProgramModuleObj):
         section.enrolled_list = []
         section.attended_list = []
         for student in section.students():
-            student.checked_in = Record.user_completed(student, "attended", prog)
+            student.checked_in = prog.isCheckedIn(student)
             student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended).exists()
             section.enrolled_list.append(student)
         for student in section.students(["Attended"]):
             if student not in section.students():
-                student.checked_in = Record.user_completed(student, "attended", prog)
+                student.checked_in = prog.isCheckedIn(student)
                 student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended).exists()
                 section.attended_list.append(student)
         return (section, not_found)

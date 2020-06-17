@@ -53,7 +53,7 @@ class LunchConstraintsForm(forms.Form):
 
 class ProgramSettingsForm(ProgramCreationForm):
     """ Form for changing program-related settings. """
-    #Remove these fields because they are editable on the deadline management page
+    # Remove these fields because they are editable on the deadline management page
     teacher_reg_start = None
     teacher_reg_end   = None
     student_reg_start = None
@@ -74,7 +74,7 @@ class ProgramSettingsForm(ProgramCreationForm):
                      ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
                      ('About Program Creator',{'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
                      ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
-                     ('Program Internal Details' ,{'fields':['program_type','program_modules','class_categories','flag_types']}),
+                     ('Program Internal Details' ,{'fields':['program_type','program_modules','program_module_questions','class_categories','flag_types']}),
                     ]# Here you can also add description for each fieldset.
         model = Program
 

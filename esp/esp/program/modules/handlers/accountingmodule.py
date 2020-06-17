@@ -45,6 +45,7 @@ class AccountingModule(ProgramModuleObj):
             "link_title": "Accounting",
             "module_type": "manage",
             "seq": 253,
+            "choosable": 0,
             }
 
     # TODO: create a user search page as main_call instead of this default

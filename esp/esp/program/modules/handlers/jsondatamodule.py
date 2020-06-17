@@ -70,6 +70,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             "link_title": "JSON Data",
             "module_type": "json",
             "seq": 0,
+            "choosable": 1,
             } ]
 
     """ Warning: for performance reasons, these views are not abstracted away from

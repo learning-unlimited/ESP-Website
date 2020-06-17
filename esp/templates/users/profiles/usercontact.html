@@ -2,6 +2,7 @@
 
 <h3>{{ profiletype|capfirst }} Contact Information</h3>
 
+{% if form.first_name %}
  <div class="control-group">
  <label class="control-label" for="id_first_name">First Name:</label>
  <div class="controls">
@@ -10,7 +11,9 @@
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.last_name %}
 <div class="control-group">
  <label class="control-label" for="id_last_name">Last Name:</label>
  <div class="controls">
@@ -19,7 +22,9 @@
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.e_mail %}
 {% ifequal profiletype "student" %}
 <div class="alert">
     <button type="button" class="close" data-dismiss="alert">x</button>
@@ -35,11 +40,13 @@
    {% endif %}
 </div>
 </div>
+{% endif %}
+
+{% if form.address_street or form.address_city or form.address_state or form.address_zip %}
+<h4>Address:</h4>
+{% endif %}
 
 {% if form.address_street %}
-
-<h4>Address:</h4>
-
 <div class="control-group">
     <label class="control-label" for="id_address_street">
     <small><i>street</i></small>
@@ -50,10 +57,12 @@
     {% endif %}
     </div>
 </div>
+{% endif %}
 
+{% if form.address_city or form.address_state or form.address_zip %}
 <div class="control-group">
     <label class="control-label" for="id_address_city">
-    <small><i>city/state/zip</i></small>
+    <small><i>{% if form.address_city %}city/{% endif %}{% if form.address_state %}state/{% endif %}{% if form.address_zip %}zip{% endif %}</i></small>
     </label>
     <div class="controls controls-row">
         {{ form.address_city }} {% if form.address_city.errors %}
@@ -69,11 +78,11 @@
         {% endif %}
     </div>
 </div>
-    
 {% endif %}
 
 {{ form.address_postal }}
 
+{% if form.phone_day or form.phone_cell %}
 <h4>Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}:{% if profiletype == "teacher" or profiletype == "student" and require_student_phonenum %}<font color="red">*</font>{% endif %}</h4>
 
 {% if profiletype == "student" %}
@@ -104,14 +113,13 @@
 </div>
 </div>
 {% endif %}
+{% endif %}
 
-{% if form.receive_txt_message %}
-
+{% if form.receive_txt_message and form.phone_cell %}
  <small><i><label = "id_receive_txt_message">I would like to receive text-message reminders about the program:</label></i></small>
  {{ form.receive_txt_message }} {% if form.receive_txt_message.errors %}
    <br /><span class="form_error">{{ form.receive_txt_message.errors|join:", " }}</span>
    {% endif %}
- 
 {% endif %}
 
 <!-- End User ContactInfo -->

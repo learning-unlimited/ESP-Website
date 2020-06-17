@@ -48,9 +48,9 @@ from esp.cal.models import Event
 from django              import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string, get_template
-from django.db.models.aggregates import Min
+from django.db.models.aggregates import Min, Max
 from django.db.models.query   import Q
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 
 import collections
 import json
@@ -62,7 +62,8 @@ class TeacherCheckinModule(ProgramModuleObj):
             "admin_title": "Teacher Check-In",
             "link_title": "Check in teachers",
             "module_type": "onsite",
-            "seq": 10
+            "seq": 10,
+            "choosable": 1,
             }
 
     def checkIn(self, teacher, prog, when=None):
@@ -319,31 +320,82 @@ class TeacherCheckinModule(ProgramModuleObj):
 
         sections_by_class = {}
         for section in sections:
-            if not all(teacher.id in arrived for teacher in section.teachers):
-                # Put the first section of each class into sections_by_class
-                if (section.parent_class.id not in sections_by_class
-                        or sections_by_class[section.parent_class_id].begin_time > section.begin_time):
-                    # Precompute some things and pack them on the section.
-                    section.any_arrived = any(teacher.id in arrived
-                                              for teacher in section.teachers)
-                    section.room = (section.prettyrooms() or [None])[0]
-                    # section.teachers is a property, so we can't add extra
-                    # data to the ESPUser objects and have them stick. We must
-                    # make a new list and then modify that.
-                    section.teachers_list = list(section.teachers)
-                    for teacher in section.teachers_list:
-                        teacher.phone = teacher_phones.get(teacher.id, default_phone)
-                    sections_by_class[section.parent_class_id] = section
+            # Put the first section of each class into sections_by_class
+            if (section.parent_class.id not in sections_by_class
+                    or sections_by_class[section.parent_class_id].begin_time > section.begin_time):
+                # Precompute some things and pack them on the section.
+                teacher_status = [teacher.id in arrived for teacher in section.teachers]
+                section.all_arrived = all(teacher_status)
+                section.any_arrived = any(teacher_status)
+                section.room = (section.prettyrooms() or [None])[0]
+                section.unique_resources = section.resourceassignments().order_by('assignment_group').distinct('assignment_group')
+                # section.teachers is a property, so we can't add extra
+                # data to the ESPUser objects and have them stick. We must
+                # make a new list and then modify that.
+                section.teachers_list = list(section.teachers)
+                for teacher in section.teachers_list:
+                    teacher.phone = teacher_phones.get(teacher.id, default_phone)
+                sections_by_class[section.parent_class_id] = section
 
         sections = [
             section for section in sections_by_class.values()
             if not section.any_arrived
         ] + [
             section for section in sections_by_class.values()
-            if section.any_arrived
+            if section.any_arrived and not section.all_arrived
+        ] + [
+            section for section in sections_by_class.values()
+            if section.all_arrived
         ]
 
         return sections, arrived
+
+    def getMissingResources(self, prog, date=None, starttime=None, default_phone = '(missing contact info)'):
+        """Return a list of class sections that have ended but have not returned their floating resources.
+
+        Parameters:
+          prog (Program):                 The program.
+          date (date, optional):          If given, the return only includes
+                                          missing resources for sections that ended
+                                          on a previous day. Overrides starttime if
+                                          both are given.
+          starttime (datetime, optional): If given, the return only includes
+                                          missing resources for sections that ended
+                                          before this time.
+          default_phone (string, opt):    A string that should be used if there
+                                          is no valid phone number for a teacher.
+
+        Returns:
+          sections_list:  A list of all sections that have ended but have not returned
+                          their resources as of starttime or date. Each item of the list
+                          has an attribute `missing_resources` that is a list of the
+                          floating resources that have not been returned.
+        """
+
+        sections = prog.sections().annotate(end_time=Max("meeting_times__end")) \
+                                  .filter(status=10, parent_class__status=10, end_time__isnull=False) \
+                                  .order_by('end_time')
+        if date is not None:
+            starttime = datetime.combine(date, time())
+        if starttime is not None:
+            sections = sections.filter(end_time__lt=starttime)
+
+        teachers = ESPUser.objects.filter(classsubject__sections__in=sections).distinct()
+        teacher_phones = self.get_phones(teachers, default_phone)
+
+        sections_list = []
+        for section in sections:
+            # Use distinct() to avoid showing duplicate resource assignments for sections that are multiple blocks long
+            resources = section.resourceassignments().filter(returned=False).order_by('assignment_group').distinct('assignment_group')
+            if len(resources):
+                section.missing_resources = resources
+                section.room = (section.prettyrooms() or [None])[-1]
+                section.teachers_list = list(section.teachers)
+                for teacher in section.teachers_list:
+                    teacher.phone = teacher_phones.get(teacher.id, default_phone)
+                sections_list.append(section)
+
+        return sections_list
 
     @aux_call
     @needs_onsite
@@ -397,9 +449,11 @@ class TeacherCheckinModule(ProgramModuleObj):
         context['date'] = date
         context['sections'], context['arrived'] = self.getMissingTeachers(
             prog, date, starttime, when, show_flags, default_phone)
+        context['missing_resources'] = self.getMissingResources(prog, date, getattr(starttime, "start", None))
         if show_flags:
             context['show_flags'] = True
             context['flag_types'] = ClassFlagType.get_flag_types(self.program)
+        context['res_types'] = prog.getFloatingResources()
         context['start_time'] = starttime
         context['next'] = next
         context['previous'] = previous
