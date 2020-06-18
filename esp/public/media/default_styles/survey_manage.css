@@ -12,7 +12,7 @@
 }
 
 #id__param_values {
-    display: none;
+    display: none !important;
 }
 
 select {
