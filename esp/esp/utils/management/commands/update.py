@@ -35,6 +35,8 @@ Learning Unlimited, Inc.
 
 from django.core.management import call_command
 from django.core.management.base import NoArgsCommand
+from django.conf import settings
+import os
 
 class Command(NoArgsCommand):
     """Update the site.
@@ -44,6 +46,8 @@ class Command(NoArgsCommand):
     - Install initial data (happens automatically after running migrations).
     - Collect static files.
     - Recompile the theme.
+    - Clear memcache
+    - Touch esp.wsgi.
     """
     def handle_noargs(self, **options):
         default_options = {
@@ -51,6 +55,7 @@ class Command(NoArgsCommand):
             'interactive': False,
             'merge': True,
             'delete_ghosts': True,
+            'clear': True,
         }
         default_options.update(options)
         options = default_options
@@ -58,3 +63,7 @@ class Command(NoArgsCommand):
         call_command('migrate', **options)
         call_command('collectstatic', **options)
         call_command('recompile_theme', **options)
+        os.system('echo flush_all | nc localhost 11211')
+        root = os.path.dirname(os.path.abspath(settings.BASE_DIR))
+        file = os.path.join(root, 'esp.wsgi')
+        os.system('touch ' + file)
