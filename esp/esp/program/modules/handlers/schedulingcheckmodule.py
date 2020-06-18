@@ -160,7 +160,7 @@ class SchedulingCheckRunner:
          ('classes_which_cover_lunch', 'Classes which are scheduled over lunch'),
          ('classes_wrong_length', 'Classes which are the wrong length'),
          ('no_overlap_classes', "Classes which shouldn't overlap"),
-         ('unapproved_scheduled_classes', 'Classes which are scheduled but aren\'t approved'),
+         ('unapproved_scheduled_classes', 'Classes which are scheduled but not approved'),
          #Teacher Diagnostics
          ('teachers_unavailable', "Teachers teaching when they aren't available"),
          ('teachers_teaching_two_classes_same_time', 'Teachers teaching two classes at once'),
