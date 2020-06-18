@@ -144,6 +144,7 @@ Minor new features
 - Moved the schedule snippets that you can include in comm panel emails to templates, allowing them to be overriden.
 - Added a class registration filter to the comm panel, group text, and arbitrary user list modules.
 - Added tags "student_profile_hide_fields", "volunteer_profile_hide_fields", "educator_profile_hide_fields", and "guardian_profile_hide_fields" that allow any fields in the profile forms to be hidden (except for email address all profile forms and grade for the student profile form).
+- Made the scheduling diagnostics made more user-friendly and prettier.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
