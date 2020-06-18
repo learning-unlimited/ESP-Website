@@ -194,5 +194,4 @@ Known issues of new features
 - "Rejected" classes aren't shown on /teacherreg or /userview.
 - Students on the section attendance page are not sorted alphabetically.
 - Survey questions and results are very squished on the webapp.
-- The new Survey UI doesn't hide the raw parameters field.
 - Multiple users taking attendance at the same time can cause the section attendance to break or behave unexpectedly.
