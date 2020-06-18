@@ -9,7 +9,7 @@ Changelog
 
 Privacy Policy
 ~~~~~~~~~~~~~~
-The LU Board has approved a new `Privacy Policy <https://www.learningu.org/about/privacy/>`_, which governs how you use collect and use the data on your site. These terms have been posted on your sites and must be followed.
+The LU Board has approved a new `Privacy Policy <https://www.learningu.org/about/privacy/>`_, which governs how you collect and use the data on your site. These terms have been posted on your sites and must be followed.
 
 Attendance
 ~~~~~~~~~~
