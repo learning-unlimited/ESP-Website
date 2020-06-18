@@ -166,7 +166,7 @@ class SchedulingCheckRunner:
          ('teachers_teaching_two_classes_same_time', 'Teachers teaching two classes at once'),
          ('teachers_who_like_running', 'Teachers who like running'),
          ('hungry_teachers', 'Hungry Teachers'),
-         ('inflexible_teachers', 'Teachers with Limited Flexibility'),
+         ('inflexible_teachers', 'Teachers with limited flexibility'),
          #Information Diagnostics
          ('classes_by_category', 'Number of classes in each block by category'),
          ('capacity_by_category', 'Total capacity in each block by category'),
