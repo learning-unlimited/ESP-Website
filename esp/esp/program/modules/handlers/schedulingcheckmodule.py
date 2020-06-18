@@ -340,7 +340,7 @@ class SchedulingCheckRunner:
                      classes = [ClassSection.objects.filter(parent_class__teachers=t,meeting_times=block)[0] for block in lunch]
                      if open_class_cat.id not in [c.category.id for c in classes]:
                          #converts the list of class section objects to a single string
-                         str1 = ' '
+                         str1 = ', '
                          classes = str1.join([unicode(c) for c in classes])
                          bads.append({
                              'Username': t,
@@ -457,7 +457,7 @@ class SchedulingCheckRunner:
           for k in d:
                d[k][num_string] = len(d[k][key_string])
           for l in d:
-               str1 = " "
+               str1 = ", "
                d[l][key_string] = str1.join(d[l][key_string])
                d[l][name_string] = str1.join(d[l][name_string])
           return self.formatter.format_table(d,
