@@ -150,7 +150,7 @@ class SchedulingCheckRunner:
           #Block Diagnostics
          ('lunch_blocks_setup', 'Lunch blocks'),
          ('inconsistent_rooms_and_times', 'Mismatched rooms and meeting times'),
-         ('special_classroom_types', 'Special Classroom Types'),
+         ('special_classroom_types', 'Special classroom types'),
          ('room_capacity_mismatch', 'Class max size/room max size mismatches'),
          #Class Diagnostiscs
          ('wrong_classroom_type', 'Classes in wrong classroom type'),
