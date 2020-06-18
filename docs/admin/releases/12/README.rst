@@ -7,6 +7,10 @@
 Changelog
 =========
 
+Privacy Policy
+~~~~~~~~~~~~~~
+The LU Board has approved a new `Privacy Policy <https://www.learningu.org/about/privacy/>`_, which governs how you use collect and use the data on your site. These terms have been posted on your sites and must be followed.
+
 Attendance
 ~~~~~~~~~~
 We've implemented a set of tools for teachers and admins to manage student class attendance:
@@ -119,7 +123,7 @@ Theme changes
 - Fixed the colors of the buttons presented when editing a QSD/editable text on the bigpicture theme. Button colors will also now properly change when updated in the bigpicture theme settings.
 - Fixed the width of the class edit form and the teacher preview table in the bigpicture theme.
 - Added a new admin bar to all themes that didn't have it before and modified the admin bar of themes that already had one. This admin bar has more helpful links for admins and current program section(s).
-- Added links to the LU Terms of Service.
+- Added links to the LU `Privacy Policy <https://www.learningu.org/about/privacy/>`_.
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
