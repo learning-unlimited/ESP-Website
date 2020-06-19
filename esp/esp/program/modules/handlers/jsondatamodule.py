@@ -148,8 +148,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         for i in range(len(data)):
             if data[i]['resourceassignment__resource__id'] != None:
                 res = Resource.objects.get(id=data[i]['resourceassignment__resource__id'])
-                # Ignore floating resources
-                if res.is_unique == True:
+                # Ignore anything that isn't a classroom
+                if res.res_type.name != "Classroom":
                     continue
                 data[i]['resourceassignment__resource__id'] = res.identical_id(prog)
             data_list.append(data[i])
