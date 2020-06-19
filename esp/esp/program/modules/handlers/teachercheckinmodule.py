@@ -357,11 +357,11 @@ class TeacherCheckinModule(ProgramModuleObj):
           prog (Program):                 The program.
           date (date, optional):          If given, the return only includes
                                           missing resources for sections that ended
-                                          on a previous day. Overrides starttime if
-                                          both are given.
+                                          on a previous day.
           starttime (datetime, optional): If given, the return only includes
                                           missing resources for sections that ended
-                                          before this time.
+                                          before this time. Overrides date if
+                                          both are given.
           default_phone (string, opt):    A string that should be used if there
                                           is no valid phone number for a teacher.
 
@@ -375,7 +375,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         sections = prog.sections().annotate(end_time=Max("meeting_times__end")) \
                                   .filter(status=10, parent_class__status=10, end_time__isnull=False) \
                                   .order_by('end_time')
-        if date is not None:
+        if starttime is None and date is not None:
             starttime = datetime.combine(date, time())
         if starttime is not None:
             sections = sections.filter(end_time__lt=starttime)
