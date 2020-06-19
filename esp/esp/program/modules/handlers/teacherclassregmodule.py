@@ -309,6 +309,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             student.checked_in = prog.isCheckedIn(student)
             student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended).exists()
             section.enrolled_list.append(student)
+        section.enrolled_list.sort(key=lambda student: student.last_name)
         for student in section.students(["Attended"]):
             if student not in section.students():
                 student.checked_in = prog.isCheckedIn(student)
