@@ -66,7 +66,7 @@ class SurveyManagement(ProgramModuleObj):
         if request.GET:
             obj = request.GET.get("obj", None)
             op = request.GET.get("op", None)
-            id = request.GET.get("id", None) or request.POST.get("survey_id", None) or request.POST.get("question_id", None)
+            id = request.GET.get("id", None) or request.POST.get("survey", None) or request.POST.get("survey_id", None) or request.POST.get("question_id", None)
             if obj == "survey":
                 context['open_section'] = 'survey'
                 survey = None
