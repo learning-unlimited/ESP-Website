@@ -5,6 +5,12 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
+{% endblock %}
+
+{% block xtrajs %}
+    {{ block.super }}
+    <script src="/media/scripts/sorttable.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -24,7 +30,8 @@ Here is an attendance summary for {{ timeslot }}. Here you can see attendance st
 {% if timeslot %}
 If you are looking for a different timeslot, you can select it from the dropdown below:
 {% else %}
-Please select a timeslot from the dropdown below:
+<a class="btn" href="/onsite/{{ one }}/{{ two }}/section_attendance/{{ timeslot.id }}">See or record section attendance</a><br /><br />
+or select a timeslot from the dropdown below to see attendance stats:
 {% endif %}
 </p>
 </center>
@@ -53,9 +60,9 @@ Please select a timeslot from the dropdown below:
         </p>
         <input name="when" type="date" value="{{ when|date:'Y-m-d' }}" style="width:auto;"><input type="submit" value="Change Date">
     </form>
-    {% endif %}
     <br />
     <a class="btn" href="/onsite/{{ one }}/{{ two }}/section_attendance/{{ timeslot.id }}">See or record section attendance{% if timeslot %} for this timeslot{% endif %}</a>
+    {% endif %}
     <br /><br />
 </center>
 
@@ -74,10 +81,12 @@ Please select a timeslot from the dropdown below:
 </tr>
 </table>
 <br />
-<table>
-<tr>
-    <th colspan="6">Students Checked In Between {{ timeslot.start_w_buffer|date:"g:i A" }} and {{ timeslot.end|date:"g:i A" }}{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</th>
-</tr>
+
+<button class="dsphead">
+    <b>Students Checked In Between {{ timeslot.start_w_buffer|date:"g:i A" }} and {{ timeslot.end|date:"g:i A" }}{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</b> (click to expand/collapse)
+</button>
+<div class="dspcont">
+<table class="sortable">
 <tr>
     <th width="5%">#</th>
     <th width="30%">Student Name</th>
@@ -101,6 +110,7 @@ Please select a timeslot from the dropdown below:
 </tr>
 {% endfor %}
 </table>
+
 <table width="100%" style="border: none;">
     {% if program|hasModule:"ListGenModule" %}
         <td width="33%" align="center">
@@ -124,11 +134,13 @@ Please select a timeslot from the dropdown below:
         </td>
     {% endif %}
 </table>
-<br />
-<table>
-<tr>
-    <th colspan="7">Students Checked In Before {{ timeslot.end|date:"g:i A" }} But Not Attending Class During This Timeslot{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</th>
-</tr>
+</div>
+
+<button class="dsphead">
+    <b>Students Checked In Before {{ timeslot.end|date:"g:i A" }} But Not Attending Class During This Timeslot{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</b> (click to expand/collapse)
+</button>
+<div class="dspcont">
+<table class="sortable">
 <tr>
     <th width="5%">#</th>
     <th width="20%">Student Name</th>
@@ -154,6 +166,7 @@ Please select a timeslot from the dropdown below:
 </tr>
 {% endfor %}
 </table>
+
 <table width="100%" style="border: none;">
     {% if program|hasModule:"ListGenModule" %}
         <td width="33%" align="center">
@@ -177,11 +190,13 @@ Please select a timeslot from the dropdown below:
         </td>
     {% endif %}
 </table>
-<br />
-<table>
-<tr>
-    <th colspan="8">Students Attending Classes In Which They Weren't Originally Enrolled During This Timeslot{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</th>
-</tr>
+</div>
+
+<button class="dsphead">
+    <b>Students Attending Classes In Which They Weren't Originally Enrolled During This Timeslot{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</b> (click to expand/collapse)
+</button>
+<div class="dspcont">
+<table class="sortable">
 <tr>
     <th width="5%">#</th>
     <th width="15%">Student Name</th>
@@ -232,11 +247,13 @@ Please select a timeslot from the dropdown below:
         </td>
     {% endif %}
 </table>
-<br />
-<table>
-<tr>
-    <th colspan="6">Sections During This Timeslot with No Attendance Recorded{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</th>
-</tr>
+</div>
+
+<button class="dsphead">
+    <b>Sections During This Timeslot with No Attendance Recorded{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</b> (click to expand/collapse)
+</button>
+<div class="dspcont">
+<table class="sortable">
 <tr>
     <th width="5%">#</th>
     <th width="10%">Email Code</th>
@@ -283,12 +300,14 @@ Please select a timeslot from the dropdown below:
         </td>
     {% endif %}
 </table>
+</div>
 </center>
+
+<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 {% endif %}
 
 </div>
 
 {% include "program/modules/onsitecore/returnlink.html" %}
-
 
 {% endblock %}
