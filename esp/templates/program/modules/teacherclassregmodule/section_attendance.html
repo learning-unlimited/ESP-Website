@@ -40,6 +40,7 @@
             }
         });
     </script>
+    <script src="/media/scripts/sorttable.js"></script>
     {% endif %}
 {% endblock %}
 
@@ -48,7 +49,7 @@
 
 {% if tl == "onsite" %}
 <br />
-<a class="btn" style="float: left" href="/onsite/{{ one }}/{{ two }}/attendance/">&lt;&lt;Back to Program Attendance</a>
+<a class="btn" style="float: left" href="/onsite/{{ one }}/{{ two }}/attendance/{{ timeslot.id }}">&lt;&lt;Back to Attendance Overview</a>
 <select name="tsid" onchange="location.href='/onsite/{{ one }}/{{ two }}/section_attendance/'+$j(this).children('option:selected').val()" style="width: 200px; float: right;">
     <option disabled{% if not timeslot %} selected="selected"{% endif %}>
         (Select a timeslot)
@@ -66,7 +67,7 @@
 
 <p>
 {% if section %}
-Here is an attendance sheet for your section's students. Here you can see which students have checked in and submit attendance for your section. This section is scheduled for {{ section.friendly_times_with_date|join:", " }}. If you are looking for a different section, you can select it from the dropdown below.
+Here is an attendance sheet for your section's students. Here you can see which students have checked in and submit attendance for your section. This section is scheduled for {{ section.friendly_times_with_date|join:", " }}. If you are looking for a different section, you can select it from the dropdown below. You can sort the students by any column by clicking on the column header.
 {% elif tl == "onsite" and not timeslot %}
 Please select a timeslot above.
 {% else %}
@@ -95,86 +96,93 @@ Please select a section from the dropdown below.
 <form action="{{ request.get_full_path }}" method="post">
 <input type="hidden" name="submitted">
 <table align="center" width="100%">
-<thead>
 <tr>
-    <th colspan="7" align="center">
+    <th align="center">
         Mark attendance for students enrolled in this section:
     </th>
 </tr>
 <tr>
-    <th width="5%">#</th>
-    <th width="30%">Student Name</th>
-    <th width="12.5%">Student ID #</th>
-    <th width="12.5%">Student Grade</th>
-    <th width="20%">School</th>
-    <th width="10%">Checked In?</th>
-    <th width="10%">Attending Section?</th>
-</tr>
-</thead>
-<tbody>
-{% for student in section.enrolled_list %}
-    <tr>
-        <th class="small">{{ forloop.counter }}</th>
-        <td>{{ student.name }}</td>
-        <td>{{ student.id }}</td>
-        <td>{{ student|getGradeForProg:program.id }}</td>
-        <td>{{ student.getLastProfile.student_info.getSchool }}</td>
-        <td align="center"><input type="checkbox"{% if student.checked_in %} checked{% endif %} disabled></td>
-        <td align="center"><input name="attending" value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}></td>
-    </tr>
-{% empty %}
-<tr>
-    <td colspan="7" align="center">
-        No students enrolled in this section
+    <td style="padding: 0px;">
+        <table align="center" width="100%" class="sortable" style="border: none;">
+            <tr>
+                <th width="5%">#</th>
+                <th width="17.5%">First Name</th>
+                <th width="17.5%">Last Name</th>
+                <th width="10%">ID #</th>
+                <th width="10%">Grade</th>
+                <th width="20%">School</th>
+                <th width="10%">Checked In?</th>
+                <th width="10%">Attending Section?</th>
+            </tr>
+            {% for student in section.enrolled_list %}
+                <tr>
+                    <th class="small">{{ forloop.counter }}</th>
+                    <td>{{ student.first_name }}</td>
+                    <td>{{ student.last_name }}</td>
+                    <td>{{ student.id }}</td>
+                    <td>{{ student|getGradeForProg:program.id }}</td>
+                    <td>{{ student.getLastProfile.student_info.getSchool }}</td>
+                    <td align="center" sorttable_customkey="{% if student.checked_in %}2{% else %}1{% endif %}"><input type="checkbox"{% if student.checked_in %} checked{% endif %} disabled></td>
+                    <td align="center" sorttable_customkey="{% if student.attended %}2{% else %}1{% endif %}"><input name="attending" value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}></td>
+                </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" align="center">
+                    No students enrolled in this section
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
     </td>
 </tr>
-{% endfor %}
 </table>
 
 {% if section.attended_list %}
 <br />
 <table align="center" width="100%">
-<thead>
 <tr>
-    <th colspan="7" align="center">
+    <th align="center">
         Mark attendance for students attending (but not enrolled in) this section:
     </th>
 </tr>
 <tr>
-    <th width="5%">#</th>
-    <th width="30%">Student Name</th>
-    <th width="12.5%">Student ID #</th>
-    <th width="12.5%">Student Grade</th>
-    <th width="20%">School</th>
-    <th width="10%">Checked In?</th>
-    <th width="10%">Attending Section?</th>
+    <td style="padding: 0px;">
+        <table align="center" width="100%" class="sortable" style="border: none;">
+            <tr>
+                <th width="5%">#</th>
+                <th width="17.5%">First Name</th>
+                <th width="17.5%">Last Name</th>
+                <th width="10%">ID #</th>
+                <th width="10%">Grade</th>
+                <th width="20%">School</th>
+                <th width="10%">Checked In?</th>
+                <th width="10%">Attending Section?</th>
+            </tr>
+            {% for student in section.attended_list %}
+                <tr>
+                    <th class="small">{{ forloop.counter }}</th>
+                    <td>{{ student.first_name }}</td>
+                    <td>{{ student.last_name }}</td>
+                    <td>{{ student.id }}</td>
+                    <td>{{ student|getGradeForProg:program.id }}</td>
+                    <td>{{ student.getLastProfile.student_info.getSchool }}</td>
+                    <td align="center" sorttable_customkey="{% if student.checked_in %}2{% else %}1{% endif %}"><input type="checkbox"{% if student.checked_in %} checked{% endif %} disabled></td>
+                    <td align="center" sorttable_customkey="{% if student.attended %}2{% else %}1{% endif %}"><input name="attending" value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}></td>
+                </tr>
+            {% endfor %}
+        </table>
+    </td>
 </tr>
-</thead>
-<tbody>
-{% for student in section.attended_list %}
-    <tr>
-        <th class="small">{{ forloop.counter }}</th>
-        <td>{{ student.name }}</td>
-        <td>{{ student.id }}</td>
-        <td>{{ student|getGradeForProg:program.id }}</td>
-        <td>{{ student.getLastProfile.student_info.getSchool }}</td>
-        <td align="center"><input type="checkbox"{% if student.checked_in %} checked{% endif %} disabled></td>
-        <td align="center"><input name="attending" value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}></td>
-    </tr>
-{% endfor %}
 </table>
 {% endif %}
 
 <br />
 <table align="center" width="100%">
-<thead>
 <tr>
     <th align="center">
         And/or enter any attending students (including unenrolled ones) here:
     </th>
 </tr>
-</thead>
-<tbody>
 <tr>
     <td align="center">
         <div class="controls">
@@ -201,7 +209,6 @@ Please select a section from the dropdown below.
         <br /><input type="checkbox" name="unenroll" checked> Unenroll them from their conflicting sections
     </td>
 </tr>
-</tbody>
 </table>
 <center>
 <br /><input type="Submit" class="fancybutton" value="Submit Attendance" />

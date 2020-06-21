@@ -22,7 +22,7 @@
 
 {% if timeslot %}
 <p>
-Here is an attendance summary for {{ timeslot }}. Here you can see attendance statistics and details for students that have been checked in during this timeslot, students that are not attending class, and students that are attending classes they were not originally enrolled in.
+Here is an attendance summary for {{ timeslot }}. Here you can see attendance statistics and details for students that have been checked in during this timeslot, students that are not attending class, students that are attending classes they were not originally enrolled in, and sections that have not recorded attendance. All tables are sortable by any of their columns by clicking on the column headers.
 </p>
 {% endif %}
 <center>
@@ -30,7 +30,7 @@ Here is an attendance summary for {{ timeslot }}. Here you can see attendance st
 {% if timeslot %}
 If you are looking for a different timeslot, you can select it from the dropdown below:
 {% else %}
-<a class="btn" href="/onsite/{{ one }}/{{ two }}/section_attendance/{{ timeslot.id }}">See or record section attendance</a><br /><br />
+<a class="btn" href="/onsite/{{ one }}/{{ two }}/section_attendance/">See or record section attendance</a><br /><br />
 or select a timeslot from the dropdown below to see attendance stats:
 {% endif %}
 </p>
@@ -55,7 +55,7 @@ or select a timeslot from the dropdown below to see attendance stats:
     <!--Could possibly hide this with a tag-->
     <form action="/onsite/{{ one }}/{{ two }}/attendance/{{ timeslot.id }}" method="get">
         <p>
-        If this timeslot is for reccuring classes, select the preferred date here:<br />
+        If this timeslot is for recurring classes, select the preferred date here:<br />
         (the <a href="/onsite/{{ one }}/{{ two }}/attendance/{{ timeslot.id }}">default</a> is the date associated with the timeslot)
         </p>
         <input name="when" type="date" value="{{ when|date:'Y-m-d' }}" style="width:auto;"><input type="submit" value="Change Date">
@@ -86,19 +86,21 @@ or select a timeslot from the dropdown below to see attendance stats:
     <b>Students Checked In Between {{ timeslot.start_w_buffer|date:"g:i A" }} and {{ timeslot.end|date:"g:i A" }}{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</b> (click to expand/collapse)
 </button>
 <div class="dspcont">
-<table class="sortable">
+<table class="sortable" width="100%">
 <tr>
     <th width="5%">#</th>
-    <th width="30%">Student Name</th>
-    <th width="15%">Student Username</th>
-    <th width="10%">Student ID #</th>
-    <th width="10%">Student Grade</th>
+    <th width="15%">First Name</th>
+    <th width="15%">Last Name</th>
+    <th width="15%">Username</th>
+    <th width="10%">ID #</th>
+    <th width="10%">Grade</th>
     <th width="20%">School</th>
 </tr>
 {% for student in checked_in_ts %}
 <tr>
     <th class="small">{{ forloop.counter }}</th>
-    <td>{{ student.name }}</td>
+    <td>{{ student.first_name }}</td>
+    <td>{{ student.last_name }}</td>
     <td>{{ student.username }}</td>
     <td>{{ student.id }}</td>
     <td>{{ student|getGradeForProg:program.id }}</td>
@@ -106,7 +108,7 @@ or select a timeslot from the dropdown below to see attendance stats:
 </tr>
 {% empty %}
 <tr>
-    <td colspan="6" align="center">No students checked in during this timeslot</td>
+    <td colspan="7" align="center">No students checked in during this timeslot</td>
 </tr>
 {% endfor %}
 </table>
@@ -140,20 +142,22 @@ or select a timeslot from the dropdown below to see attendance stats:
     <b>Students Checked In Before {{ timeslot.end|date:"g:i A" }} But Not Attending Class During This Timeslot{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</b> (click to expand/collapse)
 </button>
 <div class="dspcont">
-<table class="sortable">
+<table class="sortable" width="100%">
 <tr>
     <th width="5%">#</th>
-    <th width="20%">Student Name</th>
-    <th width="15%">Student Username</th>
-    <th width="10%">Student ID #</th>
-    <th width="10%">Student Grade</th>
+    <th width="10%">First Name</th>
+    <th width="10%">Last Name</th>
+    <th width="15%">Username</th>
+    <th width="10%">ID #</th>
+    <th width="10%">Grade</th>
     <th width="20%">School</th>
     <th width="20%">Enrolled Class</th>
 </tr>
 {% for student in not_attending %}
 <tr>
     <th class="small">{{ forloop.counter }}</th>
-    <td>{{ student.name }}</td>
+    <td>{{ student.first_name }}</td>
+    <td>{{ student.last_name }}</td>
     <td>{{ student.username }}</td>
     <td>{{ student.id }}</td>
     <td>{{ student|getGradeForProg:program.id }}</td>
@@ -162,7 +166,7 @@ or select a timeslot from the dropdown below to see attendance stats:
 </tr>
 {% empty %}
 <tr>
-    <td colspan="7" align="center">No students checked in but not attending class</td>
+    <td colspan="8" align="center">No students checked in but not attending class</td>
 </tr>
 {% endfor %}
 </table>
@@ -196,13 +200,14 @@ or select a timeslot from the dropdown below to see attendance stats:
     <b>Students Attending Classes In Which They Weren't Originally Enrolled During This Timeslot{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</b> (click to expand/collapse)
 </button>
 <div class="dspcont">
-<table class="sortable">
+<table class="sortable" width="100%">
 <tr>
     <th width="5%">#</th>
-    <th width="15%">Student Name</th>
-    <th width="15%">Student Username</th>
-    <th width="10%">Student ID #</th>
-    <th width="10%">Student Grade</th>
+    <th width="10%">First Name</th>
+    <th width="10%">Last Name</th>
+    <th width="15%">Username</th>
+    <th width="10%">ID #</th>
+    <th width="10%">Grade</th>
     <th width="15%">School</th>
     <th width="15%">Attended Class</th>
     <th width="15%">Enrolled Class</th>
@@ -210,7 +215,8 @@ or select a timeslot from the dropdown below to see attendance stats:
 {% for student in onsite %}
 <tr>
     <th class="small">{{ forloop.counter }}</th>
-    <td>{{ student.name }}</td>
+    <td>{{ student.first_name }}</td>
+    <td>{{ student.last_name }}</td>
     <td>{{ student.username }}</td>
     <td>{{ student.id }}</td>
     <td>{{ student|getGradeForProg:program.id }}</td>
@@ -220,7 +226,7 @@ or select a timeslot from the dropdown below to see attendance stats:
 </tr>
 {% empty %}
 <tr>
-    <td colspan="8" align="center">No students attending students in which they weren't enrolled</td>
+    <td colspan="9" align="center">No students attending students in which they weren't enrolled</td>
 </tr>
 {% endfor %}
 </table>
