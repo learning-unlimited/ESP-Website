@@ -66,4 +66,4 @@ class Command(NoArgsCommand):
         os.system('echo flush_all | nc localhost 11211')
         root = os.path.dirname(os.path.abspath(settings.BASE_DIR))
         file = os.path.join(root, 'esp.wsgi')
-        os.system('sudo -u www-data touch ' + file)
+        os.system('sudo touch ' + file)
