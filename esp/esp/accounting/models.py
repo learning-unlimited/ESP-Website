@@ -67,13 +67,26 @@ class LineItemType(models.Model):
 
     @property
     def options(self):
-        return self.lineitemoptions_set.all().values_list('id', 'amount_dec', 'description').order_by('amount_dec')
+        return self.lineitemoptions_set.all().values_list('id', 'amount_dec', 'description','is_custom').order_by('-is_custom')
+
+    @property
+    def has_custom_options(self):
+        """ Return True if at least one of the options for this line item type
+            allows a custom dollar amount to be entered.    """
+        return self.lineitemoptions_set.filter(is_custom=True).exists()
 
     @property
     def option_choices(self):
         """ Return a list of (ID, description) tuples, one for each of the
             possible options.  Intended for use as form field choices.  """
-        return [(x[0], x[2]) for x in self.options]
+        #   We can't use the 'options' property anymore since we need to compute the inherited amount.
+        result = []
+        for option in self.lineitemoptions_set.all():
+            if option.is_custom:
+                result.append((option.id, '%s -- enter amount below' % (option.description,)))
+            else:
+                result.append((option.id, '%s -- $%.2f' % (option.description, option.amount_dec_inherited)))
+        return result
 
     @property
     def options_cost_range(self):
@@ -105,6 +118,16 @@ class LineItemOptions(models.Model):
     lineitem_type = models.ForeignKey(LineItemType)
     description = models.TextField(help_text='You can include the cost as part of the description, which is helpful if the cost differs from the line item type.')
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='The cost of this option--leave blank to inherit from the line item type.')
+    is_custom = models.BooleanField(default=False, help_text='Should the student be allowed to specify a custom amount for this option?')
+
+    @property
+    def amount_dec_inherited(self):
+        """ The amount to charge for this option; inherits from parent
+            line item type if amount_dec is not set.    """
+        if self.amount_dec is None:
+            return self.lineitem_type.amount_dec
+        else:
+            return self.amount_dec
 
     @property
     def amount(self):

@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -7,21 +6,17 @@ __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
   (see AUTHORS file)
-
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU Affero General Public License
 as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.
-
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Affero General Public License for more details.
-
 You should have received a copy of the GNU Affero General Public
 License along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-
 Contact information:
 MIT Educational Studies Program
   84 Massachusetts Ave W20-467, Cambridge, MA 02139
@@ -42,6 +37,7 @@ from esp.accounting.models import LineItemType
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
+from esp.program.modules.handlers.donationmodule import DonationModule
 
 from django.conf import settings
 from django.db import transaction
@@ -178,9 +174,11 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         if donation_prefs:
             context['amount_donation'] = Decimal(donation_prefs[0][2])
             context['has_donation'] = True
+            context['form'] = DonationModule.get_form(settings=self.settings, donation_initial=context['amount_donation'])
         else:
             context['amount_donation'] = Decimal('0.00')
             context['has_donation'] = False
+            context['form'] = DonationModule.get_form(settings=self.settings, donation_initial=None)
         context['amount_without_donation'] = context['itemizedcosttotal'] - context['amount_donation']
 
         if 'HTTP_HOST' in request.META:
@@ -189,6 +187,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             context['hostname'] = Site.objects.get_current().domain
         context['institution'] = settings.INSTITUTION_NAME
         context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
+
 
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 
@@ -217,6 +216,23 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         group_name = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
 
         iac = IndividualAccountingController(self.program, request.user)
+
+        #   Set donation transfer
+        form = None
+        if request.method == 'POST':
+
+            current_donation_prefs = iac.get_preferences([self.line_item_type(), ])
+            if current_donation_prefs:
+                current_donation = Decimal(iac.get_preferences([self.line_item_type(), ])[0][2])
+            else:
+                current_donation = None
+            form = DonationModule.get_form(settings=self.settings, donation_initial=current_donation, form_data=request.POST)
+
+            if form.is_valid():
+                #   Clear the Transfers by specifying quantity 0
+                iac.set_preference('Donation to Learning Unlimited', 0)
+                if form.amount:
+                    iac.set_preference('Donation to Learning Unlimited', 1, amount=form.amount)
 
         #   Set Stripe key based on settings.  Also require the API version
         #   which our code is designed for.
@@ -277,6 +293,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                     #   transaction ID for our records.
                     transfer.transaction_id = charge.id
                     transfer.save()
+
             except stripe.error.CardError, e:
                 context['error_type'] = 'declined'
                 context['error_info'] = e.json_body['error']
