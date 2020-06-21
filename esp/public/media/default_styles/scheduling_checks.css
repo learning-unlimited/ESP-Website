@@ -6,6 +6,7 @@ th { cursor: pointer; }
      border: 1px solid black;
      padding: 10px;
      margin: 10px;
+     border-radius: 4px;
 }
 
 .scheduling-check-title {
@@ -47,4 +48,67 @@ color: lightgray;
 .help-text {
   margin: 10px;
   font-style: italic;
+}
+.load_ready{
+    background-color: rgba(3, 121, 0, 0.23);
+    border-radius: 3px;
+	width: 200px;
+	text-align: center;
+	margin-left: 120px;
+	margin-right: auto;
+}
+
+.load_yellow{
+    background-color: yellow;
+    border-radius: 3px;
+	width: 200px;
+	text-align: center;
+	margin-left: 140px;
+	margin-right: auto;
+}
+.load_fail{
+    background-color: red;
+    border-radius: 3px;
+	width: 200px;
+	text-align: center;
+	margin-left: 140px;
+	margin-right: auto;
+}
+.move_left{
+    margin-left: 10px;
+}
+.jsonHeader{
+    text-transform: capitalize;
+}
+.jsonColumn {
+	text-align: center;
+	padding: 10px;
+}
+table td + td {
+    border-left:1px solid black;
+
+}
+table th + th {
+    border-left:1px solid black;
+}
+
+thead {
+    border-bottom: 1px solid black;
+    text-transform: capitalize;
+    background: #333333;
+    color: #fff;
+}
+table {
+    width: 100%
+    border-spacing: 1;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
+}
+.alittlepspace {
+	padding-top: 8px;
 }

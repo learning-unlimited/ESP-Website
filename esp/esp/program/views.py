@@ -734,7 +734,7 @@ def emails(request):
     for req in requests:
         toes = TextOfEmail.objects.filter(created_at=req.created_at,
                                           subject = req.subject,
-                                          send_from = req.sender).order_by('sent')
+                                          send_from = req.sender).order_by('-sent')
         if req.processed:
             req.num_rec = toes.count()
         else:
