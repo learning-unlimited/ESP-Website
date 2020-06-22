@@ -15,7 +15,7 @@ Attendance
 ~~~~~~~~~~
 We've implemented a set of tools for teachers and admins to manage student class attendance:
 
-1. We've added a new page ``/teach/[one]/[two]/section_attendance`` that allows teachers to take attendance for a particular section (including unenrolled students). Teachers can either use a checkbox interface or scan barcodes (with their phones) like at student check-in to mark students as attending the class. Options are provided to allow teachers to enroll students in their class if they were not previously enrolled. The page is linked to from the main teacher registration page (for sections that are approved and scheduled). The page also has a dropdown menu for the teacher to select one of their sections for attendance. Attendance records for a class expire at midnight of the day they were set (this is useful for recurring classes, such that teachers can mark separate attendance for each instance of the same section). Splash at Yale made a `brief video tutorial <https://youtu.be/KV7i1G8s63k>`_ for this page.
+1. We've added a new page ``/teach/[one]/[two]/section_attendance`` that allows teachers to take attendance for a particular section (including unenrolled students). Teachers can either use a checkbox interface or scan barcodes (with their phones) like at student check-in to mark students as attending the class. Options are provided to allow teachers to enroll students in their class if they were not previously enrolled. The page is linked to from the main teacher registration page and from the webapp interface (for sections that are approved and scheduled). The page also has a dropdown menu for the teacher to select one of their sections for attendance. Attendance records for a class expire at midnight of the day they were set (this is useful for recurring classes, such that teachers can mark separate attendance for each instance of the same section). Splash at Yale made a `brief video tutorial <https://youtu.be/KV7i1G8s63k>`_ for this page.
 2. We've added an onsite module that summarizes attendance statistics/details. The page has a similar dropdown to select a particular timeslot for attendance. The page is linked to from the main onsite page (provided the module is enabled). The module will assume that you are interested in attendance records for the present day, but you can use the date picker to see a summary of attendance for a previous day (in the case of recurring classes). This page also has links to email, text, or get information for users that are checked in, playing hooky, or attending the wrong class.
 3. The onsite grid-based class changes will also show the number of students marked as attending a class (meaning there are now four numbers: "class attendance/program attendance/enrollment/capacity" for each class).
 4. The onsite attendance module also has an interface for onsite users to take attendance for any classes like how teachers can (see #1 above).
@@ -26,16 +26,17 @@ We've implemented a set of tools for teachers and admins to manage student class
    - The barcode checkin page will not raise an error if a student is checked out (and will then check them back in).
    - Attendance numbers in the grid-based class canges and grid-based status pages are now based on attending students that are not checked out.
    - There are now new "Currently checked out students" and "Currently checked in students" options for the comm panel, arbitrary user list, and group text panel.
-   - The teacher attendance page (#1 above) will only mark a student as checked in if they are not checked out.
+   - The teacher attendance page (#1 above) will mark a student as checked in again if they have been checked out.
 
 Onsite Webapps
 ~~~~~~~~~~~~~~
-We've added mobile-friendly interfaces for teachers and students for tools that are commonly used at Splash events.
+We've added mobile-friendly interfaces for teachers and students for tools that are commonly used at Splash events. We are looking to continue to improve these interfaces, so please let us know if you have any feedback! We'll also be making an admin interface in the future.
 
-1. The teacher interface, available at ``/teach/[one]/[two]/teacheronsite`` (if enabled), has a live schedule, Google maps of campus (with directions to classrooms if set up), section details (including email addresses), section rosters (with attendance functionality), and a page for the Splash teacher survey and student survey responses. If no surveys are setup, this navigation panel is hidden (the new survey creation page can be used to set these up).
-2. The student interface, available at ``/learn/[one]/[two]/studentonsite`` (if enabled), has a live schedule (with class changes), Google maps of campus (with directions to classrooms if set up), a course catalog, and an interface to fill out the student survey. If no survey is setup, this navigation panel is hidden (the new survey creation page can be used to set these up).
+1. The teacher interface, available at ``/teach/[one]/[two]/teacheronsite`` (if enabled), has a live schedule, Google maps of campus (with directions to classrooms if set up), section details (including email addresses), section rosters (with attendance functionality), and a page for the Splash teacher survey and student survey responses. If no surveys are set up, this navigation panel is hidden (the new survey creation page can be used to set this up).
+2. The student interface, available at ``/learn/[one]/[two]/studentonsite`` (if enabled), has a live schedule (with class changes), Google maps of campus (with directions to classrooms if set up), a course catalog, section details for their enrolled classes, and an interface to fill out the student survey. If no survey is set up, this navigation panel is hidden (the new survey creation page can be used to set this up).
 
-   - For class changes on the student webapp, students are allowed by default to enroll in classes that have fewer enrolled students than capacity. You can change two tags to potentially allow students to enroll in classes that are not full based on program attendance or class attendance (see the attendance section above for details of what this means). The tags are as follows:
+   - Note that students will not be able to see the classrooms for their enrolled classes or perform class changes until they are marked as attending the program (this can be changed with template overrides). We plan to allow for this to be changed with a tag setting in the future.
+   - Also, for class changes on the student webapp, students are allowed by default to enroll in classes that have fewer enrolled students than capacity. You can change two tags to potentially allow students to enroll in classes that are not full based on program attendance or class attendance (see the attendance section above for the distinction between these two). The tags are as follows:
 
      i. 'switch_time_program_attendance': Set this tag to the time at which you'd like to start using program attendance numbers instead of enrollment numbers. The format is HH:MM where HH is in 24 hour time. After this time, if at least 5 students have been checked into the program, students will be able to class change based on program attendance numbers. If this is not set, program attendance numbers will not be used. 
      ii. 'switch_lag_class_attendance': Set this tag to the amount of minutes into a class at which you'd like to start using class attendance numbers if available (instead of enrollment or program attendance). This many minutes into a class block, if at least 1 student has been marked attending that class, students will be able to class change based on class attendance numbers. If blank, class attendance numbers will not be used.
@@ -46,15 +47,15 @@ We've added mobile-friendly interfaces for teachers and students for tools that 
 
 Student Acknowledgement
 ~~~~~~~~~~~~~~~~~~~~~~~
-Similar to the teacher acknowledgement module, this module will force students to agree to some conditions (ie a code of conduct) during student registration.
+Similar to the teacher acknowledgement module, this module will force students to agree to some conditions (e.g. a code of conduct) during student registration.
 
 Generic program links
 ~~~~~~~~~~~~~~~~~~~~~
-We've added the ability to use generic links that redirect to the most recent/current program (the one that is latest in time). The links are of the form ``[site].learningu.org/[tl]/[one]/current/[view]``, where ``[site]`` is the specific chapter site; ``[tl]`` is "teach", "learn", "manage", "volunteer", or "onsite"; ``[one]`` is the program type (e.g. "Splash", "Sprout", "HSSP"); and ``[view]`` is the specific page/view (e.g. "teacherreg", "studentreg", "dashboard", etc). Further arguments can be included after the view if they are normally included for that view.
+We've added the ability to use generic links that redirect to the most recent/current program of a given program type (the one that is latest in time). The links are of the form ``[site].learningu.org/[tl]/[one]/current/[view]``, where ``[site]`` is the specific chapter site; ``[tl]`` is "teach", "learn", "manage", "volunteer", or "onsite"; ``[one]`` is the program type (e.g. "Splash", "Sprout", "HSSP"); and ``[view]`` is the specific page/view (e.g. "teacherreg", "studentreg", "dashboard", etc). Further arguments can be included after the view if they are normally included for that view.
 
 Program Creation and Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- Simplified interface to select modules when creating or modifying a program. Now users check boxes about what functions you need rather than choosing modules by name, and most modules are automatically selected.
+- Simplified the interface to select modules when creating or modifying a program. Now users check boxes about what functions you need rather than choosing modules by name, and most modules are automatically selected.
 - Only relevant and non-redundant modules are displayed on the main program management page (admin portal).
 - Added a page where you can modify all of the settings for a program (``/manage/[one]/[two]/settings``), including settings associated with the program itself, teacher registration, and student registration.
 - Added a page where you can modify the tag settings for a program (``/manage/[one]/[two]/tags``), with documentation and defaults for every tag.
@@ -76,12 +77,12 @@ Floating Resources changes
 
 Teacher registration changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- Links to class and teacher email addresses are now included for each class on a teacher's main registration page.
+- Links to class and teacher email addresses are now included for each class and section on the main teacher registration page.
 
 Printables changes
 ~~~~~~~~~~~~~~~~~~
 - Revamped student schedules. They are now in a portrait layout and include amount due, names of teachers for classes, and barcodes for check-in.
-- The ``studentchecklist`` printable now updates the statuses in the checklist based on the records through the website of whether students have been checked-in, have paid, or have turned in forms.
+- The ``studentchecklist`` printable now updates the statuses in the checklist based on the website records for whether students have been checked-in, have paid, and have turned in forms.
 - Admins can now use an arbitrary list of users (like that used in the comm panel or schedule generator) to generate nametags.
 - Nametags now have the option to have barcodes on the backs (or really anything, with template overrides).
 - Reorganized the printables page and condensed the "Class and Section Lists" section by implementing dropdown menus.
@@ -106,9 +107,9 @@ Flag and classsearch changes
 
 Survey changes
 ~~~~~~~~~~~~~~
-- Overhauled the survey interface for students and teachers. These users will now be shown a list of survey components that they can fill out in any order. These components consist of independent surveys for each class the user is registered for (if there are any 'per_class' survey questions) and a general program survey (if there are any non 'per_class' survey questions). The former are available once each class has begun and the latter is available once any of the classes has begun.
 - Added a user interface for admins to build surveys for students and teachers to fill out after a program is over. Built-in question types include "Yes-No Response", "Multiple Choice", "Checkboxes", "Short Answer", "Long Answer", "Numeric Rating", and "Labeled Numeric Rating". Survey questions can be viewed in their rendered layout to see how they'll ultimately look in the survey. Once surveys have been created, they can be imported for future programs.
-- Built-in surveys are now shown in the student and teacher onsite webapp interfaces. Additionally, teachers can see survey responses for their classes in the teacher onsite webapp interface.
+- Overhauled the survey interface for students and teachers. These users will now be shown a list of survey components that they can fill out in any order. These components consist of independent surveys for each class the user is registered for (if there are any 'per_class' survey questions) and a general program survey (if there are any non 'per_class' survey questions). The former are available once each class has begun and the latter is available once any of the classes has begun.
+- These built-in surveys are now shown in the student and teacher onsite webapp interfaces. Additionally, teachers can see survey responses for their classes in the teacher onsite webapp interface.
 - Admins can now specify which students and teachers have access to the built-in program surveys with the tags "survey_teacher_filter" and "survey_student_filter". These tags will also be used to calculate the number of potential participants when displaying survey results.
 - All survey questions are now bolded (previously some question types were not).
 - Survey result histograms for countable questions now show the entire possible range of answers.
@@ -130,7 +131,9 @@ Minor new features
 - You can now include unreviewed classes in the scheduling diagnostics.
 - You can now sort the results of a user search. The results also now include the last program for which a user has a profile (has registered).
 - The teacher major and affiliation fields are now included as options in the arbitrary user list module.
-- Phase zero is no longer included in the student registration checkboxes interface. More details are now included on the lottery confirmation page.
+- Phase Zero (Student Lottery) is no longer included in the student registration checkboxes interface.
+- More details are now included on the student lottery confirmation page, including information about their lottery status and the student's lottery group if they are in one.
+- The student lottery can now support lottery groups of any size (specified by the "student_lottery_group_max" tag). If the tag is set to 1, options to join groups will not be shown to students.
 - The teacher availability search bar now only searches teachers (for the autocomplete). The rapid check-in and formstack medical/liability student search bars now only search students (for the autocomplete).
 - Added a new page where admins can check the status of comm panel emails (``/manage/emails/``).
 - Moved the grade change request link in the profile form to just under the grade field.
@@ -140,7 +143,6 @@ Minor new features
 - Made the text on the profile form clearer when users can not change their grade/dob.
 - Added emailcodes to the subjects of all emails to class/section lists (i.e. "[prefix] [emailcode] Subject"). The prefix can be changed in the admin pages (and will be omited from the subject if not set).
 - Changed the theme of the administration pages. Each section on the main page is now moveable, collapsible, and closable.
-- The student lottery can now support lottery groups of any size (specified by the "student_lottery_group_max" tag). If the tag is set to 1, options to join groups will not be shown to students.
 - Added credit card transaction IDs to the Credit Card Viewpay Module.
 - Added global tags to change the options for the shirt size (one tag each for teachers, students, and volunteers), shirt style (universal tag), and food preference (only applicable to students) profile form fields.
 - Added a big board to the phase zero management page to track student lottery registration over time.
@@ -148,11 +150,11 @@ Minor new features
 - Moved the schedule snippets that you can include in comm panel emails to templates, allowing them to be overriden.
 - Added a class registration filter to the comm panel, group text, and arbitrary user list modules.
 - Added tags "student_profile_hide_fields", "volunteer_profile_hide_fields", "educator_profile_hide_fields", and "guardian_profile_hide_fields" that allow any fields in the profile forms to be hidden (except for email address all profile forms and grade for the student profile form).
-- Made the scheduling diagnostics made more user-friendly and prettier.
+- Made the scheduling diagnostics page more user-friendly and prettier.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
-- The debug toolbar remains active (if specified by the admin) when morphing into users.
+- The debug toolbar remains active (if specified in a URL by the admin with "?debug_toolbar=t") when morphing into users.
 - All required fields are now marked as such in the profile form.
 - Cancellation emails now permit symbols, such as apostrophes.
 - The background for the userview page will always be at least as long as the content on the page.
