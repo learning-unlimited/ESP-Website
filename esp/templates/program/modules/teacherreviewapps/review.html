@@ -1,4 +1,5 @@
 {% extends "main.html" %}
+{% load users %}
 
 {% block title %}Review Student {{ student.name }}{% endblock %}
 
@@ -23,7 +24,7 @@ Please review the student's biographical information and responses to our questi
 </tr>
 <tr>
     <td width="25%">Grade:</td>
-    <td>{{ student.getGrade }}</td>
+    <td>{{ student|getGradeForProg:program.id }}</td>
 </tr>
 <tr>
     <td>DOB:</td>

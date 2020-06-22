@@ -114,7 +114,7 @@ function clear_filters(form_name)
 {
     //  Remove any existing data in the "user filtering options" part of a comm panel form
     var form = $j("#"+form_name)[0];
-    field_names = ["userid", "username", "first_name", "last_name", "email", "zipcode", "zipdistance", "zipdistance_exclude", "states", "school", "grade_min", "grade_max", "gradyear_min", "gradyear_max", "group"];
+    field_names = ["userid", "username", "first_name", "last_name", "email", "zipcode", "zipdistance", "zipdistance_exclude", "states", "school", "grade_min", "grade_max", "gradyear_min", "gradyear_max", "group", "clsid", "regtypes"];
     for (var i = 0; i < field_names.length; i++)
     {
         var form_field = $j(form).find(':input[name=' + field_names[i] + ']')[0];
@@ -308,6 +308,13 @@ function initialize()
 
     //  Handle submit button
     $j("#prev_select_done").click(submit_prev_selection);
+
+    //  Populate fields with GET parameters
+    var items = location.search.substr(1).split("&");
+    for (var index = 0; index < items.length; index++) {
+          var tmp = items[index].split("=");
+          $j("[name="+tmp[0]+"]").val(tmp[1]);
+    }
 }
 
 $j(document).ready(initialize);

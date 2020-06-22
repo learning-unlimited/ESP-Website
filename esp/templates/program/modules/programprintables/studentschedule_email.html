@@ -1,0 +1,21 @@
+<p>{{ schedule_type }} schedule for {{ user.name }} for {{ program.niceName }}:</p>
+<table cellspacing="0" cellpadding="10" border="1" width="100%">
+    <tr>
+        <th width="20%">Time</th>
+        <th width="60%">Class</th>
+        {% if room_numbers %}
+        <th width="20%">Room</th>
+        {% endif %}
+    </tr>
+    {% for cls in sched_items %}
+        {% if cls.friendly_times %}
+        <tr>
+            <td>{% if include_date %}{{ cls.friendly_times_with_date|join:", " }}{% else %}{{ cls.friendly_times|join:", " }}{% endif %}</td>
+            <td>{{ cls.title }}</td>
+            {% if room_numbers %}
+            <td>{% for room in cls.prettyrooms %}{{ room }}, {% empty %}N/A{% endfor %}</td>
+            {% endif %}
+        </tr>
+        {% endif %}
+    {% endfor %}
+</table>

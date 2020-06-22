@@ -22,7 +22,8 @@ class TeacherBigBoardModule(ProgramModuleObj):
             "admin_title": "Teacher Registration Big Board",
             "link_title": "Watch incoming teacher registrations",
             "module_type": "manage",
-            "seq": 11
+            "seq": 11,
+            "choosable": 1,
             }
 
     class Meta:

@@ -1,3 +1,5 @@
+{% load users %}
+
 <div class="classroster">
   <div class="classtitle">Check-in List for {{ item.cls.title }}
 </div>
@@ -40,7 +42,7 @@
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
       <td>{{ student.user.id }}</td>
       <td>{{ student.user.name }}</td>
-      <td>{{ student.user.getGrade }}</td>
+      <td>{{ student.user|getGradeForProg:program.id }}</td>
       <td>{{ student.user.getLastProfile.contact_user.e_mail }}</td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;{{ student.paid }}</div></td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>

@@ -10,6 +10,7 @@
 \usepackage{enumerate}
 \usepackage{subfigure}
 \usepackage{boxedminipage}
+\usepackage{array}
 
 {% block headers %}
 \definecolor{esphead}{rgb}{0.773,0.867,0.965}
@@ -21,6 +22,8 @@
 }
 {% load latex %}
 {% endblock %}
+
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 
 \begin{document}
 

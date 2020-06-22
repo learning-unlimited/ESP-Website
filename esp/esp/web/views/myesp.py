@@ -187,9 +187,9 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                 regProf.educator_info = EducatorInfo.addOrUpdate(curUser, regProf, new_data)
             regProf.save()
 
-            curUser.first_name = new_data['first_name']
-            curUser.last_name  = new_data['last_name']
-            curUser.email     = new_data['e_mail']
+            curUser.first_name = new_data.get('first_name')
+            curUser.last_name  = new_data.get('last_name')
+            curUser.email     = new_data.get('e_mail')
             curUser.save()
             if responseuponCompletion == True:
                 return registration_redirect(request)
@@ -203,7 +203,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             except:
                 pass
             form = FormClass(curUser, replacement_data)
-            if not Tag.getTag('allow_change_grade_level'):
+            if not Tag.getBooleanTag('allow_change_grade_level', default = False):
                 if prog_input is None:
                     regProf = RegistrationProfile.getLastProfile(curUser)
                 else:
@@ -211,11 +211,11 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                 if regProf.id is None:
                     regProf = RegistrationProfile.getLastProfile(curUser)
                 if regProf.student_info:
-                    if regProf.student_info.dob:
+                    if regProf.student_info.dob and 'dob' in form.fields:
                         form.data['dob'] = regProf.student_info.dob
                         form.fields['dob'].widget.attrs['disabled'] = "true"
                         form.fields['dob'].required = False
-                    if regProf.student_info.graduation_year:
+                    if regProf.student_info.graduation_year and 'graduation_year' in form.fields:
                         form.data['graduation_year'] = regProf.student_info.graduation_year
                         form.fields['graduation_year'].widget.attrs['disabled'] = "true"
                         form.fields['graduation_year'].required = False
@@ -250,6 +250,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
     context['request'] = request
     context['form'] = form
+    context['require_student_phonenum'] = Tag.getBooleanTag('require_student_phonenum', default=True)
     return render_to_response('users/profile.html', request, context)
 
 @login_required
@@ -261,10 +262,7 @@ def myesp_onsite(request):
     progs = Permission.program_by_perm(user,"Onsite")
 
     # Order them decreasing by id
-    # - Currently reverse the list in Python, otherwise fbap's cache is ignored
-    # TODO: Fix this
-    progs = list(progs)
-    progs.reverse()
+    progs = list(progs.order_by("-id"))
 
     if len(progs) == 1:
         return HttpResponseRedirect('/onsite/%s/main' % progs[0].getUrlBase())

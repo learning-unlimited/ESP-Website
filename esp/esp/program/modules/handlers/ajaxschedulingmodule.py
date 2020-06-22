@@ -59,7 +59,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
         return {
             "link_title": "AJAX Scheduling",
             "module_type": "manage",
-            "seq": 7
+            "seq": 7,
+            "choosable": 1,
             }
     def prepare(self, context={}):
         if context is None: context = {}
@@ -117,7 +118,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         return self.makeret(prog, ret=True, msg="Schedule removed for Class Section '%s'" % cls.emailcode())
 
-    def ajax_schedule_assignreg(self, prog, cls, timeslot_ids, classroom_ids, user=None):
+    def ajax_schedule_assignreg(self, prog, cls, timeslot_ids, classroom_ids, user=None, override=False):
         if len(timeslot_ids) < 1:
             return self.makeret(prog, ret=False, msg="No times specified!, can't assign to a timeblock")
 
@@ -139,7 +140,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         classroom = classrooms[0]
 
-        cannot_schedule = cls.cannotSchedule(times, ignore_classes=False)
+        cannot_schedule = False
+        if not override:
+            cannot_schedule = cls.cannotSchedule(times, ignore_classes=False)
         if cannot_schedule:
             return self.makeret(prog, ret=False, msg=cannot_schedule)
 
@@ -227,7 +230,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 timeslot, classroom = br.split(",", 1)
                 times.append(timeslot)
                 classrooms.append(classroom)
-            retval = self.ajax_schedule_assignreg(prog, cls, times, classrooms, request.user)
+            override = request.POST['override'] == "true"
+            retval = self.ajax_schedule_assignreg(prog, cls, times, classrooms, request.user, override)
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
 

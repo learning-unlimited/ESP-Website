@@ -123,6 +123,9 @@ class UserAvailability(models.Model):
             self.role = self.user.getUserTypes()[0]
         return super(UserAvailability, self).save(*args, **kwargs)
 
+    def get_absolute_url(self):
+        return self.event.program.get_manage_url()+"edit_availability?user="+str(self.user.id)
+
 
 class ESPUserManager(UserManager):
     pass
@@ -180,7 +183,12 @@ class BaseESPUser(object):
 
 
     @classmethod
-    def ajax_autocomplete(cls, data):
+    def ajax_autocomplete(cls, data, QObject = None):
+        """
+        Filter is a dictionary, where the keys are ESPUser model fields
+        and the values are the filters on those fields
+        (e.g. {})
+        """
         #q_name assumes data is a comma separated list of names
         #lastname first
         #q_username is username
@@ -202,11 +210,30 @@ class BaseESPUser(object):
 
         query_set = cls.objects.filter(q_names | q_username | q_id)
 
+        if QObject:
+            query_set = query_set.filter(QObject).distinct()
+
         values = query_set.order_by('last_name','first_name','id').values('first_name', 'last_name', 'username', 'id')
 
         for value in values:
             value['ajax_str'] = '%s, %s (%s)' % (value['last_name'], value['first_name'], value['username'])
         return values
+
+    @classmethod
+    def ajax_autocomplete_student(cls, data):
+        return cls.ajax_autocomplete(data, QObject = Q(groups=Group.objects.get(name="Student")))
+
+    @classmethod
+    def ajax_autocomplete_teacher(cls, data):
+        return cls.ajax_autocomplete(data, QObject = Q(groups=Group.objects.get(name="Teacher")))
+
+    @classmethod
+    def ajax_autocomplete_approved_teacher(cls, data, prog = None):
+        if prog:
+            QObject = Q(classsubject__status__gt=0, classsubject__parent_program__id=prog)
+        else:
+            QObject = Q(classsubject__status__gt=0)
+        return cls.ajax_autocomplete(data, QObject)
 
     def ajax_str(self):
         return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)
@@ -372,7 +399,10 @@ class BaseESPUser(object):
 
     @cache_function
     def getTaughtClassesAll(self, include_rejected = False):
-        return self.classsubject_set.all()
+        if include_rejected:
+            return self.classsubject_set.all()
+        else:
+            return self.classsubject_set.exclude(status=-10)
     getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {'self': cls})
     getTaughtClassesAll.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
 
@@ -1041,6 +1071,9 @@ class ESPUser(User, BaseESPUser):
         self.makeRole("Administrator")
         self.save()
 
+    def get_absolute_url(self):
+        return "/manage/userview?username="+self.username
+
 class AnonymousESPUser(BaseESPUser, AnonymousUser):
     pass
 
@@ -1199,15 +1232,6 @@ def update_email(**kwargs):
                 mailman.remove_list_member(l, old_email)
 
 
-shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
-shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
-# Until someone writes a new migration, we'll have to go with the sex-based 'M'
-# key for straight cut shirts. Let this comment acknowledge that unfortunately
-# state of affairs until that time.
-shirt_types = (('M', 'Straight cut'), ('F', 'Fitted cut'))
-food_choices = ('Anything', 'Vegetarian', 'Vegan')
-food_choices = zip(food_choices, food_choices)
-
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
@@ -1219,9 +1243,9 @@ class StudentInfo(models.Model):
     studentrep = models.BooleanField(blank=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
     heard_about = models.TextField(blank=True, null=True)
-    food_preference = models.CharField(max_length=256,blank=True,null=True)
-    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
-    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
+    food_preference = models.TextField(blank=True, null=True)
+    shirt_size = models.TextField(blank=True, null=True)
+    shirt_type = models.TextField(blank=True, null=True)
 
     medical_needs = models.TextField(blank=True, null=True)
 
@@ -1270,10 +1294,11 @@ class StudentInfo(models.Model):
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
         form_dict['gender']          = self.gender
-        if Tag.getTag('studentinfo_shirt_options'):
+        if Tag.getBooleanTag('show_student_tshirt_size_options', default=False):
             form_dict['shirt_size']      = self.shirt_size
+        if Tag.getBooleanTag('studentinfo_shirt_type_selection', default=False):
             form_dict['shirt_type']      = self.shirt_type
-        if Tag.getTag('studentinfo_food_options'):
+        if Tag.getBooleanTag('show_student_vegetarianism_options', default=False):
             form_dict['food_preference'] = self.food_preference
         form_dict['heard_about']      = self.heard_about
         form_dict['studentrep_expl'] = self.studentrep_expl
@@ -1300,20 +1325,20 @@ class StudentInfo(models.Model):
 
         studentInfo.graduation_year = new_data['graduation_year']
         try:
-            if isinstance(new_data['k12school'], K12School):
-                studentInfo.k12school = new_data['k12school']
+            if isinstance(new_data.get('k12school'), K12School):
+                studentInfo.k12school = new_data.get('k12school')
             else:
-                if isinstance(new_data['k12school'], int):
-                    studentInfo.k12school = K12School.objects.get(id=int(new_data['k12school']))
+                if isinstance(new_data.get('k12school'), int):
+                    studentInfo.k12school = K12School.objects.get(id=int(new_data.get('k12school')))
                 else:
-                    studentInfo.k12school = K12School.objects.filter(name__icontains=new_data['k12school'])[0]
+                    studentInfo.k12school = K12School.objects.filter(name__icontains=new_data.get('k12school'))[0]
 
         except:
-            logger.warning('Could not find k12school for "%s"', new_data['k12school'])
+            logger.warning('Could not find k12school for "%s"', new_data.get('k12school'))
             studentInfo.k12school = None
 
-        studentInfo.school          = new_data['school'] if not studentInfo.k12school else studentInfo.k12school.name
-        studentInfo.dob             = new_data['dob']
+        studentInfo.school          = new_data.get('school') if not studentInfo.k12school else studentInfo.k12school.name
+        studentInfo.dob             = new_data.get('dob')
         studentInfo.gender          = new_data.get('gender', None)
 
         studentInfo.heard_about      = new_data.get('heard_about', '')
@@ -1365,6 +1390,8 @@ class StudentInfo(models.Model):
             username = self.user.username
         return u'ESP Student Info (%s) -- %s' % (username, unicode(self.school))
 
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
 
 AFFILIATION_UNDERGRAD = 'Undergrad'
 AFFILIATION_GRAD = 'Grad'
@@ -1401,8 +1428,8 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     college = models.CharField(max_length=128,blank=True, null=True)
     major = models.CharField(max_length=32,blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
-    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
-    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
+    shirt_size = models.TextField(blank=True, null=True)
+    shirt_type = models.TextField(blank=True, null=True)
 
     @classmethod
     def cf_link_instance(cls, request):
@@ -1477,6 +1504,9 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
             username = self.user.username
         return u'ESP Teacher Info (%s)' % username
 
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
+
     class Meta:
         app_label = 'users'
 
@@ -1538,6 +1568,8 @@ class GuardianInfo(models.Model):
             username = self.user.username
         return u'ESP Guardian Info (%s)' % username
 
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
 
 class EducatorInfo(models.Model):
     """ ESP Educator-specific contact information """
@@ -1612,6 +1644,9 @@ class EducatorInfo(models.Model):
         if self.user != None:
             username = self.user.username
         return u'ESP Educator Info (%s)' % username
+
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
 
 class ZipCode(models.Model):
     """ Zip Code information """
@@ -1843,6 +1878,8 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
             last_name = self.last_name
         return first_name + ' ' + last_name + ' (' + username + ')'
 
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
 
 class K12SchoolManager(models.Manager):
     def other(self):
@@ -2156,6 +2193,7 @@ class Record(models.Model):
         ("teacher_survey", "Completed teacher survey"),
         ("reg_confirmed", "Confirmed registration"),
         ("attended", "Attended program"),
+        ("checked_out", "Checked out of program"),
         ("conf_email","Was sent confirmation email"),
         ("teacher_quiz_done","Completed teacher quiz"),
         ("paid","Paid for program"),
@@ -2165,6 +2203,7 @@ class Record(models.Model):
         ("onsite","Registered for program onsite"),
         ("schedule_printed","Printed student schedule onsite"),
         ("teacheracknowledgement","Did teacher acknowledgement"),
+        ("studentacknowledgement", "Did student acknowledgement"),
         ("lunch_selected","Selected a lunch block"),
         ("extra_form_done","Filled out Custom Form"),
         ("extra_costs_done","Filled out Student Extra Costs Form"),
@@ -2262,7 +2301,7 @@ class Permission(ExpirableModel):
         ("Administer", "Full administrative permissions"),
         ("View", "Able to view a program"),
         ("Onsite", "Access to onsite interfaces"),
-        # The following two are outside of "Student/" so that they aren't
+        # The following are outside of "Student/" so that they aren't
         # implied by "Student/All".
         ("GradeOverride", "Ignore grade ranges for studentreg"),
         ("OverrideFull", "Register for a full program"),
@@ -2270,8 +2309,8 @@ class Permission(ExpirableModel):
         ("Student Deadlines", (
             ("Student", "Basic student access"),
             ("Student/All", "All student deadlines"),
+            ("Student/Acknowledgement", "Student acknowledgement"),
             ("Student/Applications", "Apply for classes"),
-            ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Register for classes"),
             ("Student/Classes/Lunch", "Register for lunch"),
             ("Student/Classes/Lottery", "Enter the lottery"),
@@ -2287,6 +2326,7 @@ class Permission(ExpirableModel):
             ("Student/Survey", "Access to survey"),
             ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
             ("Student/Finaid", "Access to financial aid application"),
+            ("Student/Webapp", "Access to student onsite webapp"),
         )),
         ("Teacher Deadlines", (
             ("Teacher", "Basic teacher access"),
@@ -2310,6 +2350,7 @@ class Permission(ExpirableModel):
             ("Teacher/Survey", "Teacher Survey"),
             ("Teacher/Profile", "Set profile info"),
             ("Teacher/Survey", "Access to survey"),
+            ("Teacher/Webapp", "Access to teacher onsite webapp"),
         )),
         ("Volunteer Deadlines", (
             ("Volunteer", "Basic volunteer access"),
@@ -2513,6 +2554,10 @@ class Permission(ExpirableModel):
         """Find all program that user has perm"""
         implies = [perm]
         implies+=[x for x,y in cls.implications.items() if perm in y]
+
+        #Check for global permissions (should only work for non-deadlines and admins)
+        if any([cls.user_has_perm(user, x) for x in implies]):
+            return Program.objects.all()
 
         direct = Program.objects.filter(nest_Q(Permission.is_valid_qobject(), 'permission'),
                                        permission__user=user,

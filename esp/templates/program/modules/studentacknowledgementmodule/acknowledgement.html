@@ -1,0 +1,23 @@
+{% extends "main.html" %}
+{% block title %}{{ program.niceName }} Student Acknowledgement{% endblock %}
+{% block content %}
+<h2>Student Acknowledgement for {{ program.niceName }} </h2>
+<br />
+{% load render_qsd %}
+{% inline_program_qsd_block program "learn:acknowledgement_instructions" %}
+<p>I understand that by participating in {{ program.niceName }}, I agree to abide by all rules of the Program, as explained to me by {{ settings.ORGANIZATION_SHORT_NAME }} admins, and all rules of {{ settings.INSTITUTION_NAME }}, as well as any laws of the state and country in which the Program is to be held.</p>
+<p>In particular, I will attend all of my classes as indicated by my schedule and I will follow all instructions of {{ settings.ORGANIZATION_SHORT_NAME }} admins. I will leave class only to use the bathroom, change my class, or go to the student lounge, unless otherwise instructed by a {{ settings.ORGANIZATION_SHORT_NAME }} admin. After signing in to the program and until the conclusion of the last class, I will remain in program buildings except if lunch is served outdoors, my class is led outside by the teacher, I am signed out at the admin desk by a parent/guardian, or there is an emergency. I will be respectful of others at all times and I will not do anything to put myself or others at risk of harm. I will not use illicit or controlled substances (unless specifically prescribed to me by a certified physician). I understand that participating in the program is a privilege, and I agree to comport myself appropriately.</p>
+{% end_inline_program_qsd_block %}
+<form action="acknowledgement" method="post">
+{{ form.acknowledgement.errors }}
+<table>
+    <tr>
+        <td valign="top">{{ form.acknowledgement }}</td>
+        <td>{{ form.acknowledgement.label_tag }}</td>
+    </tr>
+</table>
+<br />
+<br />
+<input type="submit" value="Submit" class="btn btn-primary" />
+</form>
+{% endblock %}

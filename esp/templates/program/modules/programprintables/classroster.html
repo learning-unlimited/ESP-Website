@@ -1,3 +1,5 @@
+{% load users %}
+
 <div style="page-break-after: always;">&nbsp;</div>
 <div class="classroster">
   <div class="classtitle">{{ section }}</div>
@@ -35,7 +37,7 @@ Students Email: <tt>{{ section.emailcode }}-students@{{ EMAIL_HOST_SENDER }}</tt
       <td>{{ student.id }}</td>
       <td>{{ student.name }}</td>
       <td>
-          {{ student.getGrade }}</td>
+          {{ student|getGradeForProg:program.id }}</td>
     </tr>
     {% endfor %}
   </table>
