@@ -41,7 +41,7 @@ Student modules
 Student Acknowledgement (StudentAcknowledgementModule)
 ------------------------------------------------------
 
-Include this module if you would like students to submit a somewhat scary-looking form where they simply check a box to say that they agree to follow by the policies in the QSD box.
+Include this module if you would like students to submit a somewhat scary-looking form where they agree to some conditions (e.g. a code of conduct) during student registration.
 
 
 Extra Registration Info (CustomFormModule)
@@ -375,11 +375,6 @@ Views provided
 * /learn/<program>/onsitecatalog -- Webapp-specific class catalog. When accessed for a specific timeblock from the student schedule, allows for students to enroll in classes that are not full (see above).
 * /learn/<program>/onsitesurvey -- Webapp version of the student survey (see above for more details). Same functionality but with slightly different styling.
 * /learn/<program>/onsitedetails -- Shows the details and links (classrooms, times, teachers, documents, website, survey) for a specific section. Only accessible from the student schedule.
-
-Student Acknowledgement Module (StudentAcknowledgementModule)
-------------------------------------------------------
-
-Include this module if you would like students to submit a somewhat scary-looking form where they agree to some conditions (e.g. a code of conduct) during student registration.
 
 Teacher modules
 ===============
