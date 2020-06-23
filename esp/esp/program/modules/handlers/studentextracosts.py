@@ -31,39 +31,38 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from collections import OrderedDict
-
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
-from esp.program.modules import module_ext
-from esp.utils.web import render_to_response
-from esp.middleware      import ESPError
-from esp.users.models    import Record
+from collections import OrderedDict, defaultdict
+from decimal import Decimal
+from django              import forms
 from django.db.models.query import Q
 from django.utils.safestring import mark_safe
-from django.template.loader import get_template
-from esp.program.models  import StudentApplication
-from django              import forms
 from esp.accounting.controllers import IndividualAccountingController, ProgramAccountingController
+from esp.accounting.models import LineItemOptions
+from esp.middleware      import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
-from collections import defaultdict
-
-from decimal import Decimal
+from esp.program.models  import StudentApplication
+from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, main_call, meets_cap
+from esp.users.models    import Record
+from esp.utils.web import render_to_response
+from esp.utils.widgets import ChoiceWithOtherField
 
 class CostItem(forms.Form):
     cost = forms.BooleanField(required=False, label='')
 
 class MultiCostItem(forms.Form):
+    count = forms.IntegerField(max_value=10, min_value=0, widget=forms.TextInput(attrs={'class': 'input-mini'}))
     cost = forms.BooleanField(required=False, label='')
-    count = forms.IntegerField(max_value=10, min_value=0)
 
 class MultiSelectCostItem(forms.Form):
-    option = forms.ChoiceField(required=False, label='', widget=forms.RadioSelect, choices=[])
     def __init__(self, *args, **kwargs):
         choices = kwargs.pop('choices')
         required = kwargs.pop('required')
+        is_custom = kwargs.pop('is_custom', False)
         super(MultiSelectCostItem, self).__init__(*args, **kwargs)
-        self.fields['option'].choices = choices
-        self.fields['option'].required = required
+        if is_custom:
+            self.fields['option'] = ChoiceWithOtherField(required=required, label='', choices=choices)
+        else:
+            self.fields['option'] = forms.ChoiceField(required=required, label='', choices=choices, widget=forms.RadioSelect)
 
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
@@ -93,7 +92,7 @@ class StudentExtraCosts(ProgramModuleObj):
         for line_item_type in pac.get_lineitemtypes(optional_only=True):
             student_desc['extracosts_%d' % line_item_type.id] = """Students who have opted for '%s'""" % line_item_type.text
             for option in line_item_type.options:
-                (option_id, option_amount, option_description) = option
+                (option_id, option_amount, option_description, has_custom_amt) = option
                 key = 'extracosts_%d_%d' % (line_item_type.id, option_id)
                 student_desc[key] = """Students who have opted for '%s' for '%s' ($%s)""" % (option_description, line_item_type.text, option_amount or line_item_type.amount_dec)
 
@@ -150,6 +149,7 @@ class StudentExtraCosts(ProgramModuleObj):
         prefs = iac.get_preferences()
 
         forms_all_valid = True
+        error_custom = False
 
         ## Another dirty hack, left as an exercise to the reader
         if request.method == 'POST':
@@ -158,34 +158,52 @@ class StudentExtraCosts(ProgramModuleObj):
             costs_db = [ { 'LineItemType': x,
                            'CostChoice': CostItem(request.POST, prefix="%s" % x.id) }
                          for x in costs_list ] + \
-                         [ x for x in \
                            [ { 'LineItemType': x,
-                               'CostChoice': MultiCostItem(request.POST, prefix="%s" % x.id) }
-                             for x in multicosts_list ] \
-                           if x['CostChoice'].is_valid() and 'cost' in x['CostChoice'].cleaned_data ] + \
+                               'CostChoice': MultiCostItem(request.POST, prefix="%s" % x.id)}
+                             for x in multicosts_list ] + \
                            [ { 'LineItemType': x,
                                'CostChoice': MultiSelectCostItem(request.POST, prefix="multi%s" % x.id,
                                                      choices=x.option_choices,
-                                                     required=(x.required)) }
+                                                     required=(x.required),
+                                                     is_custom=(x.has_custom_options)) }
                              for x in multiselect_list ]
 
             #   Get a list of the (line item, quantity) pairs stored in the forms
             #   as well as a list of line items which had invalid forms
             form_prefs = []
             preserve_items = []
+
             for item in costs_db:
                 form = item['CostChoice']
                 lineitem_type = item['LineItemType']
+
                 if form.is_valid():
                     if isinstance(form, CostItem):
                         if form.cleaned_data['cost'] is True:
                             form_prefs.append((lineitem_type.text, 1, lineitem_type.amount, None))
+
                     elif isinstance(form, MultiCostItem):
-                        if form.cleaned_data['cost'] is True:
-                            form_prefs.append((lineitem_type.text, form.cleaned_data['count'], lineitem_type.amount, None))
+                        form_prefs.append((lineitem_type.text, form.cleaned_data['count'], lineitem_type.amount, None))
+
                     elif isinstance(form, MultiSelectCostItem):
                         if form.cleaned_data['option']:
-                            form_prefs.append((lineitem_type.text, 1, None, int(form.cleaned_data['option'])))
+                            if lineitem_type.has_custom_options:
+                                option_id, option_amount = form.cleaned_data['option']
+                            else:
+                                option_id = form.cleaned_data['option']
+                                option_amount = None
+                            if option_id:
+                                option = LineItemOptions.objects.get(id=option_id)
+                                #   Give error if no amount was typed in
+                                if option.is_custom and not option_amount:
+                                    preserve_items.append(lineitem_type.text)
+                                    forms_all_valid = False
+                                    error_custom = True
+                                else:
+                                    #   Use default amount if this option doesn't allow a custom amount
+                                    if not option.is_custom:
+                                        option_amount = option.amount_dec_inherited
+                                    form_prefs.append((lineitem_type.text, 1, float(option_amount), int(option_id)))
                 else:
                     #   Preserve selected quantity for any items that we don't have a valid form for
                     preserve_items.append(lineitem_type.text)
@@ -196,8 +214,8 @@ class StudentExtraCosts(ProgramModuleObj):
             for lineitem_name in preserve_items:
                 if lineitem_name in map(lambda x: x[0], prefs):
                     new_prefs.append(prefs[map(lambda x: x[0], prefs).index(lineitem_name)])
-            new_prefs += form_prefs
 
+            new_prefs += form_prefs
             iac.apply_preferences(new_prefs)
 
             #   Redirect to main student reg page if all data was recorded properly
@@ -206,29 +224,65 @@ class StudentExtraCosts(ProgramModuleObj):
                 bit, created = Record.objects.get_or_create(user=request.user, program=self.program, event=self.event)
                 return self.goToCore(tl)
 
+            ### End Post
+
         count_map = {}
         for lineitem_type in iac.get_lineitemtypes(optional_only=True):
             count_map[lineitem_type.text] = [lineitem_type.id, 0, None, None]
+
         for item in iac.get_preferences():
             for i in range(1, 4):
                 count_map[item[0]][i] = item[i]
-        forms = [ { 'form': CostItem( prefix="%s" % x.id, initial={'cost': (count_map[x.text][1] > 0) } ),
-                    'LineItem': x }
-                  for x in costs_list ] + \
-                  [ { 'form': MultiCostItem( prefix="%s" % x.id, initial={'cost': (count_map[x.text][1] > 0), 'count': count_map[x.text][1] } ),
-                      'LineItem': x }
-                    for x in multicosts_list ] + \
-                    [ { 'form': MultiSelectCostItem( prefix="multi%s" % x.id,
-                                                     initial={'option': count_map[x.text][3]},
-                                                     choices=x.option_choices,
-                                                     required=(x.required)),
-                        'LineItem': x }
-                      for x in multiselect_list ]
+
+        cost_items =  \
+        [
+            {
+               'form': CostItem( prefix="%s" % x.id, initial={'cost': (count_map[x.text][1] > 0) } ),
+               'type': 'single',
+               'LineItem': x
+            }
+
+            for x in costs_list
+        ]
+
+        multi_cost_items = \
+        [
+            {
+                'form': MultiCostItem( prefix="%s" % x.id, initial={'cost': (count_map[x.text][1] > 0),
+                'count': count_map[x.text][1] } ),
+                'type': 'multiple',
+                'max': x.max_quantity,
+                'LineItem': x
+            }
+
+            for x in multicosts_list
+        ]
+
+        multiselect_costitems = []
+        for x in multiselect_list:
+            new_entry = {'type': 'select', 'LineItem': x}
+            form_kwargs = {'prefix': "multi%s" % x.id, 'choices': x.option_choices, 'required': x.required}
+            if x.has_custom_options:
+                #   Provide an initial value for a custom amount if an option has been selected
+                #   and the saved amount differs from the amount this option would normally cost.
+                custom_amount = ''
+                if count_map[x.text][3]:
+                    default_amount = LineItemOptions.objects.get(id=count_map[x.text][3]).amount_dec_inherited
+                    if count_map[x.text][2] != default_amount:
+                        custom_amount = count_map[x.text][2]
+                form_kwargs['initial'] = {'option': (count_map[x.text][3], custom_amount)}
+                form_kwargs['is_custom'] = True
+            else:
+                form_kwargs['initial'] = {'option': count_map[x.text][3]}
+                form_kwargs['is_custom'] = False
+            new_entry['form'] = MultiSelectCostItem(**form_kwargs)
+            multiselect_costitems.append(new_entry)
+
+        forms = cost_items + multi_cost_items + multiselect_costitems
 
         return render_to_response(self.baseDir()+'extracosts.html',
                                   request,
-                                  { 'errors': not forms_all_valid, 'forms': forms, 'financial_aid': request.user.hasFinancialAid(prog), 'select_qty': len(multicosts_list) > 0 })
-
+                                  { 'errors': not forms_all_valid, 'error_custom': error_custom, 'forms': forms, 'financial_aid': request.user.hasFinancialAid(prog), 'select_qty': len(multicosts_list) > 0 })
 
     class Meta:
         proxy = True

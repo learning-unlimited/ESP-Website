@@ -47,7 +47,6 @@ class Command(NoArgsCommand):
     - Collect static files.
     - Recompile the theme.
     - Clear memcache
-    - Touch esp.wsgi.
     """
     def handle_noargs(self, **options):
         default_options = {
@@ -64,6 +63,3 @@ class Command(NoArgsCommand):
         call_command('collectstatic', **options)
         call_command('recompile_theme', **options)
         os.system('echo flush_all | nc localhost 11211')
-        root = os.path.dirname(os.path.abspath(settings.BASE_DIR))
-        file = os.path.join(root, 'esp.wsgi')
-        os.system('touch ' + file)

@@ -2,18 +2,19 @@
 #   Modified to not force unicode
 #   - Michael P
 
-from django.conf import settings
 from django import forms
+from django.conf import settings
 from django.forms import widgets
-from django.utils.safestring import mark_safe
-import django.utils.formats
 from django.template import Template, Context
+from django.utils.encoding import force_unicode
+from django.utils.safestring import mark_safe
 
+import django.utils.formats
+import datetime
+import time
 import json
 import logging
 logger = logging.getLogger(__name__)
-import datetime
-import time
 
 # DATETIMEWIDGET
 calEnable = u"""
@@ -50,7 +51,6 @@ class DateTimeWidget(forms.widgets.TextInput):
 
         if not 'id' in final_attrs:
             final_attrs['id'] = u'%s_id' % (name)
-        id = final_attrs['id']
         return final_attrs
 
     def render(self, name, value, attrs=None):
@@ -104,7 +104,7 @@ class ClassAttrMergingSelect(forms.Select):
         #   Merge 'class' attributes - this is the difference from Django's default implementation
         if extra_attrs:
             if 'class' in attrs and 'class' in extra_attrs \
-                    and isinstance(extra_attrs['class'], basestring):
+                    and (isinstance(extra_attrs['class'], str) or isinstance(extra_attrs['class'], unicode)):
                 attrs['class'] += ' ' + extra_attrs['class']
                 del extra_attrs['class']
             attrs.update(extra_attrs)
@@ -206,7 +206,7 @@ class NullCheckboxSelect(forms.CheckboxInput):
             return False
         value = data.get(name)
         values =  {'on': True, 'true': True, 'false': False}
-        if isinstance(value, basestring):
+        if isinstance(value, str) or isinstance(value, unicode):
             value = values.get(value.lower(), value)
         logger.info('NullCheckboxSelect converted %s to %s', data.get(name), value)
         return value
@@ -346,7 +346,7 @@ $j(document).ready({{ name }}_setup);
 
     def render(self, name, value, attrs=None):
         if value is None: value = ''
-        final_attrs = self.build_attrs(attrs, name=name)
+        self.build_attrs(attrs, name=name)
         context = {}
         context['name'] = name
         context['value'] = json.dumps(value)
@@ -358,6 +358,72 @@ $j(document).ready({{ name }}_setup);
         result = json.loads(data[name])
         return result
 
+#adapted from https://djangosnippets.org/snippets/863/
+class ChoiceWithOtherRenderer(forms.RadioSelect.renderer):
+    """RadioFieldRenderer that renders its last choice with a placeholder."""
+    def __init__(self, *args, **kwargs):
+        super(ChoiceWithOtherRenderer, self).__init__(*args, **kwargs)
+        self.choices, self.other = self.choices, self.choices[-1]
+
+    def __iter__(self):
+        for input in super(ChoiceWithOtherRenderer, self).__iter__():
+            yield input
+        id = '%s_%s' % (self.attrs['id'], self.other[0]) if 'id' in self.attrs else ''
+        label_for = ' for="%s"' % id if id else ''
+        checked = '' if not force_unicode(self.other[0]) == self.value else 'checked="true" '
+        yield '<label%s><input type="radio" id="%s" value="%s" name="%s" %s/> %s</label> %%s' % (
+            label_for, id, self.other[0], self.name, checked, self.other[1])
+
+
+class ChoiceWithOtherWidget(forms.MultiWidget):
+    """MultiWidget for use with ChoiceWithOtherField."""
+    def __init__(self, choices):
+        widgets = [
+            forms.RadioSelect(choices=choices, renderer=ChoiceWithOtherRenderer),
+            forms.TextInput
+        ]
+        super(ChoiceWithOtherWidget, self).__init__(widgets)
+
+    def decompress(self, value):
+        if not value:
+            return [None, None]
+        return value
+
+    def format_output(self, rendered_widgets):
+        """Format the output by substituting the "other" choice into the first widget."""
+        rendered_widgets[0] = rendered_widgets[0] + '%s'
+        return rendered_widgets[0] % rendered_widgets[1]
+
+
+class ChoiceWithOtherField(forms.MultiValueField):
+    def __init__(self, *args, **kwargs):
+        fields = [
+            forms.ChoiceField(widget=forms.RadioSelect(), *args, **kwargs),
+            forms.CharField(required=False)
+        ]
+
+        self.choices = []
+
+        if 'choices' in kwargs:
+            self.choices = kwargs['choices']
+            widget = ChoiceWithOtherWidget(choices=kwargs['choices'])
+            kwargs.pop('choices')
+            self._was_required = kwargs.pop('required', True)
+            kwargs['required'] = False
+            super(ChoiceWithOtherField, self).__init__(widget=widget, fields=fields, *args, **kwargs)
+        else:
+            super(ChoiceWithOtherField, self).__init__(*args,**kwargs)
+
+
+    def compress(self, value):
+        if not value:
+            return [None, u'']
+
+        option_value, other_value = value
+        if self._was_required and not value or option_value in (None, ''):
+            raise forms.ValidationError(self.error_messages['required'])
+
+        return option_value, other_value
 
 # copied from esp/public/media/theme_editor/less/glyphicons.less
 # TODO(benkraft): avoid the duplication
