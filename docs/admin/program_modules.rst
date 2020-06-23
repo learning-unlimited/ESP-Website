@@ -199,7 +199,8 @@ This module allows students to select additional items for purchase along with a
 
 The options on this page are controlled by the line item types associated with the program.
 You can create additional line item types for your program and set the "Max quantity" field
-appropriately; do not check the "for payments" or "for finaid" boxes.  If you
+appropriately; do not check the "for payments" or "for finaid" boxes.  For students to be able to choose
+how much an item costs, you can check the "is_custom" box for an option. If you
 are using the "SplashInfo Module" to offer lunch, the size of the sibling
 discount is set as a line item type, but the lunch options and their costs are
 still controlled by the splashinfo_choices and splashinfo_costs Tags.  Items no
@@ -213,7 +214,7 @@ Donation module
 This program module can be used to solicit donations for Learning Unlimited. If
 this module is enabled, students who visit the page can, if they so choose,
 select one of a few donation options (and those options are admin
-configurable). Asking for donations from parents and students can be a good way
+configurable) or set a custom donation amount. Asking for donations from parents and students can be a good way
 to help fundraise for LU community events, chapter services, and operational
 costs. If you are interested in fundraising this way, get in contact with an LU
 volunteer.
