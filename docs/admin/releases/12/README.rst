@@ -151,6 +151,8 @@ Minor new features
 - Added a class registration filter to the comm panel, group text, and arbitrary user list modules.
 - Added tags "student_profile_hide_fields", "volunteer_profile_hide_fields", "educator_profile_hide_fields", and "guardian_profile_hide_fields" that allow any fields in the profile forms to be hidden (except for email address all profile forms and grade for the student profile form).
 - Made the scheduling diagnostics page more user-friendly and prettier.
+- Line item options can be marked "is_custom" meaning students can enter a custom cost.
+- Students can now enter a custom donation amount in the donation module.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
