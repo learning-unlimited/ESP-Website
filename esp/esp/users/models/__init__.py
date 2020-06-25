@@ -2182,7 +2182,8 @@ class Record(models.Model):
         ("med","Submitted medical form"),
         ("med_bypass","Recieved medical bypass"),
         ("liab","Submitted liability form"),
-        ("studentwaiver","Submitted online liability waiver"),
+        ("studentwaiver","Submitted student liability waiver"),
+        ("teacherwaiver","Submitted teacher liability waiver"),
         ("onsite","Registered for program onsite"),
         ("schedule_printed","Printed student schedule onsite"),
         ("teacheracknowledgement","Did teacher acknowledgement"),
@@ -2339,6 +2340,7 @@ class Permission(ExpirableModel):
             ("Teacher/Survey", "Teacher Survey"),
             ("Teacher/Profile", "Set profile info"),
             ("Teacher/Survey", "Access to survey"),
+            ("Teacher/Waiver", "Access to online liability waiver"),
         )),
         ("Volunteer Deadlines", (
             ("Volunteer", "Basic volunteer access"),
