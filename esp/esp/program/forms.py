@@ -75,8 +75,7 @@ class ProgramCreationForm(BetterModelForm):
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current modules. """
         # These modules are the "choosable" ones that admins will usually want to choose to select or exclude (i.e. not automatically include or exclude)
-        self.program_module_question_ids = OrderedDict([('Will you charge for the program?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Accounting', 'Financial Aid Application', 'Easily Approve Financial Aid Requests'])]),
-                                                        ('Will you have extra costs (shirts or lunch)?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Optional Fees', 'Accounting', 'Financial Aid Application', 'Easily Approve Financial Aid Requests'])]),
+        self.program_module_question_ids = OrderedDict([('Will you charge for items such as shirts or lunch?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Optional Fees', 'Accounting', 'Financial Aid Application', 'Easily Approve Financial Aid Requests'])]),
                                                         ('If you will charge for admission or other costs, will you accept payment by credit card?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Credit Card Payment Module (Stripe)', 'Credit Card View Module'])]),
                                                         ('Do you want a pre-program quiz for teachers?', [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Logistics Quiz')]),
                                                         ('Will you have any additional non-survey forms that teachers should fill out?', [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Custom Form')]),

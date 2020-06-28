@@ -21,6 +21,13 @@ function questionsToModules() {
         if ($j("#id_program_module_questions_" + String(i)).prop("checked"))
             $j.merge(modules, $j("#id_program_module_questions_"+i).val().split(","))
     }
+    // Check if there is a nonzero admissions fee entered; if so, add the associated modules
+    if ($j("#id_base_cost").val() != "" && parseInt($j("#id_base_cost").val()) > 0) {
+        var modules_to_check = $j("#id_program_modules").children().filter(function(index){
+                                                                           return ["Accounting", "Financial Aid Application",
+                                                                                   "Easily Approve Financial Aid Requests"].includes($j(this).text());});
+        $j.merge(modules, modules_to_check.map(function(index){return this.value;}));
+    }
     // Now just check those modules in the list.
     modules = $j.unique(modules)
     modules.sort() // $j.uniqueSort doesn't exist for jQuery < 2.2
