@@ -75,12 +75,17 @@ if (currentPrograms && currentPrograms.forEach) {
                 displayName: 'Class Search' +
                     ' <small>(' + currentProgram.name + ')</small>'
             });
+            ESP.registerAdminModule({
+            content_html: '    <a href="/manage/' + currentProgram.urlBase +'/main">Main Management Page</a><br /><a href="/manage/' + currentProgram.urlBase +'/dashboard">Program Dashboard</a><br /><a href="/onsite/' + currentProgram.urlBase +'/main">Main Onsite Page</a>',
+            name: 'Manage',
+            displayName: 'Manage ' + currentProgram.name
+});
         };
     });
 }
 
 ESP.registerAdminModule({
-    content_html: '    <a href="/admin/">Administration pages</a><br /><a href="/admin/filebrowser/browse/">Manage media files</a><br /><a href="/themes/">Theme settings</a>',
+    content_html: '    <a href="/manage/programs/">Manage other programs</a><br/><a href="/manage/pages">Manage static pages</a><br /><a href="/admin/">Administration pages</a><br /><a href="/admin/filebrowser/browse/">Manage media files</a><br /><a href="/themes/">Manage theme settings</a>',
     name: 'Links',
     displayName: 'Links'
 });

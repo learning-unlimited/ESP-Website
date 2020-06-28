@@ -43,6 +43,7 @@ class FinAidApproveModule(ProgramModuleObj):
             "link_title": "Approve Financial Aid Requests",
             "module_type": "manage",
             "seq": 26,
+            "choosable": 0,
             }
 
     class Meta:

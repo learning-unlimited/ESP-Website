@@ -58,6 +58,7 @@ class FormstackAppModule(ProgramModuleObj):
             "module_type": "learn",
             "seq": 10,
             "required": True,
+            "choosable": 2,
             }]
 
     def students(self, QObject = False):

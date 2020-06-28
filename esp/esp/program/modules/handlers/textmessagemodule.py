@@ -50,7 +50,8 @@ class TextMessageModule(ProgramModuleObj):
             "link_title": "Text Message Reminders",
             "module_type": "learn",
             "inline_template": "textmessage.html",
-            "seq": 100
+            "seq": 100,
+            "choosable": 1
             }
 
     def prepare(self, context):
@@ -76,7 +77,6 @@ class TextMessageModule(ProgramModuleObj):
             profile = RegistrationProfile.getLastForProgram(student, self.program)
             profile.text_reminder = False
             profile.save()
-
 
     class Meta:
         proxy = True

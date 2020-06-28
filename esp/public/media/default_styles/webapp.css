@@ -28,12 +28,18 @@
   padding: 0px;
   font-size: 2vh;
   width: 25%;
-  height: 7.5vh;
+  height: 7.7vh;
+  border: .4vh solid #333;
 }
 
 .navbar table {
   width: 100%;
-  border: .2vh solid #333;
+  border: none;
+  border-collapse: collapse;
+}
+
+.navbar.bottom {
+  top: 92vh;
 }
 
 .main table, th, td {
@@ -42,17 +48,18 @@
 
 .main {
   font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
-  margin-top: 7.9vh;
+  margin-top: 8vh;
   width: calc(100vh * 9 / 16);
-  height: 92.1vh;
+  min-height: 92vh;
   background-color: #c8e6dc;
 }
 
 .main table {
   background-color: #c8e6dc;
   border-collapse: collapse;
-  width: calc(100vh * 9 / 16);
   table-layout:fixed;
+  margin: 0px !important;
+  width: calc(100vh * 9 / 16);
 }
 
 .main tbody, tr, th, td {
@@ -95,13 +102,19 @@
 .cls {
   font-size: 2vh !important;
   width: 60%;
+  padding-bottom: .25vh !important;
 }
 
 .location {
-  font-size: 1.75vh !important;
+  font-size: 2vh !important;
+  padding-top: .25vh !important;
 }
 
-.edit {
+.location i, .cls i {
+  vertical-align: bottom;
+}
+
+.edit, .list {
   width: 20%;
 }
 
@@ -111,17 +124,32 @@
   border-top: none !important;
 }
 
-.material-icons.md-4 {
+.md-2 {
+  font-size: 2vh;
+  width: 2vh;
+}
+
+.md-3 {
+  font-size: 3vh;
+  width: 3vh;
+}
+
+.md-4 {
   font-size: 4vh;
   width: 4vh;
 }
 
-.material-icons.md-5 {
+.md-5 {
   font-size: 5vh;
   width: 5vh;
 }
 
-.material-icons.greyed {
+.md-6 {
+  font-size: 6vh;
+  width: 6vh;
+}
+
+.greyed {
   color: grey;
 }
 
@@ -150,6 +178,11 @@
 }
 
 .no-dec {
+  color: inherit;
+  text-decoration: none;
+}
+
+.no-dec:hover {
   color: inherit;
   text-decoration: none;
 }
@@ -237,7 +270,7 @@
   border-radius: 1vh !important;
   font-size: 2.25vh !important;
   width: calc(100% - 1vh);
-  height: 7.5vh;
+  min-height: 7.5vh;
 }
 
 .add_button {
@@ -253,7 +286,7 @@ a.anchor {
 }
 
 #map {
-  height: 100%;
+  height: 92vh;
   width: 100%;
 }
 
@@ -277,4 +310,61 @@ a.anchor {
   background-color: white;
   color: blue;
   border: 1px solid #999999;
+}
+
+i.pointer {
+  cursor: pointer;
+}
+
+.rosterheader th {
+  width:25%;
+  font-size: 2.5vh;
+}
+
+.main form {
+  margin: 0px;
+}
+
+.survey table {
+    width: 100%;
+}
+
+.main input, .main select {
+    max-width: 100%;
+}
+
+.survey textarea {
+    width: 100%;
+    resize: vertical;
+}
+
+.fancybutton {
+  border-radius: 1.5vh;
+  background-color: black;
+  color: white;
+  border: 2px solid black;
+  font-size: 3vh !important;
+  padding: .5vh;
+  font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
+}
+
+.fancybutton:hover {
+  background-color: #efefef;
+  color: black;
+}
+
+.survey td {
+  background: #efefef;
+}
+
+.survey .message {
+  font-size: 2.5vh;
+}
+
+.sectioninfo td {
+  background-color: #efefef;
+}
+
+.btn.fancybutton.no-dec {
+  padding: .5vh;
 }

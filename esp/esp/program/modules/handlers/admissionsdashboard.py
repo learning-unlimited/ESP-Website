@@ -54,11 +54,13 @@ class AdmissionsDashboard(ProgramModuleObj):
                 "admin_title": "Teacher Admissions Dashboard",
                 "link_title": "Admissions Dashboard",
                 "module_type": "teach",
+                "choosable": 0,
                 },
                 {
                 "admin_title": "Admin Admissions Dashboard",
                 "link_title": "Admissions Dashboard",
                 "module_type": "manage",
+                "choosable": 0,
                 }]
 
     @main_call

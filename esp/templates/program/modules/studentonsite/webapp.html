@@ -19,8 +19,10 @@
         <br>Map</a></td>
       <td{% if webapp_page == "catalog" %} class="selected"{% endif %}><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog" style="display:block;"><i class="material-icons md-5">event</i>
         <br>Catalog</td>
+      {% if survey_status != "none" %}
       <td{% if webapp_page == "survey" %} class="selected"{% endif %}><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitesurvey" style="display:block;"><i class="material-icons md-5">question_answer</i>
         <br>Survey</td>
+      {% endif %}
     </tr>
   </table>
 </div>

@@ -34,8 +34,9 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
 from esp.utils.web import render_to_response
-from esp.users.models    import ESPUser, User
+from esp.users.models    import ESPUser, User, Record
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
+from esp.program.models  import ClassFlagType
 from esp.program.models.class_ import ACCEPTED
 from esp.users.views     import search_for_user
 from esp.users.controllers.usersearch import UserSearchController
@@ -47,19 +48,20 @@ from esp.middleware import ESPError
 from esp.utils.query_utils import nest_Q
 from esp.program.models import VolunteerOffer
 
+from django import forms
 from django.conf import settings
 from django.http import HttpResponse
 from django.db.models import IntegerField, Case, When, Count
 from django.template import Context, loader
-from django.template.loader import render_to_string
+from django.template.loader import render_to_string, get_template
 from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
-from django.utils.html import format_html
 
 from decimal import Decimal
 import json
 import collections
 import copy
+import csv
 
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
@@ -69,7 +71,8 @@ class ProgramPrintables(ProgramModuleObj):
         return {
             "link_title": "Program Printables",
             "module_type": "manage",
-            "seq": 5
+            "seq": 5,
+            "choosable": 1,
             }
 
     @aux_call
@@ -349,6 +352,50 @@ class ProgramPrintables(ProgramModuleObj):
         context = {'classes': classes, 'program': prog, 'priorities': [str(priority) for priority in priorities]}
 
         return render_to_response(self.baseDir()+'classes_popularity.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def classflagdetails(self, request, tl, one, two, module, extra, prog):
+        comments = 'comments' in request.GET
+        classes = ClassSubject.objects.filter(parent_program = prog)
+        if 'clsids' in request.GET:
+            clsids = [int(clsid) for clsid in request.GET['clsids'].split(",")]
+            classes = [cls for cls in classes if cls.id in clsids]
+        if 'accepted' in request.GET:
+            classes = [cls for cls in classes if cls.status > 0]
+        elif 'cancelled' in request.GET:
+            classes = [cls for cls in classes if cls.isCancelled()]
+        elif 'all' not in request.GET:
+            classes = [cls for cls in classes if cls.status >= 0]
+        if 'scheduled' in request.GET:
+            classes = [cls for cls in classes if cls.all_meeting_times.count() > 0]
+
+        cls_list = []
+        flag_types = ClassFlagType.get_flag_types(program=prog).order_by("seq")
+
+        for cls in classes:
+            flags = cls.flags.all()
+            type_dict = {}
+            for flag in flags:
+                if flag.flag_type in type_dict:
+                    type_dict[flag.flag_type].append(flag)
+                else:
+                    type_dict[flag.flag_type] = [flag]
+            cls.flag_list = []
+            for type in flag_types:
+                if type in type_dict.keys():
+                    comms = [flag.comment for flag in type_dict[type] if flag.comment]
+                    if len(comms) > 0 and comments:
+                        cls.flag_list.append(comms)
+                    else:
+                        cls.flag_list.append(True)
+                else:
+                    cls.flag_list.append(False)
+            cls_list.append(cls)
+
+        context = {'classes': cls_list, 'program': prog, 'flag_types': flag_types}
+
+        return render_to_response(self.baseDir()+'classes_flags.html', request, context)
 
     @needs_admin
     def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, split_teachers = False, template_file='classes_list.html'):
@@ -668,7 +715,7 @@ class ProgramPrintables(ProgramModuleObj):
         if not found:
             return filterObj
 
-        context = {'module': self     }
+        context = {'module': self, 'program': prog}
         students = filter(filt_exp, filterObj.getList(ESPUser).distinct())
         for s in students:
             extra_dict = extra_func(s)
@@ -858,7 +905,6 @@ class ProgramPrintables(ProgramModuleObj):
     def getTranscript(program, student, format='text'):
         from django.template import Template
         from esp.middleware.threadlocalrequest import AutoRequestContext as Context
-        from django.template.loader import get_template
 
         template_keys = {   'text': 'program/modules/programprintables/transcript.txt',
                             'latex': 'program/modules/programprintables/transcript.tex',
@@ -888,74 +934,28 @@ class ProgramPrintables(ProgramModuleObj):
             elif user.isVolunteer():
                 schedule_type = u'Volunteer'
 
-        schedule = u''
-        if schedule_type in [u'Student', u'Teacher']:
 
-            if schedule_type == u'Student':
-                classes = ProgramPrintables.get_student_classlist(program, user)
-                classes.sort()
-            elif schedule_type == u'Teacher':
-                classes = ProgramPrintables.get_teacher_classlist(program, user)
-                classes.sort()
-
-            schedule = format_html(u"<p> {} {} {} {} {} {} </p>",
-                                    schedule_type,
-                                    " schedule for ",
-                                    user.name(),
-                                    " for ",
-                                    program.niceName(),
-                                    ":")
-            schedule += format_html(u" {} {} {} {} </th>",
-                                    mark_safe("<table cellspacing=0 cellpadding=10 border=1 width=100%><tr><th width=20%>"),
-                                    "Time",
-                                    mark_safe("</th><th width=60%>"),
-                                    "Class")
-            if room_numbers:
-                schedule += format_html(u"{} {} </th>",
-                                        mark_safe("<th width=20%>"),
-                                        "Room")
-            schedule += format_html(u"</tr>")
-            for cls in classes:
-                times = cls.friendly_times(include_date=include_date)
-                if len(times) == 0:
-                    # don't show classes with no times
-                    continue
-                else:
-                    times = ' ' + ', '.join(times)
-                schedule += format_html(u"<tr><td> {} </td><td> {} </td>",
-                                        str(times),
-                                        cls.title())
-                if room_numbers:
-                    rooms = cls.prettyrooms()
-                    if len(rooms) == 0:
-                        rooms = 'N/A'
-                    else:
-                        rooms = ' ' + ', '.join(rooms)
-                    schedule += format_html(u"<td> {} </td>",
-                                            str(rooms))
-                schedule += format_html(u"</tr>")
-            schedule += format_html(u"</table>")
-
+        if schedule_type == u'Student':
+            template = get_template('program/modules/programprintables/studentschedule_email.html')
+            sched_items = ProgramPrintables.get_student_classlist(program, user)
+            sched_items.sort()
+        elif schedule_type == u'Teacher':
+            template = get_template('program/modules/programprintables/teacherschedule_email.html')
+            sched_items = ProgramPrintables.get_teacher_classlist(program, user)
+            sched_items.sort()
         elif schedule_type == u'Volunteer':
-            schedule = format_html(u"<p> {} {} {} {} {} {} </p>",
-                                   schedule_type,
-                                   " schedule for ",
-                                   user.name(),
-                                   " for ",
-                                   program.niceName(),
-                                   ":")
-            schedule += format_html(u" {} {} {} {} </th>",
-                                    mark_safe("<table cellspacing=0 cellpadding=10 border=1 width=100%><tr><th width=35%>"),
-                                    "Time",
-                                    mark_safe("</th><th width=65%>"),
-                                    "Shift")
-            schedule += format_html(u"</tr>")
-            shifts = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
-            for shift in shifts:
-                schedule += format_html(u"<tr><td> {} </td><td> {} </td></tr>",
-                                        str(shift.request.timeslot.pretty_time(include_date=include_date)),
-                                        str(shift.request.timeslot.description))
-            schedule += format_html(u"</table>")
+            template = get_template('program/modules/programprintables/volunteerschedule_email.html')
+            sched_items = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
+
+        context = {
+                   'program': program,
+                   'user': user,
+                   'schedule_type': schedule_type,
+                   'room_numbers': room_numbers,
+                   'include_date': include_date,
+                   'sched_items': sched_items,
+                   }
+        schedule = template.render(context)
 
         return mark_safe(schedule)
 
@@ -987,7 +987,6 @@ class ProgramPrintables(ProgramModuleObj):
 
             students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
-        import csv
         from django.http import HttpResponse
         response = HttpResponse(content_type='text/csv')
         writer = csv.writer(response)
@@ -1069,7 +1068,7 @@ class ProgramPrintables(ProgramModuleObj):
             t.friendly_times = [t.pretty_time()]
             t.initial_rooms = []
 
-        show_empty_blocks = Tag.getBooleanTag('studentschedule_show_empty_blocks', prog)
+        show_empty_blocks = Tag.getBooleanTag('studentschedule_show_empty_blocks', prog, default=False)
         timeslots = list(prog.getTimeSlots())
         for student in students:
             student.updateOnsite(request)
@@ -1301,7 +1300,7 @@ class ProgramPrintables(ProgramModuleObj):
 
 
 
-        context = {'module': self     }
+        context = {'module': self, 'program': prog}
         teachers = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
         teachers.sort()
 
@@ -1345,7 +1344,6 @@ class ProgramPrintables(ProgramModuleObj):
 
         studentList = []
         for student in students:
-            paid_symbol = ''
             finaid_status = 'None'
             if student.appliedFinancialAid(prog):
                 if student.financialaidrequest_set.filter(program=prog).order_by('-id')[0].reduced_lunch:
@@ -1354,12 +1352,16 @@ class ProgramPrintables(ProgramModuleObj):
                     finaid_status = 'Req. (No RL)'
 
             iac = IndividualAccountingController(self.program, student)
-            if iac.amount_due() <= 0:
-                paid_symbol = 'X'
             if student.hasFinancialAid(self.program):
                 finaid_status = 'Approved'
 
-            studentList.append({'user': student, 'paid': paid_symbol, 'amount_due': iac.amount_due(), 'finaid': finaid_status})
+            studentList.append({'user': student,
+                                'paid': Record.user_completed(student, "paid", self.program) or iac.has_paid(in_full=True),
+                                'amount_due': iac.amount_due(),
+                                'finaid': finaid_status,
+                                'checked_in': Record.user_completed(student, "attended",self.program),
+                                'med': Record.user_completed(student, "med", self.program),
+                                'liab': Record.user_completed(student, "liab", self.program)})
 
         context['students'] = students
         context['studentList'] = studentList
@@ -1371,7 +1373,7 @@ class ProgramPrintables(ProgramModuleObj):
         """ Gives you a checklist for each classroom with the students that are supposed to be in that
             classroom.  The form has boxes for payment and forms.  This is useful for the first day
             of a program. """
-        context = {'module': self}
+        context = {'module': self, 'program': prog}
 
         students= [ user for user in self.program.students()['confirmed']]
         students.sort()
@@ -1478,36 +1480,27 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def all_classes_spreadsheet(self, request, tl, one, two, module, extra, prog):
-        import csv
-        from django.http import HttpResponse
-        from django.utils.encoding import smart_str
+        form = AllClassesSelectionForm()
+        converter = form.converter
 
-        response = HttpResponse(content_type="text/csv")
-        write_cvs = csv.writer(response)
+        if request.method == 'POST':
+            form = AllClassesSelectionForm(request.POST)
+            if form.is_valid():
+                response = HttpResponse(content_type="text/csv")
+                write_cvs = csv.writer(response)
+                selected_fields = form.cleaned_data['subject_fields']
+                csv_headings = [converter.field_dict[fieldname] for fieldname in selected_fields]
+                write_cvs.writerow(csv_headings)
 
-        write_cvs.writerow(("ID", "Teachers", "Title", "Duration", "GradeMin", "GradeMax", "ClsSizeMin", "ClsSizeMax", "Category", "Class Info", "Requests", "Msg for Directors", "Prereqs", "Directors Notes", "Assigned Times", "Assigned Rooms"))
-        for cls in ClassSubject.objects.filter(parent_program=prog):
-            write_cvs.writerow(
-                (cls.id,
-                 ", ".join([smart_str(t.name()) for t in cls.get_teachers()]),
-                 smart_str(cls.title),
-                 cls.prettyDuration(),
-                 cls.grade_min,
-                 cls.grade_max,
-                 cls.class_size_min,
-                 cls.class_size_max,
-                 cls.category,
-                 smart_str(cls.class_info),
-                 ", ".join(set(x.res_type.name for x in cls.getResourceRequests())),
-                 smart_str(cls.message_for_directors),
-                 smart_str(cls.prereqs),
-                 smart_str(cls.directors_notes),
-                 ", ".join(cls.friendly_times()),
-                 ", ".join(cls.prettyrooms()),
-                 ))
+                for cls in ClassSubject.objects.filter(parent_program=prog):
+                    write_cvs.writerow([converter.fieldvalue(cls,f) for f in selected_fields])
 
-        response['Content-Disposition'] = 'attachment; filename=all_classes.csv'
-        return response
+                response['Content-Disposition'] = 'attachment; filename=all_classes.csv'
+                return response
+
+        context = {}
+        context['form'] = form
+        return render_to_response(self.baseDir()+'all_classes_select_fields.html', request, context)
 
     @aux_call
     @needs_admin
@@ -1520,8 +1513,6 @@ class ProgramPrintables(ProgramModuleObj):
         unscheduled classes, taking into account the classes the teacher
         is already teaching and have been scheduled.
         """
-        import csv
-        from django.http import HttpResponse
 
         response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
@@ -1552,7 +1543,7 @@ class ProgramPrintables(ProgramModuleObj):
             else:
                 return ' '
 
-        if Tag.getTag('oktimes_collapse'):
+        if Tag.getBooleanTag('oktimes_collapse', default=False):
             time_headers = ['Feasible Start Times']
         else:
             time_headers = [str(time) for time in times]
@@ -1567,7 +1558,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         # this writes each row associated with a section, for the columns determined above.
         for section, timeslist in sections_possible_times:
-            if Tag.getTag('oktimes_collapse'):
+            if Tag.getBooleanTag('oktimes_collapse', default=False):
                 time_values = [', '.join([e.start.strftime('%a %I:%M %p') for e in section.viable_times()])]
             else:
                 time_values = [time_possible(time, timeslist) for time in times]
@@ -1602,8 +1593,6 @@ class ProgramPrintables(ProgramModuleObj):
         conflicts (other classes taught by same teacher)
         room requests and comments
         """
-        import csv
-        from django.http import HttpResponse
         from esp.resources.models import ResourceType
 
         response = HttpResponse(content_type="text/csv")
@@ -1675,8 +1664,6 @@ class ProgramPrintables(ProgramModuleObj):
                 -   ID of the timeslot
                 -   Lock level (usually 0 for unlocked, 1 or higher for locked)
         """
-        import csv
-        from django.http import HttpResponse
         from esp.resources.models import ResourceAssignment
         response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
@@ -1691,3 +1678,60 @@ class ProgramPrintables(ProgramModuleObj):
     class Meta:
         proxy = True
         app_label = 'modules'
+
+
+class AllClassesFieldConverter(object):
+    """
+    Handles value extraction and formatting of CLassSubject instances. This is
+    used as 'pre-processing' step when generating the records for the All Classes
+    CSV spreadsheet.
+    """
+    TEACHERS = 'teachers'
+    TIMES = 'times'
+    ROOMS = 'rooms'
+    NUM_SECTIONS = "number of sections"
+    exclude_fields = ['session_count']
+
+    def __init__(self):
+        field_list = [field for field in ClassSubject._meta.fields if field.name not in self.exclude_fields]
+        #field_list.sort(key=lambda x: x.name)
+        self.field_choices = [(f, f.title()) for f in (self.TEACHERS, self.TIMES, self.ROOMS, self.NUM_SECTIONS)]
+        self.field_choices += [(field.name, field.verbose_name.title()) for field in field_list]
+
+        #sort tuple list by field name
+        sorted(self.field_choices,key=lambda x: x[0])
+        self.field_dict = dict(self.field_choices)
+
+        #a dict of field names and asscoiated formatting lambdas to handle generation
+        #of field data that should have a different format than the default.
+        self.field_converters = {
+            self.TEACHERS: lambda x: ", ".join([smart_str(t.name()) for t in x.get_teachers()]),
+            self.TIMES: lambda x: ", ".join(x.friendly_times()),
+            self.ROOMS: lambda x: ", ".join(x.prettyrooms()),
+            self.NUM_SECTIONS: lambda x: x.sections.count()
+        }
+
+    def fieldvalue(self, class_subject, fieldname):
+        """
+        Returns the value of the specified field for the supplied class_subject instance.
+        Fields that are defined in the field_converters dict will have an associated
+        formatting function which will be executed to return the appropriate format.
+        """
+        fieldvalue = ''
+        if fieldname in self.field_converters:
+            fieldvalue = self.field_converters[fieldname](class_subject)
+        elif hasattr(class_subject, fieldname):
+            fieldvalue = getattr(class_subject, fieldname)
+        else:
+            raise ValueError('Invalid fieldname supplied {0}'.format(fieldname))
+        return fieldvalue
+
+
+class AllClassesSelectionForm(forms.Form):
+    subject_fields = forms.MultipleChoiceField()
+
+    def __init__(self, *args, **kwargs):
+        super(AllClassesSelectionForm, self).__init__(*args, **kwargs)
+
+        self.converter = AllClassesFieldConverter()
+        self.fields['subject_fields'].choices = self.converter.field_choices

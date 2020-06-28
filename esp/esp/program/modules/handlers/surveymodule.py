@@ -53,11 +53,13 @@ class SurveyModule(ProgramModuleObj):
             "link_title": "Surveys",
             "module_type": "learn",
             "seq": 20,
+            "choosable": 1,
         }, {
             "admin_title": "Teacher Surveys",
             "link_title": "Survey",
             "module_type": "teach",
             "seq": 15,
+            "choosable": 1,
         } ]
 
     def students(self, QObject = False):

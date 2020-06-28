@@ -1,0 +1,92 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Settings{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/admin.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+
+{% load render_qsd %}
+
+<h1>Program Settings for {{ program.niceName }} (ID: {{ program.id }})</h1>
+
+Welcome to the program settings page for {{ program.niceName }}. This page lists most of the settings that you may want to change to make the program run how you would like. If you can't find the setting here, try checking out the <a href="/manage/{{ program.getUrlBase }}/tags/">program tag settings page</a> or the <a href="/manage/tags/">the global tag settings page</a>. You can also reach out to <a href="mailto:websupport@learningu.org">websupport</a>.
+{% inline_program_qsd_block program "manage:settings" %}
+{% end_inline_program_qsd_block %}
+
+{% for title, section, form in forms %}
+<button class="dsphead{% if open_section == section %} active{% endif %}">
+   <b>{{ title }}</b> (click to expand/collapse)
+</button>
+
+<div class="dspcont{% if open_section == section %} active{% endif %}">
+  <div id="settings_form">
+    <form action="/manage/{{ program.getUrlBase }}/settings/{{ section }}" method="post">
+    {% autoescape off %}
+    {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+    <input id="id_form_name" name="form_name" type="hidden" value="{{ section }}">
+    {% for fieldset in form.fieldsets %}
+  
+      <fieldset class="fieldset_{{ fieldset.name }}">
+      {% if fieldset.legend %}
+        <legend>{{ fieldset.legend }}</legend>
+      {% endif %}
+      {% if fieldset.description %}
+        <p class="description">{{ fieldset.description }}</p>
+      {% endif %}
+      <table class="contact">
+      {% for field in fieldset %}
+  
+       <tr>
+        {% if field.is_hidden %}
+         <td> {{ field }} </td>
+         {% else %}
+        {% if field.label  %}
+        <td style="vertical-align:text-top;padding-right: 10px;padding-bottom: 15px;">{{ field.label }} </td>
+        {% endif %}
+         {% if field %}
+          <td style="padding-bottom: 15px;">  {{ field }} 
+        {% endif %}
+        {% if field.help_text %}
+          <br/>
+          <span> {{ field.help_text }} </span>
+        {% endif %}
+        {% for error in field.errors %}
+        <br/>
+         <span class='form_error'> {{ error }} </span>
+        {% endfor %}
+         </td>
+         </tr>
+  
+        {% endif %}
+      {% endfor %}
+      </table>
+  
+      </fieldset>
+    {% endfor %}
+  
+    {% endautoescape %}
+    <table align="center">
+      <tr> 
+        <td colspan="2" class="submit">
+          <br /><br /><br />
+          <center><input class="fancybutton" type="submit" value="Save {{ title }}" onclick="questionsToModules();" /></center>
+        </td>
+      </tr>
+    </table>
+  </form>
+  </div>
+</div>
+{% endfor %}
+
+<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
+<script src="/media/scripts/program/modules/modulequestions.js"></script>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

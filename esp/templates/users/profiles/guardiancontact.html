@@ -2,6 +2,7 @@
 
 <h3>Parent/Guardian Contact</h3>
 
+{% if form.guard_first_name %}
 <div class="control-group">
  <label class="control-label" for="id_guard_first_name">First Name:</label>
  <div class="controls">
@@ -10,7 +11,9 @@
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.guard_last_name %}
 <div class="control-group">
  <label class="control-label" for="id_guard_last_name">Last Name:</label>
  <div class="controls">
@@ -19,7 +22,9 @@
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.guard_e_mail %}
 <div class="control-group">
  <label class="control-label" for="id_guard_e_mail">Email address:</label>
  <div class="controls">
@@ -28,9 +33,13 @@
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.guard_phone_day or form.guard_phone_cell %}
 <h4>Phone numbers:</h4>
+{% endif %}
 
+{% if form.guard_phone_day %}
 <div class="control-group">
  <small><i><label class="control-label" for="id_guard_phone_day">home</label></i></small>
  <div class="controls">
@@ -39,7 +48,9 @@
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.guard_phone_cell %}
 <div class="control-group">
  <small><i><label class="control-label" for="id_guard_phone_cell">cell</label></i></small>
  <div class="controls">
@@ -48,5 +59,6 @@
    {% endif %}
 </div>
 </div>
+{% endif %}
 
 <!-- End Guardian Contact Info -->

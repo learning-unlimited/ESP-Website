@@ -35,8 +35,9 @@ from collections import defaultdict
 from esp.users.models import ESPUser, ZipCode, PersistentQueryFilter, Record
 from esp.middleware import ESPError
 from esp.utils.web import render_to_response
-from esp.program.models import Program
+from esp.program.models import Program, RegistrationType, StudentRegistration
 from esp.dbmail.models import MessageRequest
+from esp.utils.query_utils import nest_Q
 
 from django.db.models import Count
 from django.db.models.query import Q
@@ -89,6 +90,20 @@ class UserSearchController(object):
         else:
 
             ##  Select users based on all other criteria that was entered
+            if criteria.get('clsid', '').strip():
+                clsid = []
+                for digit in criteria['clsid'].split(','):
+                    try:
+                        clsid.append(int(digit))
+                    except:
+                        raise ESPError('Class id invalid, please enter a comma-separated list of numbers.', log=False)
+                if 'regtypes' in criteria:
+                    student_verbs = criteria['regtypes']
+                else:
+                    student_verbs = ['Enrolled']
+                Q_include &= Q(studentregistration__section__parent_class__id__in=clsid,
+                               studentregistration__relationship__name__in=student_verbs) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
+
             if 'group' in criteria and criteria['group'] != "":
                 group = criteria['group']
                 #Can't just filter by group because we are already filtering by group with user_type above. - willgearty, 2016-11-23
@@ -365,6 +380,7 @@ class UserSearchController(object):
             target_path = '/manage/%s/commpanel' % program.getUrlBase()
         context['action_path'] = target_path
         context['groups'] = Group.objects.all()
+        context['regtypes'] = RegistrationType.objects.all().order_by("name")
 
         return context
 

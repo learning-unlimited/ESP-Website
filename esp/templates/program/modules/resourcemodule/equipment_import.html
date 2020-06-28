@@ -34,11 +34,12 @@ You have chosen to import the floating resources from {{ past_program.niceName }
 <input type="hidden" name="program" value="{{ past_program.id }}" />
 <input type="hidden" name="complete_availability" value="{{ complete_availability }}" />
 <table align="center" cellpadding="0" cellspacing="0" width="550">
-    <tr><th colspan="4">Proposed floating resources for {{ prog.niceName }}</th></tr>
-    <tr><td colspan="4"><table cellpadding="0" cellspacing="0" width="100%">
+    <tr><th colspan="5">Proposed floating resources for {{ prog.niceName }}</th></tr>
+    <tr><td colspan="5"><table cellpadding="0" cellspacing="0" width="100%">
     <tr>
         <td class="underline"><b>Name</b></td>
         <td class="underline"><b>Type</b></td>
+        <td class="underline"><b>Choice</b></td>
         <td class="underline"><b>Available Times</b></td>
         <td class="underline"><b>Import? <input type="checkbox" onclick=toggle(this) checked></b></td>
     </tr>
@@ -46,12 +47,13 @@ You have chosen to import the floating resources from {{ past_program.niceName }
     <tr>
         <td class="underline">{{ r.name }}</td>
         <td class="underline">{{ r.res_type.name }}{% if r.res_type.hidden %} (Hidden){% endif %}</td>
+        <td class="underline">{{ r.attribute_value }}</td>
         <td class="underline">{% for t in r.timegroup %}{{ t }}<br />{% endfor %}</td>
-        <td class="underline"><input type="checkbox" name="to_import" value="{{r.old_id}}" checked></td>
+        <td class="underline"><input type="checkbox" name="to_import" value="{{ r.old_id }}" checked></td>
     </tr>
     {% endfor %}
     </table></td></tr>
-    <tr><td colspan="4" align="center"><input class="fancybutton" type="submit" value="Complete Import" /></td></tr>
+    <tr><td colspan="5" align="center"><input class="fancybutton" type="submit" value="Complete Import" /></td></tr>
 </table>
 </form>
 </div>

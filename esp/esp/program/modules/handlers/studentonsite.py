@@ -31,20 +31,18 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, CoreModule, main_call, aux_call, _checkDeadline_helper, meets_cap
-from esp.program.models  import Program, ClassSubject
+import datetime
+
+from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, CoreModule, main_call, aux_call, meets_cap
+from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
 from esp.resources.models import Resource
 from esp.utils.web import render_to_response
-from esp.users.models    import ESPUser, Permission, Record
+from esp.users.models    import Record
 from esp.cal.models import Event
 from esp.middleware   import ESPError
+from esp.survey.views   import survey_view
 from esp.tagdict.models  import Tag
-from datetime import datetime
-from django.db import models
-from django.contrib import admin
 from django.http import HttpResponseRedirect
-from django.template import Template
-from django.template.loader import render_to_string, get_template, select_template
 
 from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
 
@@ -55,7 +53,8 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
             "link_title": "Student Onsite",
             "admin_title": "Student Onsite Webapp",
             "module_type": "learn",
-            "seq": -9999
+            "seq": 9999,
+            "choosable": 1
             }
 
     @main_call
@@ -65,19 +64,40 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @meets_cap
     def studentonsite(self, request, tl, one, two, module, extra, prog):
         """ Display the landing page for the student onsite webapp """
+        context = self.onsitecontext(request, tl, one, two, prog)
         user = request.user
+        context.update(StudentClassRegModule.prepare_static(user, prog))
 
-        context = StudentClassRegModule.prepare_static(user, prog)
-
-        context['user'] = user
-        context['program'] = prog
-        context['one'] = one
-        context['two'] = two
         context['webapp_page'] = 'schedule'
         context['scrmi'] = prog.studentclassregmoduleinfo
-        context['checked_in'] = Record.objects.filter(program=prog, event='attended', user=user).exists()
+        context['checked_in'] = prog.isCheckedIn(user)
 
         return render_to_response(self.baseDir()+'schedule.html', request, context)
+
+    @main_call
+    @needs_student
+    @meets_grade
+    @meets_deadline('/Webapp')
+    @meets_cap
+    def onsitedetails(self, request, tl, one, two, module, extra, prog):
+        context = self.onsitecontext(request, tl, one, two, prog)
+        user = request.user
+        context['webapp_page'] = 'schedule'
+        if extra:
+            secid = extra
+            sections = ClassSection.objects.filter(id = secid)
+            if len(sections) == 1:
+                section = sections[0]
+                if StudentRegistration.valid_objects().filter(section=section, user=user, relationship__name="Enrolled"):
+                    context['checked_in'] = prog.isCheckedIn(user)
+                    surveys = prog.getSurveys().filter(category = tl)
+                    context['has_survey'] = surveys.count() > 0 and surveys[0].questions.filter(per_class = True).exists()
+                    first_block = section.firstBlockEvent()
+                    if first_block:
+                        context['has_started'] =  first_block.start < datetime.datetime.now()
+                    context['section'] = section
+                    return render_to_response(self.baseDir()+'sectioninfo.html', request, context)
+        return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
 
     @aux_call
     @needs_student
@@ -85,11 +105,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @meets_deadline('/Webapp')
     @meets_cap
     def onsitemap(self, request, tl, one, two, module, extra, prog):
-        context = {}
-        context['user'] = request.user
-        context['program'] = prog
-        context['one'] = one
-        context['two'] = two
+        context = self.onsitecontext(request, tl, one, two, prog)
         context['webapp_page'] = 'map'
         context['center'] = Tag.getProgramTag('program_center', program = prog, default='{lat: 37.427490, lng: -122.170267}')
         context['API_key'] = Tag.getTag('google_cloud_api_key', default='')
@@ -117,12 +133,8 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @meets_deadline('/Webapp')
     @meets_cap
     def onsitecatalog(self, request, tl, one, two, module, extra, prog):
+        context = self.onsitecontext(request, tl, one, two, prog)
         user = request.user
-        context = {}
-        context['user'] = user
-        context['program'] = prog
-        context['one'] = one
-        context['two'] = two
         context['webapp_page'] = 'catalog'
         user_grade = user.getGrade(self.program)
         if extra:
@@ -152,13 +164,9 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @meets_deadline('/Webapp')
     @meets_cap
     def onsitesurvey(self, request, tl, one, two, module, extra, prog):
-        context = {}
-        context['user'] = request.user
-        context['program'] = prog
-        context['one'] = one
-        context['two'] = two
+        context = self.onsitecontext(request, tl, one, two, prog)
         context['webapp_page'] = 'survey'
-        return render_to_response(self.baseDir()+'survey.html', request, context)
+        return survey_view(request, tl, one, two, template = self.baseDir()+'survey.html', context = context)
 
     @aux_call
     @needs_student
@@ -174,7 +182,22 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @meets_deadline('/Webapp')
     def onsiteclearslot(self, request, tl, one, two, module, extra, prog):
         result = StudentClassRegModule.clearslot_logic(request, tl, one, two, module, extra, prog)
-        return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+        if isinstance(result, basestring):
+            raise ESPError(result, log=False)
+        else:
+            return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+
+    @staticmethod
+    def onsitecontext(request, tl, one, two, prog):
+        context = {}
+        surveys = prog.getSurveys().filter(category = tl).select_related()
+        if len(surveys) == 0:
+            context['survey_status'] = 'none'
+        context['user'] = request.user
+        context['program'] = prog
+        context['one'] = one
+        context['two'] = two
+        return context
 
     def isStep(self):
         return Tag.getBooleanTag('webapp_isstep', default=False)
