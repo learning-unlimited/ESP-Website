@@ -2,7 +2,7 @@
 {% load survey %}
 <table class="fullwidth">
 <tr>
-    <td width="35%"><b>{{ name }}</b></td>
+    <b>{{ name }}</b>
     <td><input type="text" size="{{ input_length }}" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}"/></td>
 </tr>
 </table>
