@@ -41,7 +41,7 @@ Student modules
 Student Acknowledgement (StudentAcknowledgementModule)
 ------------------------------------------------------
 
-Include this module if you would like students to submit a somewhat scary-looking form where they simply check a box to say that they agree to follow by the policies in the QSD box.
+Include this module if you would like students to submit a somewhat scary-looking form where they agree to some conditions (e.g. a code of conduct) during student registration.
 
 
 Extra Registration Info (CustomFormModule)
@@ -199,7 +199,8 @@ This module allows students to select additional items for purchase along with a
 
 The options on this page are controlled by the line item types associated with the program.
 You can create additional line item types for your program and set the "Max quantity" field
-appropriately; do not check the "for payments" or "for finaid" boxes.  If you
+appropriately; do not check the "for payments" or "for finaid" boxes.  For students to be able to choose
+how much an item costs, you can check the "is_custom" box for an option. If you
 are using the "SplashInfo Module" to offer lunch, the size of the sibling
 discount is set as a line item type, but the lunch options and their costs are
 still controlled by the splashinfo_choices and splashinfo_costs Tags.  Items no
@@ -213,7 +214,7 @@ Donation module
 This program module can be used to solicit donations for Learning Unlimited. If
 this module is enabled, students who visit the page can, if they so choose,
 select one of a few donation options (and those options are admin
-configurable). Asking for donations from parents and students can be a good way
+configurable) or set a custom donation amount. Asking for donations from parents and students can be a good way
 to help fundraise for LU community events, chapter services, and operational
 costs. If you are interested in fundraising this way, get in contact with an LU
 volunteer.
@@ -326,7 +327,7 @@ Views provided
 Student Surveys (SurveyModule)
 ------------------------------
 
-Include this module if you would like to use online surveys.  This module will cause your student survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" student deadline.  Make sure you have created a survey at /admin/survey/ before adding this module.
+Include this module if you would like to use online surveys.  This module will cause your student survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" student deadline.  Make sure you have created a survey at /manage/[program]/[instance]/surveys. By default, only students that registered for a class ('classreg') are allowed to fill out the survey. This can be modified with the 'survey_student_filter' tag, which is a comma-separated list of groups of students as specified in the prog.students() dictionary (this will be more user-friendly in the future).
 
 Text Message Reminders (TextMessageModule)
 ------------------------------------------
@@ -344,6 +345,37 @@ student applications.  For more information, see
 
 Class Change Request Module (ClassChangeRequest)
 ------------------------------------------------
+
+Student Onsite Webapp (StudentOnsite)
+-------------------------------------
+
+This provides a mobile-friendly interface for students to perform common functions that might be desired onsite at a program, such as viewing their schedule, making class changes, getting directions to their classes, and filling out surveys.
+
+Admin Setup
+~~~~~~~~~~~
+
+The basic functionality of the student webapp should work as soon as the module is enabled. However, in order for the maps to work properly, you'll need to perform the following additional steps:
+
+1. We use the Google Maps API to display a map with a custom center. You'll need to register a `Google Cloud account <https://console.cloud.google.com/>`_. You'll then need to get an API key for the service. This API key should be set as the value for the 'google_cloud_api_key' tag. Note that this API service requires a payment method, but the good news is that you get a whole bunch of free usage before it charges your card each month.
+2. You'll also need to set the 'program_center' tag to the geographic center of your campus or program location, otherwise the map will be centered on Stanford. The tag should be in the format of "{lat: 37.427490, lng: -122.170267}". This can be a program-specific tag (e.g. if you want the map to focus on different parts of campus for different programs) or just a global tag.
+3. Lastly, to enable the walking directions to class locations, you need a "Lat/Long" (spelling and capitalization matter) resource to be associated with each classroom (you should do this through the resources management page). The 'attribute_value' of each resource should be set to the lat/long from google maps (of the form 37.4268889, -122.172065).
+
+For class changes on the student webapp, students are allowed by default to enroll in classes that have fewer enrolled students than capacity (including any capacity modifiers specified in the program settings). You can change two tags to potentially allow students to enroll in classes that are not full based on program attendance or class attendance. The tags are as follows:
+
+- 'switch_time_program_attendance': Set this tag to the time at which you'd like to start using program attendance numbers instead of class enrollment numbers. The format is HH:MM where HH is in 24 hour time. After this time, if at least 5 students have been checked into the program, students will be able to class change based on program attendance numbers. If this is not set, program attendance numbers will not be used. 
+- 'switch_lag_class_attendance': Set this tag to the amount of minutes into a class at which you'd like to start using class attendance numbers if available (instead of enrollment or program attendance). This many minutes into a class block, if at least 1 student has been marked attending that class, students will be able to class change based on class attendance numbers. If blank, class attendance numbers will not be used.
+Note that if both tags are set, the hierarchy is that class attendance will be used if available; program attendance will be used if class attendance is not available; enrollment will be used if program attendance is not available. 
+
+There's one last tag that may be useful, 'webapp_isstep', which you can set to "True" if you want to list the webapp as a step in student registration (in the checkboxes). Otherwise it won't be shown and you'll need to direct your students to the URL(s) some other way.
+
+Views provided
+~~~~~~~~~~~~~~
+
+* [main] /learn/<program>/studentonsite -- Main student webapp landing page and live student schedule
+* /learn/<program>/onsitemap -- Shows Google map of campus. If this page is accessed by clicking on a classroom on the student schedule, this page shows walking directions to that classroom (provided that is set up, see above).
+* /learn/<program>/onsitecatalog -- Webapp-specific class catalog. When accessed for a specific timeblock from the student schedule, allows for students to enroll in classes that are not full (see above).
+* /learn/<program>/onsitesurvey -- Webapp version of the student survey (see above for more details). Same functionality but with slightly different styling.
+* /learn/<program>/onsitedetails -- Shows the details and links (classrooms, times, teachers, documents, website, survey) for a specific section. Only accessible from the student schedule.
 
 Teacher modules
 ===============
@@ -382,7 +414,7 @@ The questions shown on the teacher profile are configurable via the following ta
 Teacher Surveys (SurveyModule)
 ------------------------------
 
-This module will cause your teacher survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" teacher deadline.  Make sure you have created a survey at /admin/survey/ before adding this module.
+This module will cause your teacher survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" teacher deadline.  Make sure you have created a survey at /manage/[program]/[instance]/surveys. By default, only teachers that submitted a class ('class_submitted') are allowed to fill out the survey. This can be modified with the 'survey_teacher_filter' tag, which is a comma-separated list of groups of students as specified in the prog.students() dictionary (this will be more user-friendly in the future)
 
 Teacher Acknowledgement (TeacherAcknowledgementModule)
 ------------------------------------------------------
@@ -445,6 +477,43 @@ Teacher Admissions Dashboard
 Provides an interface for teachers to review applications for their class.
 For more information, see `</docs/admin/student_apps.rst>`_.
 
+Teacher Onsite Webapp (TeacherOnsite)
+-------------------------------------
+
+This provides a mobile-friendly interface for teachers to perform common functions that might be desired onsite at a program, such as viewing their schedule, taking attendance, getting directions to their classes, filling out surveys, and viewing student survey results.
+
+Admin Setup
+~~~~~~~~~~~
+
+The basic functionality of the teacher webapp should work as soon as the module is enabled. However, in order for the maps to work properly, you'll need to perform the following additional steps:
+
+1. We use the Google Maps API to display a map with a custom center. You'll need to register a `Google Cloud account <https://console.cloud.google.com/>`_. You'll then need to get an API key for the service. This API key should be set as the value for the 'google_cloud_api_key' tag. Note that this API service requires a payment method, but the good news is that you get a whole bunch of free usage before it charges your card each month.
+2. You'll also need to set the 'program_center' tag to the geographic center of your campus or program location, otherwise the map will be centered on Stanford. The tag should be in the format of "{lat: 37.427490, lng: -122.170267}". This can be a program-specific tag (e.g. if you want the map to focus on different parts of campus for different programs) or just a global tag.
+3. Lastly, to enable the walking directions to class locations, you need a "Lat/Long" (spelling and capitalization matter) resource to be associated with each classroom (you should do this through the resources management page). The 'attribute_value' of each resource should be set to the lat/long from google maps (of the form 37.4268889, -122.172065).
+
+Note that you do not need to do any of this again if you've already done this for the student webapp.
+
+There's one last tag that may be useful, 'webapp_isstep', which you can set to "True" if you want to list the webapp as a step in teacher registration (in the checkboxes). Otherwise it won't be shown and you'll need to direct your teacher to the URL(s) some other way.
+
+Views provided
+~~~~~~~~~~~~~~
+
+* [main] /teach/<program>/teacheronsite -- Main teacher webapp landing page and live teacher schedule
+* /teach/<program>/onsitemap -- Shows Google map of campus. If this page is accessed by clicking on a classroom on the teacher schedule, this page shows walking directions to that classroom (provided that is set up, see above).
+* /teach/<program>/onsitesurvey -- Webapp version of the teacher survey (see above for more details). Also has a tab for teachers to view results from the student surveys for their class(es). Both of these interfaces have the same functionality as the main teacher survey pages but with slightly different styling.
+* /teach/<program>/onsitedetails -- Shows the details and links (classrooms, times, teachers, enrollment, documents, website) for a specific section (or all sections).
+* /teach/<program>/onsiteroster -- Shows the roster for a specific section (or all sections). If only a specific section is selected, this page also allows for marking attendance.
+
+Volunteer modules
+=================
+
+Volunteer Sign-up Module (VolunteerSignup)
+------------------------------------------
+
+If you are using the site for volunteer registration, add this along with VolunteerManage.  Potential volunteers will see a view (/volunteer/[program]/[instance]/signup) which you will need to link to.  This will allow them to specify which time slots they can commit to volunteering for, and provide their basic contact information.  You will need to create those time slots on the management side.  The time slots for volunteers are distinct from class time slots.
+
+If the user fills out this form without being logged in, an account will be created for them.  Otherwise their current account will be marked as a volunteer.
+
 Management modules
 ==================
 
@@ -504,9 +573,10 @@ Instructions for using the scheduler:
 
 - Click on the class you want to schedule (either in the directory or on the grid) to select it.
 - On the grid, the places you might put the class are highlighted. Legend:
- - Green means you can put the class there.
- - Green with stripes means the class can't start there, but there should be a green square to the left where you can place it (for multi-hour classes).
- - Yellow means the teacher is available then, but teaching another class.
+  
+  - Green means you can put the class there.
+  - Green with stripes means the class can't start there, but there should be a green square to the left where you can place it (for multi-hour classes).
+  - Yellow means the teacher is available then, but teaching another class.
 - Click on a green highlighted square to place the class. Click anywhere else on the grid or directory to unselect the class.
 - When you have a class selected, the pane in the upper right corner displays info about the class as well as links to the manage and edit pages.
 - When no class is selected, the pane in the upper right corner displays scheduling errors.
@@ -607,7 +677,7 @@ page. It can be edited inline by an admin to something more customized.
 Credit Card Viewer
 ------------------
 
-This module provides one view, viewpay_cybersource.  The name is a misnomer as it will display accounting information regardless of how that information was collected (Cybersource, First Data, or manual entry).  The view shows a list of students who have invoices for your program, and summarizes their amounts owed and payment[s] so far.
+This module provides one view, viewpay, that displays accounting information regardless of how that information was collected (Cybersource, First Data, or manual entry).  The view shows a list of students who have invoices for your program, and summarizes their amounts owed and payment[s] so far.
 
 Easily Approve Financial Aid Requests
 -------------------------------------
@@ -673,15 +743,10 @@ are in the works, but for now, the page
 will display a list of links to display the checks individually; most will load
 much more quickly than the entire page.
 
-Old-style scheduling (SchedulingModule)
----------------------------------------
-
-This module is deprecated and will be removed in a future release.
-
 Survey Management (SurveyManagement)
 ------------------------------------
 
-Include this module if you are using online surveys.  Surveys must be created at /admin/survey/, but this module will provide links to viewing the results.
+Include this module if you are using online surveys. This module provides links to create surveys and to view/export the survey results. Surveys can be created at /manage/[program]/[instance]/surveys/manage. Surveys can consist of program-wide and class-specific questions. The former will be shown as a single general program survey form, the latter will be shown as a class-specific survey form for each class a user took/taught.
 
 Manage Teacher Training and Interviews (TeacherEventsModule)
 ------------------------------------------------------------
@@ -696,7 +761,7 @@ Include this module if you will be using the Web site for volunteer registration
 Group Text Module
 -----------------
 
-
+Want to tell all enrolled students about a last-minute lunch location change? Want to inform students about a cancelled class? Once you have Twilio set up (contact websupport for help with this), you can use this module to select a set of users (like in the communications panel) and send them a text message. By default this will respect the users' texting preferences, but you can override this if necessary.
 
 Admin Admissions Dashboard
 --------------------------
@@ -798,12 +863,12 @@ Unenroll Students (UnenrollModule)
 
 This module allows you to find students who are late for their first class, based on whether they have checked in, and unroll them from their current or future classes. The page includes options to select the set of registrations to expire and a counter for how many students and registrations will be affected.
 
-Volunteer modules
-=================
+On-Site Student Attendance Module (OnSiteAttendance)
+----------------------------------------------------
 
-Volunteer Sign-up Module (VolunteerSignup)
-------------------------------------------
+This module can be used to check and mark attendance through the onsite interface. The main page of this module takes the onsite user to a page that summarizes attendance for classes for a selected timeblock and for the entire program. There is also an interface to select a specific class section for which to check or take attendance (just like the teacher interface).
 
-If you are using the site for volunteer registration, add this along with VolunteerManage.  Potential volunteers will see a view (/volunteer/[program]/[instance]/signup) which you will need to link to.  This will allow them to specify which time slots they can commit to volunteering for, and provide their basic contact information.  You will need to create those time slots on the management side.  The time slots for volunteers are distinct from class time slots.
+On-Site User Check-Out (OnSiteCheckoutModule)
+---------------------------------------------
 
-If the user fills out this form without being logged in, an account will be created for them.  Otherwise their current account will be marked as a volunteer.
+This module can be used to keep track of students that have checked *out* of a program (as opposed to check in). The module allows an onsite user to select a student with a search bar, then choose which classes, if any, the student will be unenrolled from when they are checked out. There is also an option to check out all students that have checked in (with multiple confirmation checks), in the case that you want to record program attendance separately for each day/weekend/etc.
