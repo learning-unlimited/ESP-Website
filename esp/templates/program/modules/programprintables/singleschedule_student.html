@@ -24,7 +24,7 @@
         {% comment %}{% if student.payment_info %}
         <b>Amount owed: </b> 
         <div style="border: 1px solid black; padding: 5px; font-size: 1.2em; font-weight: bold; text-align: center; width: 50%; margin: 0 auto;">
-            ${{ student.itemizedcosttotal|floatformat:"-2" }}
+            £{{ student.itemizedcosttotal|floatformat:"-2" }}
         </div>
         {% else %}&nbsp;
         {% endif %}{% endcomment %}
@@ -84,7 +84,7 @@ If you have any questions or would like to switch classes, please go to the prog
    <b>{{ student.name }}<br />{{ student.id }}</b>
   </td>
   <td width="30%">
-    <b>Amount owed: ${{ student.itemizedcosttotal|floatformat:"-2" }}</b>
+    <b>Amount owed: £{{ student.itemizedcosttotal|floatformat:"-2" }}</b>
   </td>
  </tr>
 {% endcomment %}

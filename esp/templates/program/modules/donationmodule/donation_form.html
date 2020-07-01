@@ -56,7 +56,14 @@ label input {
 <div id="donation_choices_wrapper">
     <h3>{% trans "Donation amount:" %}</h3>
         {{form.amount_donation.errors}}
-        {{form.amount_donation}}
+        <label class="radio">
+            <input type="radio" name="amount_donation" id="amount_donation_0" value="0" {% if not has_donation %}checked {% endif %}/>I won't be making a donation at this time
+        </label>
+        {% for option in module.settings.donation_options %}
+        <label class="radio">
+            <input type="radio" name="amount_donation" id="amount_donation_{{ forloop.counter }}" value="{{ option }}" {% if option == amount_donation %}checked {% endif %}/>£{{ option }}
+        </label>
+        {% endfor %}
         <div id="custom_amount_section" class="alert hide">
             {{form.custom_amount.errors}}
             {{form.custom_amount}}

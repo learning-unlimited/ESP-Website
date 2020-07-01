@@ -60,16 +60,15 @@ td>ul { list-style-type: none; padding: 0px }
 <tr style="border-bottom: 1px dashed grey;">
     <td>
         {% if f.type == "single" %}
-            {{ f.form.cost }} ${{ f.LineItem.amount_dec|floatformat:2 }}
+            {{ f.form.cost }} £{{ f.LineItem.amount_dec|floatformat:2 }}
         {% endif %}
         {% if f.type == "multiple" %}
-            {{ f.form.count }} ${{ f.LineItem.amount_dec|floatformat:2 }} each
+            {{ f.form.count }} £{{ f.LineItem.amount_dec|floatformat:2 }} each
         {% endif %}
         {% if f.type == "select" %}
             <div class="form-inline">{{ f.form.option }}</div>
         {% endif %}
         {% if f.form.errors %}<font color="red">{{ f.form.errors }}</font>{% endif %}
-        
         {# If num_options, radio buttons will be used for the field. In order to  #}
         {# be able to remove a selected item, we need a button. The Javascript    #}
         {# code for the button is at the bottom.                                  #}
