@@ -6,11 +6,11 @@
 {% if not user.getGrade or form.allow_change_grade_level %}
 <div class="alert">
 <button type="button" class="close" data-dismiss="alert">x</button>
-Please fill out your current age and grade accurately and honestly.
+Please fill out your current age and school year accurately and honestly.
 We trust our students to represent themselves honestly, but
-students have abused this trust in the past to circumvent grade
-requirements for higher-level classes. Lying about your age is fraud
-and is extremely frustrating for our teachers, who set these grade
+students have abused this trust in the past to circumvent school year
+requirements for higher-level classes.  Lying about your age is fraud
+and is extremely frustrating for our teachers, who set these school year
 requirements with full knowledge of the outstanding students in the
 program. Please be honest and support the community.
 <br /> <br />
@@ -20,7 +20,8 @@ After you click "Update Your Information!" below, you will not be
 able to change your age or grade level.
 <br /> <br />
 {% endif %}
-Your grade level will update automatically every August.
+Your school year updates automatically every August; if you skip a school year or 
+take a year off, please email us and we will fix your school year.
 </div>
 {% endif %}
 
@@ -41,7 +42,7 @@ Your grade level will update automatically every August.
 
 {% if form.graduation_year %}
 <div class="control-group">
-    <label for="id_graduation_year" class="control-label">Grade / Graduation Year:</label>
+    <label for="id_graduation_year" class="control-label">School Year / Graduation Year:</label>
     <div class="controls">
     {{ form.graduation_year }} {% if form.graduation_year.errors %}
     <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>

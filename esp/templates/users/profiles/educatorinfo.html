@@ -1,10 +1,10 @@
 <!-- Begin Educator Info Portion -->
 
-<h3>Additional Educator Information</h3>
+<h3>Additional High-School Teacher / Secondary Educator Information</h3>
 
 {% if form.position %}
 <div class="control-group">
- <label for="id_position" class="control-label">Position: <br /> <small>(e.g. teacher, principal)</small></label>
+ <label for="id_position" class="control-label">Position: <br /> <small>(e.g. teacher, head teacher)</small></label>
  <div class="controls">
  {{ form.position }} {% if form.position.errors %}
    <br /><span class="form_error">{{ form.position.errors|join:", " }}</span>
@@ -26,7 +26,7 @@
 
 {% if form.grades_taught %}
 <div class="control-group">
- <label for="id_grades_taught" class="control-label">Grades Taught: <br /> <small>(e.g. 9-12)</small></label>
+ <label for="id_grades_taught" class="control-label">School Years Taught: <br /> <small>(e.g. 9-12)</small></label>
  <div class="controls">
  {{ form.grades_taught }} {% if form.grades_taught.errors %}
    <br /><span class="form_error">{{ form.grades_taught.errors|join:", " }}</span>
