@@ -1,3 +1,4 @@
+from __future__ import division
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -37,8 +38,10 @@ from django.http import QueryDict
 from django.template import loader
 from esp.program.models.class_ import ClassSubject
 
+
 import os
 import subprocess
+import math
 
 try:
     import cPickle as pickle
@@ -46,6 +49,14 @@ except ImportError:
     import pickle
 
 register = template.Library()
+
+@register.filter
+def midValue(sizeLs0):
+    sizeLst = int(sizeLs0)
+    if sizeLst%2 == 1:
+        return math.ceil((sizeLst / 2))
+    else: 
+        return sizeLst / 2 + 0.1
 
 @register.filter
 def intrange(min_val, max_val):

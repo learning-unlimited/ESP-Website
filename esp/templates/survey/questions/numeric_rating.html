@@ -6,7 +6,7 @@
     {% for i in 1|intrange:number_of_ratings %}
         <div class = "floatLeft"><input type="radio" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}" value="{{ i }}" /> <b>{{ i }}</b>
         {% if forloop.first %} {{ lower_text }}{% endif %}
-        {% if forloop.middle %} {{ middle_text }}{% endif %}
+        {% if forloop.counter == number_of_ratings|midValue %} {{ middle_text }} {% endif %}
         {% if forloop.last %} {{ upper_text }}{% endif %}
         </div>
     {% endfor %}
