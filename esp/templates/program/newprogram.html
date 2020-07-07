@@ -76,15 +76,16 @@ Use a past program as a template:
      {% if field %}
       <td>  {{ field }}
     {% endif %}
-    {% if field.help_text %}
       <br />
+    {% if field.help_text %}
       <span>{{ field.help_text }}</span>
+      <br />
     {% endif %}
-    <br /><br />
     {% for error in  field.errors %}
-    <br/>
      <span class='form_error'> {{ error }} </span>
+     <br />
     {% endfor %}
+    <br />
      </td>
      </tr>
 
