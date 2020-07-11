@@ -325,8 +325,8 @@ class TeacherCheckinModule(ProgramModuleObj):
                     or sections_by_class[section.parent_class_id].begin_time > section.begin_time):
                 # Precompute some things and pack them on the section.
                 teacher_status = [teacher.id in arrived for teacher in section.teachers]
-                section.all_arrived = all(teacher_status)
-                section.any_arrived = any(teacher_status)
+                section.all_arrived = all(teacher_status) and section.teachers.count() > 0
+                section.any_arrived = any(teacher_status) and section.teachers.count() > 0
                 section.room = (section.prettyrooms() or [None])[0]
                 section.unique_resources = section.resourceassignments().order_by('assignment_group').distinct('assignment_group')
                 # section.teachers is a property, so we can't add extra
