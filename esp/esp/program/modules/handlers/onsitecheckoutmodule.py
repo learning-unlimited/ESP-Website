@@ -58,9 +58,10 @@ class OnSiteCheckoutModule(ProgramModuleObj):
         context = {}
 
         if "checkoutall" in request.POST and "confirm" in request.POST:
-            for student in ESPUser.objects.filter(record__event="attended", record__program=prog).distinct():
+            students = prog.currentlyCheckedInStudents()
+            for student in students:
                 Record.objects.create(user=student, event="checked_out", program=prog)
-            context['checkout_all_message'] = "Successfully checked out all students"
+            context['checkout_all_message'] = "Successfully checked out %s students" % (students.count())
 
         target_id = None
         student = None
