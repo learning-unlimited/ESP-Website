@@ -245,10 +245,10 @@
     {% endif %}
 {% endifchanged %}
 <tr class="section-first-row" data-sec-id="{{ section.emailcode }}">
-    <td rowspan="{{ section.teachers|length }}" class="section-code">
+    <td rowspan="{% if section.teachers %}{{ section.teachers|length }}{% else %}1{% endif %}" class="section-code">
         {{ section.parent_class.emailcode }}: {{ section.name }}
     </td>
-    <td class="room" rowspan="{{ section.teachers|length }}">
+    <td class="room" rowspan="{% if section.teachers %}{{ section.teachers|length }}{% else %}1{% endif %}">
         {% if start_time %}
             {{ section.room }}
         {% else %}
@@ -281,6 +281,12 @@
                    {% if teacher.id in arrived %} disabled title="Teacher already checked in"
                    {% elif not text_configured %} disabled title="Twilio texting settings are not configured"
                    {% elif teacher.phone == default_phone %} disabled title="No contact info"{% endif %}/>
+        </tr>
+        <tr data-sec-id="{{ section.emailcode }}">
+    {% empty %}
+        <td colspan="4">
+            No teachers for this class
+        </td>
         </tr>
         <tr data-sec-id="{{ section.emailcode }}">
     {% endfor %}
