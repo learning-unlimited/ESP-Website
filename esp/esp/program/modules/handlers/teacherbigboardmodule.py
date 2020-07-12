@@ -132,6 +132,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
         # users table.
         return ClassSubject.objects.filter(self.get_filter(prog, approved)
         ).exclude(category__category__iexact="Lunch"
+        ).exclude(teachers=None
         ).values_list('teachers').distinct().count()
 
     @cache_function_for(105)
@@ -139,6 +140,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
         recent = datetime.datetime.now() - datetime.timedelta(0, minutes * 60)
         return ClassSubject.objects.filter(parent_program=prog, timestamp__gt=recent
         ).exclude(category__category__iexact="Lunch"
+        ).exclude(teachers=None
         ).values_list('teachers').distinct().count()
 
     @cache_function_for(105)
@@ -162,9 +164,10 @@ class TeacherBigBoardModule(ProgramModuleObj):
         return sorted(class_times)
 
     @cache_function_for(105)
-    def teach_times(self, prog, approved = True):
+    def teach_times(self, prog, approved = False):
         teacher_times = dict(ClassSubject.objects.filter(self.get_filter(prog, approved)
         ).exclude(category__category__iexact="Lunch"
+        ).exclude(teachers=None
         ).distinct().values_list('teachers').annotate(Min('timestamp')))
         return sorted(teacher_times.itervalues())
 
