@@ -19,6 +19,7 @@
 {% endblock %}
 
 {% block content %}
+{% load modules %}
 
 <h1>Search Classes for {{ program.niceName }}</h1>
 
@@ -41,17 +42,25 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
 </div>
 </br>
 <div class="btn-group" style="z-index: 99; margin-right: 5px; float: left;">
-    <a class="btn btn-approve" href="./coursecatalog?clsids={{ IDs|join:',' }}" target="_blank" title="Change sorting with the 'catalog_sort_fields' tag">course catalog</a>
+    <a class="btn" href="./coursecatalog?clsids={{ IDs|join:',' }}" target="_blank" title="Change sorting with the 'catalog_sort_fields' tag">course catalog</a>
 </div>
 <div class="btn-group">
-    <a class="btn btn-approve" href="./classesbyid?clsids={{ IDs|join:',' }}" target="_blank">spreadsheet (by ID)</a>
-    <a class="btn btn-unreview" href="./classesbytitle?clsids={{ IDs|join:',' }}" target="_blank">spreadsheet (by title)</a>
-    <a class="btn btn-reject" href="./classesbytime?clsids={{ IDs|join:',' }}" target="_blank">spreadsheet (by time)</a>
+    <a class="btn" href="./classesbyid?clsids={{ IDs|join:',' }}" target="_blank">spreadsheet (by ID)</a>
+    <a class="btn" href="./classesbytitle?clsids={{ IDs|join:',' }}" target="_blank">spreadsheet (by title)</a>
+    <a class="btn" href="./classesbytime?clsids={{ IDs|join:',' }}" target="_blank">spreadsheet (by time)</a>
 </div>
 </br>
 <div class="btn-group">
-    <a class="btn btn-approve" href="./classflagdetails?clsids={{ IDs|join:',' }}" target="_blank">class flags</a>
-    <a class="btn btn-unreview" href="./classflagdetails?comments&clsids={{ IDs|join:',' }}" target="_blank">class flags (with comments)</a>
+    <a class="btn" href="./classflagdetails?clsids={{ IDs|join:',' }}" target="_blank">class flags</a>
+    <a class="btn" href="./classflagdetails?comments&clsids={{ IDs|join:',' }}" target="_blank">class flags (with comments)</a>
+</div>
+</br>
+<div class="btn-group">
+    <a class="btn" href="./selectList?recipient_type=Teacher&userid={% for cls in queryset %}{% for teacher in cls.teachers.all %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if cls.teachers.exists and not forloop.last %},{% endif %}{% endfor %}" target="_blank">Get Teacher Information</a>
+    <a class="btn" href="./commpanel?recipient_type=Teacher&userid={% for cls in queryset %}{% for teacher in cls.teachers.all %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if cls.teachers.exists and not forloop.last %},{% endif %}{% endfor %}" target="_blank">Email Teachers</a>
+    {% if program|hasModule:"GroupTextModule" %}
+    <a class="btn" href="./grouptextpanel?recipient_type=Teacher&userid={% for cls in queryset %}{% for teacher in cls.teachers.all %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if cls.teachers.exists and not forloop.last %},{% endif %}{% endfor %}" target="_blank">Text Teachers</a>
+    {% endif %}
 </div>
 </br>
 
