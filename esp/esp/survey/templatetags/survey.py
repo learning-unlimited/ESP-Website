@@ -7,7 +7,6 @@ __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
   (see AUTHORS file)
-
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU Affero General Public License
 as published by the Free Software Foundation; either version 3
@@ -56,7 +55,7 @@ def midValue(sizeLs0):
     if sizeLst%2 == 1:
         return math.ceil((sizeLst / 2))
     else: 
-        return sizeLst / 2 + 0.1
+        return sizeLst/2+0.1
 
 @register.filter
 def intrange(min_val, max_val):
