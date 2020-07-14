@@ -50,10 +50,9 @@ Expects:
             {% endif %}
         </td> 
 
-        {% if q.question.get_params.list.count > 0 %} 
-        <!-- An if statement to check if the question type is labeled numeric rating or numeric rating. 
-        If this list returns a count greater than zero then that means this list contains labels. In this case,
-        it is assumed to be of labeled numeric rating type/ numeric rating type-->
+        {% if q.question.question_type.is_numeric %} 
+        <!-- An if statement to check if the question type is labeled numeric rating or numeric rating.
+            If true, it is assumed to be of labeled numeric rating type/ numeric rating type-->
         <td width = "100%">
             <b>Statistics:</b>
             <ul>
