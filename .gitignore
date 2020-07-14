@@ -28,6 +28,15 @@ theme_compiled.css
 *_admin_thumbnail.jpg
 *_admin_thumbnail.png
 local_fabfile.py
+*.sql
+*.tar
+*.gz
+*.bak
+*.orig
+esp/public/media/uploaded/*
+*.swp
+.espsettings
+
 
 # Mac
 .DS_Store
