@@ -1494,7 +1494,6 @@ class ProgramPrintables(ProgramModuleObj):
                 write_cvs.writerow(csv_headings)
 
                 for cls in ClassSubject.objects.filter(parent_program=prog):
-                    fields = []
                     write_cvs.writerow([_encode_ascii(converter.fieldvalue(cls,f)) for f in selected_fields])
 
                 response['Content-Disposition'] = 'attachment; filename=all_classes.csv'
