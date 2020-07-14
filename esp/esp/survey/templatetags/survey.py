@@ -54,7 +54,7 @@ def midValue(sizeLs0):
     sizeLst = int(sizeLs0)
     if sizeLst%2 == 1:
         return math.ceil((sizeLst / 2))
-    else: 
+    else:
         return sizeLst/2+0.1
 
 @register.filter
