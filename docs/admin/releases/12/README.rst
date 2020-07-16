@@ -56,10 +56,13 @@ We've added the ability to use generic links that redirect to the most recent/cu
 Program Creation and Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Simplified the interface to select modules when creating or modifying a program. Now users check boxes about what functions you need rather than choosing modules by name, and most modules are automatically selected.
+- When creating a program, if you are charging for the program financial modules (including the financial aid application module) will be automatically enabled.
 - Only relevant and non-redundant modules are displayed on the main program management page (admin portal).
 - Added a page where you can modify all of the settings for a program (``/manage/[one]/[two]/settings``), including settings associated with the program itself, teacher registration, and student registration.
 - Added a page where you can modify the tag settings for a program (``/manage/[one]/[two]/tags``), with documentation and defaults for every tag.
 - Added a page where you can modify the global tag settings (``/manage/tags``), with documentation and defaults for every tag.
+
+  - Note that program and global tag settings can be very sensitive. Use caution and make sure to test your setup whenever you change them!
 
 Onsite changes
 ~~~~~~~~~~~~~~
@@ -183,18 +186,26 @@ Minor bug fixes
 - Fixed the completion certificate printable and added blank default letterhead.
 - Fixed the calculation of a section's capacity for cases where a section takes place in multiple classrooms.
 
+Minor bug fixes and new features released in August 2020
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Added a link to the nametags page from the "All Printables" page.
+- Fixed the "seq" value of the teacher onsite module and any related module objects (from -9999 to 9999).
+- Fixed the resizing of names on nametags (names will now be larger if there is space).
+- Fixed the behavior of the +/- signs on flags on the manage class, class search, and teacher checkin pages.
+- Fixed the registered teachers line on the teacher big board.
+- Fixed a bug where classes without teachers would be counted towards teacher statistics on the teacher big board.
+- Fixed the all classes spreadsheet for cases where field values had non-ascii characters.
+
 Known issues of new features
 ============================
 - Histograms in the PDF version of the survey results do not have the full range of possible choices.
 - Asterisks may still show up even when some fields are not set as required for the profile form.
 - Programs may be created without a student class registration module information object.
-- The line that tracks the number of teachers registered on the teacher big board is incorrect.
 - The arbitrary user list may break when trying to access guardian fields (such as email address or name).
 - The volunteer registration form is missing fields.
 - Documents uploaded via a custom form have the wrong link when viewed by the user.
 - Documents uploaded via a custom form can sometimes have a broken link when viewed by an admin.
 - "Accepted but hidden" sections are listed as "Rejected" in teacher registration.
-- When checking out all students in the checkout module, a random student is then selected and shown after the confirmation page.
 - "Rejected" classes aren't shown on /teacherreg or /userview.
 - Survey questions and results are very squished on the webapp.
 - Multiple users taking attendance at the same time can cause the section attendance to break or behave unexpectedly.
