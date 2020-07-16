@@ -33,7 +33,6 @@ local_fabfile.py
 *.gz
 *.bak
 *.orig
-esp/public/media/uploaded/*
 *.swp
 .espsettings
 
