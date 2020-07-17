@@ -100,17 +100,18 @@ The directors have been notified that you are no longer able to volunteer at {{ 
         {{ form.phone }}
         {% if form.shirt_size %}
         {{ form.shirt_size.label_tag }}
+        {{ form.shirt_size.errors }}
         {{ form.shirt_size }}
         {% endif %}
         {% if form.shirt_type %}
         {{ form.shirt_type.label_tag }}
-        {{ form.shirt_type }}
         {{ form.shirt_type.errors }}
+        {{ form.shirt_type }}
         {% endif %}
         {% if form.comments %}
         {{ form.comments.label_tag }}
-        {{ form.comments }}
         {{ form.comments.errors }}
+        {{ form.comments }}
         {% endif %}
       </div>
       <br>
