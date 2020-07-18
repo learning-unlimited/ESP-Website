@@ -2,7 +2,9 @@
 {% load survey %}
 <table class="fullwidth">
 <tr>
-    <b>{{ name }}</b>
-    <td><textarea rows="{{ rows }}" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}"></textarea></td>
+    <td>
+    <div style = "text-align: left; font-weight: bold;"> {{ name }} </div>
+    <div style="text-align: left; padding-left:2em; text-indent:-2em;"><textarea rows="{{ rows }}" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}"></textarea></div>
+    </td>
 </tr>
 </table>

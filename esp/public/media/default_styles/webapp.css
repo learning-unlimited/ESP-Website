@@ -368,8 +368,3 @@ i.pointer {
 .btn.fancybutton.no-dec {
   padding: .5vh;
 }
-
-div.floatLeft {
-  float: left;
-  padding: 5px;
-}

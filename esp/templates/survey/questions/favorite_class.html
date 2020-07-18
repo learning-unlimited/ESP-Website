@@ -2,10 +2,12 @@
 {% load survey %}
 <table class="fullwidth">
 <tr>
-    <b>{{ name }}</b>
-    <div class = "floatLeft">{% templatetag openblock %} for l in lst {% templatetag closeblock %}
+    <td>
+    <div style = "text-align: left; font-weight: bold;"> {{ name }} </div>
+    <div style="text-align: left; padding-left:2em; text-indent:-2em;">{% templatetag openblock %} for l in lst {% templatetag closeblock %}
         <input type="checkbox" name="question_{{ id }}" value="{% templatetag openvariable %} l.id {% templatetag closevariable %}" />{% templatetag openvariable %} l.emailcode {% templatetag closevariable %}: {% templatetag openvariable %} l.title {% templatetag closevariable %}<br />
         {% templatetag openblock %} endfor {% templatetag closeblock %}
     </div>
+    </td>
 </tr>
 </table>

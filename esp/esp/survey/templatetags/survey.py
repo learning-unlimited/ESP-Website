@@ -1,4 +1,3 @@
-from __future__ import division
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -40,7 +39,6 @@ from esp.program.models.class_ import ClassSubject
 
 import os
 import subprocess
-import math
 
 try:
     import cPickle as pickle
@@ -53,9 +51,9 @@ register = template.Library()
 def midValue(sizeLs0):
     sizeLst = int(sizeLs0)
     if sizeLst%2 == 1:
-        return math.ceil((sizeLst / 2))
+        return ((sizeLst + 1) / 2 )
     else:
-        return sizeLst/2+0.1
+        return -1
 
 @register.filter
 def intrange(min_val, max_val):

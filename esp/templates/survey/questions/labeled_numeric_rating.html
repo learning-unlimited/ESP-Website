@@ -3,9 +3,9 @@
 <table class="fullwidth">
 <tr>
     <td>
-    <b>{{ name }}</b>
+    <div style = "text-align: left; font-weight: bold;" > {{ name }} </div>
     {% for label in list %}
-        <div class="floatLeft">
+        <div style="text-align: left; padding-left:2em; text-indent:-2em;">
         <input type="radio" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}" value="{{ forloop.counter }}" /> 
         <b>{{ forloop.counter }}</b> {{ label }}
         </div>
