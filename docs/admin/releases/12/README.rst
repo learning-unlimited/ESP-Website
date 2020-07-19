@@ -195,6 +195,8 @@ Minor bug fixes and new features released in August 2020
 - Fixed the registered teachers line on the teacher big board.
 - Fixed a bug where classes without teachers would be counted towards teacher statistics on the teacher big board.
 - Fixed the all classes spreadsheet for cases where field values had non-ascii characters.
+- Improve spacing and appearance of the new program creation form and errors
+- Improve appearance and workflow of program resources page
 
 Known issues of new features
 ============================
