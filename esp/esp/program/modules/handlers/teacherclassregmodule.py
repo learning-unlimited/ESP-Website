@@ -253,19 +253,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
         not_found = []
         if request.POST and 'submitted' in request.POST:
-            attending_students = [int(student) for student in request.POST.getlist('attending')]
-            for student in section.students(verbs=["Enrolled","Attended"]):
-                if student.id in attending_students:
-                    if not prog.isCheckedIn(student):
-                        rec = Record(user=student, program=prog, event='attended')
-                        rec.save()
-                    sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
-                    sr.end_date = today_max
-                    sr.save()
-                else:
-                    srs = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended)
-                    for sr in srs:
-                        sr.expire()
             # split with delimiters comma, semicolon, and space followed by any amount of extra whitespace
             misc_students = filter(None, re.split(r'[;,\s]\s*', request.POST.get('misc_students')))
             for code in misc_students:
@@ -323,7 +310,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         POST to this view to change the attendance status of a student for a given section.
         POST data:
           'student':              The teacher's username.
-          'section':              The section ID.
+          'secid':                The section ID.
           'undo' (optional):      If 'true', expires all attendance registrations
                                   for the student for the section.
                                   Otherwise, the student is marked as attending the section.
@@ -338,19 +325,19 @@ class TeacherClassRegModule(ProgramModuleObj):
         attended = RegistrationType.objects.get_or_create(name = 'Attended', category = "student")[0]
         enrolled = RegistrationType.objects.get_or_create(name='Enrolled', category = "student")[0]
         onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
-        if 'student' in request.POST and 'section' in request.POST:
+        if 'student' in request.POST and 'secid' in request.POST:
             students = ESPUser.objects.filter(username=request.POST['student'])
             if not students.exists():
                 json_data['message'] = 'User not found!'
             else:
                 student = students[0]
                 json_data['name'] = student.name()
-                sections = ClassSection.objects.filter(id=request.POST['section'])
+                sections = ClassSection.objects.filter(id=request.POST['secid'])
                 if not sections.exists():
                     json_data['message'] = 'Section not found!'
                 else:
                     section = sections[0]
-                    json_data['section'] = section.id
+                    json_data['secid'] = section.id
                     if request.POST.get('undo', 'false').lower() == 'true':
                         #should we also delete the program attendance record?
                         srs = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended)
@@ -359,11 +346,12 @@ class TeacherClassRegModule(ProgramModuleObj):
                                 sr.expire() #or delete??
                             json_data['message'] = '%s is no longer marked as attending.' % student.name()
                         else:
-                            json_data['message'] = '%s was not marked as attending.' % teacher.name()
+                            json_data['message'] = '%s was not marked as attending.' % student.name()
                     else:
                         if not prog.isCheckedIn(student):
                             rec = Record(user=student, program=prog, event='attended')
                             rec.save()
+                            json_data['checkedin'] = True
                         sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
                         sr.end_date = today_max
                         sr.save()

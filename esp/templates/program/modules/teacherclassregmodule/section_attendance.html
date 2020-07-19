@@ -69,8 +69,6 @@ Please select a section from the dropdown below.
 
 {% if section %}
 <div id="program_form">
-<form action="{{ request.get_full_path }}" method="post">
-<input type="hidden" name="submitted">
 <table align="center" width="100%">
 <tr>
     <th align="center">
@@ -98,13 +96,13 @@ Please select a section from the dropdown below.
                     <td>{{ student.id }}</td>
                     <td>{{ student|getGradeForProg:program.id }}</td>
                     <td>{{ student.getLastProfile.student_info.getSchool }}</td>
-                    <td align="center" sorttable_customkey="{% if student.checked_in %}2{% else %}1{% endif %}"><input type="checkbox"{% if student.checked_in %} checked{% endif %} disabled></td>
+                    <td name="checkedin" align="center" sorttable_customkey="{% if student.checked_in %}2{% else %}1{% endif %}">
+                        <input type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
+                    </td>
                     <td align="center" sorttable_customkey="{% if student.attended %}2{% else %}1{% endif %}">
-                        {% if student.attended %}
-                            <input id="uncheckin_{{ student.username }}" data-section="{{ section.id }}" class="button uncheckin" type="button" value="Undo Check-In" />
-                        {% else %}
-                            <input id="checkin_{{ student.username }}" data-section="{{ section.id }}" class="button checkin" type="button" value="Check In"/><span />
-                        {% endif %}
+                        <input name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
+                        value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
+                        <br /><span class="msg"></span>
                     </td>
                 </tr>
             {% empty %}
@@ -148,8 +146,14 @@ Please select a section from the dropdown below.
                     <td>{{ student.id }}</td>
                     <td>{{ student|getGradeForProg:program.id }}</td>
                     <td>{{ student.getLastProfile.student_info.getSchool }}</td>
-                    <td align="center" sorttable_customkey="{% if student.checked_in %}2{% else %}1{% endif %}"><input type="checkbox"{% if student.checked_in %} checked{% endif %} disabled></td>
-                    <td align="center" sorttable_customkey="{% if student.attended %}2{% else %}1{% endif %}"><input name="attending" value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}></td>
+                    <td align="center" sorttable_customkey="{% if student.checked_in %}2{% else %}1{% endif %}">
+                        <input type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
+                    </td>
+                    <td align="center" sorttable_customkey="{% if student.attended %}2{% else %}1{% endif %}">
+                        <input name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
+                        value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
+                        <br /><span class="msg"></span>
+                    </td>
                 </tr>
             {% endfor %}
         </table>
@@ -159,6 +163,8 @@ Please select a section from the dropdown below.
 {% endif %}
 
 <br />
+<form action="{{ request.get_full_path }}" method="post">
+<input type="hidden" name="submitted">
 <table align="center" width="100%">
 <tr>
     <th align="center">

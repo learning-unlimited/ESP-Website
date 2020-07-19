@@ -29,58 +29,33 @@ Quagga.onDetected(function(result) {
 prog_url = $j('#attendancescript').data('prog_url');
 
 $j(function(){
-    function markAttendance(username, section, callback, undo, errorCallback){
+    function markAttendance(username, secid, callback, undo = false, errorCallback){
         refresh_csrf_cookie();
-        var data = {student: username, section: section, csrfmiddlewaretoken: csrf_token()};
-        if(undo)
-            data.undo = true;
+        var data = {student: username, secid: secid, undo: undo, csrfmiddlewaretoken: csrf_token()};
         $j.post('/teach/' + prog_url + '/ajaxstudentattendance', data, "json").success(callback)
         .error(function(){
-            alert("An error occurred while atempting to " + (undo?"un-check-in ":"check-in ") + username + ".");
+            alert("An error occurred while atempting to update attendance for" + username + ".");
             if (errorCallback) {
                 errorCallback();
             }
         });
     }
 
-    function undoAttendance(username, section, callback, errorCallback){
-        markAttendance(username, section, callback, true, errorCallback);
-    }
-
-    $j(".checkin:enabled").click(function(){
-        var username = this.id.replace("checkin_", "");
+    $j("[name=attending]").change(function(){
+        var checked = this.checked;
         var $me = $j(this);
-        var section = $me.data("section");
-        var $td = $j(this.parentNode);
-        var $msg = $td.children('.message');
-        var $txtbtn = $j(this).closest('tr').find('.text');
-        markAttendance(username, section, function(response) {
-            // $msg.text(response.message);
-            // $td.prev().prop('class', 'checked-in');
-            // checkins.push({username: username, name: response.name, $td: $td});
-            $me.hide().prop('disabled', true);
-            // $txtbtn.prop('disabled', true);
-            // $txtbtn.attr("title","Teacher already checked-in");
-            // updateSelected(false);
-
-            // var $undoButton = $j(document.createElement('button'));
-            // $undoButton.prop('class', 'btn btn-default btn-mini undo-button');
-            // $undoButton.text('Undo');
-            // $undoButton.click(function () {
-                // undoLiveCheckIn(username);
-            // });
-            // $msg.append(' ', $undoButton);
-        });
-        $msg.text('Checking in...');
+        var username = $me.data("username");
+        var secid = $me.data("secid");
+        var $msg = $me.parents("td").children(".msg");
+        var $checkedin = $me.parents("tr").children("[name=checkedin]");
+        $me.prop('disabled', true);
+        markAttendance(username, secid, function(response) {
+            $msg.text(response.message);
+            $me.prop('disabled', false);
+            console.log(response.checkedin);
+            if (response.checkedin)
+                $checkedin.prop("checked", true);
+        }, !checked);
+        $msg.text('Updating attendance...');
     });
-
-    // $j(".uncheckin:enabled").click(function(){
-        // var username = this.id.replace("uncheckin_", "");
-        // var section = $j(this).data("section");
-        // undoAttendance(username, section, function(response) {
-            // alert(response.message);
-            // location.reload();
-        // });
-        // this.value += "...";
-    // });
 });
