@@ -133,9 +133,9 @@ DEFAULT_EMAIL_ADDRESSES = {
     'mailman_moderator': 'esp-moderators@mit.edu'
 }
 # The name of your host institution.
-INSTITUTION_NAME = 'MIT'
+INSTITUTION_NAME = 'LearningUniversity'
 # A 'slug' used in email titles, like 'ESP' or 'Splash'
-ORGANIZATION_SHORT_NAME = 'ESP'
+ORGANIZATION_SHORT_NAME = 'Splash'
 # The host for ESP site-supported email lists.
 EMAIL_HOST = 'localhost'
 

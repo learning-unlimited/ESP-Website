@@ -47,6 +47,7 @@ from esp.cal.models import Event
 from esp.middleware import ESPError
 from esp.utils.query_utils import nest_Q
 from esp.program.models import VolunteerOffer
+from esp.survey.views import _encode_ascii
 
 from django import forms
 from django.conf import settings
@@ -1489,11 +1490,11 @@ class ProgramPrintables(ProgramModuleObj):
                 response = HttpResponse(content_type="text/csv")
                 write_cvs = csv.writer(response)
                 selected_fields = form.cleaned_data['subject_fields']
-                csv_headings = [converter.field_dict[fieldname] for fieldname in selected_fields]
+                csv_headings = [_encode_ascii(converter.field_dict[fieldname]) for fieldname in selected_fields]
                 write_cvs.writerow(csv_headings)
 
                 for cls in ClassSubject.objects.filter(parent_program=prog):
-                    write_cvs.writerow([converter.fieldvalue(cls,f) for f in selected_fields])
+                    write_cvs.writerow([_encode_ascii(converter.fieldvalue(cls,f)) for f in selected_fields])
 
                 response['Content-Disposition'] = 'attachment; filename=all_classes.csv'
                 return response
