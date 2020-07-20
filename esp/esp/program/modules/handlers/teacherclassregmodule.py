@@ -305,6 +305,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         return (section, not_found)
 
     @aux_call
+    @needs_teacher
     def ajaxstudentattendance(self, request, tl, one, two, module, extra, prog):
         """
         POST to this view to change the attendance status of a student for a given section.
