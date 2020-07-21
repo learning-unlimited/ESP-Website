@@ -2,8 +2,10 @@
 {% load survey %}
 <table class="fullwidth">
 <tr>
-    <td width="30%"><b>{{ name }}</b></td>
-    <td width="14%"><input type="radio" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}" value="Yes" />Yes</td>
-    <td><input type="radio" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}" value="No" />No</td>
+    <td>
+    <div style = "text-align: left; font-weight: bold;"> {{ name }} </div>
+    <div style = "text-align: left;"><input type="radio" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}" value="Yes" /> Yes</div>
+    <div style = "text-align: left;"><input type="radio" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}" value="No" /> No</div>
+    </td>
 </tr>
 </table>
