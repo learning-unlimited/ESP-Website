@@ -50,7 +50,7 @@ register = template.Library()
 @register.filter
 def midValue(sizeLs0):
     sizeLst = int(sizeLs0)
-    if sizeLst % 2  == 1:
+    if sizeLst%2  == 1:
         return ((sizeLst + 1) / 2 )
     else:
         return -1
