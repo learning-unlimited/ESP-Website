@@ -54,7 +54,7 @@ def midValue(sizeLs0):
         return ((sizeLst + 1) / 2 )
     else:
         return -1
-        
+
 @register.filter
 def intrange(min_val, max_val):
     return range(int(min_val), int(max_val) + 1)
