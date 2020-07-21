@@ -36,14 +36,6 @@ Expects:
                             {% endwith %}
                         {% endwith %}
                     {% endif %}
-                    {% if params.lower_text %}
-                    <div style="font-weight:bold; font-size:0.8em; width:216px;margin-bottom: 20px;">
-                        {# I have moral qualms about fixing this width in pixels; hopefully someone will find a better way. -ageng 2008-10-20 #}
-                        <div style="float:left;">1 = {{ params.lower_text }}</div>
-                        <div style="float:right;">{{ params.upper_text }} = {{ params.number_of_ratings }}</div>
-                        <div style="text-align:center;">{{ params.middle_text }}</div>
-                    </div>
-                    {% endif %}
                 {% endwith %}
             {% else %} 
                 There are no responses to this question.
@@ -69,6 +61,21 @@ Expects:
                 <b> {{ forloop.counter }}: </b>{{ label }}
             </div>
             {% endfor %}
+            {% if not q.answers|length_is:0 %}
+                {% with q.question.get_params as params %}
+                    {% if params.lower_text %}
+                    <div> <b> 1: </b> {{ params.lower_text }}</div>
+                    {% endif %}
+                    {% if params.middle_text %}
+                        {% if params.number_of_ratings|isOdd %}
+                        <div> <b> {{ params.number_of_ratings|midValue }}: </b> {{ params.middle_text }} </div>
+                        {% endif %}
+                    {% endif %}
+                    {% if params.upper_text %}
+                    <div> <b> {{ params.number_of_ratings }}: </b> {{ params.upper_text }} </div>
+                    {% endif %}
+                {% endwith %}
+            {% endif %}
         </td>
         {% endif %}
     </tr>

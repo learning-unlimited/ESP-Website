@@ -48,6 +48,14 @@ except ImportError:
 register = template.Library()
 
 @register.filter
+def midValue(sizeLs0):
+    sizeLst = int(sizeLs0)
+    if sizeLst % 2  == 1:
+        return ((sizeLst + 1) / 2 )
+    else:
+        return -1
+        
+@register.filter
 def intrange(min_val, max_val):
     return range(int(min_val), int(max_val) + 1)
 
@@ -242,3 +250,11 @@ def favorite_classes(answer_list, limit=20):
 def dictlookup(key,dict):
     '''Get the correct column for the answer, for dump_survey.'''
     return dict[key]
+
+@register.filter
+def isOdd(numRatings):
+    totalNum = int(numRatings)
+    if totalNum % 2 == 1:
+        return True
+    else:
+        return 0
