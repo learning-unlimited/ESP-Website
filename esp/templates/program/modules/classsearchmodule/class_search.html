@@ -80,7 +80,7 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
         Select student registration type(s):</br>
         <select name="regtypes" id="regtypes" multiple>
             {% for regtype in regtypes %}
-            <option value="{{ regtype.name }}"{% if regtype.name == "Enrolled" %} selected{% endif %}>{{ regtype }}</option>
+            <option {% if regtype.description %}title="{{ regtype.description }}" {% endif %}value="{{ regtype.name }}"{% if regtype.name == "Enrolled" %} selected{% endif %}>{{ regtype }}</option>
             {% endfor %}
         </select>
     </div>

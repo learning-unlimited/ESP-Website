@@ -156,6 +156,6 @@ class ClassSearchModule(ProgramModuleObj):
             context['queryset'] = queryset
             context['IDs'] = [cls.id for cls in queryset]
             context['flag_types'] = self.program.flag_types.all()
-            context['regtypes'] = RegistrationType.objects.all().order_by("name")
+            context['regtypes'] = sorted(RegistrationType.objects.all(), key=lambda a: str(a))
         return render_to_response(self.baseDir()+'class_search.html',
                                   request, context)
