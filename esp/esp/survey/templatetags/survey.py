@@ -250,11 +250,3 @@ def favorite_classes(answer_list, limit=20):
 def dictlookup(key,dict):
     '''Get the correct column for the answer, for dump_survey.'''
     return dict[key]
-
-@register.filter
-def isOdd(numRatings):
-    totalNum = int(numRatings)
-    if totalNum % 2 == 1:
-        return True
-    else:
-        return 0
