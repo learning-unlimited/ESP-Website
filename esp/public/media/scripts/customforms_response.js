@@ -57,8 +57,12 @@ $j(document).ready(function() {
 function file_link_formatter(cellvalue, options, rowObject)
 {
     var url_path = cellvalue.split("media/uploaded/")[1];
-    var url_dir = cellvalue.split("/");
-    return "<a href=\"/media/uploaded/" + url_path +  "\">" + url_dir[url_dir.length - 1] + "</a>";
+    if (url_path) {
+        var url_dir = url_path.split("/");
+        return "<a href=\"/media/uploaded/" + url_dir.slice(0, url_dir.length - 1).join("/") + "/" + encodeURIComponent(url_dir[url_dir.length - 1]) +  "\">" + url_dir[url_dir.length - 1] + "</a>";
+    } else {
+        return ""
+    }
 }
 
 var createGrid=function(form_data){

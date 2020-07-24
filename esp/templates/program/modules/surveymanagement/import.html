@@ -21,7 +21,7 @@ You have chosen to import {{ survey.name }} ({{ survey.category }}) from {{ surv
 <div id="program_form">
 <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=survey&op=import">
 <input type="hidden" name="import_confirm" value="yes" />
-<input type="hidden" name="survey" value="{{ survey.id }}" />
+<input type="hidden" name="survey_id" value="{{ survey.id }}" />
 <table align="center" cellpadding="0" cellspacing="0" width="100%">
     <tr><th colspan="6">Questions for {{ survey.name }} ({{ survey.category }})</th></tr>
     <tr>
