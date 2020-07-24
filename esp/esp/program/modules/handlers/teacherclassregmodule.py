@@ -329,13 +329,13 @@ class TeacherClassRegModule(ProgramModuleObj):
         if 'student' in request.POST and 'secid' in request.POST:
             students = ESPUser.objects.filter(username=request.POST['student'])
             if not students.exists():
-                json_data['message'] = 'User not found!'
+                json_data['error'] = 'User with username %s not found!' % request.POST['student']
             else:
                 student = students[0]
                 json_data['name'] = student.name()
                 sections = ClassSection.objects.filter(id=request.POST['secid'])
                 if not sections.exists():
-                    json_data['message'] = 'Section not found!'
+                    json_data['error'] = 'Section with ID %s not found!' % request.POST['secid']
                 else:
                     section = sections[0]
                     json_data['secid'] = section.id

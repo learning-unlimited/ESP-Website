@@ -33,12 +33,7 @@ $j(function(){
         refresh_csrf_cookie();
         var data = {student: username, secid: secid, undo: undo, csrfmiddlewaretoken: csrf_token()};
         $j.post('/teach/' + prog_url + '/ajaxstudentattendance', data, "json").success(callback)
-        .error(function(){
-            alert("An error occurred while atempting to update attendance for" + username + ".");
-            if (errorCallback) {
-                errorCallback();
-            }
-        });
+        .error(errorCallback);
     }
 
     $j("[name=attending]").change(function(){
@@ -50,12 +45,23 @@ $j(function(){
         var $checkedin = $me.closest("tr").find("[name=checkedin]");
         $me.prop('disabled', true);
         markAttendance(username, secid, !checked, function(response) {
-            $me.closest("td").attr("sorttable_customkey", (checked) ? 2 : 1);
-            if (response.checkedin) {
-                $checkedin.prop("checked", true);
-                $checkedin.closest("td").attr("sorttable_customkey", 2);
+            if (response.error) {
+                alert(response.error);
+                $me.prop("checked", !checked);
+            } else {
+                $me.closest("td").attr("sorttable_customkey", (checked) ? 2 : 1);
+                if (response.checkedin) {
+                    $checkedin.prop("checked", true);
+                    $checkedin.closest("td").attr("sorttable_customkey", 2);
+                }
+                console.log(response.message);
             }
-            $msg.text(response.message);
+            $msg.text("");
+            $me.prop('disabled', false);
+        }, function(error) {
+            alert("An error (" + error.statusText + ") occurred while attempting to update attendance for " + username + ".");
+            $me.prop("checked", !checked);
+            $msg.text("");
             $me.prop('disabled', false);
         });
         $msg.text('Updating attendance...');
