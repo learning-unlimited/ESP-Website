@@ -56,25 +56,29 @@ Expects:
             </ul>
             <!-- Creates a key that provides details about the Histogram Labeling-->
             <b>Response Labels:</b>
-            {% for label in q.question.get_params.list %}
-            <ul>
-                <li> <b> {{ forloop.counter }}: </b>{{ label }} </li>
-            </ul>
-            {% endfor %}
                 {% with q.question.get_params as params %}
-                <ol style = "font-weight: bold;">
-                    {% if params.lower_text %}
-                    <li><span style="font-weight: normal;"> {{ params.lower_text }} </span></li>
+                    {% if not params.list|length_is:0 %}
+                    <ul>
+                    {% for label in params.list %}
+                        <li> <b> {{ forloop.counter }}: </b>{{ label }} </li>
+                    {% endfor %}
+                    </ul>
                     {% endif %}
-                    {% if params.middle_text %}
-                        {% if not params.number_of_ratings|divisibleby:"2" %}
-                        <li value = "{{ params.number_of_ratings|midValue }}"> <span style="font-weight: normal;"> {{ params.middle_text }} </span></li>
+                        {% if params.lower_text or params.upper_text or params.middle_text %}
+                        <ol style = "font-weight: bold;">
+                            {% if params.lower_text %}
+                            <li><span style="font-weight: normal;"> {{ params.lower_text }} </span></li>
+                            {% endif %}
+                            {% if params.middle_text %}
+                                {% if not params.number_of_ratings|divisibleby:"2" %}
+                                <li value = "{{ params.number_of_ratings|midValue }}"> <span style="font-weight: normal;"> {{ params.middle_text }} </span></li>
+                                {% endif %}
+                            {% endif %}
+                            {% if params.upper_text %}
+                            <li value = "{{ params.number_of_ratings }}"> <span style="font-weight: normal;"> {{ params.upper_text }} </span></li>
+                            {% endif %}
+                        </ol>
                         {% endif %}
-                    {% endif %}
-                    {% if params.upper_text %}
-                    <li value = "{{ params.number_of_ratings }}"> <span style="font-weight: normal;"> {{ params.upper_text }} </span></li>
-                    {% endif %}
-                </ol>
                 {% endwith %}
         </td>
         {% endif %}
