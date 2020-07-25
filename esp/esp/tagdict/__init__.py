@@ -65,7 +65,7 @@ all_global_tags = {
     'random_constraints': (False, 'Constraints for /random in a JSON dictionary (e.g. {"bad_program_names": ["Delve", "SATPrep", "9001", "Test"], "bad_titles": ["Lunch Period"]})', '{}', 'manage', True),
     'admin_home_page': (False, 'The page to which admins get redirected after logging in (can be a relative or absolute page)', None, 'manage', True),
     'default_restypes': (False, 'A JSON list of the resource types (by name) to create when making a new program', None, 'manage', True),
-    'webapp_isstep': (True, 'Should the student and teacher onsite webapps be shown as steps in student and teacher registration respectively?', False, 'learn', True),
+    'webapp_isstep': (True, 'Should the student and teacher onsite webapps be shown as steps in student and teacher registration respectively?', False, 'manage', True),
     'google_cloud_api_key': (False, 'An API key for use with the Google Cloud Platform. Used for the student and teacher onsite webapps.', '', 'manage', True),
     'shirt_types': (False, 'Comma-separated list of shirt type options', 'Straight cut, Fitted cut', 'manage', True),
 }
@@ -136,7 +136,7 @@ all_program_tags = {
     'switch_time_program_attendance': (False, 'At what time should the student onsite webapp use program attendance if available (instead of enrollment) to determine if a class is full? If blank, program attendance numbers will not be used. Format: HH:MM where HH is in 24 hour time.', None, 'learn', True),
     'switch_lag_class_attendance': (False, 'How many minutes into a class should the student onsite webapp use class attendance numbers if available (instead of enrollment or program attendance) to determine if a class is full? If blank, class attendance numbers will not be used.', None, 'learn', True),
     'student_lottery_group_max': (False, 'What is the maximum number of students that can be in the same lottery group? (set to 1 to not allow groups)', '4', 'learn', True),
-    'survey_isstep': (True, 'Should the student and teacher surveys be shown as steps in student and teacher registration respectively once the event has started?', False, 'learn', True),
+    'survey_isstep': (True, 'Should the student and teacher surveys be shown as steps in student and teacher registration respectively once the event has started?', False, 'manage', True),
 }
 
 # Dictionary of categories that tags fall into (for grouping on the tag settings page)
