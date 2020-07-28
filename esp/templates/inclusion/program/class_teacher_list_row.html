@@ -57,11 +57,15 @@ Popup div for class cancellation request
 
 <tr>
   <td class="clsleft" colspan="5">
-    <b>Directors' review status</b>: {% if cls.isReviewed %}{% if cls.isAccepted %}
-    <span style="font-weight: bold; color: #0C0;">Accepted</span>
-    {% else %}
-    <span style="font-weight: bold; color: #C00;">Rejected</span>
-    {% endif %}
+    <b>Directors' review status</b>:
+    {% if cls.isReviewed %}
+        {% if cls.isAccepted %}
+        <span style="font-weight: bold; color: #0C0;">Accepted{% if cls.isHidden %} (Hidden){% endif %}</span>
+        {% elif cls.isCancelled %}
+        <span style="font-weight: bold; color: #C00;">Cancelled</span>
+        {% else %}
+        <span style="font-weight: bold; color: #C00;">Rejected</span>
+        {% endif %}
     {% else %}
     <span style="font-weight: bold; color: #00C;">Unreviewed</span>
     {% endif %}
@@ -115,11 +119,15 @@ Popup div for class cancellation request
 {% for sec in cls.sections.all %}
 <tr>
   <td class="clsleft" valign="top"><i>Section {{ sec.index }}</i> <br />
-    Status: {% if sec.isReviewed %}{% if sec.isAccepted %}
-    <span style="font-weight: bold; color: #0C0;">Accepted</span>
-    {% else %}
-    <span style="font-weight: bold; color: #C00;">Rejected</span>
-    {% endif %}
+    Status:
+    {% if sec.isReviewed %}
+        {% if sec.isAccepted %}
+        <span style="font-weight: bold; color: #0C0;">Accepted{% if sec.isHidden %} (Hidden){% endif %}</span>
+        {% elif sec.isCancelled %}
+        <span style="font-weight: bold; color: #C00;">Cancelled</span>
+        {% else %}
+        <span style="font-weight: bold; color: #C00;">Rejected</span>
+        {% endif %}
     {% else %}
     <span style="font-weight: bold; color: #00C;">Unreviewed</span>
     {% endif %}
