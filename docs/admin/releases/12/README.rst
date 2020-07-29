@@ -195,19 +195,21 @@ Minor bug fixes and new features released in August 2020
 - Fixed the registered teachers line on the teacher big board.
 - Fixed a bug where classes without teachers would be counted towards teacher statistics on the teacher big board.
 - Fixed the all classes spreadsheet for cases where field values had non-ascii characters.
-- Improve spacing and appearance of the new program creation form and errors
-- Improve appearance and workflow of program resources page
+- Improved spacing and appearance of the new program creation form and errors
+- Improved appearance and workflow of program resources page
+- Improved spacing on the attendance page, added links to userview page
+- Added tag-controlled shirt and comment fields to the volunteer signup form
+- Fixed spacing of survey questions and answers, especially in the webapps
+- Fixed some survey management bugs
+- Fixed URLs in the admin and user custom form interfaces
+- Added answer labels to the survey review page
+- Class atendance is now recorded live, not upon form submission (like teacher check-in)
+- Fixed instances where the arbitrary user list broke when selecting guardian fields
 
 Known issues of new features
 ============================
 - Histograms in the PDF version of the survey results do not have the full range of possible choices.
 - Asterisks may still show up even when some fields are not set as required for the profile form.
 - Programs may be created without a student class registration module information object.
-- The arbitrary user list may break when trying to access guardian fields (such as email address or name).
-- The volunteer registration form is missing fields.
-- Documents uploaded via a custom form have the wrong link when viewed by the user.
-- Documents uploaded via a custom form can sometimes have a broken link when viewed by an admin.
 - "Accepted but hidden" sections are listed as "Rejected" in teacher registration.
 - "Rejected" classes aren't shown on /teacherreg or /userview.
-- Survey questions and results are very squished on the webapp.
-- Multiple users taking attendance at the same time can cause the section attendance to break or behave unexpectedly.
