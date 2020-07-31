@@ -32,17 +32,12 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, main_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, main_call
 from esp.tagdict.models import Tag
-from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser
 from django.db.models.query   import Q
-from esp.middleware     import ESPError
-from esp.survey.models  import QuestionType, Question, Answer, SurveyResponse, Survey
 from esp.survey.views   import survey_view, survey_review, survey_graphical, survey_review_single
 
-import operator
 import datetime
 
 class TeacherSurveyModule(ProgramModuleObj):
@@ -75,7 +70,7 @@ class TeacherSurveyModule(ProgramModuleObj):
                 self.program.getSurveys().filter(category__in = ["learn","teach"]).exists())
 
     @main_call
-    @usercheck_usetl
+    @needs_teacher
     @meets_deadline('/Survey')
     def survey(self, request, tl, one, two, module, extra, prog):
         if extra is None or extra == '':

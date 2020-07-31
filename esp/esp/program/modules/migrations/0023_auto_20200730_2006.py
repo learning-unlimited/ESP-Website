@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 from django.db import migrations
 
 def set_my_defaults(apps, schema_editor):
-    Program = apps.get_model('program', 'Program')
     ProgramModule = apps.get_model('program', 'ProgramModule')
     old_pms = ProgramModule.objects.filter(handler="SurveyModule")
     for pm in old_pms:
@@ -24,7 +23,6 @@ def set_my_defaults(apps, schema_editor):
         pmo.save()
 
 def reverse_func(apps, schema_editor):
-    Program = apps.get_model('program', 'Program')
     ProgramModule = apps.get_model('program', 'ProgramModule')
     new_pm1 = ProgramModule.objects.get(handler="StudentSurveyModule")
     new_pm2 = ProgramModule.objects.get(handler="TeacherSurveyModule")
