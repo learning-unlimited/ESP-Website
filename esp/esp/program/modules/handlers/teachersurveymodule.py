@@ -45,32 +45,18 @@ from esp.survey.views   import survey_view, survey_review, survey_graphical, sur
 import operator
 import datetime
 
-class SurveyModule(ProgramModuleObj):
+class TeacherSurveyModule(ProgramModuleObj):
     """ A module for people to take surveys. """
 
     @classmethod
     def module_properties(cls):
         return [ {
-            "admin_title": "Student Surveys",
-            "link_title": "Surveys",
-            "module_type": "learn",
-            "seq": 20,
-            "choosable": 1,
-        }, {
             "admin_title": "Teacher Surveys",
-            "link_title": "Survey",
+            "link_title": "Teacher Surveys",
             "module_type": "teach",
-            "seq": 15,
+            "seq": 9999,
             "choosable": 1,
         } ]
-
-    def students(self, QObject = False):
-        event="student_survey"
-        program=self.program
-
-        if QObject:
-            return {'student_survey': Q(record__program=program) & Q(record__event=event)}
-        return {'student_survey': ESPUser.objects.filter(record__program=program, record__event=event).distinct()}
 
     def teachers(self, QObject = False):
         event="teacher_survey"
@@ -80,14 +66,13 @@ class SurveyModule(ProgramModuleObj):
             return {'teacher_survey': Q(record__program=program) & Q(record__event=event)}
         return {'teacher_survey': ESPUser.objects.filter(record__program=program, record__event=event).distinct()}
 
-    def studentDesc(self):
-        return {'student_survey': """Students who filled out the survey"""}
-
     def teacherDesc(self):
         return {'teacher_survey': """Teachers who filled out the survey"""}
 
     def isStep(self):
-        return Tag.getBooleanTag('survey_isstep', program=self.program, default=False) and self.program.getTimeSlots()[0].start < datetime.datetime.now()
+        return (Tag.getBooleanTag('teacher_survey_isstep', program=self.program, default=False) and
+                self.program.getTimeSlots()[0].start < datetime.datetime.now() and
+                self.program.getSurveys().filter(category__in = ["learn","teach"]).exists())
 
     @main_call
     @usercheck_usetl
