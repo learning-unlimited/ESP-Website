@@ -123,17 +123,11 @@ class FinancialAidAppModule(ProgramModuleObj):
 
                 app.save()
 
-                # Automatically accept apps for people with subsidized lunches
-                # Send an email announcing the application either way
+                # Send an email announcing the application
                 date_str = str(datetime.now())
                 iac = IndividualAccountingController(self.program, request.user)
-                if app.reduced_lunch:
-                    iac.grant_full_financial_aid()
-                    subj_str = '%s %s received Financial Aid for %s' % (request.user.first_name, request.user.last_name, prog.niceName())
-                    msg_str = "\n%s %s received Financial Aid for %s on %s, for stating that they receive a free or reduced-price lunch."
-                else:
-                    subj_str = '%s %s applied for Financial Aid for %s' % (request.user.first_name, request.user.last_name, prog.niceName())
-                    msg_str = "\n%s %s applied for Financial Aid for %s on %s, but did not state that they receive a free or reduced-price lunch."
+                subj_str = '%s %s applied for Financial Aid for %s' % (request.user.first_name, request.user.last_name, prog.niceName())
+                msg_str = "\n%s %s applied for Financial Aid for %s on %s."
                 send_mail(subj_str, (msg_str +
                 """
 
@@ -172,7 +166,9 @@ This request can be (re)viewed at:
     str(app.id)),
                             settings.SERVER_EMAIL,
                             [ prog.getDirectorConfidentialEmail() ] )
-
+                # Automatically accept apps for people with subsidized lunches
+                if app.reduced_lunch:
+                    app.approve()
                 return self.goToCore(tl)
 
         else:

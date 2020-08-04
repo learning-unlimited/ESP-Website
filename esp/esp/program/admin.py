@@ -98,11 +98,15 @@ class FinancialAidGrantInline(admin.TabularInline):
     max_num = 1
     verbose_name_plural = 'Financial aid grant - enter 100 in "Percent" field to waive entire cost'
 
+def approve_finaid_requests(modeladmin, request, queryset):
+    for req in queryset:
+        req.approve()
 class FinancialAidRequestAdmin(admin.ModelAdmin):
     list_display = ('user', 'approved', 'reduced_lunch', 'program', 'household_income', 'extra_explaination')
     search_fields = default_user_search() + ['id', 'program__url']
     list_filter = ['program']
     inlines = [FinancialAidGrantInline,]
+    actions = [ approve_finaid_requests, ]
 admin_site.register(FinancialAidRequest, FinancialAidRequestAdmin)
 
 class Admin_SplashInfo(admin.ModelAdmin):

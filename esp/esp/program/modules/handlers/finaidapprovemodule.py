@@ -97,10 +97,7 @@ class FinAidApproveModule(ProgramModuleObj):
                     continue
 
                 try:
-                    f = FinancialAidGrant(request = req, percent = 100, finalized = True)
-                    f.save()
-                    req.done = True
-                    req.save()
+                    req.approve(dollar_amount = None, discount_percent=100)
                     users_approved.append(req.user.name())
                 except:
                     users_error.append(req.user.name())
