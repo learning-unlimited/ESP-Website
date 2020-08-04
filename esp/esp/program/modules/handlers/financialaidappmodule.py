@@ -41,7 +41,6 @@ from django.db.models.query       import Q
 from django.template.loader import get_template
 from django.utils.decorators import method_decorator
 from esp.program.models  import FinancialAidRequest
-from esp.accounting.controllers import IndividualAccountingController
 from esp.tagdict.models import Tag
 from django.conf import settings
 from esp.middleware.threadlocalrequest import get_current_request
