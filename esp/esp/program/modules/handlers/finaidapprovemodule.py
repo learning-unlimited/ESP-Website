@@ -36,7 +36,6 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web import render_to_response
 from esp.program.models import FinancialAidRequest
-from esp.accounting.models import FinancialAidGrant
 
 
 class FinAidApproveModule(ProgramModuleObj):
