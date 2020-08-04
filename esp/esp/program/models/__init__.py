@@ -1655,7 +1655,7 @@ class FinancialAidRequest(models.Model):
                 email_contents = render_to_string('program/modules/finaidapprovemodule/approval_email.txt', email_context)
                 send_mail(subj, email_contents, email_from, email_to)
             else:
-                raise ESPError('Need to supply at least one of dollar_amount and discount_percent', log=True) 
+                raise ESPError('Need to supply at least one of dollar_amount and discount_percent', log=True)
 
 """ Functions for scheduling constraints
     I'm sorry that these are in the same __init__.py file;
