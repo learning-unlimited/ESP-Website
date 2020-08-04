@@ -125,7 +125,6 @@ class FinancialAidAppModule(ProgramModuleObj):
 
                 # Send an email announcing the application
                 date_str = str(datetime.now())
-                iac = IndividualAccountingController(self.program, request.user)
                 subj_str = '%s %s applied for Financial Aid for %s' % (request.user.first_name, request.user.last_name, prog.niceName())
                 msg_str = "\n%s %s applied for Financial Aid for %s on %s."
                 send_mail(subj_str, (msg_str +
