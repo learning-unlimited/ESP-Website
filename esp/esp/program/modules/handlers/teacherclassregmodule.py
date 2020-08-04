@@ -868,10 +868,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['formset'] = resource_formset
         context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
         context['classroom_form_advisories'] = 'classroom_form_advisories'
-        if self.program.grade_max - self.program.grade_min >= 4:
-            context['grade_range_popup'] = Tag.getBooleanTag('grade_range_popup', self.program, default=True)
-        else:
-            context['grade_range_popup'] = False
+        context['grade_range_popup'] = Tag.getBooleanTag('grade_range_popup', self.program, default=True)
 
         if newclass is None:
             context['addoredit'] = 'Add'
