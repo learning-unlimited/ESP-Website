@@ -1,10 +1,5 @@
-from django.conf import settings
 from django.core.cache import cache
 from django.core.management.base import NoArgsCommand
-
-import logging
-logger = logging.getLogger(__name__)
-import os
 
 class Command(NoArgsCommand):
     """
