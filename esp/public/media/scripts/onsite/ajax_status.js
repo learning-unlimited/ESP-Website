@@ -866,6 +866,9 @@ function render_table(display_mode, student_id)
         filtered_sections = filtered_sections.filter(sec_id => !(data.sections[sec_id].registration_status != 0));
     }
     
+    //exclude classes in hidden categories
+    filtered_sections = filtered_sections.filter(sec_id => settings.categories_to_display[data.classes[data.sections[sec_id].class_id].category__id]);
+    
     for (var sec_id of filtered_sections)
     {
         var row = 0;
@@ -1018,7 +1021,6 @@ function render_table(display_mode, student_id)
         update_checkboxes();
     }
     update_search_filter();
-    update_category_filters(); // show/hide classes by category
 }
     
 function render_status_table()
@@ -1036,26 +1038,6 @@ function render_classchange_table(student_id)
 
 }
 
-function update_category_filters()
-{   
-    $j(".section").removeClass("section_category_hidden");
-    for (var id_str in data.categories)
-    {
-        var id = parseInt(id_str);
-
-        if (!settings.categories_to_display[id])
-        {
-            //  console.log("Hiding category .section_category_" + id);
-            $j(".section_category_" + id).not(".student_enrolled").addClass("section_category_hidden");
-        }
-    }
-    if (!settings.categories_to_display[open_class_category.id])
-    {
-        console.log("Hiding walk-ins");
-        $j(".section_category_" + open_class_category.id).not(".student_enrolled").addClass("section_category_hidden");
-    }
-}
-
 function toggle_categories() {
     var showAll = $j(this).prop("id") == "category_show_all";
 
@@ -1066,7 +1048,7 @@ function toggle_categories() {
     $j("#category_list :checkbox").not(".category_selector")
                                   .not("#category_select_" + open_class_category.id)
                                   .prop('checked', showAll);
-    update_category_filters();
+    render_table();
 
 }
 
@@ -1095,7 +1077,7 @@ function render_category_options()
         new_checkbox.change(function (event) {
             var target_id = extract_category_id(event.target.id);
             settings.categories_to_display[target_id] = !settings.categories_to_display[target_id];
-            update_category_filters();
+            render_table();
         });
 
         new_li.append(new_checkbox);
