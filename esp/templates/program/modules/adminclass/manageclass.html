@@ -131,7 +131,7 @@
 <br />
 
 <p>
-Please use the form below to alter {{ class.title }}.  Note that changes made to the class will propagate to each of the sections, but you can later change each section independently.
+Please use the form below to alter {{ class.title }}.  Note that changes made to the class will propagate to each of the sections (except the class status will not override a section's review status if it is already changed), but you can later change each section independently.
 </p>
 
 <form name="classmanage" action="{{ request.path }}?action=modify" method="POST">
