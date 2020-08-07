@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 import copy
+import re
 from collections import defaultdict, OrderedDict
 from datetime import datetime, timedelta, date
 from decimal import Decimal
@@ -776,6 +777,12 @@ class Program(models.Model, CustomFormsLinkModel):
             result[c].timegroup = Event.collapse(result[c].timeslots)
 
         return result
+        
+    @staticmethod
+    def natural_sort(l): 
+        convert = lambda text: int(text) if text.isdigit() else text.lower() 
+        alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
+        return sorted(l, key = alphanum_key)
 
     @cache_function
     def groupedClassrooms(self):
@@ -784,9 +791,9 @@ class Program(models.Model, CustomFormsLinkModel):
 
         result = self.collapsed_dict(classrooms)
         key_list = result.keys()
-        key_list.sort()
+        natural_key_list = self.natural_sort(key_list)
         #   Turn this into a list instead of a dictionary.
-        ans = [result[key] for key in key_list]
+        ans = [result[key] for key in natural_key_list]
 
         return ans
     groupedClassrooms.depend_on_row('resources.Resource', lambda res: {'self': res.event.parent_program()})
