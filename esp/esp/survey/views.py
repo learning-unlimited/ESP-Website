@@ -83,7 +83,7 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
         event = "student_survey"
     else:
         event = "teacher_survey"
-        student_results = prog.getSurveys().filter(category = "learn").exists()
+        student_results = prog.getSurveys().filter(category = "learn", questions__per_class=True).exists()
 
     surveys = prog.getSurveys().filter(category = tl).select_related()
 
@@ -101,7 +101,7 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
         else:
             raise ESPError("Sorry, no such survey exists for this program!", log=False)
     elif len(surveys) > 1:
-        return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
+        return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'student_results': student_results, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
     else:
         survey = surveys[0]
 
