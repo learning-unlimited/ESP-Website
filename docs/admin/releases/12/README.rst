@@ -205,10 +205,13 @@ Minor bug fixes and new features released in August 2020
 - Added answer labels to the survey review page
 - Class atendance is now recorded live, not upon form submission (like teacher check-in)
 - Fixed instances where the arbitrary user list broke when selecting guardian fields
+- Fixed the grade range popup on the teacher class registration page (depends on the 'grade_range_popup' program tag)
+- Fixed the spacing on the theme select page
+- Added links to comm panel, arbitrary user list, and group text modules on the class search page; restyled all of the links at the top of this page
+- Split the 'webapp_isstep' tag into two tags 'student_webapp_isstep' and 'teacher_webapp_isstep' which are used for their respective registration modules
 
 Known issues of new features
 ============================
-- Histograms in the PDF version of the survey results do not have the full range of possible choices.
 - Asterisks may still show up even when some fields are not set as required for the profile form.
 - Programs may be created without a student class registration module information object.
 - "Accepted but hidden" sections are listed as "Rejected" in teacher registration.
