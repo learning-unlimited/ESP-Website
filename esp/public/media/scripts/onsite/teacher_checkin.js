@@ -19,6 +19,7 @@ $j(function(){
     $j(".phone").map(changeHyphens);
 
     $j('.section-detail-header').click(function () {
+        $j(this).toggleClass('active');
         var info = $j(this).siblings('.section-detail-info');
         var class_id = info.attr('data-class-id');
 
