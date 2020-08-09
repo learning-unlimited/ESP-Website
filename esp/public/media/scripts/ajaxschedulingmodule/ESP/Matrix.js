@@ -388,14 +388,12 @@ function Matrix(
         //Room headers
         var rows = {}; //table rows by room name
         var room_ids = Object.keys(this.rooms);
-        room_ids.sort(function (room1, room2) {
+        room_ids = room_ids.sort(function (room1, room2) {
             // sort by building number
-            var bldg1 = parseInt(room1.text, 10);
-            var bldg2 = parseInt(room2.text, 10);
-            if (!isNaN(bldg1) && !isNaN(bldg2) && bldg1 != bldg2) {
-                return bldg1 - bldg2;
-            }
-            return rooms[room1].text.localeCompare(rooms[room2].text);
+            return rooms[room1].text.localeCompare(rooms[room2].text, undefined, {
+                numeric: true,
+                sensitivity: 'base'
+            })
         });
         $j.each(this.rooms, function(id, room){
             room = this.rooms[id];
