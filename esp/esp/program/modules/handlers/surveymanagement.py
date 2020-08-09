@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, main_call, aux_call
 from esp.program.modules import module_ext
+from esp.program.models import ClassSubject, ClassSection
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser
 from django.db.models.query   import Q
@@ -159,6 +160,11 @@ class SurveyManagement(ProgramModuleObj):
             context['import_survey_form'] = SurveyImportForm(cur_prog = prog)
         context['surveys'] = Survey.objects.filter(program = prog)
         context['questions'] = Question.objects.filter(survey__program = prog).order_by('survey__category', 'survey', 'per_class', 'seq')
+        # Make some dummy data for survey questions that need it
+        classes = [ClassSubject(id = i, title="Test %s" %i, parent_program = prog, category = prog.class_categories.all()[0],
+                   grade_min = prog.grade_min, grade_max = prog.grade_max) for i in range(1,4)]
+        context['classes'] = classes
+        context['section'] = ClassSection(parent_class=classes[0])
 
         return render_to_response('program/modules/surveymanagement/manage.html', request, context)
 
