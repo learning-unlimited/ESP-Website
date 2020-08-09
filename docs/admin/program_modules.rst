@@ -366,7 +366,7 @@ For class changes on the student webapp, students are allowed by default to enro
 - 'switch_lag_class_attendance': Set this tag to the amount of minutes into a class at which you'd like to start using class attendance numbers if available (instead of enrollment or program attendance). This many minutes into a class block, if at least 1 student has been marked attending that class, students will be able to class change based on class attendance numbers. If blank, class attendance numbers will not be used.
 Note that if both tags are set, the hierarchy is that class attendance will be used if available; program attendance will be used if class attendance is not available; enrollment will be used if program attendance is not available. 
 
-There's one last tag that may be useful, 'webapp_isstep', which you can set to "True" if you want to list the webapp as a step in student registration (in the checkboxes). Otherwise it won't be shown and you'll need to direct your students to the URL(s) some other way.
+There's one last tag that may be useful, 'student_webapp_isstep', which you can set to "True" if you want to list the webapp as a step in student registration (in the checkboxes). Otherwise it won't be shown and you'll need to direct your students to the URL(s) some other way.
 
 Views provided
 ~~~~~~~~~~~~~~
@@ -493,7 +493,7 @@ The basic functionality of the teacher webapp should work as soon as the module 
 
 Note that you do not need to do any of this again if you've already done this for the student webapp.
 
-There's one last tag that may be useful, 'webapp_isstep', which you can set to "True" if you want to list the webapp as a step in teacher registration (in the checkboxes). Otherwise it won't be shown and you'll need to direct your teacher to the URL(s) some other way.
+There's one last tag that may be useful, 'teacher_webapp_isstep', which you can set to "True" if you want to list the webapp as a step in teacher registration (in the checkboxes). Otherwise it won't be shown and you'll need to direct your teacher to the URL(s) some other way.
 
 Views provided
 ~~~~~~~~~~~~~~
