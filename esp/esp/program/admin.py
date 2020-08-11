@@ -192,7 +192,7 @@ admin_site.register(VolunteerOffer, VolunteerOfferAdmin)
 ## class_.py
 
 class Admin_RegistrationType(admin.ModelAdmin):
-    list_display = ('name', 'category', )
+    list_display = ('name', 'category', 'displayName', 'description', )
 admin_site.register(RegistrationType, Admin_RegistrationType)
 
 def expire_student_registrations(modeladmin, request, queryset):

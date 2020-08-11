@@ -7,6 +7,15 @@
     <link rel="stylesheet" type="text/css" href="/media/styles/forms.css"/>
     <link rel="stylesheet" type="text/css" href="/media/styles/flags.css"/>
     <link rel="stylesheet" type="text/css" href="/media/styles/query-builder.css"/>
+    <style>
+    .btn-group a {
+        color: #333333 !important;
+        text-decoration: none !important;
+    }
+    .dropdown-menu a:hover {
+        color: #ffffff !important;
+    }
+    </style>
 {% endblock %}
 
 {% block xtrajs %}
@@ -19,6 +28,7 @@
 {% endblock %}
 
 {% block content %}
+{% load modules %}
 
 <h1>Search Classes for {{ program.niceName }}</h1>
 
@@ -35,25 +45,72 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
 </p>
 
 <div class="btn-group">
-    <button class="btn btn-approve" onclick="approveAll({{ IDs|escapejs }});">approve all</button>
-    <button class="btn btn-unreview" onclick="unreviewAll({{ IDs|escapejs }});">unreview all</button>
-    <button class="btn btn-reject" onclick="rejectAll({{ IDs|escapejs }});">reject all</button>
+    <button class="btn btn-approve" onclick="approveAll({{ IDs|escapejs }});">Approve All</button>
+    <button class="btn btn-unreview" onclick="unreviewAll({{ IDs|escapejs }});">Unreview All</button>
+    <button class="btn btn-reject" onclick="rejectAll({{ IDs|escapejs }});">Reject All</button>
 </div>
-</br>
-<div class="btn-group" style="z-index: 99; margin-right: 5px; float: left;">
-    <a class="btn btn-approve" href="./coursecatalog?clsids={{ IDs|join:',' }}" target="_blank" title="Change sorting with the 'catalog_sort_fields' tag">course catalog</a>
+<div class="btn-toolbar">
+    <div class="btn-group" id="catalog_links">
+        <a class="btn" href="./coursecatalog?clsids={{ IDs|join:',' }}" target="_blank" title="Change sorting with the 'catalog_sort_fields' tag">Course Catalog</a>
+    </div>
+    <div class="btn-group" id="spreadsheet_links">
+        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+            Class Spreadsheets
+            <span class="caret"></span>
+        </a>
+        <ul class="dropdown-menu">
+            <li><a href="./classesbyid?clsids={{ IDs|join:',' }}" target="_blank">By ID</a></li>
+            <li><a href="./classesbytitle?clsids={{ IDs|join:',' }}" target="_blank">By Title</a></li>
+            <li><a href="./classesbytime?clsids={{ IDs|join:',' }}" target="_blank">By Time</a></li>
+        </ul>
+    </div>
+    <div class="btn-group" id="flag_printable_links">
+        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+            Class Flag Printables
+            <span class="caret"></span>
+        </a>
+        <ul class="dropdown-menu">
+            <li><a href="./classflagdetails?clsids={{ IDs|join:',' }}" target="_blank">Without Comments</a></li>
+            <li><a href="./classflagdetails?comments&clsids={{ IDs|join:',' }}" target="_blank">With Comments</a></li>
+        </ul>
+    </div>
 </div>
-<div class="btn-group">
-    <a class="btn btn-approve" href="./classesbyid?clsids={{ IDs|join:',' }}" target="_blank">spreadsheet (by ID)</a>
-    <a class="btn btn-unreview" href="./classesbytitle?clsids={{ IDs|join:',' }}" target="_blank">spreadsheet (by title)</a>
-    <a class="btn btn-reject" href="./classesbytime?clsids={{ IDs|join:',' }}" target="_blank">spreadsheet (by time)</a>
+<div class="btn-toolbar">
+    <div id="reg_types_div" class="btn-group">
+        Select student registration type(s):</br>
+        <select name="regtypes" id="regtypes" multiple>
+            {% for regtype in regtypes %}
+            <option {% if regtype.description %}title="{{ regtype.description }}" {% endif %}value="{{ regtype.name }}"{% if regtype.name == "Enrolled" %} selected{% endif %}>{{ regtype }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="btn-group" id="student_links" data-clsids="{{ IDs|join:',' }}">
+        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+            Student Links
+            <span class="caret"></span>
+        </a>
+        <ul class="dropdown-menu">
+            <li><a href="./selectList?clsid={{ IDs|join:',' }}&regtypes=Enrolled" target="_blank">Get Student Information</a></li>
+            <li><a href="./commpanel?clsid={{ IDs|join:',' }}&regtypes=Enrolled" target="_blank">Email Students</a></li>
+            {% if program|hasModule:"GroupTextModule" %}
+            <li><a href="./grouptextpanel?clsid={{ IDs|join:',' }}&regtypes=Enrolled" target="_blank">Text Students</a></li>
+            {% endif %}
+        </ul>
+    </div>
+    <div class="btn-group" id="teacher_links">
+        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+            Teacher Links
+            <span class="caret"></span>
+        </a>
+        <ul class="dropdown-menu">
+            <li><a href="./selectList?recipient_type=Teacher&userid={% for cls in queryset %}{% for teacher in cls.teachers.all %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if cls.teachers.exists and not forloop.last %},{% endif %}{% endfor %}" target="_blank">Get Teacher Information</a></li>
+            <li><a href="./commpanel?recipient_type=Teacher&userid={% for cls in queryset %}{% for teacher in cls.teachers.all %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if cls.teachers.exists and not forloop.last %},{% endif %}{% endfor %}" target="_blank">Email Teachers</a></li>
+            {% if program|hasModule:"GroupTextModule" %}
+            <li><a href="./grouptextpanel?recipient_type=Teacher&userid={% for cls in queryset %}{% for teacher in cls.teachers.all %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if cls.teachers.exists and not forloop.last %},{% endif %}{% endfor %}" target="_blank">Text Teachers</a></li>
+            {% endif %}
+        </ul>
+    </div>
 </div>
-</br>
-<div class="btn-group">
-    <a class="btn btn-approve" href="./classflagdetails?clsids={{ IDs|join:',' }}" target="_blank">class flags</a>
-    <a class="btn btn-unreview" href="./classflagdetails?comments&clsids={{ IDs|join:',' }}" target="_blank">class flags (with comments)</a>
-</div>
-</br>
 
 <div class="flag-query-results" id="program_form">
     {% for class in queryset %}
