@@ -209,6 +209,13 @@ Minor bug fixes and new features released in August 2020
 - Fixed the spacing on the theme select page
 - Added links to comm panel, arbitrary user list, and group text modules on the class search page; restyled all of the links at the top of this page
 - Split the 'webapp_isstep' tag into two tags 'student_webapp_isstep' and 'teacher_webapp_isstep' which are used for their respective registration modules
+- Classrooms are now sorted using natural sorting on the resources page and in the ajax scheduler
+- Fixed treatment of "Accepted (but Hidden)" classes and sections in various places
+- Distinguish between classes and sections with status "Cancelled" and status "Rejected" in various places
+- Split survey module into separate teacher and student survey modules
+- Added tags 'student_survey_isstep' and 'teacher_survey_isstep' to add the respective survey modules as steps to registration (defaults are False) once the event has begun. If there is a student survey, the teacher survey module also gives a link to the survey review page.
+- The grid-based class changes table is now re-rendered when the settings are changed and classes are hidden/shown to avoid lots of empty space in the table
+- Added dummy data for the survey management pages to fix the rendered display of favorite class questions
 
 Known issues of new features
 ============================
