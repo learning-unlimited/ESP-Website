@@ -9,6 +9,14 @@ th { cursor: pointer; }
      border-radius: 4px;
 }
 
+.scheduling-check.items {
+    background-color: yellow;
+}
+
+.scheduling-check.no-items {
+    background-color: rgba(3, 121, 0, 0.23);
+}
+
 .scheduling-check-title {
      width: 100%;
      text-align: center;
@@ -17,6 +25,7 @@ th { cursor: pointer; }
 .scheduling-check-title span {
      font-weight: bold;
      font-size: 14px;
+     cursor: pointer;
 }
 
 .reset-button {
