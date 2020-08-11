@@ -95,7 +95,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     def noclasses(self):
         """ Returns true of there are no classes in this program """
-        return len(self.clslist(get_current_request().user)) < 1
+        return not self.clslist(get_current_request().user).exists()
 
     def isCompleted(self):
         return not self.noclasses()
@@ -215,8 +215,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         return any(map(self.reg_is_open, self.reg_is_open_methods.keys()))
 
     def clslist(self, user):
-        return [cls for cls in user.getTaughtClasses()
-                if cls.parent_program_id == self.program.id ]
+        return user.getTaughtClasses(program = self.program, include_rejected = True)
 
     @aux_call
     @needs_teacher

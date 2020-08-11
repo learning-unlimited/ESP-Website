@@ -1210,7 +1210,8 @@ class ClassSection(models.Model):
     def friendly_times_with_date(self, raw=False):
         return self.friendly_times(raw=raw, include_date=True)
 
-    def isAccepted(self): return self.status == ACCEPTED
+    def isAccepted(self): return self.status > 0
+    def isHidden(self): return self.status == HIDDEN
     def isReviewed(self): return self.status != UNREVIEWED
     def isRejected(self): return self.status == REJECTED
     def isCancelled(self): return self.status == CANCELLED
@@ -1776,6 +1777,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return False
 
     def isAccepted(self): return self.status > 0
+    def isHidden(self): return self.status == HIDDEN
     def isReviewed(self): return self.status != UNREVIEWED
     def isRejected(self): return self.status == REJECTED
     def isCancelled(self): return self.status == CANCELLED
