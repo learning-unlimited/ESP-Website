@@ -175,13 +175,12 @@ var SchedulingCheck = React.createClass({
         {table}
       </div>;
     }
-    console.log(this.state.has_items);
     return <div className={`scheduling-check ${this.state.has_items ? "items" : this.state.data ? "no-items" : "loading"}`}>
+      <ScheduleButton onClick={this.handleClick} />
+      <RefreshButton onClick={this.loadData} />
+      <ResetButton onClick={this.resetTable} />
       <div className="scheduling-check-title">
         <span onClick={this.handleClick}>{this.props.title}</span>
-        <ScheduleButton onClick={this.handleClick} />
-        <RefreshButton onClick={this.loadData} />
-        <ResetButton onClick={this.resetTable} />
       </div>
       <div className="scheduling-check-body">
         {body}
