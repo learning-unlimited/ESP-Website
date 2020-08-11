@@ -221,5 +221,3 @@ Known issues of new features
 ============================
 - Asterisks may still show up even when some fields are not set as required for the profile form.
 - Programs may be created without a student class registration module information object.
-- "Accepted but hidden" sections are listed as "Rejected" in teacher registration.
-- "Rejected" classes aren't shown on /teacherreg or /userview.
