@@ -101,7 +101,7 @@ var SchedulingCheck = React.createClass({
 
     $j.get("scheduling_checks/" + this.props.slug)
     .done(function (data) {
-      data_parse = JSON.parse(data); // Might not work on old browsers
+      var data_parse = JSON.parse(data);
       this.setState({
         data: data_parse,
         has_items: (data_parse.body && data_parse.body.length > 0),
