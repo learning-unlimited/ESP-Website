@@ -1,4 +1,4 @@
-{# expects program, class, can_req_cancel, and crmi (ClassRegModuleInfo) #}
+{# expects program, class, can_req_cancel, survey_results, and crmi (ClassRegModuleInfo) #}
 
 <tr{% if not cls.isReviewed %} style="color: gray"{% endif %}{% if cls.isRejected or cls.isCancelled %} style="color: red"{% endif %}>
   <td class="clsleft classname bordertop2" colspan="3">
@@ -82,6 +82,13 @@ Popup div for class cancellation request
        title="Email Class' Students" class="abutton">
       Email Students
     </a>
+    {% if survey_results %}
+    <br /><br />
+    <a href="/teach/{{ program.getUrlBase }}/survey/review?classsubject_id={{ cls.id }}"
+       title="Review Results from Student Survey" class="abutton">
+      Student Survey Results
+    </a>
+    {% endif %}
     {% endif %}
   {% endblock %}
   </td>

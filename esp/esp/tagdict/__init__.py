@@ -137,6 +137,8 @@ all_program_tags = {
     'switch_time_program_attendance': (False, 'At what time should the student onsite webapp use program attendance if available (instead of enrollment) to determine if a class is full? If blank, program attendance numbers will not be used. Format: HH:MM where HH is in 24 hour time.', None, 'learn', True),
     'switch_lag_class_attendance': (False, 'How many minutes into a class should the student onsite webapp use class attendance numbers if available (instead of enrollment or program attendance) to determine if a class is full? If blank, class attendance numbers will not be used.', None, 'learn', True),
     'student_lottery_group_max': (False, 'What is the maximum number of students that can be in the same lottery group? (set to 1 to not allow groups)', '4', 'learn', True),
+    'student_survey_isstep': (True, 'Should the student survey be shown as a step in student registration once the event has started?', False, 'learn', True),
+    'teacher_survey_isstep': (True, 'Should the teacher survey be shown as a step in teacher registration once the event has started?', False, 'teach', True),
 }
 
 # Dictionary of categories that tags fall into (for grouping on the tag settings page)

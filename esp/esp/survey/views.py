@@ -66,6 +66,7 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
     user = request.user
     view_list = True
 
+    context['tl'] = tl
     if tl in ['teach', 'learn']:
         filters = [x.strip() for x in Tag.getProgramTag('survey_' + {'learn': "student", 'teach': "teacher"}[tl] + '_filter', prog, default = {'learn': "classreg", 'teach': "class_submitted"}[tl]).split(",") if x.strip()]
         if len(filters) > 0:
@@ -77,13 +78,16 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
                 descs = prog.getListDescriptions()
                 raise ESPError('Only ' + " or ".join([descs[filter].lower() for filter in filters if filter in descs]) + ' may participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
 
+    student_results = False
     if tl == 'learn':
         event = "student_survey"
     else:
         event = "teacher_survey"
+        student_results = prog.getSurveys().filter(category = "learn", questions__per_class=True).exists()
 
     surveys = prog.getSurveys().filter(category = tl).select_related()
 
+    context['survey_id'] = request.GET.get('survey_id', None)
     if 'survey_id' in request.GET:
         try:
             s_id = int( request.GET['survey_id'] )
@@ -92,12 +96,14 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
             pass
 
     if len(surveys) < 1:
-        raise ESPError("Sorry, no such survey exists for this program!", log=False)
-
-    if len(surveys) > 1:
-        return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
-
-    survey = surveys[0]
+        if student_results:
+            survey = None
+        else:
+            raise ESPError("Sorry, no such survey exists for this program!", log=False)
+    elif len(surveys) > 1:
+        return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'student_results': student_results, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
+    else:
+        survey = surveys[0]
 
     # Section-specific survey
     section = None
@@ -152,7 +158,7 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
                 view_list = False
 
     sections = []
-    if view_list:
+    if view_list and survey:
         completed_sections = ClassSection.objects.filter(parent_class__parent_program=prog, studentregistration__user=user, studentregistration__relationship__name="SurveyCompleted")
         if tl == 'learn':
             # Get a student's enrolled sections
@@ -185,7 +191,8 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
         'completed': completed,
         'classes': classes,
         'section_surveys': section_surveys,
-        'general_survey': general_survey
+        'general_survey': general_survey,
+        'student_results': student_results
         })
     return render_to_response(template, request, context)
 

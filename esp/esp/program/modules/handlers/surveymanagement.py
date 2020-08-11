@@ -166,7 +166,14 @@ class SurveyManagement(ProgramModuleObj):
     @needs_admin
     def surveys(self, request, tl, one, two, module, extra, prog):
         if extra is None or extra == '':
-            return render_to_response('program/modules/surveymanagement/main.html', request, {'program': prog, 'surveys': prog.getSurveys()})
+            surveys = prog.getSurveys()
+            counts = {}
+            for s in surveys:
+                if s.category not in counts:
+                    counts[s.category] = 1
+                else:
+                    counts[s.category] += 1
+            return render_to_response('program/modules/surveymanagement/main.html', request, {'program': prog, 'surveys': surveys, 'counts': counts})
         elif extra == 'manage':
             return self.survey_manage(request, tl, one, two, module, extra, prog)
         elif extra == 'review':
