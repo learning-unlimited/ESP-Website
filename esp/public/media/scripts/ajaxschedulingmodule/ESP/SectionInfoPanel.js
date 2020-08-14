@@ -77,7 +77,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
             .change(function(box) {
                 var override = $j(box.target).prop("checked");
                 // Reload the section to update the availability
-                this.sections.unselectSection(override = override);
+                this.sections.unselectSection(override);
                 this.sections.selectSection(section);
             }.bind(this)
         );
