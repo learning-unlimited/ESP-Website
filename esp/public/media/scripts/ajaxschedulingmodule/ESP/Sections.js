@@ -245,8 +245,9 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
     /**
      * Unselect the cells associated with the currently selected section, hide the section info
      * panel, and unhighlight the available cells to place the section.
+     * @param override: What should the availability override status be?
      */
-    this.unselectSection = function() {
+    this.unselectSection = function(override = false) {
         if(!this.selectedSection) {
             return;
         }
@@ -262,6 +263,7 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
 
         this.selectedSection = null;
         this.matrix.sectionInfoPanel.hide();
+        this.matrix.sectionInfoPanel.override = override;
         this.matrix.unhighlightTimeslots(this.availableTimeslots);
 
     };
@@ -280,7 +282,7 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
     this.getAvailableTimeslots = function(section) {
         var availableTimeslots = [];
         var already_teaching = [];
-        if($j("input#schedule-override").prop('checked')){
+        if(this.matrix.sectionInfoPanel.override){
             $j.each(this.matrix.timeslots.timeslots, function(index, timeslot) {
                 availableTimeslots.push(timeslot.id);
             }.bind(this));
@@ -344,6 +346,7 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         var old_assignment = this.scheduleAssignments[section.id];
         var schedule_timeslots = this.matrix.timeslots.
             get_timeslots_to_schedule_section(section, first_timeslot_id);
+        var override = this.matrix.sectionInfoPanel.override;
 
         // Make sure the assignment is valid
         if (!this.matrix.validateAssignment(section, room_id, schedule_timeslots).valid){
@@ -363,6 +366,7 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
             section.id,
             schedule_timeslots,
             room_id,
+            override,
             function() {},
             // If there's an error, reschedule the section in its old location
             function(msg) {
@@ -373,6 +377,8 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
                 console.log(msg);
             }.bind(this)
         );
+        // Reset the availability override
+        this.matrix.sectionInfoPanel.override = false;
     }
 
 
