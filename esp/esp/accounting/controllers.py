@@ -462,9 +462,9 @@ class IndividualAccountingController(ProgramAccountingController):
                     "Failed on processing Transfer %d: already paid" % transfer.id)
 
             # Check to see if the amount changed
-            if '%.2f' % transfer.amount != saved_amount:
+            if '%.2f' % transfer.amount_dec != saved_amount:
                 if trusted:
-                    transfer.amount = float(saved_amount)
+                    transfer.amount = Decimal(saved_amount)
                 else:
                     msg = "Failed on processing Transfer %d: amount changed while " + \
                           "user was paying. The user was billed $%s for this item " + \
@@ -474,7 +474,7 @@ class IndividualAccountingController(ProgramAccountingController):
 
             # Mark as paid!
             transfer.paid_in = payment
-            transfer_total += transfer.amount
+            transfer_total += transfer.amount_dec
             transfer.save()
 
         if transfer_total != amount_paid:
