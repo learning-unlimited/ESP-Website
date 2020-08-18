@@ -203,7 +203,7 @@ Minor bug fixes and new features released in August 2020
 - Fixed some survey management bugs
 - Fixed URLs in the admin and user custom form interfaces
 - Added answer labels to the survey review page
-- Class atendance is now recorded live, not upon form submission (like teacher check-in)
+- Class attendance is now recorded live, not upon form submission (like teacher check-in)
 - Fixed instances where the arbitrary user list broke when selecting guardian fields
 - Fixed the grade range popup on the teacher class registration page (depends on the 'grade_range_popup' program tag)
 - Fixed the spacing on the theme select page
@@ -223,4 +223,3 @@ Minor bug fixes and new features released in August 2020
 Known issues of new features
 ============================
 - Asterisks may still show up even when some fields are not set as required for the profile form.
-- Programs may be created without a student class registration module information object.
