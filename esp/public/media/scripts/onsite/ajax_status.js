@@ -37,6 +37,7 @@ var data_status = {
     enrollment_received: false,
     checkins_received: false,
     counts_received: false,
+    full_received: false,
     rooms_received: false,
     students_received: false
 };
@@ -48,6 +49,7 @@ function reset_status()
     data_status.enrollment_received = false;
     data_status.checkins_received = false;
     data_status.counts_received = false;
+    data_status.full_received = false;
     data_status.rooms_received = false;
     data_status.students_received = false;
 }
@@ -63,6 +65,8 @@ function check_status()
     if (!data_status.checkins_received)
         return false;
     if (!data_status.counts_received)
+        return false;
+    if (!data_status.full_received)
         return false;
     if (!data_status.rooms_received)
         return false;
@@ -96,6 +100,14 @@ function handle_counts(new_data, text_status, jqxhr)
 {
     data.counts = new_data;
     data_status.counts_received = true;
+    if (check_status())
+        handle_completed();
+}
+
+function handle_full(new_data, text_status, jqxhr)
+{
+    data.full = new_data;
+    data_status.full_received = true;
     if (check_status())
         handle_completed();
 }
@@ -293,7 +305,7 @@ function update_checkboxes()
             var studentcheckbox = $j("#classchange_" + section.id + "_" + state.student_id + "_" + ts_id);
             studentcheckbox.hover(check_conflicts, clear_conflicts);
             //  Disable the checkbox if the class is full, unless we are overriding that
-            if ((section.num_students_enrolled >= section.capacity) && (!(settings.override_full))) 
+            if ((section.full) && (!(settings.override_full)))
             {
                 studentcheckbox.attr("disabled", "disabled");
             } 
@@ -661,9 +673,9 @@ function handle_checkbox(event)
         var size_override = false;
         if ((verified) && (settings.override_full))
         {
-            if (target_section.num_students_enrolled >= target_section.capacity)
+            if (target_section.full)
             {
-                verified = confirm("This class is full or oversubscribed (" + target_section.num_students_enrolled + " students, " + target_section.capacity + " spots).  Are you sure you want to register the student?");
+                verified = confirm("This class is full or oversubscribed, with " + target_section.num_students_enrolled + " students enrolled and " + target_section.capacity + " spots. Of the enrolled students, " + target_section.num_students_checked_in + " are checked in to the program and " + target_section.num_students_attending + " have been marked as attending this class. Are you sure you want to register the additional student?");
                 if (verified)
                     size_override = true;
             }
@@ -857,7 +869,7 @@ function render_table(display_mode, student_id)
     
     if (!(settings.show_full_classes)) {
         //if we are filtering full classes, exclude classes that are full and that the student isn't already enrolled in
-        filtered_sections = filtered_sections.filter(sec_id => !((data.sections[sec_id].num_students_enrolled >= data.sections[sec_id].capacity) &&
+        filtered_sections = filtered_sections.filter(sec_id => !((data.sections[sec_id].full) &&
                                                                ((display_mode == "status") || (data.students[student_id].sections.indexOf(sec_id) == -1))));
     }
     
@@ -966,7 +978,7 @@ function render_table(display_mode, student_id)
             
             //  Set color of the cell based on check-in and enrollment of the section
             var hue = 0.4 + 0.4 * (section.num_students_enrolled / section.capacity);
-            if (section.num_students_enrolled >= section.capacity)
+            if (section.full)
                 hue = 1.0;
             var lightness = 0.9;
             if (settings.checkin_colors)
@@ -1262,7 +1274,7 @@ function populate_counts()
         var sec_id = data.counts[i][0];
         var num_students = data.counts[i][1];
         var num_students_attending = data.counts[i][2];
-        
+
         //  If we have a conflict, assume the larger number of students are enrolled.
         if (!data.sections[sec_id])
             console.log("Could not find section " + sec_id);
@@ -1278,6 +1290,25 @@ function populate_counts()
     }
 }
 
+function populate_full()
+{
+    //  Assign full statuses
+    for (var i in data.full)
+    {
+        var sec_id = data.full[i][0];
+        var full = data.full[i][1];
+
+        if (!data.sections[sec_id])
+            console.log("Could not find section " + sec_id);
+        else {
+            if (full)
+            {
+                data.sections[sec_id].full = true;
+            }
+        }
+    }
+}
+
 function handle_completed()
 {
     //  console.log("All data has been received.");
@@ -1287,6 +1318,7 @@ function handle_completed()
     populate_enrollments();
     populate_checkins();
     populate_counts();
+    populate_full();
 
     //  console.log("All data has been processed.");
     
@@ -1326,6 +1358,11 @@ function fetch_all(avoid_catalog)
         url: program_base_url + "counts_status",
         dataType: 'json',
         success: handle_counts
+    });
+    $j.ajax({
+        url: program_base_url + "full_status",
+        dataType: 'json',
+        success: handle_full
     });
     $j.ajax({
         url: program_base_url + "rooms_status",
