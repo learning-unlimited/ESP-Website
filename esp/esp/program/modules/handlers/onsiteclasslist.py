@@ -203,12 +203,10 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def full_status(self, request, tl, one, two, module, extra, prog):
-        print("full status python function")
         resp = HttpResponse(content_type='application/json')
         data = [[section.id, section.isFull(webapp=True)] for section in
                      ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0,
                                                  parent_class__parent_program=prog)]
-        print(data)
         json.dump(data, resp)
         return resp
 
