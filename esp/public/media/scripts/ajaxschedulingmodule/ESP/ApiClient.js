@@ -51,11 +51,12 @@ function ApiClient() {
      * @param section_id: The ID of the section to schedule
      * @param timeslot_ids: A list of ids of all timeslots the class should be scheduled during.
      * @param room_id: The id of the room.
+     * @param override: Should teacher availability be overriden?
      * @param callback: If successful, this function will be called. Takes no params.
      * @param errorReporter: If server reports an error, this function will be called.
      *                       Takes one param msg with an error message.
      */
-    this.schedule_section = function(section_id, timeslot_ids, room_id, callback, errorReporter){
+    this.schedule_section = function(section_id, timeslot_ids, room_id, override, callback, errorReporter){
         assignments = timeslot_ids.map(function(id) {
             return id + "," + room_id;
         }).join("\n");
@@ -65,7 +66,7 @@ function ApiClient() {
             csrfmiddlewaretoken: csrf_token(),
             cls: section_id,
             block_room_assignments: assignments,
-            override: $j("input#schedule-override").prop('checked')
+            override: override
         };
         return this.send_request(req, callback, errorReporter);
     };
