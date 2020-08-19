@@ -8,9 +8,9 @@ SHELL=/bin/bash
 SITE:=$(notdir $(PWD))
 STASH:=$(shell sudo -u www-data git diff HEAD --quiet || echo true)
 
-sr-8: NEWBRANCH=stable-release-8
-sr-8: OLDBRANCH=stable-release-7
-sr-8: pre src finish
+sr-12: NEWBRANCH=stable-release-12
+sr-12: OLDBRANCH=stable-release-11
+sr-12: pre src finish
 
 pre:
 	@echo "Backing things up and fixing permissions."
@@ -33,7 +33,6 @@ finish:
 	@echo "Updating the site; if this fails for any reason, fix it up and (re-)run 'make finish'."
 	esp/update_deps.sh
 	sudo -u www-data esp/manage.py update
-	sudo -u www-data touch esp.wsgi
 	@echo "Done! Go test some things."
 
 .PHONY: pre src finish
