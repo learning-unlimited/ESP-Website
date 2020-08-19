@@ -219,6 +219,9 @@ Minor bug fixes and new features released in August 2020
 - Added functionality to send an email to the student whenever a financial aid request is approved (whether it be through the financial aid approval module or the admin pages)
 - Made it clearer visually that you can click class titles to see the class information on the teacher check-in page
 - Added styling to the scheduling checks page to indicate which checks have returned problems
+- Added "Edit Class" and "Catalog Preview" links to the manage class page; added document and website info to the manage class page
+- Cleaned up the layout of the program directory/main management page
+- Modified the availability override setting on the ajax scheduler to make it harder to abuse
 
 Known issues of new features
 ============================
