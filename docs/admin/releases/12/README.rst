@@ -215,6 +215,7 @@ Minor bug fixes and new features released in August 2020
 - Split survey module into separate teacher and student survey modules
 - Added tags 'student_survey_isstep' and 'teacher_survey_isstep' to add the respective survey modules as steps to registration (defaults are False) once the event has begun. If there is a student survey, the teacher survey module also gives a link to the survey review page.
 - The grid-based class changes table is now re-rendered when the settings are changed and classes are hidden/shown to avoid lots of empty space in the table
+- The grid-based class changes page now allows you to enroll students in full classes without overriding capacities as long as program or class attendance numbers are below capacity if the proper tags are enabled (see 'switch_time_program_attendance' and 'switch_lag_class_attendance' under the 'Onsite Webapps' section.
 - Added dummy data for the survey management pages to fix the rendered display of favorite class questions
 - Added functionality to send an email to the student whenever a financial aid request is approved (whether it be through the financial aid approval module or the admin pages)
 - Made it clearer visually that you can click class titles to see the class information on the teacher check-in page
@@ -225,4 +226,4 @@ Minor bug fixes and new features released in August 2020
 
 Known issues of new features
 ============================
-- Asterisks may still show up even when some fields are not set as required for the profile form.
+None!
