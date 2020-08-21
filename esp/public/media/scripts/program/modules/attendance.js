@@ -50,9 +50,13 @@ $j(function(){
                 $me.prop("checked", !checked);
             } else {
                 $me.closest("td").attr("sorttable_customkey", (checked) ? 2 : 1);
+                // If this is the webapp, we want to toggle the icons as well
+                $me.siblings("i").html(checked ? "check_box" : "check_box_outline_blank");
                 if (response.checkedin) {
                     $checkedin.prop("checked", true);
                     $checkedin.closest("td").attr("sorttable_customkey", 2);
+                    // If this is the webapp, we want to toggle the icons as well
+                    $checkedin.siblings("i").html("check_box");
                 }
                 console.log(response.message);
             }
@@ -63,6 +67,8 @@ $j(function(){
             $me.prop("checked", !checked);
             $msg.text("");
             $me.prop('disabled', false);
+            // If this is the webapp, we want to toggle the icons as well
+            $me.siblings("i").html(!checked ? "check_box" : "check_box_outline_blank");
         });
         $msg.text('Updating attendance...');
     });

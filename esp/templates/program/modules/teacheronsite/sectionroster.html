@@ -1,51 +1,29 @@
 {% extends "program/modules/teacheronsite/webapp.html" %}
 
 {% block head %}
+<script src="/media/scripts/sorttable.js"></script>
 {% if sections|length_is:"1" %}
 <link rel='stylesheet' type='text/css' href='/media/styles/barcodescanner.css' />
 <link rel="stylesheet" type='text/css' href="https://use.fontawesome.com/releases/v5.0.9/css/all.css">
 
 <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/jquery/jquery-1.7.2.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
 <script type="text/javascript" src="/media/scripts/common.js"></script>
+<script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
 <script src="https://webrtc.github.io/adapter/adapter-latest.js" type="text/javascript"></script>
 <script src="https://cdn.jsdelivr.net/gh/serratus/quaggaJS@e96eb9f7888507689cf33f1e6ce325959dde314e/dist/quagga.min.js" type="text/javascript"></script>
 <script src="/media/scripts/barcodescanner.js" type="text/javascript"></script>
-<script>
-var message = '';
-var lastResult = '';
-Quagga.onDetected(function(result) {
-    var code = result.codeResult.code;
-
-    if (lastResult !== code) {
-        beep();
-        lastResult = code;
-        var results = document.querySelector('textarea');
-        var codes = results.value.trim().split(/\s+/).filter(Boolean);
-        console.log(codes);
-        if (!codes.includes(code)) {
-            codes.push(code);
-            results.value = codes.join("\n");
-            message = code+' added to list';
-        } else {
-            message = code+' already in list';
-        }
-        $j('#scaninfo').show();
-        $j('#scaninfo').html(message);
-        setTimeout("$j('#scaninfo').fadeOut(); ", 4000);
-    }
-});
-</script>
-{% endif %}
+<script id="attendancescript" data-prog_url="{{ program.url }}" src="/media/scripts/program/modules/attendance.js" type="text/javascript"></script>
 <script>
 function toggleCheck(element) {
     var checkbox = element.nextElementSibling;
-    if (checkbox.checked) {
-        element.innerHTML = "check_box_outline_blank";
-    } else {
-        element.innerHTML = "check_box";
+    if (!checkbox.disabled) {
+        element.innerHTML = checkbox.checked ? "check_box_outline_blank" : "check_box";
+        checkbox.checked = !checkbox.checked;
+        $j(checkbox).change();
     }
-    checkbox.checked = !checkbox.checked;
 }
+{% endif %}
 </script>
 {% endblock %}
 
@@ -54,11 +32,6 @@ function toggleCheck(element) {
 <center>
   <div class="main">
     {% for section in sections %}
-        {% if sections|length_is:"1" %}
-        <form action="/teach/{{ one }}/{{ two }}/onsiteroster/{{ section.id }}" method="post">
-        {% csrf_token %}
-        <input type="hidden" name="submitted">
-        {% endif %}
         <table class="sectionroster">
             <tr>
                 <th colspan="4" class="sectiontitle">
@@ -73,65 +46,98 @@ function toggleCheck(element) {
                     Enrolled Students
                 </th>
             </tr>
-            <tr class="rosterheader">
-                <th>
-                    Name
-                </th>
-                <th>
-                    Grade
-                </th>
-                <th>
-                    Checked In
-                </th>
-                <th>
-                    Attending Class?
+            <tr>
+                <td colspan="4" style="padding: 0px;">
+                    <table align="center" width="100%" class="sortable" style="border: none;">
+                        <tr class="rosterheader">
+                            <th>
+                                Name
+                            </th>
+                            <th>
+                                Grade
+                            </th>
+                            <th>
+                                Checked In
+                            </th>
+                            <th>
+                                Attending Class?
+                            </th>
+                        </tr>
+                        {% for student in section.enrolled_list %}
+                            <tr>
+                                <td>{{ student.name }}</td>
+                                <td>{{ student|getGradeForProg:program.id }}</td>
+                                <td align="center" sorttable_customkey="{% if student.checked_in %}2{% else %}1{% endif %}">
+                                    <i class="material-icons-outlined md-5">{% if student.checked_in %}check_box{% else %}check_box_outline_blank{% endif %}</i>
+                                    <input hidden name="checkedin" type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
+                                </td>
+                                <td align="center" sorttable_customkey="{% if student.attended %}2{% else %}1{% endif %}">
+                                    <i class="material-icons-outlined md-5{% if sections|length_is:'1' %} pointer{% endif %}"{% if sections|length_is:'1' %} onclick="toggleCheck(this);"{% endif %}>{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
+                                    <input hidden name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
+                                    value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
+                                    <br /><span class="msg"></span>
+                                </td>
+                            </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" align="center">
+                                No students enrolled in this section
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </td>
+            </tr>
+        </table>
+        {% if section.attended_list %}
+        <table class="sectionroster">
+            <tr>
+                <th colspan="4">
+                    Other Attending Students
                 </th>
             </tr>
-            {% for student in section.enrolled_list %}
-                <tr>
-                    <td>{{ student.name }}</td>
-                    <td>{{ student|getGradeForProg:program.id }}</td>
-                    <td><i class="material-icons-outlined md-5">{% if student.checked_in %}check_box{% else %}check_box_outline_blank{% endif %}</i></td>
-                    <td>
-                        <i class="material-icons-outlined md-5{% if sections|length_is:'1' %} pointer{% endif %}"{% if sections|length_is:'1' %} onclick="toggleCheck(this);"{% endif %}>{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
-                        <input type="checkbox" name="attending" value="{{ student.id }}" hidden{% if student.attended %} checked{% endif %}>
-                    </td>
-                </tr>
-            {% endfor %}
-            {% if section.attended_list %}
-                <tr>
-                    <th colspan="4">
-                        Other Attending Students
-                    </th>
-                </tr>
-                <tr class="rosterheader">
-                    <th>
-                        Name
-                    </th>
-                    <th>
-                        Grade
-                    </th>
-                    <th>
-                        Checked In
-                    </th>
-                    <th>
-                        Attending Class?
-                    </th>
-                </tr>
-                {% for student in section.attended_list %}
-                    <tr>
-                        <td>{{ student.name }}</td>
-                        <td>{{ student|getGradeForProg:program.id }}</td>
-                        <td><i class="material-icons-outlined md-5">{% if student.checked_in %}check_box{% else %}check_box_outline_blank{% endif %}</i></td>
-                        <td>
-                            <i class="material-icons-outlined md-5{% if sections|length_is:'1' %} pointer{% endif %}"{% if sections|length_is:'1' %} onclick="toggleCheck(this);"{% endif %}>{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
-                            <input type="checkbox" name="attending" value="{{ student.id }}" hidden{% if student.attended %} checked{% endif %}>
-                        </td>
-                    </tr>
-                {% endfor %}
-            {% endif %}
+            <tr>
+                <td colspan="4" style="padding: 0px;">
+                    <table align="center" width="100%" class="sortable" style="border: none;">
+                        <tr class="rosterheader">
+                            <th>
+                                Name
+                            </th>
+                            <th>
+                                Grade
+                            </th>
+                            <th>
+                                Checked In
+                            </th>
+                            <th>
+                                Attending Class?
+                            </th>
+                        </tr>
+                        {% for student in section.attended_list %}
+                            <tr>
+                                <td>{{ student.name }}</td>
+                                <td>{{ student|getGradeForProg:program.id }}</td>
+                                <td align="center" sorttable_customkey="{% if student.checked_in %}2{% else %}1{% endif %}">
+                                    <i class="material-icons-outlined md-5">{% if student.checked_in %}check_box{% else %}check_box_outline_blank{% endif %}</i>
+                                    <input hidden name="checkedin" type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
+                                </td>
+                                <td align="center" sorttable_customkey="{% if student.attended %}2{% else %}1{% endif %}">
+                                    <i class="material-icons-outlined md-5{% if sections|length_is:'1' %} pointer{% endif %}"{% if sections|length_is:'1' %} onclick="toggleCheck(this);"{% endif %}>{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
+                                    <input hidden name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
+                                    value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
+                                    <br /><span class="msg"></span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </td>
+            </tr>
         </table>
+        {% endif %}
         {% if sections|length_is:"1" %}
+        <form action="/teach/{{ one }}/{{ two }}/onsiteroster/{{ section.id }}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="submitted">
         <table>
             <tr>
                 <th align="center">
