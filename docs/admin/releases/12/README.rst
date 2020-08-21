@@ -189,41 +189,39 @@ Minor bug fixes
 Minor bug fixes and new features released in August 2020
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Added a link to the nametags page from the "All Printables" page.
-- Fixed the "seq" value of the teacher onsite module and any related module objects (from -9999 to 9999).
+- Fixed the "seq" value of the teacher onsite module and any related module objects (from -9999 to 9999). This stops it from popping up when a teacher tries to register for a program.
 - Fixed the resizing of names on nametags (names will now be larger if there is space).
 - Fixed the behavior of the +/- signs on flags on the manage class, class search, and teacher checkin pages.
 - Fixed the registered teachers line on the teacher big board.
 - Fixed a bug where classes without teachers would be counted towards teacher statistics on the teacher big board.
 - Fixed the all classes spreadsheet for cases where field values had non-ascii characters.
-- Improved spacing and appearance of the new program creation form and errors
-- Improved appearance and workflow of program resources page
-- Improved spacing on the attendance page, added links to userview page
-- Added tag-controlled shirt and comment fields to the volunteer signup form
-- Fixed spacing of survey questions and answers, especially in the webapps
-- Fixed some survey management bugs
-- Fixed URLs in the admin and user custom form interfaces
-- Added answer labels to the survey review page
-- Class attendance is now recorded live, not upon form submission (like teacher check-in)
-- Fixed instances where the arbitrary user list broke when selecting guardian fields
-- Fixed the grade range popup on the teacher class registration page (depends on the 'grade_range_popup' program tag)
-- Fixed the spacing on the theme select page
-- Added links to comm panel, arbitrary user list, and group text modules on the class search page; restyled all of the links at the top of this page
-- Split the 'webapp_isstep' tag into two tags 'student_webapp_isstep' and 'teacher_webapp_isstep' which are used for their respective registration modules
-- Classrooms are now sorted using natural sorting on the resources page and in the ajax scheduler
-- Fixed treatment of "Accepted (but Hidden)" classes and sections in various places
-- Distinguish between classes and sections with status "Cancelled" and status "Rejected" in various places
-- Split survey module into separate teacher and student survey modules
+- Improved spacing and appearance of the new program creation form and errors.
+- Improved appearance and workflow of the program resources page.
+- Improved spacing on the attendance page, added links to userview page.
+- Added tag-controlled shirt and comment fields to the volunteer signup form.
+- Fixed spacing of survey questions and answers, especially in the webapps.
+- Fixed some survey management bugs.
+- Fixed URLs in the admin and user custom form interfaces.
+- Added answer labels to the survey review page.
+- Class attendance (on the normal, onsite, and webapp pages) is now recorded live, not upon form submission (like teacher check-in).
+- Fixed instances where the arbitrary user list broke when selecting guardian fields.
+- Fixed the grade range popup on the teacher class registration page (depends on the 'grade_range_popup' program tag).
+- Fixed the spacing on the theme select page.
+- Added links on the class search page that direct to the comm panel, arbitrary user list, and group text modules (with filters applied).
+- Reworked and condensed all of the links at the top of the class search page.
+- Split the 'webapp_isstep' tag into two tags, 'student_webapp_isstep' and 'teacher_webapp_isstep', which are used for their respective registration modules.
+- Classrooms are now sorted using natural sorting on the resources page and in the ajax scheduler.
+- Fixed treatment of "Accepted (but Hidden)" classes and sections in various places.
+- Distinguished between classes and sections with status "Cancelled" and status "Rejected" in various places.
+- Split the survey module into separate teacher and student survey modules (this shouldn't have any front facing effects).
 - Added tags 'student_survey_isstep' and 'teacher_survey_isstep' to add the respective survey modules as steps to registration (defaults are False) once the event has begun. If there is a student survey, the teacher survey module also gives a link to the survey review page.
-- The grid-based class changes table is now re-rendered when the settings are changed and classes are hidden/shown to avoid lots of empty space in the table
-- The grid-based class changes page now allows you to enroll students in full classes without overriding capacities as long as program or class attendance numbers are below capacity if the proper tags are enabled (see 'switch_time_program_attendance' and 'switch_lag_class_attendance' under the 'Onsite Webapps' section.
-- Added dummy data for the survey management pages to fix the rendered display of favorite class questions
-- Added functionality to send an email to the student whenever a financial aid request is approved (whether it be through the financial aid approval module or the admin pages)
-- Made it clearer visually that you can click class titles to see the class information on the teacher check-in page
-- Added styling to the scheduling checks page to indicate which checks have returned problems
-- Added "Edit Class" and "Catalog Preview" links to the manage class page; added document and website info to the manage class page
-- Cleaned up the layout of the program directory/main management page
-- Modified the availability override setting on the ajax scheduler to make it harder to abuse
-
-Known issues of new features
-============================
-None!
+- The grid-based class changes table is now re-rendered when the settings are changed and classes are hidden/shown to avoid lots of empty space in the table.
+- The grid-based class changes page now allows you to enroll students in full classes without overriding capacities as long as program or class attendance numbers are below capacity if the proper tags are enabled (see the 'switch_time_program_attendance' and 'switch_lag_class_attendance' tags under the 'Onsite Webapps' section above.
+- Added dummy data for the survey management pages to fix the rendered display of favorite class questions.
+- Added functionality to send an email to the student whenever a financial aid request is approved (whether it be through the financial aid approval module or the admin pages).
+- Made it clearer visually that you can click class titles to see the class information on the teacher check-in page.
+- Added styling to the scheduling checks page to indicate which checks have returned problems.
+- Added "Edit Class" and "Catalog Preview" links to the manage class page; added document and website info to the manage class page.
+- Cleaned up the layout of the program directory/main management page.
+- Modified the availability override setting on the ajax scheduler to make it harder to abuse/forget.
+- Fixed various bugs related to the grid-based class changes page.
