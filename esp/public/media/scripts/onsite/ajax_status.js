@@ -828,7 +828,7 @@ function render_table(display_mode, student_id)
     clear_table();
     if (display_mode == "classchange") {
         $j("<tr/>").addClass("schedule").insertAfter($j(".timeslot_headers"));
-	var schedule = $j(".schedule");
+        var schedule = $j(".schedule");
     }
     var headers = $j(".timeslot_headers");
     var footers = $j(".timeslot_footers");
@@ -863,23 +863,25 @@ function render_table(display_mode, student_id)
     if ((display_mode == "classchange") && (!(settings.disable_grade_filter))) {
         //if doing class changes (and we are filtering by grade)
         //exclude classes that are outside the student's grade and the student isn't already enrolled in
-        filtered_sections = filtered_sections.filter(sec_id => !((data.students[student_id].sections.indexOf(sec_id) == -1) &&
+        filtered_sections = filtered_sections.filter(sec_id => !((state.student_schedule.indexOf(parseInt(sec_id)) == -1) &&
                                                                ((data.sections[sec_id].grade_min > data.students[student_id].grade) || (data.sections[sec_id].grade_max < data.students[student_id].grade))));
     }
     
     if (!(settings.show_full_classes)) {
         //if we are filtering full classes, exclude classes that are full and that the student isn't already enrolled in
         filtered_sections = filtered_sections.filter(sec_id => !((data.sections[sec_id].full) &&
-                                                               ((display_mode == "status") || (data.students[student_id].sections.indexOf(sec_id) == -1))));
+                                                               ((display_mode == "status") || (state.student_schedule.indexOf(parseInt(sec_id)) == -1))));
     }
     
     if (!(settings.show_closed_reg)) {
-        //exclude classes with closed registration (and we're not showing closed classes)
-        filtered_sections = filtered_sections.filter(sec_id => !(data.sections[sec_id].registration_status != 0));
+        //exclude classes with closed registration and that the student isn't already enrolled in (if we're not showing closed classes)
+        filtered_sections = filtered_sections.filter(sec_id => !((data.sections[sec_id].registration_status != 0) &&
+                                                               ((display_mode == "status") || (state.student_schedule.indexOf(parseInt(sec_id)) == -1))));
     }
     
-    //exclude classes in hidden categories
-    filtered_sections = filtered_sections.filter(sec_id => settings.categories_to_display[data.classes[data.sections[sec_id].class_id].category__id]);
+    //exclude classes in hidden categories (but not that the student is enrolled in)
+    filtered_sections = filtered_sections.filter(sec_id => ((settings.categories_to_display[data.classes[data.sections[sec_id].class_id].category__id]) ||
+                                                           ((display_mode == "classchange") && (state.student_schedule.indexOf(parseInt(sec_id)) != -1))));
     
     for (var sec_id of filtered_sections)
     {
@@ -1060,7 +1062,7 @@ function toggle_categories() {
     $j("#category_list :checkbox").not(".category_selector")
                                   .not("#category_select_" + open_class_category.id)
                                   .prop('checked', showAll);
-    render_table();
+    render_table(state.display_mode, state.student_id);
 
 }
 
@@ -1089,7 +1091,7 @@ function render_category_options()
         new_checkbox.change(function (event) {
             var target_id = extract_category_id(event.target.id);
             settings.categories_to_display[target_id] = !settings.categories_to_display[target_id];
-            render_table();
+            render_table(state.display_mode, state.student_id);
         });
 
         new_li.append(new_checkbox);
