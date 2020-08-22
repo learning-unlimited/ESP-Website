@@ -27,19 +27,6 @@
 Each step below is a form that you can expand or contract by clicking on the header.
 </p>
 
-<p>
-In addition to the forms on this page, you have the following options:
-<ul>
-<li><a href="/manage/{{ prog.url }}/resources/">Click here</a> to close all panes.
-<li>Open individual panes: <a href="/manage/{{ prog.url }}/resources/timeslot">timeslots</a>, <a href="/manage/{{ prog.url }}/resources/restype">resource types</a>, <a href="/manage/{{ prog.url }}/resources/classroom">classroom</a>, <a href="/manage/{{ prog.url }}/resources/equipment">floating resources</a>.
-<li><a href="/manage/{{ prog.url }}/main">Click here</a> to return to the main program management page.
-</ul>
-</p>
-
-<p>
-Enjoy!
-</p>
-
 {% include "program/modules/resourcemodule/timeslots.html" %}
 {% include "program/modules/resourcemodule/resource_types.html" %}
 {% include "program/modules/resourcemodule/classrooms.html" %}
@@ -48,4 +35,7 @@ Enjoy!
 <script id="resourcesscript" src="/media/scripts/program/modules/resources.js" data-prog_url="{{ prog.url }}"></script>
 <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 
+<br /><br />
+<button type="button" class="btn btn-primary" onclick="location.href = '/manage/{{ prog.url }}/main';">Main Program Management Page</button>
+<br /><br />
 {% endblock %}

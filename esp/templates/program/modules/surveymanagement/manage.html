@@ -17,6 +17,7 @@
 {% endblock %}
 
 {% block content %}
+{% load survey %}
 <h1>Survey Management for {{ program.niceName }}</h1>
 
 <p>
@@ -160,7 +161,7 @@ Each step below is a form that you can expand or contract by clicking on the hea
             {% endifchanged %}
             <tr>
                 <td class="underline">{{ question.seq }}</td>
-                <td class="underline" colspan="3">{{ question.render }}</td>
+                <td class="underline" colspan="3">{% if question.per_class %}{{ question.render|substitute:section }}{% else %}{{ question.render|uselist:classes }}{% endif %}</td>
                 <td class="underline">
                     <a href="/manage/{{ program.url }}/surveys/manage?obj=question&op=edit&id={{ question.id }}">[Edit]</a>
                     <a href="/manage/{{ program.url }}/surveys/manage?obj=question&op=delete&id={{ question.id }}">[Delete]</a>

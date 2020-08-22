@@ -75,6 +75,7 @@ def finalize_finaid_grants(modeladmin, request, queryset):
         grant.finalize()
 class FinancialAidGrantAdmin(admin.ModelAdmin):
     list_display = ['id', 'request', 'user', 'program', 'finalized', 'amount_max_dec', 'percent']
+    readonly_fields=('finalized',)
     list_filter = ['request__program']
     search_fields = default_user_search('request__user')
     actions = [ finalize_finaid_grants, ]

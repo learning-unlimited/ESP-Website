@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 import copy
+import re
 from collections import defaultdict, OrderedDict
 from datetime import datetime, timedelta, date
 from decimal import Decimal
@@ -52,6 +53,7 @@ from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 
@@ -59,6 +61,7 @@ from argcache import cache_function, cache_function_for, wildcard
 from esp.cal.models import Event
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
+from esp.dbmail.models import send_mail
 from esp.middleware import ESPError, AjaxError
 from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, Record
@@ -777,6 +780,12 @@ class Program(models.Model, CustomFormsLinkModel):
 
         return result
 
+    @staticmethod
+    def natural_sort(l):
+        convert = lambda text: int(text) if text.isdigit() else text.lower()
+        alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
+        return sorted(l, key = alphanum_key)
+
     @cache_function
     def groupedClassrooms(self):
 
@@ -784,9 +793,9 @@ class Program(models.Model, CustomFormsLinkModel):
 
         result = self.collapsed_dict(classrooms)
         key_list = result.keys()
-        key_list.sort()
+        natural_key_list = self.natural_sort(key_list)
         #   Turn this into a list instead of a dictionary.
-        ans = [result[key] for key in key_list]
+        ans = [result[key] for key in natural_key_list]
 
         return ans
     groupedClassrooms.depend_on_row('resources.Resource', lambda res: {'self': res.event.parent_program()})
@@ -1629,6 +1638,31 @@ class FinancialAidRequest(models.Model):
             string = u"Finished: [" + string + u"]"
 
         return string
+
+    def approve(self, dollar_amount = None, discount_percent = 100):
+        from esp.accounting.models import FinancialAidGrant
+        if not self.approved:
+            if any([dollar_amount, discount_percent]):
+                # create financial aid grant
+                f = FinancialAidGrant(request = self, amount_max_dec = dollar_amount, percent = discount_percent)
+                # finalize the grant (creates the accounting transfer)
+                f.finalize()
+                # mark request as done
+                self.done = True
+                self.save()
+                # send email to student
+                email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
+                email_to = ['%s <%s>' % (self.user.name(), self.user.email)]
+                subj = 'Financial Aid Approved for %s for %s' % (self.user.name(), self.program.niceName())
+                email_context = {'student': self.user,
+                                 'program': self.program,
+                                 'grant': f,
+                                 'curtime': datetime.now(),
+                                 'DEFAULT_HOST': settings.DEFAULT_HOST}
+                email_contents = render_to_string('program/modules/finaidapprovemodule/approval_email.txt', email_context)
+                send_mail(subj, email_contents, email_from, email_to)
+            else:
+                raise ESPError('Need to supply at least one of dollar_amount and discount_percent', log=True)
 
 """ Functions for scheduling constraints
     I'm sorry that these are in the same __init__.py file;

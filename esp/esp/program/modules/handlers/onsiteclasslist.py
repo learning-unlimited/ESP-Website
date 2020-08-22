@@ -202,6 +202,16 @@ class OnSiteClassList(ProgramModuleObj):
 
     @aux_call
     @needs_onsite
+    def full_status(self, request, tl, one, two, module, extra, prog):
+        resp = HttpResponse(content_type='application/json')
+        data = [[section.id, section.isFull(webapp=True)] for section in
+                     ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0,
+                                                 parent_class__parent_program=prog)]
+        json.dump(data, resp)
+        return resp
+
+    @aux_call
+    @needs_onsite
     def rooms_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(content_type='application/json')
         data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, resourceassignment__resource__res_type__name="Classroom").select_related('resourceassignment__resource__name').values_list('id', 'resourceassignment__resource__name', 'resourceassignment__resource__num_students')
@@ -253,7 +263,7 @@ class OnSiteClassList(ProgramModuleObj):
 
             failed_add_sections = []
             for sec in sections_to_add:
-                if sec.isFull() and not override_full:
+                if sec.isFull(webapp=True) and not override_full:
                     result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, 'Class is currently full.'))
                     failed_add_sections.append(sec.id)
 
@@ -280,9 +290,9 @@ class OnSiteClassList(ProgramModuleObj):
                 #   Add the sections the student wants
                 for sec in sections_to_add:
                     if sec not in existing_sections and sec.id not in failed_add_sections:
-                        error = sec.cannotAdd(user, not override_full)
+                        error = sec.cannotAdd(user, not override_full, webapp=True)
                         if not error:
-                            reg_result = sec.preregister_student(user, overridefull=override_full)
+                            reg_result = sec.preregister_student(user, overridefull=override_full, webapp=True)
                             if not reg_result:
                                 error = 'Class is currently full.'
                         else:

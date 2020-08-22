@@ -2,12 +2,15 @@
 {% load survey %}
 <table class="fullwidth">
 <tr>
-    <td width="30%"><b>{{ name }}</b></td>
+    <td>
+    <div style = "text-align: left; font-weight: bold;" > {{ name }} </div>
     {% for i in 1|intrange:number_of_ratings %}
-        <td width="{{ 1|field_width:number_of_ratings }}" style="vertical-align:top;"><input type="radio" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}" value="{{ i }}" /> {{ i }}
-        {% if forloop.first %}<br />{{ lower_text }}{% endif %}
-        {% if forloop.last %}<br />{{ upper_text }}{% endif %}
-        </td>
+        <div style = "text-align: left; padding-left:2em; text-indent:-2em;"><input type="radio" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}" value="{{ i }}" /> <b>{{ i }}</b>
+        {% if forloop.first %} {{ lower_text }}{% endif %}
+        {% if forloop.counter == number_of_ratings|midValue %} {{ middle_text }} {% endif %}
+        {% if forloop.last %} {{ upper_text }}{% endif %}
+        </div>
     {% endfor %}
+    </td>
 </tr>
 </table>

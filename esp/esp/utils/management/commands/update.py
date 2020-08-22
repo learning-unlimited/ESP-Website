@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 from django.core.management import call_command
 from django.core.management.base import NoArgsCommand
 from django.conf import settings
+
 import os
 
 class Command(NoArgsCommand):
@@ -58,8 +59,22 @@ class Command(NoArgsCommand):
         }
         default_options.update(options)
         options = default_options
+
+        root = os.path.dirname(os.path.abspath(settings.BASE_DIR))
+        file = os.path.join(root, 'esp.wsgi')
+
+        user = os.getenv('USER')
+        sudo_user = os.getenv('SUDO_USER')
+        # If sudo, we are probably on the live server,
+        # so we always want to use www-data
+        if sudo_user:
+            if user != "www-data":
+                raise Exception("Looks like you tried to run this with sudo but without '-u www-data'. Please try again!")
+            elif not os.access(file, os.W_OK):
+                raise Exception("www-data doesn't have write access for esp.wsgi. Please fix this with chown, then try again!")
         call_command('clean_pyc', **options)
         call_command('migrate', **options)
         call_command('collectstatic', **options)
         call_command('recompile_theme', **options)
-        os.system('echo flush_all | nc localhost 11211')
+        call_command('flushcache', **options)
+        os.system("touch " + file)
