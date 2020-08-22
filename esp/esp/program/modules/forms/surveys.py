@@ -48,9 +48,9 @@ class QuestionForm(forms.ModelForm):
         }
 
 class SurveyImportForm(forms.Form):
-    survey = forms.ModelChoiceField(queryset=None)
+    survey_id = forms.ModelChoiceField(queryset=None, label = "Survey")
 
     def __init__(self, *args, **kwargs):
         cur_prog = kwargs.pop('cur_prog', None)
         super(SurveyImportForm, self).__init__(*args, **kwargs)
-        self.fields['survey'].queryset = Survey.objects.exclude(program=cur_prog)
+        self.fields['survey_id'].queryset = Survey.objects.exclude(program=cur_prog)

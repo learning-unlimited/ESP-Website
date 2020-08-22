@@ -10,7 +10,7 @@ Expects:
 {% load survey %}
 {% load main %}
 
-<table width="100%">
+<table width="100%"> 
 <tr>
     <td width="100%" valign="top" colspan="2"><b>{{ q.question.name }}</b> ({{ q.answers|length }}/{{ num_participants }} responses)</td>
 </tr>
@@ -36,20 +36,15 @@ Expects:
                             {% endwith %}
                         {% endwith %}
                     {% endif %}
-                    {% if params.lower_text %}
-                    <div style="font-weight:bold; font-size:0.8em; width:216px;margin-bottom: 20px;">
-                        {# I have moral qualms about fixing this width in pixels; hopefully someone will find a better way. -ageng 2008-10-20 #}
-                        <div style="float:left;">1 = {{ params.lower_text }}</div>
-                        <div style="float:right;">{{ params.upper_text }} = {{ params.number_of_ratings }}</div>
-                        <div style="text-align:center;">{{ params.middle_text }}</div>
-                    </div>
-                    {% endif %}
                 {% endwith %}
             {% else %} 
                 There are no responses to this question.
             {% endif %}
-        </td>
-        {% if q.question.question_type.is_numeric %}
+        </td> 
+
+        {% if q.question.question_type.is_numeric %} 
+        <!-- An if statement to check if the question type is labeled numeric rating or numeric rating.
+            If true, it is assumed to be of labeled numeric rating type/ numeric rating type-->
         <td width = "50%">
             <b>Statistics:</b>
             <ul>
@@ -59,6 +54,32 @@ Expects:
                     <li>Average for all classes: {{ q.question.global_average }}</li>
                 {% endif %}
             </ul>
+            <!-- Creates a key that provides details about the Histogram Labeling-->
+            <b>Response Labels:</b>
+                {% with q.question.get_params as params %}
+                    {% if not params.list|length_is:0 %}
+                    <ul>
+                    {% for label in params.list %}
+                        <li> <b> {{ forloop.counter }}: </b>{{ label }} </li>
+                    {% endfor %}
+                    </ul>
+                    {% endif %}
+                        {% if params.lower_text or params.upper_text or params.middle_text %}
+                        <ol style = "font-weight: bold;">
+                            {% if params.lower_text %}
+                            <li><span style="font-weight: normal;"> {{ params.lower_text }} </span></li>
+                            {% endif %}
+                            {% if params.middle_text %}
+                                {% if not params.number_of_ratings|divisibleby:"2" %}
+                                <li value = "{{ params.number_of_ratings|midValue }}"> <span style="font-weight: normal;"> {{ params.middle_text }} </span></li>
+                                {% endif %}
+                            {% endif %}
+                            {% if params.upper_text %}
+                            <li value = "{{ params.number_of_ratings }}"> <span style="font-weight: normal;"> {{ params.upper_text }} </span></li>
+                            {% endif %}
+                        </ol>
+                        {% endif %}
+                {% endwith %}
         </td>
         {% endif %}
     </tr>

@@ -295,7 +295,10 @@ class ProgramModuleObj(models.Model):
     def isAdminPortalFeatured(self):
         """Don't display in the long list of additional modules if it's already featured
         in the main portion of the admin portal"""
-        return self.module.admin_title in ["Program Dashboard (AdminCore)", "Course Materials", "Program Vitals (part of Dashboard)", "Volunteer Management", "Manage Classes (part of Dashboard)", "AJAX Scheduling (AJAXSchedulingModule)", "Resource Management", "Communications Panel for Admin", "User Morphing Capability", "Nametag Generation", "User List Generator", "Class Flags"]
+        return self.module.handler in ['AdminCore', 'AdminMorph', 'AdminMaterials',
+                                       'ListGenModule', 'ResourceModule', 'CommModule',
+                                       'VolunteerManage', 'ClassFlagModule', 'ProgramPrintables',
+                                       'AJAXSchedulingModule', 'NameTagModule', 'TeacherEventsModule']
 
     def isCompleted(self):
         return False

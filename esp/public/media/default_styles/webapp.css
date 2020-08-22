@@ -368,3 +368,7 @@ i.pointer {
 .btn.fancybutton.no-dec {
   padding: .5vh;
 }
+
+.sectionroster .msg {
+    font-size: 1.75vh;
+}

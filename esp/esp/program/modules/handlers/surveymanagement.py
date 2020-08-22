@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, main_call, aux_call
 from esp.program.modules import module_ext
+from esp.program.models import ClassSubject, ClassSection
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser
 from django.db.models.query   import Q
@@ -62,11 +63,16 @@ class SurveyManagement(ProgramModuleObj):
     @needs_admin
     def survey_manage(self, request, tl, one, two, module, extra, prog):
         context = {'program': prog}
+        # Make some dummy data for survey questions that need it
+        classes = [ClassSubject(id = i, title="Test %s" %i, parent_program = prog, category = prog.class_categories.all()[0],
+                   grade_min = prog.grade_min, grade_max = prog.grade_max) for i in range(1,4)]
+        context['classes'] = classes
+        context['section'] = ClassSection(parent_class=classes[0])
         context['question_types'] = json.dumps({str(qt.id): qt.param_names for qt in QuestionType.objects.all()})
         if request.GET:
             obj = request.GET.get("obj", None)
             op = request.GET.get("op", None)
-            id = request.GET.get("id", None) or request.POST.get("survey", None) or request.POST.get("survey_id", None) or request.POST.get("question_id", None)
+            id = request.GET.get("id", None) or request.POST.get("survey_id", None) or request.POST.get("question_id", None)
             if obj == "survey":
                 context['open_section'] = 'survey'
                 survey = None
@@ -166,7 +172,14 @@ class SurveyManagement(ProgramModuleObj):
     @needs_admin
     def surveys(self, request, tl, one, two, module, extra, prog):
         if extra is None or extra == '':
-            return render_to_response('program/modules/surveymanagement/main.html', request, {'program': prog, 'surveys': prog.getSurveys()})
+            surveys = prog.getSurveys()
+            counts = {}
+            for s in surveys:
+                if s.category not in counts:
+                    counts[s.category] = 1
+                else:
+                    counts[s.category] += 1
+            return render_to_response('program/modules/surveymanagement/main.html', request, {'program': prog, 'surveys': surveys, 'counts': counts})
         elif extra == 'manage':
             return self.survey_manage(request, tl, one, two, module, extra, prog)
         elif extra == 'review':

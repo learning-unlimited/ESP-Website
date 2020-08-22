@@ -8,6 +8,7 @@ $j(function(){
     var checkins = [];
 
     $j(".flag-detail").hide();
+    $j(".flag-header").removeClass("active");
     $j(".assignment-detail").hide();
 
     //Replace hyphens with non-breaking hyphens, to stop Chrome from breaking up phone numbers
@@ -18,6 +19,7 @@ $j(function(){
     $j(".phone").map(changeHyphens);
 
     $j('.section-detail-header').click(function () {
+        $j(this).toggleClass('active');
         var info = $j(this).siblings('.section-detail-info');
         var class_id = info.attr('data-class-id');
 

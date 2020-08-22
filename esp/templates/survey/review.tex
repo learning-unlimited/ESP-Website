@@ -17,7 +17,7 @@
     \begin{center}
     \begin{longtable}{|p{0.48\linewidth}|p{0.48\linewidth}|} \hline
     \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} ~ } \\
-    \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} \Large {Responses for {{ s.name }}} } \\ 
+    \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} \Large {Responses for {{ s.name|texescape }}} } \\ 
     \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} ~ } \\\hline
     {% for q in s.display_data.questions %}
         {% with s.num_participants as num_participants %}

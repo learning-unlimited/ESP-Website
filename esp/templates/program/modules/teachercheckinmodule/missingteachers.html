@@ -7,90 +7,7 @@
     <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
     <link rel='stylesheet' type='text/css' href='/media/styles/flags.css' />
     <link rel='stylesheet' type='text/css' href='/media/styles/assignments.css' />
-    <style type="text/css">
-        #shortcuts-box {
-            position: fixed;
-            right: 10px;
-            top: 10px;
-            width: 200px;
-            border: 1px solid gray;
-            padding: 5px;
-            z-index: 100;
-            background-color: white;
-            opacity: 0.75;
-            transition: opacity 0.25s ease;
-        }
-        #shortcuts-box:hover {
-            opacity: 1;
-        }
-        #shortcuts-box input{
-            width: 190px;
-        }
-
-        .section-first-row {
-            border-top: 4px solid #ccc;
-        }
-
-        .section-code {
-            background-color: #c6def7;
-            background: linear-gradient(to bottom, white, #c6def7);
-        }
-
-        .not-checked-in a {
-            font-weight: bold;
-        }
-
-        .checked-in {
-            text-decoration: line-through;
-        }
-
-        .selected .checkin + span:after {
-            content: "◀"; font-weight: bold;
-        }
-
-        .selected .not-checked-in, .selected .checkin-column, .selected .phone, .selected .text-teacher {
-            background-color: #FFFF00;
-        }
-
-        .checkin-column {
-            min-width: 90px;
-        }
-
-        input.found {
-            background-color: #AAFFAA;
-        }
-
-        input.not-found {
-            background-color: #FFAAAA;
-        }
-
-        .section-detail-td {
-            background-color: #c6def7;
-        }
-
-        .section-detail {
-            display: inline-block;
-            border-width: 0;
-            margin: 0px;
-            width: 100%;
-        }
-
-        .section-detail-header {
-            background-color: #c6def7;
-            font-size: 1.2em;
-            width: 100%;
-        }
-
-        .flag-name-list {
-            display: inline-block;
-            width: 470px;
-            vertical-align: middle;
-        }
-
-        .section-detail-include {
-            background-color: white;
-        }
-    </style>
+    <link rel='stylesheet' type='text/css' href='/media/styles/missingteachers.css' />
 {% endblock %}
 
 {% block javascript %}
@@ -245,10 +162,10 @@
     {% endif %}
 {% endifchanged %}
 <tr class="section-first-row" data-sec-id="{{ section.emailcode }}">
-    <td rowspan="{{ section.teachers|length }}" class="section-code">
+    <td rowspan="{% if section.teachers %}{{ section.teachers|length }}{% else %}1{% endif %}" class="section-code">
         {{ section.parent_class.emailcode }}: {{ section.name }}
     </td>
-    <td class="room" rowspan="{{ section.teachers|length }}">
+    <td class="room" rowspan="{% if section.teachers %}{{ section.teachers|length }}{% else %}1{% endif %}">
         {% if start_time %}
             {{ section.room }}
         {% else %}
@@ -283,10 +200,16 @@
                    {% elif teacher.phone == default_phone %} disabled title="No contact info"{% endif %}/>
         </tr>
         <tr data-sec-id="{{ section.emailcode }}">
+    {% empty %}
+        <td colspan="4">
+            No teachers for this class
+        </td>
+        </tr>
+        <tr data-sec-id="{{ section.emailcode }}">
     {% endfor %}
     <td colspan="6" class="section-detail-td">
         <div class="section-detail fqr-class">
-            <div class="section-detail-header">
+            <div class="section-detail-header" title="Click to toggle class details">
                 {{section.title}}
                 (<a href="{{section.get_absolute_url|urlencode}}">manage</a> | <a href="{{section.get_edit_absolute_url|urlencode}}">edit</a>)
             </div>
@@ -296,6 +219,7 @@
                         {% include "program/modules/classflagmodule/flag_name.html" %}
                     {% endfor %}
                 </div>
+                <br />
                 <button class="add-flag btn">add flag</button>
             {% endif %}
             <div class="assignment-name-list fqr-class-assignments">

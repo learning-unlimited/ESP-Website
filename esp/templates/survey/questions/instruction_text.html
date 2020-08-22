@@ -1,11 +1,11 @@
 <!-- Question Type: Instruction Text -->
 <table class="fullwidth">
 <tr>
-    <th><b>{{ name }}</b></th>
+    <th> <div style = "text-align: left; font-weight: bold;" >{{ name }}</div> </th>
 </tr>
 {% if text %}
 <tr>
-    <td>{{ text|safe }}<br /><br /></td>
+    <td> <div style = "text-align: left;"> {{ text|safe }} </div> <br /><br /></td>
 </tr>
 {% endif %}
 </table>

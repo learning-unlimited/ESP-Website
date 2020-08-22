@@ -17,4 +17,10 @@
 
 {% include "survey/survey_form.html" %}
 
+{% if tl == "teach" %}
+    {% include "program/modules/teacherregcore/returnlink.html" %}
+{% elif tl == "learn" %}
+    {% include "program/modules/studentregcore/returnlink.html" %}
+{% endif %}
+
 {% endblock %}

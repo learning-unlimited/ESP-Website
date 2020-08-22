@@ -16,16 +16,24 @@ Surveys for students and teachers can be associated with {{ program.program_type
 <h3>Possibilities</h3>
 <ul>
 <li><a href="/manage/{{ program.getUrlBase }}/surveys/manage" title="Create">Create a new survey</a></li>
-<li><a href="/manage/{{ program.getUrlBase }}/surveys/review" title="Review">Review survey results</a></li>
-<li><a href="/manage/{{ program.getUrlBase }}/surveys/review_pdf" title="Review PDF">Review survey results (PDF format)</a></li>
-<li><a href="/manage/{{ program.getUrlBase }}/surveys/dump" title="Dump XLS">Export survey results (XLS format)</a></li>
+<li><a href="/manage/{{ program.getUrlBase }}/surveys/review" title="Review">Review all survey results</a></li>
+<li><a href="/manage/{{ program.getUrlBase }}/surveys/review_pdf" title="Review PDF">Review all survey results (PDF format)</a></li>
+<li><a href="/manage/{{ program.getUrlBase }}/surveys/dump" title="Dump XLS">Export all survey results (XLS format)</a></li>
 <li><a href="/manage/{{ program.getUrlBase }}/surveys/top_classes" title="Top Classes">List the favorite classes</a></li>
 </ul>
 
 <h3>Existing Surveys</h3>
 <ul>
-{% for s in program.getSurveys %}
+{% for s in surveys %}
     <li><a href="/manage/{{ program.getUrlBase }}/surveys/manage?obj=survey&op=edit&id={{ s.id }}">{{ s.name }}</a> (click to edit)
+    <ul>
+    {% if s.category == "teach" %}
+        <li><a href="/teach/{{ program.getUrlBase }}/survey{% if counts.teach > 1 %}?survey_id={{ s.id }}{% endif %}">Link for teachers</a></li>
+    {% elif s.category == "learn" %}
+        <li><a href="/learn/{{ program.getUrlBase }}/survey{% if counts.learn > 1 %}?survey_id={{ s.id }}{% endif %}">Link for students</a></li>
+        <li><a href="/teach/{{ program.getUrlBase }}/survey/review{% if counts.learn > 1 %}?survey_id={{ s.id }}{% endif %}">Link for teachers to review results</a></li>
+    {% endif %}
+    </ul>
 {% endfor %}
 </ul>
 

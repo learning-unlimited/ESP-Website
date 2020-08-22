@@ -48,7 +48,7 @@ from esp.users.models            import User, ESPUser, Record, TeacherInfo
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.conf                 import settings
-from django.http                 import HttpResponseRedirect
+from django.http                 import HttpResponse, HttpResponseRedirect
 from django.db                   import models
 from django.forms.utils          import ErrorDict
 from django.template.loader      import render_to_string
@@ -86,6 +86,8 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['can_create_class'] = self.class_reg_is_open()
         context['can_create_open_class'] = self.open_class_reg_is_open()
         context['can_req_cancel'] = self.deadline_met('/Classes/CancelReq')
+        context['survey_results'] = (self.program.getSurveys().filter(category = "learn", questions__per_class=True).exists() and
+                                     self.program.getTimeSlots()[0].start < datetime.datetime.now())
         context['crmi'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
         context['friendly_times_with_date'] = Tag.getBooleanTag('friendly_times_with_date', self.program, False)
@@ -95,7 +97,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     def noclasses(self):
         """ Returns true of there are no classes in this program """
-        return len(self.clslist(get_current_request().user)) < 1
+        return not self.clslist(get_current_request().user).exists()
 
     def isCompleted(self):
         return not self.noclasses()
@@ -215,8 +217,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         return any(map(self.reg_is_open, self.reg_is_open_methods.keys()))
 
     def clslist(self, user):
-        return [cls for cls in user.getTaughtClasses()
-                if cls.parent_program_id == self.program.id ]
+        return user.getTaughtClasses(program = self.program, include_rejected = True)
 
     @aux_call
     @needs_teacher
@@ -253,19 +254,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
         not_found = []
         if request.POST and 'submitted' in request.POST:
-            attending_students = [int(student) for student in request.POST.getlist('attending')]
-            for student in section.students(verbs=["Enrolled","Attended"]):
-                if student.id in attending_students:
-                    if not prog.isCheckedIn(student):
-                        rec = Record(user=student, program=prog, event='attended')
-                        rec.save()
-                    sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
-                    sr.end_date = today_max
-                    sr.save()
-                else:
-                    srs = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended)
-                    for sr in srs:
-                        sr.expire()
             # split with delimiters comma, semicolon, and space followed by any amount of extra whitespace
             misc_students = filter(None, re.split(r'[;,\s]\s*', request.POST.get('misc_students')))
             for code in misc_students:
@@ -316,6 +304,79 @@ class TeacherClassRegModule(ProgramModuleObj):
                 student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended).exists()
                 section.attended_list.append(student)
         return (section, not_found)
+
+    @aux_call
+    @needs_teacher
+    def ajaxstudentattendance(self, request, tl, one, two, module, extra, prog):
+        """
+        POST to this view to change the attendance status of a student for a given section.
+        POST data:
+          'student':              The teacher's username.
+          'secid':                The section ID.
+          'undo' (optional):      If 'true', expires all attendance registrations
+                                  for the student for the section.
+                                  Otherwise, the student is marked as attending the section.
+          'enroll' (optional):    If 'false', does not enroll the student in the section.
+                                  Otherwise, enrolls the student if they are not already enrolled.
+          'unenroll' (optional):  If 'false', does not unenroll the student from conflicting sections.
+                                  Otherwise, unenrolls the student from conflicting sections.
+        """
+        json_data = {}
+        today_min = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
+        today_max = datetime.datetime.combine(datetime.date.today(), datetime.time.max)
+        attended = RegistrationType.objects.get_or_create(name = 'Attended', category = "student")[0]
+        enrolled = RegistrationType.objects.get_or_create(name='Enrolled', category = "student")[0]
+        onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
+        if 'student' in request.POST and 'secid' in request.POST:
+            students = ESPUser.objects.filter(username=request.POST['student'])
+            if not students.exists():
+                json_data['error'] = 'User with username %s not found!' % request.POST['student']
+            else:
+                student = students[0]
+                json_data['name'] = student.name()
+                sections = ClassSection.objects.filter(id=request.POST['secid'])
+                if not sections.exists():
+                    json_data['error'] = 'Section with ID %s not found!' % request.POST['secid']
+                else:
+                    section = sections[0]
+                    json_data['secid'] = section.id
+                    if request.POST.get('undo', 'false').lower() == 'true':
+                        #should we also delete the program attendance record?
+                        srs = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended)
+                        if srs.exists():
+                            for sr in srs:
+                                sr.expire() #or delete??
+                            json_data['message'] = '%s is no longer marked as attending.' % student.name()
+                        else:
+                            json_data['message'] = '%s was not marked as attending.' % student.name()
+                    else:
+                        if not prog.isCheckedIn(student):
+                            rec = Record(user=student, program=prog, event='attended')
+                            rec.save()
+                            json_data['checkedin'] = True
+                        sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
+                        sr.end_date = today_max
+                        sr.save()
+                        if student not in section.students():
+                            if request.POST.get('unenroll', 'true').lower() == 'true':
+                                sm = ScheduleMap(student, prog)
+                                for ts in [ts.id for ts in section.get_meeting_times()]:
+                                    if ts in sm.map and len(sm.map[ts]) > 0:
+                                        for sm_sec in sm.map[ts]:
+                                            sm_sec.unpreregister_student(student)
+                            if request.POST.get('enroll', 'true').lower() == 'true':
+                                for rt in [enrolled, onsite]:
+                                    srs = StudentRegistration.objects.filter(user = student, section = section, relationship = rt)
+                                    if srs.count() > 0:
+                                        sr = srs[0]
+                                        sr.unexpire()
+                                    else:
+                                        sr = StudentRegistration.objects.create(user = student, section = section, relationship = rt)
+                                    if rt.name=='OnSite/AttendedClass':
+                                        sr.end_date = today_max
+                                        sr.save()
+                        json_data['message'] = '%s is marked as attending.' % student.name()
+        return HttpResponse(json.dumps(json_data), content_type='text/json')
 
     @aux_call
     @needs_teacher
@@ -808,10 +869,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['formset'] = resource_formset
         context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
         context['classroom_form_advisories'] = 'classroom_form_advisories'
-        if self.program.grade_max - self.program.grade_min >= 4:
-            context['grade_range_popup'] = Tag.getBooleanTag('grade_range_popup', self.program, default=True)
-        else:
-            context['grade_range_popup'] = False
+        context['grade_range_popup'] = Tag.getBooleanTag('grade_range_popup', self.program, default=True)
 
         if newclass is None:
             context['addoredit'] = 'Add'

@@ -22,4 +22,8 @@
 {% endfor %}
 </ul>
 
+{% if student_results %}
+<p class="message">Alternatively, you can view the results of the student survey(s) for your class(es) by <a href="{{ request.path }}/review">going here</a>.
+{% endif %}
+
 {% endblock %}

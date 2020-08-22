@@ -2,10 +2,13 @@
 {% load survey %}
 <table class="fullwidth">
 <tr>
-    <td width="30%"><b>{{ name }}</b></td>
+    <!-- 
+        <td width="30%"><b>{{ name }}</b></td> *Moved the title to the top of the table cell by moving it before the div container*
+    -->
     <td>
+    <div style = "text-align: left; font-weight: bold;" > {{ name }} </div>
     {% for choice in list %}
-        <div style="padding-left:2em; text-indent:-2em;">
+        <div style = "text-align: left; padding-left:2em; text-indent:-2em;">
         <input type="radio" name="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}"
                id="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}_{{ choice|slugify }}" value="{{ choice }}" />
         <label for="question_{{ id }}{% if for_class %}_{% templatetag openvariable %} id {% templatetag closevariable %}{% endif %}_{{ choice|slugify }}" class="no_float">{{ choice }}</label>
