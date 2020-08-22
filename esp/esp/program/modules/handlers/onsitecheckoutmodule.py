@@ -56,14 +56,15 @@ class OnSiteCheckoutModule(ProgramModuleObj):
     @needs_onsite
     def checkout(self, request, tl, one, two, module, extra, prog):
         context = {}
+
+        if "checkoutall" in request.POST and "confirm" in request.POST:
+            students = prog.currentlyCheckedInStudents()
+            for student in students:
+                Record.objects.create(user=student, event="checked_out", program=prog)
+            context['checkout_all_message'] = "Successfully checked out %s students" % (students.count())
+
         target_id = None
         student = None
-        form = StudentSearchForm()
-        if "checkoutall" in request.POST and "confirm" in request.POST:
-            for student in ESPUser.objects.filter(record__event="attended", record__program=prog).distinct():
-                Record.objects.create(user=student, event="checked_out", program=prog)
-            context['checkout_all_message'] = "Successfully checked out all students"
-
         if 'target_user' in request.POST:
             form = StudentSearchForm(request.POST)
             if form.is_valid():
@@ -100,6 +101,8 @@ class OnSiteCheckoutModule(ProgramModuleObj):
                 context['checkout_message'] = "Successfully checked out %s (%s)" % (student.name(), student.username)
 
             context.update(StudentClassRegModule.prepare_static(student, prog))
+        else:
+            form = StudentSearchForm()
 
         context['form'] = form
         return render_to_response(self.baseDir()+'checkout.html', request, context)

@@ -1,7 +1,9 @@
-function check_grade_range(form, grade_min, grade_max)
+function check_grade_range(form)
 {
     console.log("Checking!");
-    if ($j(form).find('#id_grade_min').val() == grade_min && $j(form).find('#id_grade_max').val() == grade_max)
+    var grade_max = $j(form).find('#id_grade_max').val();
+    var grade_min = $j(form).find('#id_grade_min').val();
+    if (grade_max - grade_min >= 4)
     {
         return confirm("Are you sure you want your class to have grade range "+grade_min+"-"+grade_max+"? \
 Managing a class with grade range "+grade_min+"-"+grade_max+" can be more difficult due to the \
@@ -40,16 +42,3 @@ function setup_autocomplete()
 	}
     });
 }
-$j(document).ready(function() {
-	$j("#clsform").submit(function() {
-		$j(this).submit(function() {
-		    return false;
-		});
-
-		if($j(this).hasClass("grade_range_popup")) {
-			return check_grade_range($j(this), $j(this).attr("grademin"), $j(this).attr("grademax"));
-		} else {
-			return true;
-		}
-	});
-});

@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-
+{% load survey %}
 <h1>Survey Management for {{ program.niceName }}</h1>
 
 <h2>Confirm Survey Import</h2>
@@ -21,7 +21,7 @@ You have chosen to import {{ survey.name }} ({{ survey.category }}) from {{ surv
 <div id="program_form">
 <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=survey&op=import">
 <input type="hidden" name="import_confirm" value="yes" />
-<input type="hidden" name="survey" value="{{ survey.id }}" />
+<input type="hidden" name="survey_id" value="{{ survey.id }}" />
 <table align="center" cellpadding="0" cellspacing="0" width="100%">
     <tr><th colspan="6">Questions for {{ survey.name }} ({{ survey.category }})</th></tr>
     <tr>
@@ -62,7 +62,7 @@ You have chosen to import {{ survey.name }} ({{ survey.category }}) from {{ surv
     {% for question in questions %}
         <tr>
             <td class="underline">{{ question.seq }}</td>
-            <td class="underline" colspan="4">{{ question.render }}</td>
+            <td class="underline" colspan="4">{% if question.per_class %}{{ question.render|substitute:section }}{% else %}{{ question.render|uselist:classes }}{% endif %}</td>
             <td class="underline" align="center"><input type="checkbox" name="to_import" value="{{ question.id }}" onclick=toggle(this) checked></td>
         </tr>
     {% endfor %}

@@ -79,43 +79,62 @@ The directors have been notified that you are no longer able to volunteer at {{ 
 {% render_inline_program_qsd program "volunteer_signup" %}
 
 <div id="program_form">
-<form method="POST" id="volunteer_shift_form" action="{{ request.path }}">
-{% for hidden in form.hidden_fields %}
-    {{ hidden }}
-{% endfor %}
-<center>
-<p>{% if request.user.email %}Since you are logged in, your information is pre-filled but you can change it for the purposes of contacting you about volunteering.{% else %}If you have an account, please <a href="/myesp/login?next={{ request.path }}">click here</a> to log in and return to this page.{% endif %}</p>
-{% if form.errors %}
-<p><span style="color: red;">Please correct the errors in the form.</span></p>
-{% endif %}
-<div class="noclick">
-{{ form.name.label_tag }}
-{{ form.name.errors }}
-{{ form.name }}
-{{ form.email.label_tag }}
-{{ form.email.errors }}
-{{ form.email }}
-{{ form.phone.label_tag }}
-{{ form.phone.errors }}
-{{ form.phone }}
-</div>
-
-  {% include "program/modules/availability.html" %}
-  <div hidden id="checkboxes">
-    {% for request in form.requests %}
-      <input {% if request.is_checked %}checked="checked" {% endif %}id="{{ request.id_for_label }}" name="{{ request.name }}" type="checkbox" value="{{ request.choice_value }}" data-hover="{{ request.choice_label }}">
+  <form method="POST" id="volunteer_shift_form" action="{{ request.path }}">
+    {% for hidden in form.hidden_fields %}
+        {{ hidden }}
     {% endfor %}
-  </div>
-  {{ form.requests.errors }}
-<br><br>
-<div class="noclick">
-{{ form.confirm }}<span style="color: red; font-weight: bold;"> I agree to show up at the time(s) selected above.</span>
-</div>
-{{ form.non_field_errors }}
-<br><br>
-<input style="display: block" id="volunteer_form_submit" type="submit" value="Submit" class="btn btn-primary" />
-</center>
-</form>
+    <center>
+      <p>{% if request.user.email %}Since you are logged in, your information is pre-filled but you can change it for the purposes of contacting you about volunteering.{% else %}If you have an account, please <a href="/myesp/login?next={{ request.path }}">click here</a> to log in and return to this page.{% endif %}</p>
+      {% if form.errors %}
+      <p><span style="color: red;">Please correct the errors in the form.</span></p>
+      {% endif %}
+      <div class="noclick">
+        {{ form.name.label_tag }}
+        {{ form.name.errors }}
+        {{ form.name }}
+        {{ form.email.label_tag }}
+        {{ form.email.errors }}
+        {{ form.email }}
+        {{ form.phone.label_tag }}
+        {{ form.phone.errors }}
+        {{ form.phone }}
+        {% if form.shirt_size %}
+        {{ form.shirt_size.label_tag }}
+        {{ form.shirt_size.errors }}
+        {{ form.shirt_size }}
+        {% endif %}
+        {% if form.shirt_type %}
+        {{ form.shirt_type.label_tag }}
+        {{ form.shirt_type.errors }}
+        {{ form.shirt_type }}
+        {% endif %}
+        {% if form.comments %}
+        {{ form.comments.label_tag }}
+        {{ form.comments.errors }}
+        {{ form.comments }}
+        {% endif %}
+      </div>
+      <br>
+      <div>
+        Please sign up to volunteer for specific timeslots by selecting them below. Hovering over a timeslot will display details for that timeslot.
+        <br><br>
+        {% include "program/modules/availability.html" %}
+        <div hidden id="checkboxes">
+          {% for request in form.requests %}
+            <input {% if request.is_checked %}checked="checked" {% endif %}id="{{ request.id_for_label }}" name="{{ request.name }}" type="checkbox" value="{{ request.choice_value }}" data-hover="{{ request.choice_label }}">
+          {% endfor %}
+        </div>
+        {{ form.requests.errors }}
+        <br><br>
+        <div class="noclick">
+        {{ form.confirm }}<span style="color: red; font-weight: bold;"> I agree to show up at the time(s) selected above.</span>
+        </div>
+        {{ form.non_field_errors }}
+        <br><br>
+        <input style="display: block" id="volunteer_form_submit" type="submit" value="Submit" class="btn btn-primary" />
+      </div>
+    </center>
+  </form>
 </div>
 <div id="confirm_cancellation_dialog" title="Confirm Cancellation">You have unchecked all volunteer shifts.  If you must cancel your volunteer commitments, please click "Confirm" to notify the directors.  Otherwise, click "Cancel".</div>
 

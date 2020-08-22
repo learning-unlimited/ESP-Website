@@ -22,19 +22,23 @@
                 {% for sec in sections %}
                 <tr>
                     <td class="underline" align="center">{{ sec }}</td>
-                    <td class="underline" align="center">{% if not sec.started %}<span style="color: grey">Not available</span>{% elif sec.completed %}<span style="color: green">Completed</span>{% else %}<a class="btn fancybutton no-dec" href="{{ request.path }}?sec={{ sec.id }}">Take Survey</a>{% endif %}</td>
+                    <td class="underline" align="center">{% if not sec.started %}<span style="color: grey">Not available</span>{% elif sec.completed %}<span style="color: green">Completed</span>{% else %}<a class="btn fancybutton no-dec" href="{{ request.path }}?{% if survey_id %}survey_id={{ survey_id }}&{% endif %}sec={{ sec.id }}">Take Survey</a>{% endif %}</td>
                 </tr>
                 {% endfor %}
             {% endif %}
             {% if general_survey %}
                 <tr>
                     <td class="underline" align="center">General Program Survey</td>
-                    <td class="underline" align="center">{% if not general_available %}<span style="color: grey">Not available</span>{% elif general_done %}<span style="color: green">Completed</span>{% else %}<a class="btn fancybutton no-dec" href="{{ request.path }}?general">Take Survey</a>{% endif %}</td>
+                    <td class="underline" align="center">{% if not general_available %}<span style="color: grey">Not available</span>{% elif general_done %}<span style="color: green">Completed</span>{% else %}<a class="btn fancybutton no-dec" href="{{ request.path }}?{% if survey_id %}survey_id={{ survey_id }}&{% endif %}general">Take Survey</a>{% endif %}</td>
                 </tr>
             {% endif %}
         </table>
+        <br><br>
     {% else %}
         <p class="message">This survey does not have any questions.</p>
+    {% endif %}
+    {% if student_results %}
+        <p class="message">You can view the results of the student survey(s) for your class(es) by <a href="{{ request.path }}/review">going here</a>.
     {% endif %}
 {% else %}
     <form method="post" action="{{ request.get_full_path }}">

@@ -15,14 +15,15 @@
 <h1>{% if program %}Tag Settings for {{ program.niceName }} (ID: {{ program.id }}){% else %}Global Tag Settings{% endif %}</h1>
 
 {% if program %}
-Welcome to the tag settings page for {{ program.niceName }}. This page lists miscellaneous settings that you may want to change to make the program run how you would like. The main program settings can be found on <a href="/manage/{{ program.getUrlBase }}/settings/">the page here</a>, and the global tag settings can be found on <a href="/manage/tags/">the page here</a>.
+<p>Welcome to the tag settings page for {{ program.niceName }}. This page lists miscellaneous settings that you may want to change to make the program run how you would like. The main program settings can be found on <a href="/manage/{{ program.getUrlBase }}/settings/">the page here</a>, and the global tag settings can be found on <a href="/manage/tags/">the page here</a>.</p>
 {% inline_program_qsd_block program "manage:tags" %}
 {% end_inline_program_qsd_block %}
 {% else %}
-Welcome to the global tag settings page for your website. This page lists miscellaneous settings that you may want to change to make the website run how you would like.
+<p>Welcome to the global tag settings page for your website. This page lists miscellaneous settings that you may want to change to make the website run how you would like.</p>
 {% inline_qsd_block "manage:tags" %}
 {% end_inline_qsd_block %}
 {% endif %}
+<p style="color: red">Please be aware that these settings can be very sensitive and there are currently no warnings or blocks in place to prevent you from providing incorrect values. Please use caution, read the help text, and make sure to test everything whenever you change any of these settings! Feel free to contact <a href="mailto:websupport@learningu.org">websupport</a> with any questions.</p>
 
 <form action="/manage/{% if program %}{{ program.getUrlBase }}/{% endif %}tags/" method="post">
 {% autoescape off %}

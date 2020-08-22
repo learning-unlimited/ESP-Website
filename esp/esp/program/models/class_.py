@@ -1139,13 +1139,13 @@ class ClassSection(models.Model):
                 pass
 
         # Mode 1: Base "fullness" on class attendance numbers if:
-        # 1) using webapp, 2) 'switch_lag_class_attendance' tag is set properly
+        # 1) using webapp/grid based class changes, 2) 'switch_lag_class_attendance' tag is set properly
         # 3) it is currently past the class start time + however many minutes specified in tag
         # 4) at least one student has been marked as attending the class
         if webapp and switch_lag and now >= (self.start_time_prefetchable() + timedelta(minutes=switch_lag)) and self.count_attending_students() >= 1:
             num_students = self.count_attending_students()
         # Mode 2: Base "fullness" on program attendance numbers if:
-        # 1) using webapp, 2) 'switch_time_program_attendance' tag is set properly
+        # 1) using webapp/grid based class changes, 2) 'switch_time_program_attendance' tag is set properly
         # 3) it is currently past the time specified in tag
         # 4) at least five students have been marked as attending the program (to account for test users)
         elif webapp and switch_time and now >= switch_time and self.parent_program.currentlyCheckedInStudents().count() >= 5:
@@ -1210,7 +1210,8 @@ class ClassSection(models.Model):
     def friendly_times_with_date(self, raw=False):
         return self.friendly_times(raw=raw, include_date=True)
 
-    def isAccepted(self): return self.status == ACCEPTED
+    def isAccepted(self): return self.status > 0
+    def isHidden(self): return self.status == HIDDEN
     def isReviewed(self): return self.status != UNREVIEWED
     def isRejected(self): return self.status == REJECTED
     def isCancelled(self): return self.status == CANCELLED
@@ -1776,6 +1777,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return False
 
     def isAccepted(self): return self.status > 0
+    def isHidden(self): return self.status == HIDDEN
     def isReviewed(self): return self.status != UNREVIEWED
     def isRejected(self): return self.status == REJECTED
     def isCancelled(self): return self.status == CANCELLED

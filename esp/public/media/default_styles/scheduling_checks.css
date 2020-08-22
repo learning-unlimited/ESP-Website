@@ -9,14 +9,25 @@ th { cursor: pointer; }
      border-radius: 4px;
 }
 
+.scheduling-check.items {
+    background-color: yellow;
+}
+
+.scheduling-check.no-items {
+    background-color: rgb(197 224 196);
+}
+
 .scheduling-check-title {
-     width: 100%;
+     width: 320px;
+	 margin-left: 0px;
+	 margin-right: auto;
      text-align: center;
 }
 
 .scheduling-check-title span {
      font-weight: bold;
      font-size: 14px;
+     cursor: pointer;
 }
 
 .reset-button {
@@ -27,10 +38,6 @@ th { cursor: pointer; }
 .refresh-button {
      margin-left: auto;
      float: right;
-}
-
-.placeholder {
-     text-align: center;
 }
 
 .rowGreyed {
@@ -49,30 +56,24 @@ color: lightgray;
   margin: 10px;
   font-style: italic;
 }
-.load_ready{
-    background-color: rgba(3, 121, 0, 0.23);
+
+.placeholder {
+    text-align: center;
     border-radius: 3px;
-	width: 200px;
-	text-align: center;
-	margin-left: 120px;
+	width: 240px;
+	margin-left: 40px;
 	margin-right: auto;
+}
+
+.load_ready{
+    background-color: rgb(197 224 196);
 }
 
 .load_yellow{
     background-color: yellow;
-    border-radius: 3px;
-	width: 200px;
-	text-align: center;
-	margin-left: 140px;
-	margin-right: auto;
 }
 .load_fail{
     background-color: red;
-    border-radius: 3px;
-	width: 200px;
-	text-align: center;
-	margin-left: 140px;
-	margin-right: auto;
 }
 .move_left{
     margin-left: 10px;
@@ -99,7 +100,7 @@ thead {
     color: #fff;
 }
 table {
-    width: 100%
+    width: 100%;
     border-spacing: 1;
     border-collapse: collapse;
     background: white;

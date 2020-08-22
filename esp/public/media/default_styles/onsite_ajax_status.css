@@ -147,7 +147,7 @@ table.narrow {
     border: 1px solid #666666;
 }
 
-.section_hidden, .section_search_hidden, .section_category_hidden, .section_conflict_hidden {
+.section_hidden, .section_search_hidden, .section_conflict_hidden {
     visibility: hidden;
     height: 0px;
     border: 0px;
@@ -156,7 +156,7 @@ table.narrow {
     overflow: hidden;
 }
 .section_hidden > input, .section_search_hidden > input,
-.section_category_hidden > input, .section_conflict_hidden > input {
+.section_conflict_hidden > input {
     display: none;
 }
 

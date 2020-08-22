@@ -132,15 +132,18 @@ class UserAttributeGetter(object):
 
     def get_guardian_email(self):
         if self.profile.student_info:
-            return self.profile.contact_guardian.email
+            if self.profile.contact_guardian:
+                return self.profile.contact_guardian.email
 
     def get_guardian_name(self):
         if self.profile.student_info:
-            return self.profile.contact_guardian.name
+            if self.profile.contact_guardian:
+                return self.profile.contact_guardian.name
 
     def get_guardian_cellphone(self):
         if self.profile.student_info:
-            return self.profile.contact_guardian.phone_cell
+            if self.profile.contact_guardian:
+                return self.profile.contact_guardian.phone_cell
 
     def get_accountdate(self):
         return self.user.date_joined.strftime("%m/%d/%Y")

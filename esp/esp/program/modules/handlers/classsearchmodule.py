@@ -6,6 +6,7 @@ from django.http import HttpResponseRedirect
 from django.db.models.query import Q
 
 from esp.program.modules.base import ProgramModuleObj, main_call, needs_admin
+from esp.program.models import RegistrationType
 from esp.program.models.class_ import ClassSubject, STATUS_CHOICES
 from esp.program.models.flags import ClassFlagType
 from esp.resources.models import Resource, ResourceType, ResourceRequest
@@ -155,5 +156,6 @@ class ClassSearchModule(ProgramModuleObj):
             context['queryset'] = queryset
             context['IDs'] = [cls.id for cls in queryset]
             context['flag_types'] = self.program.flag_types.all()
+            context['regtypes'] = sorted(RegistrationType.objects.all(), key=lambda a: str(a))
         return render_to_response(self.baseDir()+'class_search.html',
                                   request, context)

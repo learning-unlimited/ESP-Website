@@ -1,4 +1,4 @@
-{# expects program, class, can_req_cancel, and crmi (ClassRegModuleInfo) #}
+{# expects program, class, can_req_cancel, survey_results, and crmi (ClassRegModuleInfo) #}
 
 <tr{% if not cls.isReviewed %} style="color: gray"{% endif %}{% if cls.isRejected or cls.isCancelled %} style="color: red"{% endif %}>
   <td class="clsleft classname bordertop2" colspan="3">
@@ -57,11 +57,15 @@ Popup div for class cancellation request
 
 <tr>
   <td class="clsleft" colspan="5">
-    <b>Directors' review status</b>: {% if cls.isReviewed %}{% if cls.isAccepted %}
-    <span style="font-weight: bold; color: #0C0;">Accepted</span>
-    {% else %}
-    <span style="font-weight: bold; color: #C00;">Rejected</span>
-    {% endif %}
+    <b>Directors' review status</b>:
+    {% if cls.isReviewed %}
+        {% if cls.isAccepted %}
+        <span style="font-weight: bold; color: #0C0;">Accepted{% if cls.isHidden %} (Hidden){% endif %}</span>
+        {% elif cls.isCancelled %}
+        <span style="font-weight: bold; color: #C00;">Cancelled</span>
+        {% else %}
+        <span style="font-weight: bold; color: #C00;">Rejected</span>
+        {% endif %}
     {% else %}
     <span style="font-weight: bold; color: #00C;">Unreviewed</span>
     {% endif %}
@@ -78,6 +82,13 @@ Popup div for class cancellation request
        title="Email Class' Students" class="abutton">
       Email Students
     </a>
+    {% if survey_results %}
+    <br /><br />
+    <a href="/teach/{{ program.getUrlBase }}/survey/review?classsubject_id={{ cls.id }}"
+       title="Review Results from Student Survey" class="abutton">
+      Student Survey Results
+    </a>
+    {% endif %}
     {% endif %}
   {% endblock %}
   </td>
@@ -115,11 +126,15 @@ Popup div for class cancellation request
 {% for sec in cls.sections.all %}
 <tr>
   <td class="clsleft" valign="top"><i>Section {{ sec.index }}</i> <br />
-    Status: {% if sec.isReviewed %}{% if sec.isAccepted %}
-    <span style="font-weight: bold; color: #0C0;">Accepted</span>
-    {% else %}
-    <span style="font-weight: bold; color: #C00;">Rejected</span>
-    {% endif %}
+    Status:
+    {% if sec.isReviewed %}
+        {% if sec.isAccepted %}
+        <span style="font-weight: bold; color: #0C0;">Accepted{% if sec.isHidden %} (Hidden){% endif %}</span>
+        {% elif sec.isCancelled %}
+        <span style="font-weight: bold; color: #C00;">Cancelled</span>
+        {% else %}
+        <span style="font-weight: bold; color: #C00;">Rejected</span>
+        {% endif %}
     {% else %}
     <span style="font-weight: bold; color: #00C;">Unreviewed</span>
     {% endif %}
