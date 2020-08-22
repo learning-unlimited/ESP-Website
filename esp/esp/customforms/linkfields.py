@@ -3,7 +3,7 @@ from django.forms.models import fields_for_model
 from django.apps import apps
 from localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
 from esp.utils.forms import UKPhoneNumberField
-from esp.customforms.forms import NameField, AddressField
+from esp.customforms.forms import NameField, AddressField, CustomFileWidget
 from esp.utils.forms import DummyField
 
 generic_fields = {
@@ -18,7 +18,7 @@ generic_fields = {
     'numeric': {'typeMap': forms.IntegerField, 'attrs': {'widget': forms.TextInput,}, 'widget_attrs': {'class': 'digits '},},
     'date': {'typeMap': forms.DateField,'attrs': {'widget': forms.DateInput,}, 'widget_attrs': {'class': 'ddate ', 'format': '%m-%d-%Y'},},
     'time': {'typeMap': forms.TimeField, 'attrs': {'widget': forms.TimeInput,}, 'widget_attrs': {'class': 'time '},},
-    'file': {'typeMap': forms.FileField, 'attrs': {'widget': forms.ClearableFileInput,}, 'widget_attrs': {'class': 'file'},},
+    'file': {'typeMap': forms.FileField, 'attrs': {'widget': CustomFileWidget,}, 'widget_attrs': {'class': 'file'},},
     'phone': {'typeMap': UKPhoneNumberField, 'attrs': {'widget': forms.TextInput,}, 'widget_attrs': {'class': 'USPhone '}},
     'email': {'typeMap': forms.EmailField, 'attrs': {'max_length': 30, 'widget': forms.TextInput,}, 'widget_attrs': {'class': 'email '}},
     'state': {'typeMap': USStateField, 'attrs': {'widget': USStateSelect}, 'widget_attrs': {'class': ''}},

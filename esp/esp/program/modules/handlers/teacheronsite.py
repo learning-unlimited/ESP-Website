@@ -45,7 +45,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
             "link_title": "Teacher Onsite",
             "admin_title": "Teacher Onsite Webapp",
             "module_type": "teach",
-            "seq": -9999,
+            "seq": 9999,
             "choosable": 1
             }
 
@@ -180,7 +180,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         return context
 
     def isStep(self):
-        return Tag.getBooleanTag('webapp_isstep', default=False)
+        return Tag.getBooleanTag('teacher_webapp_isstep', program=self.program, default=False)
 
     class Meta:
         proxy = True

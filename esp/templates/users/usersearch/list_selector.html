@@ -131,9 +131,8 @@
                 <small>(Can be a comma-separated list)</small> <br /><br />
                 Select registration type(s): <select name="regtypes" id="regtypes" multiple>
                     {% for regtype in regtypes %}
-                    <option value="{{ regtype.name }}">{{ regtype }}</option>
+                    <option {% if regtype.description %}title="{{ regtype.description }}" {% endif %}value="{{ regtype.name }}"{% if regtype.name == "Enrolled" %} selected{% endif %}>{{ regtype }}</option>
                     {% endfor %}
-                    <option value="" selected hidden></option>
                 </select></div>
 
             </div>
@@ -272,9 +271,8 @@
                 <small>(Can be a comma-separated list)</small> <br /><br />
                 Select registration type(s): <select name="regtypes" id="regtypes" multiple>
                     {% for regtype in regtypes %}
-                    <option value="{{ regtype.name }}">{{ regtype }}</option>
+                    <option {% if regtype.description %}title="{{ regtype.description }}" {% endif %}value="{{ regtype.name }}"{% if regtype.name == "Enrolled" %} selected{% endif %}>{{ regtype }}</option>
                     {% endfor %}
-                    <option value="" selected hidden></option>
                 </select></div>
 
             </div>

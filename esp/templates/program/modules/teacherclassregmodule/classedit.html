@@ -42,7 +42,7 @@
 {% endif %}
 
 <div id="program_form">
-<form action="{{request.path}}" id="clsform" name="clsform" method="post" class="form-inline" {% if grade_range_popup %}class="grade_range_popup" grademin="{{ program.grade_min }}" grademax="{{ program.grade_max }}"{% endif %}>
+<form action="{{request.path}}" id="clsform" name="clsform" method="post" class="form-inline"{% if grade_range_popup %} onSubmit="check_grade_range(this)"{% endif %}">
 
 {% if form.errors %}
 <p align="center">

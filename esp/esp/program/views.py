@@ -393,7 +393,7 @@ def userview(request):
 
     context = {
         'user': user,
-        'taught_classes' : user.getTaughtClasses().order_by('parent_program', 'id'),
+        'taught_classes' : user.getTaughtClasses(include_rejected = True).order_by('parent_program', 'id'),
         'enrolled_classes' : user.getEnrolledSections().order_by('parent_class__parent_program', 'id'),
         'taken_classes' : user.getSections().order_by('parent_class__parent_program', 'id'),
         'teacherbio': teacherbio,

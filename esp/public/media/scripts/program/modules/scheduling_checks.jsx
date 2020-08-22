@@ -96,12 +96,15 @@ var SchedulingCheck = React.createClass({
   loadData: function () {
     // remove any existing data, so we see a loading thing again
     this.setState({data: undefined});
+    this.setState({has_items: false});
     this.setState({timestamp: "loading"});
 
     $j.get("scheduling_checks/" + this.props.slug)
     .done(function (data) {
+      var data_parse = JSON.parse(data);
       this.setState({
-        data: data,
+        data: data_parse,
+        has_items: (data_parse.body && data_parse.body.length > 0),
         failed: false,
         timestamp: this.timestamp(),
       });
@@ -138,7 +141,7 @@ var SchedulingCheck = React.createClass({
     }else if (!this.state.data) {
       body = <div className="placeholder load_yellow">loading...</div>;
     } else {
-      var data = JSON.parse(this.state.data); // Might not work on old browsers
+      var data = this.state.data;
       var table;
       if (data.headings.length == 0) {
         table = <SelectTable rows = {data.body} header = {false} 
@@ -172,13 +175,12 @@ var SchedulingCheck = React.createClass({
         {table}
       </div>;
     }
-
-    return <div className="scheduling-check">
+    return <div className={`scheduling-check ${this.state.has_items ? "items" : this.state.data ? "no-items" : "loading"}`}>
+      <ScheduleButton onClick={this.handleClick} />
+      <RefreshButton onClick={this.loadData} />
+      <ResetButton onClick={this.resetTable} />
       <div className="scheduling-check-title">
         <span onClick={this.handleClick}>{this.props.title}</span>
-        <ScheduleButton onClick={this.handleClick} />
-        <RefreshButton onClick={this.loadData} />
-        <ResetButton onClick={this.resetTable} />
       </div>
       <div className="scheduling-check-body">
         {body}

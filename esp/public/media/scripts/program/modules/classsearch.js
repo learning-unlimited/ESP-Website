@@ -53,3 +53,17 @@ $j.initialize("input.qb-input", function() {
 $j(document).on('change', 'select.qb-input', function() {
     checkSelect(this);
 });
+
+//Update student links based on selected registrations
+$j(function () {
+    $j("#regtypes").change(function (){
+        // Get user-selected options
+        var regtypes = $j(this).val();
+        var clsids = $j("#student_links").data("clsids");
+        // Add reg types to all links
+        $j("#student_links .dropdown-menu a").each(function (){
+            var base_url = $j(this).attr('href').split('?')[0];
+            $j(this).attr('href', base_url + "?clsid=" + clsids + "&regtypes=" +regtypes.join())
+        });
+    });
+});
