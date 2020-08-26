@@ -183,7 +183,7 @@ class BlankSelectWidget(forms.Select):
         output = [u'<select%s>' % forms.utils.flatatt(final_attrs)]
         output.append( u'<option value="%s" selected="selected">%s</option>' %
                        (escape(self.blank_value), conditional_escape(force_unicode(self.blank_label))) )
-        options = self.render_options(choices, [value])
+        options = self.render_options([value])
         if options:
             output.append(options)
         output.append('</select>')
