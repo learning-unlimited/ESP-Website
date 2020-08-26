@@ -41,7 +41,7 @@ import sys
 from django.conf import settings
 from django.db.models.base import ObjectDoesNotExist
 from django.http import HttpResponse, Http404
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 from django.template import RequestContext, Context
 from django.utils.translation import ugettext as _
 
@@ -189,29 +189,9 @@ class ESPErrorMiddleware(object):
         exc_info = sys.exc_info()
         logger.log(log_level, exc_info[1], exc_info=exc_info)
         context = {'error': exc_info[1]}
-        context_instance = self._get_context(request)
         # TODO(benkraft): merge our various error templates (403, 500, error).
         # They're all slightly different, but should probably be more similar
         # and share code.
-        response = render_to_response(
-            template, context, context_instance=context_instance)
+        response = render(request, template, context)
         response.status_code = status
         return response
-
-    @staticmethod
-    def _get_context(request):
-        try:
-            # attempt to set up variables the template needs
-            # - actually, some things will fail to be set up due to our
-            #   silly render_to_response hack, but hopefully that will all
-            #   just silently fail...
-            # - alternatively, we could, I dunno, NOT GET RID OF THE SAFE
-            #   TEMPLATE in main?
-            return RequestContext(request)
-        except:
-            # well, we couldn't, but at least display something
-            # (actually it will immediately fail on main because someone
-            # removed the safe version of the template and
-            # miniblog_for_user doesn't silently fail but best not to put
-            # in ugly hacks and make random variables just happen to work.)
-            return Context()

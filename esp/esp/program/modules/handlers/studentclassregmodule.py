@@ -509,7 +509,7 @@ class StudentClassRegModule(ProgramModuleObj):
         #   Include the program explicitly; this is a cached page, without RequestContext
         context['program'] = self.program
 
-        return render_to_response(self.baseDir()+'catalog.html', request, context, use_request_context=False)
+        return render_to_response(self.baseDir()+'catalog.html', request, context)
 
     def catalog_javascript(self, request, tl, one, two, module, extra, prog, timeslot=None):
         return render_to_response(self.baseDir()+'catalog_javascript.html', request, {

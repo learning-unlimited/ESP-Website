@@ -108,7 +108,7 @@ def qsd(request, url):
 
             if (action == 'read'):
                 edit_link = '/' + base_url + '.edit.html'
-                response = render_to_response('qsd/nopage_create.html', request, {'edit_link': edit_link}, use_request_context=False)
+                response = render_to_response('qsd/nopage_create.html', request, {'edit_link': edit_link})
                 response.status_code = 404 # Make sure we actually 404, so that if there is a redirect the middleware can catch it.
                 return response
         else:
@@ -133,7 +133,7 @@ def qsd(request, url):
             'settings': settings,
             'qsdrec': qsd_rec,
             'have_edit': True,  ## Edit-ness is determined client-side these days
-            'edit_url': '/' + base_url + ".edit.html" }, use_request_context=False)
+            'edit_url': '/' + base_url + ".edit.html" })
 
 #        patch_vary_headers(response, ['Cookie'])
 #        if have_edit:
