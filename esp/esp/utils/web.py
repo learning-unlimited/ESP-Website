@@ -76,10 +76,9 @@ def render_to_response(template, request, context, content_type=None, use_reques
             category = context['nav_category']
         context['navbar_list'] = makeNavBar(section, category, path=request.path[1:])
 
-    if not use_request_context:
-        return django.shortcuts.render(request, template, context, content_type=content_type)
-    else:
-        return django.shortcuts.render(request, template, RequestContext(request, context).flatten(), content_type=content_type)
+    if use_request_context:
+        context = RequestContext(request, context).flatten()
+    return django.shortcuts.render(request, template, context, content_type=content_type)
 
 """ Override Django error views to provide some context info. """
 def error404(request, template_name='404.html'):
