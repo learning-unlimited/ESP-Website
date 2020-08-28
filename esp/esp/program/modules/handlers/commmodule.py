@@ -41,6 +41,7 @@ from esp.users.views.usersearch import get_user_checklist
 from django.db.models.query   import Q
 from esp.dbmail.models import ActionHandler
 from django.template import Template
+from django.template import Context as DjangoContext
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.middleware import ESPError
 
@@ -110,7 +111,7 @@ class CommModule(ProgramModuleObj):
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
                        'program': ActionHandler(self.program, firstuser) }
 
-        renderedtext = Template(body).render(contextdict)
+        renderedtext = Template(body).render(DjangoContext(contextdict))
 
         return render_to_response(self.baseDir()+'preview.html', request,
                                               {'filterid': filterid,
