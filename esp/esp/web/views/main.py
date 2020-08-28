@@ -41,7 +41,6 @@ from esp.users.models import ESPUser, Permission
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.utils.datastructures import MultiValueDict
 from django.template import loader
-from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from urllib import quote
 
 from Cookie import SimpleCookie
@@ -180,7 +179,7 @@ def contact(request, section='esp'):
                     'logged_in_as': logged_in_as,
                     'user_agent_str': user_agent_str
                 }
-                msgtext = t.render(Context(context))
+                msgtext = t.render(context)
 
                 send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
                     msgtext,

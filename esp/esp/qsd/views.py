@@ -108,7 +108,7 @@ def qsd(request, url):
 
             if (action == 'read'):
                 edit_link = '/' + base_url + '.edit.html'
-                response = render_to_response('qsd/nopage_create.html', request, {'edit_link': edit_link})
+                response = render_to_response('qsd/nopage_create.html', request, {'edit_link': edit_link}, use_request_context=False)
                 response.status_code = 404 # Make sure we actually 404, so that if there is a redirect the middleware can catch it.
                 return response
         else:

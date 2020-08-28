@@ -185,10 +185,9 @@ class ArchiveClass(models.Model):
         return self.description
 
     def __unicode__(self):
-        from esp.middleware.threadlocalrequest import AutoRequestContext as Context
         from django.template import loader
         t = loader.get_template('program/archive_class.html')
-        return t.render(Context({'class': self}, autoescape=True))
+        return t.render({'class': self})
 
     def num_students(self):
         if self.student_ids is not None:
