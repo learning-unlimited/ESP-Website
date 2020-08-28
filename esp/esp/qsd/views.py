@@ -133,7 +133,7 @@ def qsd(request, url):
             'settings': settings,
             'qsdrec': qsd_rec,
             'have_edit': True,  ## Edit-ness is determined client-side these days
-            'edit_url': '/' + base_url + ".edit.html" })
+            'edit_url': '/' + base_url + ".edit.html" }, use_request_context=False)
 
 #        patch_vary_headers(response, ['Cookie'])
 #        if have_edit:
