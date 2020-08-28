@@ -254,7 +254,6 @@ INSTALLED_APPS = (
     'admin_tools.theming',
     'admin_tools.menu',
     'admin_tools.dashboard',
-    #'grappelli',
     'filebrowser',
     'django.contrib.admin.apps.SimpleAdminConfig',
     'django.contrib.admindocs',
