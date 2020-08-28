@@ -2657,7 +2657,7 @@ class GradeChangeRequest(TimeStampedModel):
         super(GradeChangeRequest, self).__init__(*args, **kwargs)
         grade_options = ESPUser.grade_options()
 
-        self._meta.get_field('claimed_grade')._choices = zip(grade_options, grade_options)
+        self._meta.get_field('claimed_grade').choices = zip(grade_options, grade_options)
 
     def save(self, **kwargs):
         is_new = self.id is None
