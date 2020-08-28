@@ -55,7 +55,7 @@ from django.db.models.base import ModelState
 from django.db.models.manager import Manager
 from django.db.models.query import Q
 from django.http import HttpResponseRedirect
-from django.template import loader, Context as DjangoContext
+from django.template import loader
 from django.template.defaultfilters import urlencode
 from django.template.loader import render_to_string
 from django_extensions.db.models import TimeStampedModel
@@ -768,11 +768,11 @@ class BaseESPUser(object):
 
         # generate the email text
         t = loader.get_template('email/password_recover')
-        msgtext = t.render(DjangoContext({'user': self,
-                                    'ticket': ticket,
-                                    'domainname': domainname,
-                                    'orgname': settings.ORGANIZATION_SHORT_NAME,
-                                    'institution': settings.INSTITUTION_NAME}))
+        msgtext = t.render({'user': self,
+                            'ticket': ticket,
+                            'domainname': domainname,
+                            'orgname': settings.ORGANIZATION_SHORT_NAME,
+                            'institution': settings.INSTITUTION_NAME})
 
         # Do NOT fail_silently. We want to know if there's a problem.
         send_mail(subject, msgtext, from_email, to_email)
