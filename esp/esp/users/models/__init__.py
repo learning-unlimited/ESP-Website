@@ -2291,7 +2291,7 @@ def flatten(choices):
 class Permission(ExpirableModel):
 
     #a permission can be assigned to a user, or a role
-    user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True,
+    user = AjaxForeignKey(ESPUser, blank=True, null=True,
                           help_text="Blank does NOT mean apply to everyone, use role-based permissions for that.")
     role = models.ForeignKey("auth.Group", blank=True, null=True,
                              help_text="Apply this permission to an entire user role (can be blank).")
