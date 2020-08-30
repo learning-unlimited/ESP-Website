@@ -166,29 +166,12 @@ class SplitDateWidget(forms.MultiWidget):
 
 class BlankSelectWidget(forms.Select):
     """ A <select> widget whose first entry is blank. """
+    template_name = 'django/forms/widgets/blankselect.html'
 
     def __init__(self, blank_choice=('',''), *args, **kwargs):
         super(forms.Select, self).__init__(*args, **kwargs)
         self.blank_value = blank_choice[0]
         self.blank_label = blank_choice[1]
-
-    # Copied from django/forms/widgets.py
-    def render(self, name, value, attrs=None, choices=()):
-        from django.utils.html import escape, conditional_escape
-        from django.utils.encoding import force_unicode
-        from django.utils.safestring import mark_safe
-
-        if value is None: value = ''
-        final_attrs = self.build_attrs(attrs)
-        output = [u'<select%s>' % forms.utils.flatatt(final_attrs)]
-        output.append( u'<option value="%s" selected="selected">%s</option>' %
-                       (escape(self.blank_value), conditional_escape(force_unicode(self.blank_label))) )
-        options = self.render_options([value])
-        if options:
-            output.append(options)
-        output.append('</select>')
-        return mark_safe(u'\n'.join(output))
-
 
 class NullRadioSelect(forms.RadioSelect):
     def __init__(self, *args, **kwargs):
