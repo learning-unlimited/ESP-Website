@@ -41,7 +41,7 @@ class DateTimeWidget(forms.widgets.TextInput):
         """ Base function for preparing information needed to render the widget. """
 
         if value is None: value = ''
-        final_attrs = self.build_attrs(attrs, type=self.input_type, name=name)
+        final_attrs = self.build_attrs(attrs)
 
         if value != '':
             try:
@@ -99,8 +99,8 @@ class DateWidget(DateTimeWidget):
 
 class ClassAttrMergingSelect(forms.Select):
 
-    def build_attrs(self, extra_attrs=None, **kwargs):
-        attrs = dict(self.attrs, **kwargs)
+    def build_attrs(self, extra_attrs=None):
+        attrs = dict(self.attrs)
         #   Merge 'class' attributes - this is the difference from Django's default implementation
         if extra_attrs:
             if 'class' in attrs and 'class' in extra_attrs \
@@ -179,7 +179,7 @@ class BlankSelectWidget(forms.Select):
         from django.utils.safestring import mark_safe
 
         if value is None: value = ''
-        final_attrs = self.build_attrs(attrs, name=name)
+        final_attrs = self.build_attrs(attrs)
         output = [u'<select%s>' % forms.utils.flatatt(final_attrs)]
         output.append( u'<option value="%s" selected="selected">%s</option>' %
                        (escape(self.blank_value), conditional_escape(force_unicode(self.blank_label))) )
@@ -346,7 +346,7 @@ $j(document).ready({{ name }}_setup);
 
     def render(self, name, value, attrs=None):
         if value is None: value = ''
-        self.build_attrs(attrs, name=name)
+        self.build_attrs(attrs)
         context = {}
         context['name'] = name
         context['value'] = json.dumps(value)
