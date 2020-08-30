@@ -99,8 +99,8 @@ class DateWidget(DateTimeWidget):
 
 class ClassAttrMergingSelect(forms.Select):
 
-    def build_attrs(self, extra_attrs=None):
-        attrs = dict(self.attrs)
+    def build_attrs(self, base_attrs, extra_attrs=None):
+        attrs = base_attrs.copy()
         #   Merge 'class' attributes - this is the difference from Django's default implementation
         if extra_attrs:
             if 'class' in attrs and 'class' in extra_attrs \
