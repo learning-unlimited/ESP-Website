@@ -119,5 +119,5 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         ## Validate that the default value of the form is the empty string, like we assumed in POST'ing it above
         found_default = False
         for line in lines[i:i+j]:
-            found_default = found_default or ('<option value="" selected="selected"></option>' in line)
+            found_default = found_default or ('<option value="" selected></option>' in line)
         self.assertTrue(found_default)
