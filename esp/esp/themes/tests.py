@@ -123,6 +123,12 @@ class ThemesTest(TestCase):
                     #   have a non-trivial form (e.g. key = value fails validation).
                     settings_dict = {
                         'theme': theme_name,
+                        'full_group_name': 'themetest',
+                        'titlebar_prefix': 'themetest',
+                        'welcome_message': 'themetest',
+                        'title_text': 'themetest',
+                        'subtitle_text': 'themetest',
+                        'contact_info': 'themetest',
                         'just_selected': 'True',
                         'front_page_style': 'bubblesfront.html',
                         'facebook_link': 'http://somehost.net',
