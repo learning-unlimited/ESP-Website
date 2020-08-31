@@ -5,7 +5,7 @@ Django==1.11.29
 git+https://github.com/learning-unlimited/django-argcache.git@django-1.9 # Handles caching
 django-debug-toolbar==1.5 # Provides the debug toolbar
 django-extensions==1.8.1 # Provides shell_plus, runserver_plus, and other utilities
-django-filebrowser-no-grappelli==3.7.9 # Provides admin panel interface for files
+django-filebrowser-no-grappelli==3.8.0 # Provides admin panel interface for files
 django-form-utils==1.0.3 # Provides BetterForm (used in customforms) and BetterModelForm (used in program creation)
 django-formtools==2.1 # Used once in customforms
 django-localflavor==1.1 # Provides address and phone number fields
