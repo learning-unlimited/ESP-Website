@@ -344,7 +344,7 @@ $j(document).ready({{ name }}_setup);
 class ChoiceWithOtherWidget(forms.MultiWidget):
     """MultiWidget for use with ChoiceWithOtherField."""
     template_name = 'django/forms/widgets/choicewithother.html'
-    
+
     def __init__(self, choices):
         widgets = [
             forms.RadioSelect(choices=choices),
