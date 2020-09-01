@@ -52,15 +52,12 @@ def ajax_autocomplete(request):
     else:
         query_set = autocomplete_wrapper(getattr(Model, ajax_func), data, request.user.is_staff, prog)
 
-    if type(query_set) is QuerySet:
-        raise NotImplementedError
-    else:
-        output = list(query_set[:limit])
-        output2 = []
-        for item in output:
-            output2.append({'id': item['id'], 'ajax_str': item['ajax_str']+' (%s)' % item['id']})
+    output = list(query_set[:limit])
+    output2 = []
+    for item in output:
+        output2.append({'id': item['id'], 'ajax_str': item['ajax_str']+' (%s)' % item['id']})
 
-        content = json.dumps({'result':output2})
+    content = json.dumps({'result':output2})
 
     return HttpResponse(content,
                         content_type = 'javascript/javascript')
