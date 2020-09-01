@@ -341,25 +341,10 @@ $j(document).ready({{ name }}_setup);
         result = json.loads(data[name])
         return result
 
-#adapted from https://djangosnippets.org/snippets/863/
-# class ChoiceWithOtherRenderer(forms.RadioSelect.renderer):
-    # """RadioFieldRenderer that renders its last choice with a placeholder."""
-    # def __init__(self, *args, **kwargs):
-        # super(ChoiceWithOtherRenderer, self).__init__(*args, **kwargs)
-        # self.choices, self.other = self.choices, self.choices[-1]
-
-    # def __iter__(self):
-        # for input in super(ChoiceWithOtherRenderer, self).__iter__():
-            # yield input
-        # id = '%s_%s' % (self.attrs['id'], self.other[0]) if 'id' in self.attrs else ''
-        # label_for = ' for="%s"' % id if id else ''
-        # checked = '' if not force_unicode(self.other[0]) == self.value else 'checked="true" '
-        # yield '<label%s><input type="radio" id="%s" value="%s" name="%s" %s/> %s</label> %%s' % (
-            # label_for, id, self.other[0], self.name, checked, self.other[1])
-
-
 class ChoiceWithOtherWidget(forms.MultiWidget):
     """MultiWidget for use with ChoiceWithOtherField."""
+    template_name = 'django/forms/widgets/choicewithother.html'
+    
     def __init__(self, choices):
         widgets = [
             forms.RadioSelect(choices=choices),
@@ -371,12 +356,6 @@ class ChoiceWithOtherWidget(forms.MultiWidget):
         if not value:
             return [None, None]
         return value
-
-    def format_output(self, rendered_widgets):
-        """Format the output by substituting the "other" choice into the first widget."""
-        rendered_widgets[0] = rendered_widgets[0] + '%s'
-        return rendered_widgets[0] % rendered_widgets[1]
-
 
 class ChoiceWithOtherField(forms.MultiValueField):
     def __init__(self, *args, **kwargs):
