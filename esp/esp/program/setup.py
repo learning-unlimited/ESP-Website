@@ -55,7 +55,7 @@ def prepare_program(program, data):
     perms += [('Teacher/MainPage', None, data['teacher_reg_start'], None)]
     perms += [('Teacher/Profile', None, data['teacher_reg_start'], None)]
 
-    modules += [(ProgramModule.objects.get(id=i).admin_title, i) for i in data['program_modules']]
+    modules += [(i.admin_title, i.id) for i in data['program_modules']]
 
     return perms, modules
 
