@@ -16,17 +16,12 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 
-# DATETIMEWIDGET
-calEnable = u"""
-<span id="{id}-info"><span id="{id}-gi"></span> <span id="{id}-duration"></span></span>
-<script type="text/javascript">
-    setupDatepickerDurationLabel('{widget}', '{id}', '{media_url}', '{date_format}', '{time_format}');
-</script>"""
-
-class DateTimeWidget(forms.widgets.TextInput):
+class DateTimeWidget(forms.widgets.DateTimeInput):
+    template_name = 'django/forms/widgets/datetimepicker.html'
     dformat = 'mm/dd/yy'
     tformat = 'hh:mm'
     pythondformat = '%m/%d/%Y %H:%M'
+    jquerywidget = 'datetimepicker'
 
     # Note -- these are not actually used in the deadlines template, since we don't include
     # the entire form, just use variables from. They're here now mainly for responsibility
@@ -37,32 +32,20 @@ class DateTimeWidget(forms.widgets.TextInput):
         js = ('scripts/jquery-ui.js',
               'scripts/jquery-ui.timepicker.js')
 
-    def prepare_render_attrs(self, name, value, attrs=None):
-        """ Base function for preparing information needed to render the widget. """
+    def __init__(self, attrs=None):
+        super(DateTimeWidget, self).__init__(attrs)
+        self.format = self.pythondformat
 
-        if value is None: value = ''
-        final_attrs = self.build_attrs(attrs)
-
-        if value != '':
-            try:
-                final_attrs['value'] = value.strftime(self.pythondformat)
-            except:
-                final_attrs['value'] = value
-
-        if not 'id' in final_attrs:
-            final_attrs['id'] = u'%s_id' % (name)
-        return final_attrs
-
-    def render(self, name, value, attrs=None):
-        final_attrs = self.prepare_render_attrs(name, value, attrs)
-        id = final_attrs['id']
-        cal = calEnable.format(
-                widget='datetimepicker',
-                id=id,
-                media_url=settings.MEDIA_URL,
-                date_format=self.dformat,
-                time_format=self.tformat)
-        return u'<input%s />%s' % (forms.utils.flatatt(final_attrs), cal)
+    def get_context(self, name, value, attrs):
+        context = super(DateTimeWidget, self).get_context(name, value, attrs)
+        context.update({
+            'id': attrs['id'] if 'id' in attrs else u'%s_id' % (name),
+            'jquerywidget': self.jquerywidget,
+            'media_url': settings.MEDIA_URL,
+            'date_format': self.dformat,
+            'time_format': self.tformat,
+        })
+        return context
 
     def value_from_datadict(self, data, files, name):
         dtf = django.utils.formats.get_format('DATETIME_INPUT_FORMATS')
@@ -85,17 +68,8 @@ class DateTimeWidget(forms.widgets.TextInput):
 class DateWidget(DateTimeWidget):
     """ A stripped down version of the DateTimeWidget that uses jQuery UI's
         built in datepicker. """
-
-    def render(self, name, value, attrs=None):
-        final_attrs = self.prepare_render_attrs(name, value, attrs)
-        id = final_attrs['id']
-        cal = calEnable.format(
-                widget='datepicker',
-                id=id,
-                media_url=settings.MEDIA_URL,
-                date_format=self.dformat,
-                time_format=self.tformat)
-        return u'<input%s />%s' % (forms.utils.flatatt(final_attrs), cal)
+    pythondformat = '%m/%d/%Y'
+    jquerywidget = 'datepicker'
 
 class ClassAttrMergingSelect(forms.Select):
 
