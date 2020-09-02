@@ -6,7 +6,6 @@ from django import forms
 from django.conf import settings
 from django.forms import widgets
 from django.template import Template, Context
-from django.utils.encoding import force_unicode
 from django.utils.safestring import mark_safe
 
 import django.utils.formats
