@@ -76,6 +76,9 @@ class ProgramSettingsForm(ProgramCreationForm):
                      ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
                      ('Program Internal Details' ,{'fields':['program_type','program_modules','program_module_questions','class_categories','flag_types']}),
                     ]# Here you can also add description for each fieldset.
+        widgets = {
+            'program_modules': forms.SelectMultiple(attrs={'class': 'hidden-field'}),
+        }
         model = Program
 
 class TeacherRegSettingsForm(BetterModelForm):
