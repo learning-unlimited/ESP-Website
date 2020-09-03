@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.users.models import ESPUser, Permission
-from esp.program.models import ProgramModule
 from esp.accounting.controllers import ProgramAccountingController
 from esp.middleware import ESPError
 from django.contrib.auth.models import Group
