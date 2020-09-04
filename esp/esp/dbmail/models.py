@@ -57,8 +57,6 @@ from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
 from django.core.exceptions import ImproperlyConfigured
 
-import re
-
 def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=None,
               return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={},
               *args, **kwargs):
@@ -69,7 +67,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
-    
+
     # remove duplicate email addresses (sendgrid doesn't like them)
     recipients = []
     pat = '<(.+)>'
@@ -83,7 +81,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
             if tmp in emails:
                 recipients.append(x)
                 emails.remove(tmp)
-    
+
     from django.core.mail import EmailMessage #send_mail as django_send_mail
     logger.info("Sent mail to %s", recipients)
 
