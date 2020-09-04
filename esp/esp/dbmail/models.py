@@ -57,6 +57,7 @@ from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
 from django.core.exceptions import ImproperlyConfigured
 
+import re
 
 def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=None,
               return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={},
@@ -68,13 +69,28 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
+    
+    # remove duplicate email addresses (sendgrid doesn't like them)
+    recipients = []
+    pat = '<(.+)>'
+    emails = {re.search(pat, x).group(1) if re.search(pat, x) else x for x in new_list}
+    for x in new_list:
+        if x in emails and not re.search(pat, x):
+            recipients.append(x)
+            emails.remove(x)
+        elif re.search(pat, x):
+            tmp = re.search(pat, x).group(1)
+            if tmp in emails:
+                recipients.append(x)
+                emails.remove(tmp)
+    
     from django.core.mail import EmailMessage #send_mail as django_send_mail
-    logger.info("Sent mail to %s", new_list)
+    logger.info("Sent mail to %s", recipients)
 
     #   Get whatever type of email connection Django provides.
     #   Normally this will be SMTP, but it also has an in-memory backend for testing.
     connection = get_connection(fail_silently=fail_silently, return_path=return_path)
-    msg = EmailMessage(subject, message, from_email, new_list, bcc=bcc, connection=connection, headers=extra_headers)
+    msg = EmailMessage(subject, message, from_email, recipients, bcc=bcc, connection=connection, headers=extra_headers)
 
     #   Detect HTML tags in message and change content-type if they are found
     if '<html>' in message:
