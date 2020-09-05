@@ -176,7 +176,7 @@ class DonationModule(ProgramModuleObj):
         # credit card payment has occured. For now, just do the same thing we
         # do in other accounting modules, and don't allow changes after payment
         # has occured.
-        if iac.amount_due() <= 0:
+        if iac.has_paid():
             raise ESPError("You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.", log=False)
 
         form = None
