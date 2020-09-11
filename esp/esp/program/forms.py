@@ -70,8 +70,6 @@ class ProgramCreationForm(BetterModelForm):
                                                            help_text=Program.program_modules.field.help_text,
                                                            required=False)
 
-    program_modules   = forms.MultipleChoiceField(choices=[], widget = forms.SelectMultiple(attrs={'class': 'hidden-field'}), required=False)
-
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current modules. """
         # These modules are the "choosable" ones that admins will usually want to choose to select or exclude (i.e. not automatically include or exclude)
@@ -95,7 +93,8 @@ class ProgramCreationForm(BetterModelForm):
         # Now initialize the form
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
         self.fields['program_module_questions'].choices = [(','.join(map(str, ids)), q) for q, ids in self.program_module_question_ids.items()]
-        self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())
+        #self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())
+        self.fields['program_modules'].required = False
         #   Enable validation on other fields
         self.fields['program_size_max'].required = True
         self.fields['program_size_max'].validators.append(validators.MaxValueValidator((1 << 31) - 1))
@@ -126,12 +125,8 @@ class ProgramCreationForm(BetterModelForm):
 
     def clean_program_modules(self):
         mods = self.cleaned_data['program_modules'][:] # take a copy of the list to be safe
-        if any([type(x) is not unicode for x in mods]):
-            raise TypeError('Bad type(s) going into ProgramCreationForm:', set(type(x) for x in mods))
         # Add "include by default" modules (choosable property = 1)
-        default_modules = ProgramModule.objects.filter(choosable=1)
-        for m in default_modules:
-            mods.append(unicode(m.id))
+        mods.extend(ProgramModule.objects.filter(choosable=1))
         return list(set(mods)) # Database wants a unique collection, so take set
 
 
@@ -143,10 +138,10 @@ class ProgramCreationForm(BetterModelForm):
                      ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
                      ('Program Internal Details' ,{'fields':['program_type','program_modules','program_module_questions','class_categories','flag_types']}),
                      ('Registration Dates',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
-
-
         ]                      # Here You can also add description for each fieldset.
-
+        widgets = {
+            'program_modules': forms.SelectMultiple(attrs={'class': 'hidden-field'}),
+        }
         model = Program
 ProgramCreationForm.base_fields['director_email'].widget = forms.TextInput(attrs={'size': 40})
 ProgramCreationForm.base_fields['director_cc_email'].widget = forms.TextInput(attrs={'size': 40})

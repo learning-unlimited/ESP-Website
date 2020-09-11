@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 import os
 import warnings
 import tempfile
+import django
 
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 # Django expects BASE_DIR
@@ -52,6 +53,7 @@ from local_settings import *
 
 # Do this here so we have access to PROJECT_ROOT
 TEMPLATES[0]['DIRS'].append(os.path.join(PROJECT_ROOT, 'templates'))
+TEMPLATES[0]['DIRS'].append(django.__path__[0] + '/forms/templates')
 TEMPLATES[0]['OPTIONS']['debug'] = DEBUG
 
 # Ensure database settings are set properly

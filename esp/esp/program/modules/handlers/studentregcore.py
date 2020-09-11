@@ -77,8 +77,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         q_confirmed = Q(record__event = "reg_confirmed", record__program=self.program)
         q_attended = Q(record__event= "attended", record__program=self.program)
-        q_checked_out = Q(id__in=self.program.currentlyCheckedOutStudents())
-        q_checked_in = Q(id__in=self.program.currentlyCheckedInStudents())
+        # if we don't do list(values_list()), it breaks downstream queries for some weird reason I don't understand -WG
+        q_checked_out = Q(id__in=list(self.program.currentlyCheckedOutStudents().values_list('id', flat = True)))
+        q_checked_in = Q(id__in=list(self.program.currentlyCheckedInStudents().values_list('id', flat = True)))
         q_studentrep = Q(groups__name="StudentRep")
 
         if QObject:

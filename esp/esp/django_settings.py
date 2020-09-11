@@ -181,7 +181,7 @@ TEMPLATES = [
                 'django.template.context_processors.media',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.static',
-                'django.core.context_processors.request',
+                'django.template.context_processors.request',
             ],
             'loaders': [
                 'admin_tools.template_loaders.Loader',
@@ -196,6 +196,8 @@ TEMPLATES = [
         },
     },
 ]
+
+FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
 
 # Set MIDDLEWARE_LOCAL in local_settings.py to configure this
 MIDDLEWARE_GLOBAL = [
@@ -254,7 +256,6 @@ INSTALLED_APPS = (
     'admin_tools.theming',
     'admin_tools.menu',
     'admin_tools.dashboard',
-    #'grappelli',
     'filebrowser',
     'django.contrib.admin.apps.SimpleAdminConfig',
     'django.contrib.admindocs',
@@ -367,6 +368,8 @@ CYBERSOURCE_CONFIG = {
     'post_url': '',
     'merchant_id': '',
 }
+
+FILEBROWSER_CUSTOM_ADMIN = 'esp.admin.admin_site'
 
 #   Allow Filebrowser to edit anything under media/
 #   (not just '/media/uploads/' which is the default)
