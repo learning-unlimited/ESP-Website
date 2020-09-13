@@ -1,0 +1,19 @@
+{% extends "users/usersearch/support.html" %}
+
+{% block title %}User Map Generator{% endblock %}
+
+{% block content %}
+
+<br /><br />
+<h1>Generate Maps for {{ program.niceName }}</h1>
+
+<p>
+You can use this to get a list of users and map their geographic distribution.
+First, select a group of users to query using the form below.
+</p>
+
+{% include "users/usersearch/list_selector.html" %}
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}
