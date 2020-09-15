@@ -37,7 +37,9 @@ from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser
 from esp.users.controllers.usersearch import UserSearchController
 from django.db.models import Count
+from django.conf import settings
 
+import csv
 import json
 
 class MapGenModule(ProgramModuleObj):
@@ -76,21 +78,35 @@ class MapGenModule(ProgramModuleObj):
             context['num_users'] = users.count()
 
             #   Summarize users by state and zip code
-            states = users.select_related('contactinfo_set', 'contactinfo_set__address_state'
+            states_raw = users.select_related('contactinfo_set', 'contactinfo_set__address_state'
                 ).values('contactinfo__address_state'
                 ).order_by('contactinfo__address_state'
                 ).annotate(count = Count('contactinfo__address_state'))
-            context['states'] = json.dumps({state['contactinfo__address_state']: state['count'] for state in states if state['contactinfo__address_state']})
+            states = {state['contactinfo__address_state']: state['count'] for state in states_raw if state['contactinfo__address_state']}
 
-            zipcodes = users.select_related('contactinfo_set', 'contactinfo_set__address_zip'
+            zipcodes_raw = users.select_related('contactinfo_set', 'contactinfo_set__address_zip'
                 ).values('contactinfo__address_zip'
                 ).order_by('contactinfo__address_zip'
                 ).annotate(count = Count('contactinfo__address_zip'))
-            context['zipcodes'] = json.dumps({zipcode['contactinfo__address_zip']: zipcode['count'] for zipcode in zipcodes if zipcode['contactinfo__address_zip']})
-            #   If we don't have state data, should we use zip code data to populate it?
-            #   (we would need a table or external package)
+            zipcodes = {zipcode['contactinfo__address_zip']: zipcode['count'] for zipcode in zipcodes_raw if zipcode['contactinfo__address_zip']}
+            
+            #   If we don't have state data, use zip code data to populate it
+            #   data is from https://data.world/niccolley/us-zipcode-to-county-state
+            csvfile = open(settings.MEDIA_ROOT + 'data/zipcode-data-2018.csv', "r")
+            reader = csv.DictReader(csvfile)
+            zip_states = {}
+            for line in reader:
+                zip = line['ZIP'].zfill(5)
+                state = line['STATE']
+                if state not in zip_states:
+                    zip_states[state] = 0
+                zip_states[state] += zipcodes.get(zip, 0)
+            csvfile.close()
+            states_corr = {state: (states.get(state, 0) if states.get(state, 0) > zip_states[state] else zip_states[state]) for state in zip_states.keys()}
 
             #   Render a page with a map
+            context['states'] = json.dumps(states_corr)
+            context['zipcodes'] = json.dumps(zipcodes)
             return render_to_response(self.baseDir()+'map.html', request, context)
 
         #   Render a page that shows the list selection options
