@@ -89,7 +89,7 @@ class MapGenModule(ProgramModuleObj):
                 ).order_by('contactinfo__address_zip'
                 ).annotate(count = Count('contactinfo__address_zip'))
             zipcodes = {zipcode['contactinfo__address_zip']: zipcode['count'] for zipcode in zipcodes_raw if zipcode['contactinfo__address_zip']}
-            
+
             #   If we don't have state data, use zip code data to populate it
             #   data is from https://data.world/niccolley/us-zipcode-to-county-state
             csvfile = open(settings.MEDIA_ROOT + 'data/zipcode-data-2018.csv', "r")
