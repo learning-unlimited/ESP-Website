@@ -36,6 +36,9 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser
 from esp.users.controllers.usersearch import UserSearchController
+from django.db.models import Count
+
+import json
 
 class MapGenModule(ProgramModuleObj):
     """ Allows you to generate a map showing the distribution of the selected users. """
@@ -52,8 +55,7 @@ class MapGenModule(ProgramModuleObj):
     @main_call
     @needs_admin
     def usermap(self, request, tl, one, two, module, extra, prog):
-        """ Select a group of users and generate a list of information
-            about them using the generateList view above. """
+        """ Select a group of users and generate a map summarizing their geographic distribution. """
         usc = UserSearchController()
 
         context = {}
@@ -70,9 +72,25 @@ class MapGenModule(ProgramModuleObj):
                     data[key] = request.POST[key]
             filterObj = usc.filter_from_postdata(prog, data)
 
-            context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+            users = ESPUser.objects.filter(filterObj.get_Q()).distinct()
+            context['num_users'] = users.count()
 
-            #   Summarize users by county
+            #   Summarize users by state and zip code
+            states = users.select_related('contactinfo_set', 'contactinfo_set__address_state'
+                ).values('contactinfo__address_state'
+                ).order_by('contactinfo__address_state'
+                ).annotate(count = Count('contactinfo__address_state'))
+            context['states'] = json.dumps({state['contactinfo__address_state']: state['count'] for state in states if state['contactinfo__address_state']})
+
+            zipcodes = users.select_related('contactinfo_set', 'contactinfo_set__address_zip'
+                ).values('contactinfo__address_zip'
+                ).order_by('contactinfo__address_zip'
+                ).annotate(count = Count('contactinfo__address_zip'))
+            context['zipcodes'] = json.dumps({zipcode['contactinfo__address_zip']: zipcode['count'] for zipcode in zipcodes if zipcode['contactinfo__address_zip']})
+            #   If we don't have state data, should we use zip code data to populate it?
+            #   (we would need a table or external package)
+
+            #   Render a page with a map
             return render_to_response(self.baseDir()+'map.html', request, context)
 
         #   Render a page that shows the list selection options
