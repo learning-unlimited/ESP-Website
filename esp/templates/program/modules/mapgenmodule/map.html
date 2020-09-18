@@ -27,6 +27,10 @@ Clicking on the button in the top right of the graph provides options to downloa
 </p>
 
 <br />
+<select id="axisType">
+    <option value="logarithmic" selected>logarithmic color scale</option>
+    <option value="linear">linear color scale</option>
+</select>
 <div id="container" style="width: 100%; max-height: 500px; margin: 0 auto"></div>
 
 <script>
@@ -37,6 +41,38 @@ var data = Highcharts.geojson(Highcharts.maps['countries/us/us-all']),
     // Some responsiveness
     small = $j('#container').width() < 400;
 
+/**
+ * Custom Axis extension to allow inclusion of zero values on a logarithmic
+ * color axis. Note that the scale is not mathematically correct, as a true
+ * logarithmic axis never reaches zero.
+ * Based on https://jsfiddle.net/gh/get/library/pure/highcharts/highcharts/tree/master/samples/highcharts/coloraxis/logarithmic-with-emulate-negative-values/
+ */
+(function (H) {
+    H.addEvent(H.Axis, 'afterInit', function () {
+        var logarithmic = this.logarithmic;
+        if (logarithmic) {
+            // Avoid errors for zeros on a log axis
+            this.positiveValuesOnly = false;
+
+            // Override the converter functions
+            logarithmic.log2lin = num => {
+                var adjustedNum = num;
+                if (adjustedNum < 10) {
+                    adjustedNum += (10 - num) / 10;
+                }
+                return Math.log(adjustedNum) / Math.LN10;
+            };
+            logarithmic.lin2log = num => {
+                var result = Math.pow(10, Math.abs(num));
+                if (result < 10) {
+                    result = (10 * (result - 1)) / (10 - 1);
+                }
+                return result;
+            };
+        }
+    });
+}(Highcharts));
+
 // Set drilldown pointers
 $j.each(data, function (i) {
     this.drilldown = this.properties['hc-key'];
@@ -45,7 +81,7 @@ $j.each(data, function (i) {
 });
 
 // Instantiate the map
-Highcharts.mapChart('container', {
+chart = Highcharts.mapChart('container', {
     chart: {
         events: {
             drilldown: function (e) {
@@ -107,6 +143,8 @@ Highcharts.mapChart('container', {
     },
 
     colorAxis: {
+        id: 'axis-color',
+        type: 'logarithmic',
         reversed: false,
         min: 0,
         minColor: '#E6E7E8',
@@ -161,6 +199,20 @@ Highcharts.mapChart('container', {
             }
         }
     }
+});
+
+// When input is changed, update axis type
+// Based on http://jsfiddle.net/nrebyagr/1/
+$j(function () {
+    $j('#axisType').change(function () {
+        chart.get('axis-color').update({
+            type: this.value,
+            reversed: false,
+            min: 0,
+            minColor: '#E6E7E8',
+            maxColor: '#005645'
+        }, true);
+    });
 });
 </script>
 
