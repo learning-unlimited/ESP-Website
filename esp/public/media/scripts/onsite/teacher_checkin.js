@@ -20,7 +20,7 @@ $j(function(){
 
     $j('.section-detail-header').click(function () {
         $j(this).toggleClass('active');
-        var info = $j(this).siblings('.section-detail-info');
+        var info = $j(this).closest("tr").nextAll(".section-detail-tr").first().find('.section-detail-info');
         var class_id = info.attr('data-class-id');
 
         // Let data-class-id indicate which class id we want to load details
@@ -280,19 +280,26 @@ $j(function(){
         else if(input.val().length > lastLength || input.hasClass("not-found")){
             var found=false;
             var buttons = $j(".checkin");
-            for(var n=0; !found && n<buttons.length; n++)
-                if(buttons[n].name.toLowerCase().indexOf(input.val().toLowerCase())==0){
-                    selected=n;
-                    found=true;
-                }
-            for(var n=0; !found && n<buttons.length; n++)
-                if($j(buttons[n]).parent().prev().children("a").html().toLowerCase().indexOf(input.val().toLowerCase())==0){
-                    selected=n;
-                    found=true;
-                }
-            if(found)
-                updateSelected(true);
-            input.removeClass().addClass(found?"found":"not-found");
+            try {
+                var patt = new RegExp(input.val().toLowerCase());
+                for(var n=0; !found && n<buttons.length; n++)
+                    if(patt.test(buttons[n].name.toLowerCase())){
+                        selected=n;
+                        found=true;
+                    }
+                for(var n=0; !found && n<buttons.length; n++)
+                    if(patt.test($j(buttons[n]).parent().prev().children("a").html().toLowerCase())){
+                        selected=n;
+                        found=true;
+                    }
+                if(found)
+                    updateSelected(true);
+                input.removeClass().addClass(found?"found":"not-found");
+            } catch(e) {
+                // unselect teacher until we get a valid expression
+                input.removeClass();
+                $j(".selected").removeClass("selected");
+            }
         }
         lastLength = input.val().length;
     });

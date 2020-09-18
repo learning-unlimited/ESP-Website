@@ -70,10 +70,10 @@ input.not-found {
 
 .section-detail-header {
     background-color: #c6def7;
-    font-size: 1.2em;
+    font-size: 1.2em !important;
     width: calc(100% - 8px);
     cursor: pointer;
-    padding: 4px;
+    padding: 4px !important;
     border-bottom: 2px solid grey;
 }
 
