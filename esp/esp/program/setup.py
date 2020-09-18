@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.users.models import ESPUser, Permission
-from esp.program.models import ProgramModule
 from esp.accounting.controllers import ProgramAccountingController
 from esp.middleware import ESPError
 from django.contrib.auth.models import Group
@@ -55,7 +54,7 @@ def prepare_program(program, data):
     perms += [('Teacher/MainPage', None, data['teacher_reg_start'], None)]
     perms += [('Teacher/Profile', None, data['teacher_reg_start'], None)]
 
-    modules += [(ProgramModule.objects.get(id=i).admin_title, i) for i in data['program_modules']]
+    modules += [(i.admin_title, i.id) for i in data['program_modules']]
 
     return perms, modules
 

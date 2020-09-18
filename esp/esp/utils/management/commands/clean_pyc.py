@@ -1,11 +1,11 @@
 from django.conf import settings
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 
 import logging
 logger = logging.getLogger(__name__)
 import os
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     """
     Clean out *.pyc files that contain stale code.
 
@@ -17,7 +17,7 @@ class Command(NoArgsCommand):
     optimization over Django's original clean_pyc, which deletes all *pyc's in
     the source tree.
     """
-    def handle_noargs(self, **options):
+    def handle(self, *args, **options):
         root = os.path.dirname(os.path.abspath(settings.BASE_DIR))
         ret = os.system("find " + root + """ -name '*.pyc' -exec bash -c 'test ! -f "${1%c}"' -- {} \; -delete""")
         if ret:

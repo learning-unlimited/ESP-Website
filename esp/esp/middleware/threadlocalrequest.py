@@ -18,7 +18,7 @@ def AutoRequestContext(*args, **kwargs):
                      "This is almost certainly a bug; either Context should "
                      "be being used explicitly, or RequestContext ought to "
                      "be available here.")
-        return Context(*args, **kwargs)
+        retVal = Context(*args, **kwargs)
     else:
         if 'autoescape' in kwargs:
             autoescape = kwargs['autoescape']
@@ -27,10 +27,10 @@ def AutoRequestContext(*args, **kwargs):
             retVal = RequestContext(request, *args, **kwargs)
 
             retVal.autoescape = autoescape
-
-            return retVal
         else:
-            return RequestContext(request, *args, **kwargs)
+            retVal = RequestContext(request, *args, **kwargs)
+    # we need to return a dictionary
+    return retVal.flatten()
 
 class ThreadLocals(object):
     """
