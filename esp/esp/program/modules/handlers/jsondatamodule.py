@@ -804,7 +804,7 @@ teachers[key].filter(is_active = True).distinct().count()))
         vitals["hournum"].append(("Total # of Class-Student-Hours (approved)", app_hours["class-student-hours"]))
         vitals["hournum"].append(("Total # of Class-Student-Hours (scheduled)", sched_hours["class-student-hours"]))
         vitals["hournum"].append(("Total # of Class-Student-Hours (enrolled)", reg_hours["class-registered-hours"]))
-        if app_hours["class-student-hours"]:
+        if sched_hours["class-student-hours"]:
             vitals["hournum"].append(("Class-Student-Hours Utilization", str(round(100 * reg_hours["class-registered-hours"] / sched_hours["class-student-hours"], 2)) + "%"))
 
 
