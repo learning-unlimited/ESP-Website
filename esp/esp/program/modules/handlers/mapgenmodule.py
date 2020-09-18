@@ -78,13 +78,13 @@ class MapGenModule(ProgramModuleObj):
             context['num_users'] = users.count()
 
             #   Summarize users by state and zip code
-            states_raw = users.select_related('contactinfo_set', 'contactinfo_set__address_state'
+            states_raw = ESPUser.objects.filter(id__in=[user.id for user in users]).select_related('contactinfo_set', 'contactinfo_set__address_state'
                 ).values('contactinfo__address_state'
                 ).order_by('contactinfo__address_state'
                 ).annotate(count = Count('contactinfo__address_state'))
             states = {state['contactinfo__address_state']: state['count'] for state in states_raw if state['contactinfo__address_state']}
 
-            zipcodes_raw = users.select_related('contactinfo_set', 'contactinfo_set__address_zip'
+            zipcodes_raw = ESPUser.objects.filter(id__in=[user.id for user in users]).select_related('contactinfo_set', 'contactinfo_set__address_zip'
                 ).values('contactinfo__address_zip'
                 ).order_by('contactinfo__address_zip'
                 ).annotate(count = Count('contactinfo__address_zip'))
