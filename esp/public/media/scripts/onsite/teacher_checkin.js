@@ -236,38 +236,41 @@ $j(function(){
     }
 
     $j(document).keydown(function(e){
-        if(/^[a-z]$/i.test(e.key) && !e.ctrlKey) {
-            if(e.target.nodeName !== "TEXTAREA" && e.target.nodeName !== "INPUT")
+        if(e.target.nodeName !== "TEXTAREA") {
+            if(/^[a-z]$/i.test(e.key) && !e.ctrlKey) {
+                if(e.target !== input[0])
+                    input.val("");
+                input.focus();
+            }
+            else if([38, 40, 33, 34].includes(e.which)) {
+                if(e.which==38)
+                    selected--;
+                else if(e.which==40)
+                    selected++;
+                else if(e.which==33)
+                    selected-=5;
+                else if(e.which==34)
+                    selected+=5;
+                e.preventDefault();
+                updateSelected(true);
+            }
+            else if(e.which==90 && e.ctrlKey){
+                undoLiveCheckIn();
+                e.preventDefault();
+            }
+            else if(e.which==13 && e.shiftKey){
+                $j(".selected .checkin").click();
+                e.preventDefault();
                 input.val("");
-            input.focus();
-        }
-        else if([38, 40, 33, 34].includes(e.which)) {
-            if(e.which==38)
-                selected--;
-            else if(e.which==40)
-                selected++;
-            else if(e.which==33)
-                selected-=5;
-            else if(e.which==34)
-                selected+=5;
-            e.preventDefault();
-            updateSelected(true);
-        }
-        else if(e.which==90 && e.ctrlKey){
-            undoLiveCheckIn();
-            e.preventDefault();
-        }
-        else if(e.which==13 && e.shiftKey){
-            $j(".selected .checkin").click();
-            e.preventDefault();
-            input.val("");
-        }
-        else if(e.which==191 && e.shiftKey){
-            window.open($j(".selected a")[0].href);
-            e.preventDefault();
+            }
+            else if(e.which==191 && e.shiftKey){
+                window.open($j(".selected a")[0].href);
+                e.preventDefault();
+            }
         }
     }).keyup(function(e){
-        input.change();
+        if(e.target.nodeName !== "TEXTAREA")
+            input.change();
     });
 
     var lastLength=0;
