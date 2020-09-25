@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='classsection',
-            name='checked_in_students',
+            name='ever_checked_in_students',
             field=models.IntegerField(default=0),
         ),
     ]

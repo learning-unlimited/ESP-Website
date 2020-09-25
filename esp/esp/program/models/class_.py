@@ -959,13 +959,12 @@ class ClassSection(models.Model):
     num_students_checked_in.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     @cache_function
-    def count_checked_in_students(self):
-        return self.num_students_checked_in(use_cache=False)
-    count_checked_in_students.depend_on_model('users.Record')
-    count_checked_in_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
+    def count_ever_checked_in_students(self):
+        return (self.students() & ESPUser.objects.filter(Q(record__event="attended", record__program=self.parent_program)).distinct()).count()
+    count_ever_checked_in_students.depend_on_model('users.Record')
+    count_ever_checked_in_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
-    # TODO: We want people who were ever checked in, not just people currently checked in
-    checked_in_students = DerivedField(models.IntegerField, count_checked_in_students)(null=False, default=0)
+    ever_checked_in_students = DerivedField(models.IntegerField, count_ever_checked_in_students)(null=False, default=0)
 
     @cache_function
     def num_students_prereg(self):

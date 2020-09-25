@@ -778,9 +778,9 @@ teachers[key].filter(is_active = True).distinct().count()))
         ## minimize the number of objects that we're creating.
         ## One dict and two Decimals per row, as opposed to
         ## an Object per field and all kinds of stuff...
-        reg_classes = prog.classes().exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'), subject_checked_in_students=Sum('sections__checked_in_students')).values('num_sections', 'subject_duration', 'subject_students', 'subject_checked_in_students', 'class_size_max')
+        reg_classes = prog.classes().exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'), subject_checked_in_students=Sum('sections__ever_checked_in_students')).values('num_sections', 'subject_duration', 'subject_students', 'subject_checked_in_students', 'class_size_max')
         reg_hours = JSONDataModule.calc_hours(reg_classes)
-        app_classes = prog.classes().filter(status__gt=0, sections__status__gt=0).exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'), subject_checked_in_students=Sum('sections__checked_in_students')).values('num_sections', 'subject_duration', 'subject_students', 'subject_checked_in_students', 'class_size_max')
+        app_classes = prog.classes().filter(status__gt=0, sections__status__gt=0).exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'), subject_checked_in_students=Sum('sections__ever_checked_in_students')).values('num_sections', 'subject_duration', 'subject_students', 'subject_checked_in_students', 'class_size_max')
         app_hours = JSONDataModule.calc_hours(app_classes)
         vitals["hournum"] = []
         vitals["hournum"].append(("Total # of Class-Hours (registered)", reg_hours["class-hours"]))
@@ -788,7 +788,7 @@ teachers[key].filter(is_active = True).distinct().count()))
         vitals["hournum"].append(("Total # of Class-Student-Hours (registered)", reg_hours["class-student-hours"]))
         vitals["hournum"].append(("Total # of Class-Student-Hours (approved)", app_hours["class-student-hours"]))
         vitals["hournum"].append(("Total # of Class-Student-Hours (enrolled)", reg_hours["class-registered-hours"]))
-        vitals["hournum"].append(("Total # of Class-Student-Hours (checked in)", reg_hours["class-checked-in-hours"]))
+        vitals["hournum"].append(("Total # of Class-Student-Hours (attended program)", reg_hours["class-checked-in-hours"]))
         if app_hours["class-student-hours"]:
             vitals["hournum"].append(("Class-Student-Hours Utilization", str(round(100 * reg_hours["class-registered-hours"] / app_hours["class-student-hours"], 2)) + "%"))
 
