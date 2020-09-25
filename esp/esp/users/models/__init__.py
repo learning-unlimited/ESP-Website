@@ -55,7 +55,7 @@ from django.db.models.base import ModelState
 from django.db.models.manager import Manager
 from django.db.models.query import Q
 from django.http import HttpResponseRedirect
-from django.template import loader, Context as DjangoContext
+from django.template import loader
 from django.template.defaultfilters import urlencode
 from django.template.loader import render_to_string
 from django_extensions.db.models import TimeStampedModel
@@ -768,11 +768,11 @@ class BaseESPUser(object):
 
         # generate the email text
         t = loader.get_template('email/password_recover')
-        msgtext = t.render(DjangoContext({'user': self,
-                                    'ticket': ticket,
-                                    'domainname': domainname,
-                                    'orgname': settings.ORGANIZATION_SHORT_NAME,
-                                    'institution': settings.INSTITUTION_NAME}))
+        msgtext = t.render({'user': self,
+                            'ticket': ticket,
+                            'domainname': domainname,
+                            'orgname': settings.ORGANIZATION_SHORT_NAME,
+                            'institution': settings.INSTITUTION_NAME})
 
         # Do NOT fail_silently. We want to know if there's a problem.
         send_mail(subject, msgtext, from_email, to_email)
@@ -2291,7 +2291,7 @@ def flatten(choices):
 class Permission(ExpirableModel):
 
     #a permission can be assigned to a user, or a role
-    user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True,
+    user = AjaxForeignKey(ESPUser, blank=True, null=True,
                           help_text="Blank does NOT mean apply to everyone, use role-based permissions for that.")
     role = models.ForeignKey("auth.Group", blank=True, null=True,
                              help_text="Apply this permission to an entire user role (can be blank).")
@@ -2657,7 +2657,7 @@ class GradeChangeRequest(TimeStampedModel):
         super(GradeChangeRequest, self).__init__(*args, **kwargs)
         grade_options = ESPUser.grade_options()
 
-        self._meta.get_field('claimed_grade')._choices = zip(grade_options, grade_options)
+        self._meta.get_field('claimed_grade').choices = zip(grade_options, grade_options)
 
     def save(self, **kwargs):
         is_new = self.id is None

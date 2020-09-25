@@ -701,6 +701,17 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 hours["class-checked-in-hours"] += float(cls['subject_duration']) * float(cls['subject_checked_in_students']) / float(cls['num_sections'])
         return hours
 
+    @staticmethod
+    def calc_section_hours(sections):
+        hours = {"class-hours": 0, "class-student-hours": 0, "class-registered-hours": 0}
+        for sec in sections:
+            if sec['duration']:
+                hours["class-hours"] += float(sec['duration'])
+                capacity = ClassSection.objects.get(id=sec['id']).capacity
+                hours["class-student-hours"] += float(sec['duration']) * float(capacity)
+                hours["class-registered-hours"] += float(sec['duration']) * float(sec['enrolled_students'])
+        return hours
+
     @aux_call
     @json_response()
     @needs_admin
@@ -714,7 +725,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         class_num_list = []
         class_num_list.append(("Total # of Classes", classes.distinct().count()))
+        class_num_list.append(("Total # of Classes Scheduled", classes.filter(sections__meeting_times__isnull=False).distinct().count()))
         class_num_list.append(("Total # of Class Sections", prog.sections().select_related().distinct().count()))
+        class_num_list.append(("Total # of Class Sections Scheduled", prog.sections().select_related().filter(meeting_times__isnull=False).distinct().count()))
         class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category = "Lunch").filter(status=10).distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=0).exclude(category__category='Lunch').distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=10).exclude(category__category='Lunch').distinct().count()))
@@ -782,15 +795,19 @@ teachers[key].filter(is_active = True).distinct().count()))
         reg_hours = JSONDataModule.calc_hours(reg_classes)
         app_classes = prog.classes().filter(status__gt=0, sections__status__gt=0).exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'), subject_checked_in_students=Sum('sections__ever_checked_in_students')).values('num_sections', 'subject_duration', 'subject_students', 'subject_checked_in_students', 'class_size_max')
         app_hours = JSONDataModule.calc_hours(app_classes)
+        sched_sections = prog.sections().filter(status__gt=0, meeting_times__isnull=False).exclude(parent_class__category__category='Lunch').values('duration', 'enrolled_students', 'id')
+        sched_hours = JSONDataModule.calc_section_hours(sched_sections)
         vitals["hournum"] = []
         vitals["hournum"].append(("Total # of Class-Hours (registered)", reg_hours["class-hours"]))
         vitals["hournum"].append(("Total # of Class-Hours (approved)", app_hours["class-hours"]))
+        vitals["hournum"].append(("Total # of Class-Hours (scheduled)", sched_hours["class-hours"]))
         vitals["hournum"].append(("Total # of Class-Student-Hours (registered)", reg_hours["class-student-hours"]))
         vitals["hournum"].append(("Total # of Class-Student-Hours (approved)", app_hours["class-student-hours"]))
+        vitals["hournum"].append(("Total # of Class-Student-Hours (scheduled)", sched_hours["class-student-hours"]))
         vitals["hournum"].append(("Total # of Class-Student-Hours (enrolled)", reg_hours["class-registered-hours"]))
         vitals["hournum"].append(("Total # of Class-Student-Hours (attended program)", reg_hours["class-checked-in-hours"]))
-        if app_hours["class-student-hours"]:
-            vitals["hournum"].append(("Class-Student-Hours Utilization", str(round(100 * reg_hours["class-registered-hours"] / app_hours["class-student-hours"], 2)) + "%"))
+        if sched_hours["class-student-hours"]:
+            vitals["hournum"].append(("Class-Student-Hours Utilization", str(round(100 * reg_hours["class-registered-hours"] / sched_hours["class-student-hours"], 2)) + "%"))
 
 
         ## Prefetch enough data that get_meeting_times() and num_students() don't have to hit the db
