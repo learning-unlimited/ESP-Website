@@ -190,6 +190,9 @@ class FormstackMedliabModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'medicalbypass.html',
                                   request, context)
 
+    def isStep(self):
+        return bool(Tag.getProgramTag("formstack_id", self.program) and Tag.getProgramTag("formstack_viewkey", self.program))
+
     class Meta:
         proxy = True
         app_label = 'modules'

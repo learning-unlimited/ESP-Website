@@ -132,6 +132,8 @@ class StudentJunctionAppModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'application.html', request, {'forms': forms, 'app': app})
 
+    def isStep(self):
+        return self.program.isUsingStudentApps()
 
     class Meta:
         proxy = True

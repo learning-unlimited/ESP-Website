@@ -228,6 +228,9 @@ class AvailabilityModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'availability_form.html', request, context)
 
+    def isStep(self):
+        return self.program.getTimeSlots(types=[self.event_type()]).exists()
+
     class Meta:
         proxy = True
         app_label = 'modules'
