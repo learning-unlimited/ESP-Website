@@ -72,7 +72,8 @@ all_global_tags = {
     'volunteer_tshirt_type_selection': {
 		'is_boolean': True,
         'help_text': 'Should the volunteer form include the t-shirt type field?',
-        'default': False, 'volunteer',
+        'default': False,
+        'category': 'volunteer',
         'is_setting': True,
 	},
     'volunteer_shirt_sizes': {
@@ -93,7 +94,8 @@ all_global_tags = {
 		'is_boolean': False,
         'help_text': 'If set, requires teachers to offer availability for at least this many timeslots before allowing them to proceed to registering a class. (Needs to be a plain integer of 0 or higher.)',
         'default': None,
-        'category': 'teach', True,
+        'category': 'teach',
+        'is_setting': True,
 	},
     'availability_group_timeslots': {
 		'is_boolean': True,
@@ -706,7 +708,8 @@ all_program_tags = {
 		'is_boolean': True,
         'help_text': 'Should full classes be collapsed in the catalog/student registration?',
         'default': True,
-        'category': 'learn', True,
+        'category': 'learn',
+        'is_setting': True,
 	},
     'friendly_times_with_date': {
 		'is_boolean': True,
@@ -835,7 +838,8 @@ all_program_tags = {
         'is_setting': True,
 	},
     'volunteer_require_auth': {
-		'is_boolean': True, 'Do volunteers need to have accounts before signing up? (If not, one will be created when they sign up)',
+		'is_boolean': True,
+        'help_text': 'Do volunteers need to have accounts before signing up? (If not, one will be created when they sign up)',
         'default': False,
         'category': 'volunteer',
         'is_setting': True,
@@ -871,7 +875,8 @@ all_program_tags = {
     'switch_lag_class_attendance': {
 		'is_boolean': False,
         'help_text': 'How many minutes into a class should the student onsite webapp use class attendance numbers if available (instead of enrollment or program attendance) to determine if a class is full? If blank, class attendance numbers will not be used.',
-        'default': None, 'learn',
+        'default': None,
+        'category': 'learn',
         'is_setting': True,
 	},
     'student_lottery_group_max': {
