@@ -2,14 +2,48 @@
 
 {% block title %}{{program.niceName}} Printables{% endblock %}
 
-{% block content %}
-<style type="text/css">
-.nocheckmark { border: 1px solid black; }
-</style>
-<br />
-<br />
+{% block stylesheets %}
+    {{ block.super }}
+    <style type="text/css">
+    .nocheckmark { border: 1px solid black; }
+    select {
+        width: auto;
+    }
+    table {
+        width: 100%;
+    }
+    </style>
+{% endblock %}
 
-<br /><br />
+{% block javascript %}
+    {{ block.super }}
+    <script>
+    $j(function () {
+        $j("#class_list_options :input").change(function (){
+            // Get user-selected options
+            var fields = $j("#class_list_options :input");
+            var get = "";
+            // Create GET string
+            fields.each(function (index, element) {
+                var val = $j(this).val();
+                if (val != "") {
+                    if (get != "" & get.charAt(get.length - 1) != "&") {
+                        get += "&";
+                    }
+                    get += val;
+                }
+            });
+            // Add GET string to all links
+            $j("#class_lists a").each(function (){
+                var base_url = $j(this).attr('href').split('?')[0];
+                $j(this).attr('href', base_url + "?" + get)
+            });
+        });
+    });
+    </script>
+{% endblock %}
+
+{% block content %}
 <h1>Printables for {{program.niceName}}</h1>
 
 <p style="text-align: center">
@@ -34,6 +68,11 @@ Please select from options below.
 <li><a href="./roomschedules" title="Room Schedules">Room Schedules</a></li>
 </ul>
 
+<h3>Nametags</h3>
+<ul>
+<li><a href="/manage/{{ program.getUrlBase }}/selectidoptions">Nametags</a></li>
+</ul>
+
 <h3>Student Lists</h3>
 <ul>
 <li><a href="./classrosters" title="Class Rosters">Class Rosters</a> (by teachers)</li>
@@ -41,58 +80,6 @@ Please select from options below.
 <li><a href="./classchecklists" title="Class Checlists">Class Checklists</a> (all confirmed students)</li>
 <li><a href="./studentchecklist" title="Student Checklist">Student Checklist</a> (by students)</li>
 <li><a href="./student_financial_spreadsheet">Student Financial Spreadsheet</a> (used by the check-scanning app)</li>
-</ul>
-
-<h3>Receipts</h3>
-<ul>
-<li><a href="./certificate" title="Completion Certificate">Completion Certificate</a> (by students)</li>
-<li><a href="./paid_list_filter" title="Purchase Lists">Lists of Purchased Items</a></li>
-</ul>
-
-<h3>Admin Binder Stuff</h3>
-<ul>
-<li><a href="./classesbytime" title="Classes by Time">Class Sections Sorted by Time</a> (<a href="./classesbytime/csv">CSV</a>)
-    <ul>
-    <li><a href="./classesbytime?grade_min=7&grade_max=8" title="Classes by Time">Limit to Middle School (Grades 7-8)</a> (<a href="./classesbytime/csv?grade_min=7&grade_max=8">CSV</a>)</li>
-    <li><a href="./classesbytime?grade_min=9&grade_max=12" title="Classes by Time">Limit to High School (Grades 9-12)</a> (<a href="./classesbytime/csv?grade_min=9&grade_max=12">CSV</a>)</li>
-    <li><a href="./classesbytime?accepted" title="Classes by Time">Accepted Only</a> (<a href="./classesbytime/csv?accepted">CSV</a>)</li>
-    <li><a href="./classesbytime?scheduled" title="Classes by Time">Scheduled Only</a> (<a href="./classesbytime/csv?scheduled">CSV</a>)</li>
-    <li><a href="./classesbytime?accepted&scheduled" title="Classes by Time">Accepted and Scheduled Only</a> (<a href="./classesbytime/csv?accepted&scheduled">CSV</a>)</li>
-    <li><a href="./classesbytime?cancelled" title="Classes by Time">Cancelled Only</a> (<a href="./classesbytime/csv?cancelled">CSV</a>)</li>
-    </ul>
-</li>
-<li><a href="./classesbyid" title="Classes by ID">Class Subjects Sorted by ID</a> (<a href="./classesbyid/csv">CSV</a>)
-    <ul>
-    <li><a href="./classesbyid?grade_min=7&grade_max=8" title="Classes by ID">Limit to Middle School (Grades 7-8)</a> (<a href="./classesbyid/csv?grade_min=7&grade_max=8">CSV</a>)</li>
-    <li><a href="./classesbyid?grade_min=9&grade_max=12" title="Classes by ID">Limit to High School (Grades 9-12)</a> (<a href="./classesbyid/csv?grade_min=9&grade_max=12">CSV</a>)</li>
-    <li><a href="./classesbyid?accepted" title="Classes by ID">Accepted Only</a> (<a href="./classesbyid/csv?accepted">CSV</a>)</li>
-    <li><a href="./classesbyid?scheduled" title="Classes by ID">Scheduled Only</a> (<a href="./classesbyid/csv?scheduled">CSV</a>)</li>
-    <li><a href="./classesbyid?accepted&scheduled" title="Classes by ID">Accepted and Scheduled Only</a> (<a href="./classesbyid/csv?accepted&scheduled">CSV</a>)</li>
-    <li><a href="./classesbyid?cancelled" title="Classes by ID">Cancelled Only</a> (<a href="./classesbyid/csv?cancelled">CSV</a>)</li>
-    </ul>
-</li>
-<li><a href="./classesbytitle" title="Classes by Name">Class Subjects Sorted by Title</a> (<a href="./classesbytitle/csv">CSV</a>)
-    <ul>
-    <li><a href="./classesbytitle?grade_min=7&grade_max=8" title="Classes by Name">Limit to Middle School (Grades 7-8)</a> (<a href="./classesbytitle/csv?grade_min=7&grade_max=8">CSV</a>)</li>
-    <li><a href="./classesbytitle?grade_min=9&grade_max=12" title="Classes by Name">Limit to High School (Grades 9-12)</a> (<a href="./classesbytitle/csv?grade_min=9&grade_max=12">CSV</a>)</li>
-    <li><a href="./classesbytitle?accepted" title="Classes by Name">Accepted Only</a> (<a href="./classesbytitle/csv?scheduled">CSV</a>)</li>
-    <li><a href="./classesbytitle?scheduled" title="Classes by Name">Scheduled Only</a> (<a href="./classesbytitle/csv">CSV</a>)</li>
-    <li><a href="./classesbytitle?accepted&scheduled" title="Classes by Name">Accepted and Scheduled Only</a> (<a href="./classesbytitle/csv?accepted&scheduled">CSV</a>)</li>
-    <li><a href="./classesbytitle?cancelled" title="Classes by Name">Cancelled Only</a> (<a href="./classesbytitle/csv?cancelled">CSV</a>)</li>
-    </ul>
-</li>
-<li><a href="./classesbyteacher" title="Classes by Teacher">Class Subjects Sorted by Teacher</a> (<a href="./classesbyteacher/csv">CSV</a>)
-    <ul>
-    <li><a href="./classesbyteacher?grade_min=7&grade_max=8" title="Classes by Teacher">Limit to Middle School (Grades 7-8)</a> (<a href="./classesbyteacher/csv?grade_min=7&grade_max=8">CSV</a>)</li>
-    <li><a href="./classesbyteacher?grade_min=9&grade_max=12" title="Classes by Teacher">Limit to High School (Grades 9-12)</a> (<a href="./classesbyteacher/csv?grade_min=9&grade_max=12">CSV</a>)</li>
-    <li><a href="./classesbyteacher?accepted" title="Classes by Teacher">Accepted Only</a> (<a href="./classesbyteacher/csv?accepted">CSV</a>)</li>
-    <li><a href="./classesbyteacher?scheduled" title="Classes by Teacher">Scheduled Only</a> (<a href="./classesbyteacher/csv?scheduled">CSV</a>)</li>
-    <li><a href="./classesbyteacher?accepted&scheduled" title="Classes by Teacher">Accepted and Scheduled Only</a> (<a href="./classesbyteacher/csv?accepted&scheduled">CSV</a>)</li>
-    <li><a href="./classesbyteacher?cancelled" title="Classes by Teacher">Cancelled Only</a> (<a href="./classesbyteacher/csv?cancelled">CSV</a>)</li>
-    </ul>
-</li>
-<li><a href="./teachersbyname" title="Teacher List">Teacher List</a> (can be sorted by name, class, or start time) (<a href="./teachersbyname/csv">CSV</a>); <a href="./teachersbyname/secondday">teachers for second day of classes only</a> (<a href="./teachersbyname/seconddaycsv">CSV</a>)</li>
-<li><a href="./roomsbytime" title="Room List">Open Rooms by Time</a></li>
 <li><a href="./studentsbyname" title="Student List">Students by Name</a> (by students)</li>
 <li><a href="./emergencycontacts" title="Student List">Students' Emergency Contact Info</a> (by students)</li>
 {% if not li_types|length_is:0 %}
@@ -106,17 +93,86 @@ Please select from options below.
 {% endif %}
 </ul>
 
+<h3>Teacher Lists</h3>
+<ul>
+<li><a href="./teachersbyname" title="Teacher List">Teacher List</a> (can be sorted by name, class, or start time) (<a href="./teachersbyname/csv">CSV</a>)
+<ul><li><a href="./teachersbyname/secondday">Teachers for second day of classes only</a> (<a href="./teachersbyname/seconddaycsv">CSV</a>)</li></ul></li>
+</ul>
+
+<h3>Receipts</h3>
+<ul>
+<li><a href="./certificate" title="Completion Certificate">Completion Certificate</a> (by students)</li>
+<li><a href="./paid_list_filter" title="Purchase Lists">Lists of Purchased Items</a></li>
+</ul>
+
+<h3>Class and Section Lists</h3>
+<form id="class_list_options">
+    <table>
+        <tr>
+            <td width = "50%">
+            Class Status:
+            <select id="class_status">
+                <option value="all">Any</option>
+                <option value="accepted">Accepted</option>
+                <option value="" selected>Accepted/Unreviewed</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+            </td>
+            <td width = "50%">
+            Scheduling Status:
+            <select id="sched_status">
+                <option value="" selected>Any</option>
+                <option value="scheduled">Scheduled</option>
+            </select>
+            </td>
+        </tr>
+        <tr>
+            <td>
+            Grade Min:
+            <select id="grade_min">
+                {% for grade in program.grades %}
+                    <option value="grade_min={{ grade }}"{% if forloop.first %} selected{% endif %}>{{ grade }}</option>
+                {% endfor %}
+            </select>
+            Grade Max:
+            <select id="grade_max">
+                {% for grade in program.grades %}
+                    <option value="grade_max={{ grade }}"{% if forloop.last %} selected{% endif %}>{{ grade }}</option>
+                {% endfor %}
+            </select>
+            </td>
+            <td>
+            Output as:
+            <select id="output_type">
+                <option value="" selected>Web page</option>
+                <option value="csv">CSV</option>
+            </select>
+            </td>
+        </tr>
+    </table>
+</form>
+
+<ul id="class_lists">
+<li><a href="./classesbytime" title="Classes by Time">Class Sections Sorted by Time</a></li>
+<li><a href="./classesbyid" title="Classes by ID">Class Subjects Sorted by ID</a></li>
+<li><a href="./classesbytitle" title="Classes by Name">Class Subjects Sorted by Title</a></li>
+<li><a href="./classesbyteacher" title="Classes by Teacher">Class Subjects Sorted by Teacher</a></li>
+</ul>
+
 <h3>Other Printables</h3>
 <ul>
 <li><a href="./catalog" title="Course Catalog">Course Catalog</a></li>
+<li><a href="./roomsbytime" title="Room List">Open Rooms by Time</a></li>
 <li>Meal tickets (by students): <a href="./student_tickets/3" title="Meal Tickets">3 lines</a> <a href="./student_tickets/4" title="Meal Tickets">4 lines</a> <a href="./student_tickets/5" title="Meal Tickets">5 lines</a> <a href="./student_tickets/6" title="Meal Tickets">6 lines</a> <a href="./student_tickets/7" title="Meal Tickets">7 lines</a> </li>
 <li><a href="./onsiteregform" title="On-Site Reg Form">On-Site Reg Form</a></li>
 <li><a href="./all_classes_spreadsheet" title="All Classes Spreadsheet">All Classes Spreadsheet</a> (CSV format; opens in most spreadsheet programs)</li>
 <li><a href="./oktimes_spr" title="Viable Times for Classes">Viable Times for Sections Spreadsheet</a> (CSV format; 'X' indicates a viable time)</li>
 <li><a href="./classpopularity" title="Class Popularity">Class Subject Popularity</a></li>
+<li><a href="./classflagdetails" title="Class Flags">Class Flags</a> (<a href="./classflagdetails?comments">with comments</a>)</li>
 </ul>
-
-<p>
+<br /><br />
+{% load render_qsd %}
+{% inline_program_qsd_block program "manage:printables" %}
 <strong>Guide for happy printables:</strong>
 
 <ol>
@@ -129,5 +185,6 @@ Please select from options below.
 
 <li>Good luck!</li>
 </ol>
+{% end_inline_program_qsd_block %}
 
 {% endblock %}

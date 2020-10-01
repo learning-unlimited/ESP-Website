@@ -54,12 +54,14 @@ class FormstackMedliabModule(ProgramModuleObj):
                 "link_title": "Medical and Emergency Contact Information",
                 "module_type": "learn",
                 "seq": 3,
-                "required": True
+                "required": True,
+                "choosable": 2,
                 },
                 {
                 "admin_title": "Formstack Med-liab Bypass Page",
                 "link_title": "Grant Medliab Bypass",
                 "module_type": "manage",
+                "choosable": 2,
                 }]
 
     def isCompleted(self):
@@ -187,6 +189,9 @@ class FormstackMedliabModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'medicalbypass.html',
                                   request, context)
+
+    def isStep(self):
+        return bool(Tag.getProgramTag("formstack_id", self.program) and Tag.getProgramTag("formstack_viewkey", self.program))
 
     class Meta:
         proxy = True

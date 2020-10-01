@@ -55,7 +55,6 @@ div.required label:after {
             {% include "users/profiles/studentinfo.html" %}
             {% include "users/profiles/guardiancontact.html" %}
             {% include "users/profiles/emergencycontact.html" %}
-            {% include "users/profiles/gradechangerequestinfo.html" %}
         {% else %}
 
         {% ifequal profiletype "educator" %}
@@ -72,7 +71,7 @@ div.required label:after {
             {% include "users/profiles/usercontact.html" %}
         {% else %}
 
-        {% include "../templates/themes/bs_form.html" %}
+        {% include "themes/bs_form.html" %}
 
         {% endifequal %}
         {% endifequal %}

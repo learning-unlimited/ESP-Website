@@ -1,0 +1,69 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Registration{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+
+<style>
+
+#biglink {
+	font-size: x-large;
+}
+
+.Invoice {
+	color: red;
+}
+
+.Receipt {
+	color: blue;
+}
+
+</style>
+{% endblock %}
+
+{% block xtrajs %}
+{% endblock %}
+
+{% block content %}
+<h1>Credit Card Payments</h1>
+
+<ul>
+<li>Total number of students: {{ num_students }}</li>
+<li>Number of credit card payments so far: {{ num_payments }}</li>
+<li>Amount of credit card payments so far: ${{ total_payment|floatformat:2 }}</li>
+</ul>
+
+<div id="program_form">
+<table width="100%">
+
+<tr>
+<th>
+User:
+</th>
+<th>
+Payments:
+</th>
+</tr>
+{% for payment in payment_table %}
+<tr{% if not forloop.last %} style="border-bottom: 1px dashed #699;"{% endif %}>
+<td>
+<b><a href="/manage/userview?username={{ payment.0.username}}">{{ payment.0.get_full_name }}</a></b> (ID: {{ payment.0.id }}) <br />
+${{ payment.2 }} billed; ${{ payment.3 }} owed
+</td>
+<td>
+<ul style="margin: 0px;">
+{% for transfer in payment.1 %}
+<li>${{ transfer.amount|floatformat:2 }} - {{ transfer.line_item.text }}{% if transfer.transaction_id %} (CC Transaction ID: {{ transfer.transaction_id }}){% endif %}
+</div></li> <!-- div.( doc.getDoctypeStr ) -->
+{% endfor %}
+</ul>
+</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+{% endblock %}
+

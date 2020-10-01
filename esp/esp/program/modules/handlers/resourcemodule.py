@@ -33,8 +33,12 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import json
+
 from django.contrib.auth.decorators import login_required
 from django.forms import formset_factory
+from django.http import HttpResponseBadRequest, HttpResponse
+from django.template.loader import render_to_string
 
 from esp.utils.web import render_to_response
 from esp.utils.decorators import json_response
@@ -63,7 +67,8 @@ class ResourceModule(ProgramModuleObj):
             "admin_title": "Resource Management",
             "link_title": "Manage Times and Rooms",
             "module_type": "manage",
-            "seq": 10
+            "seq": 10,
+            "choosable": 1,
             }
 
     """
@@ -674,6 +679,79 @@ class ResourceModule(ProgramModuleObj):
         #   Display default form
         return render_to_response(self.baseDir()+'resource_main.html', request, context)
 
+    @aux_call
+    @needs_admin
+    def newassignment(self, request, tl, one, two, module, extra, prog):
+        '''Create a resource assignment from the POST data, and return its detail display.'''
+        if request.method != 'POST' or 'resource' not in request.POST or 'target' not in request.POST:
+            return HttpResponseBadRequest('')
+        results = ClassSection.objects.filter(id=request.POST['target'])
+        if not len(results): #Use len() since we will evaluate it anyway
+            return HttpResponseBadRequest('')
+        section = results[0]
+        res_name = request.POST['resource']
+        res_list = []
+        for ts in section.meeting_times.all():
+            avail_res = [res for res in prog.getAvailableResources(ts, queryset=True) if res.name==res_name]
+            if not len(avail_res):
+                return HttpResponseBadRequest('')
+            res_list.append(avail_res[0])
+        group = None
+        for res in res_list:
+            assignment = res.assign_to_section(section, group = group)
+            if group is None:
+                group = assignment.assignment_group
+        context = { 'assignment' : assignment }
+        response = json.dumps({
+            'assignment_name': render_to_string(self.baseDir()+'assignment_name.html', context = context, request = request),
+        })
+        return HttpResponse(response, content_type='application/json')
+
+    @aux_call
+    @needs_admin
+    def editassignment(self, request, tl, one, two, module, extra, prog):
+        '''Given a post request, take extra as the id of the resource assignment, update whether it's returned using the post data, and return its new name display.'''
+        if request.method != 'POST' or 'id' not in request.POST or 'returned' not in request.POST:
+            return HttpResponseBadRequest('')
+        results = ResourceAssignment.objects.filter(id=request.POST['id'])
+        if not len(results): #Use len() since we will evaluate it anyway
+            return HttpResponseBadRequest('')
+        assignments = ResourceAssignment.objects.filter(assignment_group = results[0].assignment_group)
+        for assignment in assignments:
+            assignment.returned = request.POST['returned'] == "true"
+            assignment.save()
+        context = { 'assignment' : assignment }
+        return render_to_response(self.baseDir()+'assignment_name.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def getavailableequipment(self, request, tl, one, two, module, extra, prog):
+        if request.method != 'POST' or 'secid' not in request.POST:
+            return HttpResponseBadRequest('')
+        results = ClassSection.objects.filter(id=request.POST['secid'])
+        if not len(results): #Use len() since we will evaluate it anyway
+            return HttpResponseBadRequest('')
+        section = results[0]
+        ts_res_list = []
+        # filter to only resources available for all timeslots for specified section
+        for ts in section.meeting_times.all():
+            ts_res_list.append([res.name for res in prog.getAvailableResources(ts, queryset=True)])
+        resource_list = set.intersection(*[set(x) for x in ts_res_list])
+        # Maybe include number remaining of each available resource?
+        response = json.dumps({res:res for res in resource_list})
+        return HttpResponse(response, content_type='application/json')
+
+    @aux_call
+    @needs_admin
+    def deleteassignment(self, request, tl, one, two, module, extra, prog):
+        '''Given a post request with the ID, delete the resource assignment.'''
+        if request.method != 'POST' or 'id' not in request.POST:
+            return HttpResponseBadRequest('')
+        results = ResourceAssignment.objects.filter(id=request.POST['id'])
+        if not len(results): #Use len() since we will evaluate it anyway
+            return HttpResponseBadRequest('')
+        ResourceAssignment.objects.filter(assignment_group = results[0].assignment_group).delete()
+        return HttpResponse('')
 
     class Meta:
         proxy = True

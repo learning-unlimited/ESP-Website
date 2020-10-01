@@ -53,6 +53,7 @@ class AdminReviewApps(ProgramModuleObj):
             "link_title": "Application Review for Admin",
             "module_type": "manage",
             "seq": 1000,
+            "choosable": 0,
             }
 
     def students(self, QObject=False):
@@ -182,7 +183,7 @@ class AdminReviewApps(ProgramModuleObj):
             assert False, student.studentapplication_set.all()[0].__dict__
             raise ESPError('Error: Student did not apply. Student is automatically rejected.', log=False)
 
-        return render_to_response(self.baseDir()+'app_popup.html', request, {'class': cls, 'student': student})
+        return render_to_response(self.baseDir()+'app_popup.html', request, {'class': cls, 'student': student, 'program': prog})
 
     def prepare(self, context):
         """ Sets the 'classes' template variable to contain the list of classes that the current user is teaching """

@@ -100,6 +100,7 @@ class TeacherQuizModule(ProgramModuleObj):
             'admin_title': 'Teacher Logistics Quiz',
             'link_title': 'Take the Teacher Logistics Quiz',
             'seq': 5,
+            'choosable': 0,
         }, ]
 
     def teachers(self, QObject = False):
@@ -151,6 +152,10 @@ class TeacherQuizModule(ProgramModuleObj):
             form = form_wizard.get_form(0)
 
         return render_to_response(self.baseDir()+'quiz.html', request, {'prog':prog, 'form': form})
+
+    def isStep(self):
+        custom_form_id = Tag.getProgramTag('quiz_form_id', self.program, None)
+        return custom_form_id and Form.objects.filter(id=int(custom_form_id)).exists()
 
     class Meta:
         proxy = True

@@ -54,13 +54,14 @@ from django.db import transaction
 from django.core.mail import mail_admins
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
+from django.forms.models import model_to_dict
 from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
 
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile
-from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
+from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.modules.handlers.studentregcore import StudentRegCore
@@ -393,7 +394,7 @@ def userview(request):
 
     context = {
         'user': user,
-        'taught_classes' : user.getTaughtClasses().order_by('parent_program', 'id'),
+        'taught_classes' : user.getTaughtClasses(include_rejected = True).order_by('parent_program', 'id'),
         'enrolled_classes' : user.getEnrolledSections().order_by('parent_class__parent_program', 'id'),
         'taken_classes' : user.getSections().order_by('parent_class__parent_program', 'id'),
         'teacherbio': teacherbio,
@@ -463,11 +464,9 @@ def newprogram(request):
         tprogram = Program.objects.get(id=template_prog_id)
         request.session['template_prog'] = template_prog_id
         template_prog = {}
-        template_prog.update(tprogram.__dict__)
+        template_prog.update(model_to_dict(tprogram))
         del template_prog["id"]
         template_prog["program_type"] = tprogram.program_type
-        template_prog["program_modules"] = tprogram.program_modules.all().values_list("id", flat=True)
-        template_prog["class_categories"] = tprogram.class_categories.all().values_list("id", flat=True)
         '''
         As Program Name should be new for each new program created then it is better to not to show old program names in input box .
         template_prog["term"] = tprogram.program_instance()
@@ -508,7 +507,7 @@ def newprogram(request):
             commit_program(new_prog, context['perms'], context['cost'], context['sibling_discount'])
 
             # Create the default resource types now
-            default_restypes = Tag.getProgramTag('default_restypes', program=new_prog)
+            default_restypes = Tag.getTag('default_restypes')
             if default_restypes:
                 resource_type_labels = json.loads(default_restypes)
                 resource_types = [ResourceType.get_or_create(x, new_prog) for x in resource_type_labels]
@@ -724,16 +723,17 @@ def emails(request):
     """
     context = {}
     if request.GET and "start_date" in request.GET:
-        start_date = datetime.datetime.strptime(request.GET["start_date"], "%m/%d/%Y")
+        start_date = datetime.datetime.strptime(request.GET["start_date"], "%Y-%m-%d")
     else:
         start_date = datetime.date.today() - datetime.timedelta(30)
+    context['start_date'] = start_date
     requests = MessageRequest.objects.filter(created_at__gte=start_date).order_by('-created_at')
 
     requests_list = []
     for req in requests:
         toes = TextOfEmail.objects.filter(created_at=req.created_at,
                                           subject = req.subject,
-                                          send_from = req.sender).order_by('sent')
+                                          send_from = req.sender).order_by('-sent')
         if req.processed:
             req.num_rec = toes.count()
         else:
@@ -748,6 +748,24 @@ def emails(request):
     context['requests'] = requests_list
 
     return render_to_response('admin/emails.html', request, context)
+
+@admin_required
+def tags(request, section=""):
+    context = {}
+
+    #If one of the forms was submitted, process it and save if valid
+    if request.method == 'POST':
+        form = TagSettingsForm(request.POST)
+        if form.is_valid():
+            form.save()
+
+    form = TagSettingsForm()
+
+    context['form'] = form
+    context['categories'] = form.categories
+    context['open_section'] = section
+
+    return render_to_response('program/modules/admincore/tags.html', request, context)
 
 @admin_required
 def statistics(request, program=None):

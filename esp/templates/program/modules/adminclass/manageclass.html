@@ -13,12 +13,20 @@
 {% block content %}
 
 {% load main %}
+{% load modules %}
 
 <div id="divmaintext">
 
 <h1>Manage Class {{ class.emailcode }}: {{ class.title }}</h1>
 
 <div id="program_form">
+<center>
+<a class="btn" title="Edit Class" href="/manage/{{ program.getUrlBase }}/editclass/{{ class.id }}">Edit Class</a>
+{% if program|hasModule:"TeacherPreviewModule" %}
+<a class="btn" title="Catalog Preview" href="/teach/{{ program.getUrlBase }}/catalogpreview/{{ class.id }}">Catalog Preview</a>
+{% endif %}
+<br /><br />
+</center>
 
 <table align="center" width="500">
     <tr>
@@ -54,8 +62,30 @@
                 {{ sec.num_students }} enrolled / {{ sec.num_students_prereg }} preregistered
                 <br />
             {% endfor %}
-        <td>
+        </td>
     </tr>
+    <tr>
+        <th class="smaller">Document uploads: </th>
+        <td>
+            {% if class.documents.exists %}
+            <ul>
+                {% for doc in class.getDocuments %}
+                <li style="color: black;"><a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a></li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            There are no documents associated with this class
+            {% endif %}
+        </td>
+    </tr>
+    {% if class.got_index_qsd %}
+    <tr>
+        <th class="smaller">Class website: </th>
+        <td>
+            <a href="/learn/{{ class.url }}/index.html" title="{{ class }}...">Visit web page</a>
+        </td>
+    </tr>
+    {% endif %}
     <tr>
         <th class="smaller">Additional information specified by teacher: </th>
         <td>
@@ -131,7 +161,7 @@
 <br />
 
 <p>
-Please use the form below to alter {{ class.title }}.  Note that changes made to the class will propagate to each of the sections, but you can later change each section independently.
+Please use the form below to alter {{ class.title }}.  Note that changes made to the class will propagate to each of the sections (except the class status will not override a section's review status if it is already changed), but you can later change each section independently.
 </p>
 
 <form name="classmanage" action="{{ request.path }}?action=modify" method="POST">

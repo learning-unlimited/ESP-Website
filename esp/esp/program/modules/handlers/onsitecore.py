@@ -49,6 +49,7 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
             "link_title": "onsite",
             "module_type": "onsite",
             "seq": -1000,
+            "choosable": 1,
             }
 
     @main_call

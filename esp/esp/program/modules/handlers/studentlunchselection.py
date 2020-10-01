@@ -111,7 +111,8 @@ class StudentLunchSelection(ProgramModuleObj):
             "admin_title": "Student Lunch Period Selection",
             "module_type": "learn",
             "required": True,
-            "seq": 5
+            "seq": 5,
+            "choosable": 0,
             }
 
     def isCompleted(self):
@@ -153,6 +154,9 @@ class StudentLunchSelection(ProgramModuleObj):
         context['forms'] = forms
 
         return render_to_response(self.baseDir()+'select_lunch.html', request, context)
+
+    def isStep(self):
+        return Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').exists()
 
     class Meta:
         proxy = True

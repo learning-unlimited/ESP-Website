@@ -103,6 +103,29 @@ class FinancialAidRequestAdmin(admin.ModelAdmin):
     search_fields = default_user_search() + ['id', 'program__url']
     list_filter = ['program']
     inlines = [FinancialAidGrantInline,]
+    actions = ['approve', ]
+
+    def save_related(self, request, form, formsets, change):
+        form.save_m2m()
+        obj = form.instance
+        # get the financial aid grant formset
+        formset = formsets[0]
+        # if we want to delete or change an existing grant, just save like normal
+        if formset[0].cleaned_data.get('DELETE') or obj.approved:
+            self.save_formset(request, form, formset, change=change)
+        else:
+            # if we want to add a grant, use approve() instead
+            instance = formset.save(commit=False)[0]
+            obj.approve(instance.amount_max_dec, instance.percent)
+            formset.save_m2m()
+            self.message_user(request, "Request successfully approved.")
+
+    def approve(self, request, queryset):
+        num_approved = len([req for req in queryset if not req.approved])
+        for req in queryset:
+            req.approve()
+        self.message_user(request, "%s request(s) successfully approved." % num_approved)
+    approve.short_description = "Approve selected financial aid requests for 100%%"
 admin_site.register(FinancialAidRequest, FinancialAidRequestAdmin)
 
 class Admin_SplashInfo(admin.ModelAdmin):
@@ -192,7 +215,7 @@ admin_site.register(VolunteerOffer, VolunteerOfferAdmin)
 ## class_.py
 
 class Admin_RegistrationType(admin.ModelAdmin):
-    list_display = ('name', 'category', )
+    list_display = ('name', 'category', 'displayName', 'description', )
 admin_site.register(RegistrationType, Admin_RegistrationType)
 
 def expire_student_registrations(modeladmin, request, queryset):

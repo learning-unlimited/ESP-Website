@@ -72,11 +72,13 @@ class TeacherEventsModule(ProgramModuleObj):
             'admin_title': 'Teacher Training and Interview Signups',
             'link_title': 'Sign up for Teacher Training and Interviews',
             'seq': 5,
+            'choosable': 0,
         }, {
             "module_type": "manage",
             'required': False,
             'admin_title': 'Manage Teacher Training and Interviews',
             'link_title': 'Teacher Training and Interviews',
+            'choosable': 0,
         } ]
 
     def teachers(self, QObject = False):
@@ -202,6 +204,9 @@ class TeacherEventsModule(ProgramModuleObj):
         context['training_times'] = training_times
 
         return render_to_response( self.baseDir()+'teacher_events.html', request, context )
+
+    def isStep(self):
+        return Event.objects.filter(program=self.program, event_type__in=self.event_types().values()).exists()
 
     class Meta:
         proxy = True

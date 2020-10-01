@@ -5,10 +5,10 @@ from esp.tagdict.models import Tag
 from esp.program.tests import ProgramFrameworkTest
 
 # Make test-only tags not raise warnings
-all_global_tags['test'] = (False, "")
-all_program_tags['test'] = (False, "")
-all_global_tags['test_bool'] = (True, "")
-all_program_tags['test_bool'] = (True, "")
+all_global_tags['test'] = (False, "", None, "manage", True)
+all_program_tags['test'] = (False, "", None, "manage", True)
+all_global_tags['test_bool'] = (True, "", False, "manage", True)
+all_program_tags['test_bool'] = (True, "", False, "manage", True)
 
 class TagTest(TestCase):
     def testTagGetSet(self):

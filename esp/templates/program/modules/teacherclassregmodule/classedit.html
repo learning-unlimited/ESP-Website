@@ -37,12 +37,12 @@
     {% end_inline_program_qsd_block %}
 
     {% if otherclass.reg_open and addoredit == 'Add' %}
-    <p style="font-weight:bold;">This page is for registering a {{ classtype }} <span style="text-decoration:underline;">only</span>. If you are trying to register a {{ otherclass.type }}, <a href="{% url 'esp.web.views.main.program' tl one two otherclass.link %}">click here</a>.</p>
+    <p style="font-weight:bold;">This page is for registering a {{ classtype }} <span style="text-decoration:underline;">only</span>. If you are trying to register a {{ otherclass.type }}, <a href="/teach/{{ program.url }}/{{ otherclass.link }}">click here</a>.</p>
     {% endif %}
 {% endif %}
 
 <div id="program_form">
-<form action="{{request.path}}" id="clsform" name="clsform" method="post" class="form-inline" {% if grade_range_popup %}class="grade_range_popup" grademin="{{ program.grade_min }}" grademax="{{ program.grade_max }}"{% endif %}>
+<form action="{{request.path}}" id="clsform" name="clsform" method="post" class="form-inline"{% if grade_range_popup %} onSubmit="check_grade_range(this)"{% endif %}">
 
 {% if form.errors %}
 <p align="center">
@@ -52,7 +52,7 @@
 
 
 <center>
-<table width="550">
+<table width="100%">
     <tr><th colspan="2">{{ classtype|title }} Creation/Editing Form</th></tr>
     <tr>
         <td colspan="2">

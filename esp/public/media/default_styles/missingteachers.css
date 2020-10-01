@@ -1,0 +1,111 @@
+#shortcuts-box {
+    position: fixed;
+    right: 10px;
+    top: 10px;
+    width: 200px;
+    border: 1px solid gray;
+    padding: 5px;
+    z-index: 100;
+    background-color: white;
+    opacity: 0.75;
+    transition: opacity 0.25s ease;
+}
+
+#shortcuts-box:hover {
+    opacity: 1;
+}
+
+#shortcuts-box input{
+    width: 190px;
+}
+
+.section-first-row {
+    border-top: 4px solid #ccc;
+}
+
+.section-code {
+    background-color: #c6def7;
+    background: linear-gradient(to bottom, white, #c6def7);
+}
+
+.not-checked-in a {
+    font-weight: bold;
+}
+
+.checked-in {
+    text-decoration: line-through;
+}
+
+.selected .checkin + span:after {
+    content: "◀"; font-weight: bold;
+}
+
+.selected .not-checked-in, .selected .checkin-column, .selected .phone, .selected .text-teacher {
+    background-color: #FFFF00;
+}
+
+.checkin-column {
+    min-width: 90px;
+}
+
+input.found {
+    background-color: #AAFFAA;
+}
+
+input.not-found {
+    background-color: #FFAAAA;
+}
+
+.section-detail-td {
+    background-color: #c6def7;
+    padding: 0px !important;
+}
+
+.section-detail {
+    display: inline-block;
+    border-width: 0;
+    margin: 0px;
+    width: 100%;
+}
+
+.section-detail-header {
+    background-color: #c6def7;
+    font-size: 1.2em !important;
+    width: calc(100% - 8px);
+    cursor: pointer;
+    padding: 4px !important;
+    border-bottom: 2px solid grey;
+}
+
+.section-detail-header:not(.active):after {
+    content: '\002B';
+    color: black;
+    font-weight: bold;
+    float: right;
+}
+
+.section-detail-header.active:after {
+    content: '\2212';
+    color: black;
+    font-weight: bold;
+    float: right;
+}
+
+.flag-name-list {
+    display: inline-block;
+    width: 470px;
+    vertical-align: middle;
+}
+
+.section-detail-include {
+    background-color: white;
+}
+
+.add-flag, .add-assignment {
+    margin-left: 4px;
+    margin-right: 4px;
+}
+
+.add-assignment {
+    margin-bottom: 4px;
+}

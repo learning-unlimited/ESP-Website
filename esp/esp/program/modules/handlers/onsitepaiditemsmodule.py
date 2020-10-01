@@ -51,7 +51,8 @@ class OnsitePaidItemsModule(ProgramModuleObj):
             "admin_title": "Onsite View Purchased Items",
             "link_title": "View Purchased Items for a Student",
             "module_type": "onsite",
-            "seq": 31
+            "seq": 31,
+            "choosable": 1,
             }
 
     @main_call

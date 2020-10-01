@@ -48,9 +48,9 @@ from esp.cal.models import Event
 from django              import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string, get_template
-from django.db.models.aggregates import Min
+from django.db.models.aggregates import Min, Max
 from django.db.models.query   import Q
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 
 import collections
 import json
@@ -62,7 +62,8 @@ class TeacherCheckinModule(ProgramModuleObj):
             "admin_title": "Teacher Check-In",
             "link_title": "Check in teachers",
             "module_type": "onsite",
-            "seq": 10
+            "seq": 10,
+            "choosable": 1,
             }
 
     def checkIn(self, teacher, prog, when=None):
@@ -356,6 +357,53 @@ class TeacherCheckinModule(ProgramModuleObj):
 
         return sorted_sections, arrived
 
+    def getMissingResources(self, prog, date=None, starttime=None, default_phone = '(missing contact info)'):
+        """Return a list of class sections that have ended but have not returned their floating resources.
+
+        Parameters:
+          prog (Program):                 The program.
+          date (date, optional):          If given, the return only includes
+                                          missing resources for sections that ended
+                                          on a previous day.
+          starttime (datetime, optional): If given, the return only includes
+                                          missing resources for sections that ended
+                                          before this time. Overrides date if
+                                          both are given.
+          default_phone (string, opt):    A string that should be used if there
+                                          is no valid phone number for a teacher.
+
+        Returns:
+          sections_list:  A list of all sections that have ended but have not returned
+                          their resources as of starttime or date. Each item of the list
+                          has an attribute `missing_resources` that is a list of the
+                          floating resources that have not been returned.
+        """
+
+        sections = prog.sections().annotate(end_time=Max("meeting_times__end")) \
+                                  .filter(status=10, parent_class__status=10, end_time__isnull=False) \
+                                  .order_by('end_time')
+        if starttime is None and date is not None:
+            starttime = datetime.combine(date, time())
+        if starttime is not None:
+            sections = sections.filter(end_time__lt=starttime)
+
+        teachers = ESPUser.objects.filter(classsubject__sections__in=sections).distinct()
+        teacher_phones = self.get_phones(teachers, default_phone)
+
+        sections_list = []
+        for section in sections:
+            # Use distinct() to avoid showing duplicate resource assignments for sections that are multiple blocks long
+            resources = section.resourceassignments().filter(returned=False).order_by('assignment_group').distinct('assignment_group')
+            if len(resources):
+                section.missing_resources = resources
+                section.room = (section.prettyrooms() or [None])[-1]
+                section.teachers_list = list(section.teachers)
+                for teacher in section.teachers_list:
+                    teacher.phone = teacher_phones.get(teacher.id, default_phone)
+                sections_list.append(section)
+
+        return sections_list
+
     @aux_call
     @needs_onsite
     def missingteachers(self, request, tl, one, two, module, extra, prog):
@@ -408,9 +456,11 @@ class TeacherCheckinModule(ProgramModuleObj):
         context['date'] = date
         context['sections'], context['arrived'] = self.get_missing_teachers(
             prog, date, starttime, when, show_flags, default_phone)
+        context['missing_resources'] = self.getMissingResources(prog, date, getattr(starttime, "start", None))
         if show_flags:
             context['show_flags'] = True
             context['flag_types'] = ClassFlagType.get_flag_types(self.program)
+        context['res_types'] = prog.getFloatingResources()
         context['start_time'] = starttime
         context['next'] = next
         context['previous'] = previous

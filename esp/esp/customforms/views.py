@@ -4,7 +4,6 @@ import json
 from django.db import transaction
 from django.shortcuts import redirect, HttpResponse
 from django.http import Http404,HttpResponseRedirect
-from django.template import RequestContext
 from django.db import connection
 
 from esp.customforms.models import *

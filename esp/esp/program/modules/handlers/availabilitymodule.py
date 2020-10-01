@@ -70,6 +70,7 @@ class AvailabilityModule(ProgramModuleObj):
             "link_title": "Check Teacher Availability",
             "module_type": "manage",
             "seq": 0
+            "choosable": 1,
             } ]
 
     def event_type(self):
@@ -360,6 +361,9 @@ class AvailabilityModule(ProgramModuleObj):
                 raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
 
         return self.availabilityForm(request, tl, one, two, prog, teacher, True)
+
+    def isStep(self):
+        return self.program.getTimeSlots(types=[self.event_type()]).exists()
 
     class Meta:
         proxy = True
