@@ -42,7 +42,7 @@ class Tag(models.Model):
     def getTag(cls, key, target=None, default=None):
         if key not in all_global_tags:
             logger.warning("Tag %s not in list of global tags", key)
-        elif all_global_tags[key][0]:
+        elif all_global_tags[key].get('is_boolean', False):
             logger.warning("Tag %s should be used with getBooleanTag", key)
 
         if target is not None:
@@ -87,7 +87,7 @@ class Tag(models.Model):
         """
         if key not in all_program_tags:
             logger.warning("Tag %s not in list of program tags", key)
-        elif all_program_tags[key][0] and not boolean:
+        elif all_program_tags[key].get('is_boolean', False) and not boolean:
             logger.warning("Tag %s should be used with getBooleanTag", key)
 
         res = None
@@ -111,8 +111,8 @@ class Tag(models.Model):
     def getBooleanTag(cls, key, program=None, default=None):
         """ A variant of getProgramTag that returns boolean values.
             The default argument should also be boolean. """
-        if (key not in all_program_tags or not all_program_tags[key][0]) \
-           and (key not in all_global_tags or not all_global_tags[key][0]):
+        if (key not in all_program_tags or not all_program_tags[key].get('is_boolean', False)) \
+           and (key not in all_global_tags or not all_global_tags[key].get('is_boolean', False)):
             logger.warning("Tag %s not in list of boolean tags", key)
         if program:
             tag_val = Tag.getProgramTag(key, program, boolean=True)
