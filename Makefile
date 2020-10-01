@@ -4,6 +4,7 @@
 # the script will exit, and you'll need to fix it up then run "make finish".
 # TODO(benkraft): at some point maybe we'll want a proper automation framework
 # like puppet or chef or whatever.
+# This could be better website
 SHELL=/bin/bash
 SITE:=$(notdir $(PWD))
 STASH:=$(shell sudo -u www-data git diff HEAD --quiet || echo true)
