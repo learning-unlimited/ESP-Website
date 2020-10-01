@@ -49,7 +49,15 @@ class Tag(models.Model):
             logger.warning("getTag() called for key %s with specific target; consider using getProgramTag()",
                            key)
 
-        result = cls._getTag(key, default=default, target=target)
+        result = cls._getTag(key, target=target)
+        if result is None: #See the comment in getProgramTag for why we're using None rather than passing the default through.
+            if default is not None:
+                result = default
+            else:
+                if key in all_program_tags:
+                    result = all_program_tags[key].get('default')
+                elif key in all_global_tags:
+                    result = all_global_tags[key].get('default')
 
         if isinstance(result, basestring) and (result.lower() == "false" or
                                                result.lower() == "true"):
@@ -100,7 +108,13 @@ class Tag(models.Model):
         if res is None:
             res = cls._getTag(key)
         if res is None:
-            res = default
+            if default is not None:
+                res = default
+            else:
+                if key in all_program_tags:
+                    res = all_program_tags[key].get('default')
+                elif key in all_global_tags:
+                    res = all_global_tags[key].get('default')
         if (not boolean) and isinstance(res, basestring) and \
            (res.lower() == "false" or res.lower() == "true"):
             logger.warning("Tag %s set to boolean value; consider using getBooleanTag()",
@@ -119,7 +133,17 @@ class Tag(models.Model):
         else:
             tag_val = Tag._getTag(key)
         if tag_val is None: #See the comment in getProgramTag for why we're using None rather than passing the default through.
-            return default
+            if default is not None:
+                return default
+            else:
+                if key in all_program_tags:
+                    return all_program_tags[key].get('default')
+                elif key in all_global_tags:
+                    return all_global_tags[key].get('default')
+                else:
+                    return None
+        elif isinstance(tag_val, bool):
+            return tag_val
         elif tag_val.strip().lower() == 'true' or tag_val.strip() == '1':
             return True
         else:
