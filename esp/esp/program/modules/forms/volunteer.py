@@ -126,13 +126,13 @@ class VolunteerOfferForm(forms.Form):
         self.fields['shirt_type'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types').split(',')]
 
         #   Show t-shirt fields if specified by Tag (disabled by default)
-        if not Tag.getBooleanTag('volunteer_tshirt_options', default=False):
+        if not Tag.getBooleanTag('volunteer_tshirt_options'):
             del self.fields['shirt_size']
             del self.fields['shirt_type']
-        elif not Tag.getBooleanTag('volunteer_tshirt_type_selection', default=False):
+        elif not Tag.getBooleanTag('volunteer_tshirt_type_selection'):
             del self.fields['shirt_type']
 
-        if not Tag.getBooleanTag('volunteer_allow_comments', default=False):
+        if not Tag.getBooleanTag('volunteer_allow_comments'):
             del self.fields['comments']
         else:
             tag_data = Tag.getProgramTag('volunteer_help_text_comments', self.program)

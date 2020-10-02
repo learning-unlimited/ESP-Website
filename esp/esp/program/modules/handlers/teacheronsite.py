@@ -180,7 +180,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         return context
 
     def isStep(self):
-        return Tag.getBooleanTag('teacher_webapp_isstep', program=self.program, default=False)
+        return Tag.getBooleanTag('teacher_webapp_isstep', program=self.program)
 
     class Meta:
         proxy = True

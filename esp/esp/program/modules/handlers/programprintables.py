@@ -1069,7 +1069,7 @@ class ProgramPrintables(ProgramModuleObj):
             t.friendly_times = [t.pretty_time()]
             t.initial_rooms = []
 
-        show_empty_blocks = Tag.getBooleanTag('studentschedule_show_empty_blocks', prog, default=False)
+        show_empty_blocks = Tag.getBooleanTag('studentschedule_show_empty_blocks', prog)
         timeslots = list(prog.getTimeSlots())
         for student in students:
             student.updateOnsite(request)
@@ -1544,7 +1544,7 @@ class ProgramPrintables(ProgramModuleObj):
             else:
                 return ' '
 
-        if Tag.getBooleanTag('oktimes_collapse', default=False):
+        if Tag.getBooleanTag('oktimes_collapse'):
             time_headers = ['Feasible Start Times']
         else:
             time_headers = [str(time) for time in times]
@@ -1559,7 +1559,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         # this writes each row associated with a section, for the columns determined above.
         for section, timeslist in sections_possible_times:
-            if Tag.getBooleanTag('oktimes_collapse', default=False):
+            if Tag.getBooleanTag('oktimes_collapse'):
                 time_values = [', '.join([e.start.strftime('%a %I:%M %p') for e in section.viable_times()])]
             else:
                 time_values = [time_possible(time, timeslist) for time in times]

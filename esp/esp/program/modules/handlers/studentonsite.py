@@ -200,7 +200,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         return context
 
     def isStep(self):
-        return Tag.getBooleanTag('student_webapp_isstep', program=self.program, default=False)
+        return Tag.getBooleanTag('student_webapp_isstep', program=self.program)
 
     class Meta:
         proxy = True

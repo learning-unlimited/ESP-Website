@@ -21,7 +21,7 @@ def render_class_core(cls):
 
     # Allow tag configuration of whether class descriptions get collapsed
     # when the class is full (default: yes)
-    collapse_full = Tag.getBooleanTag('collapse_full_classes', prog, True)
+    collapse_full = Tag.getBooleanTag('collapse_full_classes', prog)
 
     return {'class': cls,
             'collapse_full': collapse_full,
@@ -113,7 +113,7 @@ def _render_class_helper(cls, user=None, filter=False, timeslot=None, webapp = F
 
     # Allow tag configuration of whether class descriptions get collapsed
     # when the class is full (default: yes)
-    collapse_full = Tag.getBooleanTag('collapse_full_classes', cls.parent_program, True)
+    collapse_full = Tag.getBooleanTag('collapse_full_classes', cls.parent_program)
 
     return {'class':      cls,
             'collapse_full': collapse_full,

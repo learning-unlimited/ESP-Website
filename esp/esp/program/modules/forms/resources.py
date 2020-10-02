@@ -53,7 +53,7 @@ class ResourceTypeForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(ResourceTypeForm, self).__init__(*args, **kwargs)
-        if not Tag.getBooleanTag('allow_global_restypes', default = False):
+        if not Tag.getBooleanTag('allow_global_restypes'):
             self.fields['is_global'].widget = forms.HiddenInput()
 
     def load_restype(self, res_type):

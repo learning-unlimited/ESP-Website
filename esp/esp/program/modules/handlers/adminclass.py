@@ -479,7 +479,7 @@ class AdminClass(ProgramModuleObj):
         cls = self.getClass(request,extra)
         time_options = prog.getTimeSlots()
         #   Group contiguous blocks
-        if not Tag.getBooleanTag('availability_group_timeslots', default=True):
+        if not Tag.getBooleanTag('availability_group_timeslots'):
             time_groups = [list(time_options)]
         else:
             time_groups = Event.group_contiguous(list(time_options))
