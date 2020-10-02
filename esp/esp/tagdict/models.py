@@ -40,6 +40,9 @@ class Tag(models.Model):
 
     @classmethod
     def getTag(cls, key, target=None, default=None):
+        """
+        Will pull the default from __init__.py unless the default argument is specified.
+        """
         if key not in all_global_tags:
             logger.warning("Tag %s not in list of global tags", key)
         elif all_global_tags[key].get('is_boolean', False):
@@ -92,6 +95,7 @@ class Tag(models.Model):
         """
         Given a key and program, return the corresponding value as string.
         If the program does not have the tag set, return the global value.
+        Will pull the default from __init__.py unless the default argument is specified.
         """
         if key not in all_program_tags:
             logger.warning("Tag %s not in list of program tags", key)
@@ -123,8 +127,11 @@ class Tag(models.Model):
 
     @classmethod
     def getBooleanTag(cls, key, program=None, default=None):
-        """ A variant of getProgramTag that returns boolean values.
-            The default argument should also be boolean. """
+        """
+        A variant of getProgramTag that returns boolean values.
+        The default argument should also be boolean.
+        Will pull the default from __init__.py unless the default argument is specified.
+        """
         if (key not in all_program_tags or not all_program_tags[key].get('is_boolean', False)) \
            and (key not in all_global_tags or not all_global_tags[key].get('is_boolean', False)):
             logger.warning("Tag %s not in list of boolean tags", key)
