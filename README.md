@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.com/learning-unlimited/ESP-Website.svg?branch=main)](https://travis-ci.com/learning-unlimited/ESP-Website)
 # ESP Website
-A website to help manage the logistics of large short-term educational programs
+A website which helps in  managing the logistics of large short-term educational programs
 
 This website was written by the [MIT Educational Studies Program](https://esp.mit.edu) to support [Splash](https://esp.mit.edu/learn/Splash) and other educational programs.  It is now supported by [Learning Unlimited](https://learningu.org) with support from administrators of the MIT Educational Studies Program and other Splash programs across the country.
 
