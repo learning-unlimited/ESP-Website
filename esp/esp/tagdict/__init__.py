@@ -1,6 +1,10 @@
 from django import forms
 from django.forms import widgets
+from django.core.validators import RegexValidator
 from decimal import Decimal
+
+# Can't import this because of an import loop
+_states = ['' , 'AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'FL' , 'GA' , 'GU' , 'HI' , 'IA' , 'ID'  ,'IL','IN'  ,'KS'  ,'KY'  ,'LA'  ,'MA' ,'MD'  ,'ME'  ,'MI'  ,'MN'  ,'MO' ,'MS'  ,'MT'  ,'NC'  ,'ND' ,'NE'  ,'NH'  ,'NJ'  ,'NM' ,'NV'  ,'NY' ,'OH'  , 'OK' ,'OR'  ,'PA'  ,'PR' ,'RI'  ,'SC'  ,'SD'  ,'TN' ,'TX'  ,'UT'  ,'VA'  ,'VI'  ,'VT'  ,'WA'  ,'WI'  ,'WV' ,'WY' ,'Canada', 'UK']
 
 # Lists of all tags used anywhere in the codebase
 # Populated by hand, so don't be too surprised if something is missing
@@ -117,6 +121,7 @@ all_global_tags = {
         'default': None,
         'category': 'manage',
         'is_setting': True,
+        'field': forms.CharField(validators=[RegexValidator(r'^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$', 'Enter a valid phone number.')])
 	},
     'finaid_form_fields': {
 		'is_boolean': False,
@@ -392,6 +397,7 @@ all_global_tags = {
         'default': None,
         'category': 'manage',
         'is_setting': True,
+        'field': forms.ChoiceField(required=True, choices=zip(_states,_states))
 	},
     'teacher_address_required': {
 		'is_boolean': True,
@@ -453,13 +459,15 @@ all_program_tags = {
         'default': None,
         'category': 'learn',
         'is_setting': True,
+        'field': forms.IntegerField(min_value=1),
 	},
     'sibling_discount': {
 		'is_boolean': False,
         'help_text': 'The monitary value of the sibling discount',
-        'default': '0.00',
+        'default': Decimal(0.00),
         'category': 'learn',
         'is_setting': True,
+        'field': forms.DecimalField(min_value=Decimal(0.00), decimal_places=2),
 	},
     'splashinfo_costs': {
 		'is_boolean': False,
@@ -656,6 +664,7 @@ all_program_tags = {
         'default': None,
         'category': 'teach',
         'is_setting': True,
+        'field': forms.IntegerField(min_value=1),
 	},
     'teacherreg_default_max_grade': {
 		'is_boolean': False,
@@ -663,6 +672,7 @@ all_program_tags = {
         'default': None,
         'category': 'teach',
         'is_setting': True,
+        'field': forms.IntegerField(min_value=1),
 	},
     'teacherreg_default_class_size_max': {
 		'is_boolean': False,
@@ -670,6 +680,7 @@ all_program_tags = {
         'default': None,
         'category': 'teach',
         'is_setting': True,
+        'field': forms.IntegerField(min_value=1),
 	},
     'stripe_settings': {
 		'is_boolean': False,
@@ -684,6 +695,7 @@ all_program_tags = {
         'default': None,
         'category': 'learn',
         'is_setting': True,
+        'field': forms.IntegerField(min_value=1),
 	},
     'teach_extraform_id': {
 		'is_boolean': False,
@@ -691,6 +703,7 @@ all_program_tags = {
         'default': None,
         'category': 'teach',
         'is_setting': True,
+        'field': forms.IntegerField(min_value=1),
 	},
     'donation_settings': {
 		'is_boolean': False,
@@ -740,6 +753,7 @@ all_program_tags = {
         'default': None,
         'category': 'teach',
         'is_setting': True,
+        'field': forms.IntegerField(min_value=1),
 	},
     'display_registration_names': {
 		'is_boolean': False,
@@ -824,6 +838,7 @@ all_program_tags = {
         'default': '10',
         'category': 'learn',
         'is_setting': True,
+        'field': forms.IntegerField(min_value=1),
 	},
     'survey_teacher_filter': {
 		'is_boolean': False,
@@ -887,6 +902,7 @@ all_program_tags = {
         'default': None,
         'category': 'learn',
         'is_setting': True,
+        'field': forms.IntegerField(min_value=0),
 	},
     'student_lottery_group_max': {
 		'is_boolean': False,
