@@ -16,7 +16,7 @@ _states = ['' , 'AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'F
 #       'default': default value (normally a string or None, but can be a boolean if is_boolean is True or some other type if a custom field is set below),
 #       'category': 'category name' (see dictionary at the bottom of this file),
 #       'is_setting': show on tag settings page? (boolean),
-#       (optional) 'field': a django form field (e.g. forms.IntegerField())
+#       (optional) 'field': a django form field instance (e.g. forms.IntegerField())
 #   }
 
 # Any tag used with Tag.getTag()
@@ -307,6 +307,11 @@ all_global_tags = {
         'category': 'teach',
         'is_setting': True,
 	},
+    # TODO: For the next five, we probably want to pull the fields from the forms (e.g. TeacherProfileForm.declared_fields.keys())
+    # and then use those values in a MultipleChoiceField, but I see two problems:
+    # 1) How do we handle the conversion of the list of selected values to a comma-separated string (and back)?
+    #    We could maybe check if the field is a MultipleChoiceField, then use getlist on the cleaned_data?
+    # 2) We'll probably run into import loops when we try to import the forms
     'teacher_profile_hide_fields': {
 		'is_boolean': False,
         'help_text': 'Comma-separated list of fields to hide in the teacher profile form',
