@@ -621,7 +621,7 @@ class Program(models.Model, CustomFormsLinkModel):
         Returns a dict with tuples of valid grades as keys, and caps as values,
         or an empty dict if the Tag does not exist.
         """
-        size_tag = Tag.getProgramTag("program_size_by_grade", self, "{}")
+        size_tag = Tag.getProgramTag("program_size_by_grade", self)
         size_dict = {}
         for k, v in json.loads(size_tag).iteritems():
             if '-' in k:
@@ -664,7 +664,7 @@ class Program(models.Model, CustomFormsLinkModel):
         Returns:
           A ClassCategories object if one was found, or None.
         """
-        pk = Tag.getProgramTag('open_class_category', self, default=None)
+        pk = Tag.getProgramTag('open_class_category', self)
         cc = None
         if pk is not None:
             try:
@@ -1238,7 +1238,7 @@ class Program(models.Model, CustomFormsLinkModel):
         """
         if hasattr(self, "_sibling_discount"):
             return self._sibling_discount
-        self._sibling_discount = Decimal(Tag.getProgramTag('sibling_discount', program=self, default='0.00'))
+        self._sibling_discount = Decimal(Tag.getProgramTag('sibling_discount', program=self))
         return self._sibling_discount
 
     def _sibling_discount_set(self, value):
@@ -1348,7 +1348,7 @@ class SplashInfo(models.Model):
         LineItemType.objects.get_or_create(program=self.program, text='Sunday Lunch')
 
         #   Figure out how much everything costs
-        cost_info = json.loads(Tag.getProgramTag('splashinfo_costs', self.program, default='{}'))
+        cost_info = json.loads(Tag.getProgramTag('splashinfo_costs', self.program))
 
         #   Save accounting information
         iac = IndividualAccountingController(self.program, self.student)

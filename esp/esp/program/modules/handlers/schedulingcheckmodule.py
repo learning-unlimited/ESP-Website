@@ -561,7 +561,7 @@ class SchedulingCheckRunner:
 
      def no_overlap_classes(self):
          '''Gets a list of classes from the tag no_overlap_classes, and checks that they don't overlap.  The tag should contain a dict of {'comment': [list,of,class,ids]}.'''
-         classes = json.loads(Tag.getProgramTag('no_overlap_classes',program=self.p, default="{}"))
+         classes = json.loads(Tag.getProgramTag('no_overlap_classes',program=self.p))
          classes_lookup = {x.id: x for x in ClassSubject.objects.filter(id__in=sum(classes.values(),[]))}
          bad_classes = []
          for key, l in classes.iteritems():
@@ -597,8 +597,7 @@ class SchedulingCheckRunner:
                            r'^.*music.*$': [],
                            r'^.*kitchen.*$': []}
          config = json.loads(Tag.getProgramTag('special_classroom_types',
-                                               program=self.p,
-                                               default='{}'))
+                                               program=self.p))
          config = config if config else DEFAULT_CONFIG
 
          HEADINGS = ["Class Section", "Unfulfilled Request", "Current Room"]

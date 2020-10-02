@@ -101,7 +101,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
             lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
             in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
             lottery_run = Tag.getBooleanTag('student_lottery_run', prog, default=False)
-            num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog, default=4))
+            num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
             context['lottery_perm'] = lottery_perm
             context['lottery_run'] = lottery_run
             context['num_allowed_users'] = num_allowed_users
@@ -151,7 +151,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
         lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
         in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
         lottery_run = Tag.getBooleanTag('student_lottery_run', prog, default=False)
-        num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog, default=4))
+        num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
         context['lottery_perm'] = lottery_perm
         context['lottery_run'] = lottery_run
         context['num_allowed_users'] = num_allowed_users
