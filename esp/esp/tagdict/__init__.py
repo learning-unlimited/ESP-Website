@@ -900,6 +900,13 @@ all_program_tags = {
         'category': 'teach',
         'is_setting': True,
     },
+    'teacher_onsite_checkin_note': {
+        'is_boolean': False,
+        'help_text': 'The message that is shown at the top of the teacher webapp schedule when a teacher is NOT checked in.',
+        'default': 'Note: Please make sure to check in before your first class today.',
+        'category': 'teach',
+        'is_setting': True,
+    },
 }
 
 # Dictionary of categories that tags fall into (for grouping on the tag settings page)
