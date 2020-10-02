@@ -136,7 +136,7 @@ class Tag(models.Model):
            and (key not in all_global_tags or not all_global_tags[key].get('is_boolean', False)):
             logger.warning("Tag %s not in list of boolean tags", key)
         if program:
-            tag_val = Tag.getProgramTag(key, program, boolean=True)
+            tag_val = Tag.getProgramTag(key, program, boolean=True, default=default)
         else:
             tag_val = Tag._getTag(key)
         if tag_val is None: #See the comment in getProgramTag for why we're using None rather than passing the default through.
