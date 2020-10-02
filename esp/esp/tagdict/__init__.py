@@ -1,3 +1,7 @@
+from django import forms
+from django.forms import widgets
+from decimal import Decimal
+
 # Lists of all tags used anywhere in the codebase
 # Populated by hand, so don't be too surprised if something is missing
 
@@ -5,9 +9,10 @@
 #   'key': {
 #       'is_boolean': is tag used with getBooleanTag? (boolean),
 #       'help_text': 'some help text for admins',
-#       'default': default value,
+#       'default': default value (normally a string or None, but can be a boolean if is_boolean is True or some other type if a custom field is set below),
 #       'category': 'category name' (see dictionary at the bottom of this file),
-#       'is_setting': show on tag settings page? (boolean)
+#       'is_setting': show on tag settings page? (boolean),
+#       (optional) 'field': a django form field (e.g. forms.IntegerField())
 #   }
 
 # Any tag used with Tag.getTag()
@@ -37,9 +42,10 @@ all_global_tags = {
     'nearly_full_threshold': {
 		'is_boolean': False,
         'help_text': 'Fraction (as a decimal) of section capacity that determines if a class is \'nearly full\'',
-        'default': '0.75',
+        'default': Decimal(0.75),
         'category': 'teach',
         'is_setting': True,
+        'field': forms.DecimalField(min_value=Decimal(0.00), max_value=Decimal(1.00), decimal_places=2),
 	},
     'use_class_size_optimal': {
 		'is_boolean': True,
@@ -96,6 +102,7 @@ all_global_tags = {
         'default': None,
         'category': 'teach',
         'is_setting': True,
+        'field': forms.IntegerField(min_value=0),
 	},
     'availability_group_timeslots': {
 		'is_boolean': True,
@@ -120,10 +127,11 @@ all_global_tags = {
 	},
     'onsite_classlist_min_refresh': {
 		'is_boolean': False,
-        'help_text': 'Maximum refresh speed for the onsite classlist to avoid server overload.',
+        'help_text': 'Maximum refresh speed for the onsite classlist to avoid server overload (in seconds).',
         'default': '10',
         'category': 'onsite',
         'is_setting': True,
+        'field': forms.IntegerField(min_value=1),
 	},
     'oktimes_collapse': {
 		'is_boolean': True,
@@ -134,10 +142,11 @@ all_global_tags = {
 	},
     'qsd_display_date_author': {
 		'is_boolean': False,
-        'help_text': 'Specifies whether to display \'Last modified by [author] on [date] at [time].\' at the bottom of all website pages for non-admins. Set to \'Both\' (without the single quotes) to display author and date; set to \'Date\' to display the date and time but not the author; set to \'None\' to display nothing.',
+        'help_text': 'Specifies whether to display \'Last modified by [author] on [date] at [time].\' at the bottom of all website pages for non-admins.',
         'default': 'Both',
         'category': 'manage',
         'is_setting': True,
+        'field': forms.ChoiceField(choices=[('Both', 'Display author, date, and time'), ('Date', 'Display the date and time but not the author'), ('None', 'Display nothing')]),
 	},
     'current_theme_name': {
 		'is_boolean': False,
@@ -882,9 +891,10 @@ all_program_tags = {
     'student_lottery_group_max': {
 		'is_boolean': False,
         'help_text': 'What is the maximum number of students that can be in the same lottery group? (set to 1 to not allow groups)',
-        'default': '4',
+        'default': 4,
         'category': 'learn',
         'is_setting': True,
+        'field': forms.IntegerField(min_value=1),
 	},
     'student_survey_isstep': {
 		'is_boolean': True,
