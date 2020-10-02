@@ -390,7 +390,16 @@ class TagSettingsForm(BetterForm):
             tag_info = all_global_tags[key]
             if tag_info.get('is_setting', False):
                 self.categories.add(tag_info.get('category'))
-                self.fields[key] = getattr(forms, "BooleanField" if tag_info.get('is_boolean', False) else "CharField")(help_text=tag_info.get('help_text', ''), initial = tag_info.get('default'), required = False)
+                field = tag_info.get('field')
+                if field is not None:
+                    self.fields[key] = field
+                elif tag_info.get('is_boolean', False):
+                    self.fields[key] = forms.BooleanField()
+                else:
+                    self.fields[key] = forms.CharField()
+                self.fields[key].help_text = tag_info.get('help_text', '')
+                self.fields[key].initial = tag_info.get('default')
+                self.fields[key].required = False
                 set_val = Tag.getBooleanTag(key) if tag_info.get('is_boolean', False) else Tag.getTag(key)
                 if set_val != None and set_val != self.fields[key].initial:
                     self.fields[key].initial = set_val
