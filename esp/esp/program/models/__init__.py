@@ -1149,6 +1149,27 @@ class Program(models.Model, CustomFormsLinkModel):
     def getVolunteerRequests(self):
         return VolunteerRequest.objects.filter(timeslot__program=self).order_by('timeslot__start')
 
+    @staticmethod
+    def extractShirtStats(query, shirt_type_tag, values_list_prefix, default_shirt_type):
+        shirt_count = defaultdict(lambda: defaultdict(int))
+        if not Tag.getBooleanTag(shirt_type_tag, default=False):
+            query = query.values_list(values_list_prefix + '__shirt_size')
+            query = query.annotate(people=Count('id', distinct=True))
+
+            for row in query:
+                shirt_size, count = row
+                shirt_count[default_shirt_type][shirt_size] = count
+
+        else:
+            query = query.values_list(values_list_prefix + '__shirt_type',
+                                      values_list_prefix + '__shirt_size')
+            query = query.annotate(people=Count('id', distinct=True))
+
+            for row in query:
+                shirt_type, shirt_size, count = row
+                shirt_count[shirt_type][shirt_size] = count
+        return shirt_count
+
     @cache_function
     def getShirtInfo(self):
         shirts = []
@@ -1158,79 +1179,28 @@ class Program(models.Model, CustomFormsLinkModel):
         teacher_types = {'Approved Teachers': 'class_approved', 'All Teachers': 'class_submitted'}
         shirt_sizes = [x.strip() for x in Tag.getTag('teacher_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
         for teacher_type in teacher_types.items():
-            shirt_count = defaultdict(lambda: defaultdict(int))
             if teacher_type[1] in teacher_dict:
-                query = teacher_dict[teacher_type[1]]
-                query = query.filter(registrationprofile__most_recent_profile=True)
-                if not Tag.getBooleanTag('teacherinfo_shirt_type_selection', default=False):
-                    query = query.values_list('registrationprofile__teacher_info__shirt_size')
-                    query = query.annotate(people=Count('id', distinct=True))
-
-                    for row in query:
-                        shirt_size, count = row
-                        shirt_count['Straight cut'][shirt_size] = count
-
-                else:
-                    query = query.values_list('registrationprofile__teacher_info__shirt_type',
-                                              'registrationprofile__teacher_info__shirt_size')
-                    query = query.annotate(people=Count('id', distinct=True))
-
-                    for row in query:
-                        shirt_type, shirt_size, count = row
-                        shirt_count[shirt_type][shirt_size] = count
-            shirts.append({'name': teacher_type[0], 'shirt_sizes': shirt_sizes, 'distribution': [ { 'type': shirt_type, 'counts':[ shirt_count[shirt_type][shirt_size] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ] })
+                query = teacher_dict[teacher_type[1]].filter(registrationprofile__most_recent_profile=True)
+                shirt_count = self.extractShirtStats(query, 'teacherinfo_shirt_type_selection', 'registrationprofile__teacher_info', shirt_types[0])
+                shirts.append({'name': teacher_type[0], 'shirt_sizes': shirt_sizes, 'distribution': [ { 'type': shirt_type, 'counts':[ shirt_count[shirt_type][shirt_size] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ] })
 
         student_dict = self.students()
         student_types = {'Enrolled Students': 'enrolled', 'Attended Students': 'attended'}
         shirt_sizes = [x.strip() for x in Tag.getTag('student_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
         for student_type in student_types.items():
-            shirt_count = defaultdict(lambda: defaultdict(int))
             if student_type[1] in student_dict:
-                query = student_dict[student_type[1]]
-                query = query.filter(registrationprofile__most_recent_profile=True)
-                if not Tag.getBooleanTag('studentinfo_shirt_type_selection', default=False):
-                    query = query.values_list('registrationprofile__student_info__shirt_size')
-                    query = query.annotate(people=Count('id', distinct=True))
-
-                    for row in query:
-                        shirt_size, count = row
-                        shirt_count['Straight cut'][shirt_size] = count
-
-                else:
-                    query = query.values_list('registrationprofile__student_info__shirt_type',
-                                              'registrationprofile__student_info__shirt_size')
-                    query = query.annotate(people=Count('id', distinct=True))
-
-                    for row in query:
-                        shirt_type, shirt_size, count = row
-                        shirt_count[shirt_type][shirt_size] = count
-            shirts.append({'name': student_type[0], 'shirt_sizes': shirt_sizes, 'distribution': [ { 'type': shirt_type, 'counts':[ shirt_count[shirt_type][shirt_size] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ] })
+                query = student_dict[student_type[1]].filter(registrationprofile__most_recent_profile=True)
+                shirt_count = self.extractShirtStats(query, 'studentinfo_shirt_type_selection', 'registrationprofile__student_info', shirt_types[0])
+                shirts.append({'name': student_type[0], 'shirt_sizes': shirt_sizes, 'distribution': [ { 'type': shirt_type, 'counts':[ shirt_count[shirt_type][shirt_size] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ] })
 
         volunteer_dict = self.volunteers()
         volunteer_types = {'All Volunteers': 'volunteer_all'}
         shirt_sizes = [x.strip() for x in Tag.getTag('volunteer_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
         for volunteer_type in volunteer_types.items():
-            shirt_count = defaultdict(lambda: defaultdict(int))
             if volunteer_type[1] in volunteer_dict:
-                query = volunteer_dict[volunteer_type[1]]
-                query = query.filter(volunteeroffer__request__program=self)
-                if not Tag.getBooleanTag('volunteer_tshirt_type_selection', default=False):
-                    query = query.values_list('volunteeroffer__shirt_size')
-                    query = query.annotate(people=Count('id', distinct=True))
-
-                    for row in query:
-                        shirt_size, count = row
-                        shirt_count['Straight cut'][shirt_size] = count
-
-                else:
-                    query = query.values_list('volunteeroffer__shirt_type',
-                                              'volunteeroffer__shirt_size')
-                    query = query.annotate(people=Count('id', distinct=True))
-
-                    for row in query:
-                        shirt_type, shirt_size, count = row
-                        shirt_count[shirt_type][shirt_size] = count
-            shirts.append({'name': volunteer_type[0], 'shirt_sizes': shirt_sizes, 'distribution': [ { 'type': shirt_type, 'counts':[ shirt_count[shirt_type][shirt_size] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ] })
+                query = volunteer_dict[volunteer_type[1]].filter(registrationprofile__most_recent_profile=True)
+                shirt_count = self.extractShirtStats(query, 'volunteer_tshirt_type_selection', 'volunteeroffer', shirt_types[0])
+                shirts.append({'name': volunteer_type[0], 'shirt_sizes': shirt_sizes, 'distribution': [ { 'type': shirt_type, 'counts':[ shirt_count[shirt_type][shirt_size] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ] })
 
         return {'shirts' : shirts, 'shirt_types' : shirt_types }
 
