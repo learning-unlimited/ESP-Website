@@ -81,7 +81,7 @@ class FinAidApproveModule(ProgramModuleObj):
             userchecklist = request.POST.getlist("user")
             approve_blanks = request.POST.get('approve_blanks', False)
             amount_max_dec = request.POST.get('amount_max_dec', None)
-            percent = request.POST.get('percent', 100)
+            percent = request.POST.get('percent', None)
 
             def is_blank(x):
                 return x is None or x == ""
