@@ -81,10 +81,10 @@ function toggle(source) {
     </div>
 
     <label for="amount_max_dec">{{ amount_max_dec_help_text }}</label>
-    <input name="amount_max_dec" type="number" min="0.00" step="0.01" max="2500" value="0.00">
+    <input name="amount_max_dec" type="number" min="0.00" step="0.01" max="2500" value="0.00" required>
     <br />
     <label for="amount_max_dec">{{ percent_help_text }}</label>
-    <input name="percent" type="number" min="0" step="1" max="100" value="100">
+    <input name="percent" type="number" min="0" step="1" max="100" value="100" required>
     <br />
     <input type="submit" value="Approve Requests" class="btn btn-primary" >
     <input type="checkbox" id="approve_blanks_checkbox" name="approve_blanks" checked> Approve blank requests?
