@@ -194,6 +194,8 @@ class MessageRequest(models.Model):
     processed_by = models.DateTimeField(null=True, default=None, db_index=True) # When should this be processed by?
     priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
 
+    public = models.BooleanField(default=False) # Should the subject and msgtext of this request be publicly viewable at /email/<id>?
+
     def __unicode__(self):
         return unicode(self.subject)
 

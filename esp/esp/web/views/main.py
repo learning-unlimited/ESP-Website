@@ -50,6 +50,7 @@ import datetime
 import re
 import json
 
+from esp.dbmail.models import MessageRequest
 from esp.web.models import NavBarCategory
 from esp.utils.web import render_to_response
 from esp.web.views.navBar import makeNavBar
@@ -60,6 +61,7 @@ from esp.tagdict.models import Tag
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 from esp.utils.query_utils import nest_Q
 
+from argcache import cache_function
 from django.views.decorators.cache import cache_control
 from django.core.mail import mail_admins
 from django.conf import settings
@@ -111,6 +113,17 @@ def program(request, tl, one, two, module, extra = None):
         return newResponse
 
     raise Http404
+
+#@cache_function
+@cache_control(max_age=180)
+def public_email(request, email_id):
+    email_req = MessageRequest.objects.filter(id=email_id, public=True)
+    if email_req.count() == 1:
+        return render_to_response('public_email.html', request, {'email_req': email_req[0]})
+    else:
+        raise ESPError('Invalid email id.', log=False)
+#public_email.depend_on_model(MessageRequest)
+    
 
 def archives(request, selection, category = None, options = None):
     """ Return a page with class archives """

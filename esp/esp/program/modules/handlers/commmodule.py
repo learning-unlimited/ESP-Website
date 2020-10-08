@@ -73,6 +73,7 @@ class CommModule(ProgramModuleObj):
                                               request.POST['body']    ]
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
+        public_view = 'public_view' in request.POST
 
         # Set From address
         if request.POST.get('from', '').strip():
@@ -121,6 +122,7 @@ class CommModule(ProgramModuleObj):
                                                'subject': subject,
                                                'from': fromemail,
                                                'replyto': replytoemail,
+                                               'public_view': public_view,
                                                'body': body,
                                                'renderedtext': renderedtext})
 
@@ -161,6 +163,7 @@ class CommModule(ProgramModuleObj):
                                     request.POST['subject'],
                                     request.POST['body']    ]
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
+        public_view = 'public_view' in request.POST
 
         try:
             filterid = int(filterid)
@@ -182,6 +185,7 @@ class CommModule(ProgramModuleObj):
                                                       sender     = fromemail,
                                                       creator    = request.user,
                                                       msgtext = body,
+                                                      public = public_view,
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )
 
@@ -200,8 +204,10 @@ class CommModule(ProgramModuleObj):
         else:
             est_time = 1.5 * numusers
 
-        return render_to_response(self.baseDir()+'finished.html', request,
-                                  {'time': est_time})
+        context = {'time': est_time}
+        if public_view:
+            context['req_id'] = newmsg_request.id
+        return render_to_response(self.baseDir()+'finished.html', request, context)
 
 
     @aux_call
@@ -294,6 +300,7 @@ class CommModule(ProgramModuleObj):
                                                          request.POST['body']    ]
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
+        public_view = 'public_view' in request.POST
 
         return render_to_response(self.baseDir()+'step2.html', request,
                                               {'listcount': listcount,
@@ -303,7 +310,8 @@ class CommModule(ProgramModuleObj):
                                                'from': fromemail,
                                                'replyto': replytoemail,
                                                'subject': subject,
-                                               'body': body})
+                                               'body': body,
+                                               'public_view': public_view})
 
     class Meta:
         proxy = True
