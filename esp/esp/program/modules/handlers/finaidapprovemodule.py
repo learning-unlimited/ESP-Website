@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web import render_to_response
 from esp.program.models import FinancialAidRequest
+from esp.accounting.models import FinancialAidGrant
 
 
 class FinAidApproveModule(ProgramModuleObj):
@@ -57,9 +58,10 @@ class FinAidApproveModule(ProgramModuleObj):
     @needs_admin
     def finaidapprove(self, request, tl, one, two, module, extra, prog):
         context = {}
-        message = ""
         users_approved = []
         users_error = []
+        context['amount_max_dec_help_text'] = FinancialAidGrant._meta.get_field('amount_max_dec').help_text
+        context['percent_help_text'] = FinancialAidGrant._meta.get_field('percent').help_text
 
         # The following code was copied and modified from finaid_approve.py in useful_scripts
 
@@ -70,16 +72,16 @@ class FinAidApproveModule(ProgramModuleObj):
         # populate the query set cache (whereas if we used .exists() or .count(), they
         # wouldn't, and the later iteration would hit the database again)
         if len(reqs) == 0:
-            message = "No requests found."
-            context["error"] = message
+            context["error"] = "No requests found."
             return render_to_response(self.baseDir()+'finaid.html', request, context)
 
         if request.method == 'POST':
             context['POST'] = True
-
             # ITERATE & APPROVE REQUESTS
             userchecklist = request.POST.getlist("user")
-            approve_blanks = request.POST.get('approve_blanks', False);
+            approve_blanks = request.POST.get('approve_blanks', False)
+            amount_max_dec = request.POST.get('amount_max_dec', None)
+            percent = request.POST.get('percent', None)
 
             def is_blank(x):
                 return x is None or x == ""
@@ -96,7 +98,7 @@ class FinAidApproveModule(ProgramModuleObj):
                     continue
 
                 try:
-                    req.approve(dollar_amount = None, discount_percent=100)
+                    req.approve(dollar_amount = amount_max_dec, discount_percent = percent)
                     users_approved.append(req.user.name())
                 except:
                     users_error.append(req.user.name())

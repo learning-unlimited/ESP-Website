@@ -847,7 +847,6 @@ teachers[key].filter(is_active = True).distinct().count()))
 
         shirt_data = {"id": "shirtnum"};
         adminvitals_shirt = prog.getShirtInfo()
-        shirt_data["sizes"] = adminvitals_shirt['shirt_sizes'];
         shirt_data["types"] = adminvitals_shirt['shirt_types'];
         shirt_data["data"] = adminvitals_shirt['shirts'];
         dictOut["stats"].append(shirt_data);
