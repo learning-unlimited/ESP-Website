@@ -280,6 +280,10 @@ class StudentExtraCosts(ProgramModuleObj):
                                   request,
                                   { 'errors': not forms_all_valid, 'error_custom': error_custom, 'forms': forms, 'financial_aid': request.user.hasFinancialAid(prog), 'select_qty': len(multicosts_list) > 0 })
 
+    def isStep(self):
+        pac = ProgramAccountingController(self.program)
+        return pac.get_lineitemtypes(optional_only=True).exists()
+
     class Meta:
         proxy = True
         app_label = 'modules'

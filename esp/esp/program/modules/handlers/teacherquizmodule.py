@@ -153,6 +153,10 @@ class TeacherQuizModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'quiz.html', request, {'prog':prog, 'form': form})
 
+    def isStep(self):
+        custom_form_id = Tag.getProgramTag('quiz_form_id', self.program, None)
+        return custom_form_id and Form.objects.filter(id=int(custom_form_id)).exists()
+
     class Meta:
         proxy = True
         app_label = 'modules'

@@ -20,7 +20,7 @@ $j(function(){
 
     $j('.section-detail-header').click(function () {
         $j(this).toggleClass('active');
-        var info = $j(this).siblings('.section-detail-info');
+        var info = $j(this).closest("tr").nextAll(".section-detail-tr").first().find('.section-detail-info');
         var class_id = info.attr('data-class-id');
 
         // Let data-class-id indicate which class id we want to load details
@@ -236,38 +236,41 @@ $j(function(){
     }
 
     $j(document).keydown(function(e){
-        if(/^[a-z]$/i.test(e.key) && !e.ctrlKey) {
-            if(e.target.nodeName !== "TEXTAREA" && e.target.nodeName !== "INPUT")
+        if(e.target.nodeName !== "TEXTAREA") { // Prevent capturing textarea typing
+            if(/^[a-z]$/i.test(e.key) && !e.ctrlKey) { // Normal text
+                if(e.target !== input[0]) // Reset input if not target
+                    input.val("");
+                input.focus(); // Focus input for rest of text input
+            }
+            else if([38, 40, 33, 34].includes(e.which)) { // Change selected teacher by one or five
+                if(e.which==38) // Up arrow
+                    selected--;
+                else if(e.which==40) // Down arrow
+                    selected++;
+                else if(e.which==33) // Page up
+                    selected-=5;
+                else if(e.which==34) // Page down
+                    selected+=5;
+                e.preventDefault();
+                updateSelected(true);
+            }
+            else if(e.which==90 && e.ctrlKey){ // Ctrl + z
+                undoLiveCheckIn();
+                e.preventDefault();
+            }
+            else if(e.which==13 && e.shiftKey){ // Shift + Enter
+                $j(".selected .checkin").click(); // Check in teacher
+                e.preventDefault();
                 input.val("");
-            input.focus();
-        }
-        else if([38, 40, 33, 34].includes(e.which)) {
-            if(e.which==38)
-                selected--;
-            else if(e.which==40)
-                selected++;
-            else if(e.which==33)
-                selected-=5;
-            else if(e.which==34)
-                selected+=5;
-            e.preventDefault();
-            updateSelected(true);
-        }
-        else if(e.which==90 && e.ctrlKey){
-            undoLiveCheckIn();
-            e.preventDefault();
-        }
-        else if(e.which==13 && e.shiftKey){
-            $j(".selected .checkin").click();
-            e.preventDefault();
-            input.val("");
-        }
-        else if(e.which==191 && e.shiftKey){
-            window.open($j(".selected a")[0].href);
-            e.preventDefault();
+            }
+            else if(e.which==191 && e.shiftKey){ // Shift + ?
+                window.open($j(".selected a")[0].href); // Open userview page
+                e.preventDefault();
+            }
         }
     }).keyup(function(e){
-        input.change();
+        if(e.target.nodeName !== "TEXTAREA")
+            input.change();
     });
 
     var lastLength=0;
@@ -277,19 +280,26 @@ $j(function(){
         else if(input.val().length > lastLength || input.hasClass("not-found")){
             var found=false;
             var buttons = $j(".checkin");
-            for(var n=0; !found && n<buttons.length; n++)
-                if(buttons[n].name.toLowerCase().indexOf(input.val().toLowerCase())==0){
-                    selected=n;
-                    found=true;
-                }
-            for(var n=0; !found && n<buttons.length; n++)
-                if($j(buttons[n]).parent().prev().children("a").html().toLowerCase().indexOf(input.val().toLowerCase())==0){
-                    selected=n;
-                    found=true;
-                }
-            if(found)
-                updateSelected(true);
-            input.removeClass().addClass(found?"found":"not-found");
+            try { // Find first matching teacher or section
+                var patt = new RegExp(input.val().toLowerCase());
+                for(var n=0; !found && n<buttons.length; n++) // Loop through teacher names
+                    if(patt.test(buttons[n].name.toLowerCase())){
+                        selected=n;
+                        found=true;
+                    }
+                for(var n=0; !found && n<buttons.length; n++) // Loop through section codes/titles
+                    if(patt.test($j(buttons[n]).parent().prev().children("a").html().toLowerCase())){
+                        selected=n;
+                        found=true;
+                    }
+                if(found)
+                    updateSelected(true);
+                input.removeClass().addClass(found?"found":"not-found");
+            } catch(e) {
+                // Unselect teacher and make input white until we get a valid expression
+                input.removeClass();
+                $j(".selected").removeClass("selected");
+            }
         }
         lastLength = input.val().length;
     });
