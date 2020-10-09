@@ -157,7 +157,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
 
         #Run lottery if requested
         if request.POST:
-            if Tag.getBooleanTag('student_lottery_run', prog, default=False):
+            if Tag.getBooleanTag('student_lottery_run', prog):
                 context['error'] = "You've already run the student lottery!"
             else:
                 if "confirm" in request.POST:
@@ -168,7 +168,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                     context['error'] = "You did not confirm that you would like to run the lottery"
 
         #If lottery has been run, calculate acceptance stats
-        if Tag.getBooleanTag('student_lottery_run', prog, default=False):
+        if Tag.getBooleanTag('student_lottery_run', prog):
             for grade in grades:
                 stats[grade]['num_accepted'] = stats[grade]['per_accepted'] = 0
             winners = ESPUser.objects.filter(groups__name=role).distinct()

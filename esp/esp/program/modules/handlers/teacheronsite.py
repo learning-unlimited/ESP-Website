@@ -66,7 +66,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         # now we sort them by time/title
         classes.sort()
 
-        context['checkin_note'] = Tag.getProgramTag('teacher_onsite_checkin_note', program = prog, default="Note: Please make sure to check in before your first class today.")
+        context['checkin_note'] = Tag.getProgramTag('teacher_onsite_checkin_note', program = prog)
         context['webapp_page'] = 'schedule'
         context['crmi'] = prog.classregmoduleinfo
         context['classes'] = classes
@@ -80,8 +80,8 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
     def onsitemap(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
         context['webapp_page'] = 'map'
-        context['center'] = Tag.getProgramTag('program_center', program = prog, default='{lat: 37.427490, lng: -122.170267}')
-        context['API_key'] = Tag.getTag('google_cloud_api_key', default='')
+        context['center'] = Tag.getProgramTag('program_center', program = prog)
+        context['API_key'] = Tag.getTag('google_cloud_api_key')
 
         #extra should be a classroom id
         if extra:
@@ -180,7 +180,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         return context
 
     def isStep(self):
-        return Tag.getBooleanTag('teacher_webapp_isstep', program=self.program, default=False)
+        return Tag.getBooleanTag('teacher_webapp_isstep', program=self.program)
 
     class Meta:
         proxy = True

@@ -116,7 +116,7 @@ class ResourceType(models.Model):
 
         if program:
             base_q = Q(program=program)
-            if Tag.getBooleanTag('allow_global_restypes', default = False):
+            if Tag.getBooleanTag('allow_global_restypes'):
                 base_q = base_q | Q(program__isnull=True)
         else:
             base_q = Q(program__isnull=True)

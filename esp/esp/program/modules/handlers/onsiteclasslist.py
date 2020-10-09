@@ -398,7 +398,7 @@ class OnSiteClassList(ProgramModuleObj):
             sort_spec = extra
 
         #   Enforce a maximum refresh speed to avoid server overload.
-        min_refresh = int(Tag.getTag('onsite_classlist_min_refresh', default='10'))
+        min_refresh = int(Tag.getTag('onsite_classlist_min_refresh'))
         if int(context['refresh']) < min_refresh:
             context['refresh'] = min_refresh
 

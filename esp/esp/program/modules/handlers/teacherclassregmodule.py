@@ -90,7 +90,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                                      self.program.getTimeSlots()[0].start < datetime.datetime.now())
         context['crmi'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
-        context['friendly_times_with_date'] = Tag.getBooleanTag('friendly_times_with_date', self.program, False)
+        context['friendly_times_with_date'] = Tag.getBooleanTag('friendly_times_with_date', self.program)
         context['open_class_category'] = self.program.open_class_category.category
         return context
 
@@ -775,7 +775,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             # Thus, if default_restype isn't set, we display everything
             # potentially relevant
             resource_types = prog.getResourceTypes(include_classroom=True,
-                                                   include_global=Tag.getBooleanTag('allow_global_restypes', default = False),
+                                                   include_global=Tag.getBooleanTag('allow_global_restypes'),
                                                    include_hidden=False)
             resource_types = list(resource_types)
             resource_types.reverse()
@@ -869,7 +869,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['formset'] = resource_formset
         context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
         context['classroom_form_advisories'] = 'classroom_form_advisories'
-        context['grade_range_popup'] = Tag.getBooleanTag('grade_range_popup', self.program, default=True)
+        context['grade_range_popup'] = Tag.getBooleanTag('grade_range_popup', self.program)
 
         if newclass is None:
             context['addoredit'] = 'Add'

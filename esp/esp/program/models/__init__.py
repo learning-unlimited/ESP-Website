@@ -621,7 +621,7 @@ class Program(models.Model, CustomFormsLinkModel):
         Returns a dict with tuples of valid grades as keys, and caps as values,
         or an empty dict if the Tag does not exist.
         """
-        size_tag = Tag.getProgramTag("program_size_by_grade", self, "{}")
+        size_tag = Tag.getProgramTag("program_size_by_grade", self)
         size_dict = {}
         for k, v in json.loads(size_tag).iteritems():
             if '-' in k:
@@ -664,7 +664,7 @@ class Program(models.Model, CustomFormsLinkModel):
         Returns:
           A ClassCategories object if one was found, or None.
         """
-        pk = Tag.getProgramTag('open_class_category', self, default=None)
+        pk = Tag.getProgramTag('open_class_category', self)
         cc = None
         if pk is not None:
             try:
@@ -960,7 +960,7 @@ class Program(models.Model, CustomFormsLinkModel):
             exclude_types += [ResourceType.get_or_create('Classroom')]
 
         if include_global is None:
-            include_global = Tag.getBooleanTag('allow_global_restypes', default = False)
+            include_global = Tag.getBooleanTag('allow_global_restypes')
 
         if include_global:
             Q_filters = Q(program=self) | Q(program__isnull=True)
@@ -1152,7 +1152,7 @@ class Program(models.Model, CustomFormsLinkModel):
     @staticmethod
     def extractShirtStats(query, shirt_type_tag, values_list_prefix, default_shirt_type):
         shirt_count = defaultdict(lambda: defaultdict(int))
-        if not Tag.getBooleanTag(shirt_type_tag, default=False):
+        if not Tag.getBooleanTag(shirt_type_tag):
             query = query.values_list(values_list_prefix + '__shirt_size')
             query = query.annotate(people=Count('id', distinct=True))
 
@@ -1173,11 +1173,11 @@ class Program(models.Model, CustomFormsLinkModel):
     @cache_function
     def getShirtInfo(self):
         shirts = []
-        shirt_types = [x.strip() for x in Tag.getTag('shirt_types', default = 'Straight cut, Fitted cut').split(',')]
+        shirt_types = [x.strip() for x in Tag.getTag('shirt_types').split(',')]
 
         teacher_dict = self.teachers()
         teacher_types = {'Approved Teachers': 'class_approved', 'All Teachers': 'class_submitted'}
-        shirt_sizes = [x.strip() for x in Tag.getTag('teacher_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
+        shirt_sizes = [x.strip() for x in Tag.getTag('teacher_shirt_sizes').split(',')]
         for teacher_type in teacher_types.items():
             if teacher_type[1] in teacher_dict:
                 query = teacher_dict[teacher_type[1]].filter(registrationprofile__most_recent_profile=True)
@@ -1186,7 +1186,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         student_dict = self.students()
         student_types = {'Enrolled Students': 'enrolled', 'Attended Students': 'attended'}
-        shirt_sizes = [x.strip() for x in Tag.getTag('student_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
+        shirt_sizes = [x.strip() for x in Tag.getTag('student_shirt_sizes').split(',')]
         for student_type in student_types.items():
             if student_type[1] in student_dict:
                 query = student_dict[student_type[1]].filter(registrationprofile__most_recent_profile=True)
@@ -1195,7 +1195,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         volunteer_dict = self.volunteers()
         volunteer_types = {'All Volunteers': 'volunteer_all'}
-        shirt_sizes = [x.strip() for x in Tag.getTag('volunteer_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
+        shirt_sizes = [x.strip() for x in Tag.getTag('volunteer_shirt_sizes').split(',')]
         for volunteer_type in volunteer_types.items():
             if volunteer_type[1] in volunteer_dict:
                 query = volunteer_dict[volunteer_type[1]].filter(registrationprofile__most_recent_profile=True)
@@ -1222,7 +1222,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         See ESPUser.program_schoolyear.
         """
-        return int(Tag.getBooleanTag('increment_default_grade_levels', self, False))
+        return int(Tag.getBooleanTag('increment_default_grade_levels', self))
     incrementGrade.depend_on_row('tagdict.Tag', lambda tag: {'self' :  tag.target})
 
     def priorityLimit(self):
@@ -1265,7 +1265,7 @@ class Program(models.Model, CustomFormsLinkModel):
         """
         if hasattr(self, "_sibling_discount"):
             return self._sibling_discount
-        self._sibling_discount = Decimal(Tag.getProgramTag('sibling_discount', program=self, default='0.00'))
+        self._sibling_discount = Decimal(Tag.getProgramTag('sibling_discount', program=self))
         return self._sibling_discount
 
     def _sibling_discount_set(self, value):
@@ -1375,7 +1375,7 @@ class SplashInfo(models.Model):
         LineItemType.objects.get_or_create(program=self.program, text='Sunday Lunch')
 
         #   Figure out how much everything costs
-        cost_info = json.loads(Tag.getProgramTag('splashinfo_costs', self.program, default='{}'))
+        cost_info = json.loads(Tag.getProgramTag('splashinfo_costs', self.program))
 
         #   Save accounting information
         iac = IndividualAccountingController(self.program, self.student)

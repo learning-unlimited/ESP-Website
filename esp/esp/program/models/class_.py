@@ -1188,8 +1188,7 @@ class ClassSection(models.Model):
         # "Sun, July 10" instead of just "Sun"
         include_date = include_date or Tag.getBooleanTag(
             key='friendly_times_with_date',
-            program=self.parent_program,
-            default=False,
+            program=self.parent_program
         )
 
         txtTimes = []

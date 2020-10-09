@@ -109,7 +109,7 @@ class DonationModule(ProgramModuleObj):
             'donation_options':[10, 20, 50],
         }
 
-        tag_data = json.loads(Tag.getProgramTag('donation_settings', self.program, "{}"))
+        tag_data = json.loads(Tag.getProgramTag('donation_settings', self.program))
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
         return self.settings

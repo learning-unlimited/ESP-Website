@@ -203,7 +203,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             except:
                 pass
             form = FormClass(curUser, replacement_data)
-            if not Tag.getBooleanTag('allow_change_grade_level', default = False):
+            if not Tag.getBooleanTag('allow_change_grade_level'):
                 if prog_input is None:
                     regProf = RegistrationProfile.getLastProfile(curUser)
                 else:
@@ -250,7 +250,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
     context['request'] = request
     context['form'] = form
-    context['require_student_phonenum'] = Tag.getBooleanTag('require_student_phonenum', default=True)
+    context['require_student_phonenum'] = Tag.getBooleanTag('require_student_phonenum')
     return render_to_response('users/profile.html', request, context)
 
 @login_required

@@ -387,21 +387,30 @@ class TagSettingsForm(BetterForm):
         super(TagSettingsForm, self).__init__(*args, **kwargs)
         for key in all_global_tags:
             # generate field for each tag
-            tag_tuple = all_global_tags[key]
-            if tag_tuple[4]:
-                self.categories.add(tag_tuple[3])
-                self.fields[key] = getattr(forms, "BooleanField" if tag_tuple[0] else "CharField")(help_text=tag_tuple[1], initial = tag_tuple[2], required = False)
-                set_val = Tag.getBooleanTag(key) if tag_tuple[0] else Tag.getTag(key)
+            tag_info = all_global_tags[key]
+            if tag_info.get('is_setting', False):
+                self.categories.add(tag_info.get('category'))
+                field = tag_info.get('field')
+                if field is not None:
+                    self.fields[key] = field
+                elif tag_info.get('is_boolean', False):
+                    self.fields[key] = forms.BooleanField()
+                else:
+                    self.fields[key] = forms.CharField()
+                self.fields[key].help_text = tag_info.get('help_text', '')
+                self.fields[key].initial = tag_info.get('default')
+                self.fields[key].required = False
+                set_val = Tag.getBooleanTag(key) if tag_info.get('is_boolean', False) else Tag.getTag(key)
                 if set_val != None and set_val != self.fields[key].initial:
                     self.fields[key].initial = set_val
 
     def save(self):
         for key in all_global_tags:
             # Update tags if necessary
-            tag_tuple = all_global_tags[key]
-            if tag_tuple[4]:
+            tag_info = all_global_tags[key]
+            if tag_info.get('is_setting', False):
                 set_val = self.cleaned_data[key]
-                if not set_val in ("", "None", None, tag_tuple[2]):
+                if not set_val in ("", "None", None, tag_info.get('default')):
                     # Set a [new] tag if a value was provided and the value is not the default
                     Tag.setTag(key, value=set_val)
                 else:
@@ -409,4 +418,4 @@ class TagSettingsForm(BetterForm):
                     Tag.unSetTag(key)
 
     class Meta:
-        fieldsets = [(cat, {'fields': [key for key in sorted(all_global_tags.keys()) if all_global_tags[key][3] == cat], 'legend': tag_categories[cat]}) for cat in sorted(tag_categories.keys())]
+        fieldsets = [(cat, {'fields': [key for key in sorted(all_global_tags.keys()) if all_global_tags[key].get('category') == cat], 'legend': tag_categories[cat]}) for cat in sorted(tag_categories.keys())]
