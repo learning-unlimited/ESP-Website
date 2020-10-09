@@ -32,10 +32,12 @@ Dashboard changes
 ~~~~~~~~~~~~~~~~~
 - Added stats for the number of scheduled classes, scheduled sections, scheduled class hours, and scheduled class-student hours to the dashboard.
 - Changed the Class-Student-Hours Utilization stat on the dashboard to enrolled hours / scheduled hours instead of enrolled hours / approved hours.
+- Added attended class-student-hours to the dashboard.
+- Added shirt statistics for all teachers with a submitted class, enrolled students, attended students, and volunteers to the dashboard.
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
-
+- Added options to customize the amount of financial aid granted using the financial aid approval module.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
