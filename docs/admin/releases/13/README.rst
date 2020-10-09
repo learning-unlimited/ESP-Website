@@ -35,6 +35,10 @@ Dashboard changes
 - Added attended class-student-hours to the dashboard.
 - Added shirt statistics for all teachers with a submitted class, enrolled students, attended students, and volunteers to the dashboard.
 
+Dependency changes
+~~~~~~~~~~~~~~~~~~
+- Upgraded from Django 1.8.19 to 1.11.29
+
 Minor new features
 ~~~~~~~~~~~~~~~~~~
 - Added options to customize the amount of financial aid granted using the financial aid approval module.
