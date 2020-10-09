@@ -42,6 +42,7 @@ Dependency changes
 Minor new features
 ~~~~~~~~~~~~~~~~~~
 - Added options to customize the amount of financial aid granted using the financial aid approval module.
+- Added custom widgets to many of the tag settings (preventing potentially site-breaking tag values).
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
