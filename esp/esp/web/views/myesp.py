@@ -170,15 +170,15 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             if new_data['address_postal'] == '':
                 new_data['address_postal'] = False
 
-            regProf.contact_user = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_user, '', curUser)
-            regProf.contact_emergency = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_emergency, 'emerg_')
+            regProf.contact_user = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_user, '')
 
             if new_data.get('dietary_restrictions'):
                 regProf.dietary_restrictions = new_data['dietary_restrictions']
 
             if role == 'student':
                 regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, new_data)
-                regProf.contact_guardian = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_guardian, 'guard_')
+                regProf.contact_guardian = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_guardian, 'guard_')
+                regProf.contact_emergency = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_emergency, 'emerg_')
             elif role == 'teacher':
                 regProf.teacher_info = TeacherInfo.addOrUpdate(curUser, regProf, new_data)
             elif role == 'guardian':
