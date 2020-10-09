@@ -205,6 +205,9 @@ class TeacherEventsModule(ProgramModuleObj):
 
         return render_to_response( self.baseDir()+'teacher_events.html', request, context )
 
+    def isStep(self):
+        return Event.objects.filter(program=self.program, event_type__in=self.event_types().values()).exists()
+
     class Meta:
         proxy = True
         app_label = 'modules'

@@ -22,12 +22,12 @@
 
 <div id="shortcuts-box">
     <input type="text" />
-    <p>Type to search</p>
+    <p>Type to search by teacher or class (supports regex)</p>
     <p>Up/Down/PgUp/PgDown to select teacher</p>
     <p>'?' to view information about teacher</p>
     <p>'Shift-Enter' to check in teacher</p>
     <p>'Ctrl-Z' to un-check-in <span id='last_checkin'></span></p>
-    <p>Click a class title for more info{% if show_flags %} and class flags{% endif %}</p>
+    <p>Click a class title for more info</p>
 </div>
 
 <div id='program_form'>
@@ -117,7 +117,7 @@
 
 <table>
 <tr>
-    <th colspan="6">
+    <th colspan="5">
         {% if start_time %}
             Teachers for classes starting at {{ start_time.pretty_start_time }}
         {% else %}
@@ -128,7 +128,7 @@
 </tr>
 {% if sections|length_is:0 %}
 <tr>
-    <td colspan="6">
+    <td colspan="5">
         There are no class sections
         {% if start_time %} starting in this timeslot
         {% else %} scheduled for the program{% if date %} on {{ date|date:"D m/d/Y" }}{% endif %}
@@ -140,13 +140,13 @@
 {% ifchanged section.any_arrived %}
     {% if section.any_arrived == False %}
     <tr>
-        <th colspan="6" style="border-top: 4px solid #ccc;">
+        <th colspan="5" style="border-top: 4px solid #ccc;">
             Sections with no teachers checked in
         </th>
     </tr>
     {% elif section.any_arrived == True and section.all_arrived == False %}
     <tr>
-        <th colspan="6" style="border-top: 4px solid #ccc;">
+        <th colspan="5" style="border-top: 4px solid #ccc;">
             Sections with some teachers checked in
         </th>
     </tr>
@@ -155,16 +155,19 @@
 {% ifchanged section.all_arrived %}
     {% if section.all_arrived == True %}
     <tr>
-        <th colspan="6" style="border-top: 4px solid #ccc;">
+        <th colspan="5" style="border-top: 4px solid #ccc;">
             Sections with all teachers checked in
         </th>
     </tr>
     {% endif %}
 {% endifchanged %}
 <tr class="section-first-row" data-sec-id="{{ section.emailcode }}">
-    <td rowspan="{% if section.teachers %}{{ section.teachers|length }}{% else %}1{% endif %}" class="section-code">
-        {{ section.parent_class.emailcode }}: {{ section.name }}
+    <td class="section-detail-header" title="Click to toggle class details" colspan="5">
+        {{ section }}
+        (<a href="{{section.get_absolute_url|urlencode}}">manage</a> | <a href="{{section.get_edit_absolute_url|urlencode}}">edit</a>)
     </td>
+</tr>
+<tr>
     <td class="room" rowspan="{% if section.teachers %}{{ section.teachers|length }}{% else %}1{% endif %}">
         {% if start_time %}
             {{ section.room }}
@@ -183,7 +186,7 @@
         <td class="checkin-column">
             {% if teacher.id not in arrived %}
             <span class="message"></span>
-            <input id="checkin_{{ teacher.username }}" name="{{ section.parent_class.emailcode }}: {{ section.name }}"
+            <input id="checkin_{{ teacher.username }}" name="{{ section.parent_class.emailcode }}: {{ section.title }}"
                    class="button checkin" type="button" value="Check In" {% if when %}disabled="disabled"{% endif %} /><span />
             {% else %}
             <input id="uncheckin_{{ teacher.username }}" class="button uncheckin" type="button" value="Undo Check-In"
@@ -199,20 +202,16 @@
                    {% elif not text_configured %} disabled title="Twilio texting settings are not configured"
                    {% elif teacher.phone == default_phone %} disabled title="No contact info"{% endif %}/>
         </tr>
-        <tr data-sec-id="{{ section.emailcode }}">
+        <tr data-sec-id="{{ section.emailcode }}"{% if forloop.last %} class="section-detail-tr"{% endif %}>
     {% empty %}
         <td colspan="4">
             No teachers for this class
         </td>
         </tr>
-        <tr data-sec-id="{{ section.emailcode }}">
+        <tr data-sec-id="{{ section.emailcode }}" class="section-detail-tr">
     {% endfor %}
-    <td colspan="6" class="section-detail-td">
+    <td colspan="5" class="section-detail-td">
         <div class="section-detail fqr-class">
-            <div class="section-detail-header" title="Click to toggle class details">
-                {{section.title}}
-                (<a href="{{section.get_absolute_url|urlencode}}">manage</a> | <a href="{{section.get_edit_absolute_url|urlencode}}">edit</a>)
-            </div>
             {% if show_flags %}
                 <div class="flag-name-list fqr-class-flags">
                     {% for flag in section.parent_class.flags.all %}
