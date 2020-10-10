@@ -1766,7 +1766,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         if queryset: return queryset[0]
         else: return None
 
-    user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=False)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     e_mail = models.EmailField('Email address', blank=True, null=True, max_length=75)

@@ -312,13 +312,15 @@ def find_user(userstr):
         if cleaned.isnumeric() and len(cleaned) == 10:
             formatted = "%s%s%s-%s%s%s-%s%s%s%s" % tuple(cleaned)
             user_q = user_q | Q(contactinfo__phone_day=formatted) | Q(contactinfo__phone_cell=formatted)
-
+        #try name (including parent/emergency contact)
         user_q = user_q | (Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr))
+        user_q = user_q | (Q(contactinfo__first_name__icontains=userstr) | Q(contactinfo__last_name__icontains=userstr))
         found_users = ESPUser.objects.filter(user_q).distinct()
     else:
         q_list = []
         for i in xrange(len(userstr_parts)):
             q_list.append( Q( first_name__icontains = ' '.join(userstr_parts[:i]), last_name__icontains = ' '.join(userstr_parts[i:]) ) )
+            q_list.append( Q( contactinfo__first_name__icontains = ' '.join(userstr_parts[:i]), contactinfo__last_name__icontains = ' '.join(userstr_parts[i:]) ) )
         # Allow any of the above permutations
         q = reduce(operator.or_, q_list)
         found_users = ESPUser.objects.filter( q ).distinct()
