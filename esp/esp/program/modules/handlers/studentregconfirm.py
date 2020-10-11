@@ -45,7 +45,8 @@ class StudentRegConfirm(ProgramModuleObj):
             "admin_title": 'Add "Confirm Registration" link',
             "link_title": "Confirm Registration",
             "module_type": "learn",
-            "seq": 99999
+            "seq": 99999,
+            "choosable": 1,
             }
 
     @main_call

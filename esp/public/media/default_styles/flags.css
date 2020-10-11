@@ -22,11 +22,6 @@ select.fqb-type {
     border: 1px solid #ff0000;
 }
 
-#content th {
-    padding-top: 0;
-    padding-right: 20px;
-}
-
 .fqr-class {
     margin: 5px;
     border: 1px solid lightgray;

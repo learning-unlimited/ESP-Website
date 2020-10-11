@@ -36,6 +36,7 @@ from django.conf import settings
 
 from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.users.controllers.usersearch import UserSearchController
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
@@ -52,15 +53,18 @@ class NameTagModule(ProgramModuleObj):
             "admin_title": "Nametag Generation",
             "link_title": "Generate Nametags",
             "module_type": "manage",
-            "seq": 100
+            "seq": 100,
+            "choosable": 1,
             }
 
     @main_call
     @needs_admin
     def selectidoptions(self, request, tl, one, two, module, extra, prog):
-        """ Display a teacher eg page """
+        """ Display a page for admins to pick users for nametags """
         context = {'module': self}
         context['groups'] = Group.objects.all()
+        usc = UserSearchController()
+        context.update(usc.prepare_context(prog, target_path='/manage/%s/generatetags' % prog.url))
 
         return render_to_response(self.baseDir()+'selectoptions.html', request, context)
 
@@ -91,7 +95,16 @@ class NameTagModule(ProgramModuleObj):
 
         user_title = idtype
 
-        if idtype == 'students':
+        if idtype == 'aul':
+            user_title = request.POST['blanktitle']
+            data = {}
+            for key in request.POST:
+                data[key] = request.POST[key]
+            usc = UserSearchController()
+            filterObj = usc.filter_from_postdata(prog, data)
+            users = self.nametag_data(ESPUser.objects.filter(filterObj.get_Q()).distinct(), user_title)
+
+        elif idtype == 'students':
             user_title = "Student"
             student_dict = self.program.students(QObjects = True)
             if 'classreg' in student_dict:
@@ -170,7 +183,19 @@ class NameTagModule(ProgramModuleObj):
                 else:
                     users.append(expanded[j][i])
 
-        context['users'] = users
+        user_backs = [None]*len(users)
+        for j in range(len(users)):
+            if j % 2 == 0:
+                user_backs[j+1] = users[j]
+            else:
+                user_backs[j-1] = users[j]
+
+        users_and_backs = []
+        for j in range(len(users)/6):
+            users_and_backs.append([users[j*6:(j+1)*6], user_backs[j*6:(j+1)*6]])
+
+        context['barcodes'] = True if 'barcodes' in request.POST else False
+        context['users_and_backs'] = users_and_backs
         context['group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['phone_number'] = Tag.getTag('group_phone_number')
 

@@ -46,16 +46,19 @@ function emailTeachers (emailAddress, subject) {
 
 function showAll () {
     $j(".fqr-class-detail").show();
+    $j(".flag-header").addClass("active");
     $j(".flag-detail:not(.flag-extra)").show();
 }
 
 function showWithComments () {
     $j(".fqr-class-detail").show();
+    $j(".flag-header.flag-has-comment").addClass("active");
     $j(".flag-detail.flag-has-comment").show();
 }
 
 function hideAll () {
     $j(".fqr-class-detail").hide();
+    $j(".flag-header").removeClass("active");
     $j(".flag-detail").hide();
 }
 
@@ -88,5 +91,6 @@ function rejectAll (IDs) {
 
 $j(document).ready(function () {
     $j(".flag-detail").hide();
+    $j(".flag-header").removeClass("active");
     $j(".manage-approve-link").hide();
 });

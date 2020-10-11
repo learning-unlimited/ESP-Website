@@ -30,7 +30,8 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
             "admin_title": "Teacher Acknowledgement",
             "link_title": "Teacher Acknowledgement",
             "module_type": "teach",
-            "required": False,
+            "required": True,
+            'choosable': 1,
         }
 
     def isCompleted(self):

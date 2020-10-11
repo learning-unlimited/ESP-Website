@@ -14,10 +14,6 @@
 
 <p>Resources may be grouped or may remain floating.  For example, an LCD projector built into the classroom would be grouped with that classroom, whereas one of the projectors that we can carry around would not be grouped with anything.  When you create a classroom, please select the types of resources that it has built in.  These resources will be created and grouped with the classroom itself.</p>
 
-{% if past_program %}
-<p style="color: #990000; font-weight: bold;">Classrooms have been imported from {{ past_program.niceName }}.</p>
-{% endif %}
-
 <div id="program_form">
 <form method="post" action="/manage/{{ prog.url }}/resources/classroom_import">
 <table align="center" cellpadding="0" cellspacing="0" width="100%">

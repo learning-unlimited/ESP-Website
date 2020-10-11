@@ -63,6 +63,7 @@ class CustomFormModule(ProgramModuleObj):
             'admin_title': 'Teacher Custom Form',
             'link_title': 'Additional Profile Information',
             'seq': 4,
+            'choosable': 0,
         },
         {
             "module_type": "learn",
@@ -70,6 +71,7 @@ class CustomFormModule(ProgramModuleObj):
             'admin_title': 'Student Custom Form',
             'link_title': 'Additional Profile Information',
             'seq': 4,
+            'choosable': 0,
         },]
 
     def isCompleted(self):

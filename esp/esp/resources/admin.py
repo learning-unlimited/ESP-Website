@@ -64,7 +64,7 @@ class ResourceAdmin(admin.ModelAdmin):
             '=res_group__id')
 
 class ResourceAssignmentAdmin(admin.ModelAdmin):
-    list_display = ('id', 'resource', 'target')
+    list_display = ('id', 'resource', 'target', 'assignment_group', 'returned')
     search_fields = ('=id', 'resource__name', 'target__parent_class__title')
 
 admin_site.register(ResourceType, ResourceTypeAdmin)

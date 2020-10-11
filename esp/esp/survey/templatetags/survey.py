@@ -6,7 +6,6 @@ __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
   (see AUTHORS file)
-
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU Affero General Public License
 as published by the Free Software Foundation; either version 3
@@ -37,6 +36,7 @@ from django.http import QueryDict
 from django.template import loader
 from esp.program.models.class_ import ClassSubject
 
+
 import os
 import subprocess
 
@@ -46,6 +46,14 @@ except ImportError:
     import pickle
 
 register = template.Library()
+
+@register.filter
+def midValue(sizeLs0):
+    sizeLst = int(sizeLs0)
+    if sizeLst%2 == 1:
+        return ((sizeLst + 1) / 2 )
+    else:
+        return -1
 
 @register.filter
 def intrange(min_val, max_val):
@@ -134,6 +142,8 @@ def histogram(answer_list, args='format=html'):
 
     if args_dict.get('max'):
         context['results'] = [{'value': str(x), 'freq': 0} for x in range(1, int(args_dict.get('max')) + 1)]
+    elif args_dict.get('opts'):
+        context['results'] = [{'value': str(x), 'freq': 0} for x in args_dict.get('opts').split("|")]
     else:
         context['results'] = []
     max_answer_length = 0

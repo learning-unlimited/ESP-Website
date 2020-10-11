@@ -50,7 +50,8 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
             "admin_title": "Credit Card Payment Module (Cybersource)",
             "link_title": "Credit Card Payment",
             "module_type": "learn",
-            "seq": 10000
+            "seq": 10000,
+            "choosable": 2,
             }
 
     def isCompleted(self):

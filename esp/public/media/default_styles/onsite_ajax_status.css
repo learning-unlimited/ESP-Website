@@ -85,14 +85,20 @@ tr.narrow {
     height: 20px;
 }
 
+.sections > td:not(.section), .schedule > td:not(.section) {
+    height: 0px;
+    line-height: 0;
+    padding: 0px;
+}
+
 table.bordered {
-    border: 1px solid #cccccc;
+    border: 1px solid #777;
+    border-collapse: collapse;
 }
 
 table.narrow {
     margin: 0px;
     padding: 0px;
-    border-spacing: 0em;
     table-layout:fixed;
 }
 
@@ -100,7 +106,9 @@ table.narrow {
     font-weight: bold;
     text-align: center;
     background-color: #cccccc;
-    width: 200px;
+    border: 1px solid #777;
+    min-width: 220px;
+    max-width: 220px;
     padding-top: 10px;
     height: 30px;
     font-size: 1.1em;
@@ -111,50 +119,45 @@ table.narrow {
 }
 
 .section {
-    border: 1px solid hsla(0, 0%, 0%, 0.05);
+    border: 1px solid #777;
     background-color: #ccccff;
+    width: 220px;
+}
+
+.section_left_open {
+    border-left: none !important;
+}
+
+.section_right_open {
+    border-right: none !important;
 }
 
 .section_highlight {
     border: 1px solid #666666;
     background-color: #66FF00 !important;
-    box-shadow: inset 0 0 2px hsla(0, 0%, 100%, 0.7);
 }
 
 .student_enrolled {
     border: 1px solid #000099;
     background-color: #FFFF00 !important;
-    box-shadow: 1px 1px 3px hsla(0, 0%, 0%, 0.6);
 }
 
 .section_conflict {
     background-color: #FF6600 !important;
-    box-shadow: inset 0 0 2px hsla(0, 0%, 100%, 0.7);
     border: 1px solid #666666;
 }
 
-.section_hidden {
+.section_hidden, .section_search_hidden, .section_conflict_hidden {
     visibility: hidden;
     height: 0px;
     border: 0px;
+    line-height: 0;
+    padding: 0px;
+    overflow: hidden;
 }
-
-.section_search_hidden {
-    visibility: hidden;
-    height: 0px;
-    border: 0px;
-}
-
-.section_category_hidden {
-    visibility: hidden;
-    height: 0px;
-    border: 0px;
-}
-
-.section_conflict_hidden {
-    visibility: hidden;
-    height: 0px;
-    border: 0px;
+.section_hidden > input, .section_search_hidden > input,
+.section_conflict_hidden > input {
+    display: none;
 }
 
 #student_selector_area {
@@ -243,11 +246,6 @@ span {
     text-decoration: none !important;
 }
 
-.tooltip:hover {
-    z-index: 25; 
-    background-color: #ffff99;
-}
-
 .tooltip span.tooltip_hover {
     display: none;
 }
@@ -255,6 +253,7 @@ span {
 .tooltip:hover span.tooltip_hover { /*the span will display just on :hover state*/
     display: block;
     position: absolute;
+    z-index: 25;
     top: 2em; 
     left: 2em; 
     width: 25em;
@@ -269,4 +268,9 @@ span {
 
 .tooltip_wide span {
     width: 600px !important;
+}
+
+.title {
+    padding-left: 5px;
+    padding-right: 5px;
 }

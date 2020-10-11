@@ -26,6 +26,8 @@ class SectionList(BaseHandler):
         except:
             return
 
+        self.emailcode = section.emailcode()
+
         program = cls.parent_program
         self.recipients = ['%s Directors <%s>' % (program.niceName(), program.director_email)]
 

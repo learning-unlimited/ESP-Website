@@ -49,7 +49,8 @@ class CheckAvailabilityModule(ProgramModuleObj):
             "admin_title": "Teacher Availability Checker",
             "link_title": "Check Teacher Availability",
             "module_type": "manage",
-            "seq": 0
+            "seq": 0,
+            "choosable": 1,
             } ]
 
     @main_call

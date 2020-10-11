@@ -16,7 +16,8 @@ class LotteryFrontendModule(ProgramModuleObj):
             "admin_title": "Lottery Frontend",
             "link_title": "Run the Lottery Assignment Thing",
             "module_type": "manage",
-            "seq": 10
+            "seq": 10,
+            "choosable": 0,
             }
 
     @main_call

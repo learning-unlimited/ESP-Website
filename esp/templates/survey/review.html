@@ -11,41 +11,131 @@
 
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
+.bordered {
+    border: 2px solid black;
+}
+td, th {
+    padding: 5px !important;
+}
 </style>
-<br /><br />
-<h1>Survey Responses for {{ program.niceName }} </h1>
+<a name="top"></a><h1>Survey Responses for {{ program.niceName }} </h1>
+
+{% if teacher_form %}
+<form method="POST" action="{{ request.get_full_path }}">
+<h2>Search for a teacher to retrieve their specific survey results:</h2>
+{% for error in teacher_form.target_user.errors %}
+<span style="color:red;">{{ error|escape }}</span></br>
+{% endfor %}
+{{ teacher_form.target_user }}
+<input type="submit" value="Search" />
+</form>
+{% if teacher %}
+</br>(<a href="{{ request.path }}">Return To All Survey Results</a>)
+{% endif %}
+<br><br>
+{% endif %}
 
 <div id="program_form">
-<center>
 
+{% if teacher %}
+<center>
+<h2>Survey results for {{ teacher.name }}</h2>
+</center>
+{% endif %}
+
+
+<h2>Table of Contents</h2>
+<ul>
 {% for s in surveys %}
-    <table class="fullwidth">
-    <tr>
-        <th><h2>Responses for: {{ s.name }}</h2></th>
-    </tr>
-    </table>
+    <li><a href="#survey{{ s.id }}">Responses for: {{ s.name }}</a>
+    <ul style="list-style-type:circle;">
     {% for q in s.display_data.questions %}
+        {% if forloop.first %}
+            <li><a href="#survey{{ s.id }}-individual">Individual Questions</a></li>
+        {% endif %}
+    {% endfor %}
+    {% for c in s.perclass_data %}
+        {% if forloop.first %}
+            <li><a href="#survey{{ s.id }}-perclass">Per Class Questions</a></li>
+        {% endif %}
+    {% endfor %}
+    </ul>
+    </li>
+{% endfor %}
+
+{% if perclass_data %}
+{% for c in perclass_data %}
+    {% ifchanged c.class.parent_class %}
+        {% if not forloop.first %}
+            </ul>
+        {% endif %}
+        <li><a href="#class{{ c.class.parent_class.id }}">Responses for {{ c.class.parent_class.emailcode }}: {{ c.class.title }}</a></li>
+        <ul style="list-style-type:circle;">
+    {% endifchanged %}
+    <li><a href="#class{{ c.class.parent_class.id }}-{{ c.class.index }}">Responses for Section {{ c.class.index }}</a></li>
+    {% if forloop.last %}
+        </ul>
+    {% endif %}
+{% endfor %}
+{% endif %}
+</ul>
+
+<center>
+{% for s in surveys %}
+    <h1><a name="survey{{ s.id }}"></a>Responses for: {{ s.name }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h1>
+    {% for q in s.display_data.questions %}
+        {% if forloop.first %}
+            <h2><a name="survey{{ s.id }}-individual"></a>Individual Questions<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2>
+            <table class="fullwidth bordered">
+        {% endif %}
         {% with s.num_participants as num_participants %}
-            {% include "survey/answers.html" %}
+            <tr><td>{% include "survey/answers.html" %}</td></tr>
         {% endwith %}
+    {% endfor %}
+    </table></br></br>
+    {% for c in s.perclass_data %}
+        {% if forloop.first %}
+        <h2><a name="survey{{ s.id }}-perclass"></a>Per Class Questions<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2>
+        {% endif %}
+        {% ifchanged c.class.parent_class %}
+        {% if not forloop.first %}
+        </table></br></br>
+        {% endif %}
+        <table class="fullwidth bordered">
+        <tr><th><h2><a name="class{{ c.class.parent_class.id }}"></a>Responses for {{ c.class.parent_class.emailcode }}: {{ c.class.title }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2></th></tr>
+        {% endifchanged %}
+        <tr style="border-top: 1px dashed black;"><th><h3><a name="class{{ c.class.parent_class.id }}-{{ c.class.index }}"></a>Responses for Section {{ c.class.index }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h3></th></tr>
+        {% for q in c.questions %}
+            {% with c.class.num_students as num_participants %}
+                <tr><td>{% include "survey/answers.html" %}</td></tr>
+            {% endwith %}
+        {% endfor %}
+        {% if forloop.last %}
+        </table></br></br>
+        {% endif %}
     {% endfor %}
 {% endfor %}
 
 {% if perclass_data %}
 {% for c in perclass_data %}
-    <table class="fullwidth">
-    <tr>
-        <th class="small">Responses for {{ c.class.emailcode }}: {{ c.class.title }}</th>
-    </tr>
-    </table>
+    {% ifchanged c.class.parent_class %}
+    {% if not forloop.first %}
+    </table></br></br>
+    {% endif %}
+    <table class="fullwidth bordered">
+    <tr><th><h2><a name="class{{ c.class.parent_class.id }}"></a>Responses for {{ c.class.parent_class.emailcode }}: {{ c.class.title }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2></th></tr>
+    {% endifchanged %}
+    <tr style="border-top: 1px dashed black;"><th><h3><a name="class{{ c.class.parent_class.id }}-{{ c.class.index }}"></a>Responses for Section {{ c.class.index }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h3></th></tr>
     {% for q in c.questions %}
         {% with c.class.num_students as num_participants %}
-            {% include "survey/answers.html" %}
+            <tr><td>{% include "survey/answers.html" %}</td></tr>
         {% endwith %}
     {% endfor %}
+    {% if forloop.last %}
+    </table>
+    {% endif %}
 {% endfor %}
 {% endif %}
-
 </center>
 </div>
 

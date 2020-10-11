@@ -1,0 +1,68 @@
+{% load survey %}
+<div id="program_form">
+{% if view_list %}
+    {% if section_surveys or general_survey %}
+        <p class="message">
+        {% if submitted or completed %}
+        <span style="color: red; font-weight: bold;">
+        {% if submitted %}Your survey responses for {% if section %}{{ section }}{% elif general %}the general program survey{% endif %} have been saved.
+        {% elif completed %}You've already completed the {% if section %}survey for {{ section }}{% elif general %}general program survey{% endif %}.{% endif %}
+        Please select another survey component below or come back later.
+        </span>
+        <br /><br />
+        {% endif %}
+        This survey consists of{% if section_surveys %} a survey component for each class you are registered for{% endif %}{% if section_surveys and general_survey %} and{% endif %}{% if general_survey %} a general program survey component{% endif %}.{% if section_surveys %} You may fill out a class survey once the class has begun.{% endif %}{% if general_survey %} You may fill out the general program survey once your first class has begun.{% endif %} If no survey components are available, please come back later.
+        </p>
+        <table class="fullwidth">
+            <tr>
+                <th>Survey Component</th>
+                <th>Status</th>
+            </tr>
+            {% if section_surveys %}
+                {% for sec in sections %}
+                <tr>
+                    <td class="underline" align="center">{{ sec }}</td>
+                    <td class="underline" align="center">{% if not sec.started %}<span style="color: grey">Not available</span>{% elif sec.completed %}<span style="color: green">Completed</span>{% else %}<a class="btn fancybutton no-dec" href="{{ request.path }}?{% if survey_id %}survey_id={{ survey_id }}&{% endif %}sec={{ sec.id }}">Take Survey</a>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            {% endif %}
+            {% if general_survey %}
+                <tr>
+                    <td class="underline" align="center">General Program Survey</td>
+                    <td class="underline" align="center">{% if not general_available %}<span style="color: grey">Not available</span>{% elif general_done %}<span style="color: green">Completed</span>{% else %}<a class="btn fancybutton no-dec" href="{{ request.path }}?{% if survey_id %}survey_id={{ survey_id }}&{% endif %}general">Take Survey</a>{% endif %}</td>
+                </tr>
+            {% endif %}
+        </table>
+        <br><br>
+    {% else %}
+        <p class="message">This survey does not have any questions.</p>
+    {% endif %}
+    {% if student_results %}
+        <p class="message">You can view the results of the student survey(s) for your class(es) by <a href="{{ request.path }}/review">going here</a>.
+    {% endif %}
+{% else %}
+    <form method="post" action="{{ request.get_full_path }}">
+    {% csrf_token %}
+    {% if perclass_questions %}
+        {% for question in perclass_questions %}{{ question.render|substitute:section }}{% endfor %}
+    {% elif questions %}
+        {% for question in questions %}{{ question.render|uselist:classes }}{% endfor %}
+    {% endif %}
+
+    <table class="fullwidth">
+        <tr>
+            <th>Submit</th>
+        </tr>
+        <tr>
+            <td align="center">
+                Click the button below to finish your survey. Thank you so much for your time!<br /><br />
+                <input type="Submit" class="fancybutton" value="Submit Survey" /><br />
+            </td>
+        </tr>
+    </table>
+
+    </form>
+    <br /><br />
+    <a class="btn fancybutton no-dec" href="{{ request.path }}">Return to Survey List</a>
+{% endif %}
+</div>

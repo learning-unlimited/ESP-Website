@@ -165,7 +165,7 @@
     {% if profile.student_info %}
         <table class="dottedtable">
         <tr><td class="key">School</td><td>{{ profile.student_info.school }}</td></tr>
-        <tr><td class="key">Graduation Year</td><td>{{ profile.student_info.graduation_year }} ({{ user.getGrade }}th Grade)<br />
+        <tr><td class="key">Graduation Year</td><td>{{ profile.student_info.graduation_year }} (currently {{ user.getGrade }}th Grade)<br />
         <form action="/manage/userview/" method="get" name="change_grade">
         {{ change_grade_form.graduation_year }}
         <input type="hidden" name="username" value="{{ user.username }}" />

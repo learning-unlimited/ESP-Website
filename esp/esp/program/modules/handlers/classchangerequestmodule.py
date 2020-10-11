@@ -75,6 +75,7 @@ class ClassChangeRequestModule(ProgramModuleObj):
             "link_title": "Class Change Request",
             "module_type": "learn",
             "required": False,
+            "choosable": 1,
         }
 
     class Meta:

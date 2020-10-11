@@ -53,6 +53,7 @@ class UnenrollModule(ProgramModuleObj):
             "link_title": "Unenroll Students",
             "module_type": "onsite",
             "seq": 100,
+            "choosable": 1,
         }
 
     class Meta:

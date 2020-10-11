@@ -10,6 +10,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
     this.togglePanel = togglePanel; // The panel that should be hidden when the info panel is shown
     this.sections = sections;
     this.sectionCommentDialog = sectionCommentDialog;
+    this.override = false;
 
     /**
      * Hide the panel and show togglePanel if it exists.
@@ -70,6 +71,18 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
             }.bind(this)
         );
         toolbar.append(commentButton);
+
+        var overrideCheckbox = $j("<input id='schedule-override' type='checkbox'></input>");
+        overrideCheckbox.prop('checked', this.override)
+            .change(function(box) {
+                var override = $j(box.target).prop("checked");
+                // Reload the section to update the availability
+                this.sections.unselectSection(override);
+                this.sections.selectSection(section);
+            }.bind(this)
+        );
+        toolbar.append(overrideCheckbox);
+        toolbar.append($j("<label for='schedule-override'>Override availability</label>"));
 
         var baseURL = this.sections.getBaseUrlString();
         var autoschedulerLink = "";

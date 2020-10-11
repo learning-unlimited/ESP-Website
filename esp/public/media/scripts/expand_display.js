@@ -9,7 +9,7 @@ for (i = 0; i < coll.length; i++) {
     if (content.style.maxHeight){
       content.style.maxHeight = null;
     } else {
-      content.style.maxHeight = content.scrollHeight + "px";
+      content.style.maxHeight = "none";
     }
   });
 }
@@ -18,7 +18,7 @@ var coll = document.getElementsByClassName("dspcont active");
 var i;
 
 for (i = 0; i < coll.length; i++) {
-  coll[i].style.maxHeight = coll[i].scrollHeight + "px";
+  coll[i].style.maxHeight = "none";
 }
 
 if(!document.getElementById) {
