@@ -58,6 +58,8 @@ into the text of the message. You can use the {% templatetag openvariable %}{% t
   </label><br />
   <input type="text" size="30" name="subject" id="subject" value="{{subject}}" />
   <br /><br />
+  <input type="checkbox" name="public_view" id="public_view" {% if public_view %}checked{% endif %}/> Should the email be public? (makes the non-user specific text viewable by anyone)
+  <br /><br />
   <label for="emailbody">
   <strong>Body:</strong>
   </label> <br />
@@ -99,6 +101,7 @@ var editor = new Jodit("#emailbody", {
         '{% templatetag openvariable %}program.transcript{% templatetag closevariable %}': 'Transcript (classes and descriptions) for Program',
         '{% templatetag openvariable %}program.receipt{% templatetag closevariable %}': 'Confirmation receipt for Program',
         '{% templatetag openvariable %}program.full_classes{% templatetag closevariable %}': 'Newline-separated list of user\'s classes that have full or nearly-full sections',
+        '{% templatetag openvariable %}request.public_url{% templatetag closevariable %}': 'Public url for email (only works if email is set to public)',
       },
       exec: function(editor, current, control) {
         var key = control['name'];

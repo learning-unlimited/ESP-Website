@@ -137,6 +137,8 @@ urlpatterns += [
     url(r'^archives/([-A-Za-z0-9_ ]+)/?$', main.archives),
     url(r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.archives),
     url(r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.archives),
+
+    url(r'^email/([0-9]+)/?$', main.public_email),
 ]
 
 urlpatterns += [
