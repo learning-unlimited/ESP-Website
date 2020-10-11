@@ -49,6 +49,7 @@ class MinorsPolicyModule(ProgramModuleObj):
             "link_title": "Minors Policy Acknowledgement",
             "module_type": "teach",
             "required": False,
+            "choosable": 1,
         }
 
     def isCompleted(self):

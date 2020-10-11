@@ -29,6 +29,7 @@ class StudentWaiverModule(ProgramModuleObj):
             "link_title": "Student Waiver",
             "module_type": "learn",
             "required": False,
+            "choosable": 1,
         }
 
     def isCompleted(self):
