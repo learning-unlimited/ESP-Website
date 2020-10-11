@@ -100,8 +100,8 @@ class StudentRegPhaseZero(ProgramModuleObj):
             #Figure out if lottery is open/closed, if it has already been run, and if student has entered yet
             lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
             in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
-            lottery_run = Tag.getBooleanTag('student_lottery_run', prog, default=False)
-            num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog, default=4))
+            lottery_run = Tag.getBooleanTag('student_lottery_run', prog)
+            num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
             context['lottery_perm'] = lottery_perm
             context['lottery_run'] = lottery_run
             context['num_allowed_users'] = num_allowed_users
@@ -150,8 +150,8 @@ class StudentRegPhaseZero(ProgramModuleObj):
         user = request.user
         lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
         in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
-        lottery_run = Tag.getBooleanTag('student_lottery_run', prog, default=False)
-        num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog, default=4))
+        lottery_run = Tag.getBooleanTag('student_lottery_run', prog)
+        num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
         context['lottery_perm'] = lottery_perm
         context['lottery_run'] = lottery_run
         context['num_allowed_users'] = num_allowed_users

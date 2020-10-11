@@ -758,8 +758,8 @@ def tags(request, section=""):
         form = TagSettingsForm(request.POST)
         if form.is_valid():
             form.save()
-
-    form = TagSettingsForm()
+    else:
+        form = TagSettingsForm()
 
     context['form'] = form
     context['categories'] = form.categories

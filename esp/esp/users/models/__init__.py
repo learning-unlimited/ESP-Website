@@ -826,7 +826,7 @@ class BaseESPUser(object):
         """
         user_types = DEFAULT_USER_TYPES
         if use_tag:
-            user_types = json.loads(Tag.getTag('user_types', default=json.dumps(user_types)))
+            user_types = json.loads(Tag.getTag('user_types'))
         return user_types
     getAllUserTypes.depend_on_model(Tag)
     getAllUserTypes = staticmethod(getAllUserTypes)
@@ -1294,11 +1294,11 @@ class StudentInfo(models.Model):
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
         form_dict['gender']          = self.gender
-        if Tag.getBooleanTag('show_student_tshirt_size_options', default=False):
+        if Tag.getBooleanTag('show_student_tshirt_size_options'):
             form_dict['shirt_size']      = self.shirt_size
-        if Tag.getBooleanTag('studentinfo_shirt_type_selection', default=False):
+        if Tag.getBooleanTag('studentinfo_shirt_type_selection'):
             form_dict['shirt_type']      = self.shirt_type
-        if Tag.getBooleanTag('show_student_vegetarianism_options', default=False):
+        if Tag.getBooleanTag('show_student_vegetarianism_options'):
             form_dict['food_preference'] = self.food_preference
         form_dict['heard_about']      = self.heard_about
         form_dict['studentrep_expl'] = self.studentrep_expl

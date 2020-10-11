@@ -65,7 +65,7 @@ class StudentSurveyModule(ProgramModuleObj):
         return {'student_survey': """Students who filled out the survey"""}
 
     def isStep(self):
-        return (Tag.getBooleanTag('student_survey_isstep', program=self.program, default=False) and
+        return (Tag.getBooleanTag('student_survey_isstep', program=self.program) and
                 self.program.getTimeSlots()[0].start < datetime.datetime.now() and
                 self.program.getSurveys().filter(category = "learn").exists())
 

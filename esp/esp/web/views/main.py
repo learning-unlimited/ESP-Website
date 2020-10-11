@@ -244,7 +244,7 @@ def registration_redirect(request):
 
     #   If we have 1 program, automatically redirect to registration for that program.
     #   Most chapters will want this, but it can be disabled by a Tag.
-    if len(progs) == 1 and Tag.getBooleanTag('automatic_registration_redirect', default=True):
+    if len(progs) == 1 and Tag.getBooleanTag('automatic_registration_redirect'):
         ctxt['prog'] = progs[0]
         return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
     else:
