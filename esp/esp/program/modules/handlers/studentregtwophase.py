@@ -79,7 +79,8 @@ class StudentRegTwoPhase(ProgramModuleObj):
             "admin_title": "Two-Phase Student Registration",
             "module_type": "learn",
             "seq": 3,
-            "required": True
+            "required": True,
+            "choosable": 0,
             }
 
     @main_call
@@ -138,7 +139,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         timeslots = prog.getTimeSlots(types=['Class Time Block', 'Compulsory'])
 
         context['num_priority'] = prog.priorityLimit()
-        context['num_star'] = Tag.getProgramTag("num_stars", program = prog, default = 10)
+        context['num_star'] = int(Tag.getProgramTag("num_stars", program = prog, default = 10))
 
         for i in range(len(timeslots)):
             timeslot = timeslots[i]

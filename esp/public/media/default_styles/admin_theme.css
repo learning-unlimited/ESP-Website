@@ -1,0 +1,168 @@
+/** 
+ * theming styles
+ * 
+ */
+
+#content {
+    padding: 0;
+    margin: 15px;
+}
+
+#header {
+    background: #112E51;
+
+    /* Reset the indents of django-flat-theme
+      (need to restore 40px on branding+user-tools instead) */
+    padding-left: 0;
+    padding-right: 0;
+}
+
+#header #branding h1 {
+    margin: 0;
+    padding: 5px 10px;
+    text-indent: -9999px;
+    height: 31px;
+    width: 93px;
+}
+
+#header #user-tools {
+    /* Old Django: 1.2em, flat theme: 40px; */
+    padding-right: 1.2em;
+    color: #fff;
+
+
+}
+
+#bookmark-form {
+    clear: both;
+}
+
+div.breadcrumbs {
+    display: block;
+    padding: 10px 15px;
+    border: 0;
+    background-position: 0 -8px;
+    border-bottom: 1px solid #ededed;
+}
+
+div.breadcrumbs a {
+    display: inline;
+}
+#dashboard-title {
+    color:black;
+}
+.dashboard-module h2 {
+    background: #205493;
+    color:white;
+    border-radius: 4px;
+    text-transform: uppercase;
+
+}
+@font-face {
+  font-family: 'Roboto';
+  src: url('../fonts/Roboto-Bold-webfont.woff');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url('../fonts/Roboto-Regular-webfont.woff');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url('../fonts/Roboto-Light-webfont.woff');
+  font-weight: 300;
+  font-style: normal;
+}
+.dashboard-module-content a {
+	color: #205493;
+}
+div.breadcrumbs {
+	background: #205596;
+}
+a:link, a:visited {
+	color: #205596;
+}
+.module h2, .module caption, .inline-group h2 {
+	background: #205596;
+}
+
+.object-tools a:hover, .object-tools li:hover a {
+	background-color: #112E51;
+}
+.object-tools a:link, .object-tools a:visited {
+    background: #205596;
+}
+#changelist-filter a:hover {
+	color: #112E51;
+}
+#changelist-filter li.selected a {
+	color: #205596;
+}
+#user-tools {
+	text-transform: none;
+}
+.dashboard-module h2 a.toggle-icon, .dashboard-module h2 a.close-icon {
+
+	background-image: url(admin-tools.png);
+
+}
+
+#login-header {
+	text-align: center;
+	color: white;
+	background: #112E51;
+	font-family: "Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
+	font-size: 16px;
+	padding: 7px 5px 9px 8px;
+	-webkit-border-radius: 6px;
+}
+
+.errornote {
+	-webkit-border-radius: 6px !important;
+    font-family: "Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
+}
+
+ul.errorlist {
+	-webkit-border-radius: 3px;
+    font-family: "Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
+}
+#make-a-space {
+	height: 14px;
+}
+
+#content-main {
+	font-family: "Lucida Grande","DejaVu Sans","Bitstream Vera Sans",Verdana,Arial,sans-serif;
+}
+
+.login .form-row #id_username, .login .form-row #id_password {
+	-webkit-border-radius: 6px;
+}
+
+body.login {
+	background: #fafafa;
+}
+
+.button, input[type="submit"], input[type="button"], .submit-row input, a.button {
+	background: #112E51;
+	color: white;
+	border: 1px solid #112E51;
+	border-color: black;
+	-webkit-border-radius: 5px;
+	padding: 6px 20px;
+	font-size: 16px;
+}
+
+.login .submit-row {
+	clear: both;
+	padding: 1em 0 0 0;
+	text-align: center;
+}
+div.breadcrumbs a:link, div.breadcrumbs a:visited {
+	color: white;
+}
+

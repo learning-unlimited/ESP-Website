@@ -43,7 +43,7 @@ from captcha.fields import ReCaptchaField
 person_type = (
     ('Student', 'K-12 Student'),
     ('Parent',  'Parent/Guardian'),
-    ('Teacher', 'Teacher for ESP'),
+    ('Teacher', 'Teacher for ' + settings.ORGANIZATION_SHORT_NAME),
     ('K-12 Educator', 'K-12 Educator'),
     ('Other',   'Other'),
     )

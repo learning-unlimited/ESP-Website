@@ -37,7 +37,7 @@ from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from esp.middleware import ESPError
-from esp.program.models import StudentRegistration
+from esp.program.models import StudentRegistration, PhaseZeroRecord
 from django.db.models.query      import Q
 from django import forms
 
@@ -66,11 +66,12 @@ class UserAttributeGetter(object):
                     '19_accountdate': 'Created Date',
                     '20_first_regdate': 'Initial Registration Date',
                     '21_last_regdate': 'Most Recent Registration Date',
-                    '22_classhours': 'Num Class Hrs',
-                    '23_transportation': 'Plan to Get to Splash',
-                    '24_guardian_name': 'Guardian Name',
-                    '25_guardian_email': 'Guardian E-mail',
-                    '26_guardian_cellphone': 'Guardian Cell Phone',
+                    '22_lottery_ticket_id': 'Student Lottery Ticket ID',
+                    '23_classhours': 'Num Class Hrs',
+                    '24_transportation': 'Plan to Get to Splash',
+                    '25_guardian_name': 'Guardian Name',
+                    '26_guardian_email': 'Guardian E-mail',
+                    '27_guardian_cellphone': 'Guardian Cell Phone',
                  }
 
         last_label_index = len(labels)
@@ -131,15 +132,18 @@ class UserAttributeGetter(object):
 
     def get_guardian_email(self):
         if self.profile.student_info:
-            return self.profile.contact_guardian.email
+            if self.profile.contact_guardian:
+                return self.profile.contact_guardian.email
 
     def get_guardian_name(self):
         if self.profile.student_info:
-            return self.profile.contact_guardian.name
+            if self.profile.contact_guardian:
+                return self.profile.contact_guardian.name
 
     def get_guardian_cellphone(self):
         if self.profile.student_info:
-            return self.profile.contact_guardian.phone_cell
+            if self.profile.contact_guardian:
+                return self.profile.contact_guardian.phone_cell
 
     def get_accountdate(self):
         return self.user.date_joined.strftime("%m/%d/%Y")
@@ -223,6 +227,13 @@ class UserAttributeGetter(object):
     def get_max_applications(self):
         return 3
 
+    def get_lottery_ticket_id(self):
+        recs = PhaseZeroRecord.objects.filter(user = self.user, program = self.program).order_by('time')
+        if recs.count() > 0:
+            return recs[0].id
+        else:
+            return None
+
     def get_class_application_1(self):
         responses = self.user.listAppResponses(self.program)
         if len(responses) > 0:
@@ -260,7 +271,8 @@ class ListGenModule(ProgramModuleObj):
             "admin_title": "User List Generator",
             "link_title": "Generate List of Users",
             "module_type": "manage",
-            "seq": 500
+            "seq": 500,
+            "choosable": 1,
             }
 
     @aux_call
@@ -358,7 +370,11 @@ class ListGenModule(ProgramModuleObj):
             #   Turn multi-valued QueryDict into standard dictionary
             data = {}
             for key in request.POST:
-                data[key] = request.POST[key]
+                #   Some keys have list values
+                if key in ['regtypes']:
+                    data[key] = request.POST.getlist(key)
+                else:
+                    data[key] = request.POST[key]
             filterObj = usc.filter_from_postdata(prog, data)
 
             #   Display list generation options

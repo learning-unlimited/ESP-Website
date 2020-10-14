@@ -55,7 +55,8 @@ class MailingLabels(ProgramModuleObj):
             "admin_title": "Mailing Label Generation",
             "link_title": "Generate Mailing Labels",
             "module_type": "manage",
-            "seq": 100
+            "seq": 100,
+            "choosable": 1,
             }
 
     @aux_call

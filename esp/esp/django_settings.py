@@ -94,7 +94,7 @@ ADMINS = (
     ('LU Web Team','serverlog@learningu.org'),
 )
 
-GRAPPELLI_ADMIN_TITLE = "ESP administration"
+#GRAPPELLI_ADMIN_TITLE = "ESP administration"
 
 #############################
 # Default database settings #
@@ -181,8 +181,10 @@ TEMPLATES = [
                 'django.template.context_processors.media',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.static',
+                'django.core.context_processors.request',
             ],
             'loaders': [
+                'admin_tools.template_loaders.Loader',
                 'esp.utils.template.Loader',
                 ('django.template.loaders.cached.Loader',
                     (
@@ -222,10 +224,6 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.staticfiles',
-    'grappelli',
-    'filebrowser',
-    'django.contrib.admin.apps.SimpleAdminConfig',
-    'django.contrib.admindocs',
     'esp.users.apps.UsersConfig',
     'esp.miniblog',
     'esp.web.apps.WebConfig',
@@ -253,6 +251,14 @@ INSTALLED_APPS = (
     'esp.formstack',
     'esp.application.apps.ApplicationConfig',
     'captcha',
+    'admin_tools',
+    'admin_tools.theming',
+    'admin_tools.menu',
+    'admin_tools.dashboard',
+    #'grappelli',
+    'filebrowser',
+    'django.contrib.admin.apps.SimpleAdminConfig',
+    'django.contrib.admindocs',
 )
 
 import os
@@ -394,3 +400,9 @@ TWILIO_ACCOUNT_NUMBERS = None
 # Default configuration for themes: set this to True to make recompile_theme
 # and the themes frontend refuse to do anything
 LOCAL_THEME = False
+
+ADMIN_TOOLS_MENU = 'admintoolsmenu.CustomMenu'
+ADMIN_TOOLS_INDEX_DASHBOARD = 'admintoolsdash.CustomIndexDashboard'
+ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
+
+ADMIN_TOOLS_THEMING_CSS = '/media/default_styles/admin_theme.css'

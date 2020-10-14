@@ -1,0 +1,49 @@
+.fqb-assignment-details {
+    padding-left: 7em;
+}
+
+.fqb-assignment-detail-select {
+    width: 6em;
+}
+
+.fqr-class-assignments {
+    padding: 4px;
+}
+
+.assignment-header {
+    margin: 2px;
+    padding: 2px;
+}
+
+.assignment-detail {
+    cursor: pointer;
+}
+
+.assignment-detail div {
+    padding: 2px;
+}
+
+.assignment-detail table, .assignment-detail form {
+    padding-left: 3em;
+    width: 100%;
+}
+
+.class-assignment-list {
+    width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+input.assignment-submit-new {
+    margin-left: auto;
+    margin-right: 0px;
+}
+
+.assignment-remove:after {
+    content: "\00d7";
+    font-weight: 900;
+}
+
+.assignment-remove:hover {
+    color: white;
+}

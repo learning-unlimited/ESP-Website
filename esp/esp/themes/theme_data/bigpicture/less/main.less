@@ -21,7 +21,15 @@
         color: @identity-blue;
         text-decoration: underline;
     }
-    .btn, .button {
+    .btn {
+        border: 1px solid @identity-blue;
+		background-image: none;
+        &:active, &:focus {
+            outline: none;
+            border-color: @highlight-orange;
+        }
+    }
+	.module_link_large {
         border: 1px solid @identity-blue;
         background: @pale;
         &:active, &:focus {
@@ -35,6 +43,8 @@
     }
     .btn-primary {
         background: @identity-blue;
+		color: white;
+		text-decoration: none;
     }
     .btn-inverse {
         background: #333;

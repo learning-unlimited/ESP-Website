@@ -29,6 +29,7 @@ class TeacherWaiverModule(ProgramModuleObj):
             "link_title": "Teacher Waiver",
             "module_type": "teach",
             "required": False,
+            "choosable": 1,
         }
 
     def isCompleted(self):

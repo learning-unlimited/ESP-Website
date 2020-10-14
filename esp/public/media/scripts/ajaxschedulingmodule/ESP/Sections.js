@@ -28,6 +28,9 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         gradeMax: {active: false, el: $j("input#section-filter-grade-max"), type: "number"},
         classTeacher: {active: false, el: $j("input#section-filter-teacher-text"), type: "string"},
         classHideUnapproved: {active: false, el: $j("input#section-filter-unapproved"), type: "boolean"},
+        classHasAdmin: {active: false, el: $j("input#section-filter-admin"), type: "boolean"},
+        classFlags: {active: false, el: $j("input#section-filter-flags-text"), type: "string"},
+        classResources: {active: false, el: $j("input#section-filter-resources-text"), type: "string"},
     };
     this.filter.classLengthMin.valid = function(a) {
         return Math.ceil(a.length) >= this.filter.classLengthMin.val;
@@ -56,8 +59,23 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         }.bind(this));
         return result;
     }.bind(this);
+    this.filter.classHasAdmin.valid = function(a) {
+        var result = false;
+        $j.each(a.teacher_data, function(index, teacher) {
+            if(teacher.is_admin) {
+                result = true;
+            }
+        }.bind(this));
+        return result;
+    }.bind(this);
     this.filter.classHideUnapproved.valid = function(a) {
         return a.status > 0;
+    }.bind(this);
+    this.filter.classFlags.valid = function(a) {
+        return a.flags.toLowerCase().search(this.filter.classFlags.val)>-1;
+    }.bind(this);
+    this.filter.classResources.valid = function(a) {
+        return this.getResourceString(a).toLowerCase().search(this.filter.classResources.val)>-1;
     }.bind(this);
 
     $j.each(this.filter, function(filterName, filterObject) {
@@ -66,7 +84,7 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
             if(filterObject.type==="number") {
                 filterObject.val = parseInt(filterObject.val);
             } else if(filterObject.type==="string") {
-                filterObject.val = filterObject.val.replace(" ", "").toLowerCase()
+                filterObject.val = filterObject.val.toLowerCase()
             } else if(filterObject.type==="boolean") {
                 filterObject.val = filterObject.el.prop('checked');
             }
@@ -227,8 +245,9 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
     /**
      * Unselect the cells associated with the currently selected section, hide the section info
      * panel, and unhighlight the available cells to place the section.
+     * @param override: What should the availability override status be?
      */
-    this.unselectSection = function() {
+    this.unselectSection = function(override = false) {
         if(!this.selectedSection) {
             return;
         }
@@ -244,6 +263,7 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
 
         this.selectedSection = null;
         this.matrix.sectionInfoPanel.hide();
+        this.matrix.sectionInfoPanel.override = override;
         this.matrix.unhighlightTimeslots(this.availableTimeslots);
 
     };
@@ -260,28 +280,35 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
      * @param section: The section to check availability.
      */
     this.getAvailableTimeslots = function(section) {
-        var availabilities = [];
+        var availableTimeslots = [];
         var already_teaching = [];
-        $j.each(section.teacher_data, function(index, teacher) {
-            var teacher_availabilities = teacher.availability.slice();
-            teacher_availabilities = teacher_availabilities.filter(function(val) {
-                return this.matrix.timeslots.get_by_id(val);
+        if(this.matrix.sectionInfoPanel.override){
+            $j.each(this.matrix.timeslots.timeslots, function(index, timeslot) {
+                availableTimeslots.push(timeslot.id);
             }.bind(this));
-            $j.each(teacher.sections, function(index, section_id) {
-                var assignment = this.scheduleAssignments[section_id];
-                if(assignment && section_id != section.id) {
-                    $j.each(assignment.timeslots, function(index, timeslot_id) {
-                        var availability_index = teacher_availabilities.indexOf(timeslot_id);
-                        if(availability_index >= 0) {
-                            teacher_availabilities.splice(availability_index, 1);
-                            already_teaching.push(timeslot_id);
-                        }
-                    }.bind(this));
-                }
+        } else {
+            var availabilities = []
+            $j.each(section.teacher_data, function(index, teacher) {
+                var teacher_availabilities = teacher.availability.slice();
+                teacher_availabilities = teacher_availabilities.filter(function(val) {
+                    return this.matrix.timeslots.get_by_id(val);
+                }.bind(this));
+                $j.each(teacher.sections, function(index, section_id) {
+                    var assignment = this.scheduleAssignments[section_id];
+                    if(assignment && section_id != section.id) {
+                        $j.each(assignment.timeslots, function(index, timeslot_id) {
+                            var availability_index = teacher_availabilities.indexOf(timeslot_id);
+                            if(availability_index >= 0) {
+                                teacher_availabilities.splice(availability_index, 1);
+                                already_teaching.push(timeslot_id);
+                            }
+                        }.bind(this));
+                    }
+                }.bind(this));
+                availabilities.push(teacher_availabilities);
             }.bind(this));
-            availabilities.push(teacher_availabilities);
-        }.bind(this));
-        var availableTimeslots = helpersIntersection(availabilities, true);
+            availableTimeslots = helpersIntersection(availabilities, true);
+        }
         return [availableTimeslots, already_teaching];
     };
 
@@ -319,6 +346,7 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         var old_assignment = this.scheduleAssignments[section.id];
         var schedule_timeslots = this.matrix.timeslots.
             get_timeslots_to_schedule_section(section, first_timeslot_id);
+        var override = this.matrix.sectionInfoPanel.override;
 
         // Make sure the assignment is valid
         if (!this.matrix.validateAssignment(section, room_id, schedule_timeslots).valid){
@@ -338,6 +366,7 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
             section.id,
             schedule_timeslots,
             room_id,
+            override,
             function() {},
             // If there's an error, reschedule the section in its old location
             function(msg) {
@@ -348,6 +377,8 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
                 console.log(msg);
             }.bind(this)
         );
+        // Reset the availability override
+        this.matrix.sectionInfoPanel.override = false;
     }
 
 
