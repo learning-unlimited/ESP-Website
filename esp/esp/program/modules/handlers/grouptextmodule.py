@@ -157,8 +157,8 @@ class GroupTextModule(ProgramModuleObj):
 
             contactInfo = None
             try:
-                # TODO: handle multiple ContactInfo objects per user
-                contactInfo = ContactInfo.objects.filter(user=user).order_by("-id")[0]
+                #   Only get contact info for the actual user (not guardians or emergency contacts)
+                contactInfo = ContactInfo.objects.filter(user=user, as_user__isnull=False).distinct('user')[0]
             except ContactInfo.DoesNotExist:
                 pass
             if not contactInfo:
