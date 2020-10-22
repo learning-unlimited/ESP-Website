@@ -6,7 +6,6 @@ from esp.program.controllers.lottery import LotteryAssignmentController, Lottery
 from esp.utils.web import render_to_response
 from esp.users.models import ESPUser
 from esp.utils.decorators import json_response
-import numpy
 
 class LotteryFrontendModule(ProgramModuleObj):
 
