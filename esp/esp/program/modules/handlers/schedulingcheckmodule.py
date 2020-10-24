@@ -123,7 +123,6 @@ class SchedulingCheckRunner:
           self.d_grades = []
 
      def _getLunchByDay(self):
-        import numpy
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
         lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
