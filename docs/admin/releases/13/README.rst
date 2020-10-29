@@ -38,11 +38,15 @@ Dashboard changes
 Dependency changes
 ~~~~~~~~~~~~~~~~~~
 - Upgraded from Django 1.8.19 to 1.11.29
+- Upgraded from pillow 3.3.3 to 6.2.2
+- Upgraded from psycopg2 2.6.1 to 2.8.6
+- Upgraded from numpy 1.7.1 to 1.16.6
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
 - Added options to customize the amount of financial aid granted using the financial aid approval module.
 - Added custom widgets to many of the tag settings (preventing potentially site-breaking tag values).
+- Added a public view for emails that have been marked as public (this is a new option in the comm panel). Anonymous (not signed in) users can read a generic (no private information) version of an email at /email/<id> (actual links are on the email monitoring page and comm panel confirmation page).
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
