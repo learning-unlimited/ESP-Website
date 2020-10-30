@@ -12,6 +12,7 @@ import json
 from pytz import country_names
 from localflavor.us.forms import USPhoneNumberField
 
+
 class DropdownOtherWidget(forms.MultiWidget):
     """
     A widget that presents a dropdown list of choices, as well as an 'Other...' textbox
