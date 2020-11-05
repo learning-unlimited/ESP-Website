@@ -249,9 +249,10 @@ class CommModule(ProgramModuleObj):
                             if student.isStudent():
                                 data[key] = student
                             else:
-                                context['student_in_class_message'] = '%s %s is not a student' % (
-                                    student.first_name, student.last_name)
+                                data[key] = "invalid"
                             student_search_form = StudentSearchForm(initial={'target_user': student.id})
+                    elif request.POST['target_user_raw']:
+                        data[key] = "invalid"
                 else:
                     data[key] = request.POST[key]
 
@@ -289,8 +290,6 @@ class CommModule(ProgramModuleObj):
             else:
                 raise ESPError('What do I do without knowing what kind of users to look for?', log=True)
         else:
-            if 'user' in request.GET:
-                target_id = request.GET['user']
             student_search_form = StudentSearchForm()
 
         context['student_search_form'] = student_search_form

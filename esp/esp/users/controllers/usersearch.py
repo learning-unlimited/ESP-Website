@@ -231,7 +231,9 @@ class UserSearchController(object):
 
             if 'target_user' in criteria:
                 student_id = criteria['target_user']
-                if student_id:
+                if student_id == "invalid":
+                    raise ESPError('Please select a valid student whose teachers to email.', log=False)
+                else:
                     sections = [sr.section for sr in StudentRegistration.valid_objects().filter(user_id=student_id, relationship__name="Enrolled", section__parent_class__parent_program=program)]
                     if len(sections):
                         teacher_filter = Q(classsubject__sections__in=sections)
