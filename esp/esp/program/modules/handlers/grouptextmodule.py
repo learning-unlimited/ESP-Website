@@ -36,6 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admi
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter, ContactInfo
 from esp.users.controllers.usersearch import UserSearchController
+from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.users.views.usersearch import get_user_checklist
 from django.db.models.query   import Q
 from esp.dbmail.models import ActionHandler
@@ -112,8 +113,20 @@ class GroupTextModule(ProgramModuleObj):
             data = {}
             for key in request.POST:
                 #   Some keys have list values
-                if key in ['regtypes']:
+                if key in ['regtypes', 'teaching_times', 'teacher_events', 'class_times']:
                     data[key] = request.POST.getlist(key)
+                elif key == 'target_user':
+                    if request.POST['target_user']:
+                        student_search_form = StudentSearchForm(request.POST)
+                        if student_search_form.is_valid():
+                            student = student_search_form.cleaned_data['target_user']
+                            #   Check that this is a student user
+                            if student.isStudent():
+                                data[key] = student
+                            else:
+                                context['student_in_class_message'] = '%s %s is not a student' % (
+                                student.first_name, student.last_name)
+                            student_search_form = StudentSearchForm(initial={'target_user': student.id})
                 else:
                     data[key] = request.POST[key]
             filterObj = UserSearchController().filter_from_postdata(prog, data)
@@ -122,7 +135,10 @@ class GroupTextModule(ProgramModuleObj):
             context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
             context['est_time'] = float(context['num_users']) * 1.0 / len(settings.TWILIO_ACCOUNT_NUMBERS)
             return render_to_response(self.baseDir()+'options.html', request, context)
+        else:
+            student_search_form = StudentSearchForm()
 
+        context['student_search_form'] = student_search_form
         context.update(usc.prepare_context(prog, target_path='/manage/%s/grouptextpanel' % prog.url))
         return render_to_response(self.baseDir()+'search.html', request, context)
 

@@ -37,6 +37,7 @@ from esp.utils.web import render_to_response
 from esp.dbmail.models import MessageRequest
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
+from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.users.views.usersearch import get_user_checklist
 from django.db.models.query   import Q
 from esp.dbmail.models import ActionHandler
@@ -237,8 +238,20 @@ class CommModule(ProgramModuleObj):
             data = {}
             for key in request.POST:
                 #   Some keys have list values
-                if key in ['regtypes']:
+                if key in ['regtypes', 'teaching_times', 'teacher_events', 'class_times']:
                     data[key] = request.POST.getlist(key)
+                elif key == 'target_user':
+                    if request.POST['target_user']:
+                        student_search_form = StudentSearchForm(request.POST)
+                        if student_search_form.is_valid():
+                            student = student_search_form.cleaned_data['target_user']
+                            #   Check that this is a student user
+                            if student.isStudent():
+                                data[key] = student
+                            else:
+                                context['student_in_class_message'] = '%s %s is not a student' % (
+                                    student.first_name, student.last_name)
+                            student_search_form = StudentSearchForm(initial={'target_user': student.id})
                 else:
                     data[key] = request.POST[key]
 
@@ -275,7 +288,12 @@ class CommModule(ProgramModuleObj):
 
             else:
                 raise ESPError('What do I do without knowing what kind of users to look for?', log=True)
+        else:
+            if 'user' in request.GET:
+                target_id = request.GET['user']
+            student_search_form = StudentSearchForm()
 
+        context['student_search_form'] = student_search_form
         #   Otherwise, render a page that shows the list selection options
         context.update(usc.prepare_context(prog))
 

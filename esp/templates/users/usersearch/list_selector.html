@@ -1,3 +1,9 @@
+<script>
+$j(document).ready(function() {
+    $j("#id_target_user").removeClass("span6");
+});
+</script>
+
 <div id="list_descriptions" class="commpanel_hidden">
 {% for kv in lists.items %}{% for item in kv.1 %}
 <div id="list_description_{{ item.name }}">{{ item.description }}</div>
@@ -129,11 +135,44 @@
                 <h4 class="student"><a href="#">Class Registrations</a></h4>
                 <div>Enter class ID number: <input type="text" size="6" name="clsid" id="clsid" /> <br />
                 <small>(Can be a comma-separated list)</small> <br /><br />
+                Select class time(s): <select name="class_times" id="class_times" multiple>
+                    {% for class_time in class_times %}
+                    <option value="{{ class_time.id }}">{{ class_time }}</option>
+                    {% endfor %}
+                </select><br /><br />
+                <small>(Can enter either class ID(s) or class time(s) or both)</small><br /><br />
                 Select registration type(s): <select name="regtypes" id="regtypes" multiple>
                     {% for regtype in regtypes %}
                     <option {% if regtype.description %}title="{{ regtype.description }}" {% endif %}value="{{ regtype.name }}"{% if regtype.name == "Enrolled" %} selected{% endif %}>{{ regtype }}</option>
                     {% endfor %}
                 </select></div>
+
+                <h4 class="teacher"><a href="#">Teaching Times</a></h4>
+                <div>Select timeslot(s): <select name="teaching_times" id="teaching_times" multiple>
+                    {% for teaching_time in class_times %}
+                    <option  value="{{ teaching_time.id }}">{{ teaching_time }}</option>
+                    {% endfor %}
+                </select></div>
+
+                <h4 class="teacher"><a href="#">Teacher Events</a></h4>
+                <div>Select timeslot(s): <select name="teacher_events" id="teacher_events" multiple>
+                    {% for event in teacher_events %}
+                    <option value="{{ event.id }}">{{ event }}</option>
+                    {% endfor %}
+                </select></div>
+
+                <h4 class="student"><a href="#">Number of enrolled class blocks</a></h4>
+                <div>
+                Min number: <input type="text" size="3" name="hours_min" value="" /><br />
+                Max number: <input type="text" size="3" name="hours_max" value="" />
+                </div>
+
+                <h4 class="teacher"><a href="#">Student enrolled in class</a></h4>
+                <div>
+                <form id="student_in_class" name="student_in_class" method="POST" action="{{ request.path }}">
+                    {{ student_search_form }}
+                </form>
+                </div>
 
             </div>
 
@@ -269,11 +308,44 @@
                 <h4><a href="#">Class Registrations</a></h4>
                 <div>Enter class ID number: <input type="text" size="6" name="clsid" id="clsid" /> <br />
                 <small>(Can be a comma-separated list)</small> <br /><br />
+                Select class time(s): <select name="class_times" id="class_times" multiple>
+                    {% for class_time in class_times %}
+                    <option value="{{ class_time.id }}">{{ class_time }}</option>
+                    {% endfor %}
+                </select><br /><br />
+                <small>(Can enter either class ID(s) or class time(s) or both)</small><br /><br />
                 Select registration type(s): <select name="regtypes" id="regtypes" multiple>
                     {% for regtype in regtypes %}
                     <option {% if regtype.description %}title="{{ regtype.description }}" {% endif %}value="{{ regtype.name }}"{% if regtype.name == "Enrolled" %} selected{% endif %}>{{ regtype }}</option>
                     {% endfor %}
                 </select></div>
+
+                <h4 class="teacher"><a href="#">Teaching Times</a></h4>
+                <div>Select timeslot(s): <select name="teaching_times" id="teaching_times" multiple>
+                    {% for teaching_time in class_times %}
+                    <option value="{{ teaching_time.id }}">{{ teaching_time }}</option>
+                    {% endfor %}
+                </select></div>
+
+                <h4 class="teacher"><a href="#">Teacher Events</a></h4>
+                <div>Select timeslot(s): <select name="teacher_events" id="teacher_events" multiple>
+                    {% for event in teacher_events %}
+                    <option value="{{ event.id }}">{{ event }}</option>
+                    {% endfor %}
+                </select></div>
+
+                <h4 class="student"><a href="#">Number of enrolled class blocks</a></h4>
+                <div>
+                Min number: <input type="text" size="3" name="hours_min" value="" /><br />
+                Max number: <input type="text" size="3" name="hours_max" value="" />
+                </div>
+
+                <h4 class="teacher"><a href="#">Student enrolled in class</a></h4>
+                <div>
+                <form id="student_in_class" name="student_in_class" method="POST" action="{{ request.path }}">
+                    {{ student_search_form }}
+                </form>
+                </div>
 
             </div>
 
