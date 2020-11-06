@@ -35,7 +35,7 @@ from collections import defaultdict
 from esp.users.models import ESPUser, ZipCode, PersistentQueryFilter, Record
 from esp.middleware import ESPError
 from esp.utils.web import render_to_response
-from esp.program.models import Program, RegistrationType, StudentRegistration, ClassSubject
+from esp.program.models import Program, RegistrationType, StudentRegistration
 from esp.dbmail.models import MessageRequest
 from esp.utils.query_utils import nest_Q
 from esp.cal.models import EventType

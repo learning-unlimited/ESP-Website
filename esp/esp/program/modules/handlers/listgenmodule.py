@@ -398,7 +398,6 @@ class ListGenModule(ProgramModuleObj):
                                 data[key] = student
                             else:
                                 data[key] = "invalid"
-                            student_search_form = StudentSearchForm(initial={'target_user': student.id})
                     elif request.POST['target_user_raw']:
                         data[key] = "invalid"
                 else:
