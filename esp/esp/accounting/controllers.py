@@ -617,10 +617,6 @@ class IndividualAccountingController(ProgramAccountingController):
             if total >= target:
                 break
 
-        if total != target:
-            # This will cause all changes to be rolled back
-            raise ValueError("Transfers do not sum to target: %.2f" % target)
-
     @staticmethod
     def updatePaid(program, user, paid=True):
         """ Create an invoice for the user and, if paid is True, create a receipt showing
