@@ -1,7 +1,6 @@
 
 {% extends "outlines/letter_base.tex" %}
 {% load latex %}
-
 {% block maincontent %}
 {{ block.super }}
 
@@ -15,15 +14,17 @@ This is to certify that \underline{ {{ user.first_name }} {{ user.last_name }} }
 
 \vspace{0.25in}
 
-{{ prog.program_type }} courses are taught by volunteers, primarily {{ settings.INSTITUTION_NAME }} students.
+{% autoescape off %}
+{{ prog.program_type }} courses are taught by volunteers, primarily {{ settings.INSTITUTION_NAME|texescape }} students.
 The content and difficulty of the subjects varies significantly, from non-academic to college-level.
-Our program is not accredited to issue credit for any class, however, we leave it to school administrators to decide whether {{ settings.ORGANIZATION_SHORT_NAME }} courses can be counted as substitutes for school classes.
+Our program is not accredited to issue credit for any class, however, we leave it to school administrators to decide whether {{ settings.ORGANIZATION_SHORT_NAME|texescape }} courses can be counted as substitutes for school classes.
 You may view the teachers' course descriptions on the attached pages.
-If you would like to talk to an administrator or teacher about the content of a particular course, please email us at {\tt {{ settings.DEFAULT_EMAIL_ADDRESSES.default }} }. \\
+If you would like to talk to an administrator or teacher about the content of a particular course, please email us at {\tt {{ settings.DEFAULT_EMAIL_ADDRESSES.default|texescape }} }. \\
 
 \hspace{3in}\begin{minipage}{4in}{{ prog.niceName }} Directors \\
-{{settings.INSTITUTION_NAME}} {{settings.ORGANIZATION_SHORT_NAME}} \end{minipage}
+{{ settings.INSTITUTION_NAME|texescape }} {{ settings.ORGANIZATION_SHORT_NAME|texescape }} \end{minipage}
 
+{% endautoescape %}
 {% endblock %}
 
 {% block additionalcontent %}
