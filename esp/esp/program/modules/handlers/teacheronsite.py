@@ -59,17 +59,19 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
 
         context = self.onsitecontext(request, tl, one, two, prog)
 
-        classes = [cls for cls in user.getTaughtSections(program = prog)
+        classes_observed = user.get_observing_sections_from_program(program = prog)
+        classes_all = [cls for cls in user.getTaughtSections(program = prog)
                    if cls.meeting_times.all().exists()
                    and cls.resourceassignment_set.all().exists()
                    and cls.status > 0]
-        # now we sort them by time/title
-        classes.sort()
+        classes_all.extend(classes_observed) # this is used to see what to display in the onsite module
+        classes_all.sort() # by time and title
 
         context['checkin_note'] = Tag.getProgramTag('teacher_onsite_checkin_note', program = prog, default="Note: Please make sure to check in before your first class today.")
         context['webapp_page'] = 'schedule'
         context['crmi'] = prog.classregmoduleinfo
-        context['classes'] = classes
+        context['classes'] = classes_all
+        context['observed_classes'] = classes_observed
         context['checked_in'] = Record.objects.filter(program=prog, event='teacher_checked_in', user=user, time__year=now.year, time__month=now.month, time__day=now.day).exists()
 
         return render_to_response(self.baseDir()+'schedule.html', request, context)
