@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
+from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.dbmail.models import MessageRequest
 from esp.users.models   import ESPUser, PersistentQueryFilter
@@ -235,25 +236,7 @@ class CommModule(ProgramModuleObj):
         #   If list information was submitted, continue to prepare a message
         if request.method == 'POST':
             #   Turn multi-valued QueryDict into standard dictionary
-            data = {}
-            for key in request.POST:
-                #   Some keys have list values
-                if key in ['regtypes', 'teaching_times', 'teacher_events', 'class_times']:
-                    data[key] = request.POST.getlist(key)
-                elif key == 'target_user':
-                    if request.POST['target_user']:
-                        student_search_form = StudentSearchForm(request.POST)
-                        if student_search_form.is_valid():
-                            student = student_search_form.cleaned_data['target_user']
-                            #   Check that this is a student user
-                            if student.isStudent():
-                                data[key] = student
-                            else:
-                                data[key] = "invalid"
-                    elif request.POST['target_user_raw']:
-                        data[key] = "invalid"
-                else:
-                    data[key] = request.POST[key]
+            data = ListGenModule.processPost(request)
 
             ##  Handle normal list selecting submissions
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):

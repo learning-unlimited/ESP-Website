@@ -369,6 +369,30 @@ class ListGenModule(ProgramModuleObj):
             }
             return render_to_response(self.baseDir()+'options.html', request, context)
 
+    @staticmethod
+    def processPost(request):
+        #   Turn multi-valued QueryDict into standard dictionary
+        data = {}
+        for key in request.POST:
+            #   Some keys have list values
+            if key in ['regtypes', 'teaching_times', 'teacher_events', 'class_times']:
+                data[key] = request.POST.getlist(key)
+            elif key == 'target_user':
+                if request.POST['target_user']:
+                    student_search_form = StudentSearchForm(request.POST)
+                    if student_search_form.is_valid():
+                        student = student_search_form.cleaned_data['target_user']
+                        #   Check that this is a student user
+                        if student.isStudent():
+                            data[key] = student
+                        else:
+                            data[key] = "invalid"
+                elif request.POST['target_user_raw']:
+                    data[key] = "invalid"
+            else:
+                data[key] = request.POST[key]
+        return data
+
     @main_call
     @needs_admin
     def selectList(self, request, tl, one, two, module, extra, prog):
@@ -382,26 +406,8 @@ class ListGenModule(ProgramModuleObj):
         #   If list information was submitted, generate a query filter and
         #   show options for generating a user list
         if request.method == 'POST':
-            #   Turn multi-valued QueryDict into standard dictionary
-            data = {}
-            for key in request.POST:
-                #   Some keys have list values
-                if key in ['regtypes', 'teaching_times', 'teacher_events', 'class_times']:
-                    data[key] = request.POST.getlist(key)
-                elif key == 'target_user':
-                    if request.POST['target_user']:
-                        student_search_form = StudentSearchForm(request.POST)
-                        if student_search_form.is_valid():
-                            student = student_search_form.cleaned_data['target_user']
-                            #   Check that this is a student user
-                            if student.isStudent():
-                                data[key] = student
-                            else:
-                                data[key] = "invalid"
-                    elif request.POST['target_user_raw']:
-                        data[key] = "invalid"
-                else:
-                    data[key] = request.POST[key]
+            data = self.processPost(request)
+
             filterObj = usc.filter_from_postdata(prog, data)
 
             #   Display list generation options filtered by recipient type

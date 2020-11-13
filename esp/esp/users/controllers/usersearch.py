@@ -109,25 +109,23 @@ class UserSearchController(object):
 
             if 'class_times' in criteria:
                 class_times = criteria['class_times']
+                print(class_times)
                 if 'regtypes' in criteria:
                     student_verbs = criteria['regtypes']
                 else:
                     student_verbs = ['Enrolled']
-                times_filter = reduce(operator.or_, (Q(studentregistration__section__meeting_times__in=time, studentregistration__relationship__name__in=student_verbs)
-                                                     & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration') for time in class_times))
-                Q_include &= times_filter
+                Q_include &= Q(studentregistration__section__meeting_times__id__in=class_times, studentregistration__relationship__name__in=student_verbs) \
+                             & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
                 self.updated = True
 
             if 'teaching_times' in criteria:
                 teaching_times = criteria['teaching_times']
-                times_filter = reduce(operator.or_, (Q(classsubject__sections__meeting_times__in=time) for time in teaching_times))
-                Q_include &= times_filter
+                Q_include &= Q(classsubject__sections__meeting_times__id__in=teaching_times)
                 self.updated = True
 
             if 'teacher_events' in criteria:
                 teacher_events = criteria['teacher_events']
-                events_filter = reduce(operator.or_, (Q(useravailability__event=event) for event in teacher_events))
-                Q_include &= events_filter
+                Q_include &= Q(useravailability__event__id__in=teacher_events)
                 self.updated = True
 
             if 'group' in criteria and criteria['group'] != "":
