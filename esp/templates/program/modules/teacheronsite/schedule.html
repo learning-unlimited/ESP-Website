@@ -24,12 +24,22 @@
             <tr class="schedule_row">
                 <td rowspan="2" class="time">{{ cls.time_blocks.0.short_time }}</td>
                 <td class="cls">
-                    <b>{{ cls.parent_class.title }}</b>
+                    {% if cls in observed_classes %}
+                        <b>{{ cls.parent_class.title }}</b> (Observer) 
+                    {% else %}
+                        <b>{{ cls.parent_class.title }}</b>
+                    {% endif %}
                 </td>
-                <td rowspan="2" class="list">
-                    <a class="no-dec" title="More Details" href="/teach/{{one}}/{{two}}/onsitedetails/{{ cls.id }}"><i class="material-icons md-4">list</i></a>
-                    <a class="no-dec" title="Class Roster" href="/teach/{{one}}/{{two}}/onsiteroster/{{ cls.id }}"><i class="material-icons md-4">assignment</i></a>
-                </td>
+                    {% if cls in observed_classes %}
+                        <td rowspan="2" class="list">
+                            <a class="no-dec" title="Class Roster" href="/teach/{{one}}/{{two}}/section_students/{{ cls.id }}"><i class="material-icons md-4">assignment</i></a>
+                        </td>
+                    {% else %}
+                        <td rowspan="2" class="list">
+                            <a class="no-dec" title="More Details" href="/teach/{{one}}/{{two}}/onsitedetails/{{ cls.id }}"><i class="material-icons md-4">list</i></a>
+                            <a class="no-dec" title="Class Roster" href="/teach/{{one}}/{{two}}/section_students/{{ cls.id }}"><i class="material-icons md-4">assignment</i></a>
+                        </td>
+                    {% endif %}
             </tr>
             <tr class="schedule_row">
                 <td class="location">
