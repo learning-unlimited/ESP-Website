@@ -109,7 +109,6 @@ class UserSearchController(object):
 
             if 'class_times' in criteria:
                 class_times = criteria['class_times']
-                print(class_times)
                 if 'regtypes' in criteria:
                     student_verbs = criteria['regtypes']
                 else:
