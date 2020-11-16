@@ -46,8 +46,6 @@ from django.contrib.auth.models import Group
 
 import collections
 import re
-import operator
-
 
 class UserSearchController(object):
 
