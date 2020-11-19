@@ -207,6 +207,7 @@ function initialize()
     $j("#combo_filter_accordion").accordion({
         heightStyle: "content",
         collapsible: true,
+        active: false,
     });
     $j("#combo_filter_accordion").accordion("option", "active", false);
 
