@@ -302,10 +302,11 @@ class ListGenModule(ProgramModuleObj):
             else:
                 raise ESPError('Could not determine the query filter ID.', log=False)
 
+        usertype = request.POST.get('recipient_type', 'combo').lower()
         if request.method == 'POST' and 'fields' in request.POST:
             #   If list information was submitted, continue to prepare a list
             #   Parse the contents of the form
-            form = ListGenForm(request.POST)
+            form = ListGenForm(request.POST, usertype=usertype)
             if form.is_valid():
                 lists = []
                 lists_indices = {}
@@ -356,16 +357,18 @@ class ListGenModule(ProgramModuleObj):
                 context = {
                     'form': form,
                     'filterid': filterObj.id,
-                    'num_users': ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+                    'num_users': ESPUser.objects.filter(filterObj.get_Q()).distinct().count(),
+                    'recipient_type': usertype
                 }
                 return render_to_response(self.baseDir()+'options.html', request, context)
         else:
             #   Otherwise, show a blank form with the fields filtered by recipient_type
-            form = ListGenForm(usertype=request.POST.get('recipient_type', 'combo').lower())
+            form = ListGenForm(usertype=usertype)
             context = {
                 'form': form,
                 'filterid': filterObj.id,
-                'num_users': ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+                'num_users': ESPUser.objects.filter(filterObj.get_Q()).distinct().count(),
+                'recipient_type': usertype
             }
             return render_to_response(self.baseDir()+'options.html', request, context)
 
@@ -412,11 +415,13 @@ class ListGenModule(ProgramModuleObj):
 
             #   Display list generation options filtered by recipient type
             #   If there is no receipient_type, we submitted a combo list
-            form = ListGenForm(usertype=request.POST.get('recipient_type', 'combo').lower())
+            usertype = request.POST.get('recipient_type', 'combo').lower()
+            form = ListGenForm(usertype=usertype)
             context.update({
                 'form': form,
                 'filterid': filterObj.id,
-                'num_users': ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+                'num_users': ESPUser.objects.filter(filterObj.get_Q()).distinct().count(),
+                'recipient_type': usertype
             })
             return render_to_response(self.baseDir()+'options.html', request, context)
 
