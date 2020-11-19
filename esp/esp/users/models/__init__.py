@@ -1776,7 +1776,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     phone_even = PhoneNumberField('Alternate phone',blank=True, null=True)
     address_street = models.CharField('Street address',max_length=100,blank=True, null=True)
     address_city = models.CharField('City',max_length=50,blank=True, null=True)
-    address_state = USStateField('State',blank=True, null=True)
+    address_state = models.CharField('State',max_length=32,blank=True, null=True)
     address_zip = models.CharField('Zip code',max_length=5,blank=True, null=True)
     address_postal = models.TextField(blank=True,null=True)
     undeliverable = models.BooleanField(default=False)
