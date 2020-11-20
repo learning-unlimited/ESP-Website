@@ -83,7 +83,7 @@ class UserSearchController(object):
                     raise ESPError('User id invalid, please enter a number or comma-separated list of numbers.', log=False)
 
             if 'userid__not' in criteria:
-                Q_exclude &= Q(id__in = userid)
+                Q_exclude |= Q(id__in = userid)
             else:
                 Q_include &= Q(id__in = userid)
             self.updated = True
@@ -125,10 +125,16 @@ class UserSearchController(object):
                 Q_include &= Q(useravailability__event__id__in=teacher_events)
                 self.updated = True
 
-            if 'group' in criteria and criteria['group'] != "":
-                group = criteria['group']
+            if 'groups_include' in criteria:
+                groups_include = criteria['groups_include']
                 #Can't just filter by group because we are already filtering by group with user_type above. - willgearty, 2016-11-23
-                Q_include &= Q(registrationprofile__user__groups=group)
+                Q_include &= Q(registrationprofile__user__groups__id__in=groups_include)
+                self.updated = True
+
+            if 'groups_exclude' in criteria:
+                groups_exclude = criteria['groups_exclude']
+                #Can't just filter by group because we are already filtering by group with user_type above. - willgearty, 2016-11-23
+                Q_exclude |= Q(registrationprofile__user__groups__id__in=groups_exclude)
                 self.updated = True
 
             for field in ['username','last_name','first_name', 'email']:
@@ -140,7 +146,7 @@ class UserSearchController(object):
                         raise ESPError('Invalid search expression, please check your syntax: %s' % criteria[field], log=False)
                     filter_dict = {'%s__iregex' % field: criteria[field]}
                     if '%s__not' % field in criteria:
-                        Q_exclude &= Q(**filter_dict)
+                        Q_exclude |= Q(**filter_dict)
                     else:
                         Q_include &= Q(**filter_dict)
                     self.updated = True
@@ -164,7 +170,7 @@ class UserSearchController(object):
             if criteria.get('states', '').strip():
                 state_codes = criteria['states'].strip().upper().split(',')
                 if 'states__not' in criteria:
-                    Q_exclude &= Q(registrationprofile__contact_user__address_state__in = state_codes, registrationprofile__most_recent_profile=True)
+                    Q_exclude |= Q(registrationprofile__contact_user__address_state__in = state_codes, registrationprofile__most_recent_profile=True)
                 else:
                     Q_include &= Q(registrationprofile__contact_user__address_state__in = state_codes, registrationprofile__most_recent_profile=True)
                 self.updated = True
@@ -221,7 +227,7 @@ class UserSearchController(object):
                         for user, hours in user_hours.items():
                             if hours > int(hours_max):
                                 exclude_user_list.append(user)
-                Q_exclude &= Q(id__in=exclude_user_list)
+                Q_exclude |= Q(id__in=exclude_user_list)
                 self.updated = True
 
             if 'target_user' in criteria:
@@ -236,7 +242,6 @@ class UserSearchController(object):
                         teacher_filter = Q(classsubject__sections__in=sections)
                     Q_include &= teacher_filter
                     self.updated = True
-
         return Q_base & (Q_include & ~Q_exclude)
 
     def query_from_postdata(self, program, data):

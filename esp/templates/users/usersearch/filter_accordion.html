@@ -44,12 +44,16 @@ Min: <input type="text" size="3" name="gradyear_min" value="" /> <br />
 Max: <input type="text" size="3" name="gradyear_max" value="" />
 </div>
 
-<h4 class="any"><a href="#">User group</a></h4>
-<div><select name="group" id="user-search-group">
+<h4 class="any"><a href="#">User groups</a></h4>
+<div>Select group(s) to include: <select name="groups_include" id="user-search-groups-include" multiple>
     {% for group in groups %}
     <option value="{{ group.id }}">{{ group.name }}</option>
     {% endfor %}
-    <option value="" selected hidden></option>
+</select><br /><br />
+Select group(s) to exclude: <select name="groups_exclude" id="user-search-groups-exclude" multiple>
+    {% for group in groups %}
+    <option value="{{ group.id }}">{{ group.name }}</option>
+    {% endfor %}
 </select></div>
 
 <h4 class="student"><a href="#">Class registrations</a></h4>

@@ -375,7 +375,7 @@ class ListGenModule(ProgramModuleObj):
         data = {}
         for key in request.POST:
             #   Some keys have list values
-            if key in ['regtypes', 'teaching_times', 'teacher_events', 'class_times']:
+            if key in ['regtypes', 'teaching_times', 'teacher_events', 'class_times', 'groups_include', 'groups_exclude']:
                 data[key] = request.POST.getlist(key)
             elif key == 'target_user':
                 if request.POST['target_user']:
