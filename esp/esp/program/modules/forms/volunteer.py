@@ -149,7 +149,7 @@ class VolunteerOfferForm(forms.Form):
         previous_offers = user.getVolunteerOffers(self.program).order_by('-id')
         if previous_offers.exists():
             self.fields['has_previous_requests'].initial = True
-            self.fields['requests'].initial = previous_offers.values_list('request', flat=True)
+            self.fields['requests'].initial = list(previous_offers.values_list('request', flat=True))
             if 'shirt_size' in self.fields:
                 self.fields['shirt_size'].initial = previous_offers[0].shirt_size
             if 'shirt_type' in self.fields:
