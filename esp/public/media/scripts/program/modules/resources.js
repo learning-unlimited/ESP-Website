@@ -35,14 +35,14 @@ function update_furnishing_choices(furnishing_select_obj, value) {
         var num = $j(furnishing_select_obj).attr('id').split("-")[1];
         $j('#id_furnishings-' + num + '-choice').remove();
         if (choices.length > 1) {
-            $j(furnishing_select_obj).after($j('<select>').css('margin-left', '4px').attr('id','id_furnishings-' + num + '-choice').attr('name','furnishings-' + num + '-choice').attr('type', 'text'));
+            $j(furnishing_select_obj).after($j('<select>').css('margin-left', '8px').attr('id','id_furnishings-' + num + '-choice').attr('name','furnishings-' + num + '-choice').attr('type', 'text'));
             $j('#id_furnishings-' + num + '-choice').append($j('<option>').text('(option)'));
             var i;
             for (i in choices) {
                 $j('#id_furnishings-' + num + '-choice').append($j('<option>').val(choices[i]).text(choices[i]));
             }
         } else {
-            $j(furnishing_select_obj).after($j('<input>').css('margin-left', '4px').attr('id','id_furnishings-' + num + '-choice').attr('name','furnishings-' + num + '-choice').attr('maxlength', '50').attr('placeholder', '(option)').attr('type', 'text'));
+            $j(furnishing_select_obj).after($j('<input>').css('margin-left', '8px').attr('id','id_furnishings-' + num + '-choice').attr('name','furnishings-' + num + '-choice').attr('maxlength', '200').attr('placeholder', '(option)').attr('type', 'text'));
         }
         if (value) {
             $j('#id_furnishings-' + num + '-choice').val(value);
@@ -86,7 +86,7 @@ function update_floating_choices(floating_select_obj, floating_choice_obj, value
                 $j('#id_choice').append($j('<option>').val(choices[i]).text(choices[i]));
             }
         } else {
-            $j(floating_choice_obj).after($j('<input>').attr('id','id_choice').attr('name','choice').attr('maxlength', '50').attr('type', 'text'));
+            $j(floating_choice_obj).after($j('<input>').attr('id','id_choice').attr('name','choice').attr('maxlength', '200').attr('type', 'text'));
             $j(floating_choice_obj).remove();
         }
         if (value) {
