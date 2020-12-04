@@ -111,7 +111,7 @@ class EquipmentForm(forms.Form):
     times_available = forms.MultipleChoiceField()
     num_items = forms.IntegerField(label = "Number of unique items", validators=[MinValueValidator(1)])
     resource_type = forms.ChoiceField()
-    choice = forms.CharField(label = "Choice (optional)", required=False, max_length=50)
+    choice = forms.CharField(label = "Choice (optional)", required=False, max_length=200)
 
     def __init__(self, *args, **kwargs):
         if isinstance(args[0], Program):
@@ -266,7 +266,7 @@ class ClassroomForm(forms.Form):
 def FurnishingFormForProgram(prog):
     class FurnishingForm(forms.Form):
         furnishing = forms.ChoiceField()
-        choice = forms.CharField(required=False, max_length=50, widget=forms.TextInput(attrs={'placeholder': '(option)'}))
+        choice = forms.CharField(required=False, max_length=200, widget=forms.TextInput(attrs={'placeholder': '(option)', 'style': 'margin-left: 8px'}))
         def __init__(self, *args, **kwargs):
             furnishings = setup_furnishings(prog.getResourceTypes())
             self.base_fields['furnishing'].choices = tuple([(u'', '(furnishing)')] + list(furnishings))
