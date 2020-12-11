@@ -4,7 +4,6 @@ var myInterval;
 $j(function(){
     function refreshAll() {
         if (auto_running) {
-            console.log("boop");
             $j("button.refresh-button").click();
             // Allow for updating fresh interval while the refresh is already running
             myInterval = setTimeout(refreshAll, $j("[name=refresh_interval]").val() * 1000);
@@ -19,7 +18,6 @@ $j(function(){
             $j(this).html("Start Auto Refresh");
             
             // Stop autorefreshing
-            console.log("autorefresh stopping");
             clearTimeout(myInterval);
         } else {
             auto_running = true;
@@ -29,7 +27,6 @@ $j(function(){
             $j(this).html("Stop Auto Refresh");
             
             // Start autorefreshing
-            console.log("autorefresh starting");
             refreshAll()
         }
     });
