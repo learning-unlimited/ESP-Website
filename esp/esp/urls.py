@@ -38,6 +38,7 @@ from esp.admin import admin_site, autodiscover
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from django.views.generic import TemplateView
 from django.views.generic.base import RedirectView
 from filebrowser.sites import site as filebrowser_site
 
@@ -115,6 +116,11 @@ urlpatterns += [
 urlpatterns += [
     # bios
     url(r'^(?P<tl>teach|learn)/teachers/', include('esp.web.urls')),
+]
+
+# Specific .html pages that have defaults
+urlpatterns += [
+    url(r'^faq', TemplateView.as_view(template_name='faq.html'), name='FAQ'),
 ]
 
 urlpatterns += [

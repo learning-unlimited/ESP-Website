@@ -72,6 +72,10 @@ def myesp_passwd(request):
                                                     'Success': False})
 
 @login_required
+def myesp_accountmanage(request):
+    return render_to_response('users/account_manage.html', request, {})
+
+@login_required
 def myesp_switchback(request):
     user = request.user
     user.updateOnsite(request)
