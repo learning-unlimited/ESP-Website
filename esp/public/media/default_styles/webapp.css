@@ -372,3 +372,15 @@ i.pointer {
 .sectionroster .msg {
     font-size: 1.75vh;
 }
+
+table.sortable thead th:not(.sorttable_sorted):not(.sorttable_sorted_reverse):not(.sorttable_nosort):after { 
+    content: " \25B4\25BE" 
+}
+
+table.sortable tbody tr:nth-child(2n) td {
+  background: #eee;
+}
+
+table.sortable tbody tr:nth-child(2n+1) td {
+  background: #fff;
+}
