@@ -36,6 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, a
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
+from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.middleware import ESPError
 from esp.program.models import StudentRegistration, PhaseZeroRecord
 from django.db.models.query      import Q
@@ -71,7 +72,7 @@ class UserAttributeGetter(object):
                     '20_first_regdate': {'label': 'Initial Registration Date', 'usertype': {'student'}},
                     '21_last_regdate': {'label': 'Most Recent Registration Date', 'usertype': {'student'}},
                     '22_lottery_ticket_id': {'label': 'Student Lottery Ticket ID', 'usertype': {'student'}},
-                    '23_classhours': {'label': 'Num Class Hrs', 'usertype': {'student'}},
+                    '23_classhours': {'label': 'Number of Enrolled Class Blocks', 'usertype': {'student'}},
                     '24_transportation': {'label': 'Plan to Get to Splash', 'usertype': {'student'}},
                     '25_guardian_name': {'label': 'Guardian Name', 'usertype': {'student'}},
                     '26_guardian_email': {'label': 'Guardian E-mail', 'usertype': {'student'}},
@@ -368,6 +369,30 @@ class ListGenModule(ProgramModuleObj):
             }
             return render_to_response(self.baseDir()+'options.html', request, context)
 
+    @staticmethod
+    def processPost(request):
+        #   Turn multi-valued QueryDict into standard dictionary
+        data = {}
+        for key in request.POST:
+            #   Some keys have list values
+            if key in ['regtypes', 'teaching_times', 'teacher_events', 'class_times']:
+                data[key] = request.POST.getlist(key)
+            elif key == 'target_user':
+                if request.POST['target_user']:
+                    student_search_form = StudentSearchForm(request.POST)
+                    if student_search_form.is_valid():
+                        student = student_search_form.cleaned_data['target_user']
+                        #   Check that this is a student user
+                        if student.isStudent():
+                            data[key] = student
+                        else:
+                            data[key] = "invalid"
+                elif request.POST['target_user_raw']:
+                    data[key] = "invalid"
+            else:
+                data[key] = request.POST[key]
+        return data
+
     @main_call
     @needs_admin
     def selectList(self, request, tl, one, two, module, extra, prog):
@@ -381,14 +406,8 @@ class ListGenModule(ProgramModuleObj):
         #   If list information was submitted, generate a query filter and
         #   show options for generating a user list
         if request.method == 'POST':
-            #   Turn multi-valued QueryDict into standard dictionary
-            data = {}
-            for key in request.POST:
-                #   Some keys have list values
-                if key in ['regtypes']:
-                    data[key] = request.POST.getlist(key)
-                else:
-                    data[key] = request.POST[key]
+            data = self.processPost(request)
+
             filterObj = usc.filter_from_postdata(prog, data)
 
             #   Display list generation options filtered by recipient type
@@ -401,6 +420,10 @@ class ListGenModule(ProgramModuleObj):
             })
             return render_to_response(self.baseDir()+'options.html', request, context)
 
+        else:
+            student_search_form = StudentSearchForm()
+
+        context['student_search_form'] = student_search_form
         #   Otherwise, render a page that shows the list selection options
         context.update(usc.prepare_context(prog, target_path='/manage/%s/selectList' % prog.url))
         return render_to_response(self.baseDir()+'search.html', request, context)

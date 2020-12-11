@@ -33,10 +33,12 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
+from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.dbmail.models import MessageRequest
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
+from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.users.views.usersearch import get_user_checklist
 from django.db.models.query   import Q
 from esp.dbmail.models import ActionHandler
@@ -240,13 +242,7 @@ class CommModule(ProgramModuleObj):
         #   If list information was submitted, continue to prepare a message
         if request.method == 'POST':
             #   Turn multi-valued QueryDict into standard dictionary
-            data = {}
-            for key in request.POST:
-                #   Some keys have list values
-                if key in ['regtypes']:
-                    data[key] = request.POST.getlist(key)
-                else:
-                    data[key] = request.POST[key]
+            data = ListGenModule.processPost(request)
 
             ##  Handle normal list selecting submissions
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
@@ -281,7 +277,10 @@ class CommModule(ProgramModuleObj):
 
             else:
                 raise ESPError('What do I do without knowing what kind of users to look for?', log=True)
+        else:
+            student_search_form = StudentSearchForm()
 
+        context['student_search_form'] = student_search_form
         #   Otherwise, render a page that shows the list selection options
         context.update(usc.prepare_context(prog))
 
