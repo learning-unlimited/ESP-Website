@@ -113,3 +113,14 @@ table {
 .alittlepspace {
 	padding-top: 8px;
 }
+
+input[name="refresh_interval"] {
+    width: 40px;
+    float: right;
+    margin-right: 10px;
+}
+
+button[name="refresh"] {
+    float: right;
+    margin-right: 10px;
+}
