@@ -147,13 +147,23 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
 
         grades = range(prog.grade_min, prog.grade_max + 1)
         stats = {}
+        invalid_grades = set()
 
         #Calculate grade counts
         for grade in grades:
             stats[grade] = {}
             stats[grade]['in_lottery'] = 0
         for entrant in entrants:
-            stats[entrant.getGrade(prog)]['in_lottery'] += 1
+            grade = entrant.getGrade(prog)
+            if grade in grades:
+                stats[grade]['in_lottery'] += 1
+            else:
+                # Catch students that somehow don't have a valid grade
+                invalid_grades.add(entrant)
+                if 'Invalid Grade' not in stats:
+                    stats['Invalid Grade'] = {}
+                    stats['Invalid Grade']['in_lottery'] = 0
+                stats['Invalid Grade']['in_lottery'] += 1
 
         #Run lottery if requested
         if request.POST:
@@ -169,17 +179,27 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
 
         #If lottery has been run, calculate acceptance stats
         if Tag.getBooleanTag('student_lottery_run', prog):
-            for grade in grades:
+            for grade in stats:
                 stats[grade]['num_accepted'] = stats[grade]['per_accepted'] = 0
             winners = ESPUser.objects.filter(groups__name=role).distinct()
             for winner in winners:
-                stats[winner.getGrade(prog)]['num_accepted'] += 1
-            for grade in grades:
+                grade = winner.getGrade(prog)
+                if grade in grades:
+                    stats[grade]['num_accepted'] += 1
+                else:
+                    # Catch students that somehow don't have a valid grade
+                    invalid_grades.add(winner)
+                    if 'Invalid Grade' not in stats:
+                        stats['Invalid Grade'] = {}
+                        stats['Invalid Grade']['num_accepted'] = 0
+                    stats['Invalid Grade']['num_accepted'] += 1
+            for grade in stats:
                 if stats[grade]['in_lottery'] == 0:
                     stats[grade]['per_accepted'] = "NA"
                 else:
                     stats[grade]['per_accepted'] = round(stats[grade]['num_accepted'],1)/stats[grade]['in_lottery']*100
         context['stats'] = stats
+        context['invalid_grades'] = invalid_grades
         return render_to_response('program/modules/studentregphasezero/status.html', request, context)
 
     class Meta:
