@@ -177,7 +177,7 @@ span {
     font-weight: bold;
 }
 
-.tooltip_teachers {
+.tooltip_teachers, .teacher {
     font-style: italic;
 }
 
@@ -270,7 +270,7 @@ span {
     width: 600px !important;
 }
 
-.title {
+.title, .teacher {
     padding-left: 5px;
     padding-right: 5px;
 }
