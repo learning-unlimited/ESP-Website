@@ -834,21 +834,13 @@ function render_table(display_mode, student_id)
     var footers = $j(".timeslot_footers");
     var timeslots_ordered = Object.keys(data.timeslots)
     timeslots_ordered.sort((a, b) => (data.timeslots[a].startTimeMillis > data.timeslots[b].startTimeMillis) ? 1 : -1)
+    //exclude timeslots that have a start time 20 minutes prior to the current time (if we're not showing past timeslots)
+    if (settings.hide_past_time_blocks) {
+        timeslots_ordered = timeslots_ordered.filter(ts_id => (Math.floor((Date.now() - data.timeslots[ts_id].startTimeMillis)/60000)) < minMinutesToHideTimeSlot);
+    }
     for (var ts_id of timeslots_ordered)
     {
         var timeSlotHeader = data.timeslots[ts_id].label;
-
-        if (settings.hide_past_time_blocks) 
-        {
-            var startTimeMillis = data.timeslots[ts_id].startTimeMillis;
-            //excludes timeslots that have a start time 20 minutes prior to the current time
-            var differenceInMinutes = Math.floor((Date.now() - startTimeMillis)/60000);
-
-            if(differenceInMinutes > minMinutesToHideTimeSlot) 
-            {
-                continue;
-            }
-        }
 
         headers.append($j("<th/>").addClass("timeslot_" + ts_id + " timeslot_header timeslot_top").html(timeSlotHeader));
         footers.append($j("<th/>").addClass("timeslot_" + ts_id + " timeslot_header").html(timeSlotHeader));
@@ -882,6 +874,26 @@ function render_table(display_mode, student_id)
     //exclude classes in hidden categories (but not that the student is enrolled in)
     filtered_sections = filtered_sections.filter(sec_id => ((settings.categories_to_display[data.classes[data.sections[sec_id].class_id].category__id]) ||
                                                            ((display_mode == "classchange") && (state.student_schedule.indexOf(parseInt(sec_id)) != -1))));
+
+    function check_timeslots(sec_id) {
+        var section = data.sections[sec_id];
+        for (var j in section.timeslots)
+        {
+            var sec_ts_id = section.timeslots[j];
+            var startTimeMillis = data.timeslots[sec_ts_id].startTimeMillis;
+            //excludes timeslots that have a start time 20 minutes prior to the current time
+            var differenceInMinutes = Math.floor((Date.now() - startTimeMillis)/60000);
+
+            if (differenceInMinutes > minMinutesToHideTimeSlot)
+                return false;
+        }
+        return true;
+    }
+        
+    //exclude the class if it started in the past (and we're not showing past timeblocks)
+    if (settings.hide_past_time_blocks) {
+        filtered_sections = filtered_sections.filter(sec_id => check_timeslots(sec_id));
+    }
     
     for (var sec_id of filtered_sections)
     {
@@ -933,21 +945,6 @@ function render_table(display_mode, student_id)
             }
             //  TODO: make this snap to the right reliably
             new_td.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_attending.toString() + "/" + section.num_students_checked_in + "/" + section.num_students_enrolled + "/" + section.capacity));
-
-            //  Hide the class if it started in the past (and we're not showing past timeblocks)
-            if (settings.hide_past_time_blocks)
-            {
-                for (var j in section.timeslots)
-                {
-                    var sec_ts_id = section.timeslots[j];
-                    var startTimeMillis = data.timeslots[sec_ts_id].startTimeMillis;
-                    //excludes timeslots that have a start time 20 minutes prior to the current time
-                    var differenceInMinutes = Math.floor((Date.now() - startTimeMillis)/60000);
-
-                    if (differenceInMinutes > minMinutesToHideTimeSlot)
-                        new_td.addClass("section_hidden");
-                }
-            }
 
             // Show the class title if we're not in compact mode
             if (settings.show_class_titles)
