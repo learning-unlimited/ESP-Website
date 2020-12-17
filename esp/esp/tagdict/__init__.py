@@ -450,7 +450,7 @@ all_global_tags = {
         'is_boolean': False,
         'help_text': 'When should students\' grades rollover/increment?',
         'default': datetime.date(datetime.date.today().year, 7, 31),
-        'category': 'manage',
+        'category': 'learn',
         'is_setting': True,
         'field': forms.DateField(widget=forms.SelectDateWidget(years=[datetime.date.today().year]))
     },
