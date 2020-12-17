@@ -213,8 +213,8 @@ function update_search_filter()
         var section = data.sections[section_id];
 
         // check if the class matches the search
-        if (section.emailcode.toLowerCase().indexOf(settings.search_term.toLowerCase()) != -1 |
-            section.title.toLowerCase().indexOf(settings.search_term.toLowerCase()) != -1 |
+        if (section.emailcode.toLowerCase().indexOf(settings.search_term.toLowerCase()) != -1 ||
+            section.title.toLowerCase().indexOf(settings.search_term.toLowerCase()) != -1 ||
             data.classes[section.class_id].teacher_names.toLowerCase().indexOf(settings.search_term.toLowerCase()) != -1)
             continue;
 
