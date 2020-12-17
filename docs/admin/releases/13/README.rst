@@ -54,9 +54,12 @@ Minor new features
 - Added a public view for emails that have been marked as public (this is a new option in the comm panel). Anonymous (not signed in) users can read a generic (no private information) version of an email at /email/<id> (actual links are on the email monitoring page and comm panel confirmation page).
 - The "choice" field for classroom furnishings and floating resources now accepts up to 200 characters.
 - Added a default FAQ page at /faq (/faq.html should also work).
+- Timeslots for classrooms and floating resources on the resources page are no longer grouped if they occur <15 minutes apart.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
 - Fixed an error that occured when trying to access the profile form when morphed as a teacher.
 - Fixed a bug on the phase zero management page that would prevent the graph from being plotted.
 - Fixed a bug that had broken the credit card module.
+- Fixed a bug where students that had yet to fill out a profile would cause the phase zero management page to break. If such students are in the phase zero lottery, they are now reported on the management page.
+- Fixed a bug that reported an error when a class's duration was some whole number of hours.
