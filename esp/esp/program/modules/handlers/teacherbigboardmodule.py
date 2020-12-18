@@ -76,10 +76,10 @@ class TeacherBigBoardModule(ProgramModuleObj):
             start = self.mindate
         else:
             timess = [
-                ("number of registered classes", [(1, time) for time in self.reg_classes(prog)]),
-                ("number of approved classes", [(1, time) for time in self.reg_classes(prog, True)]),
-                ("number of teachers registered", [(1, time) for time in self.teach_times(prog)]),
-                ("number of teachers approved", [(1, time) for time in self.teach_times(prog, True)]),
+                ("number of registered classes", [(1, time) for time in self.reg_classes(prog)], True),
+                ("number of approved classes", [(1, time) for time in self.reg_classes(prog, True)], True),
+                ("number of teachers registered", [(1, time) for time in self.teach_times(prog)], True),
+                ("number of teachers approved", [(1, time) for time in self.teach_times(prog, True)], True),
             ]
 
             timess_data, start = BigBoardModule.make_graph_data(timess)
@@ -88,14 +88,14 @@ class TeacherBigBoardModule(ProgramModuleObj):
             class_hours_approved, student_hours_approved = self.get_hours(prog, approved = True)
 
             class_hourss = [
-                ("number of registered class-hours", class_hours),
-                ("number of approved class-hours", class_hours_approved),
+                ("number of registered class-hours", class_hours, True),
+                ("number of approved class-hours", class_hours_approved, True),
             ]
             class_hourss_data, _ = BigBoardModule.make_graph_data(class_hourss)
 
             student_hourss = [
-                ("number of registered class-student-hours", student_hours),
-                ("number of approved class-student-hours", student_hours_approved),
+                ("number of registered class-student-hours", student_hours, True),
+                ("number of approved class-student-hours", student_hours_approved, True),
             ]
             student_hourss_data, _ = BigBoardModule.make_graph_data(student_hourss)
 

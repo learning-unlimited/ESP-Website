@@ -11,12 +11,21 @@
         table-layout: fixed;
         overflow-wrap: break-word;
     }
+    #highcharts-placeholder {
+        width: 100%;
+        height: 250px;
+    }
     </style>
 {% endblock %}
 
 {% block xtrajs %}
     {{ block.super }}
     <script src="/media/scripts/sorttable.js"></script>
+    {% if not timeslot %}
+        <script type="text/javascript" src="//code.highcharts.com/highcharts.js"></script>
+        <script type="text/javascript" src="//code.highcharts.com/highcharts-more.js"></script>
+        <script type="text/javascript" src="//code.highcharts.com/modules/no-data-to-display.js"></script>
+    {% endif %}
 {% endblock %}
 
 {% block content %}
@@ -68,6 +77,8 @@ or select a timeslot from the dropdown below to see attendance stats:
     </form>
     <br />
     <a class="btn" href="/onsite/{{ one }}/{{ two }}/section_attendance/{{ timeslot.id }}">See or record section attendance{% if timeslot %} for this timeslot{% endif %}</a>
+    {% else %}
+        {% include "program/modules/bigboardmodule/bigboard_graph.html" %}
     {% endif %}
     <br /><br />
 </center>
