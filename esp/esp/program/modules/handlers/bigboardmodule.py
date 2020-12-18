@@ -149,6 +149,8 @@ class BigBoardModule(ProgramModuleObj):
     @cache_function_for(105)
     def num_prefs(self, prog):
         num_srs = StudentRegistration.valid_objects().filter(
+            Q(relationship__name='Interested') |
+            Q(relationship__name__contains='Priority/'),
             section__parent_class__parent_program=prog).count()
         return num_srs + self.num_ssis(prog)
 
