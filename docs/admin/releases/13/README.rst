@@ -13,6 +13,7 @@ User search modules changes
 - Added a new module to generate a state and/or zipcode map of a set of users.
 - Added new user search filters for students, including number of registered class hours and registered class times.
 - Added new user search filters for teachers, including teaching times, training/interview times, and teachers of a particular student.
+- Added the ability to include and/or multiple user groups when filtering users.
 
 Student registration changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -55,6 +56,7 @@ Minor new features
 - The "choice" field for classroom furnishings and floating resources now accepts up to 200 characters.
 - Added a default FAQ page at /faq (/faq.html should also work).
 - Timeslots for classrooms and floating resources on the resources page are no longer grouped if they occur <15 minutes apart.
+- Added a new tag `grade_increment_date` that allows admins to adjust when student grades increment (e.g. before or after a summer program).
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -63,3 +65,7 @@ Minor bug fixes
 - Fixed a bug that had broken the credit card module.
 - Fixed a bug where students that had yet to fill out a profile would cause the phase zero management page to break. If such students are in the phase zero lottery, they are now reported on the management page.
 - Fixed a bug that reported an error when a class's duration was some whole number of hours.
+- Fixed the alignment of the headers in the scheduling app when rooms have really long names.
+- Fixed the wrong class length scheduling check.
+- Fixed the "lottery preferences" count on the student big board (was previously including enrollments).
+- Fixed the completion certificate to now include the program email and name.
