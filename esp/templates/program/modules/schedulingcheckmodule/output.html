@@ -38,6 +38,7 @@ function updateDocs(docs) {
     <p>Clicking "Include unreviewed classes" will show all classes in the diagnostic.</p>
     <br></div>
 <a class="btn move_left" href="scheduling_checks{% if unreviewed %}">Exclude{% else %}?unreviewed">Include{% endif %} unreviewed classes</a>
+<button class="btn btn-success" name="refresh">Start Auto Refresh</button><input type="number" min="5" name="refresh_interval" title="(Refresh interval in seconds)" value=30>
 
 <div id="scheduling-check-wrapper" />
 <script type="text/jsx">
