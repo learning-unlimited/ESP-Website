@@ -17,6 +17,7 @@ var settings = {
     override_full: false,
     disable_grade_filter: false,
     show_class_titles: false,
+    show_class_teachers: false,
     show_class_rooms: false,
     show_closed_reg: false,
     hide_past_time_blocks: false,
@@ -156,6 +157,7 @@ function setup_settings()
     $j("#override_control").unbind("change");
     $j("#grade_limits_control").unbind("change");
     $j("#show_class_titles").unbind("change");
+    $j("#show_class_teachers").unbind("change");
     $j("#show_class_rooms").unbind("change");
     $j("#show_closed_reg").unbind("change");
     $j("#hide_past_time_blocks").unbind("change");
@@ -167,6 +169,7 @@ function setup_settings()
     settings.override_full = $j("#override_control").prop("checked");
     settings.disable_grade_filter = $j("#grade_limits_control").prop("checked");
     settings.show_class_titles = $j("#show_class_titles").prop("checked");
+    settings.show_class_teachers = $j("#show_class_teachers").prop("checked");
     settings.show_class_rooms = $j("#show_class_rooms").prop("checked");
     settings.show_closed_reg = $j("#show_closed_reg").prop("checked");
     settings.hide_past_time_blocks = $j("#hide_past_time_blocks").prop("checked");
@@ -176,6 +179,7 @@ function setup_settings()
     $j("#override_control").change(handle_settings_change);
     $j("#grade_limits_control").change(handle_settings_change);
     $j("#show_class_titles").change(handle_settings_change);
+    $j("#show_class_teachers").change(handle_settings_change);
     $j("#show_class_rooms").change(handle_settings_change);
     $j("#show_closed_reg").change(handle_settings_change);
     $j("#hide_past_time_blocks").change(handle_settings_change);
@@ -209,8 +213,9 @@ function update_search_filter()
         var section = data.sections[section_id];
 
         // check if the class matches the search
-        var section_key = section.emailcode + ": " + section.title;
-        if (section_key.toLowerCase().indexOf(settings.search_term.toLowerCase()) != -1)
+        if (section.emailcode.toLowerCase().indexOf(settings.search_term.toLowerCase()) != -1 ||
+            section.title.toLowerCase().indexOf(settings.search_term.toLowerCase()) != -1 ||
+            data.classes[section.class_id].teacher_names.toLowerCase().indexOf(settings.search_term.toLowerCase()) != -1)
             continue;
 
         // no match; hide the class
@@ -955,10 +960,15 @@ function render_table(display_mode, student_id)
                 new_td.append($j("<div/>").addClass("title").html(section.title));
             }
             
+            var class_data = data.classes[section.class_id];
+            if (settings.show_class_teachers)
+            {
+                new_td.append($j("<div/>").addClass("teacher").html(class_data.teacher_names));
+            }
+            
             //  Create a tooltip with more information about the class
             new_td.addClass("tooltip");
             var tooltip_div = $j("<span/>").addClass("tooltip_hover");
-            var class_data = data.classes[section.class_id];
             var short_data = section.title + " - Grades " + class_data.grade_min.toString() + "--" + class_data.grade_max.toString();
             if(class_data.hardness_rating) short_data = class_data.hardness_rating + " " + short_data;
             tooltip_div.append($j("<div/>").addClass("tooltip_title").html(short_data));
