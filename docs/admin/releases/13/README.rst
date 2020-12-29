@@ -25,10 +25,17 @@ Teacher registration changes
 - Some modules will no longer show up in registration if they are not set up correctly (teacher availability, teacher training/interviews, and teacher quiz).
 - Implemented several improvements to the attendance interface (normal and webapp versions).
 
+Volunteer registration changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Help text is now shown for the comments field.
+- Required fields are now marked with asterisks.
+
 Onsite changes
 ~~~~~~~~~~~~~~
 - The search on the teacher check-in page now permits regular expressions and searches all parts of teacher name and class titles/codes.
 - Teacher attendance changes also apply to the onsite attendance portal.
+- Added teacher lists to classes on the grid-based class changes interface. Also added teachers as a filterable field.
+- Fixed the "Hide past timeblocks" option in the grid-based class changes interface.
 
 Theme changes
 ~~~~~~~~~~~~~
@@ -57,6 +64,7 @@ Minor new features
 - Added a default FAQ page at /faq (/faq.html should also work).
 - Timeslots for classrooms and floating resources on the resources page are no longer grouped if they occur <15 minutes apart.
 - Added a new tag `grade_increment_date` that allows admins to adjust when student grades increment (e.g. before or after a summer program).
+- Added a button to the scheduling checks page that, when clicked, causes all of the checks to refresh at some interval that is specified by the user.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
