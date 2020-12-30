@@ -292,27 +292,27 @@ def find_user(userstr):
         # first branch of the if statement gets taken
         userstr_parts = ["".join(userstr_parts)]
 
-    # single search token, could be username, id or email
-    #worth noting that a username may be an integer or an email so we will just check them all
+    # Single search token, could be username, id or email
+    # worth noting that a username may be an integer or an email so we will just check them all
     found_users = None
     if len(userstr_parts) == 1:
-        #try username?
+        # Try username?
         user_q = Q(username__iexact=userstr)
-        #try pk
+        # Try user id
         if userstr.isnumeric():
             user_q = user_q | Q(id=userstr)
-        #try email?
-        if '@' in userstr:  # but don't even bother hitting the DB if it doesn't even have an '@'
+        # Try email
+        if '@' in userstr:  # Don't even bother hitting the DB if it doesn't even have an '@'
             user_q = user_q | Q(email__iexact=userstr)
-            user_q = user_q | Q(contactinfo__e_mail__iexact=userstr)  # search parent contact info, too
-        #try phone
+            user_q = user_q | Q(contactinfo__e_mail__iexact=userstr)  # Search parent contact info, too
+        # Try phone
         cleaned = userstr
         for char in "-.() ":
             cleaned = cleaned.replace(char, "")
         if cleaned.isnumeric() and len(cleaned) == 10:
             formatted = "%s%s%s-%s%s%s-%s%s%s%s" % tuple(cleaned)
             user_q = user_q | Q(contactinfo__phone_day=formatted) | Q(contactinfo__phone_cell=formatted)
-        #try name (including parent/emergency contact)
+        # Try name (including parent/emergency contact)
         user_q = user_q | (Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr))
         user_q = user_q | (Q(contactinfo__first_name__icontains=userstr) | Q(contactinfo__last_name__icontains=userstr))
         found_users = ESPUser.objects.filter(user_q).distinct()
@@ -327,7 +327,6 @@ def find_user(userstr):
 
     #if the previous search attempt failed, try titles of courses a teacher has taught?
     if not found_users.exists():
-        # lastly,
         found_users = ESPUser.objects.filter(classsubject__title__icontains=userstr).distinct()
 
     return found_users
