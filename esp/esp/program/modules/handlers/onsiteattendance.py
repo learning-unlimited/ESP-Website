@@ -161,7 +161,6 @@ class OnSiteAttendance(ProgramModuleObj):
             # For classes that are multiple hours, we want to count a student for
             # each hour starting from when they are marked and ending at the end of the class
             # Also, for multi-week programs (e.g. Sprout), we want to adjust the start and end times based on the attendance sr
-            sec = sr.section
             start_time = sr.start_date.replace(minute = 0, second = 0, microsecond = 0)
             end_time = sr.section.end_time().end.replace(
                 year = sr.start_date.year, month = sr.start_date.month, day = sr.start_date.day,
