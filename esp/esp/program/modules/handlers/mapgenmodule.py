@@ -34,13 +34,13 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web import render_to_response
-from esp.users.models   import ESPUser
+from esp.users.models   import ESPUser, ContactInfo
 from esp.users.controllers.usersearch import UserSearchController
-from django.db.models import Count
 from django.conf import settings
 
 import csv
 import json
+from collections import Counter
 
 class MapGenModule(ProgramModuleObj):
     """ Allows you to generate a map showing the distribution of the selected users. """
@@ -78,17 +78,14 @@ class MapGenModule(ProgramModuleObj):
             context['num_users'] = users.count()
 
             #   Summarize users by state and zip code
-            states_raw = ESPUser.objects.filter(id__in=[user.id for user in users]).select_related('contactinfo_set', 'contactinfo_set__address_state'
-                ).values('contactinfo__address_state'
-                ).order_by('contactinfo__address_state'
-                ).annotate(count = Count('contactinfo__address_state'))
-            states = {state['contactinfo__address_state']: state['count'] for state in states_raw if state['contactinfo__address_state']}
+            #   Only get contact infos that are for the actual users (not guardians or emergency contacts)
+            states_raw = ContactInfo.objects.filter(user__in=users, as_user__isnull=False
+                ).distinct('user').values_list('address_state', flat = True)
+            states = dict(Counter([x for x in states_raw if x]))
 
-            zipcodes_raw = ESPUser.objects.filter(id__in=[user.id for user in users]).select_related('contactinfo_set', 'contactinfo_set__address_zip'
-                ).values('contactinfo__address_zip'
-                ).order_by('contactinfo__address_zip'
-                ).annotate(count = Count('contactinfo__address_zip'))
-            zipcodes = {zipcode['contactinfo__address_zip']: zipcode['count'] for zipcode in zipcodes_raw if zipcode['contactinfo__address_zip']}
+            zipcodes_raw = ContactInfo.objects.filter(user__in=users, as_user__isnull=False
+                ).distinct('user').values_list('address_zip', flat = True)
+            zipcodes = dict(Counter([x for x in zipcodes_raw if x]))
 
             #   If we don't have state data, use zip code data to populate it
             #   data is from https://data.world/niccolley/us-zipcode-to-county-state
