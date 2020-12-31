@@ -140,7 +140,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         context['grade_caps'] = sorted(prog.grade_caps().iteritems())
 
         recs = PhaseZeroRecord.objects.filter(program=prog).order_by('time')
-        timess = [("number of lottery students", [(rec.user.count(), rec.time) for rec in recs])]
+        timess = [("number of lottery students", [(rec.user.count(), rec.time) for rec in recs], True)]
         timess_data, start = BigBoardModule.make_graph_data(timess)
         context["left_axis_data"] = [{"axis_name": "#", "series_data": timess_data}]
         context["first_hour"] = start

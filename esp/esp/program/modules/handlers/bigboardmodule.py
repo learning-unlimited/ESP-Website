@@ -62,8 +62,8 @@ class BigBoardModule(ProgramModuleObj):
         numbers = [(desc, num) for desc, num in numbers if num]
 
         timess = [
-            ("completed the medical form", [(1, time) for time in self.times_medical(prog)]),
-            ("signed up for classes", [(1, time) for time in self.times_classes(prog)]),
+            ("completed the medical form", [(1, time) for time in self.times_medical(prog)], True),
+            ("signed up for classes", [(1, time) for time in self.times_classes(prog)], True),
         ]
 
         timess_data, start = self.make_graph_data(timess, 4, 0, 5)
@@ -242,12 +242,12 @@ class BigBoardModule(ProgramModuleObj):
         return sorted(ssi_times_dict.itervalues())
 
     @staticmethod
-    def chunk_times(times, start, end, delta=datetime.timedelta(0, 3600)):
+    def chunk_times(times, start, end, delta=datetime.timedelta(0, 3600), cumulative = True):
         """Given a list of times, return hourly summaries.
 
         `times` should be a list of tuples, sorted by time, containing some metric (duration, capacity, etc.) and datetime.datetime objects
-        `start` and `end` should be datetimes; the chunks will be for hours
-        between them, inclusive.
+        `start` and `end` should be datetimes; the chunks will be for hours between them, inclusive.
+        `cumulative` should be a boolean determining whether counts should be summed cumulatively for conseculative hours or if they should only be summed within individual hours
         Returns a list of integers, each of which is the number of times that
         precede the given hour.
         """
@@ -268,13 +268,15 @@ class BigBoardModule(ProgramModuleObj):
                 # times preceding it for the previous hour.
                 chunks.append(float(count))
                 start += delta
+                if not cumulative:
+                    count = 0
         return chunks
 
     @staticmethod
     def make_graph_data(timess, drop_beg = 0, drop_end = 0, cutoff = 1):
         """Given a list of time series, return graph data series.
 
-        `timess` should be a list of pairs (description, sorted tuples of metrics and datetime.datetime objects).
+        `timess` should be a list of tuples (description, sorted tuples of metrics and datetime.datetime objects, whether counts should be cumulative).
         `drop_beg` should be a number of items to drop from the beginning of each list
         `drop_end` should be a number of items to drop from the end of each list
         `cutoff` should be the minimum number of items that must exist in a time series
@@ -282,22 +284,22 @@ class BigBoardModule(ProgramModuleObj):
         Returns a dict of cleaned time series and the start time for graphing
         """
         #Remove any time series without at least 'cutoff' times
-        timess = [(desc, times) for desc, times in timess if len(times) >= cutoff]
+        timess = [(desc, times, cumulative) for desc, times, cumulative in timess if len(times) >= cutoff]
         # Drop the first and last times if specified
         # Then round start down and end up to the nearest day.
         if not timess:
             graph_data = []
             start = None
         else:
-            start = min([times[drop_beg:(len(times)-drop_end)][0][1] for desc, times in timess])
+            start = min([times[drop_beg:(len(times)-drop_end)][0][1] for desc, times, cumulative in timess])
             start = start.replace(hour=0, minute=0, second=0, microsecond=0)
-            end = max([times[drop_beg:(len(times)-drop_end)][-1][1] for desc, times in timess])
+            end = max([times[drop_beg:(len(times)-drop_end)][-1][1] for desc, times, cumulative in timess])
             end = end.replace(hour=0, minute=0, second=0, microsecond=0)
             end += datetime.timedelta(1)
             end = min(end, datetime.datetime.now())
             graph_data = [{"description": desc,
-                           "data": BigBoardModule.chunk_times(times, start, end)}
-                          for desc, times in timess]
+                           "data": BigBoardModule.chunk_times(times, start, end, cumulative = cumulative)}
+                          for desc, times, cumulative in timess]
         return graph_data, start
 
     # runs in 9ms, so don't bother caching
