@@ -92,8 +92,9 @@ function check_state() {
     $j("#id_address_country").removeClass("hidden");
   } else {
     $j("#id_address_country").addClass("hidden");
+    $j("#id_address_country").val("");
   }
-]
+}
 $j(document).ready(function() {
   $j(".required").each(function() {
     $j(this).closest(".control-group").addClass("required");
