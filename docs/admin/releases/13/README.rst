@@ -15,6 +15,12 @@ User search modules changes
 - Added new user search filters for teachers, including teaching times, training/interview times, and teachers of a particular student.
 - Added the ability to include and/or multiple user groups when filtering users.
 
+Contact info changes
+~~~~~~~~~~~~~~~~~~~~
+- Contact infos now require an associated user.
+- Old contact infos have been cleaned up, associating student accounts with their emergency contact and guardian contact infos. Any contact infos without associated users have been deleted, since they are useless.
+- Users can now be searched by any guardian or emergency contact information (e.g. find a student account by their parent's email address).
+
 Student registration changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Some modules will no longer show up in registration if they are not set up correctly (formstack medliab, extra costs, student applications, and lunch selection).
@@ -36,6 +42,7 @@ Onsite changes
 - Teacher attendance changes also apply to the onsite attendance portal.
 - Added teacher lists to classes on the grid-based class changes interface. Also added teachers as a filterable field.
 - Fixed the "Hide past timeblocks" option in the grid-based class changes interface.
+- Added an attendance-through-time chart on the attendance landing page that shows the cumulative number of students that have checked in to the program and the number of students that are attending classes for each hour.
 
 Theme changes
 ~~~~~~~~~~~~~
