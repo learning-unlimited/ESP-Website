@@ -2,6 +2,7 @@ from django import forms
 from django.forms import widgets
 from django.core.validators import RegexValidator
 from decimal import Decimal
+import datetime
 
 from esp.users.forms import _states
 
@@ -444,6 +445,14 @@ all_global_tags = {
         'default': 'Straight cut, Fitted cut',
         'category': 'manage',
         'is_setting': True,
+    },
+    'grade_increment_date': {
+        'is_boolean': False,
+        'help_text': 'When should students\' grades rollover/increment?',
+        'default': datetime.date(datetime.date.today().year, 7, 31),
+        'category': 'learn',
+        'is_setting': True,
+        'field': forms.DateField(widget=forms.SelectDateWidget(years=[datetime.date.today().year]))
     },
 }
 

@@ -400,7 +400,8 @@ function Matrix(
             var room_header = $j("<td>")
                 .addClass('room')
                 .text(room.text + " [" + room['num_students'] + "]")
-                .attr('data-id', id);
+                .attr('data-id', id)
+                .css({"max-width": "140px", "min-width": "140px"});
             var row = $j("<tr></tr>");
             room_header.appendTo(row);
             rows[id] = row;

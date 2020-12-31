@@ -1022,7 +1022,7 @@ class Program(models.Model, CustomFormsLinkModel):
                     else:
                         rounded_seconds = durationSeconds
                     if (max_seconds is None) or (durationSeconds <= max_seconds):
-                        durationDict[(Decimal(durationSeconds) / 3600)] = \
+                        durationDict[(Decimal(durationSeconds) / 3600).quantize(Decimal('.01'))] = \
                                         str(rounded_seconds / 3600) + ':' + \
                                         str(int(round((rounded_seconds / 60.0) % 60))).rjust(2,'0')
 
@@ -1418,6 +1418,7 @@ class RegistrationProfile(models.Model):
     def _set_text_reminder(self, val):
         if not self.contact_user:
             contact_user = ContactInfo()
+            contact_user.user = self.user
             contact_user.first_name = self.user.first_name
             contact_user.last_name = self.user.last_name
             contact_user.save()

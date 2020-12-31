@@ -28,6 +28,11 @@ Quagga.onDetected(function(result) {
 
 prog_url = $j('#attendancescript').data('prog_url');
 
+function update_checkboxes(table) {
+    $j(table).find("[name=attending_total]").html($j(table).find("[name=attending]:checked").length);
+    $j(table).find("[name=checkedin_total]").html($j(table).find("[name=checkedin]:checked").length);
+}
+
 $j(function(){
     function markAttendance(username, secid, undo = false, callback, errorCallback){
         refresh_csrf_cookie();
@@ -62,6 +67,7 @@ $j(function(){
             }
             $msg.text("");
             $me.prop('disabled', false);
+            update_checkboxes($me.parents("table"));
         }, function(error) {
             alert("An error (" + error.statusText + ") occurred while attempting to update attendance for " + username + ".");
             $me.prop("checked", !checked);
@@ -71,5 +77,9 @@ $j(function(){
             $me.siblings("i").html(!checked ? "check_box" : "check_box_outline_blank");
         });
         $msg.text('Updating attendance...');
+    });
+
+    $j("table.sortable").each(function(i, e){
+        update_checkboxes(e);
     });
 });

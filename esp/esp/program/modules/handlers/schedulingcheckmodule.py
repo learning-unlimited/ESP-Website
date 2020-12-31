@@ -275,7 +275,7 @@ class SchedulingCheckRunner:
              start_time = sec.start_time_prefetchable()
              end_time = sec.end_time_prefetchable()
              length = end_time - start_time
-             if abs(length.total_seconds() / 3600.0 - float(sec.duration)) > 0.0:
+             if abs(round(length.total_seconds() / 3600.0, 2) - float(sec.duration)) > 0.0:
                  output.append(sec)
          return self.formatter.format_list(output, ["Classes"])
 
