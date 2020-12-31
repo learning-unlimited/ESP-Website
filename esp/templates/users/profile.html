@@ -87,9 +87,22 @@ div.required label:after {
 </div>
 
 <script>
+function check_state() {
+  if ($j("#id_address_state").val() == "International") {
+    $j("#id_address_country").removeClass("hidden");
+  } else {
+    $j("#id_address_country").addClass("hidden");
+  }
+]
 $j(document).ready(function() {
   $j(".required").each(function() {
     $j(this).closest(".control-group").addClass("required");
+  });
+  
+  check_state();
+  
+  $j("#id_address_state").change(function() {
+    check_state();
   });
 });
 </script>
