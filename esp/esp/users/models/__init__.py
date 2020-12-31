@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from collections import defaultdict
 from datetime import datetime, timedelta, date
+from pytz import country_names
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -1779,6 +1780,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     address_state = models.CharField('State',max_length=32,blank=True, null=True)
     address_zip = models.CharField('Zip code',max_length=5,blank=True, null=True)
     address_postal = models.TextField(blank=True,null=True)
+    address_country = models.CharField('Country', max_length=2, choices=country_names.items(), default='US')
     undeliverable = models.BooleanField(default=False)
 
     class Meta:

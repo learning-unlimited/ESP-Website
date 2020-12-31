@@ -9,6 +9,7 @@ from datetime import datetime
 from esp.program.models import RegistrationProfile
 from django.conf import settings
 import json
+from pytz import country_names
 from localflavor.us.forms import USPhoneNumberField
 
 class DropdownOtherWidget(forms.MultiWidget):
@@ -52,10 +53,12 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     address_city = StrippedCharField(required=True, length=20, max_length=50)
     address_state = forms.ChoiceField(required=True, choices=zip(_states,_states), widget=forms.Select(attrs={'class': 'input-mini'}))
     address_zip = StrippedCharField(required=True, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
+    address_country = forms.ChoiceField(required=False, choices=sorted(country_names.items(), key = lambda x: x[1]), initial='US', widget=forms.Select(attrs={'class': 'input-medium', 'hidden': 'hidden'}))
     address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args, **kwargs):
         super(UserContactForm, self).__init__(*args, **kwargs)
+        self.fields['address_country'].initial = "US"
         if not Tag.getBooleanTag('request_student_phonenum'):
             del self.fields['phone_day']
         if not Tag.getBooleanTag('text_messages_to_students') or not self.user.isStudent():
