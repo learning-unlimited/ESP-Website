@@ -1,6 +1,7 @@
 (function(){'use strict';
 /*jshint -W069, bitwise: false*/
 /*
+  Source attribution:
   SortTable
   version 2e3 (enhanced)
   7th April 2007 (17th April 2015)
@@ -13,6 +14,8 @@
   Thanks to many, many people for contributions and suggestions.
   Licenced as X11: http://www.kryogenix.org/code/browser/licence.html
   This basically means: do what you want with it.
+  ===============
+  Modifications made for Learning Unlimited
 */
 var sorttable = {
 	RE_NUMERIC: /^[+\-£$¤¥]{0,2}\s*(?:\d+(?:([ ',\.])(?:\d{3}([ ',\.]))*(\d*))?|([,\.])\d+)\s*[€₽%]?$/,
@@ -278,9 +281,9 @@ var sorttable = {
 		}
 
 		/* If you want a stable sort, uncomment the following line */
-		//sorttable.shaker_sort(sortle.val, info[col].func);
+		sorttable.shaker_sort(sortle.val, info[col].func);
 		/* and comment out this one */
-		sortle.val.sort(info[col].func);
+		//sortle.val.sort(info[col].func);
 		if (inverse) sortle.val.reverse();
 
 		var idx = 0;
@@ -342,8 +345,8 @@ var sorttable = {
 		return aa - bb;
 	},
 	sort_alpha: function(a,b) {
-		if (a[0] == b[0]) return 0;
-		if (a[0] < b[0]) return -1;
+		if (a[0].toLowerCase() == b[0].toLowerCase()) return 0;
+		if (a[0].toLowerCase() < b[0].toLowerCase()) return -1;
 		return 1;
 	},
 	dateToNumber: function(d,m,y){
