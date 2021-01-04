@@ -251,8 +251,11 @@ var sorttable = {
 		var i,tb,tbe;
 
 		sorttable.updateArrows(info,col,inverse,!sorted);
-		if (table.rows.length !== info[col].known){ // determine sort function
-			info[col].known = table.rows.length;
+		if (sorted) {
+			sorttable.reverseSort(table);
+			return;
+		} else { // determine sort function
+            info[col].known = table.rows.length;
 			var mtch = /\bsorttable_(\w+)\b/.exec(this.className);
 			if (mtch && sorttable['sort_'+mtch[1]]) {
 				info[col].func = sorttable['sort_'+mtch[1]];
@@ -260,10 +263,7 @@ var sorttable = {
 				sortle.val = [];
 				info[col].func = sorttable.guessType(table,col,sortle);
 			}
-		} else if (sorted) {
-			sorttable.reverseSort(table);
-			return;
-		}
+        }
 		
 		if (!sortle.val) { // build an array to sort if we didn't had to guessType()
 			sortle.val = [];
