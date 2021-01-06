@@ -97,10 +97,10 @@ Please select a section from the dropdown below.
                         <td align="center">{{ student.id }}</td>
                         <td align="center">{{ student|getGradeForProg:program.id }}</td>
                         <td align="center">{{ student.getLastProfile.student_info.getSchool }}</td>
-                        <td align="center" sorttable_customkey="{% if student.checked_in %}2{% else %}1{% endif %}">
+                        <td align="center" data-st-key="{% if student.checked_in %}2{% else %}1{% endif %}">
                             <input name="checkedin" type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
                         </td>
-                        <td align="center" sorttable_customkey="{% if student.attended %}2{% else %}1{% endif %}">
+                        <td align="center" data-st-key="{% if student.attended %}2{% else %}1{% endif %}">
                             <input name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
                             value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
                             <br /><span class="msg"></span>
@@ -158,10 +158,10 @@ Please select a section from the dropdown below.
                         <td align="center">{{ student.id }}</td>
                         <td align="center">{{ student|getGradeForProg:program.id }}</td>
                         <td align="center">{{ student.getLastProfile.student_info.getSchool }}</td>
-                        <td align="center" sorttable_customkey="{% if student.checked_in %}2{% else %}1{% endif %}">
+                        <td align="center" data-st-key="{% if student.checked_in %}2{% else %}1{% endif %}">
                             <input name="checkedin" type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
                         </td>
-                        <td align="center" sorttable_customkey="{% if student.attended %}2{% else %}1{% endif %}">
+                        <td align="center" data-st-key="{% if student.attended %}2{% else %}1{% endif %}">
                             <input name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
                             value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
                             <br /><span class="msg"></span>
