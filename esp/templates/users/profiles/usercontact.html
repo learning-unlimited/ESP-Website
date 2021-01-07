@@ -76,6 +76,10 @@
         {{ form.address_zip }} {% if form.address_zip.errors %}
         <br /><span class="form_error">{{ form.address_zip.errors|join:", " }}</span>
         {% endif %}
+        
+        {{ form.address_country }} {% if form.address_country.errors %}
+        <br /><span class="form_error">{{ form.address_country.errors|join:", " }}</span>
+        {% endif %}
     </div>
 </div>
 {% endif %}
