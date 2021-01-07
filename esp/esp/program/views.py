@@ -48,6 +48,7 @@ from django.core.mail import send_mail
 from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability
 
 from django.contrib.auth.decorators import login_required
+from django.contrib.contenttypes.models import ContentType
 from django.db.models.query import Q
 from django.db.models import Min
 from django.db import transaction
@@ -60,6 +61,7 @@ from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
 
+from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm
 from esp.program.setup import prepare_program, commit_program
@@ -513,12 +515,36 @@ def newprogram(request):
                 resource_type_labels = json.loads(default_restypes)
                 resource_types = [ResourceType.get_or_create(x, new_prog) for x in resource_type_labels]
 
-            # Force all ProgramModuleObjs and their extensions to be created now
-            # If we are using another program as a template, let's copy the seq and required values from that program.
             if 'template_prog' in request.session:
+                # Force all ProgramModuleObjs and their extensions to be created now
+                # If we are using another program as a template, let's copy the seq and required values from that program.
                 old_prog = Program.objects.get(id=request.session['template_prog'])
                 new_prog.getModules(old_prog=old_prog)
+                # Copy CRMI settings from old program
+                old_crmi = ClassRegModuleInfo.objects.get(program=old_prog)
+                new_crmi = ClassRegModuleInfo.objects.get(program=new_prog)
+                for field in old_crmi._meta.fields:
+                    if field.name not in ["id", "program"]:
+                        setattr(new_crmi, field.name, getattr(old_crmi, field.name))
+                new_crmi.save()
+                # Copy SCRMI settings from old program
+                old_scrmi = StudentClassRegModuleInfo.objects.get(program=old_prog)
+                new_scrmi = StudentClassRegModuleInfo.objects.get(program=new_prog)
+                for field in old_scrmi._meta.fields:
+                    if field.name not in ["id", "program"]:
+                        setattr(new_scrmi, field.name, getattr(old_scrmi, field.name))
+                new_scrmi.save()
+                # Copy tags from old program
+                ct = ContentType.objects.get_for_model(old_prog)
+                tags = Tag.objects.filter(content_type=ct, object_id=old_prog.id)
+                for tag in tags:
+                    tag.pk = None
+                    tag.id = None
+                    tag.target = new_prog
+                    tag.object_id = new_prog.id
+                    tag.save()
             else:
+                # Create new modules
                 new_prog.getModules()
 
             manage_url = '/manage/' + new_prog.url + '/resources'
