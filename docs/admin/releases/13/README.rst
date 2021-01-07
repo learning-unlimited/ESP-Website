@@ -20,6 +20,7 @@ Contact info changes
 - Contact infos now require an associated user.
 - Old contact infos have been cleaned up, associating student accounts with their emergency contact and guardian contact infos. Any contact infos without associated users have been deleted, since they are useless.
 - Users can now be searched by any guardian or emergency contact information (e.g. find a student account by their parent's email address).
+- Added a country field to contact infos. If "International" is selected for the state field in a user's profile, the country field is shown.
 
 Student registration changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -61,6 +62,7 @@ Dependency changes
 - Upgraded from pillow 3.3.3 to 6.2.2
 - Upgraded from psycopg2 2.6.1 to 2.8.6
 - Upgraded from numpy 1.7.1 to 1.16.6
+- Upgraded from sorttable.js 2 to 2e3
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
