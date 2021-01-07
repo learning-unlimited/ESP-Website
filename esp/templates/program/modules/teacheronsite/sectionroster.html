@@ -70,11 +70,11 @@ function toggleCheck(element) {
                                 <tr>
                                     <td>{{ student.name }}</td>
                                     <td>{{ student|getGradeForProg:program.id }}</td>
-                                    <td align="center" sorttable_customkey="{% if student.checked_in %}2{% else %}1{% endif %}">
+                                    <td align="center" data-st-key="{% if student.checked_in %}2{% else %}1{% endif %}">
                                         <i class="material-icons-outlined md-5">{% if student.checked_in %}check_box{% else %}check_box_outline_blank{% endif %}</i>
                                         <input hidden name="checkedin" type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
                                     </td>
-                                    <td align="center" sorttable_customkey="{% if student.attended %}2{% else %}1{% endif %}">
+                                    <td align="center" data-st-key="{% if student.attended %}2{% else %}1{% endif %}">
                                         <i class="material-icons-outlined md-5{% if sections|length_is:'1' %} pointer{% endif %}"{% if sections|length_is:'1' %} onclick="toggleCheck(this);"{% endif %}>{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
                                         <input hidden name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
                                         value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
@@ -131,11 +131,11 @@ function toggleCheck(element) {
                             <tr>
                                 <td>{{ student.name }}</td>
                                 <td>{{ student|getGradeForProg:program.id }}</td>
-                                <td align="center" sorttable_customkey="{% if student.checked_in %}2{% else %}1{% endif %}">
+                                <td align="center" data-st-key="{% if student.checked_in %}2{% else %}1{% endif %}">
                                     <i class="material-icons-outlined md-5">{% if student.checked_in %}check_box{% else %}check_box_outline_blank{% endif %}</i>
                                     <input hidden name="checkedin" type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
                                 </td>
-                                <td align="center" sorttable_customkey="{% if student.attended %}2{% else %}1{% endif %}">
+                                <td align="center" data-st-key="{% if student.attended %}2{% else %}1{% endif %}">
                                     <i class="material-icons-outlined md-5{% if sections|length_is:'1' %} pointer{% endif %}"{% if sections|length_is:'1' %} onclick="toggleCheck(this);"{% endif %}>{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
                                     <input hidden name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
                                     value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
