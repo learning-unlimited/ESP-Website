@@ -536,13 +536,11 @@ def newprogram(request):
                 new_scrmi.save()
                 # Copy tags from old program
                 ct = ContentType.objects.get_for_model(old_prog)
-                tags = Tag.objects.filter(content_type=ct, object_id=old_prog.id)
-                for tag in tags:
-                    tag.pk = None
-                    tag.id = None
-                    tag.target = new_prog
-                    tag.object_id = new_prog.id
-                    tag.save()
+                old_tags = Tag.objects.filter(content_type=ct, object_id=old_prog.id)
+                for old_tag in old_tags:
+                    new_tag, _ = Tag.objects.get_or_create(key=old_tag.key, content_type=ct, object_id=new_prog.id)
+                    new_tag.value = old_tag.value
+                    new_tag.save()
             else:
                 # Create new modules
                 new_prog.getModules()
