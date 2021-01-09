@@ -181,7 +181,7 @@ class ClassCancellationForm(forms.Form):
             self.fields['text_students'].widget = forms.HiddenInput()
 
 class SectionCancellationForm(forms.Form):
-    target = forms.ModelChoiceField(queryset=ClassSection.objects.all(), widget=forms.HiddenInput)
+    target = forms.ModelMultipleChoiceField(label = "Section(s)", queryset=ClassSection.objects.all(), widget = forms.CheckboxSelectMultiple(), required=False)
     explanation = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 60}), required=False, help_text='Optional but recommended')
     unschedule = forms.BooleanField(help_text='Check this box to unschedule this section in order to free up space for others.  This will delete the original time and location and you won\'t be able to recover them.', required=False)
     email_lottery_students = forms.BooleanField(help_text='Check this box to email students who applied for this section in a lottery, in addition to those that are actually enrolled.', required=False)
@@ -191,8 +191,9 @@ class SectionCancellationForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         initial = kwargs.pop('initial', {})
-        initial['target'] = kwargs.pop('section', None)
+        cls = kwargs.pop('cls', None)
         kwargs['initial'] = initial
         super(SectionCancellationForm, self).__init__(*args, **kwargs)
-        if not initial['target'].parent_program.hasModule('GroupTextModule') or not GroupTextModule.is_configured():
+        self.fields['target'].queryset = cls.sections.filter(status__gte = 0)
+        if not cls.parent_program.hasModule('GroupTextModule') or not GroupTextModule.is_configured():
             self.fields['text_students'].widget = forms.HiddenInput()
