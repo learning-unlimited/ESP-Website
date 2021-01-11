@@ -57,7 +57,7 @@ table.sortable thead {
 {% autoescape off %}
 <tr>
  <!-- <td>{{ forloop.counter }}</td> -->
- <td>{{ sec.emailcode }}</td>
+ <td data-st-key="{{ sec.id }}">{{ sec.emailcode }}</td>
  <td>{{ sec.title }}</td>
  <td>{{ sec.parent_class.class_info|truncatewords_html:10 }}</td>
  <td>{{ sec.parent_class.grade_min }}</td>
