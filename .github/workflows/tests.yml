@@ -11,6 +11,10 @@ jobs:
   build:
     name: ${{ matrix.travis_job }}
     runs-on: ubuntu-16.04
+    # runs all of the steps inside the specified container rather than on the VM host.  
+    # Because of this the network configuration changes from host based network to a container network.
+    container:
+      image:  node:10.16-jessie
     services:
       memcached:
         image: memcached:latest
@@ -21,8 +25,7 @@ jobs:
           POSTGRES_PASSWORD: testpassword
           POSTGRES_DB: test_django
         ports:
-        # will assign a random free host port
-        - 5432/tcp
+        - 5432:5432
         # needed because the postgres container does not provide a healthcheck
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     strategy:
@@ -45,9 +48,11 @@ jobs:
         TRAVIS_JOB: ${{ matrix.travis_job }}
       run: deploy/travis/install
     - name: Prepare for ${{ matrix.travis_job }}
+      working-directory: ./postgres
       env:
         TRAVIS_JOB: ${{ matrix.travis_job }}
-        POSTGRES_HOST: localhost
+        # use postgres for the host here because we have specified a container for the job.
+        POSTGRES_HOST: postgres
         POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
       run: deploy/travis/before_script
     - name: Run ${{ matrix.travis_job }}
