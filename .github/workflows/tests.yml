@@ -12,7 +12,8 @@ jobs:
     name: ${{ matrix.travis_job }}
     runs-on: ubuntu-16.04
     services:
-      memcached
+      memcached:
+        image: memcached
     strategy:
       matrix:
         python-version: [2.7]
