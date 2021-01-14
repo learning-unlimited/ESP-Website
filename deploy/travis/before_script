@@ -5,7 +5,6 @@ if [ "$TRAVIS_JOB" = "test" ]; then
     cp esp/esp/local_settings.py.travis esp/esp/local_settings.py
     ln -s `pwd`/esp/public/media/default_images esp/public/media/images
     ln -s `pwd`/esp/public/media/default_styles esp/public/media/styles
-    sudo service postgresql start
     psql -c "CREATE ROLE testuser PASSWORD 'testpassword' LOGIN CREATEDB;" -U postgres
     psql -c "CREATE DATABASE test_django OWNER testuser;" -U postgres
 elif [ "$TRAVIS_JOB" = "lint" ]; then

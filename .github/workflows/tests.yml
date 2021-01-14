@@ -14,8 +14,17 @@ jobs:
     services:
       memcached:
         image: memcached:latest
+      postgres:
+        image: postgres:10
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
         ports:
-          - 5432:5432
+        # will assign a random free host port
+        - 5432/tcp
+        # needed because the postgres container does not provide a healthcheck
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     strategy:
       matrix:
         python-version: [2.7]
@@ -38,6 +47,8 @@ jobs:
     - name: Prepare for ${{ matrix.travis_job }}
       env:
         TRAVIS_JOB: ${{ matrix.travis_job }}
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
       run: deploy/travis/before_script
     - name: Run ${{ matrix.travis_job }}
       env:
