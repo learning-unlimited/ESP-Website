@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     name: ${{ matrix.travis_job }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16.04
     strategy:
       matrix:
         python-version: [2.7]
@@ -24,7 +24,7 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Update apt-get
+    - name: apt-get update
       run: deploy/travis/before_install
     - name: Install Dependencies for ${{ matrix.travis_job }}
       env:
