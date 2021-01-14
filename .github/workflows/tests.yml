@@ -17,9 +17,9 @@ jobs:
       postgres:
         image: postgres:10
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: test_django
         ports:
         # will assign a random free host port
         - 5432/tcp
