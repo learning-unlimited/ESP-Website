@@ -43,10 +43,12 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: apt-get update
       run: deploy/travis/before_install
+      working-directory: ./postgres
     - name: Install Dependencies for ${{ matrix.travis_job }}
       env:
         TRAVIS_JOB: ${{ matrix.travis_job }}
       run: deploy/travis/install
+      working-directory: ./postgres
     - name: Prepare for ${{ matrix.travis_job }}
       working-directory: ./postgres
       env:
@@ -59,3 +61,4 @@ jobs:
       env:
         TRAVIS_JOB: ${{ matrix.travis_job }}
       run: deploy/travis/script
+      working-directory: ./postgres
