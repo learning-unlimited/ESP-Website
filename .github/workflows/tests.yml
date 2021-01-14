@@ -15,7 +15,7 @@ jobs:
       memcached:
         image: memcached:latest
         ports:
-          - 5432:tcp
+          - 5432:5432
     strategy:
       matrix:
         python-version: [2.7]
