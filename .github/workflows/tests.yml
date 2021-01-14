@@ -1,0 +1,40 @@
+name: "Lint and Unit Tests"
+
+on:
+  push:
+    branches: [main, ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [main]
+
+jobs:
+  build:
+    name: ${{ matrix.travis_job }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [2.7]
+        travis_job: ["lint", "test"]
+    env:
+      DJANGO_SETTINGS_MODULE: esp.settings
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Update apt-get
+      run: deploy/travis/before_install
+    - name: Install Dependencies for ${{ matrix.travis_job }}
+      env:
+        TRAVIS_JOB: ${{ matrix.travis_job }}
+      run: deploy/travis/install
+    - name: Prepare for ${{ matrix.travis_job }}
+      env:
+        TRAVIS_JOB: ${{ matrix.travis_job }}
+      run: deploy/travis/before_script
+    - name: Run ${{ matrix.travis_job }}
+      env:
+        TRAVIS_JOB: ${{ matrix.travis_job }}
+      run: deploy/travis/script
