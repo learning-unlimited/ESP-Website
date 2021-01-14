@@ -11,9 +11,6 @@ jobs:
   build:
     name: ${{ matrix.travis_job }}
     runs-on: ubuntu-16.04
-    services:
-      memcached:
-        image: memcached
     strategy:
       matrix:
         python-version: [2.7]
@@ -23,6 +20,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - uses: niden/actions-memcached@v7
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
