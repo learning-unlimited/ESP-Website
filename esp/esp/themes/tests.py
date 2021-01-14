@@ -97,6 +97,7 @@ class ThemesTest(TestCase):
         try:
             #   Test each theme that is available.
             for theme_name in tc.get_theme_names():
+                print(theme_name)
                 #   Delete the theme_compiled.css file so we force a new one to be generated.
                 css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
                 if os.path.exists(css_filename):
@@ -148,6 +149,7 @@ class ThemesTest(TestCase):
 
                 #   Check that the CSS stylesheet has been compiled.
                 self.assertTrue(os.path.exists(css_filename))
+                print(open(css_filename).read())
                 self.assertTrue(len(open(css_filename).read()) > 1000)  #   Hacky way to check that content is substantial
 
                 #   Check that the template override is marked with the theme name.
