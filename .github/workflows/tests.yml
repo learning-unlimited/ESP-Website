@@ -17,9 +17,9 @@ jobs:
       postgres:
         image: postgres:10.8
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: github_actions
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: test_django
         ports:
           - 5432:5432
         # needed because the postgres container does not provide a healthcheck
@@ -46,8 +46,6 @@ jobs:
     - name: Prepare for ${{ matrix.travis_job }}
       env:
         TRAVIS_JOB: ${{ matrix.travis_job }}
-        POSTGRES_HOST: localhost
-        POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
       run: deploy/travis/before_script
     - name: Run ${{ matrix.travis_job }}
       env:
