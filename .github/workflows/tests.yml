@@ -11,10 +11,6 @@ jobs:
   build:
     name: ${{ matrix.travis_job }}
     runs-on: ubuntu-16.04
-    # runs all of the steps inside the specified container rather than on the VM host.  
-    # Because of this the network configuration changes from host based network to a container network.
-    container:
-      image:  node:10.16-jessie
     services:
       memcached:
         image: memcached:latest
@@ -43,22 +39,17 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: apt-get update
       run: deploy/travis/before_install
-      working-directory: ./postgres
     - name: Install Dependencies for ${{ matrix.travis_job }}
       env:
         TRAVIS_JOB: ${{ matrix.travis_job }}
       run: deploy/travis/install
-      working-directory: ./postgres
     - name: Prepare for ${{ matrix.travis_job }}
-      working-directory: ./postgres
       env:
         TRAVIS_JOB: ${{ matrix.travis_job }}
-        # use postgres for the host here because we have specified a container for the job.
-        POSTGRES_HOST: postgres
+        POSTGRES_HOST: localhost
         POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
       run: deploy/travis/before_script
     - name: Run ${{ matrix.travis_job }}
       env:
         TRAVIS_JOB: ${{ matrix.travis_job }}
       run: deploy/travis/script
-      working-directory: ./postgres
