@@ -22,7 +22,7 @@ jobs:
     - uses: actions/checkout@v2
     - uses: KeisukeYamashita/memcached-actions@v1
       with:
-      ports: "5432"
+        ports: "5432"
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
