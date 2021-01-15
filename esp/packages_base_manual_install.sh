@@ -3,10 +3,11 @@
 # This script will install the package dependencies for this website install
 # that cannot be installed via apt-get.
 
-#sudo apt-get install -y curl
-#curl -sL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-#sudo apt-get install -y nodejs
-sudo apt-get install nodejs-legacy
+sudo apt-get install -y curl
+curl -sL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt-get install -y nodejs
+sudo ln -s /usr/bin/nodejs /usr/bin/node
+alias node=nodejs
 
 if [[ ":$PATH:" == *":/usr/bin:"* ]]
 then
