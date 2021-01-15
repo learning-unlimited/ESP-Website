@@ -8,6 +8,9 @@ if [ "$TRAVIS_JOB" = "test" ]; then
     then
         echo "lessc could not be found"
         exit
+    else
+        echo "lessc was found"
+        exit
     fi
     lessc -v
     node -v
