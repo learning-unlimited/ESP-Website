@@ -5,7 +5,7 @@ imagemagick
 dvipng
 python
 python-setuptools
-python2-pip
+python-pip
 postgresql
 libevent-dev
 python-dev
