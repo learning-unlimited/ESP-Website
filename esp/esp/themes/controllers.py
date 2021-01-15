@@ -265,6 +265,10 @@ class ThemeController(object):
         #   Compile to CSS
         print(less_search_path)
         lessc_args = ['lessc', '--include-path="%s"' % less_search_path, '-']
+        lessc_process = subprocess.Popen('lessc -v', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        test = lessc_process.communicate()
+        print(test)
+        print(less_data)
         lessc_process = subprocess.Popen(' '.join(lessc_args), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
         test = lessc_process.communicate(less_data)
         print(test)
