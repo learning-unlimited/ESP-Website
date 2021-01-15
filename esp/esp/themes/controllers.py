@@ -268,10 +268,9 @@ class ThemeController(object):
         lessc_process = subprocess.Popen('lessc -v', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
         test = lessc_process.communicate()
         print(test)
-        print(less_data)
         lessc_process = subprocess.Popen(' '.join(lessc_args), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
         test = lessc_process.communicate(less_data)
-        print(test)
+        #print(test)
         css_data = test[0]
 
         if lessc_process.returncode != 0:

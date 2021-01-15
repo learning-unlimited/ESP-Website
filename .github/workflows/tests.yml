@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     name: ${{ matrix.travis_job }}
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-20.04
     services:
       postgres:
         image: postgres:10.8

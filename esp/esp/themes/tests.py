@@ -149,7 +149,6 @@ class ThemesTest(TestCase):
 
                 #   Check that the CSS stylesheet has been compiled.
                 self.assertTrue(os.path.exists(css_filename))
-                print(open(css_filename).read())
                 self.assertTrue(len(open(css_filename).read()) > 1000)  #   Hacky way to check that content is substantial
 
                 #   Check that the template override is marked with the theme name.
