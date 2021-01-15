@@ -3,6 +3,7 @@
 # This script will install the package dependencies for this website install
 # that cannot be installed via apt-get.
 
+sudo apt-get install curl
 curl -sL https://deb.nodesource.com/setup_0.10 | sudo -E bash -
 sudo apt-get install -y nodejs
 
