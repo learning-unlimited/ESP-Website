@@ -9,7 +9,7 @@ sudo apt-get install -y nodejs
 if [[ ":$PATH:" == *":/usr/bin:"* ]]
 then
     # explicitly pass --prefix /usr to npm
-    sudo -H npm install -g --prefix /usr less@1.3.1
+    sudo -H npm install --prefix /usr less@1.3.1 -g
 else
     # no /usr/bin? hopefully this doesn't happen, let npm guess
     sudo -H npm install -g less@1.3.1

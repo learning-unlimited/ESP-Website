@@ -4,6 +4,11 @@ set -euf -o pipefail
 if [ "$TRAVIS_JOB" = "test" ]; then
     sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres | grep -v ^libpq-dev)
     esp/packages_base_manual_install.sh
+    if ! command -v lessc &> /dev/null
+    then
+        echo "lessc could not be found"
+        exit
+    fi
     lessc -v
     node -v
     pip install -r esp/requirements.txt -q --log pip.log || (tail pip.log && exit 1)
