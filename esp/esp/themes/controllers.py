@@ -266,8 +266,9 @@ class ThemeController(object):
         print(less_search_path)
         lessc_args = ['lessc', '--include-path="%s"' % less_search_path, '-']
         lessc_process = subprocess.Popen(' '.join(lessc_args), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-        print(lessc_process.communicate(less_data))
-        css_data = lessc_process.communicate(less_data)[0]
+        test = lessc_process.communicate(less_data)
+        print(test)
+        css_data = test[0]
 
         if lessc_process.returncode != 0:
             raise ESPError('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.<br />LESS compile command was: <pre>%s</pre>' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support'], ' '.join(lessc_args)), log=True)
