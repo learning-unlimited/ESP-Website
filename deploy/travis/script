@@ -4,7 +4,8 @@ set -euf -o pipefail
 if [ "$TRAVIS_JOB" = "test" ]; then
     cd esp
     ./manage.py collectstatic --noinput -v 0
-    ./manage.py test
+    #./manage.py test
+    ./manage.py test esp.themes.tests
 elif [ "$TRAVIS_JOB" = "lint" ]; then
     deploy/lint
 else
