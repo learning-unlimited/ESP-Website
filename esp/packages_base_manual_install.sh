@@ -4,10 +4,15 @@
 # that cannot be installed via apt-get.
 
 sudo apt-get install -y curl
+node -v
+which node
+command -v nvm
 #curl -sL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
 #sudo apt-get install -y nodejs
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.2/install.sh | bash
+#curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.2/install.sh | bash
 sudo nvm install 0.10
+node -v
+which node
 
 if [[ ":$PATH:" == *":/usr/bin:"* ]]
 then
