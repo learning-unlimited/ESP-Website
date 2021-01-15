@@ -14,8 +14,8 @@ which node
 if [[ ":$PATH:" == *":/usr/bin:"* ]]
 then
     # explicitly pass --prefix /usr to npm
-    sudo -H npm install --prefix /usr less@1.3.1 -g
+    sudo -H npm install --prefix /usr less@1.4 -g
 else
     # no /usr/bin? hopefully this doesn't happen, let npm guess
-    sudo -H npm install -g less@1.3.1
+    sudo -H npm install less@1.3.1 -g
 fi
