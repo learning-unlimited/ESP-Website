@@ -28,8 +28,9 @@
   // Hover/focus state
   &:hover,
   &:focus {
-    color: @grayDark;
+    color: @black;
     text-decoration: none;
+    background-color: darken(@btnBackgroundHighlight, 10%);
     background-position: 0 -15px;
 
     // transition is only when going to hover/focus, otherwise the background
