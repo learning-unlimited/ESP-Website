@@ -4,7 +4,7 @@
 # that cannot be installed via apt-get.
 
 sudo apt-get install -y curl
-curl -sL https://deb.nodesource.com/setup_0.10 | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
 if [[ ":$PATH:" == *":/usr/bin:"* ]]
