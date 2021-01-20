@@ -260,12 +260,12 @@ class TeacherClassRegForm(FormWithRequiredCss):
             self.fields['class_size_max'].initial = tag_data
 
         #   Rewrite difficulty label/choices if desired:
-        if Tag.getTag('teacherreg_difficulty_choices'):
-            self.fields['hardness_rating'].choices = json.loads(Tag.getTag('teacherreg_difficulty_choices'))
+        if Tag.getProgramTag('teacherreg_difficulty_choices', prog):
+            self.fields['hardness_rating'].choices = json.loads(Tag.getProgramTag('teacherreg_difficulty_choices', prog))
 
         # Get class_style_choices from tag, otherwise hide the field
-        if Tag.getTag('class_style_choices'):
-            self.fields['class_style'].choices = json.loads(Tag.getTag('class_style_choices'))
+        if Tag.getProgramTag('class_style_choices', prog):
+            self.fields['class_style'].choices = json.loads(Tag.getProgramTag('class_style_choices', prog))
             self.fields['class_style'].required = True
         else:
             hide_field(self.fields['class_style'])
@@ -350,6 +350,11 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
                 self.fields[field].required = False
                 hide_field(self.fields[field], default)
 
+        # Hide fields as desired.
+        tag_data = Tag.getProgramTag('teacherreg_hide_fields_open', program)
+        if tag_data:
+            for field_name in tag_data.split(','):
+                hide_field(self.fields[field_name])
 
 class TeacherEventSignupForm(FormWithRequiredCss):
     """ Form for teachers to pick interview and teacher training times. """
