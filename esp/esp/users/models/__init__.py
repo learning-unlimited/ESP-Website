@@ -112,6 +112,7 @@ class UserAvailability(models.Model):
     class Meta:
         app_label = 'users'
         db_table = 'users_useravailability'
+        verbose_name_plural = 'User availabilities'
 
     def __unicode__(self):
         return u'%s available as %s at %s' % (self.user.username, self.role.name, unicode(self.event))
@@ -1061,7 +1062,7 @@ class ESPUser(User, BaseESPUser):
 
     class Meta:
         proxy = True
-        verbose_name = 'ESP User'
+        verbose_name = 'ESP user'
 
     def makeAdmin(self):
         """
@@ -1728,7 +1729,7 @@ class ZipCodeSearches(models.Model):
     class Meta:
         app_label = 'users'
         db_table = 'users_zipcodesearches'
-        verbose_name_plural = 'Zip Code Searches'
+        verbose_name_plural = 'Zip code searches'
 
     def __unicode__(self):
         return u'%s Zip Codes that are less than %s miles from %s' % \
