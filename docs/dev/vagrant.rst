@@ -175,7 +175,7 @@ Upgrading your personal dev VM
 
 If the base VM has been changed (see above), you will want to upgrade your development server. However, upgrading Ubuntu within a virtual machine can cause problems with your database. Therefore, you'll need to export your database, create a new virtual machine, then import your database:
 
-1. Run ``git checkout branch``, where branch is the name of an old branch that used the version of Ubuntu that you are currently on.
+1. Run ``git checkout dumpdb``. This branch has the proper code to interact with your current database and create the dump file.
 
 2. Run ``vagrant up`` to start the virtual machine.
 
