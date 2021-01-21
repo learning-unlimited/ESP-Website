@@ -27,6 +27,7 @@ import pipes
 import platform
 import random
 import string
+import sys
 
 from os.path import join
 
@@ -40,7 +41,7 @@ env.venv = "/home/vagrant/venv/"
 env.lbase = os.path.dirname(env.real_fabfile)
 
 # Name of the encrypted volume group in the Vagrant VM
-env.encvg = "ubuntu--12--vg-keep_1"
+env.encvg = "ubuntu--20--vg-keep_1"
 
 # Name of the Postgres database
 env.dbname = "devsite_django"
@@ -328,6 +329,22 @@ def loaddb(filename=None):
 
     # Cleanup
     run("rm -f " + env.encfab + "dbdump")
+
+@task
+def dumpdb(filename="devsite_django.sql"):
+    """
+    Creates a dump of a database.
+    This has not been tested on the production server.
+    """
+    ensure_environment()
+
+    sys.path.insert(0, 'esp/esp/')
+    from local_settings import DATABASES
+    default_db = DATABASES['default']
+
+    sudo("PGHOST=%s PGPORT=%s PGDATABASE=%s PGUSER=%s PGPASSWORD=%s pg_dump > %s%s" %
+         (pipes.quote(default_db['HOST']), pipes.quote(default_db['PORT']), pipes.quote(env.dbname),
+         pipes.quote(default_db['USER']), pipes.quote(default_db['PASSWORD']), pipes.quote(env.rbase), pipes.quote(filename)))
 
 def gen_password(length):
     return "".join([random.choice(string.letters + string.digits) for i in range(length)])
