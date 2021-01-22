@@ -175,7 +175,7 @@ Upgrading your personal dev VM
 
 If the base VM has been changed (see above), you will want to upgrade your development server. However, upgrading Ubuntu within a virtual machine can cause problems with your database. Therefore, you'll need to export your database, create a new virtual machine, then import your database:
 
-1. Run ``git checkout dumpdb``. This branch has the proper code to interact with your current database and create the dump file.
+1. From within the "devsite" folder, run ``git checkout main``. If you are upgrading your VM as part of a pull request, replace "main" with the name of the PR branch.
 
 2. Run ``vagrant up`` to start the virtual machine.
 
@@ -183,6 +183,4 @@ If the base VM has been changed (see above), you will want to upgrade your devel
 
 4. Run ``vagrant destroy`` (note, this destroys your virtual machine. Only do it once you are sure your database has been backed up and you are ready to continue).
 
-5. Run ``git checkout main`` to checkout the main branch. If you are upgrading your VM as part of a pull request, replace "main" with the name of the PR branch.
-
-6. Make sure you are in the "devsite" folder. Now follow the VM installations above, starting at ``vagrant up``. After running ``fab setup``, run ``fab loaddb:devsite_django.sql``. If you specified a different filename, use that instead.
+5. Now follow the VM installations above, starting at ``vagrant up``. After running ``fab setup``, run ``fab loaddb:devsite_django.sql``. If you specified a different filename, use that instead.
