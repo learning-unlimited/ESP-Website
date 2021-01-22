@@ -8,8 +8,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Build off the basic Ubuntu 20.04 64-bit VM.
   config.vm.box = 'ubuntu/focal64'
-  # We should pull from vagrant's database by default, but if that is ever down, we have a backup version on our AWS
-  # config.vm.box_url = 'https://s3.amazonaws.com/learningu-static/ubuntu-20.04.box'
+  config.vm.box_url = 'https://s3.amazonaws.com/learningu-static/ubuntu-20.04.box'
   config.vm.hostname = 'ludev'
 
   # Forward port for Django dev server

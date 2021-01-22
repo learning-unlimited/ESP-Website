@@ -37,6 +37,12 @@ then
     sudo apt-get install -y $(<"$BASEDIR/esp/packages_prod.txt")
 fi
 
+# Install pip
+sudo add-apt-repository universe
+sudo apt-get install -y curl
+curl https://bootstrap.pypa.io/get-pip.py --output get-pip.py
+sudo python2 get-pip.py
+
 # Ensure that the virtualenv exists and is activated.
 if [[ -z "$VIRTUAL_ENV" ]]
 then
@@ -48,7 +54,7 @@ then
     source "$VIRTUALENV_DIR/bin/activate"
 fi
 
-# Upgrade/install pip, setuptools, wheel, and application dependencies.
-pip install -U pip
-pip install -U setuptools wheel
-pip install -U -r "$BASEDIR/esp/requirements.txt"
+# Install/upgrade pip, setuptools, wheel, and application dependencies.
+pip2 install -U pip
+pip2 install -U setuptools wheel
+pip2 install -U -r "$BASEDIR/esp/requirements.txt"

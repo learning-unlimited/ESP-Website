@@ -6,8 +6,6 @@
 sudo apt-get install -y curl
 curl -sL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
 sudo apt-get install -y nodejs
-node -v
-which node
 
 if [[ ":$PATH:" == *":/usr/bin:"* ]]
 then
@@ -17,6 +15,3 @@ else
     # no /usr/bin? hopefully this doesn't happen, let npm guess
     sudo -H npm install less@1.7.5 -g
 fi
-
-lessc -v
-which lessc

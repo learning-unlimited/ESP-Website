@@ -5,7 +5,6 @@ imagemagick
 dvipng
 python
 python-setuptools
-python-pip
 postgresql
 libevent-dev
 python-dev
@@ -17,6 +16,7 @@ memcached
 libmemcached-dev
 libpq-dev
 libcurl4-openssl-dev
+libssl-dev
 libjpeg-dev
 javascript-common
 libc-ares2
