@@ -15,7 +15,7 @@ A dev server requires a lot of software components to run properly, and it would
 
 For some time, we provided dev servers as Virtualbox images, which were prepared by (manually) creating a VM with Ubuntu installed, and then running our setup script inside the VM.  This worked well except that it was time-consuming to create these images (especially with chapter-specific databases and media files), and the files were very large (on the order of 5--10 GB) and time consuming to download.  That is what motivated the development of an alternative setup process, where the VM is created and prepared on your machine (with few manual steps).
 
-With this new procedure, we should be able to standardize the platform that all development and production servers use (currently it's Ubuntu 14.04) without tying developers to that platform.
+With this new procedure, we should be able to standardize the platform that all development and production servers use (currently it's Ubuntu 20.04) without tying developers to that platform.
 
 Setup procedure
 ---------------
