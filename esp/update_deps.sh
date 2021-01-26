@@ -30,17 +30,17 @@ done
 BASEDIR=$(dirname $(dirname $(readlink -e $0)))
 
 sudo apt-get update
-sudo apt-get install -y $(<"$BASEDIR/esp/packages_base.txt")
+xargs sudo apt-get install -y < $BASEDIR/esp/packages_base.txt
 $BASEDIR/esp/packages_base_manual_install.sh
 if [[ "$MODE_PROD" ]]
 then
-    sudo apt-get install -y $(<"$BASEDIR/esp/packages_prod.txt")
+    xargs sudo apt-get install -y < $BASEDIR/esp/packages_prod.txt
 fi
 
 # Install pip
 sudo add-apt-repository universe
 sudo apt-get install -y curl
-curl https://bootstrap.pypa.io/get-pip.py --output get-pip.py
+curl https://bootstrap.pypa.io/2.7/get-pip.py --output get-pip.py
 sudo python2 get-pip.py
 
 # Ensure that the virtualenv exists and is activated.

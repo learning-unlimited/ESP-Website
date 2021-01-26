@@ -41,7 +41,7 @@ env.venv = "/home/vagrant/venv/"
 env.lbase = os.path.dirname(env.real_fabfile)
 
 # Name of the encrypted volume group in the Vagrant VM
-env.encvg = "ubuntu--12--vg-keep_1"
+env.encvg = "vgvagrant-keep_1"
 
 # Name of the Postgres database
 env.dbname = "devsite_django"
