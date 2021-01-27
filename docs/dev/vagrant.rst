@@ -175,14 +175,18 @@ Upgrading your personal dev VM
 
 If the base VM has been changed (see above), you will want to upgrade your development server. However, upgrading Ubuntu within a virtual machine can cause problems with your database. Therefore, you'll need to export your database, create a new virtual machine, then import your database:
 
-1. From within the "devsite" folder, run ``git checkout dumpdb``. This branch has the proper code to interact with your current database and create the dump file.
+1. Make a copy of `esp/esp/local_settings.py` somewhere with a different name (e.g. on your desktop as "old_local_settings.py"). This file will get overriden by the end of this process and you will want to restore some of the settings from your previous VM setup.
 
-2. Run ``vagrant up`` to start the virtual machine.
+2. From within the "devsite" folder, run ``git checkout dumpdb``. This branch has the proper code to interact with your current database and create the dump file.
 
-3. Run ``fab dumpdb``. This will save your database as a dump file in the "devsite" folder ("devsite_django.sql"). You can also specify a filename if you would like with ``fab dumpdb:filename``.
+3. Run ``vagrant up`` to start the virtual machine.
 
-4. Run ``vagrant destroy`` (note, this destroys your virtual machine. Only do it once you are sure your database has been backed up and you are ready to continue).
+4. Run ``fab dumpdb``. This will save your database as a dump file in the "devsite" folder ("devsite_django.sql"). You can also specify a filename if you would like with ``fab dumpdb:filename``.
 
-5. Run ``git checkout main`` to checkout the main branch. If you are upgrading your VM as part of a pull request, replace "main" with the name of the PR branch.
+5. Run ``vagrant destroy`` (note, this destroys your virtual machine. Only do it once you are sure your database has been backed up and you are ready to continue).
 
-6. Now follow the VM installations above, starting at ``vagrant up``. After running ``fab setup``, run ``fab loaddb:devsite_django.sql``. If you specified a different filename, use that instead.
+6. Run ``git checkout main`` to checkout the main branch. If you are upgrading your VM as part of a pull request, replace "main" with the name of the PR branch.
+
+7. Now follow the VM installations above, starting at ``vagrant up``. After running ``fab setup``, run ``fab loaddb:devsite_django.sql``. If you specified a different filename, use that instead.
+
+8. Open your old local_settings.py file and your new local_settings.py file with a text editor. You will likely want to copy over most of your old local settings. The ONLY thing that MUST remain from the NEW version is the NEW DATABASE PASSWORD.
