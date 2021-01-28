@@ -32,6 +32,10 @@ Teacher registration changes
 - Some modules will no longer show up in registration if they are not set up correctly (teacher availability, teacher training/interviews, and teacher quiz).
 - Implemented several improvements to the attendance interface (normal and webapp versions).
 
+Class management changes
+~~~~~~~~~~~~~~~~~~~~~~~~
+- All of the section cancellation forms have been merged into a single form allowing admins to cancel multiple sections at once for the same reason.
+
 Volunteer registration changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Help text is now shown for the comments field.
@@ -56,14 +60,6 @@ Dashboard changes
 - Added attended class-student-hours to the dashboard.
 - Added shirt statistics for all teachers with a submitted class, enrolled students, attended students, and volunteers to the dashboard.
 
-Dependency changes
-~~~~~~~~~~~~~~~~~~
-- Upgraded from Django 1.8.19 to 1.11.29
-- Upgraded from pillow 3.3.3 to 6.2.2
-- Upgraded from psycopg2 2.6.1 to 2.8.6
-- Upgraded from numpy 1.7.1 to 1.16.6
-- Upgraded from sorttable.js 2 to 2e3
-
 Minor new features
 ~~~~~~~~~~~~~~~~~~
 - Added options to customize the amount of financial aid granted using the financial aid approval module.
@@ -86,3 +82,25 @@ Minor bug fixes
 - Fixed the wrong class length scheduling check.
 - Fixed the "lottery preferences" count on the student big board (was previously including enrollments).
 - Fixed the completion certificate to now include the program email and name.
+- Fixed elements that were supposed to be full width (e.g. surveys).
+- Fixed the cutoff at the bottom of the manage programs page.
+- Fixed pluralizations and capitalizations in the admin pages.
+
+Development changes
+===================
+
+Development server changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+- The development server has been upgraded to Ubuntu 20.04 (from Ubuntu 14.04). LU web developers will need to upgrade their local development servers by following the instructions in `vagrant.rst <https://github.com/learning-unlimited/ESP-Website/blob/main/docs/dev/vagrant.rst#upgrading-your-personal-dev-vm>`_.
+
+Dependency changes
+~~~~~~~~~~~~~~~~~~
+- Upgraded Django (1.8.19 -> 1.11.29)
+- Upgraded pillow (3.3.3 -> 6.2.2)
+- Upgraded psycopg2 (2.6.1 -> 2.8.6)
+- Upgraded numpy (1.7.1 -> 1.16.6)
+- Upgraded sorttable.js (2 -> 2e3)
+- Upgraded node.js (0.10.x -> 14.x LTS)
+- Upgraded less (1.3.1 -> 1.7.5)
+- Upgraded bootstrap (2.0.2 -> 2.3.2)
+
