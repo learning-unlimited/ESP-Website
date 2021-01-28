@@ -65,5 +65,5 @@ fi
 
 echo "Creating Virtualenv in $VENVDIR"
 
-sudo pip install "virtualenv>=1.10"
+sudo pip2 install "virtualenv>=1.10"
 virtualenv "$VENVDIR"
