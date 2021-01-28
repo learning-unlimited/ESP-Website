@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from collections import defaultdict
 from datetime import datetime, timedelta, date
+from pytz import country_names
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -43,7 +44,7 @@ from django import forms, dispatch
 from django.conf import settings
 from django.contrib.auth import logout, login, REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User, AnonymousUser, Group, UserManager
-from localflavor.us.models import USStateField, PhoneNumberField
+from localflavor.us.models import PhoneNumberField
 from localflavor.us.forms import USStateSelect
 
 from django.contrib.sites.models import Site
@@ -111,6 +112,7 @@ class UserAvailability(models.Model):
     class Meta:
         app_label = 'users'
         db_table = 'users_useravailability'
+        verbose_name_plural = 'User availabilities'
 
     def __unicode__(self):
         return u'%s available as %s at %s' % (self.user.username, self.role.name, unicode(self.event))
@@ -826,7 +828,7 @@ class BaseESPUser(object):
         """
         user_types = DEFAULT_USER_TYPES
         if use_tag:
-            user_types = json.loads(Tag.getTag('user_types', default=json.dumps(user_types)))
+            user_types = json.loads(Tag.getTag('user_types'))
         return user_types
     getAllUserTypes.depend_on_model(Tag)
     getAllUserTypes = staticmethod(getAllUserTypes)
@@ -902,12 +904,13 @@ are a teacher of the class"""
         if now is None:
             now = date.today()
         curyear = now.year
-        # Changed from 6/1 to 5/1 rollover so as not to affect start of Summer HSSP registration
-        # - Michael P 5/24/2010
-        # Changed from 5/1 to 7/31 rollover to as to neither affect registration starts nor occur prior to graduation.
-        # Adam S 8/1/2010
-        #if datetime(curyear, 6, 1) > now:
-        if date(curyear, 7, 31) > now:
+        try:
+            # An error here can cause a good chunk of the site to break,
+            # so we'll just catch this if it fails and fall back on the default
+            d = datetime.strptime(Tag.getTag('grade_increment_date'), '%Y-%m-%d').date().replace(year=curyear)
+        except:
+            d = date(curyear, 7, 31)
+        if d > now:
             schoolyear = curyear
         else:
             schoolyear = curyear + 1
@@ -1059,7 +1062,7 @@ class ESPUser(User, BaseESPUser):
 
     class Meta:
         proxy = True
-        verbose_name = 'ESP User'
+        verbose_name = 'ESP user'
 
     def makeAdmin(self):
         """
@@ -1294,11 +1297,11 @@ class StudentInfo(models.Model):
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
         form_dict['gender']          = self.gender
-        if Tag.getBooleanTag('show_student_tshirt_size_options', default=False):
+        if Tag.getBooleanTag('show_student_tshirt_size_options'):
             form_dict['shirt_size']      = self.shirt_size
-        if Tag.getBooleanTag('studentinfo_shirt_type_selection', default=False):
+        if Tag.getBooleanTag('studentinfo_shirt_type_selection'):
             form_dict['shirt_type']      = self.shirt_type
-        if Tag.getBooleanTag('show_student_vegetarianism_options', default=False):
+        if Tag.getBooleanTag('show_student_vegetarianism_options'):
             form_dict['food_preference'] = self.food_preference
         form_dict['heard_about']      = self.heard_about
         form_dict['studentrep_expl'] = self.studentrep_expl
@@ -1726,7 +1729,7 @@ class ZipCodeSearches(models.Model):
     class Meta:
         app_label = 'users'
         db_table = 'users_zipcodesearches'
-        verbose_name_plural = 'Zip Code Searches'
+        verbose_name_plural = 'Zip code searches'
 
     def __unicode__(self):
         return u'%s Zip Codes that are less than %s miles from %s' % \
@@ -1766,7 +1769,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         if queryset: return queryset[0]
         else: return None
 
-    user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=False)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     e_mail = models.EmailField('Email address', blank=True, null=True, max_length=75)
@@ -1776,9 +1779,10 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     phone_even = PhoneNumberField('Alternate phone',blank=True, null=True)
     address_street = models.CharField('Street address',max_length=100,blank=True, null=True)
     address_city = models.CharField('City',max_length=50,blank=True, null=True)
-    address_state = USStateField('State',blank=True, null=True)
+    address_state = models.CharField('State',max_length=32,blank=True, null=True)
     address_zip = models.CharField('Zip code',max_length=5,blank=True, null=True)
     address_postal = models.TextField(blank=True,null=True)
+    address_country = models.CharField('Country', max_length=2, choices=sorted(country_names.items(), key = lambda x: x[1]), default='US')
     undeliverable = models.BooleanField(default=False)
 
     class Meta:
@@ -1830,15 +1834,14 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
             return "%s, %s (%s)" % (self.last_name, self.first_name, self.e_mail)
 
     @staticmethod
-    def addOrUpdate(regProfile, new_data, contactInfo, prefix='', curUser=None):
+    def addOrUpdate(curUser, regProfile, new_data, contactInfo, prefix=''):
         """ adds or updates a ContactInfo record """
         if contactInfo is None:
             contactInfo = ContactInfo()
         for i in contactInfo.__dict__.keys():
             if i != 'user_id' and i != 'id' and prefix+i in new_data:
                 contactInfo.__dict__[i] = new_data[prefix+i]
-        if curUser is not None:
-            contactInfo.user = curUser
+        contactInfo.user = curUser
         contactInfo.save()
         return contactInfo
 

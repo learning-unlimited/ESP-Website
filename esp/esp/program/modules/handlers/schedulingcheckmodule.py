@@ -123,7 +123,6 @@ class SchedulingCheckRunner:
           self.d_grades = []
 
      def _getLunchByDay(self):
-        import numpy
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
         lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
@@ -276,7 +275,7 @@ class SchedulingCheckRunner:
              start_time = sec.start_time_prefetchable()
              end_time = sec.end_time_prefetchable()
              length = end_time - start_time
-             if abs(length.total_seconds() / 3600.0 - float(sec.duration)) > 0.0:
+             if abs(round(length.total_seconds() / 3600.0, 2) - float(sec.duration)) > 0.0:
                  output.append(sec)
          return self.formatter.format_list(output, ["Classes"])
 
@@ -561,7 +560,7 @@ class SchedulingCheckRunner:
 
      def no_overlap_classes(self):
          '''Gets a list of classes from the tag no_overlap_classes, and checks that they don't overlap.  The tag should contain a dict of {'comment': [list,of,class,ids]}.'''
-         classes = json.loads(Tag.getProgramTag('no_overlap_classes',program=self.p, default="{}"))
+         classes = json.loads(Tag.getProgramTag('no_overlap_classes',program=self.p))
          classes_lookup = {x.id: x for x in ClassSubject.objects.filter(id__in=sum(classes.values(),[]))}
          bad_classes = []
          for key, l in classes.iteritems():
@@ -597,8 +596,7 @@ class SchedulingCheckRunner:
                            r'^.*music.*$': [],
                            r'^.*kitchen.*$': []}
          config = json.loads(Tag.getProgramTag('special_classroom_types',
-                                               program=self.p,
-                                               default='{}'))
+                                               program=self.p))
          config = config if config else DEFAULT_CONFIG
 
          HEADINGS = ["Class Section", "Unfulfilled Request", "Current Room"]

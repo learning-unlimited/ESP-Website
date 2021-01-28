@@ -78,6 +78,9 @@ class NavBarCategory(models.Model):
     def __unicode__(self):
         return u'%s' % self.name
 
+    class Meta:
+        verbose_name_plural = 'Nav bar categories'
+
 def default_navbarcategory():
     """ Default navigation category. """
     if not hasattr(NavBarCategory, '_default'):
@@ -115,7 +118,7 @@ class NavBarEntry(models.Model):
         return (self.link is not None) and (len(self.link) > 0)
 
     class Meta:
-        verbose_name_plural = 'Nav Bar Entries'
+        verbose_name_plural = 'Nav bar entries'
 
 def install():
     # Add a default nav bar category, to let QSD editing work.

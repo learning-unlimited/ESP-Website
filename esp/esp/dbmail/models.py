@@ -51,6 +51,7 @@ from django.template import Template #, VariableNode, TextNode
 import esp.dbmail.sendto_fns
 
 from django.conf import settings
+from django.contrib.sites.models import Site
 
 from django.core.mail import get_connection
 from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
@@ -194,6 +195,11 @@ class MessageRequest(models.Model):
     processed_by = models.DateTimeField(null=True, default=None, db_index=True) # When should this be processed by?
     priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
 
+    public = models.BooleanField(default=False) # Should the subject and msgtext of this request be publicly viewable at /email/<id>?
+
+    def public_url(self):
+        return '%s/email/%s' % (Site.objects.get_current().domain, self.id)
+
     def __unicode__(self):
         return unicode(self.subject)
 
@@ -218,6 +224,7 @@ class MessageRequest(models.Model):
 
         if var_dict is not None:
             new_request.save()
+            var_dict['request'] = new_request
             MessageVars.createMessageVars(new_request, var_dict) # create the message Variables
         return new_request
 
@@ -455,7 +462,7 @@ class TextOfEmail(models.Model):
         return orm_class.objects.filter(Q(sent_by__isnull=True) | Q(sent_by__lt=now), sent__isnull=True, tries__gte=min_tries).update(sent=now)
 
     class Meta:
-        verbose_name_plural = 'Email Texts'
+        verbose_name_plural = 'Email texts'
 
 class MessageVars(models.Model):
     """ A storage of message variables for a specific message. """
@@ -535,7 +542,7 @@ class MessageVars(models.Model):
         return "Message Variables for %s" % self.messagerequest
 
     class Meta:
-        verbose_name_plural = 'Message Variables'
+        verbose_name_plural = 'Message variables'
 
 
 class EmailRequest(models.Model):

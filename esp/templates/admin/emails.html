@@ -83,6 +83,9 @@ tr.email-details {
                 <tr><td><i>Sending address:</i><br />{{ req.sender }}</td></tr>
                 <tr><td><i>Created at:</i><br />{{ req.created_at }}</td></tr>
                 <tr><td><i>Finished at:</i><br />{{ req.finished_at }}</td></tr>
+                {% if req.public %}
+                <tr><td><i><a href="/email/{{ req.id }}" target="_blank">Public here</a></i><br /></td></tr>
+                {% endif %}
             </table></td>
         </tr>
     {% endfor %}

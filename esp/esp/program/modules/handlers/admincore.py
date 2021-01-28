@@ -170,8 +170,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
             form = ProgramTagSettingsForm(request.POST, program = prog)
             if form.is_valid():
                 form.save()
-
-        form = ProgramTagSettingsForm(program = prog)
+        else:
+            form = ProgramTagSettingsForm(program = prog)
 
         context['one'] = one
         context['two'] = two

@@ -343,7 +343,7 @@ class AccountCreationTest(TestCase):
         #first try an email that shouldn't have an account
         #first without follow, to see that it redirects correctly
         response1 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com"})
-        if not Tag.getBooleanTag('ask_about_duplicate_accounts', default=False):
+        if not Tag.getBooleanTag('ask_about_duplicate_accounts'):
             self.assertTemplateUsed(response1,"registration/newuser.html")
             return
 
@@ -380,7 +380,7 @@ class AccountCreationTest(TestCase):
         """Testing phase 2, where user provides info, and we make the account"""
 
         url = "/myesp/register/"
-        if Tag.getBooleanTag("ask_about_duplicate_accounts", default=False):
+        if Tag.getBooleanTag("ask_about_duplicate_accounts"):
             url+="information/"
         response = self.client.post(url,
                                    data={"username":"username",
@@ -401,7 +401,7 @@ class AccountCreationTest(TestCase):
         except ESPUser.DoesNotExist, ESPUser.MultipleObjectsReturned:
             self.fail("User not created correctly or created multiple times")
 
-        if not Tag.getBooleanTag('require_email_validation', default=False):
+        if not Tag.getBooleanTag('require_email_validation'):
             return
 
         self.assertFalse(u.is_active)

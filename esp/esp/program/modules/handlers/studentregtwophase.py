@@ -139,7 +139,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         timeslots = prog.getTimeSlots(types=['Class Time Block', 'Compulsory'])
 
         context['num_priority'] = prog.priorityLimit()
-        context['num_star'] = int(Tag.getProgramTag("num_stars", program = prog, default = 10))
+        context['num_star'] = int(Tag.getProgramTag("num_stars", program = prog))
 
         for i in range(len(timeslots)):
             timeslot = timeslots[i]

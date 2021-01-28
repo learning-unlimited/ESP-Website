@@ -68,7 +68,7 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
 
     context['tl'] = tl
     if tl in ['teach', 'learn']:
-        filters = [x.strip() for x in Tag.getProgramTag('survey_' + {'learn': "student", 'teach': "teacher"}[tl] + '_filter', prog, default = {'learn': "classreg", 'teach': "class_submitted"}[tl]).split(",") if x.strip()]
+        filters = [x.strip() for x in Tag.getProgramTag('survey_' + {'learn': "student", 'teach': "teacher"}[tl] + '_filter', prog).split(",") if x.strip()]
         if len(filters) > 0:
             if tl == 'learn':
                 users = prog.students()

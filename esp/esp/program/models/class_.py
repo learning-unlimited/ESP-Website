@@ -959,6 +959,14 @@ class ClassSection(models.Model):
     num_students_checked_in.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     @cache_function
+    def count_ever_checked_in_students(self):
+        return (self.students() & ESPUser.objects.filter(Q(record__event="attended", record__program=self.parent_program)).distinct()).count()
+    count_ever_checked_in_students.depend_on_model('users.Record')
+    count_ever_checked_in_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
+
+    ever_checked_in_students = DerivedField(models.IntegerField, count_ever_checked_in_students)(null=False, default=0)
+
+    @cache_function
     def num_students_prereg(self):
         return self.students_prereg().count()
     num_students_prereg.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
@@ -1180,8 +1188,7 @@ class ClassSection(models.Model):
         # "Sun, July 10" instead of just "Sun"
         include_date = include_date or Tag.getBooleanTag(
             key='friendly_times_with_date',
-            program=self.parent_program,
-            default=False,
+            program=self.parent_program
         )
 
         txtTimes = []
@@ -2008,7 +2015,7 @@ class ClassCategories(models.Model):
     seq = models.IntegerField(default=0)
 
     class Meta:
-        verbose_name_plural = 'Class Categories'
+        verbose_name_plural = 'Class categories'
         app_label = 'program'
         db_table = 'program_classcategories'
 

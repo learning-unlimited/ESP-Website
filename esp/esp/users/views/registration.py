@@ -35,7 +35,7 @@ def user_registration_validate(request):
 
 This function is overloaded to handle either one or two phase reg"""
 
-    if not Tag.getBooleanTag("ask_about_duplicate_accounts",default=False):
+    if not Tag.getBooleanTag("ask_about_duplicate_accounts"):
         form = SinglePhaseUserRegForm(request.POST)
     else:
         form = UserRegForm(request.POST)
@@ -62,7 +62,7 @@ This function is overloaded to handle either one or two phase reg"""
         user.set_password(form.cleaned_data['password'])
 
         #   Append key to password and disable until activation if desired
-        if Tag.getBooleanTag('require_email_validation', default=False):
+        if Tag.getBooleanTag('require_email_validation'):
             userkey = random.randint(0,2**31 - 1)
             user.password += "_%d" % userkey
             user.is_active = False
@@ -71,7 +71,7 @@ This function is overloaded to handle either one or two phase reg"""
 
         user.groups.add(Group.objects.get(name=form.cleaned_data['initial_role']))
 
-        if not Tag.getBooleanTag('require_email_validation', default=False):
+        if not Tag.getBooleanTag('require_email_validation'):
             user = authenticate(username=form.cleaned_data['username'],
                                     password=form.cleaned_data['password'])
 
@@ -96,7 +96,7 @@ When there are already accounts with this email address (depending on some tags)
 
     if form.is_valid():
         ## First, check to see if we have any users with the same email
-        if not 'do_reg_no_really' in request.POST and Tag.getBooleanTag('ask_about_duplicate_accounts', default=False):
+        if not 'do_reg_no_really' in request.POST and Tag.getBooleanTag('ask_about_duplicate_accounts'):
             existing_accounts = ESPUser.objects.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
             awaiting_activation_accounts = ESPUser.objects.filter(email=form.cleaned_data['email']).filter(is_active=False, password__regex='\$(.*)_').exclude(password='emailuser')
             if len(existing_accounts)+len(awaiting_activation_accounts) != 0:
@@ -123,7 +123,7 @@ def user_registration_phase1(request):
 
     #depending on a tag, we'll either have registration all in one page,
     #or in two separate ones
-    if not Tag.getBooleanTag("ask_about_duplicate_accounts",default=False):
+    if not Tag.getBooleanTag("ask_about_duplicate_accounts"):
         if request.method == 'POST':
             return user_registration_validate(request)
 
@@ -146,7 +146,7 @@ def user_registration_phase2(request):
     if request.method == 'POST':
         return user_registration_validate(request)
 
-    if not Tag.getBooleanTag("ask_about_duplicate_accounts",default=False):
+    if not Tag.getBooleanTag("ask_about_duplicate_accounts"):
         return HttpResponseRedirect(reverse("esp.users.views.user_registration_phase1"))
 
     try:

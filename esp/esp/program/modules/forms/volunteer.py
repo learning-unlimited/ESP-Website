@@ -122,17 +122,17 @@ class VolunteerOfferForm(forms.Form):
         super(VolunteerOfferForm, self).__init__(*args, **kwargs)
         vrs = self.program.getVolunteerRequests()
         self.fields['requests'].choices = [(v.id, '%s: %s (%s more needed)' % (v.timeslot.pretty_time(), v.timeslot.description, positive_or_no(v.num_volunteers - v.num_offers()))) for v in vrs]
-        self.fields['shirt_size'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('volunteer_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
-        self.fields['shirt_type'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types', default = 'Straight cut, Fitted cut').split(',')]
+        self.fields['shirt_size'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('volunteer_shirt_sizes').split(',')]
+        self.fields['shirt_type'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types').split(',')]
 
         #   Show t-shirt fields if specified by Tag (disabled by default)
-        if not Tag.getBooleanTag('volunteer_tshirt_options', default=False):
+        if not Tag.getBooleanTag('volunteer_tshirt_options'):
             del self.fields['shirt_size']
             del self.fields['shirt_type']
-        elif not Tag.getBooleanTag('volunteer_tshirt_type_selection', default=False):
+        elif not Tag.getBooleanTag('volunteer_tshirt_type_selection'):
             del self.fields['shirt_type']
 
-        if not Tag.getBooleanTag('volunteer_allow_comments', default=False):
+        if not Tag.getBooleanTag('volunteer_allow_comments'):
             del self.fields['comments']
         else:
             tag_data = Tag.getProgramTag('volunteer_help_text_comments', self.program)
@@ -149,7 +149,7 @@ class VolunteerOfferForm(forms.Form):
         previous_offers = user.getVolunteerOffers(self.program).order_by('-id')
         if previous_offers.exists():
             self.fields['has_previous_requests'].initial = True
-            self.fields['requests'].initial = previous_offers.values_list('request', flat=True)
+            self.fields['requests'].initial = list(previous_offers.values_list('request', flat=True))
             if 'shirt_size' in self.fields:
                 self.fields['shirt_size'].initial = previous_offers[0].shirt_size
             if 'shirt_type' in self.fields:
