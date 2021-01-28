@@ -45,6 +45,10 @@ from django.shortcuts import render
 from django.template import RequestContext
 from django.utils.translation import ugettext as _
 
+try:
+    from django.utils.deprecation import MiddlewareMixin
+except ImportError:
+    MiddlewareMixin = object
 
 # TODO(benkraft): replace with the django version
 class Http403(Exception):
@@ -90,7 +94,7 @@ def ESPError(message=None, log=True):
         return cls(message)
 
 """ Adapted from http://www.djangosnippets.org/snippets/802/ """
-class AjaxErrorMiddleware(object):
+class AjaxErrorMiddleware(MiddlewareMixin):
     '''Return AJAX errors to the browser in a sensible way.
 
     Includes some code from http://www.djangosnippets.org/snippets/650/
@@ -153,7 +157,7 @@ class AjaxErrorMiddleware(object):
 AjaxError = AjaxErrorMiddleware.AjaxError
 
 
-class ESPErrorMiddleware(object):
+class ESPErrorMiddleware(MiddlewareMixin):
     """ This middleware handles errors appropriately.
     It will display a friendly error if there indeed was one
     (and emails the admin). This, of course, is only true if DEBUG is
