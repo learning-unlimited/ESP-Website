@@ -210,12 +210,7 @@ class AdminClass(ProgramModuleObj):
             cls_cancel_form = None
         else:
             cls_cancel_form = ClassCancellationForm(subject=cls)
-        sec_cancel_forms = []
-        for sec in sections:
-            if sec.isCancelled():
-                sec_cancel_forms.append(None)
-            else:
-                sec_cancel_forms.append(SectionCancellationForm(section=sec, prefix='sec'+str(sec.index())))
+        sec_cancel_forms = SectionCancellationForm(cls = cls)
 
         action = request.GET.get('action', None)
 
@@ -227,16 +222,15 @@ class AdminClass(ProgramModuleObj):
                     #   Call the Class{Subject,Section}.cancel() method to email and remove students, etc.
                     cls_cancel_form.cleaned_data['target'].cancel(email_students=True, include_lottery_students=cls_cancel_form.cleaned_data['email_lottery_students'], text_students=cls_cancel_form.cleaned_data['text_students'], email_teachers = cls_cancel_form.cleaned_data['email_teachers'], explanation=cls_cancel_form.cleaned_data['explanation'], unschedule=cls_cancel_form.cleaned_data['unschedule'])
                     cls_cancel_form = None
-            else:
-                j = 0
-                for i in [sec.index() for sec in sections]:
-                    if action == ('cancel_sec_%d' % i):
-                        sec_cancel_forms[j].data = request.POST
-                        sec_cancel_forms[j].is_bound = True
-                        if sec_cancel_forms[j].is_valid():
-                            sec_cancel_forms[j].cleaned_data['target'].cancel(email_students=True, include_lottery_students=sec_cancel_forms[j].cleaned_data['email_lottery_students'], text_students=sec_cancel_forms[j].cleaned_data['text_students'], email_teachers = sec_cancel_forms[j].cleaned_data['email_teachers'], explanation=sec_cancel_forms[j].cleaned_data['explanation'], unschedule=sec_cancel_forms[j].cleaned_data['unschedule'])
-                            sec_cancel_forms[j] = None
-                    j += 1
+            elif action == 'cancel_sec':
+                sec_cancel_forms.data = request.POST
+                sec_cancel_forms.is_bound = True
+                if sec_cancel_forms.is_valid():
+                    cleaned_data = sec_cancel_forms.cleaned_data
+                    for sec in sections:
+                        if not sec.isCancelled() and sec in cleaned_data['target']:
+                            sec.cancel(email_students=True, include_lottery_students=cleaned_data['email_lottery_students'], text_students=cleaned_data['text_students'], email_teachers = cleaned_data['email_teachers'], explanation=cleaned_data['explanation'], unschedule=cleaned_data['unschedule'])
+                            sec_cancel_forms = SectionCancellationForm(cls = cls)
 
         cls_form = ClassManageForm(self, subject=cls)
         sec_forms = [SectionManageForm(self, section=sec, prefix='sec'+str(sec.index())) for sec in cls.sections.all().order_by('id')]

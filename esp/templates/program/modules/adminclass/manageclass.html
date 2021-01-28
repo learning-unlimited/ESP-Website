@@ -132,29 +132,27 @@
 {% endif %}
 
 {% if cls_cancel_form %}
-{% for form in sec_cancel_forms %}
-{% if not form %}
+{% if sec_cancel_forms.fields.target.choices|length == 0 %}
     <table align="center" width="500">
     <tr>
-        <th colspan="2" align="center">Section {{ class.emailcode }}s{{ forloop.counter }} is already cancelled.</th>
+        <th colspan="2" align="center">All sections for  {{ class.emailcode }} are already cancelled.</th>
     </tr>
     </table>
 {% else %}
-    <form name="sec{{ forloop.counter }}_cancel" action="{{ request.path }}?action=cancel_sec_{{ forloop.counter }}" method="POST">
+    <form name="sec_cancel" action="{{ request.path }}?action=cancel_sec" method="POST">
     <table align="center" width="500">
     <tr>
-        <th colspan="2" align="center">Cancel section {{ class.emailcode }}s{{ forloop.counter }}: {{ class.title }}</th>
+        <th colspan="2" align="center">Cancel sections for {{ class.emailcode }}: {{ class.title }}</th>
     </tr>
-    {{ form }}
+    {{ sec_cancel_forms }}
     <tr>
         <th class="smaller" colspan="2" align="center">
-        <input type="submit" class="fancybutton" value="Cancel Section">
+        <input type="submit" class="fancybutton" value="Cancel Section(s)">
         </th>
     </tr>
     </table>
     </form>
 {% endif %}
-{% endfor %}
 {% endif %}
 
 <br />
