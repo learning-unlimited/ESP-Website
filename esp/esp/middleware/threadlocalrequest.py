@@ -7,6 +7,10 @@ import threading
 _threading_local = threading.local()
 
 from django.template import Context, RequestContext
+try:
+    from django.utils.deprecation import MiddlewareMixin
+except ImportError:
+    MiddlewareMixin = object
 
 def get_current_request():
     return getattr(_threading_local, 'request', None)
@@ -32,7 +36,7 @@ def AutoRequestContext(*args, **kwargs):
     # we need to return a dictionary
     return retVal.flatten()
 
-class ThreadLocals(object):
+class ThreadLocals(MiddlewareMixin):
     """
     Middleware that gets various objects from the
     request object and saves them in thread local storage.
