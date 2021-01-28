@@ -462,7 +462,7 @@ class TextOfEmail(models.Model):
         return orm_class.objects.filter(Q(sent_by__isnull=True) | Q(sent_by__lt=now), sent__isnull=True, tries__gte=min_tries).update(sent=now)
 
     class Meta:
-        verbose_name_plural = 'Email Texts'
+        verbose_name_plural = 'Email texts'
 
 class MessageVars(models.Model):
     """ A storage of message variables for a specific message. """
@@ -542,7 +542,7 @@ class MessageVars(models.Model):
         return "Message Variables for %s" % self.messagerequest
 
     class Meta:
-        verbose_name_plural = 'Message Variables'
+        verbose_name_plural = 'Message variables'
 
 
 class EmailRequest(models.Model):

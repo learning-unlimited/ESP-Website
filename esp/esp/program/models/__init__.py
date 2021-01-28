@@ -1992,6 +1992,7 @@ class ScheduleTestCategory(ScheduleTestTimeblock):
 
     class Meta:
         app_label = 'program'
+        verbose_name_plural = 'Schedule test categories'
 
 class ScheduleTestSectionList(ScheduleTestTimeblock):
     """ Boolean value testing: Does the schedule contain one of the specified
