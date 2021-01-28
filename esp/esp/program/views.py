@@ -538,9 +538,11 @@ def newprogram(request):
                 ct = ContentType.objects.get_for_model(old_prog)
                 old_tags = Tag.objects.filter(content_type=ct, object_id=old_prog.id)
                 for old_tag in old_tags:
-                    new_tag, _ = Tag.objects.get_or_create(key=old_tag.key, content_type=ct, object_id=new_prog.id)
-                    new_tag.value = old_tag.value
-                    new_tag.save()
+                    new_tag, created = Tag.objects.get_or_create(key=old_tag.key, content_type=ct, object_id=new_prog.id)
+                    # Some tags get created during program creation (e.g. sibling discount), and we don't want to override those
+                    if created:
+                        new_tag.value = old_tag.value
+                        new_tag.save()
             else:
                 # Create new modules
                 new_prog.getModules()
