@@ -32,9 +32,12 @@ Learning Unlimited, Inc.
 """
 
 from django import template
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
 from django.http import QueryDict
 from django.template import loader
 from esp.program.models.class_ import ClassSubject
+from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 
 
 import os
@@ -46,6 +49,31 @@ except ImportError:
     import pickle
 
 register = template.Library()
+
+@cache_inclusion_tag(register, 'inclusion/survey/responses_for_admins.html')
+def render_responses_for_admins(survey):
+    """Render the survey responses for admin review."""
+    return _render_responses_for_admins_helper(survey)
+render_responses_for_admins.cached_function.depend_on_row('survey.SurveyResponse', lambda sr: {'survey': sr.survey})
+
+@cache_inclusion_tag(register, 'inclusion/survey/responses_for_admins.tex')
+def render_responses_for_admins_pdf(survey):
+    """Render the survey responses for admin review."""
+    return _render_responses_for_admins_helper(survey)
+render_responses_for_admins_pdf.cached_function.depend_on_row('survey.SurveyResponse', lambda sr: {'survey': sr.survey})
+
+def _render_responses_for_admins_helper(survey):
+    """Render the survey responses for admin review."""
+    subject_ct=ContentType.objects.get(app_label="program",model="classsubject")
+    section_ct=ContentType.objects.get(app_label="program",model="classsection")
+
+    questions = survey.questions.filter(per_class=False).order_by('-question_type__is_numeric', 'seq')
+    survey.display_data = {'questions': [ { 'question': y, 'answers': y.answer_set.all() } for y in questions ]}
+    classes = survey.program.sections().order_by('parent_class', 'id')
+    perclass_questions = survey.questions.filter(per_class=True).order_by('-question_type__is_numeric', 'seq')
+    survey.perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(Q(content_type=section_ct,object_id=x.id) | Q(content_type=subject_ct,object_id=x.parent_class.id)) } for y in perclass_questions ] } for x in classes ]
+
+    return {'s': survey}
 
 @register.filter
 def midValue(sizeLs0):

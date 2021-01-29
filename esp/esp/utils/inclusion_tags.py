@@ -53,6 +53,9 @@ from esp.program.templatetags.class_render_row import render_class_teacher_list_
 from esp.qsd.templatetags.render_qsd import render_qsd
 from esp.qsd.templatetags.render_qsd import render_inline_qsd
 
+from esp.survey.templatetags.survey import render_responses_for_admins
+from esp.survey.templatetags.survey import render_responses_for_admins_pdf
+
 from esp.web.templatetags.navbar import navbar_gen
 
 from esp.web.templatetags.topbar import get_primary_nav

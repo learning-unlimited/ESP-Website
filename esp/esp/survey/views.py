@@ -38,7 +38,6 @@ Learning Unlimited, Inc.
 import datetime
 import xlwt
 import re
-from argcache import cache_function
 from cStringIO import StringIO
 from django.db import models
 from django.db.models import Q
@@ -242,6 +241,7 @@ def get_survey_info(request, tl, program, instance):
 
     return (user, prog, surveys)
 
+
 def display_survey(user, prog, surveys, request, tl, format, template = 'survey/review.html', context = {}):
     """ Wrapper doing the necessary work for the survey output. """
     from esp.program.models import ClassSubject, ClassSection
@@ -272,14 +272,9 @@ def display_survey(user, prog, surveys, request, tl, format, template = 'survey/
     subject_ct=ContentType.objects.get(app_label="program",model="classsubject")
     section_ct=ContentType.objects.get(app_label="program",model="classsection")
     if tl == 'manage' and teacher is None and sec is None and cls is None:
-        #   In the manage category, pack the data in as extra attributes to the surveys
+        # since this requires a lot of processing, we cache the display with an inclusion_tag in the template
+        # therefore, all we need is the list of surveys
         survey_list = list(surveys)
-        for s in survey_list:
-            questions = s.questions.filter(per_class=False).order_by('-question_type__is_numeric', 'seq')
-            s.display_data = {'questions': [ { 'question': y, 'answers': y.answer_set.all() } for y in questions ]}
-            classes = prog.sections().order_by('parent_class', 'id')
-            perclass_questions = s.questions.filter(per_class=True).order_by('-question_type__is_numeric', 'seq')
-            s.perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(Q(content_type=section_ct,object_id=x.id) | Q(content_type=subject_ct,object_id=x.parent_class.id)) } for y in perclass_questions ] } for x in classes ]
     else:
         perclass_questions = surveys[0].questions.filter(per_class=True).order_by('-question_type__is_numeric', 'seq')
         classes = []
@@ -418,27 +413,17 @@ def survey_dump(request, tl, program, instance):
 
 @login_required
 def survey_review(request, tl, program, instance, template = 'survey/review.html', context = {}):
-    """ A wrapper of the next function so we can have the @login_required decorator """
-    return survey_review_cache(request, tl, program, instance, template, context)
-
-@cache_function
-def survey_review_cache(request, tl, program, instance, template, context):
     """ A view of all the survey results pertaining to a particular user in the given program. """
+
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
     return display_survey(user, prog, surveys, request, tl, 'html', template, context)
-survey_review_cache.depend_on_row('survey.SurveyResponse', lambda sr: {'program': sr.survey.program.program_type, 'instance': sr.survey.program.program_instance})
 
 @login_required
 def survey_graphical(request, tl, program, instance, template = 'survey/review.tex', context = {}):
-    """ A wrapper of the next function so we can have the @login_required decorator """
-    return survey_graphical_cache(request, tl, program, instance, template, context)
-
-@cache_function
-def survey_graphical_cache(request, tl, program, instance, template, context):
     """ A PDF view of the survey results with histograms. """
+
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
     return display_survey(user, prog, surveys, request, tl, 'tex', template, context)
-survey_graphical_cache.depend_on_row('survey.SurveyResponse', lambda sr: {'program': sr.survey.program.program_type, 'instance': sr.survey.program.program_instance})
 
 @login_required
 def survey_review_single(request, tl, program, instance, template = 'survey/review_single.html', context = {}):
