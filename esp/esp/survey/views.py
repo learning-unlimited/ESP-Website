@@ -38,6 +38,7 @@ Learning Unlimited, Inc.
 import datetime
 import xlwt
 import re
+from argcache import cache_function
 from cStringIO import StringIO
 from django.db import models
 from django.db.models import Q
@@ -241,7 +242,6 @@ def get_survey_info(request, tl, program, instance):
 
     return (user, prog, surveys)
 
-
 def display_survey(user, prog, surveys, request, tl, format, template = 'survey/review.html', context = {}):
     """ Wrapper doing the necessary work for the survey output. """
     from esp.program.models import ClassSubject, ClassSection
@@ -418,17 +418,27 @@ def survey_dump(request, tl, program, instance):
 
 @login_required
 def survey_review(request, tl, program, instance, template = 'survey/review.html', context = {}):
-    """ A view of all the survey results pertaining to a particular user in the given program. """
+    """ A wrapper of the next function so we can have the @login_required decorator """
+    return survey_review_cache(request, tl, program, instance, template, context)
 
+@cache_function
+def survey_review_cache(request, tl, program, instance, template, context):
+    """ A view of all the survey results pertaining to a particular user in the given program. """
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
     return display_survey(user, prog, surveys, request, tl, 'html', template, context)
+survey_review_cache.depend_on_row('survey.SurveyResponse', lambda sr: {'program': sr.survey.program.program_type, 'instance': sr.survey.program.program_instance})
 
 @login_required
 def survey_graphical(request, tl, program, instance, template = 'survey/review.tex', context = {}):
-    """ A PDF view of the survey results with histograms. """
+    """ A wrapper of the next function so we can have the @login_required decorator """
+    return survey_graphical_cache(request, tl, program, instance, template, context)
 
+@cache_function
+def survey_graphical_cache(request, tl, program, instance, template, context):
+    """ A PDF view of the survey results with histograms. """
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
     return display_survey(user, prog, surveys, request, tl, 'tex', template, context)
+survey_graphical_cache.depend_on_row('survey.SurveyResponse', lambda sr: {'program': sr.survey.program.program_type, 'instance': sr.survey.program.program_instance})
 
 @login_required
 def survey_review_single(request, tl, program, instance, template = 'survey/review_single.html', context = {}):
