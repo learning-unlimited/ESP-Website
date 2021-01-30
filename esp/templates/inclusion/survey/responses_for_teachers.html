@@ -1,0 +1,6 @@
+<tr style="border-top: 1px dashed black;"><th><h3><a name="class{{ sec.parent_class.id }}-{{ sec.index }}"></a>Responses for Section {{ sec.index }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h3></th></tr>
+{% for q in class_data %}
+    {% with sec.num_students as num_participants %}
+        <tr><td>{% include "survey/answers.html" %}</td></tr>
+    {% endwith %}
+{% endfor %}

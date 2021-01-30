@@ -50,6 +50,9 @@ except ImportError:
 
 register = template.Library()
 
+subject_ct=ContentType.objects.get(app_label="program",model="classsubject")
+section_ct=ContentType.objects.get(app_label="program",model="classsection")
+
 @cache_inclusion_tag(register, 'inclusion/survey/responses_for_admins.html')
 def render_responses_for_admins(survey):
     """Render the survey responses for admin review."""
@@ -64,16 +67,27 @@ render_responses_for_admins_pdf.cached_function.depend_on_row('survey.SurveyResp
 
 def _render_responses_for_admins_helper(survey):
     """Render the survey responses for admin review."""
-    subject_ct=ContentType.objects.get(app_label="program",model="classsubject")
-    section_ct=ContentType.objects.get(app_label="program",model="classsection")
-
     questions = survey.questions.filter(per_class=False).order_by('-question_type__is_numeric', 'seq')
-    survey.display_data = {'questions': [ { 'question': y, 'answers': y.answer_set.all() } for y in questions ]}
-    classes = survey.program.sections().order_by('parent_class', 'id')
-    perclass_questions = survey.questions.filter(per_class=True).order_by('-question_type__is_numeric', 'seq')
-    survey.perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(Q(content_type=section_ct,object_id=x.id) | Q(content_type=subject_ct,object_id=x.parent_class.id)) } for y in perclass_questions ] } for x in classes ]
+    display_data = [ { 'question': y, 'answers': y.answer_set.all() } for y in questions ]
+    return {'display_data': display_data, 'survey': survey}
 
-    return {'s': survey}
+@cache_inclusion_tag(register, 'inclusion/survey/responses_for_teachers.html')
+def render_responses_for_teachers(sec, survey):
+    """Render the survey responses for teacher review in HTML."""
+    return _render_responses_for_teachers_helper(sec, survey)
+render_responses_for_teachers.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey, 'sec': ClassSection.objects.get(id=ans.content_id)})
+
+@cache_inclusion_tag(register, 'inclusion/survey/responses_for_teachers.tex')
+def render_responses_for_teachers_pdf(sec, survey):
+    """Render the survey responses for teacher review in LaTeX."""
+    return _render_responses_for_teachers_helper(sec, survey)
+render_responses_for_teachers_pdf.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey, 'sec': ClassSection.objects.get(id=ans.content_id)})
+
+def _render_responses_for_teachers_helper(sec, survey):
+    """Render the survey responses for teacher review."""
+    class_questions = survey.questions.filter(per_class=True).order_by('-question_type__is_numeric', 'seq')
+    class_data = [ { 'question': question, 'answers': question.answer_set.filter(Q(content_type=section_ct,object_id=sec.id) | Q(content_type=subject_ct,object_id=sec.parent_class.id)) } for question in class_questions ]
+    return {'class_data': class_data, 'sec': sec, 'survey': survey}
 
 @register.filter
 def midValue(sizeLs0):
