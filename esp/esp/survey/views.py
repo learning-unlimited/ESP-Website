@@ -268,9 +268,9 @@ def display_survey(user, prog, surveys, request, tl, format, template = 'survey/
         teacher = getByIdOrNone(ESPUser, 'teacher_id')
 
     context.update({'user': user, 'teacher': teacher, 'program': prog, 'tl': tl})
+    # since this requires a lot of processing/rendering, we cache the display with inclusion_tags in the template
+    # therefore, all we need is a list of surveys and a list of sections
     if tl == 'manage' and teacher is None and sec is None and cls is None:
-        # since this requires a lot of processing, we cache the display with an inclusion_tag in the template
-        # therefore, all we need is the list of surveys
         context.update({'surveys': list(surveys), 'sections': prog.sections().order_by('parent_class', 'id'), 'survey': None})
     else:
         if sec is not None:
