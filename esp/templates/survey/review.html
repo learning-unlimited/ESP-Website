@@ -98,7 +98,7 @@ td, th {
             <table class="fullwidth bordered">
             <tr><th><h2><a name="class{{ c.class.parent_class.id }}"></a>Responses for {{ sec.parent_class.emailcode }}: {{ sec.title }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2></th></tr>
             {% endifchanged %}
-            {% render_responses_for_teachers sec s %}
+            {% render_responses_for_program sec s %}
             {% if forloop.last %}
             </table></br></br>
             {% endif %}
@@ -113,7 +113,7 @@ td, th {
         <table class="fullwidth bordered">
         <tr><th><h2><a name="class{{ sec.parent_class.id }}"></a>Responses for {{ sec.parent_class.emailcode }}: {{ sec.title }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2></th></tr>
         {% endifchanged %}
-        {% render_responses_for_teachers sec survey %}
+        {% render_responses_for_section sec survey %}
         {% if forloop.last %}
         </table>
         {% endif %}
