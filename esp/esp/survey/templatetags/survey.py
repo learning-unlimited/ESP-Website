@@ -36,7 +36,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.http import QueryDict
 from django.template import loader
-from esp.program.models import Program, ClassSubject, ClassSection
+from esp.program.models import Program
+from esp.program.models.class_ import ClassSubject, ClassSection
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 
 
@@ -50,8 +51,8 @@ except ImportError:
 
 register = template.Library()
 
-subject_ct=ContentType.objects.get_for_model(ClassSubject)
-section_ct=ContentType.objects.get_for_model(ClassSection)
+subject_ct=ContentType.objects.get(app_label="program",model="classsubject")
+section_ct=ContentType.objects.get(app_label="program",model="classsection")
 program_ct=ContentType.objects.get_for_model(Program)
 
 @cache_inclusion_tag(register, 'inclusion/survey/responses_for_program.html')
