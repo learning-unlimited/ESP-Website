@@ -36,7 +36,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.http import QueryDict
 from django.template import loader
-from esp.program.models.class_ import ClassSubject
+from esp.program.models import Program
+from esp.program.models.class_ import ClassSubject, ClassSection
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 
 
@@ -50,20 +51,21 @@ except ImportError:
 
 register = template.Library()
 
-subject_ct=ContentType.objects.get(app_label="program",model="classsubject")
-section_ct=ContentType.objects.get(app_label="program",model="classsection")
+subject_ct=ContentType.objects.get_for_model(ClassSubject)
+section_ct=ContentType.objects.get_for_model(ClassSection)
+program_ct=ContentType.objects.get_for_model(Program)
 
-@cache_inclusion_tag(register, 'inclusion/survey/responses_for_admins.html')
+@cache_inclusion_tag(register, 'inclusion/survey/responses_for_program.html')
 def render_responses_for_program(survey):
     """Render the survey responses for admin review."""
     return _render_responses_for_program_helper(survey)
-render_responses_for_program.cached_function.depend_on_row('survey.SurveyResponse', lambda sr: {'survey': sr.survey})
+render_responses_for_program.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey}, filter=lambda ans: (ans.content_type == program_ct))
 
-@cache_inclusion_tag(register, 'inclusion/survey/responses_for_admins.tex')
+@cache_inclusion_tag(register, 'inclusion/survey/responses_for_program.tex')
 def render_responses_for_program_pdf(survey):
     """Render the survey responses for admin review."""
     return _render_responses_for_program_helper(survey)
-render_responses_for_program_pdf.cached_function.depend_on_row('survey.SurveyResponse', lambda sr: {'survey': sr.survey})
+render_responses_for_program_pdf.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey}, filter=lambda ans: (ans.content_type == program_ct))
 
 def _render_responses_for_program_helper(survey):
     """Render the survey responses for admin review."""
@@ -71,17 +73,17 @@ def _render_responses_for_program_helper(survey):
     display_data = [ { 'question': y, 'answers': y.answer_set.all() } for y in questions ]
     return {'display_data': display_data, 'survey': survey}
 
-@cache_inclusion_tag(register, 'inclusion/survey/responses_for_teachers.html')
+@cache_inclusion_tag(register, 'inclusion/survey/responses_for_section.html')
 def render_responses_for_section(sec, survey):
     """Render the survey responses for teacher review in HTML."""
     return _render_responses_for_section_helper(sec, survey)
-render_responses_for_section.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey, 'sec': ClassSection.objects.get(id=ans.content_id)})
+render_responses_for_section.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey, 'sec': ClassSection.objects.get(id=ans.object_id)}, filter=lambda ans: (ans.content_type == section_ct))
 
-@cache_inclusion_tag(register, 'inclusion/survey/responses_for_teachers.tex')
+@cache_inclusion_tag(register, 'inclusion/survey/responses_for_section.tex')
 def render_responses_for_section_pdf(sec, survey):
     """Render the survey responses for teacher review in LaTeX."""
     return _render_responses_for_section_helper(sec, survey)
-render_responses_for_section_pdf.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey, 'sec': ClassSection.objects.get(id=ans.content_id)})
+render_responses_for_section_pdf.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey, 'sec': ClassSection.objects.get(id=ans.object_id)}, filter=lambda ans: (ans.content_type == section_ct))
 
 def _render_responses_for_section_helper(sec, survey):
     """Render the survey responses for teacher review."""
