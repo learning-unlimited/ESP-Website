@@ -36,8 +36,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.http import QueryDict
 from django.template import loader
-from esp.program.models import Program
-from esp.program.models.class_ import ClassSubject, ClassSection
+from esp.program.models import Program, ClassSubject, ClassSection
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 
 
