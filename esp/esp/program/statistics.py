@@ -177,17 +177,17 @@ def startreg(form, programs, students, profiles, result_dict={}):
     for student in students:
         for program in programs:
 
-            reg_bits = StudentRegistration.objects.filter(user=student).order_by('start_date')
+            reg_bits = StudentRegistration.objects.filter(user=student, section__parent_class__parent_program = program).order_by('start_date')
             if reg_bits.exists():
                 if reg_bits[0].start_date.date() not in reg_dict[program]:
                     reg_dict[program][reg_bits[0].start_date.date()] = 0
                 reg_dict[program][reg_bits[0].start_date.date()] += 1
 
-            confirm_bits = Record.objects.filter(user=student, event='reg_confirmed', program=program).order_by('-date')
+            confirm_bits = Record.objects.filter(user=student, event='reg_confirmed', program=program).order_by('-time')
             if confirm_bits.exists():
-                if confirm_bits[0].date.date() not in confirm_dict[program]:
-                    confirm_dict[program][confirm_bits[0].date.date()] = 0
-                confirm_dict[program][confirm_bits[0].date.date()] += 1
+                if confirm_bits[0].time.date() not in confirm_dict[program]:
+                    confirm_dict[program][confirm_bits[0].time.date()] = 0
+                confirm_dict[program][confirm_bits[0].time.date()] += 1
 
     #   Compile and render
     startreg_list = []
