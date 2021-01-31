@@ -12,6 +12,10 @@
     list-style-type: none;
     padding-left: 0px;
 }
+#statistics_form_contents select
+{
+    margin-bottom: 5px;
+}
 #statistics_form_contents select[multiple]
 {
     border: 1px solid #999999;
@@ -27,6 +31,27 @@
 #statistics_form_contents input[type=submit]:hover
 {
     background-color: #999999;
+}
+#statistics_form_contents td, #statistics_form_contents th
+{
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+#statistics_form_contents label
+{
+    margin: 0px;
+}
+#statistics_form_contents input[type=checkbox] + br
+{
+  display: none;
+}
+#statistics_form_contents input[type=checkbox] + br + span
+{
+  margin-left: 5px;
+}
+#statistics_form_contents input[type="radio"], #statistics_form_contents input[type="checkbox"]
+{
+    margin: 0px;
 }
 </style>
 {% endblock %}
