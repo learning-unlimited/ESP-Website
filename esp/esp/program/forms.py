@@ -230,7 +230,7 @@ class StatisticsQueryForm(forms.Form):
 
     reg_types = forms.MultipleChoiceField(choices=reg_categories, widget=forms.SelectMultiple(), initial=['classreg'], label='Registration Categories')
 
-    school_query_type = forms.ChoiceField(choices=(('all', 'Match any school'), ('name', 'Enter partial school name'), ('list', 'Select school(s) from list')), initial='all', widget=forms.RadioSelect(), label='School Query Type')
+    school_query_type = forms.ChoiceField(choices=(('all', 'Match any school'), ('name', 'Enter partial school name')), initial='all', widget=forms.RadioSelect(), label='School Query Type')
     school_name = forms.CharField(required=False, widget=forms.TextInput(), label='[Partial] School Name')
     school_multisel = forms.MultipleChoiceField(required=False, choices=(), widget=forms.SelectMultiple(), label='School(s)', help_text='Hold down Ctrl to select more than one')
 
@@ -249,8 +249,10 @@ class StatisticsQueryForm(forms.Form):
         self.fields['program_type'].choices = StatisticsQueryForm.get_program_type_choices()
         self.fields['program_instances'].choices = StatisticsQueryForm.get_program_instance_choices(self.fields['program_type'].choices[0][0])
 
-        #   This will be done later if they ask
-        #   self.fields['school_multisel'].choices = StatisticsQueryForm.get_school_choices()
+        school_choices = StatisticsQueryForm.get_school_choices()
+        if len(school_choices) > 0:
+            self.fields['school_query_type'].choices.append(('list', 'Select school(s) from list'))
+            self.fields['school_multisel'].choices = school_choices
 
     def clean(self):
         """ Check that either 'All Programs' is selected or a program is selected   """
