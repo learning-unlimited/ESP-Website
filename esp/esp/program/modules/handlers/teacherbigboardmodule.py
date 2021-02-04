@@ -52,6 +52,10 @@ class TeacherBigBoardModule(ProgramModuleObj):
              self.num_teachers_teaching(prog, True)),
             ("classes registered",
              self.num_class_reg(prog)),
+            ("classes registered (sequences)",
+             self.num_class_style(prog, "Sequence")),
+            ("classes registered (standalones)",
+             self.num_class_style(prog, "Standalone")),
             ("classes approved",
              self.num_class_reg(prog, True)),
             ("class-hours registered",
@@ -77,6 +81,8 @@ class TeacherBigBoardModule(ProgramModuleObj):
         else:
             timess = [
                 ("number of registered classes", [(1, time) for time in self.reg_classes(prog)]),
+                ("number of registered classes (sequences)", [(1, time) for time in self.style_classes(prog, "Sequence")]),
+                ("number of registered classes (standalones)", [(1, time) for time in self.style_classes(prog, "Standalone")]),
                 ("number of approved classes", [(1, time) for time in self.reg_classes(prog, True)]),
                 ("number of teachers registered", [(1, time) for time in self.teach_times(prog)]),
                 ("number of teachers approved", [(1, time) for time in self.teach_times(prog, True)]),
@@ -157,8 +163,22 @@ class TeacherBigBoardModule(ProgramModuleObj):
         ).exclude(category__category__iexact="Lunch").distinct().count()
 
     @cache_function_for(105)
+    def num_class_style(self, prog, style, approved = False):
+        return ClassSubject.objects.filter(
+            self.get_filter(prog, approved) & Q(class_style=style)
+        ).exclude(category__category__iexact="Lunch").distinct().count()
+
+    @cache_function_for(105)
     def reg_classes(self, prog, approved = False):
         class_times = ClassSubject.objects.filter(self.get_filter(prog, approved)
+        ).exclude(category__category__iexact="Lunch"
+        ).distinct().values_list('timestamp', flat=True)
+        return sorted(class_times)
+
+    @cache_function_for(105)
+    def style_classes(self, prog, style, approved = False):
+        class_times = ClassSubject.objects.filter(
+            self.get_filter(prog, approved) & Q(class_style=style)
         ).exclude(category__category__iexact="Lunch"
         ).distinct().values_list('timestamp', flat=True)
         return sorted(class_times)
