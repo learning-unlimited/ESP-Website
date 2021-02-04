@@ -5,7 +5,9 @@
         <td style="width:7%">{{ timeslot.end|date:"f A" }}</td>
         <td style="width:45%">
             {% if timeslot.teachers %}
-                {{ timeslot.teachers|join:",<br />" }}
+                {% for teacher in timeslot.teachers %}
+                    <a href="/manage/userview?username={{ teacher.user.username|urlencode }}">{{ teacher.user.first_name }} {{ teacher.user.last_name }}</a> (<a href="mailto:{{ teacher.user.email }}" target="_blank">{{ teacher.user.email }}</a>) <br />
+                {% endfor %}
             {% else %}
                 <em>(None)</em>
             {% endif %}
