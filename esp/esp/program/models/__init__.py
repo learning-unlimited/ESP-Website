@@ -44,7 +44,6 @@ logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
-from localflavor.us.models import PhoneNumberField
 from django.core import urlresolvers, validators
 from django.core.cache import cache
 from django.db import models
@@ -2026,7 +2025,7 @@ class VolunteerOffer(models.Model):
     #   ...or this if you haven't.
     email = models.EmailField(blank=True, null=True, max_length=75)
     name = models.CharField(max_length=80, blank=True, null=True)
-    phone = PhoneNumberField(blank=True, null=True)
+    phone = models.CharField(max_length=50, blank=True, null=True)
 
     shirt_size = models.TextField(blank=True, null=True)
     shirt_type = models.TextField(blank=True, null=True)

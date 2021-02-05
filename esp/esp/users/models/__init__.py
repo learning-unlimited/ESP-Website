@@ -43,7 +43,7 @@ from django import forms, dispatch
 from django.conf import settings
 from django.contrib.auth import logout, login, REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User, AnonymousUser, Group, UserManager
-from localflavor.us.models import USStateField, PhoneNumberField
+from localflavor.us.models import USStateField
 from localflavor.us.forms import USStateSelect
 
 from django.contrib.sites.models import Site
@@ -1779,10 +1779,10 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     e_mail = models.EmailField('Email address', blank=True, null=True, max_length=75)
-    phone_day = PhoneNumberField('Home phone',blank=True, null=True)
-    phone_cell = PhoneNumberField('Cell phone',blank=True, null=True)
+    phone_day = models.CharField('Home phone',max_length=50,blank=True, null=True)
+    phone_cell = models.CharField('Cell phone',max_length=50,blank=True, null=True)
     receive_txt_message = models.BooleanField(default=False)
-    phone_even = PhoneNumberField('Alternate phone',blank=True, null=True)
+    phone_even = models.CharField('Alternate phone',max_length=50,blank=True, null=True)
     address_street = models.CharField('Street address',max_length=100,blank=True, null=True)
     address_city = models.CharField('City',max_length=50,blank=True, null=True)
     address_state = USStateField('State',blank=True, null=True)
