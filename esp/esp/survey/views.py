@@ -204,7 +204,7 @@ def get_survey_info(request, tl, program, instance):
 
     user = request.user
 
-    if (tl == 'teach' and user.isTeacher()):
+    if (tl == 'teach' and (user.isTeacher() or user.isAdmin(prog))):
         surveys = prog.getSurveys().filter(category = 'learn').select_related()
     elif (tl == 'manage' and user.isAdmin(prog)):
         #   Meerp, no problem... I took care of it.   -Michael
