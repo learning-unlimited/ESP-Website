@@ -88,32 +88,40 @@ class BigBoardModule(ProgramModuleObj):
     # bunch if multiple admins are loading the page, but short enough that each
     # time the page refreshes for the same admin, they will get new numbers
 
-    @cache_function_for(105)
-    def num_users_enrolled(self, prog):
+    @staticmethod
+    def users_enrolled(prog):
         # Querying for SRs and then extracting the users saves us joining the
         # users table.
         return StudentRegistration.valid_objects().filter(
             section__parent_class__parent_program=prog,
             relationship__name='Enrolled'
-        ).values_list('user').distinct().count()
+        ).values_list('user', flat = True).distinct()
 
     @cache_function_for(105)
-    def num_users_with_lottery(self, prog):
+    def num_users_enrolled(self, prog):
+        return self.users_enrolled(prog).count()
+
+    @staticmethod
+    def users_with_lottery(prog):
         # Past empirical observation has shown that doing the union in SQL is
         # much, much slower for unknown reasons; it also means we would have to
         # query over the users table, so this saves us joining that table.
         users_with_ssis = set(
             StudentSubjectInterest.valid_objects()
             .filter(subject__parent_program=prog)
-            .values_list('user').distinct())
+            .values_list('user', flat = True).distinct())
         users_with_srs = set(
             StudentRegistration.valid_objects()
             .filter(
                 Q(relationship__name='Interested') |
                 Q(relationship__name__contains='Priority/'),
                 section__parent_class__parent_program=prog)
-            .values_list('user').distinct())
-        return len(users_with_ssis | users_with_srs)
+            .values_list('user', flat = True).distinct())
+        return users_with_ssis | users_with_srs
+
+    @cache_function_for(105)
+    def num_users_with_lottery(self, prog):
+        return len(self.users_with_lottery(prog))
 
     @cache_function_for(105)
     def num_active_users(self, prog, minutes=10):
@@ -159,10 +167,13 @@ class BigBoardModule(ProgramModuleObj):
         return Record.objects.filter(program=prog,
                                      event__in=['med', 'med_bypass']).count()
 
+    @staticmethod
+    def checked_in_users(prog):
+        return Record.objects.filter(program=prog, event='attended').values_list('user', flat = True).distinct()
 
     @cache_function_for(105)
     def num_checked_in_users(self, prog):
-        return Record.objects.filter(program=prog, event='attended').count()
+        return self.checked_in_users(prog).count()
 
     @cache_function_for(105)
     def popular_classes(self, prog, num=5):

@@ -23,7 +23,7 @@
 {
     background-color: #999999;
 }
-#statistics_form_contents table {
+#statistics_form_contents table, #result table {
     width: 100%;
 }
 #statistics_form_contents tr {
@@ -57,4 +57,12 @@
 #statistics_form_contents input[type="radio"], #statistics_form_contents input[type="checkbox"]
 {
     margin: 0px;
+}
+#result table, #result tr, #result td, #result th {
+    border: black solid 1px;
+    border-spacing: 2px;
+    padding: 2px;
+}
+#result table {
+    margin-bottom: 10px;
 }

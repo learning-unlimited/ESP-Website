@@ -32,10 +32,14 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import json
+from collections import OrderedDict
+
 from django.template.loader import render_to_string
 
 from esp.program.models import Program, StudentRegistration
-from esp.users.models import Record
+from esp.users.models import ESPUser, Record
+from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 
 """
 This file contains a set of functions used to perform statistics queries
@@ -312,3 +316,47 @@ def hours(form, programs, students, profiles, result_dict={}):
     result_dict['hours_data'] = zip(programs, stats_flat, timeslots_flat, students_list)
     return render_to_string('program/statistics/hours.html', result_dict)
 
+def student_reg(form, programs, students, profiles, result_dict={}):
+    stat_names = [
+        'Student Lottery',
+        'Class Lottery',
+        'Enrolled',
+        'Checked In',
+    ]
+    prog_stats = []
+    # ordered dictionary so the legend is in order
+    series_data = OrderedDict((stat, []) for stat in stat_names)
+    for program in programs:
+        stats_list = []
+        # entered student lottery
+        stud_lott_num = len(program.students().get('phasezero', ESPUser.objects.none()) & students)
+        series_data['Student Lottery'].append([program.name, stud_lott_num])
+        stats_list.append(stud_lott_num)
+        # set class lottery preferences
+        class_lott_num = len(BigBoardModule.users_with_lottery(program) & set(students.values_list('id', flat = True)))
+        series_data['Class Lottery'].append([program.name, class_lott_num])
+        stats_list.append(stud_lott_num)
+        # enrolled in at least one class
+        enroll_num = len(set(BigBoardModule.users_enrolled(program)) & set(students.values_list('id', flat = True)))
+        series_data['Enrolled'].append([program.name, enroll_num])
+        stats_list.append(enroll_num)
+        # students checked in
+        checked_num = len(set(BigBoardModule.checked_in_users(program)) & set(students.values_list('id', flat = True)))
+        series_data['Checked In'].append([program.name, checked_num])
+        stats_list.append(checked_num)
+        prog_stats.append(stats_list)
+    prog_data = zip(programs, prog_stats)
+    graph_data = [{"description": desc, "data": json.dumps(data)} for desc, data in series_data.items()]
+    left_axis_data = [
+            {"axis_name": "# Students Registered", "series_data": graph_data},
+    ]
+    result_dict.update({"prog_data": prog_data,
+                        "stat_names": stat_names,
+                        "categories": json.dumps([program.name for program in programs.order_by('id')]),
+                        "left_axis_data": left_axis_data,
+                       })
+    return render_to_string('program/statistics/student_reg.html', result_dict)
+
+def teacher_reg(form, programs, teachers, profiles, result_dict={}):
+    
+    return render_to_string('program/statistics/teacher_reg.html', result_dict)

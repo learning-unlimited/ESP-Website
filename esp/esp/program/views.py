@@ -820,15 +820,23 @@ def statistics(request, program=None):
                 programs = programs.filter(url__in=form.cleaned_data['program_instances'])
             result_dict['programs'] = programs
 
-            #   Get list of students the query applies to
-            students_q = Q()
+            #   Get list of users the query applies to
+            users_q = Q()
             for program in programs:
-                for reg_type in form.cleaned_data['reg_types']:
-                    students_q = students_q | program.students(QObjects=True)[reg_type]
+                if 'student_reg_types' in form.cleaned_data:
+                    students_objects = program.students(QObjects=True)
+                    for reg_type in form.cleaned_data['student_reg_types']:
+                        if reg_type in students_objects.keys():
+                            users_q = users_q | students_objects[reg_type]
+                elif 'teacher_reg_types' in form.cleaned_data:
+                    teachers_objects = program.teachers(QObjects=True)
+                    for reg_type in form.cleaned_data['teacher_reg_types']:
+                        if reg_type in teachers_objects.keys():
+                            users_q = users_q | teachers_objects[reg_type]
 
             #   Narrow down by school (perhaps not ideal results, but faster)
             if form.cleaned_data['school_query_type'] == 'name':
-                students_q = students_q & (Q(studentinfo__school__icontains=form.cleaned_data['school_name']) | Q(studentinfo__k12school__name__icontains=form.cleaned_data['school_name']))
+                users_q = users_q & (Q(studentinfo__school__icontains=form.cleaned_data['school_name']) | Q(studentinfo__k12school__name__icontains=form.cleaned_data['school_name']))
             elif form.cleaned_data['school_query_type'] == 'list':
                 k12school_ids = []
                 school_names = []
@@ -837,27 +845,27 @@ def statistics(request, program=None):
                         k12school_ids.append(int(item[4:]))
                     elif item.startwith('Sch:'):
                         school_names.append(item[4:])
-                students_q = students_q & (Q(studentinfo__school__in=school_names) | Q(studentinfo__k12school__id__in=k12school_ids))
+                users_q = users_q & (Q(studentinfo__school__in=school_names) | Q(studentinfo__k12school__id__in=k12school_ids))
 
             #   Narrow down by Zip code, simply using the latest profile
-            #   Note: it would be harder to track students better (i.e. zip code A in fall 2008, zip code B in fall 2009)
+            #   Note: it would be harder to track users better (i.e. zip code A in fall 2008, zip code B in fall 2009)
             if form.cleaned_data['zip_query_type'] == 'exact':
-                students_q = students_q & Q(registrationprofile__contact_user__address_zip=form.cleaned_data['zip_code'], registrationprofile__most_recent_profile=True)
+                users_q = users_q & Q(registrationprofile__contact_user__address_zip=form.cleaned_data['zip_code'], registrationprofile__most_recent_profile=True)
             elif form.cleaned_data['zip_query_type'] == 'partial':
-                students_q = students_q & Q(registrationprofile__contact_user__address_zip__startswith=form.cleaned_data['zip_code_partial'], registrationprofile__most_recent_profile=True)
+                users_q = users_q & Q(registrationprofile__contact_user__address_zip__startswith=form.cleaned_data['zip_code_partial'], registrationprofile__most_recent_profile=True)
             elif form.cleaned_data['zip_query_type'] == 'distance':
                 zipc = ZipCode.objects.get(zip_code=form.cleaned_data['zip_code'])
                 zipcodes = zipc.close_zipcodes(form.cleaned_data['zip_code_distance'])
-                students_q = students_q & Q(registrationprofile__contact_user__address_zip__in = zipcodes, registrationprofile__most_recent_profile=True)
+                users_q = users_q & Q(registrationprofile__contact_user__address_zip__in = zipcodes, registrationprofile__most_recent_profile=True)
 
-            students = ESPUser.objects.filter(students_q).distinct()
-            result_dict['num_students'] = students.count()
-            profiles = [student.getLastProfile() for student in students]
+            users = ESPUser.objects.filter(users_q).distinct()
+            result_dict['num_users'] = users.count()
+            profiles = [user.getLastProfile() for user in users]
 
             #   Accumulate desired information for selected query
             from esp.program import statistics as statistics_functions
             if hasattr(statistics_functions, form.cleaned_data['query']):
-                context['result'] = getattr(statistics_functions, form.cleaned_data['query'])(form, programs, students, profiles, result_dict)
+                context['result'] = getattr(statistics_functions, form.cleaned_data['query'])(form, programs, users, profiles, result_dict)
             else:
                 context['result'] = 'Unsupported query'
 
