@@ -864,7 +864,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         - All programs' time ranges are determined by the start of their first
           timeslot and the end of their last timeslot.
-        - If there are any programs currently running, any programs whose first
+        - If there are not any programs currently running, any programs whose first
           timeslot is in less than 60 days, or any programs whose last timeslot
           was less than 30 days ago, we return all such programs as current
           programs.
