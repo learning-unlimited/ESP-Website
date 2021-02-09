@@ -180,6 +180,7 @@ class StatisticsQueryForm(forms.Form):
         ('hours', 'How many hours of class did the students take and when?'),
         ('student_reg', 'How many students registered?'),
         ('teacher_reg', 'How many teachers registered?'),
+        ('class_reg', 'How many classes were registered by teachers?'),
         #   (other queries here)
     )
 
@@ -238,8 +239,8 @@ class StatisticsQueryForm(forms.Form):
     program_instance_all = forms.BooleanField(required=False, initial=True, widget=forms.CheckboxInput(), label='Search All Instances?', help_text='Uncheck to select specific instances')
     program_instances = forms.MultipleChoiceField(required=False, choices=((None, ''),), widget=forms.SelectMultiple(), label='Instance(s) of Program')  #   Choices will be replaced by Ajax request if necessary
 
-    student_reg_types = forms.MultipleChoiceField(choices=student_reg_categories, widget=forms.SelectMultiple(), initial='classreg', label='Registration Categories')
-    teacher_reg_types = forms.MultipleChoiceField(choices=teacher_reg_categories, widget=forms.SelectMultiple(), initial='class_approved', label='Registration Categories')
+    student_reg_types = forms.MultipleChoiceField(required=False, choices=student_reg_categories, widget=forms.SelectMultiple(), label='Registration Categories', help_text='Leaving this blank will select all students')
+    teacher_reg_types = forms.MultipleChoiceField(required=False, choices=teacher_reg_categories, widget=forms.SelectMultiple(), label='Registration Categories', help_text='Leaving this blank will select all teachers')
 
     school_query_type = forms.ChoiceField(choices=(('all', 'Match any school'), ('name', 'Enter partial school name')), initial='all', widget=forms.RadioSelect(), label='School Query Type')
     school_name = forms.CharField(required=False, widget=forms.TextInput(), label='[Partial] School Name')
@@ -378,12 +379,15 @@ class StatisticsQueryForm(forms.Form):
         if 'query' not in data or data['query'] not in ['zipcodes', 'heardabout', 'schools']:
             self.hide_field('limit')
 
-        #   Hide fields that don't apply to teachers
-        if 'query' in data and data['query'] in ['teacher_reg']:
+        if 'query' in data and data['query'] in ['teacher_reg', 'class_reg']:
+            #   Hide fields that don't apply to teachers
             self.hide_field('student_reg_types')
+            self.disable_field('student_reg_types')
             self.hide_field('school_query_type')
         else:
+            #   Hide fields that don't apply to students
             self.hide_field('teacher_reg_types')
+            self.disable_field('teacher_reg_types')
 
     @staticmethod
     def get_multiselect_fields():

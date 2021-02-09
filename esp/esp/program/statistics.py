@@ -40,6 +40,7 @@ from django.template.loader import render_to_string
 from esp.program.models import Program, StudentRegistration
 from esp.users.models import ESPUser, Record
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
+from esp.program.modules.handlers.teacherbigboardmodule import TeacherBigBoardModule
 
 """
 This file contains a set of functions used to perform statistics queries
@@ -358,5 +359,32 @@ def student_reg(form, programs, students, profiles, result_dict={}):
     return render_to_string('program/statistics/student_reg.html', result_dict)
 
 def teacher_reg(form, programs, teachers, profiles, result_dict={}):
-    
+    stat_names = [
+        'Class Registered',
+        'Class Approved',
+    ]
+    prog_stats = []
+    # ordered dictionary so the legend is in order
+    series_data = OrderedDict((stat, []) for stat in stat_names)
+    for program in programs:
+        stats_list = []
+        # teachers that registered a class
+        teach_reg = len(set(TeacherBigBoardModule.teachers_teaching(program)) & set(teachers.values_list('id', flat = True)))
+        series_data['Class Registered'].append([program.name, teach_reg])
+        stats_list.append(teach_reg)
+        # teachers with an approved class
+        teach_app = len(set(TeacherBigBoardModule.teachers_teaching(program, True)) & set(teachers.values_list('id', flat = True)))
+        series_data['Class Approved'].append([program.name, teach_app])
+        stats_list.append(teach_app)
+        prog_stats.append(stats_list)
+    prog_data = zip(programs, prog_stats)
+    graph_data = [{"description": desc, "data": json.dumps(data)} for desc, data in series_data.items()]
+    left_axis_data = [
+            {"axis_name": "# Teachers Registered", "series_data": graph_data},
+    ]
+    result_dict.update({"prog_data": prog_data,
+                        "stat_names": stat_names,
+                        "categories": json.dumps([program.name for program in programs.order_by('id')]),
+                        "left_axis_data": left_axis_data,
+                       })
     return render_to_string('program/statistics/teacher_reg.html', result_dict)

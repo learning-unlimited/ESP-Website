@@ -13,6 +13,11 @@ from esp.utils.decorators import cached_module_view
 from esp.utils.web import render_to_response
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 
+def get_filter(prog, approved):
+    filt = Q(parent_program=prog)
+    if approved:
+        filt &= Q(status__gt=0, sections__status__gt=0)
+    return filt
 
 class TeacherBigBoardModule(ProgramModuleObj):
 
@@ -126,14 +131,18 @@ class TeacherBigBoardModule(ProgramModuleObj):
     # this is the date we added timestamps
     mindate = datetime.datetime(2016, 1, 30)
 
-    @cache_function_for(105)
-    def num_teachers_teaching(self, prog, approved = False):
+    @staticmethod
+    def teachers_teaching(prog, approved = False):
         # Querying for SRs and then extracting the users saves us joining the
         # users table.
-        return ClassSubject.objects.filter(self.get_filter(prog, approved)
+        return ClassSubject.objects.filter(get_filter(prog, approved)
         ).exclude(category__category__iexact="Lunch"
         ).exclude(teachers=None
-        ).values_list('teachers').distinct().count()
+        ).values_list('teachers', flat = True).distinct()
+
+    @cache_function_for(105)
+    def num_teachers_teaching(self, prog, approved = False):
+        return self.teachers_teaching(prog, approved).count()
 
     @cache_function_for(105)
     def num_active_users(self, prog, minutes=10):
@@ -153,19 +162,19 @@ class TeacherBigBoardModule(ProgramModuleObj):
 
     @cache_function_for(105)
     def num_class_reg(self, prog, approved = False):
-        return ClassSubject.objects.filter(self.get_filter(prog, approved)
+        return ClassSubject.objects.filter(get_filter(prog, approved)
         ).exclude(category__category__iexact="Lunch").distinct().count()
 
     @cache_function_for(105)
     def reg_classes(self, prog, approved = False):
-        class_times = ClassSubject.objects.filter(self.get_filter(prog, approved)
+        class_times = ClassSubject.objects.filter(get_filter(prog, approved)
         ).exclude(category__category__iexact="Lunch"
         ).distinct().values_list('timestamp', flat=True)
         return sorted(class_times)
 
     @cache_function_for(105)
     def teach_times(self, prog, approved = False):
-        teacher_times = dict(ClassSubject.objects.filter(self.get_filter(prog, approved)
+        teacher_times = dict(ClassSubject.objects.filter(get_filter(prog, approved)
         ).exclude(category__category__iexact="Lunch"
         ).exclude(teachers=None
         ).distinct().values_list('teachers').annotate(Min('timestamp')))
@@ -173,7 +182,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
 
     @cache_function_for(105)
     def get_hours(self, prog, approved = False):
-        hours = ClassSubject.objects.filter(self.get_filter(prog, approved)
+        hours = ClassSubject.objects.filter(get_filter(prog, approved)
         ).annotate(num_sections=Count('sections')).filter(num_sections__gt=0
         ).exclude(category__category__iexact="Lunch"
         ).values_list('timestamp','class_size_max'
@@ -191,13 +200,6 @@ class TeacherBigBoardModule(ProgramModuleObj):
             return [sum(zip(*j)[0]) for j in hours]
         else:
             return [0,0]
-
-    @staticmethod
-    def get_filter(prog, approved):
-        filt = Q(parent_program=prog)
-        if approved:
-            filt &= Q(status__gt=0, sections__status__gt=0)
-        return filt
 
     # runs in 9ms, so don't bother caching
     def load_averages(self):
