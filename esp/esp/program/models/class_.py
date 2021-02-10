@@ -1759,7 +1759,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                             return True
 
 
-        #   Check that adding this teacher as a coteacher would not overcommit them
+        #   Check if adding this teacher as a coteacher would overcommit them
         #   to more hours of teaching than the program allows.
         avail = Event.collapse(user.getAvailableTimes(self.parent_program, ignore_classes=True), tol=timedelta(minutes=15))
         time_avail = 0.0
@@ -1776,11 +1776,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         time_needed = 0.0
         for sec in self.get_sections():
             time_needed += float(str(sec.duration))
-        #   See if the available time exceeds the required time
-        if time_needed > time_avail:
-            return True
-
-        return False
+        #   See if the available time exceeds the required time, adding in a small amount of buffer for rounding errors
+        return (time_needed > time_avail + 0.00001)
 
     def isAccepted(self): return self.status > 0
     def isHidden(self): return self.status == HIDDEN
