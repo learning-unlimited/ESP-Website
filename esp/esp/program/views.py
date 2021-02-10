@@ -823,12 +823,12 @@ def statistics(request, program=None):
             #   Get list of users the query applies to
             users_q = Q()
             for program in programs:
-                if 'student_reg_types' in form.cleaned_data:
+                if 'student_reg_types' in form.cleaned_data and form.cleaned_data['student_reg_types']:
                     students_objects = program.students(QObjects=True)
                     for reg_type in form.cleaned_data['student_reg_types']:
                         if reg_type in students_objects.keys():
                             users_q = users_q | students_objects[reg_type]
-                elif 'teacher_reg_types' in form.cleaned_data:
+                elif 'teacher_reg_types' in form.cleaned_data and form.cleaned_data['teacher_reg_types']:
                     teachers_objects = program.teachers(QObjects=True)
                     for reg_type in form.cleaned_data['teacher_reg_types']:
                         if reg_type in teachers_objects.keys():
