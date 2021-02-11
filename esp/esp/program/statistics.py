@@ -336,7 +336,7 @@ def student_reg(form, programs, students, profiles, result_dict={}):
         # set class lottery preferences
         class_lott_num = len(BigBoardModule.users_with_lottery(program) & set(students.values_list('id', flat = True)))
         series_data['Class Lottery'].append([program.name, class_lott_num])
-        stats_list.append(stud_lott_num)
+        stats_list.append(class_lott_num)
         # enrolled in at least one class
         enroll_num = len(set(BigBoardModule.users_enrolled(program)) & set(students.values_list('id', flat = True)))
         series_data['Enrolled'].append([program.name, enroll_num])
