@@ -185,7 +185,7 @@ If the base VM has been changed (see above), you will want to upgrade your devel
 
 5. Run ``vagrant destroy`` (note, this destroys your virtual machine. Only do it once you are sure your database has been backed up and you are ready to continue).
 
-(There appears to be a problem in Windows related to administrative permissions that causes any new VM to break if it is created in a folder that previously had an old VM. If you are on Windows, at this point you should delete your entire "deviste" folder, then follow the entire "Installation" directions at the top of this file. Once you've run ``fab setup`` continue from #8 below)
+(There appears to be a problem in Windows related to administrative permissions that causes any new VM to break if it is created in a folder that previously had an old VM. If you are on Windows, at this point you should delete your entire "deviste" folder, then follow the entire `"Installation" directions <https://github.com/learning-unlimited/ESP-Website/blob/main/docs/dev/vagrant.rst#installation>`_ in this file. Once you've run ``fab setup`` continue from #8 below)
 
 6. Run ``git checkout main`` to checkout the main branch. If you are upgrading your VM as part of a pull request, replace "main" with the name of the PR branch.
 
