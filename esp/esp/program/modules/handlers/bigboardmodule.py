@@ -88,7 +88,7 @@ class BigBoardModule(ProgramModuleObj):
     # bunch if multiple admins are loading the page, but short enough that each
     # time the page refreshes for the same admin, they will get new numbers
 
-    @staticmethod
+    @cache_function_for(105)
     def users_enrolled(prog):
         # Querying for SRs and then extracting the users saves us joining the
         # users table.
@@ -96,12 +96,13 @@ class BigBoardModule(ProgramModuleObj):
             section__parent_class__parent_program=prog,
             relationship__name='Enrolled'
         ).values_list('user', flat = True).distinct()
+    users_enrolled = staticmethod(users_enrolled)
 
     @cache_function_for(105)
     def num_users_enrolled(self, prog):
         return self.users_enrolled(prog).count()
 
-    @staticmethod
+    @cache_function_for(105)
     def users_with_lottery(prog):
         # Past empirical observation has shown that doing the union in SQL is
         # much, much slower for unknown reasons; it also means we would have to
@@ -118,6 +119,7 @@ class BigBoardModule(ProgramModuleObj):
                 section__parent_class__parent_program=prog)
             .values_list('user', flat = True).distinct())
         return users_with_ssis | users_with_srs
+    users_with_lottery = staticmethod(users_with_lottery)
 
     @cache_function_for(105)
     def num_users_with_lottery(self, prog):
@@ -167,9 +169,10 @@ class BigBoardModule(ProgramModuleObj):
         return Record.objects.filter(program=prog,
                                      event__in=['med', 'med_bypass']).count()
 
-    @staticmethod
+    @cache_function_for(105)
     def checked_in_users(prog):
         return Record.objects.filter(program=prog, event='attended').values_list('user', flat = True).distinct()
+    checked_in_users = staticmethod(checked_in_users)
 
     @cache_function_for(105)
     def num_checked_in_users(self, prog):
