@@ -185,8 +185,12 @@ If the base VM has been changed (see above), you will want to upgrade your devel
 
 5. Run ``vagrant destroy`` (note, this destroys your virtual machine. Only do it once you are sure your database has been backed up and you are ready to continue).
 
+(There appears to be a problem in Windows related to administrative permissions that causes any new VM to break if it is created in a folder that previously had an old VM. If you are on Windows, at this point you should delete your entire "deviste" folder, then follow the entire "Installation" directions at the top of this file. Once you've run ``fab setup`` continue from #8 below)
+
 6. Run ``git checkout main`` to checkout the main branch. If you are upgrading your VM as part of a pull request, replace "main" with the name of the PR branch.
 
-7. Now follow the VM installations above, starting at ``vagrant up``. After running ``fab setup``, run ``fab loaddb:devsite_django.sql``. If you specified a different filename, use that instead.
+7. Now follow the VM installations above, starting at ``vagrant up``.
 
-8. Open your old local_settings.py file and your new local_settings.py file with a text editor. You will likely want to copy over most of your old local settings. The ONLY thing that MUST remain from the NEW version is the NEW DATABASE PASSWORD.
+8. After running ``fab setup``, run ``fab loaddb:devsite_django.sql``. If you specified a different filename, use that instead.
+
+9. Open your old local_settings.py file and your new local_settings.py file with a text editor. You will likely want to copy over most of your old local settings. The ONLY thing that MUST remain from the NEW version is the NEW DATABASE PASSWORD.
