@@ -64,24 +64,16 @@ function submit_prev_selection()
 
 function prepare_accordion(accordion_id, rb_selected)
 {
+    $j("#" + accordion_id).children(".ui-accordion-header:not(.any)").hide();
+    
     //  Show school/grade options for students, graduation year options for teachers
     if (rb_selected.toLowerCase().substr(0, 7) == "student")
     {
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(7).show();
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(8).show();
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(9).hide();
+        $j("#" + accordion_id).children(".ui-accordion-header.student").show();
     }
     else if (rb_selected.toLowerCase().substr(0, 7) == "teacher")
     {
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(7).hide();
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(8).hide();
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(9).show();
-    }
-    else
-    {
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(7).hide();
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(8).hide();
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(9).hide();
+        $j("#" + accordion_id).children(".ui-accordion-header.teacher").show();
     }
 }
 
@@ -114,7 +106,7 @@ function clear_filters(form_name)
 {
     //  Remove any existing data in the "user filtering options" part of a comm panel form
     var form = $j("#"+form_name)[0];
-    field_names = ["userid", "username", "first_name", "last_name", "email", "zipcode", "zipdistance", "zipdistance_exclude", "states", "school", "grade_min", "grade_max", "gradyear_min", "gradyear_max", "group"];
+    field_names = ["userid", "username", "first_name", "last_name", "email", "zipcode", "zipdistance", "zipdistance_exclude", "states", "school", "grade_min", "grade_max", "gradyear_min", "gradyear_max", "group", "clsid", "regtypes", "hours_min", "hours_max", "teaching_times", "teacher_events", "class_times", "target_user"];
     for (var i = 0; i < field_names.length; i++)
     {
         var form_field = $j(form).find(':input[name=' + field_names[i] + ']')[0];
@@ -151,8 +143,8 @@ function initialize()
     $j("#filter_accordion").accordion({
         heightStyle: "content",
         collapsible: true,
+        active: false,
     });
-    $j("#filter_accordion").accordion("option", "active", false);
 
     //  Handle changes in the recipient type
     recipient_type_change = function () {
@@ -175,7 +167,7 @@ function initialize()
     });
     recipient_type_change();
 
-    //  Handle clicks on show/hide e-mail list links
+    //  Handle clicks on show/hide email list links
     $j("button.commpanel_show_all").click(function () {
         $j("li.commpanel_list_entry").removeClass("commpanel_hidden");
         $j("button.commpanel_show_all").addClass("commpanel_hidden");
@@ -215,6 +207,7 @@ function initialize()
     $j("#combo_filter_accordion").accordion({
         heightStyle: "content",
         collapsible: true,
+        active: false,
     });
     $j("#combo_filter_accordion").accordion("option", "active", false);
 
@@ -285,7 +278,7 @@ function initialize()
     });
     $j("#combo_filter_done").click(submit_combo_selection);
 
-    /*  Previous e-mails tab    */
+    /*  Previous emails tab    */
 
     //  Set up message request autocomplete
     msgreq_data = json_fetch(["message_requests"], function (result_data) {
@@ -308,6 +301,13 @@ function initialize()
 
     //  Handle submit button
     $j("#prev_select_done").click(submit_prev_selection);
+
+    //  Populate fields with GET parameters
+    var items = location.search.substr(1).split("&").filter(Boolean);
+    for (var index = 0; index < items.length; index++) {
+        var key_val = items[index].split("=");
+        $j("[name=" + key_val[0] + "]").val(key_val[1].split(",")).change();
+    }
 }
 
 $j(document).ready(initialize);

@@ -94,7 +94,7 @@ ADMINS = (
     ('LU Web Team','serverlog@learningu.org'),
 )
 
-GRAPPELLI_ADMIN_TITLE = "ESP administration"
+#GRAPPELLI_ADMIN_TITLE = "ESP administration"
 
 #############################
 # Default database settings #
@@ -124,8 +124,8 @@ EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
 
 # Default addresses to send archive/bounce info to - should probably be overridden in local_settings
 DEFAULT_EMAIL_ADDRESSES = {
-    'archive': 'learninguarchive@gmail.com',
-    'bounces': 'learningubounces@gmail.com',
+    'archive': 'splashwebsitearchive@learningu.org',
+    'bounces': 'emailbounces@learningu.org',
     'support': 'websupport@learningu.org',
     'membership': 'info@learningu.org',
     'default': 'info@learningu.org',
@@ -133,10 +133,10 @@ DEFAULT_EMAIL_ADDRESSES = {
     'mailman_moderator': 'esp-moderators@mit.edu'
 }
 # The name of your host institution.
-INSTITUTION_NAME = 'MIT'
-# A 'slug' used in e-mail titles, like 'ESP' or 'Splash'
-ORGANIZATION_SHORT_NAME = 'ESP'
-# The host for ESP site-supported e-mail lists.
+INSTITUTION_NAME = 'LearningUniversity'
+# A 'slug' used in email titles, like 'ESP' or 'Splash'
+ORGANIZATION_SHORT_NAME = 'Splash'
+# The host for ESP site-supported email lists.
 EMAIL_HOST = 'localhost'
 
 #################################
@@ -181,8 +181,10 @@ TEMPLATES = [
                 'django.template.context_processors.media',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.static',
+                'django.template.context_processors.request',
             ],
             'loaders': [
+                'admin_tools.template_loaders.Loader',
                 'esp.utils.template.Loader',
                 ('django.template.loaders.cached.Loader',
                     (
@@ -194,6 +196,8 @@ TEMPLATES = [
         },
     },
 ]
+
+FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
 
 # Set MIDDLEWARE_LOCAL in local_settings.py to configure this
 MIDDLEWARE_GLOBAL = [
@@ -222,10 +226,6 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.staticfiles',
-    'grappelli',
-    'filebrowser',
-    'django.contrib.admin.apps.SimpleAdminConfig',
-    'django.contrib.admindocs',
     'esp.users.apps.UsersConfig',
     'esp.miniblog',
     'esp.web.apps.WebConfig',
@@ -252,6 +252,13 @@ INSTALLED_APPS = (
     'debug_toolbar',
     'esp.formstack',
     'esp.application.apps.ApplicationConfig',
+    'admin_tools',
+    'admin_tools.theming',
+    'admin_tools.menu',
+    'admin_tools.dashboard',
+    'filebrowser',
+    'django.contrib.admin.apps.SimpleAdminConfig',
+    'django.contrib.admindocs',
 )
 
 import os
@@ -290,8 +297,8 @@ AUTHENTICATION_BACKENDS = (
 
 CONTACTFORM_EMAIL_CHOICES = (
     ('esp','Unknown'),
-    ('general','General ESP'),
-    ('esp-web','Web Site Problems'),
+    ('general','General'),
+    ('esp-web','Website Problems'),
     ('relations',  'K-12 School Relations'),
     )
 
@@ -362,9 +369,25 @@ CYBERSOURCE_CONFIG = {
     'merchant_id': '',
 }
 
+FILEBROWSER_CUSTOM_ADMIN = 'esp.admin.admin_site'
+
 #   Allow Filebrowser to edit anything under media/
 #   (not just '/media/uploads/' which is the default)
 FILEBROWSER_DIRECTORY = ''
+
+FILEBROWSER_EXTENSIONS = {
+    'Image': ['.jpg','.jpeg','.gif','.png','.tif','.tiff','.ico'],
+    'Document': ['.pdf','.doc','.rtf','.txt','.xls','.csv'],
+    'Video': ['.mov','.wmv','.mpeg','.mpg','.avi','.rm'],
+    'Audio': ['.mp3','.mp4','.wav','.aiff','.midi','.m4p'],
+}
+
+FILEBROWSER_SELECT_FORMATS = {
+    'file': ['Image','Document','Video','Audio'],
+    'image': ['Image'],
+    'document': ['Document'],
+    'media': ['Video','Audio'],
+}
 
 #   Default imports for shell_plus, for convenience.
 SHELL_PLUS_POST_IMPORTS = (
@@ -379,3 +402,9 @@ TWILIO_ACCOUNT_NUMBERS = None
 # Default configuration for themes: set this to True to make recompile_theme
 # and the themes frontend refuse to do anything
 LOCAL_THEME = False
+
+ADMIN_TOOLS_MENU = 'admintoolsmenu.CustomMenu'
+ADMIN_TOOLS_INDEX_DASHBOARD = 'admintoolsdash.CustomIndexDashboard'
+ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
+
+ADMIN_TOOLS_THEMING_CSS = '/media/default_styles/admin_theme.css'

@@ -45,7 +45,7 @@ from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from django.http import HttpResponseRedirect, HttpResponseBadRequest
 
 from django.core.mail import send_mail
-from esp.users.models import ESPUser, Permission, admin_required, ZipCode
+from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability
 
 from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q
@@ -54,19 +54,22 @@ from django.db import transaction
 from django.core.mail import mail_admins
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
+from django.forms.models import model_to_dict
 from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
 
-from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration
-from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
+from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile
+from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.modules.handlers.studentregcore import StudentRegCore
+from esp.program.modules.handlers.commmodule import CommModule
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import CybersourcePostback
+from esp.dbmail.models import MessageRequest, TextOfEmail
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_members
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
@@ -76,6 +79,7 @@ import re
 import pickle
 import operator
 import json
+import datetime
 from collections import defaultdict
 from decimal import Decimal
 from reversion import revisions as reversion
@@ -288,40 +292,41 @@ def find_user(userstr):
         # first branch of the if statement gets taken
         userstr_parts = ["".join(userstr_parts)]
 
-    # single search token, could be username, id or email
-    #worth noting that a username may be an integer or an email so we will just check them all
+    # Single search token, could be username, id or email
+    # worth noting that a username may be an integer or an email so we will just check them all
     found_users = None
     if len(userstr_parts) == 1:
-        #try username?
+        # Try username?
         user_q = Q(username__iexact=userstr)
-        #try pk
+        # Try user id
         if userstr.isnumeric():
             user_q = user_q | Q(id=userstr)
-        #try e-mail?
-        if '@' in userstr:  # but don't even bother hitting the DB if it doesn't even have an '@'
+        # Try email
+        if '@' in userstr:  # Don't even bother hitting the DB if it doesn't even have an '@'
             user_q = user_q | Q(email__iexact=userstr)
-            user_q = user_q | Q(contactinfo__e_mail__iexact=userstr)  # search parent contact info, too
-        #try phone
+            user_q = user_q | Q(contactinfo__e_mail__iexact=userstr)  # Search parent contact info, too
+        # Try phone
         cleaned = userstr
         for char in "-.() ":
             cleaned = cleaned.replace(char, "")
         if cleaned.isnumeric() and len(cleaned) == 10:
             formatted = "%s%s%s-%s%s%s-%s%s%s%s" % tuple(cleaned)
             user_q = user_q | Q(contactinfo__phone_day=formatted) | Q(contactinfo__phone_cell=formatted)
-
+        # Try name (including parent/emergency contact)
         user_q = user_q | (Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr))
+        user_q = user_q | (Q(contactinfo__first_name__icontains=userstr) | Q(contactinfo__last_name__icontains=userstr))
         found_users = ESPUser.objects.filter(user_q).distinct()
     else:
         q_list = []
         for i in xrange(len(userstr_parts)):
             q_list.append( Q( first_name__icontains = ' '.join(userstr_parts[:i]), last_name__icontains = ' '.join(userstr_parts[i:]) ) )
+            q_list.append( Q( contactinfo__first_name__icontains = ' '.join(userstr_parts[:i]), contactinfo__last_name__icontains = ' '.join(userstr_parts[i:]) ) )
         # Allow any of the above permutations
         q = reduce(operator.or_, q_list)
         found_users = ESPUser.objects.filter( q ).distinct()
 
     #if the previous search attempt failed, try titles of courses a teacher has taught?
     if not found_users.exists():
-        # lastly,
         found_users = ESPUser.objects.filter(classsubject__title__icontains=userstr).distinct()
 
     return found_users
@@ -345,7 +350,9 @@ def usersearch(request):
         from urllib import urlencode
         return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users[0].username}))
     elif num_users > 1:
-        return render_to_response('users/userview_search.html', request, { 'found_users': found_users })
+        found_users = found_users.all()
+        sorted_users = sorted(found_users, key=lambda x: x.get_last_program_with_profile().dates()[0] if x.get_last_program_with_profile() and x.get_last_program_with_profile().dates() else datetime.date(datetime.MINYEAR, 1, 1), reverse=True)
+        return render_to_response('users/userview_search.html', request, { 'found_users': sorted_users })
     else:
         raise ESPError("No user found by that name!", log=False)
 
@@ -355,8 +362,21 @@ def userview(request):
     """ Render a template displaying all the information about the specified user """
     try:
         user = ESPUser.objects.get(username=request.GET['username'])
-    except:
+    except ESPUser.DoesNotExist:
         raise ESPError("Sorry, can't find anyone with that username.", log=False)
+
+    if 'program' in request.GET:
+        try:
+            program = Program.objects.get(id=request.GET['program'])
+        except Program.DoesNotExist:
+            raise ESPError("Sorry, can't find that program.", log=False)
+    else:
+        program = user.get_last_program_with_profile()
+
+    if program:
+        profile = RegistrationProfile.getLastForProgram(user, program)
+    else:
+        profile = user.getLastProfile()
 
     teacherbio = TeacherBio.getLastBio(user)
     if not teacherbio.picture:
@@ -375,13 +395,18 @@ def userview(request):
 
     context = {
         'user': user,
-        'taught_classes' : user.getTaughtClasses().order_by('parent_program', 'id'),
+        'taught_classes' : user.getTaughtClasses(include_rejected = True).order_by('parent_program', 'id'),
         'enrolled_classes' : user.getEnrolledSections().order_by('parent_class__parent_program', 'id'),
         'taken_classes' : user.getSections().order_by('parent_class__parent_program', 'id'),
         'teacherbio': teacherbio,
         'domain': settings.SITE_INFO[1],
         'change_grade_form': change_grade_form,
         'printers': StudentRegCore.printer_names(),
+        'all_programs': Program.objects.all().order_by('-id'),
+        'program': program,
+        'profile': profile,
+        'volunteer': VolunteerOffer.objects.filter(request__program = program, user = user).exists(),
+        'avail_set': UserAvailability.objects.filter(event__program = program, user = user).exists(),
     }
     return render_to_response("users/userview.html", request, context )
 
@@ -391,6 +416,20 @@ def deactivate_user(request):
 
 def activate_user(request):
     return activate_or_deactivate_user(request, activate=True)
+
+@admin_required
+def unenroll_student(request):
+    if request.method != 'POST' or 'user_id' not in request.POST or 'program' not in request.POST:
+        return HttpResponseBadRequest('')
+    users = ESPUser.objects.filter(id=request.POST['user_id'])
+    if users.count() != 1:
+        return HttpResponseBadRequest('')
+    else:
+        user = users[0]
+        sections = user.getSections(program = request.POST['program'])
+        for sec in sections:
+            sec.unpreregister_student(user)
+        return HttpResponseRedirect('/manage/userview?username=%s' % user.username)
 
 @admin_required
 def activate_or_deactivate_user(request, activate):
@@ -424,12 +463,11 @@ def newprogram(request):
        #try:
         template_prog_id = int(request.GET["template_prog"])
         tprogram = Program.objects.get(id=template_prog_id)
+        request.session['template_prog'] = template_prog_id
         template_prog = {}
-        template_prog.update(tprogram.__dict__)
+        template_prog.update(model_to_dict(tprogram))
         del template_prog["id"]
         template_prog["program_type"] = tprogram.program_type
-        template_prog["program_modules"] = tprogram.program_modules.all().values_list("id", flat=True)
-        template_prog["class_categories"] = tprogram.class_categories.all().values_list("id", flat=True)
         '''
         As Program Name should be new for each new program created then it is better to not to show old program names in input box .
         template_prog["term"] = tprogram.program_instance()
@@ -467,16 +505,21 @@ def newprogram(request):
 
             new_prog = pcf.save(commit = True)
 
-            commit_program(new_prog, context['perms'], context['modules'], context['cost'], context['sibling_discount'])
+            commit_program(new_prog, context['perms'], context['cost'], context['sibling_discount'])
 
             # Create the default resource types now
-            default_restypes = Tag.getProgramTag('default_restypes', program=new_prog)
+            default_restypes = Tag.getTag('default_restypes')
             if default_restypes:
                 resource_type_labels = json.loads(default_restypes)
                 resource_types = [ResourceType.get_or_create(x, new_prog) for x in resource_type_labels]
 
-            #   Force all ProgramModuleObjs and their extensions to be created now
-            new_prog.getModules()
+            # Force all ProgramModuleObjs and their extensions to be created now
+            # If we are using another program as a template, let's copy the seq and required values from that program.
+            if 'template_prog' in request.session:
+                old_prog = Program.objects.get(id=request.session['template_prog'])
+                new_prog.getModules(old_prog=old_prog)
+            else:
+                new_prog.getModules()
 
             manage_url = '/manage/' + new_prog.url + '/resources'
 
@@ -671,6 +714,59 @@ def flushcache(request):
 
     return render_to_response('admin/cache_flush.html', request, context)
 
+@admin_required
+def emails(request):
+    """
+    View that displays information for recent email requests.
+    GET data:
+      'start_date' (optional):  Starting date to filter email requests by.
+                                Should be given in the format "%m/%d/%Y".
+    """
+    context = {}
+    if request.GET and "start_date" in request.GET:
+        start_date = datetime.datetime.strptime(request.GET["start_date"], "%Y-%m-%d")
+    else:
+        start_date = datetime.date.today() - datetime.timedelta(30)
+    context['start_date'] = start_date
+    requests = MessageRequest.objects.filter(created_at__gte=start_date).order_by('-created_at')
+
+    requests_list = []
+    for req in requests:
+        toes = TextOfEmail.objects.filter(created_at=req.created_at,
+                                          subject = req.subject,
+                                          send_from = req.sender).order_by('-sent')
+        if req.processed:
+            req.num_rec = toes.count()
+        else:
+            req.num_rec = CommModule.approx_num_of_recipients(req.recipients, req.get_sendto_fn())
+        req.num_sent = sum(toe.sent is not None for toe in toes)
+        if req.num_rec == req.num_sent:
+            req.finished_at = toes[0].sent
+        else:
+            req.finished_at = "(Not finished)"
+        requests_list.append(req)
+
+    context['requests'] = requests_list
+
+    return render_to_response('admin/emails.html', request, context)
+
+@admin_required
+def tags(request, section=""):
+    context = {}
+
+    #If one of the forms was submitted, process it and save if valid
+    if request.method == 'POST':
+        form = TagSettingsForm(request.POST)
+        if form.is_valid():
+            form.save()
+    else:
+        form = TagSettingsForm()
+
+    context['form'] = form
+    context['categories'] = form.categories
+    context['open_section'] = section
+
+    return render_to_response('program/modules/admincore/tags.html', request, context)
 
 @admin_required
 def statistics(request, program=None):

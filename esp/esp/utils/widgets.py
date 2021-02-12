@@ -2,35 +2,25 @@
 #   Modified to not force unicode
 #   - Michael P
 
-from django.conf import settings
 from django import forms
+from django.conf import settings
 from django.forms import widgets
-from django.utils.safestring import mark_safe
-import django.utils.formats
 from django.template import Template, Context
+from django.utils.safestring import mark_safe
 
+import django.utils.formats
+import datetime
+import time
 import json
 import logging
 logger = logging.getLogger(__name__)
-import datetime
-import time
 
-# DATETIMEWIDGET
-calEnable = u"""
-<script type="text/javascript">
-    $j("#%s").%s({
-        showOn: 'button',
-        buttonImage: '%simages/calbutton_tight.png',
-        buttonImageOnly: true,
-        dateFormat: '%s',
-        timeFormat: '%s'
-    });
-</script>"""
-
-class DateTimeWidget(forms.widgets.TextInput):
+class DateTimeWidget(forms.widgets.DateTimeInput):
+    template_name = 'django/forms/widgets/datetimepicker.html'
     dformat = 'mm/dd/yy'
     tformat = 'hh:mm'
     pythondformat = '%m/%d/%Y %H:%M'
+    jquerywidget = 'datetimepicker'
 
     # Note -- these are not actually used in the deadlines template, since we don't include
     # the entire form, just use variables from. They're here now mainly for responsibility
@@ -41,28 +31,20 @@ class DateTimeWidget(forms.widgets.TextInput):
         js = ('scripts/jquery-ui.js',
               'scripts/jquery-ui.timepicker.js')
 
-    def prepare_render_attrs(self, name, value, attrs=None):
-        """ Base function for preparing information needed to render the widget. """
+    def __init__(self, attrs=None):
+        super(DateTimeWidget, self).__init__(attrs)
+        self.format = self.pythondformat
 
-        if value is None: value = ''
-        final_attrs = self.build_attrs(attrs, type=self.input_type, name=name)
-
-        if value != '':
-            try:
-                final_attrs['value'] = value.strftime(self.pythondformat)
-            except:
-                final_attrs['value'] = value
-
-        if not 'id' in final_attrs:
-            final_attrs['id'] = u'%s_id' % (name)
-        id = final_attrs['id']
-        return final_attrs
-
-    def render(self, name, value, attrs=None):
-        final_attrs = self.prepare_render_attrs(name, value, attrs)
-        id = final_attrs['id']
-        cal = calEnable % (id, 'datetimepicker', settings.MEDIA_URL, self.dformat, self.tformat)
-        return u'<input%s />%s' % (forms.utils.flatatt(final_attrs), cal)
+    def get_context(self, name, value, attrs):
+        context = super(DateTimeWidget, self).get_context(name, value, attrs)
+        context.update({
+            'id': attrs['id'] if 'id' in attrs else u'%s_id' % (name),
+            'jquerywidget': self.jquerywidget,
+            'media_url': settings.MEDIA_URL,
+            'date_format': self.dformat,
+            'time_format': self.tformat,
+        })
+        return context
 
     def value_from_datadict(self, data, files, name):
         dtf = django.utils.formats.get_format('DATETIME_INPUT_FORMATS')
@@ -85,21 +67,17 @@ class DateTimeWidget(forms.widgets.TextInput):
 class DateWidget(DateTimeWidget):
     """ A stripped down version of the DateTimeWidget that uses jQuery UI's
         built in datepicker. """
-
-    def render(self, name, value, attrs=None):
-        final_attrs = self.prepare_render_attrs(name, value, attrs)
-        id = final_attrs['id']
-        cal = calEnable % (id, 'datepicker', settings.MEDIA_URL, self.dformat, self.tformat)
-        return u'<input%s />%s' % (forms.utils.flatatt(final_attrs), cal)
+    pythondformat = '%m/%d/%Y'
+    jquerywidget = 'datepicker'
 
 class ClassAttrMergingSelect(forms.Select):
 
-    def build_attrs(self, extra_attrs=None, **kwargs):
-        attrs = dict(self.attrs, **kwargs)
+    def build_attrs(self, base_attrs, extra_attrs=None):
+        attrs = base_attrs.copy()
         #   Merge 'class' attributes - this is the difference from Django's default implementation
         if extra_attrs:
             if 'class' in attrs and 'class' in extra_attrs \
-                    and isinstance(extra_attrs['class'], basestring):
+                    and (isinstance(extra_attrs['class'], str) or isinstance(extra_attrs['class'], unicode)):
                 attrs['class'] += ' ' + extra_attrs['class']
                 del extra_attrs['class']
             attrs.update(extra_attrs)
@@ -161,29 +139,12 @@ class SplitDateWidget(forms.MultiWidget):
 
 class BlankSelectWidget(forms.Select):
     """ A <select> widget whose first entry is blank. """
+    template_name = 'django/forms/widgets/blankselect.html'
 
     def __init__(self, blank_choice=('',''), *args, **kwargs):
         super(forms.Select, self).__init__(*args, **kwargs)
         self.blank_value = blank_choice[0]
         self.blank_label = blank_choice[1]
-
-    # Copied from django/forms/widgets.py
-    def render(self, name, value, attrs=None, choices=()):
-        from django.utils.html import escape, conditional_escape
-        from django.utils.encoding import force_unicode
-        from django.utils.safestring import mark_safe
-
-        if value is None: value = ''
-        final_attrs = self.build_attrs(attrs, name=name)
-        output = [u'<select%s>' % forms.utils.flatatt(final_attrs)]
-        output.append( u'<option value="%s" selected="selected">%s</option>' %
-                       (escape(self.blank_value), conditional_escape(force_unicode(self.blank_label))) )
-        options = self.render_options(choices, [value])
-        if options:
-            output.append(options)
-        output.append('</select>')
-        return mark_safe(u'\n'.join(output))
-
 
 class NullRadioSelect(forms.RadioSelect):
     def __init__(self, *args, **kwargs):
@@ -201,7 +162,7 @@ class NullCheckboxSelect(forms.CheckboxInput):
             return False
         value = data.get(name)
         values =  {'on': True, 'true': True, 'false': False}
-        if isinstance(value, basestring):
+        if isinstance(value, str) or isinstance(value, unicode):
             value = values.get(value.lower(), value)
         logger.info('NullCheckboxSelect converted %s to %s', data.get(name), value)
         return value
@@ -219,6 +180,8 @@ class DummyWidget(widgets.Input):
         return mark_safe(output)
 
 class NavStructureWidget(forms.Widget):
+    # TODO(benkraft): Convert this to an actual static script so we don't have
+    # to interpolate a pile of JS here.
     template_text = """
 <input type="hidden" id="id_{{ name }}" name="{{ name }}" value="{{ value }}" />
 <div id="{{ name }}_options">
@@ -242,10 +205,7 @@ function {{ name }}_add_link(obj, data)
     var entry_list = obj.children("ul");
     entry_list.append($j("<li />"));
     var entry = entry_list.children().last();
-    entry.append($j("<span>Text: </span>"));
-    entry.append($j("<input class='data_text nav_secondary_field input-small' type='text' value='" + data.text + "' />"));
-    entry.append($j("<span>Link: </span>"));
-    entry.append($j("<input class='data_link nav_secondary_field' type='text' value='" + data.link + "' />"));
+    %(add_link_body)s
 
     var delete_button = $j("<button class='btn btn-mini btn-danger'>Delete link</button>");
     delete_button.click({{ name }}_delete_link);
@@ -271,12 +231,12 @@ function {{ name }}_add_tab(obj, data)
     //  console.log("Links: ");
     for (var j = 0; j < data.links.length; j++)
     {
-        {{ name }}_add_link(category_li, {text: data.links[j].text, link: data.links[j].link})
+        {{ name }}_add_link(category_li, data.links[j]);
     }
     var add_button = $j("<button class='btn btn-mini'>Add link</button>");
     add_button.click(function (event) {
         event.preventDefault();
-        {{ name }}_add_link($j(this).parent(), {text: "", link: ""});
+        {{ name }}_add_link($j(this).parent(), {text: "", link: "", icon: ""});
     });
     category_li.append(add_button);
 }
@@ -289,8 +249,10 @@ function {{ name }}_save()
             header_link: $j(element).children(".data_header_link").val(),
             links: $j(element).children("ul").children("li").map(function (index, element) {
                 return {
+                    // note the first one may be undefined, which is fine.
+                    icon: $j(element).children(".data_icon").val(),
                     link: $j(element).children(".data_link").val(),
-                    text: $j(element).children(".data_text").val()
+                    text: $j(element).children(".data_text").val(),
                 };
             }).get()
         };
@@ -310,7 +272,7 @@ function {{ name }}_setup()
     var add_button = $j("<button class='btn btn-mini btn-primary'>Add tab</button>");
     add_button.click(function (event) {
         event.preventDefault();
-        {{ name }}_add_tab(anchor_ul, {header: "", header_link: "", links: [{text: "", link: ""}]});
+        {{ name }}_add_tab(anchor_ul, {header: "", header_link: "", links: [{text: "", link: "", icon: ""}]});
     });
     anchor_ul.parent().append(add_button);
 
@@ -330,15 +292,358 @@ $j(document).ready({{ name }}_setup);
 </style>
 """
 
+    # We separate out this part so subclasses can override it.
+    add_link_body = """
+        entry.append($j("<span>Text: </span>"));
+        entry.append($j("<input class='data_text nav_secondary_field input-small' type='text' value='" + data.text + "' />"));
+        entry.append($j("<span>Link: </span>"));
+        entry.append($j("<input class='data_link nav_secondary_field' type='text' value='" + data.link + "' />"));
+    """
+
     def render(self, name, value, attrs=None):
         if value is None: value = ''
-        final_attrs = self.build_attrs(attrs, name=name)
+        self.build_attrs(attrs)
         context = {}
         context['name'] = name
         context['value'] = json.dumps(value)
-        template = Template(NavStructureWidget.template_text)
+        template = Template(self.template_text % {
+            'add_link_body': self.add_link_body})
         return template.render(Context(context))
 
     def value_from_datadict(self, data, files, name):
         result = json.loads(data[name])
         return result
+
+class ChoiceWithOtherWidget(forms.MultiWidget):
+    """MultiWidget for use with ChoiceWithOtherField."""
+    template_name = 'django/forms/widgets/choicewithother.html'
+
+    def __init__(self, choices):
+        widgets = [
+            forms.RadioSelect(choices=choices),
+            forms.TextInput
+        ]
+        super(ChoiceWithOtherWidget, self).__init__(widgets)
+
+    def decompress(self, value):
+        if not value:
+            return [None, None]
+        return value
+
+class ChoiceWithOtherField(forms.MultiValueField):
+    def __init__(self, *args, **kwargs):
+        fields = [
+            forms.ChoiceField(widget=forms.RadioSelect(), *args, **kwargs),
+            forms.CharField(required=False)
+        ]
+
+        self.choices = []
+
+        if 'choices' in kwargs:
+            self.choices = kwargs['choices']
+            widget = ChoiceWithOtherWidget(choices=kwargs['choices'])
+            kwargs.pop('choices')
+            self._was_required = kwargs.pop('required', True)
+            kwargs['required'] = False
+            super(ChoiceWithOtherField, self).__init__(widget=widget, fields=fields, *args, **kwargs)
+        else:
+            super(ChoiceWithOtherField, self).__init__(*args,**kwargs)
+
+
+    def compress(self, value):
+        if not value:
+            return [None, u'']
+
+        option_value, other_value = value
+        if self._was_required and not value or option_value in (None, ''):
+            raise forms.ValidationError(self.error_messages['required'])
+
+        return option_value, other_value
+
+# copied from esp/public/media/theme_editor/less/glyphicons.less
+# TODO(benkraft): avoid the duplication
+_ICONS = [
+    "asterisk",
+    "plus",
+    "euro",
+    "minus",
+    "cloud",
+    "envelope",
+    "pencil",
+    "glass",
+    "music",
+    "search",
+    "heart",
+    "star",
+    "star-empty",
+    "user",
+    "film",
+    "th-large",
+    "th",
+    "th-list",
+    "ok",
+    "remove",
+    "zoom-in",
+    "zoom-out",
+    "off",
+    "signal",
+    "cog",
+    "trash",
+    "home",
+    "file",
+    "time",
+    "road",
+    "download-alt",
+    "download",
+    "upload",
+    "inbox",
+    "play-circle",
+    "repeat",
+    "refresh",
+    "list-alt",
+    "lock",
+    "flag",
+    "headphones",
+    "volume-off",
+    "volume-down",
+    "volume-up",
+    "qrcode",
+    "barcode",
+    "tag",
+    "tags",
+    "book",
+    "bookmark",
+    "print",
+    "camera",
+    "font",
+    "bold",
+    "italic",
+    "text-height",
+    "text-width",
+    "align-left",
+    "align-center",
+    "align-right",
+    "align-justify",
+    "list",
+    "indent-left",
+    "indent-right",
+    "facetime-video",
+    "picture",
+    "map-marker",
+    "adjust",
+    "tint",
+    "edit",
+    "share",
+    "check",
+    "move",
+    "step-backward",
+    "fast-backward",
+    "backward",
+    "play",
+    "pause",
+    "stop",
+    "forward",
+    "fast-forward",
+    "step-forward",
+    "eject",
+    "chevron-left",
+    "chevron-right",
+    "plus-sign",
+    "minus-sign",
+    "remove-sign",
+    "ok-sign",
+    "question-sign",
+    "info-sign",
+    "screenshot",
+    "remove-circle",
+    "ok-circle",
+    "ban-circle",
+    "arrow-left",
+    "arrow-right",
+    "arrow-up",
+    "arrow-down",
+    "share-alt",
+    "resize-full",
+    "resize-small",
+    "exclamation-sign",
+    "gift",
+    "leaf",
+    "fire",
+    "eye-open",
+    "eye-close",
+    "warning-sign",
+    "plane",
+    "calendar",
+    "random",
+    "comment",
+    "magnet",
+    "chevron-up",
+    "chevron-down",
+    "retweet",
+    "shopping-cart",
+    "folder-close",
+    "folder-open",
+    "resize-vertical",
+    "resize-horizontal",
+    "hdd",
+    "bullhorn",
+    "bell",
+    "certificate",
+    "thumbs-up",
+    "thumbs-down",
+    "hand-right",
+    "hand-left",
+    "hand-up",
+    "hand-down",
+    "circle-arrow-right",
+    "circle-arrow-left",
+    "circle-arrow-up",
+    "circle-arrow-down",
+    "globe",
+    "wrench",
+    "tasks",
+    "filter",
+    "briefcase",
+    "fullscreen",
+    "dashboard",
+    "paperclip",
+    "heart-empty",
+    "link",
+    "phone",
+    "pushpin",
+    "usd",
+    "gbp",
+    "sort",
+    "sort-by-alphabet",
+    "sort-by-alphabet-alt",
+    "sort-by-order",
+    "sort-by-order-alt",
+    "sort-by-attributes",
+    "sort-by-attributes-alt",
+    "unchecked",
+    "expand",
+    "collapse-down",
+    "collapse-up",
+    "log-in",
+    "flash",
+    "log-out",
+    "new-window",
+    "record",
+    "save",
+    "open",
+    "saved",
+    "import",
+    "export",
+    "send",
+    "floppy-disk",
+    "floppy-saved",
+    "floppy-remove",
+    "floppy-save",
+    "floppy-open",
+    "credit-card",
+    "transfer",
+    "cutlery",
+    "header",
+    "compressed",
+    "earphone",
+    "phone-alt",
+    "tower",
+    "stats",
+    "sd-video",
+    "hd-video",
+    "subtitles",
+    "sound-stereo",
+    "sound-dolby",
+    "sound-5-1",
+    "sound-6-1",
+    "sound-7-1",
+    "copyright-mark",
+    "registration-mark",
+    "cloud-download",
+    "cloud-upload",
+    "tree-conifer",
+    "tree-deciduous",
+    "cd",
+    "save-file",
+    "open-file",
+    "level-up",
+    "copy",
+    "paste",
+    "alert",
+    "equalizer",
+    "king",
+    "queen",
+    "pawn",
+    "bishop",
+    "knight",
+    "baby-formula",
+    "tent",
+    "blackboard",
+    "bed",
+    "apple",
+    "erase",
+    "hourglass",
+    "lamp",
+    "duplicate",
+    "piggy-bank",
+    "scissors",
+    "bitcoin",
+    "btc",
+    "xbt",
+    "yen",
+    "jpy",
+    "ruble",
+    "rub",
+    "scale",
+    "ice-lolly",
+    "ice-lolly-tasted",
+    "education",
+    "option-horizontal",
+    "option-vertical",
+    "menu-hamburger",
+    "modal-window",
+    "oil",
+    "grain",
+    "sunglasses",
+    "text-size",
+    "text-color",
+    "text-background",
+    "object-align-top",
+    "object-align-bottom",
+    "object-align-horizontal",
+    "object-align-left",
+    "object-align-vertical",
+    "object-align-right",
+    "triangle-right",
+    "triangle-left",
+    "triangle-bottom",
+    "triangle-top",
+    "console",
+    "superscript",
+    "subscript",
+    "menu-left",
+    "menu-right",
+    "menu-down",
+    "menu-up",
+]
+
+class NavStructureWidgetWithIcons(NavStructureWidget):
+    # TODO(benkraft): Add some way of seeing the icons while selecting them.
+    add_link_body = """
+        entry.append($j("<span>Icon: </span>"));
+        var select = $j("<select class='data_icon nav_secondary_field input-small' />");
+        select.append($j("<option value=''" +
+                         (data.icon ? "" : " selected") +
+                         ">(none)</option>"));
+        %(entries)s
+        entry.append(select);
+        %(super_add_link_body)s
+    """ % {
+        'super_add_link_body': NavStructureWidget.add_link_body,
+        'entries': '\n'.join('''
+            select.append($j("<option value='%(icon)s'" +
+                             (data.icon === "%(icon)s" ? " selected" : "") +
+                             ">glyphicon-%(icon)s</option>"));'''
+            % {'icon': icon}
+            for icon in _ICONS),
+    }

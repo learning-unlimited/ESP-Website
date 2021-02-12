@@ -8,16 +8,16 @@ SHELL=/bin/bash
 SITE:=$(notdir $(PWD))
 STASH:=$(shell sudo -u www-data git diff HEAD --quiet || echo true)
 
-sr-8: NEWBRANCH=stable-release-8
-sr-8: OLDBRANCH=stable-release-7
-sr-8: pre src finish
+sr-12: NEWBRANCH=stable-release-12
+sr-12: OLDBRANCH=stable-release-11
+sr-12: pre src finish
 
 pre:
 	@echo "Backing things up and fixing permissions."
 	@# get credentials, if we lack them, before we try to do anything fancy with pipes
 	sudo -v
-        @# We might not have write permissions on the homedir, but www-data should.
-        sudo -u postgres pg_dump $(SITE)_django | gzip | sudo -u www-data tee $(SITE)_$(shell date +"%Y%m%d").sql.gz >/dev/null
+	@# We might not have write permissions on the homedir, but www-data should.
+	set -o pipefail; sudo -u postgres pg_dump $(SITE)_django | gzip | sudo -u www-data tee $(SITE)_$(shell date +"%Y%m%d").sql.gz >/dev/null
 	-sudo chown -RL "www-data:www-data" .
 
 src:
@@ -26,17 +26,13 @@ src:
 	if [ "$(STASH)" = "true" ] ; then sudo -u www-data git stash ; fi
 	sudo -u www-data git fetch origin
 	sudo -u www-data git remote prune origin
-	sudo -u www-data git checkout $(NEWBRANCH)
+	sudo -u www-data git checkout origin/$(NEWBRANCH)
 	if [ "$(STASH)" = "true" ] ; then sudo -u www-data git stash pop ; fi
 
 finish:
 	@echo "Updating the site; if this fails for any reason, fix it up and (re-)run 'make finish'."
 	esp/update_deps.sh
 	sudo -u www-data esp/manage.py update
-	@# Clear memcache
-	@# TODO(benkraft): do this in manage.py update
-	echo flush_all | nc localhost 11211
-	sudo -u www-data touch esp.wsgi
 	@echo "Done! Go test some things."
 
 .PHONY: pre src finish

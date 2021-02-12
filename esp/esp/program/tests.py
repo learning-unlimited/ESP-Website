@@ -570,7 +570,7 @@ class ProgramFrameworkTest(TestCase):
                     'sections_per_class': 1,
                     'num_students': 10,
                     'num_admins': 1,
-                    'modules':[x.id for x in ProgramModule.objects.all()],
+                    'modules': ProgramModule.objects.all(),
                     'program_type': 'TestProgram',
                     'program_instance_name': '2222_Summer',
                     'program_instance_label': 'Summer 2222',
@@ -658,7 +658,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog.save()
         pcf.save_m2m()
 
-        commit_program(new_prog, perms, modules, pcf.cleaned_data['base_cost'])
+        commit_program(new_prog, perms, pcf.cleaned_data['base_cost'])
 
         #   Add recursive permissions to open registration to the appropriate people
         (perm, created) = Permission.objects.get_or_create(role=Group.objects.get(name='Teacher'), permission_type='Teacher/All', program=new_prog)
@@ -805,7 +805,7 @@ class ProgramFrameworkTest(TestCase):
             logger.info(pcf.data)
             logger.info(pcf.errors)
             logger.info(prog_form_values)
-            raise Exception()
+            raise Exception('Problem creating a past program')
 
         temp_prog = pcf.save(commit=False)
         (perms, modules) = prepare_program(temp_prog, pcf.cleaned_data)
@@ -819,7 +819,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog.save()
         pcf.save_m2m()
 
-        commit_program(new_prog, perms, modules, pcf.cleaned_data['base_cost'])
+        commit_program(new_prog, perms, pcf.cleaned_data['base_cost'])
 
         self.new_prog = new_prog
 
@@ -1399,3 +1399,121 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         scrmi.save()
 
         self.testLottery()
+
+class BulkCreateAccountTest(ProgramFrameworkTest):
+    def setUp(self):
+        super(BulkCreateAccountTest, self).setUp()
+        self.client = Client()
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'),
+                        'Could not login as %s' % self.admins[0].username)
+        group = Group(name='BulkAccountGroup')
+        group.save()
+
+    def testHappyPath(self):
+        # Make sure the bulk_create_form page works
+        bulk_create_form_response = self.client.get('/manage/%s/bulk_create_form' % self.program.getUrlBase())
+        self.assertEqual(bulk_create_form_response.status_code, 200)
+        self.assertTrue('program/modules/bulkcreateaccountmodule/bulk_create_form.html' in
+                        [x.name for x in bulk_create_form_response.templates],
+                        'bulk_create_form did not render template program/modules/bulkcreateaccountmodule/bulk_create_form.html')
+
+        # Now bulk create accounts for Student and BulkAccountGroup.
+        form_data = {
+            'groups': ('Student', 'BulkAccountGroup'),
+            'prefix1': 'bulk1',
+            'count1': '3',
+            'prefix2': 'bulk2',
+            'count2': '4'
+        }
+
+        bulk_account_create_response = self.client.post('/manage/%s/bulk_account_create' % self.program.getUrlBase(), data=form_data)
+        self.assertEqual(bulk_account_create_response.status_code, 200)
+
+        # make sure new accounts all exist and have the right groups
+        try:
+            new_accounts = []
+            new_accounts.append(ESPUser.objects.get(username='bulk11'))
+            new_accounts.append(ESPUser.objects.get(username='bulk12'))
+            new_accounts.append(ESPUser.objects.get(username='bulk13'))
+            new_accounts.append(ESPUser.objects.get(username='bulk21'))
+            new_accounts.append(ESPUser.objects.get(username='bulk22'))
+            new_accounts.append(ESPUser.objects.get(username='bulk23'))
+            new_accounts.append(ESPUser.objects.get(username='bulk24'))
+
+            student_group = Group.objects.get(name='Student')
+            bulk_group = Group.objects.get(name='BulkAccountGroup')
+            for account in new_accounts:
+                self.assertTrue(student_group in account.groups.all())
+                self.assertTrue(bulk_group in account.groups.all())
+        except ESPUser.DoesNotExist:
+            raise AssertionError('bulk_account_create did not create all accounts it was supposed to')
+
+    def checkForBulkCreateError(self, test_case, form_data):
+        bulk_account_create_response = self.client.post('/manage/%s/bulk_account_create' % self.program.getUrlBase(),
+                                                        data=form_data)
+        self.assertTrue('program/modules/bulkcreateaccountmodule/bulk_create_error.html' in
+                        [x.name for x in bulk_account_create_response.templates],
+                        'Test case "%s" did not return error page program/modules/bulkcreateaccountmodule/bulk_create_error.html' % test_case)
+
+    def testNoPrefixes(self):
+        self.checkForBulkCreateError('testNoPrefixes', {
+            'groups': ('Student', 'BulkAccountGroup')
+        })
+
+    def testTooManyAccounts(self):
+        self.checkForBulkCreateError('testTooManyAccounts', {
+            'prefix1': 'bulk1',
+            'count1': '10000',
+            'groups': ('Student', 'BulkAccountGroup')
+        })
+
+    def testMissingStudentOrTeacherGroup(self):
+        self.checkForBulkCreateError('testMissingStudentOrTeacherGroup', {
+            'prefix1': 'bulk1',
+            'count1': '3',
+            'groups': ('BulkAccountGroup')
+        })
+
+    def testBlankPrefix(self):
+        self.checkForBulkCreateError('testBlankPrefix', {
+            'prefix1': '    ',
+            'count1': '3',
+            'groups': ('Student', 'BulkAccountGroup')
+        })
+
+    def testLongPrefix(self):
+        self.checkForBulkCreateError('testLongPrefix', {
+            'prefix1': 'a'*100,
+            'count1': '3',
+            'groups': ('Student', 'BulkAccountGroup')
+        })
+
+    def testDuplicatePrefix(self):
+        self.checkForBulkCreateError('testDuplicatePrefix', {
+            'prefix1': 'bulk1',
+            'count1': '3',
+            'prefix2': 'bulk1',
+            'count2': '5',
+            'groups': ('Student', 'BulkAccountGroup')
+        })
+
+    def testNonNumericalCount(self):
+        self.checkForBulkCreateError('testNonNumericalCount', {
+            'prefix1': 'bulk1',
+            'count1': 'xy',
+            'groups': ('Student', 'BulkAccountGroup')
+        })
+
+    def testNegativeCount(self):
+        self.checkForBulkCreateError('testNegativeCount', {
+            'prefix1': 'bulk1',
+            'count1': '-2',
+            'groups': ('Student', 'BulkAccountGroup')
+        })
+
+    def testFractionalCount(self):
+        self.checkForBulkCreateError('testFractionalCount', {
+            'prefix1': 'bulk1',
+            'count1': '2.6',
+            'groups': ('Student', 'BulkAccountGroup')
+        })

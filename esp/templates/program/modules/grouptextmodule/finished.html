@@ -25,6 +25,9 @@
 <p>The texts have been submitted to our SMS provider.</p>
 
 <h2>Send log</h2>
+{% if override %}
+<p><i>(Texting preferences were overriden)</i></p>
+{% endif %}
 
 <pre>{{ log }}</pre>
 

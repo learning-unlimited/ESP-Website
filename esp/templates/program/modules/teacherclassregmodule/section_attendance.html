@@ -1,0 +1,228 @@
+{% extends "main.html" %}
+
+{% block title %}Section Attendance{% if section %} for {{ section }}{% endif %}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
+    <link rel='stylesheet' type='text/css' href='/media/styles/barcodescanner.css' />
+    <link rel='stylesheet' type='text/css' href='/media/styles/attendance.css' />
+    <link rel="stylesheet" type='text/css' href="https://use.fontawesome.com/releases/v5.0.9/css/all.css">
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    {% if section %}
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/gh/serratus/quaggaJS@e96eb9f7888507689cf33f1e6ce325959dde314e/dist/quagga.min.js" type="text/javascript"></script>
+    <script src="/media/scripts/barcodescanner.js" type="text/javascript"></script>
+    <script id="attendancescript" data-prog_url="{{ program.url }}" src="/media/scripts/program/modules/attendance.js" type="text/javascript"></script>
+    <script src="/media/scripts/sorttable.js"></script>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+{% load users %}
+
+{% if tl == "onsite" %}
+<br />
+<a class="btn" style="float: left" href="/onsite/{{ one }}/{{ two }}/attendance/{{ timeslot.id }}">&lt;&lt;Back to Attendance Overview</a>
+<select name="tsid" onchange="location.href='/onsite/{{ one }}/{{ two }}/section_attendance/'+$j(this).children('option:selected').val()" style="width: 200px; float: right;">
+    <option disabled{% if not timeslot %} selected="selected"{% endif %}>
+        (Select a timeslot)
+    </option>
+    {% for ts in program.getTimeSlotList %}
+        <option value="{{ ts.id }}" {% if ts == timeslot %}selected="selected"{% endif %}>
+            {{ ts }}
+        </option>
+    {% endfor %}
+</select>
+<br /><br /><br />
+{% endif %}
+
+<h1>Section Attendance{% if section %} for <u>{{ section }}</u>{% endif %}</h1>
+
+<p>
+{% if section %}
+Here is an attendance sheet for your section's students. Here you can see which students have checked in and submit attendance for your section. This section is scheduled for {{ section.friendly_times_with_date|join:", " }}. If you are looking for a different section, you can select it from the dropdown below. You can sort the students by any column by clicking on the column header.
+{% elif tl == "onsite" and not timeslot %}
+Please select a timeslot above.
+{% else %}
+Please select a section from the dropdown below.
+{% endif %}
+<br />
+</p>
+
+{% if tl == "teach" or timeslot %}
+<center>
+    <select name="secid" onchange="location.href='{{ request.path }}?secid='+$j(this).children('option:selected').val()" style="width: 400px;">
+        <option disabled{% if not section %} selected="selected"{% endif %}>
+            (Select a section)
+        </option>
+        {% for sec in sched_sections %}
+            <option value="{{ sec.id }}" {% if sec == section %}selected="selected"{% endif %}>
+                {{ sec }}: {{ sec.friendly_times_with_date|join:", " }}
+            </option>
+        {% endfor %}
+    </select>
+</center>
+{% endif %}
+
+{% if section %}
+<div id="program_form">
+<table align="center" width="100%">
+<tr>
+    <th align="center">
+        Mark attendance for students enrolled in this section:
+    </th>
+</tr>
+<tr>
+    <td style="padding: 0px;">
+        <table align="center" width="100%" class="sortable" style="border: none;">
+            <tr>
+                <th width="5%" class="sorttable_nosort">#</th>
+                <th width="17.5%">First Name</th>
+                <th width="17.5%">Last Name</th>
+                <th width="10%">ID #</th>
+                <th width="10%">Grade</th>
+                <th width="20%">School</th>
+                <th width="10%">Checked In?</th>
+                <th width="10%">Attending Section?</th>
+            </tr>
+                {% for student in section.enrolled_list %}
+                    <tr>
+                        <th class="small">{{ forloop.counter }}</th>
+                        <td>{{ student.first_name }}</td>
+                        <td>{{ student.last_name }}</td>
+                        <td align="center">{{ student.id }}</td>
+                        <td align="center">{{ student|getGradeForProg:program.id }}</td>
+                        <td align="center">{{ student.getLastProfile.student_info.getSchool }}</td>
+                        <td align="center" data-st-key="{% if student.checked_in %}2{% else %}1{% endif %}">
+                            <input name="checkedin" type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
+                        </td>
+                        <td align="center" data-st-key="{% if student.attended %}2{% else %}1{% endif %}">
+                            <input name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
+                            value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
+                            <br /><span class="msg"></span>
+                        </td>
+                    </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" align="center">
+                        No students enrolled in this section
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="6">TOTAL</th>
+                    <th align="center" name="checkedin_total"></th>
+                    <th align="center" name="attending_total"></th>
+                </tr>
+            </tfoot>
+        </table>
+    </td>
+</tr>
+</table>
+
+{% if section.attended_list %}
+<br />
+<table align="center" width="100%">
+<tr>
+    <th align="center">
+        Mark attendance for students attending (but not enrolled in) this section:
+    </th>
+</tr>
+<tr>
+    <td style="padding: 0px;">
+        <table align="center" width="100%" class="sortable" style="border: none;">
+            <thead>
+                <tr>
+                    <th width="5%" class="sorttable_nosort">#</th>
+                    <th width="17.5%">First Name</th>
+                    <th width="17.5%">Last Name</th>
+                    <th width="10%">ID #</th>
+                    <th width="10%">Grade</th>
+                    <th width="20%">School</th>
+                    <th width="10%">Checked In?</th>
+                    <th width="10%">Attending Section?</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in section.attended_list %}
+                    <tr>
+                        <th class="small">{{ forloop.counter }}</th>
+                        <td>{{ student.first_name }}</td>
+                        <td>{{ student.last_name }}</td>
+                        <td align="center">{{ student.id }}</td>
+                        <td align="center">{{ student|getGradeForProg:program.id }}</td>
+                        <td align="center">{{ student.getLastProfile.student_info.getSchool }}</td>
+                        <td align="center" data-st-key="{% if student.checked_in %}2{% else %}1{% endif %}">
+                            <input name="checkedin" type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
+                        </td>
+                        <td align="center" data-st-key="{% if student.attended %}2{% else %}1{% endif %}">
+                            <input name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
+                            value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
+                            <br /><span class="msg"></span>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="6">TOTAL</th>
+                    <th align="center" name="checkedin_total"></th>
+                    <th align="center" name="attending_total"></th>
+                </tr>
+            </tfoot>
+        </table>
+    </td>
+</tr>
+</table>
+{% endif %}
+
+<br />
+<form action="{{ request.get_full_path }}" method="post">
+<input type="hidden" name="submitted">
+<table align="center" width="100%">
+<tr>
+    <th align="center">
+        And/or enter any attending students (including unenrolled ones) here:
+    </th>
+</tr>
+<tr>
+    <td align="center">
+        <div class="controls">
+            <button type="button" class="scan"><i class="fas fa-barcode"></i>&ensp;Scan barcodes with your device</button>
+            <select style="display:none">
+                <option selected value="code_39_reader">Code 39</option>
+                <option value="codabar_reader">Codabar</option>
+                <option value="code_128_reader">Code 128</option>
+                <option value="i2of5_reader">Interleaved 2 of 5</option>
+            </select>
+        </div>
+        <div class="overlay overlay--inline">
+            <div class="overlay__content viewport" id="interactive">
+                <div id="scaninfo" class="scan_popup"></div>
+                <div class="overlay__close">X</div>
+            </div>
+        </div>
+        <br /><textarea name="misc_students" rows="10" style="width:75%" placeholder="student usernames/IDs"></textarea>
+        {% if not_found %}
+        <br /><span style="color:red">{{ not_found|join:", " }} not found</span>
+        {% endif %}
+        <br /><h3>For any attending students not enrolled in this section:</h3>
+        <input type="checkbox" name="enroll" checked> Enroll them in this section
+        <br /><input type="checkbox" name="unenroll" checked> Unenroll them from their conflicting sections
+    </td>
+</tr>
+</table>
+<center>
+<br /><input type="Submit" class="fancybutton" value="Submit Attendance" />
+</center>
+</form>
+</div>
+{% endif %}
+
+{% endblock %}

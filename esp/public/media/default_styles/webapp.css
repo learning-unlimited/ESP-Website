@@ -1,0 +1,386 @@
+.navbar {
+  font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
+  overflow: hidden;
+  background-color: #333;
+  width: calc(100vh * 9 / 16);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
+  z-index: 1000;
+}
+
+.navbar .selected {
+  background: #ddd;
+  color: black;
+}
+
+.navbar td:hover {
+  background: #ddd;
+  color: black;
+}
+
+.navbar td {
+  color: #ddd;
+  text-align: center;
+  text-decoration: none;
+  padding: 0px;
+  font-size: 2vh;
+  width: 25%;
+  height: 7.7vh;
+  border: .4vh solid #333;
+}
+
+.navbar table {
+  width: 100%;
+  border: none;
+  border-collapse: collapse;
+}
+
+.navbar.bottom {
+  top: 92vh;
+}
+
+.main table, th, td {
+  text-align: center;
+}
+
+.main {
+  font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
+  margin-top: 8vh;
+  width: calc(100vh * 9 / 16);
+  min-height: 92vh;
+  background-color: #c8e6dc;
+}
+
+.main table {
+  background-color: #c8e6dc;
+  border-collapse: collapse;
+  table-layout:fixed;
+  margin: 0px !important;
+  width: calc(100vh * 9 / 16);
+}
+
+.main tbody, tr, th, td {
+  background: none;
+}
+
+.main td {
+  font-size: 2.5vh;
+  vertical-align: middle;
+}
+
+.main th {
+  font-size: 3vh;
+  height: 25%;
+}
+
+.main td, th {
+  padding-top: 1.5vh;
+  padding-bottom: 1.5vh;
+  padding-left: 1vh;
+  padding-right: 1vh;
+  line-height: 1.2 !important;
+}
+
+.main tr {
+  border-top: 1px solid #999999;
+  border-bottom: 1px solid #999999;
+  border-collapse: collapse;
+}
+
+.checkinnote {
+  font-size: 1.75vh !important;
+}
+
+.time {
+  width: 20%;
+  font-size: 1.75vh !important;
+}
+
+.cls {
+  font-size: 2vh !important;
+  width: 60%;
+  padding-bottom: .25vh !important;
+}
+
+.location {
+  font-size: 2vh !important;
+  padding-top: .25vh !important;
+}
+
+.location i, .cls i {
+  vertical-align: bottom;
+}
+
+.edit, .list {
+  width: 20%;
+}
+
+.schedule_row {
+  background-color: #F7F7F7;
+  border-bottom: none !important;
+  border-top: none !important;
+}
+
+.md-2 {
+  font-size: 2vh;
+  width: 2vh;
+}
+
+.md-3 {
+  font-size: 3vh;
+  width: 3vh;
+}
+
+.md-4 {
+  font-size: 4vh;
+  width: 4vh;
+}
+
+.md-5 {
+  font-size: 5vh;
+  width: 5vh;
+}
+
+.md-6 {
+  font-size: 6vh;
+  width: 6vh;
+}
+
+.greyed {
+  color: grey;
+}
+
+.popuptext {
+  visibility: hidden;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 1.5vh;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.5vh;
+  font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
+  box-shadow: 0.5vh 0.5vh #888888;
+}
+
+.popup .show {
+  visibility: visible;
+}
+
+.min-font {
+  font-size: 60px !important;
+}
+
+.no-dec {
+  color: inherit;
+  text-decoration: none;
+}
+
+.no-dec:hover {
+  color: inherit;
+  text-decoration: none;
+}
+
+.linktop {
+  font-size: 2vh !important;
+}
+
+.class_title {
+  font-size: 2vh !important;
+  padding-bottom: .25vh;
+}
+
+.class_teachers, .class_content, .class_style, .class_prereqs, .class_meeting_times, .class_grades {
+  font-size: 1.5vh !important;
+  padding-bottom: .25vh;
+  padding-top: .25vh;
+}
+
+.jump {
+  border-bottom: none !important;
+}
+
+.header_category {
+  width: 50%;
+  vertical-align: top;
+  font-size: 2vh !important;
+  padding: 0 !important;
+  padding-bottom: 1vh !important;
+}
+
+.categories {
+  border-bottom: none !important;
+  border-top: none !important;
+}
+
+.last_categories {
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.last_categories td {
+  padding-bottom: 1.5vh !important;
+}
+
+.category_row {
+  border-bottom: none !important;
+  border-top: 1px solid black;
+}
+
+.category {
+  padding-bottom: .5vh;
+  text-transform: uppercase;
+}
+
+.class_row {
+  border-bottom: none !important;
+  border-top: none !important;
+}
+
+.no_classes {
+  border-bottom: none !important;
+}
+
+.btn {
+  border-radius: 1.5vh;
+  background-color: #efefef;
+  color: black;
+  border: 2px solid black;
+  font-size: 1.5vh !important;
+}
+
+.btn-disabled {
+  border-radius: 12px;
+  border: 2px solid black;
+  font-size: 1.5vh !important;
+}
+
+.btn:hover {
+  background-color: black;
+  color: white;
+}
+
+.header.btn {
+  border-radius: 1vh !important;
+  font-size: 2.25vh !important;
+  width: calc(100% - 1vh);
+  min-height: 7.5vh;
+}
+
+.add_button {
+  padding-bottom: .25vh;
+  padding-top: .25vh;
+}
+
+a.anchor {
+  display: block;
+  position: relative;
+  top: -9.3vh;
+  visibility: hidden;
+}
+
+#map {
+  height: 92vh;
+  width: 100%;
+}
+
+#topBtn {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: calc((100vw - 100vh * 9 / 16) / 2 + 20px);
+  z-index: 99;
+  font-size: 18px;
+  border: none;
+  outline: none;
+  background-color: blue;
+  color: white;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+#topBtn:hover {
+  background-color: white;
+  color: blue;
+  border: 1px solid #999999;
+}
+
+i.pointer {
+  cursor: pointer;
+}
+
+.rosterheader th {
+  width:25%;
+  font-size: 2.5vh;
+}
+
+.main form {
+  margin: 0px;
+}
+
+.survey table {
+    width: 100%;
+}
+
+.main input, .main select {
+    max-width: 100%;
+}
+
+.survey textarea {
+    width: 100%;
+    resize: vertical;
+}
+
+.fancybutton {
+  border-radius: 1.5vh;
+  background-color: black;
+  color: white;
+  border: 2px solid black;
+  font-size: 3vh !important;
+  padding: .5vh;
+  font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
+}
+
+.fancybutton:hover {
+  background-color: #efefef;
+  color: black;
+}
+
+.survey td {
+  background: #efefef;
+}
+
+.survey .message {
+  font-size: 2.5vh;
+}
+
+.sectioninfo td {
+  background-color: #efefef;
+}
+
+.btn.fancybutton.no-dec {
+  padding: .5vh;
+}
+
+.sectionroster .msg {
+    font-size: 1.75vh;
+}
+
+table.sortable thead th:not(.sorttable_sorted):not(.sorttable_sorted_reverse):not(.sorttable_nosort):after { 
+    content: " \25B4\25BE" 
+}
+
+table.sortable tbody tr:nth-child(2n) td {
+  background: #eee;
+}
+
+table.sortable tbody tr:nth-child(2n+1) td {
+  background: #fff;
+}

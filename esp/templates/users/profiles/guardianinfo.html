@@ -1,23 +1,27 @@
 <!-- Begin Guardian Info Portion -->
 
-<h3>Guardian Information</h3>
+<h3>Additional Guardian Information</h3>
 
-<div class="control-group">
- <label for="id_year_finished" class="control-label">Est. year finished with ESP<br /> (if applicable):</label>
+{% if form.year_finished %}
+<div class="control-group"
+ <label for="id_year_finished" class="control-label">Estimated year you finished with {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}<br /> (if applicable):</label>
  <div class="controls">
  {{ form.year_finished }} {% if form.year_finished.errors %}
    <br /><span class="form_error">{{ form.year_finished.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.num_kids %}
 <div class="control-group">
- <label for="id_num_kids" class="control-label">Number of Kids (to be involved in ESP):</label>
+ <label for="id_num_kids" class="control-label">Number of kids (to be involved in our programs):</label>
  <div class="controls">
  {{ form.num_kids }} {% if form.num_kids.errors %}
    <br /><span class="form_error">{{ form.num_kids.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
+{% endif %}
 
 <!-- End Guardian Info Portion -->

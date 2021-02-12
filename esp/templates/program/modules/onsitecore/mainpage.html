@@ -21,10 +21,6 @@ Please select from the option below to continue.
 <strong>Your Options:</strong>
 <ul>
 
-<!-- Sorry, I know this is a hack.  We need some module reorganization. -->
-<li><a href="/onsite/{{ program.getUrlBase }}/classchange_grid">Grid-based Class Changes Interface</a></li>
-<li><a href="/onsite/{{ program.getUrlBase }}/classList">Scrolling Class List</a></li>
-
 {% for module in modules %}
 {% if module.isStep %}
   {% if not module.useTemplate %}
@@ -34,12 +30,6 @@ Please select from the option below to continue.
   {% endif %}
 {% endif %}
 {% endfor %}
-
-{% if core_admin %}
-  <li><a href="/manage/{{program.getUrlBase }}/main" title="Manage {{program.niceName}}!">
-      Manage {{program.niceName}}!</a>
-  </li>
-{% endif %}
 
 </ul>
 
@@ -56,7 +46,8 @@ Please select from the option below to continue.
 {% endfor %}
 
 
-
-
+{% if core_admin %}
+{% include "program/modules/admincore/returnlink.html" %}
+{% endif %}
 
 {% endblock %}

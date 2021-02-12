@@ -46,20 +46,51 @@ function emailTeachers (emailAddress, subject) {
 
 function showAll () {
     $j(".fqr-class-detail").show();
+    $j(".flag-header").addClass("active");
     $j(".flag-detail:not(.flag-extra)").show();
 }
 
 function showWithComments () {
     $j(".fqr-class-detail").show();
+    $j(".flag-header.flag-has-comment").addClass("active");
     $j(".flag-detail.flag-has-comment").show();
 }
 
 function hideAll () {
     $j(".fqr-class-detail").hide();
+    $j(".flag-header").removeClass("active");
     $j(".flag-detail").hide();
+}
+
+function approveAll (IDs) {
+    var r = confirm("Are you sure you'd like to approve ALL of these classes?");
+    if (r) {
+        IDs.forEach(function(element) {
+            approve(element);
+        });
+    }
+}
+
+function unreviewAll (IDs) {
+    var r = confirm("Are you sure you'd like to unreview ALL of these classes?");
+    if (r) {
+        IDs.forEach(function(element) {
+            unreview(element);
+        });
+    }
+}
+
+function rejectAll (IDs) {
+    var r = confirm("Are you sure you'd like to reject ALL of these classes?");
+    if (r) {
+        IDs.forEach(function(element) {
+            reject(element);
+        });
+    }
 }
 
 $j(document).ready(function () {
     $j(".flag-detail").hide();
+    $j(".flag-header").removeClass("active");
     $j(".manage-approve-link").hide();
 });

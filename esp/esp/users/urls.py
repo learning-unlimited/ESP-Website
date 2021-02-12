@@ -5,6 +5,7 @@ from esp.users.views.registration import GradeChangeRequestView
 from esp.web.views import bio
 from esp.web.views import main
 from esp.web.views import myesp
+from django.views.generic import TemplateView
 
 urlpatterns = [
     url(r'^register/?$', views.user_registration_phase1,
@@ -25,6 +26,7 @@ urlpatterns = [
     url(r'^disableaccount/?$', views.disable_account),
     url(r'^grade_change_request/?$', GradeChangeRequestView.as_view(), name = 'grade_change_request'),
     url(r'^makeadmin/?$', views.make_admin),
+    url(r'^loginhelp', TemplateView.as_view(template_name='users/loginhelp.html'), name='Login Help'),
     url(r'^morph/?$', views.morph_into_user),
 ]
 
@@ -36,6 +38,7 @@ urlpatterns += [
     url(r'^switchback/?$', myesp.myesp_switchback),
     url(r'^onsite/?$', myesp.myesp_onsite),
     url(r'^passwd/?$', myesp.myesp_passwd),
+    url(r'^accountmanage/?$', myesp.myesp_accountmanage),
     url(r'^profile/?$', myesp.edit_profile),
 ]
 

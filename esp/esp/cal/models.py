@@ -73,7 +73,18 @@ class Event(models.Model):
         return self.name
 
     def duration(self):
-        return self.end - self.start
+        # Matches the rounding of class/section durations
+        dur = self.end - self.start
+        hrs = round(dur.total_seconds() / 3600.0, 2)
+        return timedelta(hours = hrs)
+
+    def start_w_buffer(self, buffer = timedelta(minutes=15)):
+        #Adds a buffer to the start time
+        return self.start - buffer
+
+    def end_w_buffer(self, buffer = timedelta(minutes=15)):
+        #Adds a buffer to the start time
+        return self.end + buffer
 
     def duration_str(self):
         dur = self.end - self.start
@@ -106,7 +117,10 @@ class Event(models.Model):
         event_list = list(event_list)
         event_list.sort(key=lambda x:x.start)
         if len(event_list) > 0:
-            return event_list[-1].end - event_list[0].start
+            # Matches the rounding of class/section durations
+            dur = event_list[-1].end - event_list[0].start
+            hrs = round(dur.total_seconds() / 3600.0, 2)
+            return timedelta(hours = hrs)
         else:
             return timedelta(seconds=0)
 
@@ -175,6 +189,9 @@ class Event(models.Model):
         else:
             return s + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8') + u'--' \
                + self.end.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
+
+    def pretty_time_with_date(self):
+        return self.pretty_time(include_date = True)
 
     def pretty_date(self):
         return self.start.strftime('%A, %B %d').decode('utf-8')

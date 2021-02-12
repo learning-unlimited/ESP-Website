@@ -1,7 +1,9 @@
+{% load users %}
+
 <html>
 
 <head>
-    <title>MIT ESP - Viewing Student Application</title>
+    <title>Viewing Student Application</title>
     <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 </head>
 
@@ -14,7 +16,7 @@
 </tr>
 <tr>
     <td width="25%">Grade:</td>
-    <td>{{ student.getGrade }}</td>
+    <td>{{ student|getGradeForProg:program.id }}</td>
 </tr>
 <tr>
     <td>DOB:</td>

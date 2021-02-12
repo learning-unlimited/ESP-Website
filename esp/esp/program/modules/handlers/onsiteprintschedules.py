@@ -53,7 +53,8 @@ class OnsitePrintSchedules(ProgramModuleObj):
             "admin_title": "Automatically Print Schedules for Onsite Reg",
             "link_title": "Automatically Print Schedules",
             "module_type": "onsite",
-            "seq": 10000
+            "seq": 10000,
+            "choosable": 1,
             }
 
     @main_call

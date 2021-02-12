@@ -1,0 +1,27 @@
+{% autoescape off %}Class Cancellation Request
+{{ request_teacher.get_full_name }} <{{ request_teacher.email }}> has requested that the class below be cancelled for the following reason:
+
+{{ reason }}
+
+---------------------------------
+Class Details
+
+Class Title: {{ cls.title }}
+
+Category: {{ cls.category }}
+
+Class Description: 
+{{ cls.class_info }}
+
+Number of sections: {{ cls.get_sections|length }}
+
+Teachers:{% for teacher in cls.get_teachers %}
+
+{{ teacher.get_full_name }} <{{ teacher.email }}>
+{% if not teacher.taught_programs %}    *** This teacher is a first-time teacher. ***
+{% else %}    Programs this teacher has taught in: {{ teacher.taught_programs }}{% endif %}{% endfor %}
+{% if admin %}
+---------------------------------
+If you have reviewed all of this information and would like to cancel this class, go here: 
+    <http://{{ DEFAULT_HOST }}/manage/{{ one }}/{{ two }}/manageclass/{{ cls.id }}>{% endif %}
+{% endautoescape %}

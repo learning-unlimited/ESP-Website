@@ -37,7 +37,8 @@ Learning Unlimited, Inc.
 import logging
 logger = logging.getLogger(__name__)
 import numpy
-assert numpy.version.short_version >= "1.7.0"
+from pkg_resources import parse_version
+assert parse_version(numpy.version.short_version) >= parse_version("1.7.0")
 import numpy.random
 
 from datetime import date, datetime
@@ -392,11 +393,11 @@ class LotteryAssignmentController(object):
 
         #   Filter students by who has all of the section's timeslots available
         for i in range(timeslots.shape[0]):
-            possible_students *= (True - self.student_schedules[:, timeslots[i]])
+            possible_students *= ~(self.student_schedules[:, timeslots[i]])
 
         #   Filter students by who is not already registered for a different section of the class
         for sec_index in numpy.nonzero(self.section_overlap[:, si])[0]:
-            possible_students *= (True - self.student_sections[:, sec_index])
+            possible_students *= ~(self.student_sections[:, sec_index])
 
         #   Filter students by lunch constraint - if class overlaps with lunch period, student must have 1 additional free spot
         #   NOTE: Currently only works with 2 lunch periods per day
@@ -406,7 +407,7 @@ class LotteryAssignmentController(object):
                 for j in range(self.lunch_timeslots.shape[1]):
                     timeslot_index = self.timeslot_indices[self.lunch_timeslots[lunch_day, j]]
                     if timeslot_index != timeslots[i]:
-                        possible_students *= (True - self.student_schedules[:, timeslot_index])
+                        possible_students *= ~(self.student_schedules[:, timeslot_index])
 
         candidate_students = numpy.nonzero(possible_students)[0]
         if candidate_students.shape[0] <= num_spaces:
@@ -767,9 +768,12 @@ class LotteryAssignmentController(object):
         if len(data_parts) != 3:
             raise ValueError('provided lottery_data is corrupted (doesn\'t contain three parts)')
 
-        self.student_sections = numpy.loadtxt(StringIO(data_parts[0]))
-        self.student_ids = numpy.loadtxt(StringIO(data_parts[1]))
-        self.section_ids = numpy.loadtxt(StringIO(data_parts[2]))
+        # ndmin is for corner cases where one of the array dimensions is 1.  If you don't include the ndmin parameter,
+        # then "mono-dimensional axes will be squeezed" (see the numpy documentation), and the resulting array
+        # would not have the right shape.
+        self.student_sections = numpy.loadtxt(StringIO(data_parts[0]), ndmin=2)
+        self.student_ids = numpy.loadtxt(StringIO(data_parts[1]), ndmin=1)
+        self.section_ids = numpy.loadtxt(StringIO(data_parts[2]), ndmin=1)
 
     def clear_mailman_list(self, list_name):
         contents = list_contents(list_name)

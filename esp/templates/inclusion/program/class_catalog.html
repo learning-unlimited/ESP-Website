@@ -1,6 +1,6 @@
 {% if show_class %}
   {% load class_render %}
-  <div id="class_{{ class.id }}" class="show_class{% if errormsg %} class_error{% endif %}">
+  <div id="class_{{ class.id }}" class="{% for grade in class.grades %}grade_{{ grade }} {% endfor %}show_class{% if errormsg %} class_error{% endif %}">
   {% render_class_core class %}
   {% if prereg_url %}
       <div id="class_{{ class.id }}_regbuttons" class="class_buttons">
@@ -23,7 +23,10 @@
                   <input type="hidden" name="class_id" value="{{ class.id }}" />
                   <input type="hidden" name="section_id" value="{{ section.id }}" />
                   {% if not section.isFull %}
-                      <div id="addbutton_fillslot_sec{{ section.id }}"><input type="submit" class="addbutton" name="action" value="Click here to add this class" id="submitbutton{{ class.id }}" /></div>
+                  <div id="addbutton_fillslot_sec{{ section.id }}"><button type="submit" class="btn btn-primary btn-large addbutton" name="action" id="submitbutton{{ class.id }}">
+                          <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                          Click here to add this class
+                          <span class="glyphicon glyphicon-plus" aria-hidden="true"></span></button></div>
                       <!--                      <div id="addbutton_fillslot_sec{{ section.id }}"><input type="submit" class="addbutton" name="action" value="Add this class" onclick="return submit_prereg({{ class.id }});" id="submitbutton{{ class.id }}" /></div>  -->
                   {% else %}
                       <!-- this branch is obsolete and probably can be removed; see 1b73e4538cc04cc55c4d8886f5b5d0d6f6791c95 (lua) -->
@@ -37,10 +40,16 @@
                       <form id="prereg_{{ sec.id }}" name="prereg_{{ sec.id }}" method="post" action="{{ prereg_url }}" style="margin: 0px;">
                       <script type="text/javascript">add_csrf_token();</script>
                       <input type="hidden" name="class_id" value="{{ class.id }}" />
-                      <input type="hidden" name="section_id" value="{{ sec.id }}" />
+                      <input type="hidden" name="section_id" value="{{ sec.id }}" />                      
                       <div id="addbutton_catalog_sec{{ sec.id }}">
-                      <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }} (Please choose just one section)" />
-                      <!--                      <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }}" onclick="return submit_prereg({{ sec.id }});" id="submitbutton{{ sec.id }}" /> -->
+                      {% if not sec.isFull %}
+                          <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }} (Please choose just one section)" />
+                          <!--                      <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }}" onclick="return submit_prereg({{ sec.id }});" id="submitbutton{{ sec.id }}" /> -->
+                      {% elif not class.isFullOrClosed %}
+                          <input type="submit" class="addbutton_disabled" name="action" value="Section {{ sec.index }} is full; check other sections of this class" id="submitbutton{{ sec.id }}" disabled />
+                      {% else %}
+                          <input type="submit" class="addbutton_disabled" name="action" value="Section {{ sec.index }} is full; please check back later" id="submitbutton{{ sec.id }}" disabled />
+                      {% endif %}
                       </div>
                       </form>
                   {% endif %}
@@ -80,4 +89,12 @@
     setTimeout(initialize_prereg_{{ class.id }}, Math.random()*1000);
   }
   </script>
+  {% if collapse_full %}
+  {% if class.isFullOrClosed %}
+  <!-- This class is already full; hide any buttons -->
+  <script type="text/javascript">
+  swap_visible('class_{{ class.id }}_regbuttons');
+  </script>
+  {% endif %}
+  {% endif %}
 {% endif %}

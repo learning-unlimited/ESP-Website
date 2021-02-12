@@ -10,7 +10,7 @@
 {% block body %}
 
 {% block main %}
-
+<div id="page" style="margin:0 auto; width:920px;">
 <div id="top_area">
 <div id="logo_area">
     <div id="main_logo"><a href="/"><img src="/media/images/theme/generic_logo_short.png"/></a></div>
@@ -21,6 +21,31 @@
 </div>
 
 <div id="nav_area">
+    {% comment %} === Admin Toolbar (includes user search) === {% endcomment %}
+    <style>
+        #content_area h2, h3, p, form {
+	        padding-left: 0px;
+	        padding-right: 0px;
+}
+    </style>
+    <link rel="stylesheet" type="text/css" href="/media/default_styles/admin_bar.css">
+        <div id="adminbar" class="admin hidden" style="position: fixed !important">
+            <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
+            <div id="adminbar_content"></div>
+        </div>
+    <script type="text/javascript">
+    var currentPrograms = [
+    {% for current_program in current_programs %}
+        {
+            urlBase: "{{ current_program.getUrlBase }}",
+            name: "{{ current_program.niceName }}",
+        },
+    {% endfor %}
+    ];
+    </script>
+    <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
+    {% comment %} === Ends Admin Toolbar (includes user search) === {% endcomment %}
+
     <div id="nav_buffer">
         <div id="nav_buffer_background">{{ theme.title_text }}</div>
         <div id="nav_buffer_foreground">{{ theme.subtitle_text }}</div>
@@ -53,6 +78,7 @@
     <!-- Login -->
     <div class="box" style="text-align: right;">
     {% include "users/loginbox_content.html" %}
+        <li class="unmorph hidden"><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a></li>
     </div>
     
     <!-- Announcements -->
@@ -80,26 +106,26 @@
     {% endif %}
     {% endif %}
     
-    <!-- Admin -->
+    <!-- Old Admin
     <div class="box admin hidden">
     <div class="box_header"> Admin</div>	
     <ul>
-    <li class="admin hidden"><a href="/admin/"><i class="icon-tasks"></i>Administration pages</a>
+    <li class="admin hidden"><a href="/admin/"><i class="glyphicon glyphicon-tasks" aria-hidden="true"></i> Administration pages</a>
         <ul>
             <li class="admin hidden"><a href="/admin/miniblog/entry/">Sidebar messages</a></li>
             <li class="admin hidden"><a href="/admin/miniblog/announcementlink/">Sidebar links</a></li>
         </ul>
     </li>
-	<li class="admin hidden"><a href="/manage/programs/"><i class="icon-th-large"></i> Manage programs</a></li>
-    <li class="admin hidden"><a href="/admin/filebrowser/browse/"><i class="icon-tasks"></i> Manage media files</a>
-	<li class="admin hidden"><a href="/themes/"><i class="icon-pencil"></i> Theme settings</a></li>
+	<li class="admin hidden"><a href="/manage/programs/"><i class="glyphicon glyphicon-th-large" aria-hidden="true"></i> Manage programs</a></li>
+    <li class="admin hidden"><a href="/admin/filebrowser/browse/"><i class="glyphicon glyphicon-tasks" aria-hidden="true"></i> Manage media files</a>
+	<li class="admin hidden"><a href="/themes/"><i class="glyphicon glyphicon-pencil" aria-hidden="true"></i> Theme settings</a></li>
     <li class="unmorph hidden"><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a></li>
     </ul>
-    </div>
+    </div --->
 
     <!-- Onsite -->
     <div class="box onsite hidden">
-    <div class="box_header"><a href="/myesp/onsite/">On-site registration</a></div>
+    <div class="box_header"><a href="/myesp/onsite/">Onsite registration</a></div>
     </div>
 
 </div>
@@ -110,13 +136,13 @@
     {% endblock %}
 
     <div id="footer">
-        <p>Copyright {{ theme.mtime.year }}, {{ settings.ORGANIZATION_SHORT_NAME }} at {{ settings.INSTITUTION_NAME }} - <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">E-mail us</a> - <a href="/contact/contact/">Contact Form</a></p>
-        <p>Site hosted by Learning Unlimited - <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.support }}">E-mail technical support</a></p>
+        <p>Copyright {{ theme.mtime.year }}, {{ settings.ORGANIZATION_SHORT_NAME }} at {{ settings.INSTITUTION_NAME }} - <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">Email us</a> - <a href="/contact/contact/">Contact Form</a></p>
+        <p>Site hosted by Learning Unlimited - <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.support }}">Email technical support</a></p>
     </div>
 </div>
 
 </div>
-
+</div>
 {% endblock %} {# endblock main #}
 
 {% endblock %} {# endblock body #}

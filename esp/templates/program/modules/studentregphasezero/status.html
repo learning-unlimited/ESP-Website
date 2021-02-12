@@ -1,0 +1,164 @@
+{% extends "main.html" %}
+{% load render_qsd %}
+{% load users %}
+
+{% block title %} Manage Phase Zero for {{program.niceName}} {% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
+
+<style>
+#highcharts-placeholder {
+  width: 100%;
+  height: 250px;
+}
+
+#applicants
+{
+    list-style-type: none;
+    counter-reset: section;
+
+    -moz-column-count: 3;
+    -moz-column-gap: 20px;
+    -webkit-column-count: 3;
+    -webkit-column-gap: 20px;
+    column-count: 3;
+    column-gap: 20px;
+    margin: 0px;
+}
+
+#record
+{
+    padding-left: 30px;
+    position: relative;
+}
+
+#lotteryentries{
+  display:none;
+}
+#lotteryentries.show{
+  display:block;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid black;
+}
+
+td {
+    text-align: center;
+}
+.dsphead {
+    text-align: center !important;
+}
+</style>
+{% endblock %}
+
+{% block xtrajs %}
+  <script type="text/javascript" src="//code.highcharts.com/highcharts.js"></script>
+  <script type="text/javascript" src="//code.highcharts.com/highcharts-more.js"></script>
+  <script type="text/javascript" src="//code.highcharts.com/modules/no-data-to-display.js"></script>
+{% endblock xtrajs %}
+
+{% block content %}
+<h1>Manage Phase Zero (Student Lottery) for {{program.niceName}}</h1>
+
+<center>
+{% include "program/modules/bigboardmodule/bigboard_graph.html" %}
+</center>
+
+<center>
+<hr>
+{% if error %}<p><font color="red">{{ error }}</font></p>{% endif %}
+{% if invalid_grades %}<p><font color="red">The following students have invalid grades:</br>{% for student in invalid_grades %}{{ student }}</br>{% endfor %}</font></p>{% endif %}
+{% autoescape off %}
+{% if lottery_messages %}<p><font color="blue">{{ lottery_messages|join:"<br/>" }}</font></p>{% endif %}
+{% endautoescape %}
+
+<button class="dsphead">
+    <b><u>Run Default Student Lottery Algorithm:</u></b>
+</button>
+<div class="dspcont">
+    (Do not do this unless you know what you are doing)<br/><br/>
+    <form action="#" method="POST">
+        <input type="hidden" name="mode" value="default">
+        {% if grade_caps %}
+            The following grade capacities will be used</br>(as specified by the <i>program_size_by_grade</i> <a href="/manage/{{ program.getUrlBase }}/tags">tag</a>):</br>
+            <table align="center" width="200">
+                <tr>
+                    <th>Grade(s)</th>
+                    <th>Capacity</th>
+                </tr>
+                {% for grades, cap in grade_caps %}
+                    <tr>
+                        <td>
+                            {{ grades|join:" - " }}
+                        </td>
+                        <td>
+                            {{ cap }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            You must set the <i>program_size_by_grade</i> <a href="/manage/{{ program.getUrlBase }}/tags">tag</a>.
+        {% endif %}
+        <!--<b>Specify Role Name for Winners: </b>--><input type="hidden" name="rolename" value="{{role}}"></br></br>
+        <input type="checkbox" name="confirm">  I confirm that I would like to run the default student lottery algorithm.</br></br>
+        <input {% if not grade_caps %}disabled {% endif %}type="submit" style="float:none" value="Run Default Student Lottery Algorithm" />
+    </form>
+</div>
+
+
+<button class="dsphead">
+    <b><u>Run Manual Student Lottery:</u></b>
+</button>
+<div class="dspcont">
+    (Do not do this unless you know what you are doing)<br/><br/>
+    <form action="#" method="POST">
+        <input type="hidden" name="mode" value="manual">
+        <textarea name="usernames" rows="6" placeholder="Enter comma-separated or space-separated student usernames here"></textarea>
+        <!--<b>Specify Role Name for Winners: </b>--><input type="hidden" name="rolename" value="{{role}}"></br></br>
+        <input type="checkbox" name="groups">  I would also like to accept any students in the same lottery groups.</br></br>
+        <input type="checkbox" name="confirm">  I confirm that I would like to use the above list of students for a manual student lottery.</br></br>
+        <input type="submit" style="float:none" value="Run Manual Student Lottery" />
+    </form>
+</div>
+
+</center>
+
+{% if stats %}
+<hr>
+<center><h2><u>Lottery Statistics</u></h2></center>
+<table align="center" width="500">
+    <tr>
+	    <th>Grade</th>
+	    <th># in Lottery</th>
+        <th># Accepted</th>
+        <th>% Accepted</th>
+	</tr>
+	{% for grade, stat in stats.items %}
+        <tr>
+            <td>
+                {{ grade }}
+            </td>
+            <td>
+                {{ stat.in_lottery }}
+            </td>
+            <td>
+                {{ stat.num_accepted }}
+            </td>
+            <td>
+                {{ stat.per_accepted }}
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+{% endif %}
+<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
+{% endblock %}

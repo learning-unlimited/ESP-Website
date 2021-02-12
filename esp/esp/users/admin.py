@@ -100,9 +100,9 @@ class StudentInfoAdmin(UserInfoAdmin):
 admin_site.register(StudentInfo, StudentInfoAdmin)
 
 class TeacherInfoAdmin(UserInfoAdmin):
-    list_display = ['id', 'user', 'graduation_year', 'from_here', 'college', 'is_graduate_student']
+    list_display = ['id', 'user', 'graduation_year', 'from_here', 'college', 'is_graduate_student', 'affiliation']
     search_fields = default_user_search() + ['college']
-    list_filter = ('from_here', 'is_graduate_student', 'graduation_year')
+    list_filter = ('from_here', 'is_graduate_student', 'graduation_year', 'affiliation')
 admin_site.register(TeacherInfo, TeacherInfoAdmin)
 
 class GuardianInfoAdmin(UserInfoAdmin):
@@ -123,7 +123,9 @@ class K12SchoolAdmin(admin.ModelAdmin):
     search_fields = ['name', 'contact__first_name', 'contact__last_name'] #no, using default_user_search does not work.
     list_filter = ['school_type']
     def contact_name(self, obj):
-        return "%s %s" % (obj.contact.first_name, obj.contact.last_name)
+        if obj.contact:
+            return "%s %s" % (obj.contact.first_name, obj.contact.last_name)
+        return None
     contact_name.short_description = 'Contact name'
 
 admin_site.register(K12School, K12SchoolAdmin)

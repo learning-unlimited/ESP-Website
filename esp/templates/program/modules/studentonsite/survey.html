@@ -1,0 +1,13 @@
+{% extends "program/modules/studentonsite/webapp.html" %}
+
+{% block body %}
+<center>
+  <div class="main survey">
+    <table>
+        <tr><th>{% if not view_list and general %}General {% endif %}Survey for {% if not view_list and section %}{{ section }}{% else %}{{ program.niceName }}{% endif %}</th></tr>
+    </table>
+    {% include "survey/survey_form.html" %}
+  </div>
+</center>
+
+{% endblock %}

@@ -197,12 +197,15 @@ Message for Director
 <center>
 
 {% if module.meets_deadline %}
-<input class="button" type="submit"
+<button type="submit" class="btn btn-primary btn-large">
 {% if class.id %}
- value="Save course!" />
+<span class="glyphicon glyphicon-floppy-saved"></span>
+Save course!
 {% else %}
- value="Teach for {{one}}!" />
+<span class="glyphicon glyphicon-education"></span>
+Teach for {{one}}!
 {% endif %}
+</button>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 {% endif %}
 <input class="button" type="button"

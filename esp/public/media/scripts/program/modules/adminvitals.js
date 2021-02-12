@@ -1,5 +1,20 @@
 statsFilled = false;
 
+function fillData(ID, stats)
+{
+    $field = $j(ID.concat(" > .module_group_body"));
+    $field.html('');
+    for (var i = 0; i < stats.length; i++)
+    {
+	$field.append("<strong>"+stats[i][0]+"</strong> &ndash; "+stats[i][1]);
+	if (i != stats.length - 1)
+	{
+	    $field.append("<br />");
+	}
+    }
+    
+}
+
 function fillStats(data)
 {
     // Pull out the stats data
@@ -12,40 +27,19 @@ function fillStats(data)
     accounting = stats.accounting;
 
     // Fill in student num data
-    $studentnum = $j("#stats_students > .module_group_body");
-    $studentnum.html('');
-    for (var i = 0; i < vitals.studentnum.length; i++)
-    {
-	$studentnum.append("<strong>"+vitals.studentnum[i][0]+"</strong> &ndash; "+vitals.studentnum[i][1]);
-	if (i != vitals.studentnum.length - 1)
-	{
-	    $studentnum.append("<br />");
-	}
-    }
+    fillData("#stats_students", vitals.studentnum)
 
     // Fill in the teacher num data
-    $teachernum = $j("#stats_teachers > .module_group_body");
-    $teachernum.html('');
-    for (var i = 0; i < vitals.teachernum.length; i++)
-    {
-	$teachernum.append("<strong>"+vitals.teachernum[i][0]+"</strong> &ndash; "+vitals.teachernum[i][1]);
-	if (i != vitals.teachernum.length - 1)
-	{
-	    $teachernum.append("<br />");
-	}
-    }
+    fillData("#stats_teachers", vitals.teachernum)
+
+    // Fill in the volunteer num data
+    fillData("#stats_volunteers", vitals.volunteernum)
 
     // Fill in the classes num data
-    $classnum = $j("#stats_classes > .module_group_body");
-    $classnum.html('');
-    for (var i = 0; i < vitals.classnum.length; i++)
-    {
-	$classnum.append("<strong>"+vitals.classnum[i][0]+"</strong> &ndash; "+vitals.classnum[i][1]);
-	if (i != vitals.classnum.length - 1)
-	{
-	    $classnum.append("<br />");
-	}
-    }
+    fillData("#stats_classes", vitals.classnum)
+
+    // Fill in the flags num data
+    fillData("#stats_flags", vitals.flagsnum)
 
     // Fill in the categories table
     $categories = $j("#stats_categories > .module_group_body");
@@ -80,16 +74,7 @@ function fillStats(data)
     }
 
     // Fill in the hours num data
-    $hournum = $j("#stats_hours > .module_group_body");
-    $hournum.html('');
-    for (var i = 0; i < vitals.hournum.length; i++)
-    {
-	$hournum.append("<strong>"+vitals.hournum[i][0]+"</strong> &ndash; "+Math.round(100.0*vitals.hournum[i][1])/100.0);
-	if (i != vitals.hournum.length - 1)
-	{
-	    $hournum.append("<br />");
-	}
-    }
+    fillData("#stats_hours", vitals.hournum)
 
     // Fill in the timeslots table
     $timeslots = $j("#stats_timeslots > .module_group_body");
@@ -104,27 +89,32 @@ function fillStats(data)
 
     // Fill in the t-shirts table
     $tshirts = $j("#stats_tshirts > .module_group_body");
-    html_string = "<table><tr><th colspan='"+(shirtnum.sizes.length+1)+"'>Teacher T-Shirts</th></tr>";
-    // Sizes header
-    html_string = html_string.concat("<tr><td></td>");
-    for (var i = 0; i < shirtnum.sizes.length; i++)
+    html_string = ""
+    for (var group of shirtnum.data)
     {
-	html_string = html_string.concat("<th class='smaller'>"+shirtnum.sizes[i]+"</th>");
+        var shirtsizes = group.shirt_sizes;
+        html_string = html_string.concat("<table><tr><th colspan='"+(shirtsizes.length+1)+"'>"+group.name+" T-Shirts</th></tr>");
+        // Sizes header
+        html_string = html_string.concat("<tr><td></td>");
+        for (var i = 0; i < shirtsizes.length; i++)
+        {
+            html_string = html_string.concat("<th class='smaller'>"+shirtsizes[i]+"</th>");
+        }
+        html_string = html_string.concat("</tr>");
+        // Types
+        var curDist = group.distribution;
+        for (var i = 0; i < curDist.length; i++)
+        {
+            //  console.log(curDist);
+            html_string = html_string.concat("<tr><th class='smaller'>"+curDist[i].type+"</th>");
+            for (var j = 0; j < curDist[i].counts.length; j++)
+            {
+                html_string = html_string.concat("<td>"+curDist[i].counts[j]+"</td>");
+            }
+            html_string = html_string.concat("</tr>");
+        }
+        html_string = html_string.concat("</table><br>");
     }
-    html_string = html_string.concat("</tr>");
-    // Types
-    for (var i = 0; i < shirtnum.data.teachers.length; i++)
-    {
-	var curDist = shirtnum.data.teachers[i];
-	//  console.log(curDist);
-	html_string = html_string.concat("<tr><th class='smaller'>"+curDist.type+"</th>");
-	for (var j = 0; j < curDist.distribution.length; j++)
-	{
-	    html_string = html_string.concat("<td>"+curDist.distribution[j]+"</td>");
-	}
-	html_string = html_string.concat("</tr>");
-    }
-    html_string = html_string.concat("</table>");
     $tshirts.html(html_string);
     
     //  Fill in the lunch/sibling discount table

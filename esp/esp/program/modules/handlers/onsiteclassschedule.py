@@ -47,7 +47,8 @@ class OnsiteClassSchedule(ProgramModuleObj):
             "admin_title": "Onsite Scheduling for Students",
             "link_title": "Scheduling and Class Changes",
             "module_type": "onsite",
-            "seq": 30
+            "seq": 30,
+            "choosable": 1,
             }
 
     @aux_call
@@ -84,7 +85,7 @@ class OnsiteClassSchedule(ProgramModuleObj):
         """ Redirect to student registration, having morphed into the desired
         student. """
 
-        user, found = search_for_user(request, ESPUser.getAllOfType('Student', False))
+        user, found = search_for_user(request, ESPUser.getAllOfType('Student', False), add_to_context = {'tl': 'onsite'})
         if not found:
             return user
 

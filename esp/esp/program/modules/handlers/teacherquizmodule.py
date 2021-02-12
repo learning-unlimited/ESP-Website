@@ -100,6 +100,7 @@ class TeacherQuizModule(ProgramModuleObj):
             'admin_title': 'Teacher Logistics Quiz',
             'link_title': 'Take the Teacher Logistics Quiz',
             'seq': 5,
+            'choosable': 0,
         }, ]
 
     def teachers(self, QObject = False):
@@ -118,7 +119,7 @@ class TeacherQuizModule(ProgramModuleObj):
 
     def teacherDesc(self):
         return {
-            'quiz_done': """Teachers who have completed the teacher logistics quiz.""",
+            'quiz_done': """Teachers who have completed the teacher logistics quiz""",
         }
 
     # Per-user info
@@ -132,7 +133,7 @@ class TeacherQuizModule(ProgramModuleObj):
     @meets_deadline('/Quiz')
     def quiz(self, request, tl, one, two, module, extra, prog):
 
-        custom_form_id = Tag.getProgramTag('quiz_form_id', prog, None)
+        custom_form_id = Tag.getProgramTag('quiz_form_id', prog)
         if custom_form_id:
             cf = Form.objects.get(id=int(custom_form_id))
         else:
@@ -151,6 +152,10 @@ class TeacherQuizModule(ProgramModuleObj):
             form = form_wizard.get_form(0)
 
         return render_to_response(self.baseDir()+'quiz.html', request, {'prog':prog, 'form': form})
+
+    def isStep(self):
+        custom_form_id = Tag.getProgramTag('quiz_form_id', self.program)
+        return custom_form_id and Form.objects.filter(id=int(custom_form_id)).exists()
 
     class Meta:
         proxy = True

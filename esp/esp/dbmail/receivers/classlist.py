@@ -22,6 +22,8 @@ class ClassList(BaseHandler):
         except ESPUser.DoesNotExist:
             return
 
+        self.emailcode = cls.emailcode()
+
         program = cls.parent_program
         self.recipients = ['%s Directors <%s>' % (program.niceName(), program.director_email)]
 
@@ -54,7 +56,7 @@ class ClassList(BaseHandler):
             return
 
         # Create a class list in Mailman,
-        # then bounce this e-mail off to it
+        # then bounce this email off to it
 
         list_name = "%s-%s" % (cls.emailcode(), user_type)
 

@@ -14,6 +14,15 @@
 <br />
 <br />
 
+<script type="text/javascript">
+    function checkAll(checkId){
+        var inputs = document.querySelectorAll(checkId);
+        for (var i = 0; i < inputs.length; i++) {  
+            inputs[i].checked = chk_new.checked;
+        }
+    }
+</script>
+
 <h1>Select users</h1>
 
 <p>
@@ -23,10 +32,16 @@ Please check off the users you'd like to be included in your list:
 <form action="{{ nextpage }}" method="post" name="checklist">
 
 <table>
+<tr>
+<td>
+<input type="checkbox" id="chk_new" onclick="checkAll('.chk');">
+Select all users
+</tr>
+</td>
 {% for user in users %}
 <tr>
 <td>
-<input type="checkbox" name="userno{{user.id}}" value="{{user.id}}" />
+<input type="checkbox" class="chk" name="userno{{user.id}}" value="{{user.id}}" />
 {{user.first_name}} {{user.last_name}} ({{user.username}}) ({{user.id}})
 </td>
 </tr>
@@ -34,6 +49,8 @@ Please check off the users you'd like to be included in your list:
 </table>
 <br />
 <br />
+
+
 
 <input type="hidden" name="extra" value="{{extra}}" />
 <input type="hidden" name="submit_checklist" value="true" />

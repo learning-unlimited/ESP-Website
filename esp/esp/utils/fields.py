@@ -8,9 +8,6 @@ class JSONField(models.TextField):
     """JSONField is a generic textfield that neatly serializes/unserializes
     JSON objects seamlessly"""
 
-    # Used so to_python() is called
-    __metaclass__ = models.SubfieldBase
-
     def to_python(self, value):
         """Convert our string value to JSON after we load it from the DB"""
 
@@ -35,3 +32,6 @@ class JSONField(models.TextField):
             value = json.dumps(value, cls=DjangoJSONEncoder)
 
         return super(JSONField, self).get_db_prep_save(value, connection=connection)
+
+    def from_db_value(self, value, expression, connection, context):
+        return self.to_python(value)

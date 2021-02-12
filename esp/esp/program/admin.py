@@ -43,7 +43,7 @@ from esp.program.models import VolunteerRequest, VolunteerOffer
 
 from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 
-from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest
+from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest, PhaseZeroRecord
 
 from esp.program.models import ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
@@ -103,6 +103,29 @@ class FinancialAidRequestAdmin(admin.ModelAdmin):
     search_fields = default_user_search() + ['id', 'program__url']
     list_filter = ['program']
     inlines = [FinancialAidGrantInline,]
+    actions = ['approve', ]
+
+    def save_related(self, request, form, formsets, change):
+        form.save_m2m()
+        obj = form.instance
+        # get the financial aid grant formset
+        formset = formsets[0]
+        # if we want to delete or change an existing grant, just save like normal
+        if formset[0].cleaned_data.get('DELETE') or obj.approved:
+            self.save_formset(request, form, formset, change=change)
+        else:
+            # if we want to add a grant, use approve() instead
+            instance = formset.save(commit=False)[0]
+            obj.approve(instance.amount_max_dec, instance.percent)
+            formset.save_m2m()
+            self.message_user(request, "Request successfully approved.")
+
+    def approve(self, request, queryset):
+        num_approved = len([req for req in queryset if not req.approved])
+        for req in queryset:
+            req.approve()
+        self.message_user(request, "%s request(s) successfully approved." % num_approved)
+    approve.short_description = "Approve selected financial aid requests for 100%%"
 admin_site.register(FinancialAidRequest, FinancialAidRequestAdmin)
 
 class Admin_SplashInfo(admin.ModelAdmin):
@@ -166,7 +189,11 @@ class VolunteerOfferInline(admin.StackedInline):
 class VolunteerRequestAdmin(admin.ModelAdmin):
     def description(obj):
         return obj.timeslot.description
-    list_display = ('id', 'program', description, 'timeslot', 'num_volunteers')
+    def time(obj):
+        return obj.timeslot.short_time()
+    def date(obj):
+        return obj.timeslot.pretty_date()
+    list_display = ('id', 'program', description, time, date, 'num_volunteers')
     list_filter = ('program',)
     inlines = [VolunteerOfferInline,]
 admin_site.register(VolunteerRequest, VolunteerRequestAdmin)
@@ -174,7 +201,13 @@ admin_site.register(VolunteerRequest, VolunteerRequestAdmin)
 class VolunteerOfferAdmin(admin.ModelAdmin):
     def program(obj):
         return obj.request.program
-    list_display = ('id', 'user', 'email', 'name', 'request', program, 'confirmed')
+    def description(obj):
+        return obj.request.timeslot.description
+    def time(obj):
+        return obj.request.timeslot.short_time()
+    def date(obj):
+        return obj.request.timeslot.pretty_date()
+    list_display = ('id', 'user', 'email', 'name', description, time, date, program, 'confirmed')
     list_filter = ('request__program',)
     search_fields = default_user_search() + ['email', 'name']
 admin_site.register(VolunteerOffer, VolunteerOfferAdmin)
@@ -182,7 +215,7 @@ admin_site.register(VolunteerOffer, VolunteerOfferAdmin)
 ## class_.py
 
 class Admin_RegistrationType(admin.ModelAdmin):
-    list_display = ('name', 'category', )
+    list_display = ('name', 'category', 'displayName', 'description', )
 admin_site.register(RegistrationType, Admin_RegistrationType)
 
 def expire_student_registrations(modeladmin, request, queryset):
@@ -323,3 +356,9 @@ class ClassFlagAdmin(admin.ModelAdmin):
     search_fields = default_user_search('modified_by') + default_user_search('created_by') + ['flag_type__name', 'flag_type__id', 'subject__id', 'subject__title', 'subject__parent_program__url', 'comment']
     list_filter = ['subject__parent_program','flag_type']
 admin_site.register(ClassFlag, ClassFlagAdmin)
+
+class PhaseZeroRecordAdmin(admin.ModelAdmin):
+    list_display = ('id', 'display_user', 'program')
+    search_fields = ['user__username']
+    list_filter = ['program']
+admin_site.register(PhaseZeroRecord, PhaseZeroRecordAdmin)

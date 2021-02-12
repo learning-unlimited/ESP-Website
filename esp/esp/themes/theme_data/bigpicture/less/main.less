@@ -1,0 +1,276 @@
+@identity-blue: #1C1953;
+@highlight-orange: #FF8000;
+@pale: #f8f8f8;
+
+#main {
+    h1 {
+        color: #444;
+        font-family: 'Patrick Hand', Helvetica, 'Helvetica Neue', sans-serif;
+        font-size: 42px;
+        font-weight: normal;
+        margin-bottom: 0.5em;
+    }
+    h2 {
+        color: @identity-blue;
+        font-family: 'Patrick Hand', Helvetica, 'Helvetica Neue', sans-serif;
+        font-size: 32px;
+        font-weight: normal;
+        margin-bottom: 0.3em;
+    }
+    a {
+        color: @identity-blue;
+        text-decoration: underline;
+    }
+    .btn {
+        border: 1px solid @identity-blue;
+		background-image: none;
+        &:active, &:focus {
+            outline: none;
+            border-color: @highlight-orange;
+        }
+    }
+	.module_link_large {
+        border: 1px solid @identity-blue;
+        background: @pale;
+        &:active, &:focus {
+            outline: none;
+            border-color: @highlight-orange;
+        }
+    }
+    .btn-primary,
+    .btn-inverse {
+        border-color: transparent;
+    }
+    .btn-primary {
+        background: @identity-blue;
+		color: white;
+		text-decoration: none;
+    }
+    .btn-inverse {
+        background: #333;
+    }
+    .control-group .controls > ul {
+        list-style: none;
+    }
+    input[type="text"], input[type="password"], textarea, select, label {
+        margin: 0;
+        padding: 0.3em 0.5em;
+        font-size: inherit;
+        line-height: normal;
+        vertical-align: text-bottom;
+    }
+    input[type="text"], input[type="password"], textarea, select {
+        box-sizing: border-box;
+        display: inline-block;
+        -webkit-appearance: none;
+        color: black;
+        background-color: #fdfdfd;
+        border: 1px solid @identity-blue;
+        &:focus {
+            border-color: @highlight-orange;
+            outline: none;
+            -webkit-box-shadow: none;
+               -moz-box-shadow: none;
+                    box-shadow: none;
+        }
+    }
+    input[type="text"], input[type="password"] {
+        border-width: 1px 0px;
+        border-top: 1px solid #eee;
+        -webkit-border-radius: 0;
+        -moz-border-radius: 0;
+        border-radius: 0;
+        line-height: 2.5em;
+        height: 2.5em;
+    }
+    .dspcont {
+        td:nth-child(1) {
+            width: 20%;
+        }
+        td:nth-child(2) {
+            width: 10%;
+        }
+    }
+}
+
+
+
+body {
+    background: @pale;
+    position: relative;
+}
+.container {
+    margin: 0 auto;
+    width: 940px;
+}
+body, .jumbotron {
+    box-sizing: border-box;
+    min-width: 940px;
+}
+.header-cell {
+    display: table-cell;
+    vertical-align: bottom;
+}
+
+
+div.qsd_edit_visible textarea, textarea.wide {
+    font-family: monospace;
+    width: 100%;
+    box-sizing: border-box;
+}
+input, textarea, select, .uneditable-input {
+    vertical-align: baseline;
+}
+div.nav-collapse.collapse {
+    height: auto !important;
+}
+
+
+.sidebar {
+    & {
+        background: none;
+        margin-bottom: 2em;
+    }
+    .nav-header {
+        color: #666;
+    }
+    li > a:hover {
+        color: @identity-blue;
+    }
+    > .active > a {
+        &, &:hover {
+            background-color: @identity-blue
+        }
+    }
+    > li > a {
+        padding: 8px 18px;
+        color: black;
+        font-family: 'Patrick Hand', Helvetica, 'Helvetica Neue', sans-serif;
+        font-size: 17px;
+    }
+    .active {
+        [class^="icon-"], [class*=" icon-"] {
+            background-image: url("/media/theme_editor/img/glyphicons-halflings-white.png");
+        }
+    }
+    [class^="icon-"], [class*=" icon-"] {
+        vertical-align: baseline;
+        height: 13px;
+        width: 13px;
+    }
+}
+
+
+.btn:hover {
+    background-position: 0;
+}
+.navbar {
+    & {
+        padding: 20px;
+        width: auto;
+        display: inline-block;
+        position: absolute;
+        z-index: 2;
+        right: 0;
+    }
+    input, select, .radio, .checkbox {
+        margin-top: 0;
+    }
+    .navbar-inner {
+        padding: 3px 6px 0 10px;
+        background: white;
+        background: rgba(255, 255, 255, 0.74);
+        min-height: auto;
+    }
+    .btn {
+        background: none;
+        border: 1px solid gray;
+        border: 1px solid rgba(0, 0, 0, 0.21);
+    }
+    .username {
+        color: black;
+        display: inline-block;
+    }
+    a.username {
+        text-decoration: none;
+    }
+    .navbar-form > * {
+        display: inline-block;
+        vertical-align: middle;
+    }
+}
+
+
+.logo {
+    max-width: 300px;
+    max-height: 300px;
+    margin: 0 80px 0 0;
+}
+.jumbotron {
+    margin-bottom: 30px;
+    position: relative;
+    padding: 50px 80px;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0,0,0,.7), 0 0 30px rgba(0,0,0,.075);
+    background-image: url(/media/images/theme/header.png);
+    background-size: cover;
+    background-position: center;
+    -webkit-box-shadow: inset 0 3px 7px rgba(0,0,0,.2), inset 0 -3px 7px rgba(0,0,0,.2);
+       -moz-box-shadow: inset 0 3px 7px rgba(0,0,0,.2), inset 0 -3px 7px rgba(0,0,0,.2);
+            box-shadow: inset 0 3px 7px rgba(0,0,0,.2), inset 0 -3px 7px rgba(0,0,0,.2);
+}
+.jumbotron-announcements {
+    font-size: 20px;
+
+    p {
+        margin: 0 0 0.5em;
+        font-family: inherit;
+        font-size: 1em;
+        line-height: normal;
+    }
+}
+
+.contact-form {
+    th, td {
+        padding: 4px 3px;
+    }
+    th {
+        vertical-align: top;
+        text-align: right;
+        white-space: nowrap;
+        label {
+            display: block;
+        }
+    }
+    td {
+        vertical-align: top;
+    }
+    #id_message {
+        width: 100% !important;
+        display: block;
+    }
+    #id_subject {
+        width: 100% !important;
+    }
+}
+
+#user_search_form input {
+  box-sizing: border-box;
+  display: block;
+  height: auto;
+  margin: 0;
+  width: 100%;
+}
+
+.form_error {
+  color: red;
+  display: inline-block;
+}
+
+/* copied from fruitsalad, but with #main instead of #content.
+   TODO(benkraft): something less theme-specific for things like this. */
+#main form {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}

@@ -1,0 +1,45 @@
+{# TODO(benkraft): This isn't that different from the non-theme one, dedupe #}
+<div id="loginbox">
+
+  <div class="logged_in hidden">
+    <form class="navbar-form form-inline">
+      <a href="/myesp/profile/" class="username">
+        <i class="icon-user"></i> Hello,
+        <span id="user_first_name"></span> <span id="user_last_name"></span>!
+      </a>
+      <a class="btn" href="/myesp/signout">Logout</a>
+      <span class="dropdown">
+        <button class="btn dropdown-toggle" data-toggle="dropdown" style="margin-left:0px;">
+          &#9662;
+        </button>
+        <ul class="dropdown-menu pull-right">
+          <li><a href="/myesp/accountmanage/">Manage Account</a></li>
+          <li><a href="/myesp/loginhelp.html">Help</a></li>
+          <li><a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a></li>
+        </ul>
+      </span>
+    </form>
+  </div>
+
+  <div class="not_logged_in hidden">
+    <form name="loginform" id="loginform" method="post" action="/myesp/login/" class="navbar-form form-inline">
+      <input type="hidden" name="next" value="{{ request.path }}" />
+      <input type="text" name="username" id="user" size="8" value="" placeholder="Username" maxlength="255" class="inputbox" />
+      <input type="password" name="password" id="pass" size="8" value="" placeholder="Password" maxlength="255" class="inputbox" />
+
+      <button class="btn" id="gologin" type="submit">Login</button>
+      <span class="dropdown">
+        <button class="btn dropdown-toggle" data-toggle="dropdown" style="margin-left:0px;">
+          &#9662;
+        </button>
+        <ul class="dropdown-menu pull-right">
+          <li><a href="/myesp/register">Register</a></li>
+          <li><a href="/myesp/passwdrecover/">Forgot Password</a></li>
+          <li><a href="/myesp/loginhelp.html">Help</a></li>
+          <li><a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a></li>
+        </ul>
+      </span>
+
+    </form>
+  </div>
+</div>

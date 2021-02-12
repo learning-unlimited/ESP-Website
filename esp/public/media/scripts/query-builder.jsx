@@ -155,19 +155,23 @@ var QueryBuilder = React.createClass({
       Find {this.props.spec.englishName}&hellip;
       <QueryNode ref="queryNode"
                  filters={this.allFilters()}
-                 filterNames={this.allFilterNames()} />
+                 filterNames={this.allFilterNames()}
+                 onSubmit={this.submit} />
       <button onClick={this.submit} className="qb-input btn btn-primary">
-        Search
+        <span className="glyphicon glyphicon-search" aria-hidden="true" />
+        &nbsp;Search
       </button>
       <button title="search and randomize results"
               onClick={this.submitRandom}
               className="qb-input btn btn-default">
-        Randomize
+        <span className="glyphicon glyphicon-random" aria-hidden="true" />
+        &nbsp;Randomize
       </button>
       <button title="jump to manage page for a random result"
               onClick={this.submitLucky}
               className="qb-input btn btn-default">
-        I'm Feeling Lucky
+        <span className="glyphicon glyphicon-gift" aria-hidden="true" />
+        &nbsp;I'm Feeling Lucky
       </button>
     </div>;
   },
@@ -190,6 +194,15 @@ var QueryNode = React.createClass({
     // A handler to call if the node is removed.  Leave out onRemove to not
     // allow removing the node (e.g. for the root).
     onRemove: React.PropTypes.func,
+
+    // Handler to call if user tries to submit the search form from here. For
+    // now, we'll be conservative and propagate this only into Filters directly
+    // belonging to us, and not complex BooleanOps, since if the user is
+    // building a complex query, they might intend to go to the next field or
+    // something similar when they type <Enter> in a field (going to the next
+    // field is not implemented, but we don't want to submit the form if they
+    // don't want to).
+    onSubmit: React.PropTypes.func,
   },
 
   getInitialState: function () {
@@ -241,14 +254,17 @@ var QueryNode = React.createClass({
                                 filters={this.props.filters} />;
       } else {
         var currentFilter = this.props.filters[this.state.currentFilterName];
-        filterBody = <Filter ref="filter" filter={currentFilter} />;
+        filterBody = <Filter ref="filter"
+                             filter={currentFilter}
+                             onSubmit={this.props.onSubmit} />;
       }
     }
     var removeButton = null;
     if (this.props.onRemove) {
       removeButton = <button onClick={this.props.onRemove}
-                             className="qb-input btn btn-default">
-        -
+                             aria-label="Remove"
+                             className="qb-input btn btn-danger">
+        <span className="glyphicon glyphicon-trash glyphicon-btn-height" aria-hidden="true" />
       </button>;
     }
     return <div>
@@ -326,6 +342,7 @@ var Filter = React.createClass({
         reactClass: React.PropTypes.string.isRequired,
       })),
     }).isRequired,
+    onSubmit: React.PropTypes.func,
   },
 
   asJSON: function () {
@@ -342,13 +359,15 @@ var Filter = React.createClass({
   },
 
   render: function () {
+    var myOnSubmit = this.props.onSubmit;
     var inputs = _.map(this.props.filter.inputs,
                        function (input, i) {
                          // We need to get the class with the name that is the
                          // string input.reactClass.  Doing so is
                          // *terrifyingly* easy.
                          var InputClass = window[input.reactClass];
-                         return <InputClass ref={i} key={i} input={input} />;
+                         return <InputClass ref={i} key={i} input={input}
+                                            onSubmit={myOnSubmit} />;
                        });
     return <span>
       {inputs}
@@ -577,6 +596,7 @@ var TextInput = React.createClass({
       reactClass: React.PropTypes.string.isRequired,
       name: React.PropTypes.string,
     }).isRequired,
+    onSubmit: React.PropTypes.func,
   },
 
   asJSON: function () {
@@ -587,10 +607,18 @@ var TextInput = React.createClass({
     React.findDOMNode(this.refs.input).value = data;
   },
 
+  keyDownHandler: function (event) {
+    if (event.keyCode === 13 && this.props.onSubmit) { // Enter
+      event.preventDefault();
+      this.props.onSubmit();
+    }
+  },
+
   render: function () {
     return <span>
       {this.props.input.name}
-      <input type="text" ref="input" className="qb-input" />
+      <input type="text" ref="input" className="qb-input"
+             onKeyDown={this.keyDownHandler} />
     </span>;
   },
 });
@@ -688,8 +716,9 @@ var BooleanOp = React.createClass({
         {children}
         <li>
           <button onClick={this.handleAdd}
-                  className="qb-input btn btn-default">
-            +
+                  aria-label="Add"
+                  className="qb-input btn btn-success">
+            <span className="glyphicon glyphicon-plus glyphicon-btn-height" aria-hidden="true" />
           </button>
         </li>
       </ul>

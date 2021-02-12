@@ -52,7 +52,8 @@ class StudentJunctionAppModule(ProgramModuleObj):
             "link_title": "Extra Application Info",
             "module_type": "learn",
             "seq": 10000,
-            "required": True
+            "required": True,
+            "choosable": 2,
             }
 
     def students(self, QObject = False):
@@ -68,8 +69,8 @@ class StudentJunctionAppModule(ProgramModuleObj):
                     'studentapps':          ESPUser.objects.filter(Q_students)}
 
     def studentDesc(self):
-        return {'studentapps_complete': """Students who have completed the student application.""",
-                'studentapps':          """Students who have started the student application."""}
+        return {'studentapps_complete': """Students who have completed the student application""",
+                'studentapps':          """Students who have started the student application"""}
 
     def isCompleted(self):
         """ This step is completed if the student has marked their application as complete or answered questions for
@@ -131,6 +132,8 @@ class StudentJunctionAppModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'application.html', request, {'forms': forms, 'app': app})
 
+    def isStep(self):
+        return self.program.isUsingStudentApps()
 
     class Meta:
         proxy = True

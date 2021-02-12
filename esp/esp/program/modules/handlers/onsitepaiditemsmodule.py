@@ -51,7 +51,8 @@ class OnsitePaidItemsModule(ProgramModuleObj):
             "admin_title": "Onsite View Purchased Items",
             "link_title": "View Purchased Items for a Student",
             "module_type": "onsite",
-            "seq": 31
+            "seq": 31,
+            "choosable": 1,
             }
 
     @main_call
@@ -59,7 +60,7 @@ class OnsitePaidItemsModule(ProgramModuleObj):
     def paiditems(self, request, tl, one, two, module, extra, prog):
 
         #   Get a user
-        user, found = search_for_user(request)
+        user, found = search_for_user(request, add_to_context = {'tl': 'onsite'})
         if not found:
             return user
 

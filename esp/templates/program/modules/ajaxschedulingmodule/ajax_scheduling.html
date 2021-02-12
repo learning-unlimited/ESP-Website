@@ -8,17 +8,16 @@
 <head>
 
 <!-- meta -->
-<meta http-equiv="Content-Script-Type" content="text/javascript">
+<meta http-equiv="Content-Script-Type" content="text/javascript" />
 
-<title>ESP Scheduling Application</title>
+<title>{{ settings.ORGANIZATION_SHORT_NAME }} Scheduling Application</title>
 
 <!-- LIBS -->
 <!-- STYLE -->
 <link id='sch_css' href='/media/default_styles/scheduling.css' type='text/css' rel='stylesheet' />
 <link id='tooltip_css' href='/media/default_styles/tooltips.css' type='text/css' rel='stylesheet' />
 <link rel="stylesheet" href='/media/default_styles/jquery-ui/jquery-ui.css'/>
-<link rel="stylesheet" type="text/css" href="/media/default_styles/scheduling.css">
-<link rel="stylesheet" type="text/css" href="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.css"></link>
+<link rel="stylesheet" type="text/css" href="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.css" />
 
 <!-- 3rd party -->
 <script type='text/javascript' src='/media/scripts/jquery.js'></script>
@@ -27,10 +26,14 @@
 <script type='text/javascript' src='/media/scripts/common.js'></script>
 <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/google/palette.js@8418158452401c15d276d9632b88933aa581718f/palette.js"></script>
 
 <!--Scheduler-->
-<script type="text/javascript">    var base_url = "{{ program.getUrlBase }}";  </script>
-<script type="text/javascript">    var program_base_url = "/json/"+base_url+"/";  </script>
+<script type="text/javascript">
+  var base_url = "{{ program.getUrlBase }}";
+  var program_base_url = "/json/"+base_url+"/";
+  var has_autoscheduler_frontend = "{{ has_autoscheduler_frontend }}";
+</script>
 
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/CellColors.js"></script>
@@ -58,13 +61,16 @@
     </td>
     <td class="no-border">
       <div id="side-panel-wrapper" class="ui-widget">
-        <div id="section-info-div" class="component-div ui-widget ui-corner-all ui-helper-hidden"></div>
-        <div id="message-div" class="component-div ui-widget-content ui-corner-all"></div>
-
+        <div id="info-panel">
+          <div id="section-info-div" class="component-div ui-widget ui-corner-all ui-helper-hidden"></div>
+          <div id="message-div" class="component-div ui-widget-content ui-corner-all"></div>
+          <div id="separator" class="ui-resizable-handle ui-resizable-s"></div>
+        </div>
         <div id="side-panel" class="component-div ui-widget">
           <ul>
             <li><a href="#classes">Classes</a></li>
-            <li><a href="#filters">Filters</a></li>
+            <li><a href="#filters">Class Filters</a></li>
+            <li><a href="#filters2">Room Filters</a></li>
           </ul>
           <div id="side-panel-inner">
                 <div id="classes">
@@ -73,11 +79,11 @@
                             <label for="class-search-text">Search:</label>
                             <input id="class-search-text"
                                    style="width: 8em;"></input>
-                            
-                            <label for="class-search-title" 
+
+                            <label for="class-search-title"
                                    class="ui-helper-hidden"
                                   >Search Type</label>
-                            <input type="radio" name="class-search-type" value="title" 
+                            <input type="radio" name="class-search-type" value="title"
                                    checked="checked">title</input>
                             <input type="radio" name="class-search-type" value="emailcode">code</input>
                         </form>
@@ -86,35 +92,81 @@
                 </div>
                 <div id="filters">
                   <form>
-                    <label for="section-filter-length"><b>Class Length</b></label></br>
-                    <div id="section-filter-length">
-                        <label for="section-filter-length-min">Min:</label>
-                        <input id="section-filter-length-min" class="numeric"></input> Hours
-                        </br>
-                        <label for="section-filter-length-max">Max:</label>
-                        <input id="section-filter-length-max" class="numeric"></input> Hours
-                    </div>
-                    </br> 
-                    <label for="section-filter-capacity"><b>Class Capacity</b></label></br>
-                    <div id="section-filter-length">
-                        <label for="section-filter-capacity-min">Min:</label> 
-                        <input id="section-filter-capacity-min" class="numeric"></input> Students
-                        </br>
-                        <label for="section-filter-capacity-max">Max:</label>
-                        <input id="section-filter-capacity-max" class="numeric"></input> Students
-                    </div>
-                    </br>
-                    <div id="section-filter-teacher">
-                        <label for="section-filter-teacher-text"><b>Teacher</b></label></br>
-                        <input id="section-filter-teacher-text"></input>
-                    </div>
-                    <div id="section-filter-unapproved">
+                    <div id="section-filter-unapproved-wrapper">
                         <input id="section-filter-unapproved" type="checkbox"></input>
                         <label for="section-filter-unapproved">Hide unapproved classes</label>
                     </div>
+                    <br />
+                    <label for="section-filter-length"><b>Class Length</b></label><br />
+                    <div id="section-filter-length">
+                        <label for="section-filter-length-min">Min:</label>
+                        <input id="section-filter-length-min" class="numeric"></input> Hours
+                        <br />
+                        <label for="section-filter-length-max">Max:</label>
+                        <input id="section-filter-length-max" class="numeric"></input> Hours
+                    </div>
+                    <br />
+                    <label for="section-filter-capacity"><b>Class Capacity</b></label><br />
+                    <div id="section-filter-capacity">
+                        <label for="section-filter-capacity-min">Min:</label>
+                        <input id="section-filter-capacity-min" class="numeric"></input> Students
+                        <br />
+                        <label for="section-filter-capacity-max">Max:</label>
+                        <input id="section-filter-capacity-max" class="numeric"></input> Students
+                    </div>
+                    <br />
+                    <label for="section-filter-grade"><b>Class Grades</b></label><br />
+                    <div id="section-filter-grade">
+                        <label for="section-filter-grade-min">Min:</label>
+                        <input id="section-filter-grade-min" class="numeric"></input>
+                        <br />
+                        <label for="section-filter-grade-max">Max:</label>
+                        <input id="section-filter-grade-max" class="numeric"></input>
+                    </div>
+                    <br />
+                    <div id="section-filter-teacher">
+                        <label for="section-filter-teacher-text"><b>Teacher</b></label><br />
+                        <input id="section-filter-teacher-text"></input>
+                    </div>
+                    <div id="section-filter-admin-wrapper">
+                        <input id="section-filter-admin" type="checkbox"></input>
+                        <label for="section-filter-admin">Has admin teacher</label>
+                    </div>
+                    <br />
+                    <div id="section-filter-flags">
+                        <label for="section-filter-flags-text"><b>Flag(s)</b></label><br />
+                        <input id="section-filter-flags-text"></input>
+                    </div>
+                    <br />
+                    <div id="section-filter-resources">
+                        <label for="section-filter-resources-text"><b>Resource(s)</b></label><br />
+                        <input id="section-filter-resources-text"></input>
+                    </div>
                   </form>
                 </div>
-          </div> 
+                <div id="filters2">
+                  <form>
+                    <label for="room-filter-capacity"><b>Room Capacity</b></label><br />
+                    <div id="room-filter-capacity">
+                        <label for="room-filter-capacity-min">Min:</label>
+                        <input id="room-filter-capacity-min" class="numeric"></input> Students
+                        <br />
+                        <label for="room-filter-capacity-max">Max:</label>
+                        <input id="room-filter-capacity-max" class="numeric"></input> Students
+                    </div>
+                    <br />
+                    <div id="room-filter-resource">
+                        <label for="room-filter-resource-text"><b>Resource</b></label><br />
+                        <input id="room-filter-resource-text"></input>
+                    </div>
+                    <br />
+                    <div id="room-filter-name">
+                        <label for="room-filter-name-text"><b>Name</b></label><br />
+                        <input id="room-filter-name-text"></input>
+                    </div>
+                  </form>
+                </div>
+          </div>
         </div>
       </div>
     </td>
@@ -131,6 +183,16 @@
     </fieldset>
   </form>
 </div>
+
+<script>
+$j("#info-panel").resizable({
+  handles: {s: '#separator'},
+  containment: '#side-panel-wrapper',
+  resize: function() {
+    $j("#side-panel").outerHeight($j("#side-panel-wrapper").innerHeight() - $j("#info-panel").outerHeight());
+  }
+});
+</script>
 
 </body>
 </html>

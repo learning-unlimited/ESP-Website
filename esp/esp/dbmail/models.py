@@ -51,14 +51,14 @@ from django.template import Template #, VariableNode, TextNode
 import esp.dbmail.sendto_fns
 
 from django.conf import settings
+from django.contrib.sites.models import Site
 
 from django.core.mail import get_connection
 from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
 from django.core.exceptions import ImproperlyConfigured
 
-
-def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=(settings.DEFAULT_EMAIL_ADDRESSES['archive'],),
+def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=None,
               return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={},
               *args, **kwargs):
     from_email = from_email.strip()
@@ -68,13 +68,28 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
-    from django.core.mail import EmailMessage #send_mail as django_send_mail
-    logger.info("Sent mail to %s", new_list)
 
-    #   Get whatever type of e-mail connection Django provides.
+    # remove duplicate email addresses (sendgrid doesn't like them)
+    recipients = []
+    pat = '<(.+)>'
+    emails = {re.search(pat, x).group(1) if re.search(pat, x) else x for x in new_list}
+    for x in new_list:
+        if x in emails and not re.search(pat, x):
+            recipients.append(x)
+            emails.remove(x)
+        elif re.search(pat, x):
+            tmp = re.search(pat, x).group(1)
+            if tmp in emails:
+                recipients.append(x)
+                emails.remove(tmp)
+
+    from django.core.mail import EmailMessage #send_mail as django_send_mail
+    logger.info("Sent mail to %s", recipients)
+
+    #   Get whatever type of email connection Django provides.
     #   Normally this will be SMTP, but it also has an in-memory backend for testing.
     connection = get_connection(fail_silently=fail_silently, return_path=return_path)
-    msg = EmailMessage(subject, message, from_email, new_list, bcc=bcc, connection=connection, headers=extra_headers)
+    msg = EmailMessage(subject, message, from_email, recipients, bcc=bcc, connection=connection, headers=extra_headers)
 
     #   Detect HTML tags in message and change content-type if they are found
     if '<html>' in message:
@@ -126,7 +141,7 @@ _MESSAGE_CREATED_AT_HELP_TEXT = re.sub(r'\s+', ' ', _MESSAGE_CREATED_AT_HELP_TEX
 
 
 class MessageRequest(models.Model):
-    """ An initial request to broadcast an e-mail message """
+    """ An initial request to broadcast an email message """
 
     # Each MessageRequest can specify a sendto function, which specifies, for
     # each recipient in the recipients query, which set of associated email
@@ -166,7 +181,7 @@ class MessageRequest(models.Model):
                     help_text="The function that specifies, for each recipient " +
                     "of the message, which set of associated email addresses " +
                     "should receive the message.")
-    sender = models.TextField(blank=True, null=True) # E-mail sender; should be a valid SMTP sender string
+    sender = models.TextField(blank=True, null=True) # Email sender; should be a valid SMTP sender string
     creator = AjaxForeignKey(ESPUser) # the person who sent this message
 
     # Use `default` instead of `auto_now_add`, so that the migration creating
@@ -179,6 +194,11 @@ class MessageRequest(models.Model):
     processed = models.BooleanField(default=False, db_index=True) # Have we made EmailRequest objects from this MessageRequest yet?
     processed_by = models.DateTimeField(null=True, default=None, db_index=True) # When should this be processed by?
     priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
+
+    public = models.BooleanField(default=False) # Should the subject and msgtext of this request be publicly viewable at /email/<id>?
+
+    def public_url(self):
+        return '%s/email/%s' % (Site.objects.get_current().domain, self.id)
 
     def __unicode__(self):
         return unicode(self.subject)
@@ -204,6 +224,7 @@ class MessageRequest(models.Model):
 
         if var_dict is not None:
             new_request.save()
+            var_dict['request'] = new_request
             MessageVars.createMessageVars(new_request, var_dict) # create the message Variables
         return new_request
 
@@ -303,6 +324,7 @@ class MessageRequest(models.Model):
         It is the caller's responsibility to call this only on unprocessed
         MessageRequests.
         """
+        logger.info("Processing MessageRequest %d: %s", self.id, self.subject)
 
         # figure out who we're sending from...
         if self.sender is not None and len(self.sender.strip()) > 0:
@@ -334,7 +356,7 @@ class MessageRequest(models.Model):
                     'subject': subject,
                     'msgtext': msgtext,
                     'created_at': self.created_at,
-                    'defaults': {'sent': None},
+                    'sent': None,
                 }
 
                 # Use get_or_create so that, if this send_to address is
@@ -345,13 +367,11 @@ class MessageRequest(models.Model):
                 # from receiving a duplicate when a message request needs to
                 # be resent after a bug prevented it from being received by
                 # all recipients the first time.
-                newtxt, created = TextOfEmail.objects.get_or_create(**newtxt)
-                if not created:
-                    logger.warning('Skipped duplicate creation of message to %s for message request %d: %s', send_to, self.id, self.subject)
-
+                # Disabled in hopes that it will make postgres less sad.
+                # TODO(benkraft): Figure out a more permanent solution.
+                newtxt = TextOfEmail.objects.create(**newtxt)
                 newemailrequest['textofemail'] = newtxt
-
-                EmailRequest.objects.get_or_create(**newemailrequest)
+                EmailRequest.objects.create(**newemailrequest)
 
         # Mark ourselves processed.  We don't have to worry about the DB
         # falling over between the above writes and this one, because the whole
@@ -359,14 +379,14 @@ class MessageRequest(models.Model):
         self.processed = True
         self.save()
 
-        logger.info('Prepared e-mails to send for message request %d: %s', self.id, self.subject)
+        logger.info('Prepared emails to send for message request %d: %s', self.id, self.subject)
 
 
 class TextOfEmail(models.Model):
     """ Contains the processed form of an EmailRequest, ready to be sent.  SmartText becomes plain text. """
     send_to = models.CharField(max_length=1024)  # Valid email address, "Name" <foo@bar.com>
     send_from = models.CharField(max_length=1024) # Valid email address
-    subject = models.TextField() # E-mail subject; plain text
+    subject = models.TextField() # Email subject; plain text
     msgtext = models.TextField() # Message body; plain text
 
     # Don't use `default` or `auto_now_add`. When a
@@ -442,7 +462,7 @@ class TextOfEmail(models.Model):
         return orm_class.objects.filter(Q(sent_by__isnull=True) | Q(sent_by__lt=now), sent__isnull=True, tries__gte=min_tries).update(sent=now)
 
     class Meta:
-        verbose_name_plural = 'Email Texts'
+        verbose_name_plural = 'Email texts'
 
 class MessageVars(models.Model):
     """ A storage of message variables for a specific message. """
@@ -522,11 +542,11 @@ class MessageVars(models.Model):
         return "Message Variables for %s" % self.messagerequest
 
     class Meta:
-        verbose_name_plural = 'Message Variables'
+        verbose_name_plural = 'Message variables'
 
 
 class EmailRequest(models.Model):
-    """ Each e-mail is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to. """
+    """ Each email is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to. """
     target = AjaxForeignKey(ESPUser)
     msgreq = models.ForeignKey(MessageRequest)
     textofemail = AjaxForeignKey(TextOfEmail, blank=True, null=True)

@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 """
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, Permission
-from esp.web.views.navBar import makeNavBar
 from esp.web.models import NavBarEntry, NavBarCategory, default_navbarcategory
 from esp.utils.web import render_to_response
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
@@ -221,6 +220,11 @@ def ajax_qsd(request):
 
         qsd, created = QuasiStaticData.objects.get_or_create(url=post_dict['url'], defaults={'author': request.user})
 
+        # Clobber prevention. -ageng 2013-08-12
+        # Now needs to be slightly more complicated since we're on reversion. -ageng 2014-01-04
+        if not QuasiStaticData.objects.get_by_url(qsd.url) == qsd:
+            return HttpResponse(content='The edit you are submitting is not based on the newest version!\n(Is someone else editing? Did you get here by a back button?)\nCopy out your work if you need it. Then refresh the page to get the latest version.', status=409)
+
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
         # The revision will automatically be created upon calling the save function of the model object
         if qsd.content != post_dict['data']:
@@ -234,5 +238,16 @@ def ajax_qsd(request):
         result['status'] = 1
         result['content'] = markdown(qsd.content)
         result['url'] = qsd.url
+
+    return HttpResponse(json.dumps(result))
+
+def ajax_qsd_preview(request):
+    """ Ajax function for previewing the result of QSD editing. """
+    import json
+    from markdown import markdown
+
+    # We don't necessarily need to wrap it in JSON, but this seems more
+    # future-proof.
+    result = {'content': markdown(request.POST['data'])}
 
     return HttpResponse(json.dumps(result))

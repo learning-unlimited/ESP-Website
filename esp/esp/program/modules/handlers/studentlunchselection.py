@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_student, meets_cap
+from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_student, meets_cap, meets_deadline
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
 from esp.users.models            import Record
 from esp.cal.models              import Event
@@ -75,7 +75,7 @@ class StudentLunchSelectionForm(forms.Form):
         result = False
 
         #   Clear existing lunch periods for this day
-        for section in self.user.getEnrolledSections(self.program):
+        for section in self.user.getSections(self.program):
             if section.parent_class.category.category == 'Lunch':
                 if section.get_meeting_times()[0].start.day == self.day.day:
                     section.unpreregister_student(self.user)
@@ -111,7 +111,8 @@ class StudentLunchSelection(ProgramModuleObj):
             "admin_title": "Student Lunch Period Selection",
             "module_type": "learn",
             "required": True,
-            "seq": 2
+            "seq": 5,
+            "choosable": 0,
             }
 
     def isCompleted(self):
@@ -120,6 +121,7 @@ class StudentLunchSelection(ProgramModuleObj):
     @main_call
     @needs_student
     @meets_cap
+    @meets_deadline('/Classes/Lunch')
     def select_lunch(self, request, tl, one, two, module, extra, prog):
         context = {'prog': self.program}
         user = request.user
@@ -152,6 +154,9 @@ class StudentLunchSelection(ProgramModuleObj):
         context['forms'] = forms
 
         return render_to_response(self.baseDir()+'select_lunch.html', request, context)
+
+    def isStep(self):
+        return Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').exists()
 
     class Meta:
         proxy = True

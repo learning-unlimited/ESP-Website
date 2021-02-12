@@ -70,7 +70,7 @@ class ProgramModuleObj(models.Model):
     module   = models.ForeignKey(ProgramModule)
     seq      = models.IntegerField()
     required = models.BooleanField(default=False)
-    required_label = models.CharField(max_length=80, blank=True, null=True)
+    required_label = models.CharField(max_length=80, blank=True, null=False, default="")
 
     def docs(self):
         if hasattr(self, 'doc') and self.doc is not None and str(self.doc).strip() != '':
@@ -93,7 +93,7 @@ class ProgramModuleObj(models.Model):
 
         #   Filter out attributes that we don't want to look at: attributes of
         #   ProgramModuleObj, including Django stuff
-        key_set = set(dir(self)) - set(dir(ProgramModuleObj)) - set(self.__class__._meta.get_all_field_names())
+        key_set = set(dir(self)) - set(dir(ProgramModuleObj)) - set(self.__class__._meta.get_fields())
         for key in key_set:
             #   Fetch the attribute, now that we're confident it's safe to look at.
             item = getattr(self, key)
@@ -141,6 +141,9 @@ class ProgramModuleObj(models.Model):
 
     def goToCore(self, tl):
         return HttpResponseRedirect(self.getCoreURL(tl))
+
+    def require_auth(self):
+        return True
 
     @cache_function
     def findModuleObject(tl, call_txt, prog):
@@ -207,7 +210,7 @@ class ProgramModuleObj(models.Model):
         raise Http404
 
     @staticmethod
-    def getFromProgModule(prog, mod):
+    def getFromProgModule(prog, mod, old_prog = None):
         import esp.program.modules.models
         """ Return an appropriate module object for a Module and a Program.
            Note that all the data is forcibly taken from the ProgramModuleObj table """
@@ -216,9 +219,16 @@ class ProgramModuleObj(models.Model):
         if len(BaseModuleList) < 1:
             BaseModule = ProgramModuleObj()
             BaseModule.program = prog
-            BaseModule.module  = mod
-            BaseModule.seq     = mod.seq
-            BaseModule.required = mod.required
+            BaseModule.module = mod
+            # If an old program is specified, use the seq and required values from that program
+            old_pmo = ProgramModuleObj.objects.filter(program = old_prog, module = mod)
+            if len(old_pmo) == 1:
+                BaseModule.seq = old_pmo[0].seq
+                BaseModule.required = old_pmo[0].required
+                BaseModule.required_label = old_pmo[0].required_label
+            else:
+                BaseModule.seq = mod.seq
+                BaseModule.required = mod.required
             BaseModule.save()
 
         elif len(BaseModuleList) > 1:
@@ -282,6 +292,14 @@ class ProgramModuleObj(models.Model):
         """ Use a template if the `mainView' function doesn't exist. """
         return (not self.main_view)
 
+    def isAdminPortalFeatured(self):
+        """Don't display in the long list of additional modules if it's already featured
+        in the main portion of the admin portal"""
+        return self.module.handler in ['AdminCore', 'AdminMorph', 'AdminMaterials',
+                                       'ListGenModule', 'ResourceModule', 'CommModule',
+                                       'VolunteerManage', 'ClassFlagModule', 'ProgramPrintables',
+                                       'AJAXSchedulingModule', 'NameTagModule', 'TeacherEventsModule']
+
     def isCompleted(self):
         return False
 
@@ -293,22 +311,58 @@ class ProgramModuleObj(models.Model):
             return 'program/modules/%s/%s' % (self.__class__.__name__.lower(), self.module.inline_template)
         return None
 
-    def teachers(self, QObject = False):
+    def teacherDesc(self):
+        """
+        A dict of string keys to descriptions (strings).
+
+        Keys should be consistent with those of the teachers method.
+        """
+        return {}
+
+    def teachers(self, QObject=False):
+        """
+        A dict of string keys to lists/QuerySets of teachers.
+
+        String keys should be distinct across modules, unless the modules are
+        mutually exclusive. Used for features like computing stats for the
+        dashboard and selecting users for the comm panel.
+        """
         return {}
 
     def studentDesc(self):
+        """
+        A dict of string keys to descriptions (strings).
+
+        Keys should be consistent with those of the students method.
+        """
         return {}
 
-    def teacherDesc(self):
-        return {}
+    def students(self, QObject=False):
+        """
+        A dict of string keys to lists/QuerySets of students.
 
-    def students(self,QObject=False):
+        String keys should be distinct across modules, unless the modules are
+        mutually exclusive. Used for features like computing stats for the
+        dashboard and selecting users for the comm panel.
+        """
         return {}
 
     def volunteerDesc(self):
+        """
+        A dict of string keys to descriptions (strings).
+
+        Keys should be consistent with those of the volunteers method.
+        """
         return {}
 
-    def volunteers(self,QObject=False):
+    def volunteers(self, QObject=False):
+        """
+        A dict of string keys to lists/QuerySets of volunteers.
+
+        String keys should be distinct across modules, unless the modules are
+        mutually exclusive. Used for features like computing stats for the
+        dashboard and selecting users for the comm panel.
+        """
         return {}
 
     def isStep(self):
@@ -335,6 +389,7 @@ class ProgramModuleObj(models.Model):
         - "handler"
         - "admin_title" (as "%(link_title)s (%(handler)s)")
         - "seq" (as 200)
+        - "choosable" (as 0, namely that it displays as an option for admins to choose upon creating a new program)
         """
 
         props = cls.module_properties()
@@ -346,6 +401,9 @@ class ProgramModuleObj(models.Model):
                 props["admin_title"] = "%(link_title)s (%(handler)s)" % props
             if not "seq" in props:
                 props["seq"] = 200
+            if not "choosable" in props:
+                props["choosable"] = 0
+                raise AttributeError("Module `{}` doesn't have choosable property.".format(cls.__name__))
 
         if isinstance(props, dict):
             props = [ props ]
@@ -499,39 +557,67 @@ def meets_grade(method):
         cur_grade = request.user.getGrade(moduleObj.program)
         if cur_grade != 0 and (cur_grade < moduleObj.program.grade_min or \
                                cur_grade > moduleObj.program.grade_max):
-            return render_to_response(errorpage, request, {'yog': request.user.getYOG(moduleObj.program)})
+            return render_to_response(errorpage, request, {
+                    'program': moduleObj.program,
+                    'yog': request.user.getYOG(moduleObj.program),
+                })
 
         return method(moduleObj, request, tl, *args, **kwargs)
 
     return _checkGrade
 
-# Anything you can do, I can do meta
-
-# Just broke out this function to allow combined deadlines (see meets_any_deadline,
-# meets_all_deadlines functions below).  -Michael P, 6/23/2009
 def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs):
-    if tl != 'learn' and tl != 'teach':
+    """
+    Decide if a user can view a requested page; if not, offer a redirect.
+
+    Given information about a request, return a pair of type (bool, None |
+    response), which indicates whether the user can view the requested page,
+    and an optional redirect if not.
+
+    If the user is an administrator, annotate the request with information
+    about what roles have permission to view the requested page.
+    """
+    if tl != 'learn' and tl != 'teach' and tl != 'volunteer':
         return (True, None)
     response = None
     canView = False
+    perm_name = {'learn':'Student','teach':'Teacher','volunteer':'Volunteer'}[tl]+extension
     if not_logged_in(request):
-        response = HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+        if not moduleObj.require_auth() and Permission.null_user_has_perm(permission_type=perm_name, program=request.program):
+            canView = True
+        else:
+            response = HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
     else:
-        canView = request.user.updateOnsite(request)
+        user = request.user
+        program = request.program
+        canView = user.updateOnsite(request)
         if not canView:
-            perm_name = {'learn':'Student','teach':'Teacher'}[tl]+extension
-            canView = Permission.user_has_perm(request.user,
+            canView = Permission.user_has_perm(user,
                                                perm_name,
-                                               program=request.program)
+                                               program=program)
             #   For now, allow an exception if the user is of the wrong type
             #   This is because we are used to UserBits having a null user affecting everyone, regardless of user type.
-            if not canView and Permission.valid_objects().filter(permission_type=perm_name, program=request.program, user__isnull=True).exists():
+            if not canView and Permission.valid_objects().filter(permission_type=perm_name, program=program, user__isnull=True).exists():
                 canView = True
+
+            #   Give administrators additional information
+            if user.isAdministrator(program=program):
+                request.show_perm_info = True
+                if getattr(request, 'perm_names', None) is not None:
+                    request.perm_names.append(perm_name)
+                else:
+                    request.perm_names = [perm_name]
+
+                roles_with_perm = Permission.list_roles_with_perm(perm_name, program)
+                if getattr(request, 'roles_with_perm', None) is not None:
+                    request.roles_with_perm += roles_with_perm
+                else:
+                    request.roles_with_perm = roles_with_perm
 
     return (canView, response)
 
 def list_extensions(tl, extensions, andor=''):
-    nicetl={'teach':'Teacher','learn':'Student'}[tl]
+    nicetl={'teach':'Teacher','learn':'Student','volunteer':'Volunteer'}[tl]
     if len(extensions)==0:
         return 'no deadlines were'
     elif len(extensions)==1:
@@ -541,31 +627,30 @@ def list_extensions(tl, extensions, andor=''):
     else:
         return 'the deadlines '+', '.join([nicetl+e for e in extensions[:-1]])+', '+andor+' '+nicetl+extensions[-1]+' were'
 
-#   Return a decorator that returns a function calling the decorated function if
-#   the deadline is met, or a function that generates an error page if the
-#   deadline is not met.
-def meets_deadline(extension=''):
-    def meets_deadline(method):
-        def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
-            errorpage = 'errors/program/deadline-%s.html' % tl
-            (canView, response) = _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs)
-            if canView:
-                return method(moduleObj, request, tl, *args, **kwargs)
-            else:
-                if response:
-                    return response
-                else:
-                    return render_to_response(errorpage, request, {'extension': list_extensions(tl,[extension]), 'moduleObj': moduleObj})
-        return _checkDeadline
-    return meets_deadline
+def render_deadline_for_tl(tl, request, context):
+    errorpage = 'errors/program/deadline-%s.html' % tl
+    return render_to_response(errorpage, request, context)
 
-#   Behaves like the meets_deadline function above, but accepts a list of
-#   userbit names.  The returned decorator returns the decorated function if
-#   any of the deadlines are met.
+def meets_deadline(extension=''):
+    """
+    Decorate a function to check if a deadline is met.
+
+    Return a decorator that returns a function calling the decorated function if
+    the deadline is met, or a function that generates an error page if the
+    deadline is not met.
+    """
+    return meets_any_deadline([extension])
+
 def meets_any_deadline(extensions=[]):
+    """
+    Decorate a function to check if at least one deadline is met.
+
+    Return a decorator that returns a function calling the decorated function
+    if at least one of the deadlines is met, or a function that generates an
+    error page if none of the deadlines are met.
+    """
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
-            errorpage = 'errors/program/deadline-%s.html' % tl
             for ext in extensions:
                 (canView, response) = _checkDeadline_helper(method, ext, moduleObj, request, tl, *args, **kwargs)
                 if canView:
@@ -573,26 +658,10 @@ def meets_any_deadline(extensions=[]):
             if response:
                 return response
             else:
-                return render_to_response(errorpage, request, {'extension': list_extensions(tl,extensions,'and') , 'moduleObj': moduleObj})
+                return render_deadline_for_tl(tl, request,
+                        {'extension': list_extensions(tl,extensions,'and') , 'moduleObj': moduleObj})
         return _checkDeadline
     return meets_deadline
-
-#   Line meets_any_deadline above, but requires that all deadlines are met.
-def meets_all_deadlines(extensions=[]):
-    def meets_deadline(method):
-        def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
-            errorpage = 'errors/program/deadline-%s.html' % tl
-            for ext in extensions:
-                (canView, response) = _checkDeadline_helper(method, ext, moduleObj, request, tl, *args, **kwargs)
-                if not canView:
-                    if response:
-                        return response
-                    else:
-                        return render_to_response(errorpage, request, {'extension': list_extensions(tl,extensions,'or') , 'moduleObj': moduleObj})
-            return method(moduleObj, request, tl, *args, **kwargs)
-        return _checkDeadline
-    return meets_deadline
-
 
 def meets_cap(view_method):
     """Only allow students who meet the program cap past this point."""
@@ -627,12 +696,8 @@ def user_passes_test(test_func, error_message):
         def _check(moduleObj, request, tl, *args, **kwargs):
             if test_func(moduleObj):
                 return view_method(moduleObj, request, tl, *args, **kwargs)
-            errorpage = 'errors/program/deadline-%s.html' % tl
-            return render_to_response(
-                errorpage,
-                request,
-                {'extension': error_message, 'moduleObj': moduleObj},
-            )
+            return render_deadline_for_tl(tl, request,
+                    {'extension': error_message, 'moduleObj': moduleObj})
         return _check
     return user_passes_test
 

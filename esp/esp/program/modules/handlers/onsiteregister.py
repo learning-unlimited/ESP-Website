@@ -50,31 +50,10 @@ class OnSiteRegister(ProgramModuleObj):
             "admin_title": "Onsite New Registration",
             "link_title": "New Student Registration",
             "module_type": "onsite",
-            "seq": 30
+            "seq": 30,
+            "choosable": 1,
             }
 
-    def updatePaid(self, paid=True):
-        """ Create an invoice for the student and, if paid is True, create a receipt showing
-        that they have paid all of the money they owe for the program. """
-        iac = IndividualAccountingController(self.program, self.student)
-        if not iac.has_paid():
-            iac.ensure_required_transfers()
-            if paid:
-                iac.submit_payment(iac.amount_due())
-
-    def createBit(self, extension):
-        if extension == 'Paid':
-            self.updatePaid(True)
-
-        if Record.user_completed(self.student, extension.lower(), self.program):
-            return False
-        else:
-            Record.objects.create(
-                user = self.student,
-                event = extension.lower(),
-                program = self.program
-            )
-            return True
 
     @main_call
     @needs_onsite
@@ -90,7 +69,7 @@ class OnSiteRegister(ProgramModuleObj):
                                 last_name  = new_data['last_name'],
                                 email      = new_data['email'])
 
-                self.student = new_user
+                self.user = new_user
 
                 regProf = RegistrationProfile.getLastForProgram(new_user,
                                                                 self.program)
@@ -121,20 +100,20 @@ class OnSiteRegister(ProgramModuleObj):
                 regProf.save()
 
                 if new_data['paid']:
-                    self.createBit('paid')
-                    self.updatePaid(True)
+                    Record.createBit('paid', self.program, self.user)
+                    IndividualAccountingController.updatePaid(self.program, self.user, True)
                 else:
-                    self.updatePaid(False)
+                    IndividualAccountingController.updatePaid(self.program, self.user, False)
 
-                self.createBit('Attended')
+                Record.createBit('Attended', self.program, self.user)
 
                 if new_data['medical']:
-                    self.createBit('Med')
+                    Record.createBit('Med', self.program, self.user)
 
                 if new_data['liability']:
-                    self.createBit('Liab')
+                    Record.createBit('Liab', self.program, self.user)
 
-                self.createBit('OnSite')
+                Record.createBit('OnSite', self.program, self.user)
 
 
                 new_user.groups.add(Group.objects.get(name="Student"))

@@ -1,0 +1,119 @@
+{% extends "main.html" %}
+{% load render_qsd %}
+
+{% block title %} Student Registration for {{program.niceName}} {% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript">base_url = "{{ program.getUrlBase }}"</script>
+<script type="text/javascript" src="/media/scripts/program/modules/studentregphasezero.js"></script>
+<script type="text/javascript">
+  // Set up the student input autocomplete
+  $j(document).ready(function() {
+    setup_autocomplete();
+  });
+</script>
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+
+<style>
+table, th, tr, td {
+    text-align:center;
+}
+
+th, td {
+    padding: 4px !important;
+}
+
+.option {
+    border: 1px solid black;
+    background-color: #f7f7f7;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+}
+
+.option:hover {
+    background-color: #edf3ff;
+}
+
+.button {
+    float: none !important;
+}
+
+input {
+    margin: 0px !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Phase Zero (Student Lottery) for {{program.niceName}}</h1>
+{% inline_program_qsd_block program "learn:studentregphasezero/top" %}
+Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any student that submits interest to the program before the end of phase zero will receive a lottery ticket. We will then select a random portion of these tickets that will then have guaranteed entry into the program. Only students selected in the student lottery may proceed to register for classes.
+{% end_inline_program_qsd_block %}
+
+<hr>
+
+<center><h2>To enter the student lottery, please complete {% if num_allowed_users > 1 %}<u>one</u> of the two options{% else %}the step{% endif %} below:</h2></center>
+<br>
+
+<table width=100% cellpadding="0" cellspacing="0">
+    <td width=46% class="option">
+        <form method="POST" id="submit_form" action="/learn/{{one}}/{{two}}/studentregphasezero">
+            <table width=100%>
+            {{ form }}
+                <tr>
+                    <th>Create a New Lottery Ticket</th>
+                </tr>
+                <tr>
+                    <td>{% if num_allowed_users > 1 %}(Use this option if you want to start a new lottery ticket for yourself or for a group)<br><br>{% endif %}1) Just click the button below:<br><br></td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="submit" class="button" value="Create New Lottery Ticket"/>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </td>
+
+    {% if num_allowed_users > 1 %}
+    <td width=8%><b><i>OR</i></b></td>
+
+    <td width=46% class="option">
+        <form action="/learn/{{one}}/{{two}}/joingroup" method="post" name="addstudent">
+            <table width=100%>
+                <tr>
+                    <th>Join An Existing Lottery Ticket</th>
+                </tr>
+                <tr>
+                    <td>(Use this option if you want to join a ticket that someone else has already made)<br><br>1) Begin typing another student's <u>username</u> below<br>2) Select the correct username<br>3) Click the button<br><br>Note: the student must already have a lottery ticket and the maximum allowed group size is <b>{{ num_allowed_users }}</b> students</td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="text" name="student_username" id="student_username" />
+                        <input type="hidden" name="student_selected" id="student_id" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="submit" class="button" value="Join Student's Lottery Ticket" />
+                    </td>
+                </tr>
+                {% if join_error %}
+                <tr>
+                    <td>
+                        <p><font color="red">{{ join_error }}</font></p>
+                    </td>
+                </tr>
+                {% endif %}
+            </table>
+        </form>
+    </td>
+    {% endif %}
+</table>
+
+
+{% endblock %}

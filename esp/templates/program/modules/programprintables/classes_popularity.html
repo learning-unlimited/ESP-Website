@@ -1,0 +1,78 @@
+<html>
+<head>
+<title>Class Subject Popularity for {{ program.niceName }}</title>
+<style type="text/css" media="print,screen">
+body { font-family: georgia; margin: 0; font-size: 12px;}
+.title { text-align: center; font-size: 12pt; font-family: georgia; }
+.title span { font-weight:bolder; text-decoration: underline;
+              font-size:16pt; }
+.facts { text-align: center; border: 0; }
+.facts th { text-align: right; font-size: 12pt; font-weight: bold; }
+.facts td { text-align: left; font-size: 12pt;}
+.facts td.paid { border: 1px solid black; text-align: center;
+                 }
+.title { padding: 1in 0 0 0; }
+.schedule {border: 1px solid black; }
+.schedule td { border: 1px solid black; }
+.schedule th { border: 1px solid black; vertical-align: top; }
+.schedule td { vertical-align: top; }
+.schedule th.day { border-bottom: 0; }
+.schedule td.oldday { border-bottom: 0;
+                      border-top: 0;}
+td.newday { border-width: 2px 1px 0 1px;}
+#pagebreak {page-break-after: always; }
+.description { text-align: center; padding: .2in 0 .2in 0; }
+td, th {
+       border: 1px solid black; 
+       border-collapse: collapse
+}
+table.sortable thead {
+    background-color:#eee;
+    color:#666666;
+    font-weight: bold;
+    cursor: default;
+}
+</style>
+<script src="/media/scripts/sorttable.js"></script>
+
+</head>
+<body>
+{% load main %}
+
+<table class="sortable" style="border: 1px solid black; border-collapse: collapse;">
+<tr>
+ <!-- <th>#</th> -->
+ <th>Class Code</th>
+ <th>Class Title</th>
+ <th>Description (short)</th>
+ <th>Teachers</th>
+ <th>Number of Stars</th>
+ {% for priority in priorities %}
+ <th>Priority {{ priority }}</th>
+ {% endfor %}
+ <th>Students Enrolled</th>
+ <th>Class Capacity</th>
+ <th>Percent Capacity</th>
+</tr>
+{% for cls in classes %}
+<tr>
+ <!-- <td>{{ forloop.counter }}</td> -->
+ <td data-st-key="{{ cls.id }}">{{ cls.emailcode }}</td>
+ <td>{{ cls.title }}</td>
+ <td>{{ cls.class_info|truncatewords_html:10 }}
+ <td>{% for teacher in cls.teachers.all %}{% if teacher.id == cls.split_teacher.id %}<b>{% endif %}{{ teacher.name_last_first }}{% if teacher.id == cls.split_teacher.id %}</b>{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
+ <td>{{ cls.ssi }}</td>
+ {% for priority in priorities %}
+ {% with prior_field="priority"|concat:priority %}
+ <td>{{ cls|get_field:prior_field }}</td>
+ {% endwith %}
+ {% endfor %}
+ <td>{{ cls.num_students }}</td>
+ <td>{{ cls.capacity }}</td>
+ <td>{{ cls.percent_capacity|floatformat:2 }}</td>
+</tr>
+{% endfor %}
+</table>
+
+</body>
+</html>

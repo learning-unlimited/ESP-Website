@@ -152,15 +152,17 @@ class PasswordRecoveryTicketTest(TestCase):
 
 class TeacherInfo__validationtest(TestCase):
     def setUp(self):
+        Tag.setTag('teacher_shirt_sizes', value='XS, S, M, L, XL, XXL')
+        Tag.setTag('student_shirt_sizes', value='XS, S, M, L, XL, XXL')
+        Tag.setTag('volunteer_shirt_sizes', value='XS, S, M, L, XL, XXL')
+        Tag.setTag('shirt_types', value='Straight cut, Fitted cut')
         self.user, created = ESPUser.objects.get_or_create(username='teacherinfo_teacher')
         self.user.profile = self.user.getLastProfile()
         self.info_data = {
             'graduation_year': '2000',
-            'school': 'L University',
             'major': 'Underwater Basket Weaving',
             'shirt_size': 'XXL',
-            'shirt_type': 'M',
-            'from_here': 'True'
+            'shirt_type': 'Straight cut'
         }
 
     def useData(self, data):
@@ -189,6 +191,14 @@ class TeacherInfo__validationtest(TestCase):
 
         # Check that model data copies correctly back to the form
         tifnew = TeacherInfoForm(ti.updateForm({}))
+
+        # split values from dropdown widget of affiliation
+        affiliation_dropdown_widget = tifnew.fields['affiliation'].widget
+        affiliation_values = affiliation_dropdown_widget.decompress(tifnew.data['affiliation'])
+        tifnew.data['affiliation_0'] = affiliation_values[0]
+        tifnew.data['affiliation_1'] = affiliation_values[1]
+        del tifnew.data['affiliation']
+
         self.assertTrue(tifnew.is_valid())
 
         # This one should be an exact match
@@ -196,14 +206,27 @@ class TeacherInfo__validationtest(TestCase):
 
     def testUndergrad(self):
         self.info_data['graduation_year'] = '2000'
+        self.info_data['affiliation_0'] = 'Undergrad'
+        self.info_data['affiliation_1'] = ''
         self.useData( self.info_data )
     def testGrad(self):
         self.info_data['graduation_year'] = ' G'
+        self.info_data['affiliation_0'] = 'Grad'
+        self.info_data['affiliation_1'] = ''
         self.useData( self.info_data )
+    def testPostdoc(self):
+        self.info_data['graduation_year'] = ''
+        self.info_data['affiliation_0'] = 'Postdoc'
+        self.info_data['affiliation_1'] = ''
+        self.useData(self.info_data)
     def testOther(self):
         self.info_data['graduation_year'] = ''
+        self.info_data['affiliation_0'] = 'Other'
+        self.info_data['affiliation_1'] = 'Professor'
         self.useData( self.info_data )
         self.info_data['graduation_year'] = 'N/A'
+        self.info_data['affiliation_0'] = 'None'
+        self.info_data['affiliation_1'] = 'other school'
         self.useData( self.info_data )
 
 class ValidHostEmailFieldTest(TestCase):
@@ -320,7 +343,7 @@ class AccountCreationTest(TestCase):
         #first try an email that shouldn't have an account
         #first without follow, to see that it redirects correctly
         response1 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com"})
-        if not Tag.getBooleanTag('ask_about_duplicate_accounts', default=False):
+        if not Tag.getBooleanTag('ask_about_duplicate_accounts'):
             self.assertTemplateUsed(response1,"registration/newuser.html")
             return
 
@@ -357,7 +380,7 @@ class AccountCreationTest(TestCase):
         """Testing phase 2, where user provides info, and we make the account"""
 
         url = "/myesp/register/"
-        if Tag.getBooleanTag("ask_about_duplicate_accounts", default=False):
+        if Tag.getBooleanTag("ask_about_duplicate_accounts"):
             url+="information/"
         response = self.client.post(url,
                                    data={"username":"username",
@@ -378,7 +401,7 @@ class AccountCreationTest(TestCase):
         except ESPUser.DoesNotExist, ESPUser.MultipleObjectsReturned:
             self.fail("User not created correctly or created multiple times")
 
-        if not Tag.getBooleanTag('require_email_validation', default=False):
+        if not Tag.getBooleanTag('require_email_validation'):
             return
 
         self.assertFalse(u.is_active)
@@ -475,9 +498,9 @@ class TestChangeRequestView(TestCase):
         c.login(username=self.user.username, password=self.password)
 
         #   Submit a valid grade change request
-        response = c.post("/myesp/grade_change_request", { "reason": 'I should not get this e-mail', 'claimed_grade': 10 })
+        response = c.post("/myesp/grade_change_request", { "reason": 'I should not get this email', 'claimed_grade': 10 })
 
-        #   Check that an e-mail was sent with the right from/to
+        #   Check that an email was sent with the right from/to
         self.assertEqual(len(mail.outbox), 1)
         msg = mail.outbox[0]
         self.assertEqual(msg.to, [settings.DEFAULT_EMAIL_ADDRESSES['default']])

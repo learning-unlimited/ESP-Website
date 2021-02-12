@@ -1,0 +1,26 @@
+<div class="assignment-detail assignment-extra" style="display: none;">
+    <div style="background: gray;">New Resource Assignment</div>
+    <form method="post" class="assignment-form" action="/manage/{{program.getUrlBase}}/newassignment/">{% csrf_token %}<input type="hidden" name="target" value="{{ section.id }}"></input>
+        <table>
+            <tbody>
+                <tr>
+                    <th> Resource type: </th>
+                    <td>
+                        <select name="resource">
+                            <option selected="selected" value=""></option>
+                            {% for res_type in res_types %}
+                                <option value="{{ res_type.id }}">{{ res_type.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <input type="submit" class="assignment-submit-new btn btn-default" value="Checkout"></input>
+                    </td>
+                    <td>
+                        <input type="button" class="assignment-submit-new btn btn-default" onclick="$j(this).parents('div..assignment-extra').remove()" value="Close"></input>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </form>
+</div>

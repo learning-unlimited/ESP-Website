@@ -63,6 +63,7 @@ class CustomFormModule(ProgramModuleObj):
             'admin_title': 'Teacher Custom Form',
             'link_title': 'Additional Profile Information',
             'seq': 4,
+            'choosable': 0,
         },
         {
             "module_type": "learn",
@@ -70,6 +71,7 @@ class CustomFormModule(ProgramModuleObj):
             'admin_title': 'Student Custom Form',
             'link_title': 'Additional Profile Information',
             'seq': 4,
+            'choosable': 0,
         },]
 
     def isCompleted(self):
@@ -79,7 +81,7 @@ class CustomFormModule(ProgramModuleObj):
     @main_call
     @usercheck_usetl
     def extraform(self, request, tl, one, two, module, extra, prog):
-        custom_form_id = Tag.getProgramTag('%s_extraform_id' % tl, prog, None)
+        custom_form_id = Tag.getProgramTag('%s_extraform_id' % tl, prog)
         if custom_form_id:
             cf = Form.objects.get(id=int(custom_form_id))
         else:

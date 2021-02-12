@@ -2,26 +2,21 @@
 
 {% load render_qsd %}
 
-<h3>Teacher Information</h3>
+<h3>Additional Teacher Information</h3>
 
+{% if form.affiliation %}
 <div class="control-group">
-<label for="id_from_here" class="control-label">{{ form.from_here.label }}</label>
-<div class="controls">
-{{ form.from_here }} {% if form.from_here.errors %}
-  <br /><span class="form_error">{{ form.from_here.errors|join:", " }}</span>
-  {% endif %}
+    <label for="id_affiliation" class="control-label">{{ form.affiliation.label }}<font color="red">*</font></label>
+    <div class="controls controls-row">
+    <span style="font-size: 0.8em; font-style: italic;">(If you select "Other" or "No affiliation," please explain in the lower box.)</span><br />
+    {{ form.affiliation }} {% if form.affiliation.errors %}
+    <br /><span class="form_error">{{ form.affiliation.errors|join:", " }}</span>
+    {% endif %}
+    </div>
 </div>
-</div>
+{% endif %}
 
-<div class="control-group">
- <label for="id_school" class="control-label">If no, what is your school/employer?</label>
- <div class="controls">
- {{ form.school }} {% if form.school.errors %}
-   <br /><span class="form_error">{{ form.school.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
-
+{% if form.graduation_year %}
 <div class="control-group">
 <label for="id_graduation_year" class="control-label">Graduation Year:</label>
 <div class="controls">
@@ -32,16 +27,9 @@
    {% endif %}
 </div>
 </div>
+{% endif %}
 
-<div class="control-group">
- <label for="id_school" class="control-label">Are you a graduate student or graduate alum?</label><br />
- <div class="controls">
- {{ form.is_graduate_student }} {% if form.is_graduate_student.errors %}
-   <br /><span class="form_error">{{ form.is_graduate_student.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div> 
-
+{% if form.major %}
 <div class="control-group">
  <label for="id_major" class="control-label">Major/Department:</label>
  <div class="controls">
@@ -49,7 +37,8 @@
    <br /><span class="form_error">{{ form.major.errors|join:", " }}</span>
    {% endif %}
 </div>
-</div> 
+</div>
+{% endif %}
 
 {% if form.shirt_size %}
 

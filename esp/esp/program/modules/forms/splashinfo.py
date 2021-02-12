@@ -81,23 +81,20 @@ class SplashInfoForm(forms.Form):
         super(SplashInfoForm, self).__init__(*args, **kwargs)
 
         #   Set choices from Tag data (try to get program-specific choices if they exist)
-        tag_data = None
-        if program:
-            tag_data = Tag.getTag('splashinfo_choices', target=program)
-        if not tag_data: tag_data = Tag.getTag('splashinfo_choices')
+        tag_data = Tag.getProgramTag('splashinfo_choices', program)
         if tag_data:
             tag_struct = json.loads(tag_data)
             self.fields['lunchsat'].choices = tag_struct['lunchsat']
             self.fields['lunchsun'].choices = tag_struct['lunchsun']
 
-        if not Tag.getBooleanTag('splashinfo_siblingdiscount', default=True):
+        if not Tag.getBooleanTag('splashinfo_siblingdiscount', program=program):
             del self.fields['siblingdiscount']
             del self.fields['siblingname']
 
-        if not Tag.getBooleanTag('splashinfo_lunchsat', default=True):
+        if not Tag.getBooleanTag('splashinfo_lunchsat', program=program):
             del self.fields['lunchsat']
 
-        if not Tag.getBooleanTag('splashinfo_lunchsun', default=True):
+        if not Tag.getBooleanTag('splashinfo_lunchsun', program=program):
             del self.fields['lunchsun']
 
     def load(self, splashinfo):

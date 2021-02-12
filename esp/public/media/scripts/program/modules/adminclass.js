@@ -115,6 +115,7 @@ function fill_class_popup(clsid, classes_data) {
     .append(make_attrib_para("Location", class_info.location))
     .append(make_attrib_para("Grade Range", class_info.grade_range))
     .append(make_attrib_para("Category", class_info.category))
+    .append(make_attrib_para("Style", class_info.class_style))
     //.append("<p>Difficulty: " + class_info.difficulty))
     .append(make_attrib_para("Prereqs", class_info.prereqs))
     // Ensure the class description gets HTML-escaped
@@ -220,27 +221,9 @@ function createClassTitleTd(clsObj) {
         $j('<span/>', {'class': title_css_class})
             .text(getShortTitle(clsObj) + ' ')
             .append(statusStrong)
-    );
+    ).attr("data-st-key", clsObj.id);
 }
 
-function createSectionListTd(clsObj) {
-    var td = $j('<td/>', {
-        'class': 'clsmiddle',
-        'style': 'font-size: 12px',
-        'width': '40px',
-        'title': "Control the enrollment of the class's sections",
-    });
-    $j.each(clsObj.sections, function(index, sectionId) {
-        if (index) {
-            td.append(', ');
-        }
-        var section = sections[sectionId];
-        var href = '/teach/' + base_url + '/select_students/' + section.id;
-        td.append($j('<a/>', {href: href}).text(
-            'Sec. ' + section.index));
-    });
-    return td;
-}
 function createTeacherListTd(clsObj) {
     var td = $j('<td/>', {
         'class': 'clsleft classname',
@@ -307,9 +290,9 @@ function createStatusButtonTd(clsObj) {
 function createClassRow(clsObj)
 {
     var tr = $j(document.createElement('tr'));
+    tr.attr("id", clsObj.id);
     tr.append(
         createClassTitleTd(clsObj),
-        createSectionListTd(clsObj),
         createTeacherListTd(clsObj),
         createDeleteButtonTd(clsObj),
         createLinkButtonTd(clsObj, 'editclass', 'Edit'),
@@ -329,22 +312,24 @@ function handle_sort_control()
     var method = $j("#dashboard_sort_control").prop("value");
     //  Update the sorttable_customkey of the first td in each row
     $j("#classes_anchor > tr").each(function (index) {
-        var clsid = parseInt($j(this).prop("id").split("-")[1])
-        if (!classes_global.hasOwnProperty(clsid))
+        var clsid = parseInt($j(this).attr("id"))
+        if (!classes_global.hasOwnProperty(clsid)) {
+            console.log("No class found with ID: " + clsid);
             return;
+        }
         var cls = classes_global[clsid];
         if (method == "id")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.id);
+            $j(this).children("td").first().attr("data-st-key", cls.id);
         else if (method == "category")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.emailcode);
+            $j(this).children("td").first().attr("data-st-key", cls.emailcode);
         else if (method == "name")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.title);
+            $j(this).children("td").first().attr("data-st-key", cls.title);
         else if (method == "status")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.status);
+            $j(this).children("td").first().attr("data-st-key", cls.status);
         else if (method == "size")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.class_size_max);
+            $j(this).children("td").first().attr("data-st-key", cls.class_size_max);
         else if (method == "special")
-            $j(this).children("td").first().attr("sorttable_customkey", (cls.message_for_directors || "").length + (cls.requested_special_resources || "").length);
+            $j(this).children("td").first().attr("data-st-key", (cls.message_for_directors || "").length + (cls.requested_special_resources || "").length);
     });
     
     $j("#header-row > th").first().removeClass("sorttable_sorted sorttable_sorted_reverse");

@@ -14,9 +14,10 @@
 <br />
 <br />
 
-<h1> Search For User</h1>
+<h1>Search For User</h1>
 
-<p style="text-align: center">
+<center>
+<p>
 Please search for a user: <br />
 (Yes, Regular expressions are allowed.) 
 </p>
@@ -24,6 +25,12 @@ Please search for a user: <br />
 {% if error %}
 <p class="error">Error: No user found by that criteria.</p>
 {% endif %}
+
+{% if message %}
+<p><b>{{ message }}</b></p>
+{% endif %}
+
+</center>
 
 <div id="program_form">
 <form action="{{ request.path }}" method="get" class="form-inline">
@@ -107,5 +114,9 @@ Max:
 </div>
 
 <p>Please note that these operations may take a long time if they involve a lot of users.</p>
+
+{% if tl == "onsite" %}
+{% include "program/modules/onsitecore/returnlink.html" %}
+{% endif %}
 
 {% endblock %}

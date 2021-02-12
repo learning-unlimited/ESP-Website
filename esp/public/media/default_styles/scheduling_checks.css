@@ -6,16 +6,28 @@ th { cursor: pointer; }
      border: 1px solid black;
      padding: 10px;
      margin: 10px;
+     border-radius: 4px;
+}
+
+.scheduling-check.items {
+    background-color: yellow;
+}
+
+.scheduling-check.no-items {
+    background-color: rgb(197 224 196);
 }
 
 .scheduling-check-title {
-     width: 100%;
+     width: 320px;
+	 margin-left: 0px;
+	 margin-right: auto;
      text-align: center;
 }
 
 .scheduling-check-title span {
      font-weight: bold;
      font-size: 14px;
+     cursor: pointer;
 }
 
 .reset-button {
@@ -28,10 +40,6 @@ th { cursor: pointer; }
      float: right;
 }
 
-.placeholder {
-     text-align: center;
-}
-
 .rowGreyed {
 color: lightgray;
 }
@@ -42,4 +50,77 @@ color: lightgray;
 
 .sortReversed {
   color: red;
+}
+
+.help-text {
+  margin: 10px;
+  font-style: italic;
+}
+
+.placeholder {
+    text-align: center;
+    border-radius: 3px;
+	width: 240px;
+	margin-left: 40px;
+	margin-right: auto;
+}
+
+.load_ready{
+    background-color: rgb(197 224 196);
+}
+
+.load_yellow{
+    background-color: yellow;
+}
+.load_fail{
+    background-color: red;
+}
+.move_left{
+    margin-left: 10px;
+}
+.jsonHeader{
+    text-transform: capitalize;
+}
+.jsonColumn {
+	text-align: center;
+	padding: 10px;
+}
+table td + td {
+    border-left:1px solid black;
+
+}
+table th + th {
+    border-left:1px solid black;
+}
+
+thead {
+    border-bottom: 1px solid black;
+    text-transform: capitalize;
+    background: #333333;
+    color: #fff;
+}
+table {
+    width: 100%;
+    border-spacing: 1;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
+}
+.alittlepspace {
+	padding-top: 8px;
+}
+
+input[name="refresh_interval"] {
+    width: 40px;
+    float: right;
+    margin-right: 10px;
+}
+
+button[name="refresh"] {
+    float: right;
+    margin-right: 10px;
 }

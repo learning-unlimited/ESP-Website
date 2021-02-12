@@ -1,0 +1,45 @@
+{% extends "program/modules/teacheronsite/webapp.html" %}
+
+{% block body %}
+
+<center>
+
+  <div class="main">
+    <table class="teacherschedule">
+      <thead>
+        <th colspan="3" class="user_info">
+            <i>Classes for {{user.first_name}} {{user.last_name}} - ID: {{user.id}}</i>
+            {% if not checked_in %}
+                <p class="checkinnote">{{ checkin_note }}</p>
+            {% endif %}
+        </th>
+      </thead>
+      <tbody>
+        {% for cls in classes %}
+            {% ifchanged cls.get_meeting_times.0.start.day %}
+                <tr>
+                    <th colspan="3" class="day">{{ cls.get_meeting_times.0.pretty_date }}</th>
+                </tr>
+            {% endifchanged %}
+            <tr class="schedule_row">
+                <td rowspan="2" class="time">{{ cls.time_blocks.0.short_time }}</td>
+                <td class="cls">
+                    <b>{{ cls.parent_class.title }}</b>
+                </td>
+                <td rowspan="2" class="list">
+                    <a class="no-dec" title="More Details" href="/teach/{{one}}/{{two}}/onsitedetails/{{ cls.id }}"><i class="material-icons md-4">list</i></a>
+                    <a class="no-dec" title="Class Roster" href="/teach/{{one}}/{{two}}/onsiteroster/{{ cls.id }}"><i class="material-icons md-4">assignment</i></a>
+                </td>
+            </tr>
+            <tr class="schedule_row">
+                <td class="location">
+                    {{ cls.prettyrooms|join:", " }}&nbsp;<a class="no-dec" title="More Details" href="/teach/{{one}}/{{two}}/onsitemap/{{ cls.initial_rooms.0.id }}"><i class="material-icons md-3">directions</i></a>
+                </td>
+            </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</center>
+
+{% endblock %}

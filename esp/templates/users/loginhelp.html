@@ -1,0 +1,50 @@
+{% extends "main.html" %}
+
+{% block title %}Login Help{% endblock %}
+{% block content_title %}Login Help{% endblock %}
+
+{% block content %}
+
+{% load render_qsd %}
+
+{% inline_qsd_block ''loginhelp'' %}
+
+
+Login Help
+===============
+
+##Welcome!##
+
+In order to join {{ settings.INSTITUTION_NAME }}
+{{ settings.ORGANIZATION_SHORT_NAME }}, you first need to log on to this web
+site.
+If you have not already done so, please
+[create an account](/myesp/register/ "Join {{ settings.ORGANIZATION_SHORT_NAME }}!") now.
+Note: Creating an account does *not* register you for any programs.
+
+
+
+- If you've forgotten your username/password, you can use our
+[password reset page][2] as long as you still have access to the email you
+used to register.
+The reset will remind you of your username and ask you to reset your password.
+If you do not have access to that email account anymore, [send us an email][3].
+
+- If you tried logging in and it says your password is invalid (even after
+password recovery), then chances our your browser doesn't support [cookies][1].
+Please visit [Google's guide to cookies][1].
+
+- If you've gone to the password reset page but you haven't received the reset
+email, it's likely that the automatic message sent by our website with a link
+to creating a new password may have been marked as spam by your email client.
+Please check your spam folder.
+
+
+
+
+[1]: http://www.google.com/cookies.html "Enabling cookies in your browser."
+[2]: /myesp/passwdrecover/
+[3]: mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}
+
+{% end_inline_qsd_block %}
+{% endblock %}

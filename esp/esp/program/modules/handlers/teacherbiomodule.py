@@ -47,7 +47,8 @@ class TeacherBioModule(ProgramModuleObj):
             "admin_title": "Teacher Biography Editor",
             "link_title": "Update your teacher biography",
             "module_type": "teach",
-            "seq": -111
+            "seq": -111,
+            "choosable": 1,
             }
 
     def teachers(self, QObject = False):
@@ -58,7 +59,7 @@ class TeacherBioModule(ProgramModuleObj):
         return {'teacher_biographies': teachers }
 
     def teacherDesc(self):
-        return {'teacher_biographies': """Teachers who have completed the biography."""}
+        return {'teacher_biographies': """Teachers who have completed the biography"""}
 
     @main_call
     @needs_teacher

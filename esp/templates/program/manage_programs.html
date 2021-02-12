@@ -8,22 +8,48 @@
 <h2>Manage a Program</h2>
 
 <table class="table" width="100%" align="center">
-<thead>
-  <tr>
-    <th align="center">
-        Welcome, {{ user.first_name }}!
-    </th>
-  </tr>
-</thead>
 <tbody>
   <tr>
     <td>
-        {% render_inline_qsd "manage/programs" %}
+        <h2>Hello Admins!</h2>
+        <p>Here are some useful management pages:
+        <ul>
+          <li><a href="/manage/pages/">View and manage static pages</a></li>
+
+          <li><a href="/manage/flushcache/">Flush cache</a></li>
+
+          <li><a href="/myesp/makeadmin/">Make someone a website admin</a></li>
+
+          <li><a href="/customforms/">Create and edit custom survey forms</a></li>
+          
+          <li><a href="/manage/statistics/">View statistics about students</a></li>
+          
+          <li><a href="/manage/emails/">Monitor comm panel email status</a></li>
+          
+          <li><a href="/manage/tags/">Modify tag settings (generic miscellaneous settings, for experts only)</a></li>
+        </ul>
+        </p>
+
+        <p>Here are some tips:
+        <ul>
+          <li>If you want to create a new page, just go to the URL you want (such as https://yoursite.learningu.org/newpage.html). If you are logged in as an admin, you should see an option that says "change that." Click, and edit the new page.</li>
+
+          <li><a href="https://wiki.learningu.org/How_to_use_the_website">LU website tips</a></li>
+                    
+          <li><a href="https://github.com/learning-unlimited/ESP-Website/tree/main/docs/admin">Limited LU website documentation</a></li>
+
+          <li><a href="https://docs.google.com/document/d/10WZVUf3y_ajc3f7Ur-QSd0B9i_7derNczcTh24Oa3LM/view">LU website guide (in progress)</a></li>
+
+          <li>If you're not sure how to do something contact your mentor(s). If you are an associate or full Chapter, contact <a href="mailto:websupport@learningu.org">websupport</a> (or Chapter Services, as appropriate) with questions, problems, or requests.</li>
+        </ul>
+        </p>
     </td>
   </tr>
   <tr>
     <td>
-Select a program to manage it.
+        {% load render_qsd %}
+        {% inline_qsd_block "manage/programs" %}
+        {% end_inline_qsd_block %}
     </td>
   </tr>
 </tbody>
@@ -32,7 +58,7 @@ Select a program to manage it.
 <table class="table table-striped table-condensed" align="center">
 <thead>
   <tr>
-    <th align="center">Programs you are an Administrator of:</th>
+    <th align="center">Select a program to manage it:</th>
   </tr>
 </thead>
 <tbody>
@@ -45,13 +71,13 @@ Select a program to manage it.
 </tbody>
 <thead>
   <tr>
-    <th align="center"><b><a href="/manage/newprogram" title="Create a New Program">
+    <th align="center"><b><a class="btn btn-primary" href="/manage/newprogram" title="Create a New Program">
    Create a New Program...
 </a></b></th>
   </tr>
 </thead>
 </table>
 
-</div> <!-- div#battlescreen -->
+<!-- div#battlescreen -->
 
 {% endblock %}

@@ -1,0 +1,93 @@
+{% extends "main.html" %}
+
+{% block title %}{% if program %}{{program.niceName}}{% else %}Global{% endif %} Tag Settings{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
+    <style>
+        #id_grade_increment_date_year {
+            display: none;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+
+{% load render_qsd %}
+
+<h1>{% if program %}Tag Settings for {{ program.niceName }} (ID: {{ program.id }}){% else %}Global Tag Settings{% endif %}</h1>
+
+{% if program %}
+<p>Welcome to the tag settings page for {{ program.niceName }}. This page lists miscellaneous settings that you may want to change to make the program run how you would like. The main program settings can be found on <a href="/manage/{{ program.getUrlBase }}/settings/">the page here</a>, and the global tag settings can be found on <a href="/manage/tags/">the page here</a>.</p>
+{% inline_program_qsd_block program "manage:tags" %}
+{% end_inline_program_qsd_block %}
+{% else %}
+<p>Welcome to the global tag settings page for your website. This page lists miscellaneous settings that you may want to change to make the website run how you would like.</p>
+{% inline_qsd_block "manage:tags" %}
+{% end_inline_qsd_block %}
+{% endif %}
+<p style="color: red">Please be aware that these settings can be very sensitive and there are currently no warnings or blocks in place to prevent you from providing incorrect values. Please use caution, read the help text, and make sure to test everything whenever you change any of these settings! Feel free to contact <a href="mailto:websupport@learningu.org">websupport</a> with any questions.</p>
+
+<form action="/manage/{% if program %}{{ program.getUrlBase }}/{% endif %}tags/" method="post">
+{% autoescape off %}
+{% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+{% endautoescape %}
+{% for fieldset in form.fieldsets %}
+{% if fieldset.name in categories %}
+  <button type="button" class="dsphead{% if open_section == fieldset.name %} active{% endif %}">
+     <b>{{ fieldset.legend }}</b> (click to expand/contract)
+  </button>
+
+  <div class="dspcont{% if open_section == fieldset.name %} active{% endif %}">
+    {% autoescape off %}
+    {% if fieldset.description %}
+      <p class="description">{{ fieldset.description }}</p>
+    {% endif %}
+
+    <table class="contact">
+    {% for field in fieldset %}
+     <tr>
+      {% if field.is_hidden %}
+       <td style="padding-bottom: 15px;"> {{ field }} </td>
+       {% else %}
+      {% if field.label  %}
+      <td style="vertical-align:text-top;padding-right: 10px;">{{ field.label }} </td>
+      {% endif %}
+       {% if field %}
+        <td style="padding-bottom: 15px;">  {{ field }} 
+      {% endif %}
+      {% if field.help_text %}
+        <br/>
+        <span> {{ field.help_text }} </span>
+      {% endif %}
+      {% for error in field.errors %}
+      <br/>
+       <span class='form_error'> {{ error }} </span>
+      {% endfor %}
+       </td>
+       </tr>
+    
+      {% endif %}
+    {% endfor %}
+    {% endautoescape %}
+    </table>
+    <table align="center">
+      <tr> 
+        <td colspan="2" class="submit">
+          <br />
+          <center><input class="fancybutton" type="submit" value="Save Tag Settings" formaction="/manage/{% if program %}{{ program.getUrlBase }}/{% endif %}tags/{{ fieldset.name }}"/></center>
+        </td>
+      </tr>
+    </table>
+  </div>
+{% endif %}
+{% endfor %}
+</form>
+
+<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

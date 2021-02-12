@@ -1,7 +1,8 @@
 <!-- Begin Educator Info Portion -->
 
-<h3>Educator Information</h3>
+<h3>Additional Educator Information</h3>
 
+{% if form.position %}
 <div class="control-group">
  <label for="id_position" class="control-label">Position: <br /> <small>(e.g. teacher, principal)</small></label>
  <div class="controls">
@@ -10,7 +11,9 @@
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.subject_taught %}
 <div class="control-group">
  <label for="id_subject_taught" class="control-label">Subject Taught: <br /> <small>(if applicable)</small></label>
  <div class="controls">
@@ -19,7 +22,9 @@
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.grades_taught %}
 <div class="control-group">
  <label for="id_grades_taught" class="control-label">Grades Taught: <br /> <small>(e.g. 9-12)</small></label>
  <div class="controls">
@@ -28,14 +33,17 @@
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.school %}
 <div class="control-group">
- <label for="id_college" class="control-label">School Name:</label>
+ <label for="id_school" class="control-label">School Name:</label>
  <div class="controls">
  {{ form.school }} {% if form.school.errors %}
    <br /><span class="form_error">{{ form.school.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
+{% endif %}
 
 <!-- End Educator Info Portion -->

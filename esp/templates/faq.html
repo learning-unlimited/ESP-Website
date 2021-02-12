@@ -1,0 +1,38 @@
+{% extends "main.html" %}
+
+{% block title %}FAQs{% endblock %}
+{% block content_title %}FAQs{% endblock %}
+
+{% block content %}
+
+{% load render_qsd %}
+
+{% inline_qsd_block "faq" %}
+
+<h1>Frequently Asked Questions About {{ settings.ORGANIZATION_SHORT_NAME }}</h1>
+
+<ol>
+    <li><a href="#g1">Who runs {{ settings.ORGANIZATION_SHORT_NAME }}?</a></li>
+    <li><a href="#g2">How can I be notified about upcoming {{ settings.ORGANIZATION_SHORT_NAME }} programs?</a></li>
+    <li><a href="#g3">How can I edit my profile, change my password, or disable my account?</a></li>
+    <li><a href="#g4">Where can I get help with logging in?</a></li>
+    <li><a href="#g5">Are there other programs like {{ settings.ORGANIZATION_SHORT_NAME }}?</a></li>
+</ol>
+
+<p id="g1"><strong>1. Who runs {{ settings.ORGANIZATION_SHORT_NAME }}?</strong></p>
+<p align="justify">{{ settings.ORGANIZATION_SHORT_NAME }} is an enrichment program run by students from {{ settings.INSTITUTION_NAME }}.
+
+<p id="g2"><strong>2. How can I be notified about upcoming {{ settings.ORGANIZATION_SHORT_NAME }} programs?</strong></p>
+<p align="justify">To be added to our mailing lists, you should <a href="/myesp/register/">create an account</a> on our website. Once you have done so, you will receive periodic emails with information about upcoming {{ settings.ORGANIZATION_SHORT_NAME }} programs.</p>
+
+<p id="g3"><strong>3. How can I edit my profile, change my password, or disable my account?</strong></p>
+<p align="justify">You can access these account settings at the <a href="/myesp/accountmanage">account management page</a>.</p>
+
+<p id="g4"><strong>4. Where can I get help with logging in?</strong></p>
+<p align="justify">If you are having trouble logging in to your account, you should check out our <a href="/myesp/loginhelp">login help page</a>.</p>
+
+<p id="g5"><strong>5. Are there other programs like {{ settings.ORGANIZATION_SHORT_NAME }}?</strong></p>
+<p align="justify">Yes! There are many similar programs at several other universities! You can see a list of these programs at <a href="https://www.learningu.org/current-programs/" target="_blank">Learning Unlimited's website</a>.</p>
+
+{% end_inline_qsd_block %}
+{% endblock %}

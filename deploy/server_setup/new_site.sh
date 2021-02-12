@@ -8,7 +8,6 @@ set -ef -o pipefail
 
 # Parameters
 GIT_REPO="git://github.com/learning-unlimited/ESP-Website.git"
-GIT_BRANCH="stable-release-7"
 APACHE_CONF_FILE="/etc/apache2/sites-available/esp_sites.conf"
 APACHE_REDIRECT_CONF_FILE="/etc/apache2/sites-available/esp_sites/https_redirect.conf"
 AUTH_USER_FILE="/lu/auth/dav_auth"
@@ -140,7 +139,7 @@ echo "ESPHOSTNAME=\"$ESPHOSTNAME\"" >> $BASEDIR/.espsettings
 
 while [[ ! -n $GROUPEMAIL ]]; do
     echo
-    echo -n "Enter your group's contact e-mail address --> "
+    echo -n "Enter your group's contact email address --> "
     read GROUPEMAIL
 done
 echo "Contact forms on the site will direct mail to $GROUPEMAIL."
@@ -159,18 +158,18 @@ while [[ ! -n $GROUPNAME ]]; do
     read GROUPNAME
 done
 echo "GROUPNAME=\"$GROUPNAME\"" >> $BASEDIR/.espsettings
-echo "In printed materials and e-mails your group will be referred to as"
+echo "In printed materials and emails your group will be referred to as"
 echo "$INSTITUTION $GROUPNAME.  To substitute a more detailed name in"
 echo "some printed materials, set the 'full_group_name' Tag."
 
 while [[ ! -n $EMAILHOST ]]; do
     echo
-    echo "Enter the hostname you will be using for e-mail"
+    echo "Enter the hostname you will be using for email"
     echo -n "  (default = $ESPHOSTNAME) --> "
     read EMAILHOST
     EMAILHOST=${EMAILHOST:-$ESPHOSTNAME}
 done
-echo "Selected e-mail host: $EMAILHOST"
+echo "Selected email host: $EMAILHOST"
 echo "EMAILHOST=\"$EMAILHOST\"" >> $BASEDIR/.espsettings
 
 while [[ ! -n $TIMEZONE ]]; do
@@ -219,6 +218,8 @@ read THROWAWAY
 # Git repository setup
 # To manually reset: Back up .espsettings file in [sitename].old directory, then remove site directory
 if [[ "$MODE_GIT" || "$MODE_ALL" ]] ; then
+    echo -n "Enter the current release branch --> "
+    read GIT_BRANCH
     if [[ -e "$BASEDIR/.git" ]] ; then
         echo "Updating code in $BASEDIR.  Please tend to any conflicts."
         cd "$BASEDIR"
@@ -289,8 +290,8 @@ CACHE_PREFIX = "${SITENAME}ESP"
 
 # Default addresses to send archive/bounce info to
 DEFAULT_EMAIL_ADDRESSES = {
-        'archive': 'learninguarchive@gmail.com',
-        'bounces': 'learningubounces@gmail.com',
+        'archive': 'splashwebsitearchive@learningu.org',
+        'bounces': 'emailbounces@learningu.org',
         'support': '$GROUPEMAIL',
         'membership': '$GROUPEMAIL',
         'default': '$GROUPEMAIL',
@@ -333,6 +334,12 @@ ALLOWED_HOSTS = ['$ESPHOSTNAME']
 EOF
 
     chown -R $WWW_USER:$WWW_USER "$BASEDIR"
+    # TODO(benkraft): This shouldn't be necessary; we should just set things up
+    # to get the right perms on creation.
+    for ext in .shell.log .log ; do
+        touch "$DJANGO_LOGDIR/$SITENAME-django$ext"
+        chown $WWW_USER:$WWW_USER "$DJANGO_LOGDIR/$SITENAME-django$ext"
+    done
 
     echo "Generated Django settings overrides, saved to:"
     echo "  $BASEDIR/esp/esp/local_settings.py"
@@ -378,7 +385,7 @@ then
     chown -R $WWW_USER:$WWW_USER "$BASEDIR"
     cd $CURDIR
 
-    #   Set initial Site (used in password recovery e-mail)
+    #   Set initial Site (used in password recovery email)
     # TODO(benkraft): do this in python.
     sudo -u postgres psql -c "DELETE FROM django_site; INSERT INTO django_site (id, domain, name) VALUES (1, '$ESPHOSTNAME', '$INSTITUTION $GROUPNAME Site');" $DBNAME
 
@@ -424,10 +431,13 @@ WSGIDaemonProcess $SITENAME processes=2 threads=1 maximum-requests=500 display-n
 
 EOF
     service apache2 graceful
+    # TODO(benkraft): put the renewal script in git too.
+    /lu/scripts/certbot/renew_lu.py
     echo "Added VirtualHost to Apache configuration $APACHE_CONF_FILE"
 
-    echo "Apache has been set up.  Please check them by looking over the"
-    echo -n "output above, then press enter to continue or Ctrl-C to quit."
+    echo "Apache has been set up, and a new SSL cert has been requested."
+    echo "Please check them by looking over the output above, then press"
+    echo -n "enter to continue or Ctrl-C to quit."
     read THROWAWAY
 fi
 

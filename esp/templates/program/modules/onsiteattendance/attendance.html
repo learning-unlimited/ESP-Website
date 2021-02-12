@@ -1,0 +1,336 @@
+{% extends "main.html" %}
+
+{% block title %}{{ program.niceName }} Management{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
+    <style>
+    table.sortable {
+        table-layout: fixed;
+        overflow-wrap: break-word;
+    }
+    #highcharts-placeholder {
+        width: 100%;
+        height: 250px;
+    }
+    </style>
+{% endblock %}
+
+{% block xtrajs %}
+    {{ block.super }}
+    <script src="/media/scripts/sorttable.js"></script>
+    {% if not timeslot %}
+        <script type="text/javascript" src="//code.highcharts.com/highcharts.js"></script>
+        <script type="text/javascript" src="//code.highcharts.com/highcharts-more.js"></script>
+        <script type="text/javascript" src="//code.highcharts.com/modules/no-data-to-display.js"></script>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+{% load users %}
+{% load modules %}
+<h1>Student Attendance for {{ program.niceName }}</h1>
+
+<div id="program_form">
+
+{% if timeslot %}
+<p>
+Here is an attendance summary for {{ timeslot }}. Here you can see attendance statistics and details for students that have been checked in during this timeslot, students that are not attending class, students that are attending classes they were not originally enrolled in, and sections that have not recorded attendance. All tables are sortable by any of their columns by clicking on the column headers.
+</p>
+{% endif %}
+<center>
+<p>
+{% if timeslot %}
+If you are looking for a different timeslot, you can select it from the dropdown below:
+{% else %}
+<a class="btn" href="/onsite/{{ one }}/{{ two }}/section_attendance/">See or record section attendance</a><br /><br />
+or select a timeslot from the dropdown below to see attendance stats:
+{% endif %}
+</p>
+</center>
+
+
+<center>
+    <select name="tsid" onchange="location.href='/onsite/{{ one }}/{{ two }}/attendance/'+$j(this).children('option:selected').val(){% if when %}+'?when={{ when|date:'Y-m-d' }}'{% endif %}" style="width:auto;">
+        {% if not timeslot %}
+            <option disabled selected="selected">
+                (Select a timeslot)
+            </option>
+        {% endif %}
+        {% for ts in program.getTimeSlots %}
+            <option value="{{ ts.id }}" {% if ts == timeslot %}selected="selected"{% endif %}>
+                {{ ts }}
+            </option>
+        {% endfor %}
+    </select>
+
+    {% if timeslot %}
+    <!--Could possibly hide this with a tag-->
+    <form action="/onsite/{{ one }}/{{ two }}/attendance/{{ timeslot.id }}" method="get">
+        <p>
+        If this timeslot is for recurring classes, select the preferred date here:<br />
+        (the <a href="/onsite/{{ one }}/{{ two }}/attendance/{{ timeslot.id }}">default</a> is the date associated with the timeslot)
+        </p>
+        <input name="when" type="date" value="{{ when|date:'Y-m-d' }}" style="width:auto;"><input type="submit" value="Change Date">
+    </form>
+    <br />
+    <a class="btn" href="/onsite/{{ one }}/{{ two }}/section_attendance/{{ timeslot.id }}">See or record section attendance{% if timeslot %} for this timeslot{% endif %}</a>
+    {% else %}
+        {% include "program/modules/bigboardmodule/bigboard_graph.html" %}
+    {% endif %}
+    <br /><br />
+</center>
+
+{% if timeslot %}
+<center>
+<table>
+<tr>
+    <th width="33%"># Students<br />Checked In<br />To the Program<br />Before {{ timeslot.end|date:"g:i A" }}{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</th>
+    <th width="33%"># Students<br />Enrolled in Classes<br />During This Timeslot</th>
+    <th width="33%"># Students<br />Attending Classes<br />During This Timeslot{% if when != timeslot.end %}<br />on {{ when|date:'n/j/Y' }}{% endif %}</th>
+</tr>
+<tr>
+    <td align="center">{{ checked_in.count }}</td>
+    <td align="center">{{ enrolled.count }}</td>
+    <td align="center">{{ attended.count }}</td>
+</tr>
+</table>
+<br />
+
+<button class="dsphead">
+    <b>Students Checked In Between {{ timeslot.start_w_buffer|date:"g:i A" }} and {{ timeslot.end|date:"g:i A" }}{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</b> (click to expand/collapse)
+</button>
+<div class="dspcont">
+<table class="sortable" width="100%">
+<tr>
+    <th width="5%">#</th>
+    <th width="15%">First Name</th>
+    <th width="15%">Last Name</th>
+    <th width="15%">Username</th>
+    <th width="10%">ID #</th>
+    <th width="10%">Grade</th>
+    <th width="20%">School</th>
+</tr>
+{% for student in checked_in_ts %}
+<tr>
+    <th class="small">{{ forloop.counter }}</th>
+    <td>{{ student.first_name }}</td>
+    <td>{{ student.last_name }}</td>
+    <td><a href="/manage/userview?username={{ student.username|urlencode }}">{{ student.username }}</a></td>
+    <td>{{ student.id }}</td>
+    <td>{{ student|getGradeForProg:program.id }}</td>
+    <td>{{ student.getLastProfile.student_info.getSchool }}</td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="7" align="center">No students checked in during this timeslot</td>
+</tr>
+{% endfor %}
+</table>
+
+<table width="100%" style="border: none;">
+    {% if program|hasModule:"ListGenModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/selectList?userid={% for student in checked_in_ts %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Get Student Information
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"CommModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/commpanel?userid={% for student in checked_in_ts %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Email Students
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"GroupTextModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?userid={% for student in checked_in_ts %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Text Students
+            </a>
+        </td>
+    {% endif %}
+</table>
+</div>
+
+<button class="dsphead">
+    <b>Students Checked In Before {{ timeslot.end|date:"g:i A" }} But Not Attending Class During This Timeslot{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</b> (click to expand/collapse)
+</button>
+<div class="dspcont">
+<table class="sortable" width="100%">
+<tr>
+    <th width="5%">#</th>
+    <th width="15%">First Name</th>
+    <th width="15%">Last Name</th>
+    <th width="15%">Username</th>
+    <th width="10%">ID #</th>
+    <th width="10%">Grade</th>
+    <th width="15%">School</th>
+    <th width="15%">Enrolled Class</th>
+</tr>
+{% for student in not_attending %}
+<tr>
+    <th class="small">{{ forloop.counter }}</th>
+    <td>{{ student.first_name }}</td>
+    <td>{{ student.last_name }}</td>
+    <td><a href="/manage/userview?username={{ student.username|urlencode }}">{{ student.username }}</a></td>
+    <td>{{ student.id }}</td>
+    <td>{{ student|getGradeForProg:program.id }}</td>
+    <td>{{ student.getLastProfile.student_info.getSchool }}</td>
+    <td>{{ student.missed_class }}</td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="8" align="center">No students checked in but not attending class</td>
+</tr>
+{% endfor %}
+</table>
+
+<table width="100%" style="border: none;">
+    {% if program|hasModule:"ListGenModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/selectList?userid={% for student in not_attending %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Get Student Information
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"CommModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/commpanel?userid={% for student in not_attending %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Email Students
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"GroupTextModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?userid={% for student in not_attending %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Text Students
+            </a>
+        </td>
+    {% endif %}
+</table>
+</div>
+
+<button class="dsphead">
+    <b>Students Attending Classes In Which They Weren't Originally Enrolled During This Timeslot{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</b> (click to expand/collapse)
+</button>
+<div class="dspcont">
+<table class="sortable" width="100%">
+<tr>
+    <th width="5%">#</th>
+    <th width="10%">First Name</th>
+    <th width="10%">Last Name</th>
+    <th width="15%">Username</th>
+    <th width="10%">ID #</th>
+    <th width="10%">Grade</th>
+    <th width="15%">School</th>
+    <th width="15%">Attended Class</th>
+    <th width="15%">Enrolled Class</th>
+</tr>
+{% for student in onsite %}
+<tr>
+    <th class="small">{{ forloop.counter }}</th>
+    <td>{{ student.first_name }}</td>
+    <td>{{ student.last_name }}</td>
+    <td><a href="/manage/userview?username={{ student.username|urlencode }}">{{ student.username }}</a></td>
+    <td>{{ student.id }}</td>
+    <td>{{ student|getGradeForProg:program.id }}</td>
+    <td>{{ student.getLastProfile.student_info.getSchool }}</td>
+    <td>{{ student.attended_class }}</td>
+    <td>{{ student.enrolled_class }}</td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="9" align="center">No students attending students in which they weren't enrolled</td>
+</tr>
+{% endfor %}
+</table>
+<table width="100%" style="border: none;">
+    {% if program|hasModule:"ListGenModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/selectList?userid={% for student in onsite %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Get Student Information
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"CommModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/commpanel?userid={% for student in onsite %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Email Students
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"GroupTextModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?userid={% for student in onsite %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Text Students
+            </a>
+        </td>
+    {% endif %}
+</table>
+</div>
+
+<button class="dsphead">
+    <b>Sections During This Timeslot with No Attendance Recorded{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</b> (click to expand/collapse)
+</button>
+<div class="dspcont">
+<table class="sortable">
+<tr>
+    <th width="5%">#</th>
+    <th width="10%">Email Code</th>
+    <th width="30%">Class Title</th>
+    <th width="20%">Teachers</th>
+    <th width="20%">Times</th>
+    <th width="15%"># Students Enrolled</th>
+</tr>
+{% for section in no_attendance %}
+<tr>
+    <th class="small">{{ forloop.counter }}</th>
+    <td>{{ section.emailcode }}</td>
+    <td>{{ section.title }}</td>
+    <td>{% for teacher in section.parent_class.get_teachers %}<a href="/manage/userview?username={{ teacher.username|urlencode }}">{{ teacher.nonblank_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+    <td>{{ section.friendly_times_with_date|join:", " }}</td>
+    <td>{{ section.num_students }}</td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="6" align="center">No sections without attendance recorded</td>
+</tr>
+{% endfor %}
+</table>
+<table width="100%" style="border: none;">
+    {% if program|hasModule:"ListGenModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/selectList?userid={% for section in no_attendance %}{% for teacher in section.teachers %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Get Teacher Information
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"CommModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/commpanel?userid={% for section in no_attendance %}{% for teacher in section.teachers %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Email Teachers
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"GroupTextModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?userid={% for section in no_attendance %}{% for teacher in section.teachers %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Text Teachers
+            </a>
+        </td>
+    {% endif %}
+</table>
+</div>
+</center>
+
+<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
+{% endif %}
+
+</div>
+
+{% include "program/modules/onsitecore/returnlink.html" %}
+
+{% endblock %}

@@ -4,9 +4,11 @@ Program modules
 
 .. contents:: :local:
 
-When you create a program, your primary means of controlling the registration process is to choose which program modules to include.  Each program module corresponds to a "view" that users will be able (or perhaps compelled) to see when they are registering.  
+When you create a program, your primary means of controlling the registration process is to choose which program modules to include.  Each program module corresponds to a "view" that users will be able (or perhaps compelled) to see when they are registering.
 
 You may select which program modules to include on the program creation form at http://[hostname]/manage/newprogram.  After a program has been created, you can select which modules to include within the administration pages; go to http://[hostname]/admin/program/program/, select your program and edit the "Program modules" multi-select field.
+
+You can also change the displayed name of program modules at http://[hostname]/admin/program/programmodule/.
 
 More background on program modules
 ==================================
@@ -33,23 +35,29 @@ You will also see references to other data structures that store configuration s
 
 Below we provide a more detailed explanation of what each program module is for and which settings can be used to adjust it.
 
-Student modules (17)
-====================
+Student modules
+===============
+
+Student Acknowledgement (StudentAcknowledgementModule)
+------------------------------------------------------
+
+Include this module if you would like students to submit a somewhat scary-looking form where they agree to some conditions (e.g. a code of conduct) during student registration.
+
 
 Extra Registration Info (CustomFormModule)
 ------------------------------------------
 
 This module can be used in teacher and/or student registration to add a custom form into the registration process.  This can be helpful if you want to collect information (e.g. about dietary restrictions or demographics) that is not collected by the other program modules.  To use it:
-1) Create a custom form at /customforms/.  Once you have submitted the form, take note of its integer ID (in the link to fill out the form, it will be /customforms/view/[ID]). 
+1) Create a custom form at /customforms/.  Once you have submitted the form, take note of its integer ID (in the link to fill out the form, it will be /customforms/view/[ID]).
 2) Create a Tag (/admin/tagdict/tag/add/) called either "learn_extraform_id" (students) or "teach_extraform_id" (teachers), with the form ID as its value.
 3) (Optional) Associate the desired program with this Tag by selecting "Program" as the content type and the program ID as the object ID.
 4) To view results, use the main custom forms page at /customforms/.
 
 
-Financial Aid Application (FinancialAidAppModule) 
+Financial Aid Application (FinancialAidAppModule)
 -------------------------------------------------
 
-We recommend that you include this module in all programs.  It will add a step to registration for students so that they can request financial aid.  You will be e-mailed whenever someone submits the form.  Students indicating that they receive free or reduced price lunch at school will automatically be granted financial aid.
+We recommend that you include this module in all programs.  It will add a step to registration for students so that they can request financial aid.  You will be emailed whenever someone submits the form.  Students indicating that they receive free or reduced price lunch at school will automatically be granted financial aid.
 
 To review financial aid applications, go to /admin/ and click "Financial aid requests" under
 "Program"; if you would like to grant financial aid, fill out the form at the
@@ -65,38 +73,56 @@ We are not permitted to directly handle sensitive information such as medical in
 
 This registration step is controlled by the FormstackMedliab deadline type.
 
-Lottery Student Registration (LotteryStudentRegModule) 
+Lottery Student Registration (LotteryStudentRegModule)
 ------------------------------------------------------
 
 There are two options for a "lottery" registration where students select their classes of interest and are later assigned to classes by the Web site.  This option shows students a list of classes beginning in each time slot and allows them to choose.  After saving their preferences they are taken back to the main student reg page (where they can fill out other parts of registration if the deadlines are open).
 
 If you are using this module, make sure the StudentClassRegModule is not enabled at the same time.  Add only LotteryStudentRegModule to your program for the lottery phase, then remove it when that phase ends.  After running the lottery assignment script, you can add the StudentClassRegModule and set a deadline for first-come first-served registration.
 
-Student Profile Editor (RegProfileModule) 
+Student Registration Phase Zero
+-------------------------------
+
+For programs in which there is more demand than supply, this student lottery
+system allows a program to run a lottery to limit the number of students who
+can join the program.  This helps ensure that each student gets enough classes
+in later phases of registration.
+
+The program size is based on the ``program_size_by_grade`` Tag.  Students
+submit non-binding interest (which sends a confirmation email).  The lottery
+allows students to combine into groups of up to 4; each student will only be
+selected in the lottery if all can be.  (This can very slightly decrease each
+student's chance of being selected.)
+
+Also provides various situational templates (e.g. to explain if students didn't
+win the lottery).  To enable these, this module should NOT be disabled upon the
+conclusion of the student lottery.
+
+Student Profile Editor (RegProfileModule)
 -----------------------------------------
 
-This module should be enabled if you would like students to fill out their profile form as part of the program registration process. The profile form includes contact information for the student, parent and emergency contact, as well as student-specific information like "how you heard about Splash?" and "what school do you go to?". 
+This module should be enabled if you would like students to fill out their profile form as part of the program registration process. The profile form includes contact information for the student, parent and emergency contact, as well as student-specific information like "how you heard about Splash?" and "what school do you go to?".
 
-It is required by default when enabled. However, if a student has filled out a profile within the previous 5 days (e.g. for a newly created account), their previous profile will be duplicated and they won't have to fill it out again. 
+It is required by default when enabled. However, if a student has filled out a profile within the previous 5 days (e.g. for a newly created account), their previous profile will be duplicated and they won't have to fill it out again.
 
-Relevant settings include: 
+Relevant settings include:
 
 * Tag 'require_school_field':&nbsp;Controls whether the 'School' field is required.
-* Tags 'require_guardian_email' and 'allow_guardian_no_email':&nbsp;Controls whether students have to enter their parent's e-mail address.&nbsp; If 'allow_guardian_no_email' is set, then students can check a box saying "My parents don't have e-mail" to make the e-mail field non-required.
+* Tags 'require_guardian_email' and 'allow_guardian_no_email':&nbsp;Controls whether students have to enter their parent's email address.&nbsp; If 'allow_guardian_no_email' is set, then students can check a box saying "My parents don't have email" to make the email field non-required.
 * Tag 'request_student_phonenum':&nbsp;Controls whether the student phone number field is required. 
 * Tag 'allow_change_grade_level': By default, a student's graduation year is fixed after the first time they fill out their profile; this is intended to prevent students from lying about their age in order to get into certain classes. If this Tag is set, students may change their grade level at any time.
-* Tag 'student_grade_options': A JSON-encoded list of grade choices can be used to override the defaults (7 through 12 inclusive). 
-* Tag 'student_medical_needs': If tag exists, students will see a text box where they can enter 'special medical needs'. 
-* Tag 'show_studentrep_application': If tag exists, the student-rep application is shown as a part of the student profile. If it exists but is set to "no_expl", don't show the explanation textbox in the form. 
-* Tag 'show_student_tshirt_size_options': If tag exists, ask students about their choice of T-shirt size as part of the student profile 
-* Tag 'show_student_vegetarianism_options': If tag exists, ask students about their dietary restrictions as part of the student profile 
-* Tag 'show_student_graduation_years_not_grades': If tag exists, in the student profile, list graduation years rather than grade numbers 
-* Tag 'ask_student_about_post_hs_plans': If tag exists, ask in the student profile about a student's post-high-school plans (go to college, go to trade school, get a job, etc) 
+* Tag 'student_grade_options': A JSON-encoded list of grade choices can be used to override the defaults (7 through 12 inclusive).
+* Tag 'student_medical_needs': If tag exists, students will see a text box where they can enter 'special medical needs'.
+* Tag 'show_studentrep_application': If tag exists, the student-rep application is shown as a part of the student profile. If it exists but is set to "no_expl", don't show the explanation textbox in the form.
+* Tag 'show_student_tshirt_size_options': If tag exists, ask students about their choice of T-shirt size as part of the student profile
+* Tag 'show_student_vegetarianism_options': If tag exists, ask students about their dietary restrictions as part of the student profile
+* Tag 'show_student_graduation_years_not_grades': If tag exists, in the student profile, list graduation years rather than grade numbers
+* Tag 'ask_student_about_post_hs_plans': If tag exists, ask in the student profile about a student's post-high-school plans (go to college, go to trade school, get a job, etc)
 * Tag 'ask_student_about_transportation_to_program': If tag exists, ask in the student profile about how the student is going to get to the upcoming program
 
 More details on these Tags can be found here at http://wiki.learningu.org/Customize_behavior_with_Tags.
 
-Lunch Preferences and Sibling Discount (SplashInfoModule) 
+Lunch Preferences and Sibling Discount (SplashInfoModule)
 ---------------------------------------------------------
 
 This module was designed specifically for Stanford Splash, although other chapters can use it too.  It will prompt students to choose a lunch option for each of the 1-2 days in the program.  It will also allow students to enter the name of their sibling in order to get a "sibling discount" for the program deducted from their invoice.  You will need to set up the following Tags (/admin/tagdict/tag), which can be program-specific:
@@ -112,7 +138,7 @@ This module was designed specifically for Stanford Splash, although other chapte
     ["burrito_vegetarian", "Yes: Burrito-Vegetarian"],
     ["burrito_meat", "Yes: Burrito-Meat"],
     ["no", "No, I will bring my own lunch."]
-  ], 
+  ],
     "lunchsun": [
     ["pizza_vegetarian", "Yes: Pizza-Vegetarian"],
     ["pizza_meat", "Yes: Pizza-Meat"],
@@ -126,16 +152,16 @@ This module was designed specifically for Stanford Splash, although other chapte
 * splashinfo_costs: A JSON structure of form options for the "lunchsat" and "lunchsun" keys.  The option labels must be consistent with all of the options specified in splashinfo_choices.  Example:
 
 ::
-  
+
   {
-    "lunchsat": { 
+    "lunchsat": {
         "pizza_vegetarian": 0.0,
         "pizza_meat": 0.0,
         "burrito_vegetarian": 0.0,
         "burrito_meat": 0.0,
         "no": 0.0
     },
-    "lunchsun": { 
+    "lunchsun": {
         "pizza_vegetarian": 0.0,
         "pizza_meat": 0.0,
         "burrito_vegetarian": 0.0,
@@ -150,19 +176,19 @@ The dollar amount of the sibling discount can be configured as a line item type 
 Student Class Registration (StudentClassRegModule)
 --------------------------------------------------
 
-This module should be enabled if your program involves students picking and choosing their classes. It is used to display the catalog, schedule, and class selection pages. Settings affecting this module are: 
+This module should be enabled if your program involves students picking and choosing their classes. It is used to display the catalog, schedule, and class selection pages. Settings affecting this module are:
 
-* Student module control field 'Enforce max': Unchecking this box allows students to sign up for full classes. 
-* Student module control fields 'Class cap multiplier' and 'Class cap offset': Allows you to apply a linear function to the capacities of all classes. For example, to limit classes to half full (perhaps for the first day of registration) you could use a multiplier of 0.5 and an offset of 0; to allow 3 extra students to sign up for each class you could use a multiplier of 1 and an offset of 3. 
-* Student module control field 'Signup verb': Controls which type of registration students are given when they select a class. The default is "Enrolled," which adds the student to the class roster (i.e. first-come first served). However, you may choose "Applied" to allow teachers to select which students to enroll, or create other registration types for your needs. 
-* Student module control field 'Use priority': When this box is checked, students will be allowed to choose multiple classes per time slot and their registration types will be annotated in the order they signed up. This is typically used with the 'Priority' registration type to allow students to indicate 1st, 2nd and 3rd choices. 
-* Student module control field 'Priority limit': If 'Use priority' is checked, this number controls the maximum number of simultaneous classes that students may register for. 
-* Student module control field 'Register from catalog': If this box is checked, students will see 'Register for section [index]' buttons below the description of each available class in the catalog. If their browser supports Javascript they will be able to register for the classes by clicking those buttons. You will need to add an appropriate fragment to the editable text area on the catalog if you would like students to see their schedule while doing this. 
-* Student module control field 'Visible enrollments': If unchecked, the publicly available catalog will not show how many students are enrolled in each class section: 
-* Student module control field 'Visible meeting times': If unchecked, the publicly available catalog will not show the meeting times of each class section. 
-* Student module control field 'Show emailcodes': If unchecked, the catalog will not show codes such as 'E464:' and 'M21:' before class titles. 
-* Student module control 'Show unscheduled classes': If unchecked, the publicly available catalog will not show classes that do not have meeting times associated with them. 
-* Student module control 'Temporarily full text': You may enter text here to customize the label shown on disabled 'Add class' buttons when the class is full. 
+* Student module control field 'Enforce max': Unchecking this box allows students to sign up for full classes.
+* Student module control fields 'Class cap multiplier' and 'Class cap offset': Allows you to apply a linear function to the capacities of all classes. For example, to limit classes to half full (perhaps for the first day of registration) you could use a multiplier of 0.5 and an offset of 0; to allow 3 extra students to sign up for each class you could use a multiplier of 1 and an offset of 3.
+* Student module control field 'Signup verb': Controls which type of registration students are given when they select a class. The default is "Enrolled," which adds the student to the class roster (i.e. first-come first served). However, you may choose "Applied" to allow teachers to select which students to enroll, or create other registration types for your needs.
+* Student module control field 'Use priority': When this box is checked, students will be allowed to choose multiple classes per time slot and their registration types will be annotated in the order they signed up. This is typically used with the 'Priority' registration type to allow students to indicate 1st, 2nd and 3rd choices.
+* Student module control field 'Priority limit': If 'Use priority' is checked, this number controls the maximum number of simultaneous classes that students may register for.
+* Student module control field 'Register from catalog': If this box is checked, students will see 'Register for section [index]' buttons below the description of each available class in the catalog. If their browser supports Javascript they will be able to register for the classes by clicking those buttons. You will need to add an appropriate fragment to the editable text area on the catalog if you would like students to see their schedule while doing this.
+* Student module control field 'Visible enrollments': If unchecked, the publicly available catalog will not show how many students are enrolled in each class section:
+* Student module control field 'Visible meeting times': If unchecked, the publicly available catalog will not show the meeting times of each class section.
+* Student module control field 'Show emailcodes': If unchecked, the catalog will not show codes such as 'E464:' and 'M21:' before class titles.
+* Student module control 'Show unscheduled classes': If unchecked, the publicly available catalog will not show classes that do not have meeting times associated with them.
+* Student module control 'Temporarily full text': You may enter text here to customize the label shown on disabled 'Add class' buttons when the class is full.
 * Tag 'studentschedule_show_empty_blocks': Controls whether the student schedule includes time slots for which the student has no classes. By default, empty blocks are displayed.
 
 
@@ -173,7 +199,8 @@ This module allows students to select additional items for purchase along with a
 
 The options on this page are controlled by the line item types associated with the program.
 You can create additional line item types for your program and set the "Max quantity" field
-appropriately; do not check the "for payments" or "for finaid" boxes.  If you
+appropriately; do not check the "for payments" or "for finaid" boxes.  For students to be able to choose
+how much an item costs, you can check the "is_custom" box for an option. If you
 are using the "SplashInfo Module" to offer lunch, the size of the sibling
 discount is set as a line item type, but the lunch options and their costs are
 still controlled by the splashinfo_choices and splashinfo_costs Tags.  Items no
@@ -187,7 +214,7 @@ Donation module
 This program module can be used to solicit donations for Learning Unlimited. If
 this module is enabled, students who visit the page can, if they so choose,
 select one of a few donation options (and those options are admin
-configurable). Asking for donations from parents and students can be a good way
+configurable) or set a custom donation amount. Asking for donations from parents and students can be a good way
 to help fundraise for LU community events, chapter services, and operational
 costs. If you are interested in fundraising this way, get in contact with an LU
 volunteer.
@@ -230,18 +257,18 @@ If you are using lunch constraints, some students may be confused by the require
 Add "Confirm Registration" link (StudentRegConfirm)
 ---------------------------------------------------
 
-If you pay attention to whether students have a confirmed registration (e.g. for sending e-mails), consider adding this module.  This module doesn't do anything; all it does is add "Confirm Registration" as a step (shown at the top of the main student registration page) which does not show a check mark until the "Confirm" button has been clicked.  It may help to get more students to click "Confirm" after adding their classes.
+If you pay attention to whether students have a confirmed registration (e.g. for sending emails), consider adding this module.  This module doesn't do anything; all it does is add "Confirm Registration" as a step (shown at the top of the main student registration page) which does not show a check mark until the "Confirm" button has been clicked.  It may help to get more students to click "Confirm" after adding their classes.
 
 Core Student Reg (StudentRegCore)
 ---------------------------------
 
-This module should be enabled if students will be registering using the Web site. It aggregates information and links to other other student modules that are enabled on the main registration page at http://[hostname]/learn/[program]/[instance]/studentreg. Settings affecting this module are: 
+This module should be enabled if students will be registering using the Web site. It aggregates information and links to other other student modules that are enabled on the main registration page at http://[hostname]/learn/[program]/[instance]/studentreg. Settings affecting this module are:
 
 * Student module control field "Progress mode": Set to 1 to show registration steps as checkboxes, 2 to show registration steps as a progress bar, or 0 to not show them at all. 
 * Student module control field 'Force show required modules': Check the box to show the student all required modules (e.g. profile editor, lunch/sibling information, etc.) before allowing them to proceed to the main registration page. If unchecked, the student can complete registration steps in any order but must finish all required steps before confirming their registration. 
 * Student module control fields 'Confirm button text,' 'Cancel button text,' and 'View button text': You may enter text here to customize the labels shown on these buttons at the bottom of the main registration page. 
 * Student module control field 'Cancel button dereg': If you check this box, students will be removed from all classes they registered for when they click the 'Cancel registration' button. 
-* Student module control field 'Send confirmation': If checked, students will receive e-mail when they click the 'Confirm registration' button. You need to create an e-mail receipt as described here: [[Add a registration receipt]] 
+* Student module control field 'Send confirmation': If checked, students will receive email when they click the 'Confirm registration' button. You need to create an email receipt as described here: [[Add a registration receipt]] 
 * Tag 'allowed_student_types': Controls which types of user accounts may access student registration. By default, student and administrator accounts have access.
 
 Two-phase Student Registration (StudentRegTwoPhase)
@@ -297,10 +324,10 @@ Views provided
 * /learn/<program>/rank_classes -- Step 2 of registration: marking priorities for timeslots (Fig. 3).
 
 
-Student Surveys (SurveyModule) 
+Student Surveys (SurveyModule)
 ------------------------------
 
-Include this module if you would like to use online surveys.  This module will cause your student survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" student deadline.  Make sure you have created a survey at /admin/survey/ before adding this module.
+Include this module if you would like to use online surveys.  This module will cause your student survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" student deadline.  Make sure you have created a survey at /manage/[program]/[instance]/surveys. By default, only students that registered for a class ('classreg') are allowed to fill out the survey. This can be modified with the 'survey_student_filter' tag, which is a comma-separated list of groups of students as specified in the prog.students() dictionary (this will be more user-friendly in the future).
 
 Text Message Reminders (TextMessageModule)
 ------------------------------------------
@@ -319,8 +346,39 @@ student applications.  For more information, see
 Class Change Request Module (ClassChangeRequest)
 ------------------------------------------------
 
-Teacher modules (13)
-====================
+Student Onsite Webapp (StudentOnsite)
+-------------------------------------
+
+This provides a mobile-friendly interface for students to perform common functions that might be desired onsite at a program, such as viewing their schedule, making class changes, getting directions to their classes, and filling out surveys.
+
+Admin Setup
+~~~~~~~~~~~
+
+The basic functionality of the student webapp should work as soon as the module is enabled. However, in order for the maps to work properly, you'll need to perform the following additional steps:
+
+1. We use the Google Maps API to display a map with a custom center. You'll need to register a `Google Cloud account <https://console.cloud.google.com/>`_. You'll then need to get an API key for the service. This API key should be set as the value for the 'google_cloud_api_key' tag. Note that this API service requires a payment method, but the good news is that you get a whole bunch of free usage before it charges your card each month.
+2. You'll also need to set the 'program_center' tag to the geographic center of your campus or program location, otherwise the map will be centered on Stanford. The tag should be in the format of "{lat: 37.427490, lng: -122.170267}". This can be a program-specific tag (e.g. if you want the map to focus on different parts of campus for different programs) or just a global tag.
+3. Lastly, to enable the walking directions to class locations, you need a "Lat/Long" (spelling and capitalization matter) resource to be associated with each classroom (you should do this through the resources management page). The 'attribute_value' of each resource should be set to the lat/long from google maps (of the form 37.4268889, -122.172065).
+
+For class changes on the student webapp, students are allowed by default to enroll in classes that have fewer enrolled students than capacity (including any capacity modifiers specified in the program settings). You can change two tags to potentially allow students to enroll in classes that are not full based on program attendance or class attendance. The tags are as follows:
+
+- 'switch_time_program_attendance': Set this tag to the time at which you'd like to start using program attendance numbers instead of class enrollment numbers. The format is HH:MM where HH is in 24 hour time. After this time, if at least 5 students have been checked into the program, students will be able to class change based on program attendance numbers. If this is not set, program attendance numbers will not be used. 
+- 'switch_lag_class_attendance': Set this tag to the amount of minutes into a class at which you'd like to start using class attendance numbers if available (instead of enrollment or program attendance). This many minutes into a class block, if at least 1 student has been marked attending that class, students will be able to class change based on class attendance numbers. If blank, class attendance numbers will not be used.
+Note that if both tags are set, the hierarchy is that class attendance will be used if available; program attendance will be used if class attendance is not available; enrollment will be used if program attendance is not available. 
+
+There's one last tag that may be useful, 'student_webapp_isstep', which you can set to "True" if you want to list the webapp as a step in student registration (in the checkboxes). Otherwise it won't be shown and you'll need to direct your students to the URL(s) some other way.
+
+Views provided
+~~~~~~~~~~~~~~
+
+* [main] /learn/<program>/studentonsite -- Main student webapp landing page and live student schedule
+* /learn/<program>/onsitemap -- Shows Google map of campus. If this page is accessed by clicking on a classroom on the student schedule, this page shows walking directions to that classroom (provided that is set up, see above).
+* /learn/<program>/onsitecatalog -- Webapp-specific class catalog. When accessed for a specific timeblock from the student schedule, allows for students to enroll in classes that are not full (see above).
+* /learn/<program>/onsitesurvey -- Webapp version of the student survey (see above for more details). Same functionality but with slightly different styling.
+* /learn/<program>/onsitedetails -- Shows the details and links (classrooms, times, teachers, documents, website, survey) for a specific section. Only accessible from the student schedule.
+
+Teacher modules
+===============
 
 Teacher Availability (AvailabilityModule)
 -----------------------------------------
@@ -329,7 +387,7 @@ Use this module if you are having classes scheduled into specific timeslots.  Te
 
 It is important that all teachers and co-teachers have indicated availability for the time slots in which they are teaching.  The scheduling module will not allow you to violate this constraint, and teachers will not be allowed to change their availability once their classes are scheduled.  You can use the "Force Availability" feature of the scheduling module to override the availability if you are sure this will not cause any problems.  Or, use the "Manage Class" page to schedule the class.
 
-E-mail verification (EmailVerifyModule)
+Email verification (EmailVerifyModule)
 ---------------------------------------
 
 This module is deprecated and will be removed in a future version of the site.
@@ -339,17 +397,24 @@ Teacher Profile Editor (RegProfileModule)
 
 This module will prompt teachers to fill out their profile information before proceeding to create classes.  In addition to their contact information, they will be asked a few questions such as their affiliation (e.g. your university, or something else) and graduation year.  If you would like to ask additional questions, please use the CustomFormModule.
 
+If you would like to remove a question, you can do so using the following tag:
+
+* teacherreg_hide_fields - A comma seperated list of what fields (i.e. purchase_requests) you want to hide from teachers during teacher registration.
+
 The questions shown on the teacher profile are configurable via the following tags:
 
-* teacherreg_label_purchase_requests - If tag exists, overwrites text under 'Planned Purchases' in teacher registration.
-* teacherreg_label_message_for_directors - If tag exists, overwrites text under 'Message for Directors' in teacher registration.
+* teacherreg_label_purchase_requests - If tag exists, overwrites the label 'Planned Purchases' in teacher registration.
+* teacherreg_help_text_purchase_requests - If tag exists, overwrites text under 'Planned Purchases' in teacher registration.
+* teacherreg_label_message_for_directors - If tag exists, overwrites the label 'Message for Directors' in teacher registration.
+* teacherreg_help_text_message_for_directors - If tag exists, overwrites text under 'Message for Directors' in teacher registration.
+
 * teacherinfo_shirt_options - If it is set to 'False', teachers won't be able to specify shirt size/type on their profile.  The default behavior is to show the shirt fields on the profile form.
-* teacherinfo_shirt_type_selection - If it is set to 'False', teachers won't be able to specify whether they want normal shaped (guys') or fitted shaped (girls') T-shirts.  The default behavior is to provide this choice on the profile form.
+* teacherinfo_shirt_type_selection - If it is set to 'False', teachers won't be able to specify whether they want straight (vertical) cut or fitted cut T-shirts.  The default behavior is to provide this choice on the profile form.
 
 Teacher Surveys (SurveyModule)
 ------------------------------
 
-This module will cause your teacher survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" teacher deadline.  Make sure you have created a survey at /admin/survey/ before adding this module.
+This module will cause your teacher survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" teacher deadline.  Make sure you have created a survey at /manage/[program]/[instance]/surveys. By default, only teachers that submitted a class ('class_submitted') are allowed to fill out the survey. This can be modified with the 'survey_teacher_filter' tag, which is a comma-separated list of groups of students as specified in the prog.students() dictionary (this will be more user-friendly in the future)
 
 Teacher Acknowledgement (TeacherAcknowledgementModule)
 ------------------------------------------------------
@@ -386,13 +451,13 @@ If you include this module, teachers will see a summary of the classes that othe
 Teacher Logistics Quiz (TeacherQuizModule)
 ------------------------------------------
 
-You can use this module to show teachers a quiz as part of the registration process.  The quiz is typically used to ensure that teachers know the basic logistical knowledge they need to participate in the program smoothly.  Teachers will have to enter a correct answer to every question before they are allowed to proceed.  Often the information they need is provided via e-mail or at an in-person training session, so you can use this module as a means of forcing teachers to stay in touch.
+You can use this module to show teachers a quiz as part of the registration process.  The quiz is typically used to ensure that teachers know the basic logistical knowledge they need to participate in the program smoothly.  Teachers will have to enter a correct answer to every question before they are allowed to proceed.  Often the information they need is provided via email or at an in-person training session, so you can use this module as a means of forcing teachers to stay in touch.
 
 The teacher quiz is based on a custom form.  To set it up:
-1) Create a custom form at /customforms/.  Make sure that you specify a correct answer for every question.
-2) Once you have submitted the form, take note of its integer ID (in the link to fill out the form, it will be /customforms/view/[ID]). 
-3) Create a Tag (/admin/tagdict/tag/add/) called either "quiz_form_id", with the form ID as its value.
-4) (Optional) Associate the desired program with this Tag by selecting "Program" as the content type and the program ID as the object ID.  This will allow you to use different quizzes for different programs.
+  1) Create a custom form at /customforms/.  Make sure that you specify a correct answer for every question.
+  2) Once you have submitted the form, take note of its integer ID (in the link to fill out the form, it will be /customforms/view/[ID]). 
+  3) Create a Tag (/admin/tagdict/tag/add/) called either "quiz_form_id", with the form ID as its value.
+  4) (Optional, if you want the quiz to be associated with a single program) Associate the desired program with this Tag by selecting "Program" as the content type from the pull-down menu and the program ID (the number next to the program under /admin/program/program/) as the object ID.  This will allow you to use different quizzes for different programs.
 
 Core Teacher Reg (TeacherRegCore)
 ---------------------------------
@@ -412,16 +477,53 @@ Teacher Admissions Dashboard
 Provides an interface for teachers to review applications for their class.
 For more information, see `</docs/admin/student_apps.rst>`_.
 
-Management modules (26)
-=======================
+Teacher Onsite Webapp (TeacherOnsite)
+-------------------------------------
+
+This provides a mobile-friendly interface for teachers to perform common functions that might be desired onsite at a program, such as viewing their schedule, taking attendance, getting directions to their classes, filling out surveys, and viewing student survey results.
+
+Admin Setup
+~~~~~~~~~~~
+
+The basic functionality of the teacher webapp should work as soon as the module is enabled. However, in order for the maps to work properly, you'll need to perform the following additional steps:
+
+1. We use the Google Maps API to display a map with a custom center. You'll need to register a `Google Cloud account <https://console.cloud.google.com/>`_. You'll then need to get an API key for the service. This API key should be set as the value for the 'google_cloud_api_key' tag. Note that this API service requires a payment method, but the good news is that you get a whole bunch of free usage before it charges your card each month.
+2. You'll also need to set the 'program_center' tag to the geographic center of your campus or program location, otherwise the map will be centered on Stanford. The tag should be in the format of "{lat: 37.427490, lng: -122.170267}". This can be a program-specific tag (e.g. if you want the map to focus on different parts of campus for different programs) or just a global tag.
+3. Lastly, to enable the walking directions to class locations, you need a "Lat/Long" (spelling and capitalization matter) resource to be associated with each classroom (you should do this through the resources management page). The 'attribute_value' of each resource should be set to the lat/long from google maps (of the form 37.4268889, -122.172065).
+
+Note that you do not need to do any of this again if you've already done this for the student webapp.
+
+There's one last tag that may be useful, 'teacher_webapp_isstep', which you can set to "True" if you want to list the webapp as a step in teacher registration (in the checkboxes). Otherwise it won't be shown and you'll need to direct your teacher to the URL(s) some other way.
+
+Views provided
+~~~~~~~~~~~~~~
+
+* [main] /teach/<program>/teacheronsite -- Main teacher webapp landing page and live teacher schedule
+* /teach/<program>/onsitemap -- Shows Google map of campus. If this page is accessed by clicking on a classroom on the teacher schedule, this page shows walking directions to that classroom (provided that is set up, see above).
+* /teach/<program>/onsitesurvey -- Webapp version of the teacher survey (see above for more details). Also has a tab for teachers to view results from the student surveys for their class(es). Both of these interfaces have the same functionality as the main teacher survey pages but with slightly different styling.
+* /teach/<program>/onsitedetails -- Shows the details and links (classrooms, times, teachers, enrollment, documents, website) for a specific section (or all sections).
+* /teach/<program>/onsiteroster -- Shows the roster for a specific section (or all sections). If only a specific section is selected, this page also allows for marking attendance.
+
+Volunteer modules
+=================
+
+Volunteer Sign-up Module (VolunteerSignup)
+------------------------------------------
+
+If you are using the site for volunteer registration, add this along with VolunteerManage.  Potential volunteers will see a view (/volunteer/[program]/[instance]/signup) which you will need to link to.  This will allow them to specify which time slots they can commit to volunteering for, and provide their basic contact information.  You will need to create those time slots on the management side.  The time slots for volunteers are distinct from class time slots.
+
+If the user fills out this form without being logged in, an account will be created for them.  Otherwise their current account will be marked as a volunteer.
+
+Management modules
+==================
 
 Class Management For Admin (AdminClass)
 ---------------------------------------
 
 It is recommended to include this module in all programs, since it includes frequently used functions such as deleting and approving classes that are used by other program modules.  Functions include:
 
-* "Manage class" page, which is accessible from the list of classes on the program dashboard.  This page provides fine control over scheduling and co-teachers and allows you to open/close individual sections.  It also lets you cancel a class and e-mail the students.
-* Reviewing (e.g. approving) classes, which can be done via a link in the class creation/editing e-mails.
+* "Manage class" page, which is accessible from the list of classes on the program dashboard.  This page provides fine control over scheduling and co-teachers and allows you to open/close individual sections.  It also lets you cancel a class and email the students.
+* Reviewing (e.g. approving) classes, which can be done via a link in the class creation/editing emails.
 * Bulk approval of classes by typing in their IDs.
 
 AdminCore (AdminCore)
@@ -471,9 +573,10 @@ Instructions for using the scheduler:
 
 - Click on the class you want to schedule (either in the directory or on the grid) to select it.
 - On the grid, the places you might put the class are highlighted. Legend:
- - Green means you can put the class there.
- - Green with stripes means the class can't start there, but there should be a green square to the left where you can place it (for multi-hour classes).
- - Yellow means the teacher is available then, but teaching another class.
+  
+  - Green means you can put the class there.
+  - Green with stripes means the class can't start there, but there should be a green square to the left where you can place it (for multi-hour classes).
+  - Yellow means the teacher is available then, but teaching another class.
 - Click on a green highlighted square to place the class. Click anywhere else on the grid or directory to unselect the class.
 - When you have a class selected, the pane in the upper right corner displays info about the class as well as links to the manage and edit pages.
 - When no class is selected, the pane in the upper right corner displays scheduling errors.
@@ -516,9 +619,9 @@ page.
 Communications Panel for Admin (CommModule)
 -------------------------------------------
 
-This module allows you to use the Web site to send e-mail to participants in your programs.  You first select the list of recipients and then enter the message title and text.  There are many options for selecting recipients, either a basic list (single criteria) and combination list (multiple criteria combined with Boolean logic).  Be aware that for technical reasons, combination lists often do not contain the set of users you are expecting (this will be addressed in a future release).  Please check that the number of recipients look reasonable before sending an e-mail.  You can use the "recipient checklist" feature to see specific users.
+This module allows you to use the website to send email to participants in your programs.  You first select the list of recipients and then enter the message title and text.  There are many options for selecting recipients, either a basic list (single criteria) and combination list (multiple criteria combined with Boolean logic).  Be aware that for technical reasons, combination lists often do not contain the set of users you are expecting (this will be addressed in a future release).  Please check that the number of recipients look reasonable before sending an email.  You can use the "recipient checklist" feature to see specific users.
 
-To send an HTML e-mail (e.g. with images and formatting), begin your e-mail text with <html> and end it with </html>.  Besides using proper HTML code in the message text, please test send the message to yourself (before sending to a larger list) so you can verify that the message displays properly.
+The text box for the body of the message includes a rich text editor that includes most common word-processing functions available in Microsoft Word or Google Docs, including font styles (bold, strikethrough, underline, and italics), indentation, lists, font families, headings, colors, alignment, tables, and symbols. The editor supports the pasting of rich text from various sources (including Microsoft Word), and images can be included from external sources or the filebrowser via URL (direct upload may be supported in a future release). The template tags are now located in a dropdown menu with the ``{{}}`` label. Admins can click the </> button to use a source code editor and write HTML code as before. All comm panel emails are now HTML, so including ``<html>`` tags are no longer necessary. We will address the spam filter implications of this in a future release.
 
 Cybersource Credit Card Module
 ------------------------------
@@ -574,7 +677,13 @@ page. It can be edited inline by an admin to something more customized.
 Credit Card Viewer
 ------------------
 
-This module provides one view, viewpay_cybersource.  The name is a misnomer as it will display accounting information regardless of how that information was collected (Cybersource, First Data, or manual entry).  The view shows a list of students who have invoices for your program, and summarizes their amounts owed and payment[s] so far.  
+This module provides one view, viewpay, that displays accounting information regardless of how that information was collected (Cybersource, First Data, or manual entry).  The view shows a list of students who have invoices for your program, and summarizes their amounts owed and payment[s] so far.
+
+Easily Approve Financial Aid Requests
+-------------------------------------
+
+This module allows you to easily view and approve any financial aid requests for your program in bulk.
+
 
 JSON Data (JSONDataModule)
 --------------------------
@@ -585,7 +694,7 @@ This module provides a wide variety of information as requested by other program
 User List Generator (ListGenModule)
 -----------------------------------
 
-This module presents an interface similar to the communications panel, allowing you to specify filtering criteria to get a list of users.  However, instead of sending an e-mail, you are asked which information you would like to retrieve about each user.  This information might include their school, grade level, or emergency contact information.  Lists can be generated in HTML format (for printing) or CSV format (for spreadsheets).
+This module presents an interface similar to the communications panel, allowing you to specify filtering criteria to get a list of users.  However, instead of sending an email, you are asked which information you would like to retrieve about each user.  This information might include their school, grade level, or emergency contact information.  Lists can be generated in HTML format (for printing) or CSV format (for spreadsheets).
 
 Mailing Label Generation (MailingLabels)
 ----------------------------------------
@@ -634,15 +743,10 @@ are in the works, but for now, the page
 will display a list of links to display the checks individually; most will load
 much more quickly than the entire page.
 
-Old-style scheduling (SchedulingModule)
----------------------------------------
-
-This module is deprecated and will be removed in a future release.  
-
 Survey Management (SurveyManagement)
 ------------------------------------
 
-Include this module if you are using online surveys.  Surveys must be created at /admin/survey/, but this module will provide links to viewing the results.
+Include this module if you are using online surveys. This module provides links to create surveys and to view/export the survey results. Surveys can be created at /manage/[program]/[instance]/surveys/manage. Surveys can consist of program-wide and class-specific questions. The former will be shown as a single general program survey form, the latter will be shown as a class-specific survey form for each class a user took/taught.
 
 Manage Teacher Training and Interviews (TeacherEventsModule)
 ------------------------------------------------------------
@@ -657,7 +761,7 @@ Include this module if you will be using the Web site for volunteer registration
 Group Text Module
 -----------------
 
-
+Want to tell all enrolled students about a last-minute lunch location change? Want to inform students about a cancelled class? Once you have Twilio set up (contact websupport for help with this), you can use this module to select a set of users (like in the communications panel) and send them a text message. By default this will respect the users' texting preferences, but you can override this if necessary.
 
 Admin Admissions Dashboard
 --------------------------
@@ -675,9 +779,37 @@ some of the same statistics as the dashboard, but is a lot faster to load, and
 has some fun extra numbers too.  Most of the statistics are most useful during
 lottery registration, but it is not restricted to the lottery.
 
+Teacher Registration Big Board
+--------------------------------------
 
-Onsite modules (8)
-==================
+Like the Student Registration Big Board, but for teacher registrations.
+Records the following information: number of registered classes, number of
+approved classes, numbers of teachers, number of class-hours, and number of
+class-student-hours. Also records the number of checked in teachers for the
+current day and the number of teachers registering a class in the last 10
+minutes.
+
+"Phase Zero" Management
+-----------------------
+
+This module is used to manage the Student Registration Phase Zero module.  It
+provides an admin interface to track student lottery registration and run the
+lottery. When the lottery is run, the winners will be given open-ended
+``OverridePhaseZero`` and ``Student/All`` permissions, which will enable them
+to reach the other student registration phases.
+
+Lottery Frontend
+--------------------------------------
+
+For programs that use the class registration lottery, this module allows admins
+to run the lottery without assistance from web-team.  To run the lottery,
+enable this module, go to "Run the Lottery Assignment Thing" in the list of
+modules.  Click the "Generate Student Schedules" button to run the lottery,
+examine the statistics, and then click "Save Schedules to Website".  This
+clobbers any existing student registrations, so use with care.
+
+Onsite modules
+==============
 
 On-Site User Check-In (OnSiteCheckinModule)
 -------------------------------------------
@@ -702,7 +834,7 @@ This module will allow you to morph into a student and access the regular studen
 Onsite Reg Core Module (OnsiteCore)
 -----------------------------------
 
-This module should be included in all programs.  It will show the main on-site page which links to all of the other modules.  This page will be accessible to administrators as well as the special "onsite" user.  (The password for the "onsite" user should be set using the admin interface at /admin/users/espuser/.)
+This module should be included in all programs.  It will show the main onsite page which links to all of the other modules.  This page will be accessible to administrators as well as the special "onsite" user.  (The password for the "onsite" user should be set using the admin interface at /admin/users/espuser/.)
 
 Onsite View Purchased Items (OnsitePaidItemsModule)
 ---------------------------------------------------
@@ -731,12 +863,12 @@ Unenroll Students (UnenrollModule)
 
 This module allows you to find students who are late for their first class, based on whether they have checked in, and unroll them from their current or future classes. The page includes options to select the set of registrations to expire and a counter for how many students and registrations will be affected.
 
-Volunteer modules (1)
-=====================
+On-Site Student Attendance Module (OnSiteAttendance)
+----------------------------------------------------
 
-Volunteer Sign-up Module (VolunteerSignup)
-------------------------------------------
+This module can be used to check and mark attendance through the onsite interface. The main page of this module takes the onsite user to a page that summarizes attendance for classes for a selected timeblock and for the entire program. There is also an interface to select a specific class section for which to check or take attendance (just like the teacher interface).
 
-If you are using the site for volunteer registration, add this along with VolunteerManage.  Potential volunteers will see a view (/volunteer/[program]/[instance]/signup) which you will need to link to.  This will allow them to specify which time slots they can commit to volunteering for, and provide their basic contact information.  You will need to create those time slots on the management side.  The time slots for volunteers are distinct from class time slots.
+On-Site User Check-Out (OnSiteCheckoutModule)
+---------------------------------------------
 
-If the user fills out this form without being logged in, an account will be created for them.  Otherwise their current account will be marked as a volunteer.
+This module can be used to keep track of students that have checked *out* of a program (as opposed to check in). The module allows an onsite user to select a student with a search bar, then choose which classes, if any, the student will be unenrolled from when they are checked out. There is also an option to check out all students that have checked in (with multiple confirmation checks), in the case that you want to record program attendance separately for each day/weekend/etc.
