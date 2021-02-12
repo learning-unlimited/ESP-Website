@@ -88,7 +88,7 @@ try:
 
         subject = message['subject']
         del(message['subject'])
-        if instance.emailcode:
+        if hasattr(instance, 'emailcode') and instance.emailcode:
             subject = '[%s] %s' % (instance.emailcode, subject)
         if handler.subject_prefix:
             subject = '[%s] %s' % (handler.subject_prefix, subject)
