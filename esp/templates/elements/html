@@ -32,7 +32,7 @@
     {% block jquery %}
     {% block jquery_version %}
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/{{ settings.JQUERY_VERSION }}/jquery.min.js" integrity="{{ settings.JQUERY_HASH }}" crossorigin="anonymous"></script>
-    <script src="http://code.jquery.com/jquery-migrate-1.4.1.js"></script>
+    <script src="http://code.jquery.com/jquery-migrate-1.4.1.{% if not settings.DEBUG %}min.{% endif %}js"></script>
     {% endblock jquery_version %}
     {% block jquery_cookie_version %}
     <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
