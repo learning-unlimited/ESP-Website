@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Main mailgate for ESP.
+# Main mailgate
 # Handles incoming messages etc.
 
 import sys, os, email, re, smtplib, socket, sha, random
@@ -10,13 +10,13 @@ sys.path.insert(0, "/usr/sbin/")
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
 import logging
-# Make sure we end up in our logger even though this file is outside esp
+# Make sure we end up in our logger even though this file is outside esp/esp/
 logger = logging.getLogger('esp.mailgate')
 
 import os.path
 project = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
-# Path for ESP code
+# Path for site code
 sys.path.insert(0, project)
 
 # Check if a virtualenv has been installed and activated from elsewhere.
@@ -39,11 +39,10 @@ MAIL_PATH = '/usr/sbin/sendmail'
 server = smtplib.SMTP('localhost')
 ARCHIVE = settings.DEFAULT_EMAIL_ADDRESSES['archive']
 SUPPORT = settings.DEFAULT_EMAIL_ADDRESSES['support']
+ORGANIZATION_NAME = settings.INSTITUTION_NAME + '_' + settings.ORGANIZATION_SHORT_NAME
 
-DEBUG=True
+#DEBUG=True
 DEBUG=False
-
-#os.environ['LOCAL_PART'] = 'axiak'
 
 user = "UNKNOWN USER"
 
@@ -89,7 +88,7 @@ try:
 
         subject = message['subject']
         del(message['subject'])
-        if instance.emailcode:
+        if hasattr(instance, 'emailcode') and instance.emailcode:
             subject = '[%s] %s' % (instance.emailcode, subject)
         if handler.subject_prefix:
             subject = '[%s] %s' % (handler.subject_prefix, subject)
@@ -129,15 +128,12 @@ except Exception as e:
     else:
         logger.warning("Couldn't find user '%s'", user)
         print """
-ESP MAIL SERVER
+%s MAIL SERVER
 ===============
 
 Could not find user "%s"
 
 If you are experiencing difficulty, please email %s.
 
--Educational Studies Program
-
-
-""" % (user, SUPPORT)
+""" % (ORGANIZATION_NAME, user, SUPPORT)
         sys.exit(1)
