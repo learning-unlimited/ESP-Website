@@ -182,11 +182,10 @@ class TeacherBigBoardModule(ProgramModuleObj):
 
     @cache_function_for(105)
     def get_hours(prog, approved = False, teachers = None):
-        hours = ClassSubject.objects.filter(get_filter(prog, approved, teachers)
+        classes = ClassSubject.objects.filter(get_filter(prog, approved, teachers)
         ).annotate(num_sections=Count('sections')).filter(num_sections__gt=0
-        ).exclude(category__category__iexact="Lunch"
-        ).values_list('timestamp','class_size_max'
-        ).annotate(duration=Sum('sections__duration'))
+        ).exclude(category__category__iexact="Lunch")
+        hours = [[cls.timestamp, cls.class_size_max, sum([sec.duration for sec in cls.get_sections()])] for cls in classes]
         # use mindate if a class is missing a timestamp so we can still calculate static stats
         sorted_hours = sorted(hours, key=lambda x:x[0] or mindate)
         class_hours = [(hour[2],hour[0]) for hour in sorted_hours]
