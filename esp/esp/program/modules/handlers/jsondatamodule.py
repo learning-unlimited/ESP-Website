@@ -285,6 +285,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'parent_class': cls.id,
                 'category': cls.category.symbol,
                 'category_id': cls.category.id,
+                'class_style': cls.class_style,
                 'grade_max': cls.grade_max,
                 'grade_min': cls.grade_min,
                 'title': cls.title,
