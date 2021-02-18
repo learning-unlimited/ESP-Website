@@ -1,9 +1,14 @@
+<p>{{ num_users }} users were matched by the query.</p>
 <h2>Class Registration Stats</h2>
 <p>The number of classes that were registered by teachers for each program are shown below (using several metrics).</p>
-<p>{{ num_users }} matched by query.</p>
 <table>
 <tr>
-<th></th>
+<th rowspan="2"></th>
+{% for stat_category in stat_categories %}
+<th colspan="{{ stats_per_category }}">{{ stat_category }}</th>
+{% endfor %}
+</tr>
+<tr>
 {% for stat in stat_names %}
 <th>{{ stat }}</th>
 {% endfor %}

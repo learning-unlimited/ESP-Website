@@ -362,6 +362,7 @@ def teacher_reg(form, programs, teachers, profiles, result_dict={}):
     stat_names = [
         'Class Registered',
         'Class Approved',
+        'Class Scheduled',
     ]
     prog_stats = []
     # ordered dictionary so the legend is in order
@@ -376,6 +377,10 @@ def teacher_reg(form, programs, teachers, profiles, result_dict={}):
         teach_app = TeacherBigBoardModule.num_teachers_teaching(program, approved = True, teachers = teachers)
         series_data['Class Approved'].append([program.name, teach_app])
         stats_list.append(teach_app)
+        # teachers with a scheduled class
+        teach_sch = TeacherBigBoardModule.num_teachers_teaching(program, approved = True, scheduled = True, teachers = teachers)
+        series_data['Class Scheduled'].append([program.name, teach_sch])
+        stats_list.append(teach_sch)
         prog_stats.append(stats_list)
     prog_data = zip(programs, prog_stats)
     graph_data = [{"description": desc, "data": json.dumps(data)} for desc, data in series_data.items()]
@@ -390,11 +395,14 @@ def teacher_reg(form, programs, teachers, profiles, result_dict={}):
     return render_to_string('program/statistics/teacher_reg.html', result_dict)
 
 def class_reg(form, programs, teachers, profiles, result_dict={}):
+    stat_categories = ["Classes", "Class-student-hours"]
     stat_names = [
         'Classes Registered',
         'Classes Approved',
+        'Classes Scheduled',
         'Class-student-hours Registered',
         'Class-student-hours Approved',
+        'Class-student-hours Scheduled',
     ]
     prog_stats = []
     # ordered dictionary so the legend is in order
@@ -402,31 +410,39 @@ def class_reg(form, programs, teachers, profiles, result_dict={}):
     for program in programs:
         stats_list = []
         # registered classes
-        teach_reg = TeacherBigBoardModule.num_class_reg(program, teachers = teachers)
-        series_data['Classes Registered'].append([program.name, teach_reg])
-        stats_list.append(teach_reg)
+        class_reg = TeacherBigBoardModule.num_class_reg(program, teachers = teachers)
+        series_data['Classes Registered'].append([program.name, class_reg])
+        stats_list.append(class_reg)
         # teachers with an approved class
-        teach_app = TeacherBigBoardModule.num_class_reg(program, approved = True, teachers = teachers)
-        series_data['Classes Approved'].append([program.name, teach_app])
-        stats_list.append(teach_app)
+        class_app = TeacherBigBoardModule.num_class_reg(program, approved = True, teachers = teachers)
+        series_data['Classes Approved'].append([program.name, class_app])
+        stats_list.append(class_app)
+        class_sch = TeacherBigBoardModule.num_class_reg(program, approved = True, scheduled = True, teachers = teachers)
+        series_data['Classes Approved'].append([program.name, class_sch])
+        stats_list.append(class_sch)
         class_hours, student_hours = TeacherBigBoardModule.static_hours(program, teachers = teachers)
         series_data['Class-student-hours Registered'].append([program.name, float(student_hours)])
         stats_list.append(float(student_hours))
         class_hours_approved, student_hours_approved = TeacherBigBoardModule.static_hours(program, approved = True, teachers = teachers)
         series_data['Class-student-hours Approved'].append([program.name, float(student_hours_approved)])
         stats_list.append(float(student_hours_approved))
+        class_hours_scheduled, student_hours_scheduled = TeacherBigBoardModule.static_hours(program, approved = True, scheduled = True, teachers = teachers)
+        series_data['Class-student-hours Scheduled'].append([program.name, float(student_hours_scheduled)])
+        stats_list.append(float(student_hours_scheduled))
         prog_stats.append(stats_list)
     prog_data = zip(programs, prog_stats)
-    graph_data = [{"description": desc, "data": json.dumps(data)} for desc, data in series_data.items()[0:2]]
+    graph_data = [{"description": desc, "data": json.dumps(data)} for desc, data in series_data.items()[0:3]]
     left_axis_data = [
         {"axis_name": "# Classes", "series_data": graph_data},
     ]
-    graph_data = [{"description": desc, "data": json.dumps(data)} for desc, data in series_data.items()[2:4]]
+    graph_data = [{"description": desc, "data": json.dumps(data)} for desc, data in series_data.items()[3:6]]
     right_axis_data = [
         {"axis_name": "# Class-student-hours", "series_data": graph_data},
     ]
     result_dict.update({"prog_data": prog_data,
-                        "stat_names": stat_names,
+                        "stat_categories": stat_categories,
+                        "stats_per_category": len(stat_names)/len(stat_categories),
+                        "stat_names": [stat_name.split(' ')[1] for stat_name in stat_names],
                         "categories": json.dumps([program.name for program in programs.order_by('id')]),
                         "left_axis_data": left_axis_data,
                         "right_axis_data": right_axis_data,
