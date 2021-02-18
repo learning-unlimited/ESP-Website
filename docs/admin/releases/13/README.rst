@@ -7,6 +7,10 @@
 Changelog
 =========
 
+Program management changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+- When importing the settings from a previous program, class registration module info settings, student class registration module info settings, and tag settings are now copied to the new program. New programs based on previous programs should now function almost exactly like the previous programs.
+
 User search modules changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - For the Arbitrary User List module, the list of available fields is now filtered based on the selected user type.
@@ -60,6 +64,10 @@ Dashboard changes
 - Added attended class-student-hours to the dashboard.
 - Added shirt statistics for all teachers with a submitted class, enrolled students, attended students, and volunteers to the dashboard.
 
+Survey changes
+~~~~~~~~~~~~~~
+- Survey results are now cached, which should result in much faster load times when viewing any survey result page.
+
 Minor new features
 ~~~~~~~~~~~~~~~~~~
 - Added options to customize the amount of financial aid granted using the financial aid approval module.
@@ -85,6 +93,7 @@ Minor bug fixes
 - Fixed elements that were supposed to be full width (e.g. surveys).
 - Fixed the cutoff at the bottom of the manage programs page.
 - Fixed pluralizations and capitalizations in the admin pages.
+- Fixed an issue that had broken email "plain" redirects.
 
 Development changes
 ===================
@@ -103,4 +112,7 @@ Dependency changes
 - Upgraded node.js (0.10.x -> 14.x LTS)
 - Upgraded less (1.3.1 -> 1.7.5)
 - Upgraded bootstrap (2.0.2 -> 2.3.2)
+- Upgraded jQuery (1.7.2 -> 1.12.4)
+- Upgraded jQuery UI (1.8.9 -> 1.12.1)
+- Upgraded jqGrid (4.3.1 -> 5.5.2)
 
