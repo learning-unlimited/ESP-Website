@@ -100,7 +100,7 @@ var perms={};
 $j(document).ready(function() {
 	
 	//Assigning event handlers
-    $j('#button_add').click(function(){insertField($j('#elem_selector').attr('value'),$prevField)});
+    $j('#button_add').click(function(){insertField($j('#elem_selector').val(),$prevField)});
 	$j('#submit').click(submit);
 	$j('#input_form_title').bind('change', updateTitle);
 	$j('#input_form_description').bind('change', updateDesc);
@@ -109,7 +109,7 @@ $j(document).ready(function() {
 	$j('#links_id_main').change(onChangeMainLink);
 	$j('#links_id_specify').change(onChangeLinksSpecify);
 	$j('#id_modify').change(function(){
-		if($j(this).attr('checked'))
+		if($j(this).prop('checked'))
 			$j('#submit').val('Modify Form');
 		else $j('#submit').val('Create Form');	
 	});
@@ -245,7 +245,7 @@ var initUI=function(){
 
 var clearPermsArea=function(){
 	//Initializes the permissions area
-	$j('#id_prog_belong').attr('checked', false).parent().hide();
+	$j('#id_prog_belong').prop('checked', false).parent().hide();
 	$j('#id_perm_program').val("-1").hide();
 	$j('#id_sub_perm').children().remove();
 	$j('#id_sub_perm').parent().hide();
@@ -341,7 +341,7 @@ var onChangeMainPerm=function(){
 };
 
 var onChangeProgBelong=function(){
-	var belongs=$j(this).attr('checked');
+	var belongs=$j(this).prop('checked');
 	if(belongs){
 		$j('#id_perm_program').show();
 	}
@@ -423,7 +423,7 @@ var addOption=function(option_text) {
 	
 	var $option,$wrap_option;
 	$wrap_option=$j('<div></div>').addClass('option_element');
-	$option=$j('<input/>', {
+	$option=$j('<input/>').attr({
 		type:"text",
 		value:option_text
 	});
@@ -602,8 +602,8 @@ var onSelectElem = function(item) {
 
 	//Remove previous field-specific options, if any
 	clearSpecificOptions();
-	$j('#id_instructions').attr('value','');
-	$j('#id_required').attr('checked','');
+	$j('#id_instructions').val('');
+	$j('#id_required').prop('checked','');
 	
 	$j('div.field_selected').removeClass('field_selected');
 	var currCategory=$j('#cat_selector').val();	
@@ -623,19 +623,19 @@ var onSelectElem = function(item) {
 	else if(item=="numeric") 
 		addSpecificOptions(item, '', '');
 	else if(item=='section'){
-		$j('#id_instructions').attr('value','Enter a short description about the section');
+		$j('#id_instructions').val('Enter a short description about the section');
 	}
 	else if(item=='page'){
-		$j('#id_instructions').attr('value','Not required');
+		$j('#id_instructions').val('Not required');
 	}
 	
 	//Set 'Required' to a sensible default
 	setRequired(item);	
 		
-	$j('#id_question').attr('value',question_text);
+	$j('#id_question').val(question_text);
 	$prevField=$currSection.children(":last");
-	if($button.attr('value')!='Add to Form')
-		$button.attr('value','Add to Form').unbind('click').click(function(){insertField($j('#elem_selector').attr('value'),$prevField)});
+	if($button.val()!='Add to Form')
+		$button.val('Add to Form').unbind('click').click(function(){insertField($j('#elem_selector').val(),$prevField)});
 };
 
 var setRequired=function(item){
@@ -651,7 +651,7 @@ var setRequired=function(item){
 		$j.each(formElements, function(cat, flds){
 			if(item in flds){
 				if(flds[item]['required'])
-					$j('#id_required').attr('checked', true).attr('disabled', true);
+					$j('#id_required').prop('checked', true).attr('disabled', true);
 				return false; //break out
 			}
 		});
@@ -661,8 +661,8 @@ var setRequired=function(item){
 var updateField=function() {
 	var curr_field_type=$j.data($currField[0],'data').field_type;
 	if(curr_field_type=='section'){
-		$currField.find('h2').html($j('#id_question').attr('value'));
-		$currField.children('p.field_text').html($j('#id_instructions').attr('value'));
+		$currField.find('h2').html($j('#id_question').val());
+		$currField.children('p.field_text').html($j('#id_instructions').val());
 		return;
 	}
 	$prevField=$currField.prev();
@@ -711,9 +711,9 @@ var onSelectField=function($elem, field_data) {
 		$prevField=$wrap.prev('div.field_wrapper');	
 	}
 	if(ftype!='section')
-		$j("#id_required").attr('checked',field_data.required);
-	$j("#id_question").attr('value',field_data.question_text);
-	$j("#id_instructions").attr('value',field_data.help_text);
+		$j("#id_required").prop('checked',field_data.required);
+	$j("#id_question").val(field_data.question_text);
+	$j("#id_instructions").val(field_data.help_text);
 	
 	//Adding in field-specific options
 	if(field_data.attrs['options'] && $j.inArray(ftype, ['radio', 'dropdown', 'multiselect', 'checkboxes']) != -1){
@@ -733,12 +733,12 @@ var onSelectField=function($elem, field_data) {
 			addSpecificOptions(ftype, field_data.attrs['wordlimits'], 'words');
 	}
 	else if(ftype=='section'){
-		$j("#id_required").attr('checked','');
+		$j("#id_required").prop('checked','');
 	}
 	addCorrectnessOptions(ftype);
-	$j('#'+ftype+'_correct_answer').attr('value', field_data.attrs['correct_answer']);
-	if($button.attr('value')=='Add to Form')
-		$button.attr('value','Update').unbind('click').click(updateField);
+	$j('#'+ftype+'_correct_answer').val(field_data.attrs['correct_answer']);
+	if($button.val()=='Add to Form')
+		$button.val('Update').unbind('click').click(updateField);
 		
 	//Set 'Required' depending on item
 	setRequired(ftype);	
@@ -750,7 +750,7 @@ var deSelectField=function() {
 	$j(this).removeClass('field_selected');
 	$j(this).addClass('field_hover');
 	$j(this).find(".wrapper_button").toggleClass("wrapper_button_hover");
-	$j('#cat_selector').children('option[value=Generic]').attr('selected','selected');
+	$j('#cat_selector').children('option[value=Generic]').prop('selected','selected');
 	onSelectCategory('Generic');
 	onSelectElem('textField');
 };
@@ -766,45 +766,45 @@ var renderNormalField=function(item, field_options, data){
 	//Rendering code for simple fields (i.e. non-custom fields)
 	var $new_elem, key;
 	if(item=="textField"){
-		$new_elem=$j('<input/>', {
+		$new_elem=$j('<input/>').attr({
 			type:"text",
 			size:"30"
 		});
 		if($j('#charOrWord').val()=='chars')
 			key='charlimits';
 		else key='wordlimits';	
-		data['attrs'][key]=$j('#text_min').attr('value') + ',' + $j('#text_max').attr('value');
-        data['attrs']['correct_answer']=$j('#textField_correct_answer').attr('value');
+		data['attrs'][key]=$j('#text_min').val() + ',' + $j('#text_max').val();
+        data['attrs']['correct_answer']=$j('#textField_correct_answer').val();
 	}
 	else if(item=="longTextField"){
-		$new_elem=$j('<input/>', {
+		$new_elem=$j('<input/>').attr({
 			type:"text",
 			size:"60"
 		});
 		if($j('#charOrWord').val()=='chars')
 			key='charlimits';
 		else key='wordlimits';	
-		data['attrs'][key]=$j('#text_min').attr('value') + ',' + $j('#text_max').attr('value');
+		data['attrs'][key]=$j('#text_min').val() + ',' + $j('#text_max').val();
 	}
 	else if(item=="longAns") {
-		$new_elem=$j('<textarea>', {
+		$new_elem=$j('<textarea>').attr({
 			rows:"8",
 			cols:"50"
 		});
 		if($j('#charOrWord').val()=='chars')
 			key='charlimits';
 		else key='wordlimits';	
-		data['attrs'][key]=$j('#text_min').attr('value') + ',' + $j('#text_max').attr('value');
+		data['attrs'][key]=$j('#text_min').val() + ',' + $j('#text_max').val();
 	}
 	else if(item=="reallyLongAns") {
-		$new_elem=$j('<textarea>', {
+		$new_elem=$j('<textarea>').attr({
 			rows:"14",
 			cols:"60"
 		});
 		if($j('#charOrWord').val()=='chars')
 			key='charlimits';
 		else key='wordlimits';	
-		data['attrs'][key]=$j('#text_min').attr('value') + ',' + $j('#text_max').attr('value');
+		data['attrs'][key]=$j('#text_min').val() + ',' + $j('#text_max').val();
 	}
 	else if(item=="radio") {
 		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
@@ -817,12 +817,12 @@ var renderNormalField=function(item, field_options, data){
 		else {
 			//Normal field
 			$text_inputs.each(function(idx,el) {
-					options_string+=$j(el).attr('value')+"|";	
+					options_string+=$j(el).val()+"|";	
 			});
 		}
 		$j.each(options_string.split('|'), function(idx, el){
 			if(el!=''){
-				$one_option=$j('<input>', {
+				$one_option=$j('<input>').attr({
 						type:"radio",
 						value:el
 				});
@@ -830,7 +830,7 @@ var renderNormalField=function(item, field_options, data){
 			}
 		});
 		data['attrs']['options']=options_string;
-        data['attrs']['correct_answer']=$j('#radio_correct_answer').attr('value');
+        data['attrs']['correct_answer']=$j('#radio_correct_answer').val();
 	}
 	else if(item=="dropdown") {
 		$new_elem=$j('<select>');
@@ -839,23 +839,23 @@ var renderNormalField=function(item, field_options, data){
 			options_string=field_options['options'];
 		else{
 			$text_inputs.each(function(idx,el) {
-				options_string+=$j(el).attr('value')+"|";
+				options_string+=$j(el).val()+"|";
 			});
 		}
 		$j.each(options_string.split('|'), function(idx, el){
 			if(el!=''){
-				$one_option=$j('<option>', {
+				$one_option=$j('<option>').attr({
 						value:el
 				});	
 				$one_option.html(el);
 				$new_elem.append($one_option);
 			}
 		});	
-        data['attrs']['correct_answer']=$j('#dropdown_correct_answer').attr('value');
+        data['attrs']['correct_answer']=$j('#dropdown_correct_answer').val();
 		data['attrs']['options']=options_string;
 	}
 	else if(item=="multiselect") {
-		$new_elem=$j('<select>',{
+		$new_elem=$j('<select>').attr({
 			'multiple':'multiple'
 		});
 		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
@@ -863,11 +863,11 @@ var renderNormalField=function(item, field_options, data){
 			options_string=field_options['options'];
 		else {
 			$text_inputs.each(function(idx,el) {
-				options_string+=$j(el).attr('value')+"|";
+				options_string+=$j(el).val()+"|";
 			});
 		}
 		$j.each(options_string.split('|'), function(idx, el){
-			$one_option=$j('<option>', {
+			$one_option=$j('<option>').attr({
 					value:el
 			});	
 			$one_option.html(el);
@@ -882,40 +882,40 @@ var renderNormalField=function(item, field_options, data){
 			options_string=field_options['options'];
 		else {
 			$text_inputs.each(function(idx,el) {
-				options_string+=$j(el).attr('value')+"|";
+				options_string+=$j(el).val()+"|";
 			});
 		}
 		$j.each(options_string.split('|'), function(idx, el){
-			$one_option=$j('<input>', {
+			$one_option=$j('<input>').attr({
 					type:"checkbox",
 					value:el
 			});
 			$new_elem.append($j("<p>").append($one_option).append($j("<span>"+el+"</span>")));
 		});
 		data['attrs']['options']=options_string;
-        data['attrs']['correct_answer']=$j('#checkboxes_correct_answer').attr('value');
+        data['attrs']['correct_answer']=$j('#checkboxes_correct_answer').val();
 	}
 	else if(item=="numeric"){
-		$new_elem=$j('<input/>', {
+		$new_elem=$j('<input/>').attr({
 			type:"text",
 			size:"20"
 		});
-		data['attrs']['limits']=$j('#id_minVal').attr('value') + ',' + $j('#id_maxVal').attr('value');
+		data['attrs']['limits']=$j('#id_minVal').val() + ',' + $j('#id_maxVal').val();
 	}
 	else if(item=='date'){
 		$new_elem=$j("<div>");
 		var $mm,$dd,$yyyy;
-		$mm=$j('<input/>', {
+		$mm=$j('<input/>').attr({
 			type:"text",
 			size:"2",
 			value:"mm"
 		});
-		$dd=$j('<input/>', {
+		$dd=$j('<input/>').attr({
 			type:"text",
 			size:"2",
 			value:"dd"
 		});
-		$yyyy=$j('<input/>', {
+		$yyyy=$j('<input/>').attr({
 			type:"text",
 			size:"4",
 			value:"yyyy"
@@ -925,17 +925,17 @@ var renderNormalField=function(item, field_options, data){
 	else if(item=='time'){
 		$new_elem=$j("<div>");
 		var $hh,$m,$ss,$ampm;
-		$hh=$j('<input/>', {
+		$hh=$j('<input/>').attr({
 			type:"text",
 			size:"2",
 			value:"hh"
 		});
-		$m=$j('<input/>', {
+		$m=$j('<input/>').attr({
 			type:"text",
 			size:"2",
 			value:"mm"
 		});
-		$ss=$j('<input/>', {
+		$ss=$j('<input/>').attr({
 			type:"text",
 			size:"2",
 			value:"ss"
@@ -944,12 +944,12 @@ var renderNormalField=function(item, field_options, data){
 		$new_elem.append($j('<p>').append($hh).append($j('<span> : </span>')).append($m).append($j('<span> : </span>')).append($ss).append('&nbsp;').append($ampm));
 	}
 	else if(item=='file'){
-		$new_elem=$j('<input/>', {
+		$new_elem=$j('<input/>').attr({
 			type:"file"
 		});
 	}
 	else if(item=='phone' || item=='email'){
-		$new_elem=$j('<input/>', {
+		$new_elem=$j('<input/>').attr({
 			type:"text",
 			size:"30"
 		});
@@ -959,11 +959,11 @@ var renderNormalField=function(item, field_options, data){
 	}
 	else if(item=='gender'){
 		$new_elem=$j('<p>');
-		$new_elem.append($j('<input/>', {
+		$new_elem.append($j('<input/>').attr({
 			type:'radio',
 			value:'Male',
 			name:'gender'
-		})).append($j('<span class="field_text">Male&nbsp;&nbsp;</span>')).append($j('<input/>', {
+		})).append($j('<span class="field_text">Male&nbsp;&nbsp;</span>')).append($j('<input/>').attr({
 				type:'radio',
 				value:'Female',
 				name:'gender'
@@ -974,7 +974,7 @@ var renderNormalField=function(item, field_options, data){
 		$new_elem=$j("<div>");
         options_string = 'Yes';
 		$j.each(options_string.split('|'), function(idx, el){
-			$one_option=$j('<input>', {
+			$one_option=$j('<input>').attr({
 					type:"checkbox",
 					value:el
 			});
@@ -988,7 +988,7 @@ var renderNormalField=function(item, field_options, data){
 		options_string = 'Yes|No';
 		$j.each(options_string.split('|'), function(idx, el){
 			if(el!=''){
-				$one_option=$j('<input>', {
+				$one_option=$j('<input>').attr({
 						type:"radio",
 						value:el
 				});
@@ -998,16 +998,16 @@ var renderNormalField=function(item, field_options, data){
 		data['attrs']['options']=options_string;
 	}
     else if(item=="instructions") {
-		$new_elem=$j('<div class="instructions">' + $j('#id_instructions').attr('value') + '</div>');
+		$new_elem=$j('<div class="instructions">' + $j('#id_instructions').val() + '</div>');
 	}
 	//Page and section are special-cased
 	else if(item=='section'){
 		//this one's processed differently from the others
 	
-		var $outline=$j('<div class="outline"></div>'), label_text=$j.trim($j('#id_question').attr('value')),
-			help_text=$j.trim($j('#id_instructions').attr('value'));
+		var $outline=$j('<div class="outline"></div>'), label_text=$j.trim($j('#id_question').val()),
+			help_text=$j.trim($j('#id_instructions').val());
 		$outline.append('<hr/>').append($j('<h2 class="section_header">'+label_text+'</h2>')).append($j('<p class="field_text">'+help_text+'</p>'));
-		$currSection=$j('<div>', {
+		$currSection=$j('<div>').attr({
 			id:'section_'+secCount,
 			'class':'section'
 		});
@@ -1083,7 +1083,7 @@ var renderCustomField=function(item, field_options, data){
 			'rows':4,
 			'cols':22
 		}));
-		$new_elem.append($j('<p>').append($j('<span class="field_text">City&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>')).append($j('<input/>', {
+		$new_elem.append($j('<p>').append($j('<span class="field_text">City&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>')).append($j('<input/>').attr({
 			type:'text',
 			size:'20'
 		})).append('&nbsp;&nbsp;').append($j('<span class="field_text">State</span>')).append($j('<select>')));
@@ -1106,19 +1106,19 @@ var addElement=function(item, $prevField) {
 		$j(this).toggleClass('field_hover');
 		$j(this).find(".wrapper_button").toggleClass("wrapper_button_hover");
 	}).toggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, deSelectField),
-	label_text=$j.trim($j('#id_question').attr('value')),
-	help_text=$j.trim($j('#id_instructions').attr('value')),
+	label_text=$j.trim($j('#id_question').val()),
+	help_text=$j.trim($j('#id_instructions').val()),
 	html_name=item+"_"+elemTypes[item], html_id="id_"+item+"_"+elemTypes[item],
 	data={};
 	
-	$new_elem_label=$j(createLabel(label_text,$j('#id_required').attr('checked'))).appendTo($wrap);
+	$new_elem_label=$j(createLabel(label_text,$j('#id_required').prop('checked'))).appendTo($wrap);
 	$j('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($wrap);
 	
 	//Populating common data attributes
 	data.question_text=label_text;
 	data.help_text=help_text;
 	data.field_type=item;
-	data.required=$j('#id_required').attr('checked');
+	data.required=$j('#id_required').prop('checked');
 	data.parent_id=-1; //Useful for modifications
 	data.attrs={};
 	
@@ -1188,7 +1188,7 @@ var addElement=function(item, $prevField) {
 var submit=function() {
 	//submits the created form to the server
 	
-	var form={'title':$j('#form_title').html(), 'desc':$j('#form_description').html(), 'anonymous':($j('#id_anonymous').attr('checked') == "checked"), 'pages':[]}, section, elem, page, section_seq, page_seq=0;
+	var form={'title':$j('#form_title').html(), 'desc':$j('#form_description').html(), 'anonymous':($j('#id_anonymous').prop('checked') == "checked"), 'pages':[]}, section, elem, page, section_seq, page_seq=0;
 	form['link_type']=$j('#links_id_main').val();
 	if(form['link_type']!='-1' && $j('#links_id_specify').val()=='particular')
 		form['link_id']=$j('#links_id_pick').val();
@@ -1255,7 +1255,7 @@ var submit=function() {
 	//console.log(form);
 	//POSTing to server
 	var post_url='/customforms/submit/';
-	if($j('#id_modify').attr('checked')){
+	if($j('#id_modify').prop('checked')){
 		form.form_id=parseInt($j('#base_form').val());
 		post_url='/customforms/modify/';
 	}
@@ -1276,12 +1276,12 @@ var submit=function() {
 var updateTitle = function(){
 	//Updates the title for the form
 	
-	$j("#form_title").html($j('#input_form_title').attr('value'));
+	$j("#form_title").html($j('#input_form_title').val());
 };
 
 var updateDesc=function() {
 	//Updates the form description
-	$j('#form_description').html($j('#input_form_description').attr('value'));
+	$j('#form_description').html($j('#input_form_description').val());
 	
 };
 
@@ -1311,10 +1311,10 @@ var createFromBase=function(){
 	}
 	else {
 		$j('#id_modify_wrapper').hide();
-		$j('#id_modify').attr('checked', false);
-		$j('#input_form_title').attr('value', '').change();
-		$j('#input_form_description').attr('value','').change();
-		$j('#id_anonymous').attr('checked', false);
+		$j('#id_modify').prop('checked', false);
+		$j('#input_form_title').val('').change();
+		$j('#input_form_description').val('').change();
+		$j('#id_anonymous').prop('checked', false);
 	}
 };
 
@@ -1323,12 +1323,12 @@ var rebuild=function(metadata) {
 	
 	$j('#outline_0').remove();
 	//Setting form's title and description
-	$j('#input_form_title').attr('value', metadata['title']).change();
-	$j('#input_form_description').attr('value',metadata['desc']).change();
+	$j('#input_form_title').val(metadata['title']).change();
+	$j('#input_form_description').val(metadata['desc']).change();
 	//console.log(metadata);
 	//Setting other form options
 	if(metadata['anonymous'])
-		$j('#id_anonymous').attr('checked', true);
+		$j('#id_anonymous').prop('checked', true);
 	//Setting fkey-only links
 	$j('#links_id_main').val(metadata['link_type']);
 	//console.log($j('#links_id_main').val());
