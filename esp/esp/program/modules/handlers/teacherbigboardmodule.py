@@ -1,7 +1,7 @@
 import datetime
 import subprocess
 
-from django.db.models.aggregates import Min, Sum
+from django.db.models.aggregates import Min
 from django.db.models.query import Q
 from django.db.models import Count
 
