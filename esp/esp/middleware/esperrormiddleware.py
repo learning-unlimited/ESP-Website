@@ -41,7 +41,6 @@ import sys
 from django.conf import settings
 from django.db.models.base import ObjectDoesNotExist
 from django.http import HttpResponse, Http404
-from django.shortcuts import render
 from django.template import RequestContext
 from django.utils.translation import ugettext as _
 
