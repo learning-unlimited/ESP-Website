@@ -109,7 +109,6 @@ function clear_filters(form_name)
     field_names = ["userid", "username", "first_name", "last_name", "email", "zipcode", "zipdistance", "zipdistance_exclude", "states", "school", "grade_min", "grade_max", "gradyear_min", "gradyear_max", "groups_include", "groups_exclude", "clsid", "regtypes", "hours_min", "hours_max", "teaching_times", "teacher_events", "class_times", "target_user"];
     for (var i = 0; i < field_names.length; i++)
     {
-        console.log(field_names[i]);
         var form_field = $j(form).find(':input[name=' + field_names[i] + ']')[0];
         switch (form_field.type) {
             case 'password':
