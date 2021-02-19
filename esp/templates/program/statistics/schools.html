@@ -1,8 +1,16 @@
+<p>{{ num_users }} users were matched by the query.</p>
 <h2>School Info</h2>
 
-<p>Of {{ num_students }} students, {{ num_k12school }} selected a school from existing options and {{ num_school }} typed one in manually.</p>
-<ul>
-{% for pair in school_data %}
-    <li>{{ pair.0 }}: {{ pair.1 }} students
+<p>{{ num_k12school }} students selected a school from existing options and {{ num_school }} typed one in manually.</p>
+<table>
+<tr>
+<th>School</th>
+<th># of Students</th>
+</tr>
+{% for school, num in school_data %}
+<tr>
+    <td>{{ school }}</td>
+    <td>{{ num }}</td>
+</tr>
 {% endfor %}
-</ul>
+</table>

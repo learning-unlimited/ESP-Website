@@ -1,8 +1,16 @@
+<p>{{ num_users }} users were matched by the query.</p>
 <h2>Returning Student Info</h2>
 
-<p>Query captured {{ num_students }} students.  Results include all programs that the selected students registered for.</p>
-<ul>
-{% for pair in repeat_data %}
-    <li>{{ pair.0 }}: {{ pair.1 }} students
+<p>Results include all programs that the selected students registered for.</p>
+<table>
+<tr>
+<th>Program</th>
+<th># of Students</th>
+</tr>
+{% for program, num in repeat_data %}
+<tr>
+    <td>{{ program }}</td>
+    <td>{{ num }}</td>
+</tr>
 {% endfor %}
-</ul>
+</table>
