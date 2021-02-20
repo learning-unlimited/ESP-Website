@@ -11,67 +11,25 @@
 
 \vspace{0.3in}
 
-{% for s in surveys %}
-\vspace{0.25in}
-{% if not forloop.first %}\clearpage{% endif %}
-    \begin{center}
-    \begin{longtable}{|p{0.48\linewidth}|p{0.48\linewidth}|} \hline
-    \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} ~ } \\
-    \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} \Large {Responses for {{ s.name|texescape }}} } \\ 
-    \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} ~ } \\\hline
-    {% for q in s.display_data.questions %}
-        {% with s.num_participants as num_participants %}
-            {% include "survey/answers.tex" %}
-        {% endwith %}
-    {% endfor %}
-    \end{longtable}
-    \end{center}
-    {% for c in s.perclass_data %}
-        \clearpage
-        \begin{center}
-        \begin{longtable}{|p{0.48\linewidth}|p{0.48\linewidth}|} \hline
-        \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} ~ } \\
-        \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} \Large {Responses for {{ c.class.emailcode }}: {{ c.class.title|texescape }}} } \\ 
-        \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} ~ } \\\hline
-        \multicolumn{2}{|C{\linewidth}|}{
-            \rule{0pt}{3ex}
-            Teachers: {{ c.class.parent_class.getTeacherNames|join:", "|texescape }}
-            \rule[-1.5ex]{0pt}{0pt} } \\\hline
-        {% for q in c.questions %}
-            {% with c.class.num_students as num_participants %}
-                {% include "survey/answers.tex" %}
-            {% endwith %}
+{% if surveys %}
+    {% for s in surveys %}
+        \vspace{0.25in}
+        {% if not forloop.first %}\clearpage{% endif %}
+        {% render_responses_for_program_pdf s %}
+        {% for sec in sections %}
+            \clearpage
+            {% render_responses_for_section_pdf sec s %}
         {% endfor %}
-        \end{longtable}
-        \end{center}
     {% endfor %}
-{% endfor %}
+{% elif sections and survey %}
 
-
-{% if perclass_data %}
-
-Students were also asked a few questions about each of their classes.  The results for your classes are shown below.
+Students were asked a few questions about each of their classes.  The results for your classes are shown below.
 
 \vspace{0.25in}
 
-{% for c in perclass_data %}
+{% for sec in sections %}
 {% if not forloop.first %}\clearpage{% endif %}
-    \begin{center}
-    \begin{longtable}{|p{0.48\linewidth}|p{0.48\linewidth}|} \hline
-    \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} ~ } \\
-    \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} \Large {Responses for {{ c.class.emailcode }}: {{ c.class.title|texescape }}} } \\ 
-    \multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} ~ } \\\hline
-    \multicolumn{2}{|C{\linewidth}|}{
-            \rule{0pt}{3ex}
-            Teachers: {{ c.class.parent_class.getTeacherNames|join:", "|texescape }}
-            \rule[-1.5ex]{0pt}{0pt} } \\\hline
-    {% for q in c.questions %}
-        {% with c.class.num_students as num_participants %}
-            {% include "survey/answers.tex" %}
-        {% endwith %}
-    {% endfor %}
-    \end{longtable}
-    \end{center}
+    {% render_responses_for_section_pdf sec survey %}
 {% endfor %}
 {% endif %}
 

@@ -185,6 +185,9 @@ def ensure_environment():
     if env.get("db_running", False):
         return
 
+    # Make sure the postgresql service is running
+    sudo("service postgresql start")
+
     # Has some database been loaded?
     dbs = int(psql("SELECT COUNT(*) FROM pg_stat_database;").strip())
     if dbs < 4:
