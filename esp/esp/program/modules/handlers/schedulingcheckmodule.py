@@ -641,7 +641,7 @@ class SchedulingCheckRunner:
              class_hours = teacher.getTaughtTime(program=self.p, round_to=1).seconds/3600
              delta = availability - class_hours
              # Arbitrary formula, seems to do a good job of catching the cases I care about
-             if class_hours/float(availability) >= 2/float(3):
+             if (availability == 0) or (class_hours/float(availability) >= 2/float(3)):
                  inflexible.append({'Username': teacher.username,
                                'Teacher Name': teacher.name(),
                                'Class hours': class_hours,
