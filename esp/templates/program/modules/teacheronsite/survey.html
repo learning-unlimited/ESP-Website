@@ -8,17 +8,13 @@
         <table>
             <tr><th>Student Survey Responses for {{ program.niceName }}</th></tr>
         </table>
-        {% for c in perclass_data %}
+        {% for sec in sections %}
             <table>
                 <tr>
-                    <th>Responses for {{ c.class.emailcode }}: {{ c.class.title }}</th>
+                    <th>Responses for {{ sec.emailcode }}: {{ sec.title }}</th>
                 </tr>
             </table>
-            {% for q in c.questions %}
-                {% with c.class.num_students as num_participants %}
-                    {% include "survey/answers.html" %}
-                {% endwith %}
-            {% endfor %}
+            {% render_responses_for_section sec survey %}
         {% empty %}
             <table>
                 <tr>

@@ -368,7 +368,7 @@ function update_checkboxes()
             sched_td = $j(".schedule > .timeslot_" + section.timeslots[j]);
             sched_td.replaceWith(section_td_old);
             var studentcheckbox = $j("#classchange_" + section.id + "_" + state.student_id + "_" + section.timeslots[j]);
-            studentcheckbox.attr("checked", "checked");
+            studentcheckbox.prop("checked", "checked");
             studentcheckbox.removeAttr("disabled");
             studentcheckbox.unbind("change");
             studentcheckbox.change(handle_checkbox);
@@ -800,10 +800,10 @@ function setup_autocomplete()
             $j( "#student_selector" ).val( ui.item.label );
             return false;
         },
-    }).data("autocomplete")._renderItem = function (ul, item) {
+    }).data("ui-autocomplete")._renderItem = function (ul, item) {
         var listItem = $j("<li>")
                         .attr( "data-value", item.value )
-                        .append("<a href='#'>" + item.label + "</a>")
+                        .append("<div>" + item.label + "</div>")
                         .data("item.autocomplete", item);
 
         if(item.noProfile) {
@@ -1092,7 +1092,7 @@ function render_category_options()
         var new_checkbox = $j("<input/>").attr("type", "checkbox").attr("id", "category_select_" + id);
 
         if (settings.categories_to_display[id]) {
-            new_checkbox.attr("checked", "checked");
+            new_checkbox.prop("checked", "checked");
         }
 
         new_checkbox.change(function (event) {

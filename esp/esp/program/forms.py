@@ -178,17 +178,28 @@ class StatisticsQueryForm(forms.Form):
         ('repeats', 'What other programs have the students attended?'),
         ('heardabout', 'How did the students hear about the program?'),
         ('hours', 'How many hours of class did the students take and when?'),
-        #   Not yet implemented
-        #   ('classes', 'What were the most and least popular classes?'),
+        ('student_reg', 'How many students registered?'),
+        ('teacher_reg', 'How many teachers registered?'),
+        ('class_reg', 'How many classes were registered by teachers?'),
         #   (other queries here)
     )
 
     #   Keys into the program.students() dictionary (and descriptions)
-    reg_categories = (
+    student_reg_categories = (
+        ('student_profile', 'Created a profile'),
         ('confirmed', 'Confirmed registration'),
         ('attended', 'Marked as attended on the Web site'),
         ('classreg', 'Registered for at least one class'),
         ('student_survey', 'Completed the online survey'),
+    )
+
+    #   Keys into the program.students() dictionary (and descriptions)
+    teacher_reg_categories = (
+        ('teacher_profile', 'Created a profile'),
+        ('class_proposed', 'Proposed a class'),
+        ('class_approved', 'Had a class approved'),
+        ('class_rejected', 'Had a class rejected'),
+        ('teacher_survey', 'Completed the online survey'),
     )
 
     @staticmethod
@@ -223,16 +234,19 @@ class StatisticsQueryForm(forms.Form):
     query = forms.ChoiceField(choices=stats_questions, widget=forms.Select(), help_text='What question would you like to ask?')
     limit = forms.IntegerField(required=False, min_value=0, widget=forms.TextInput(), help_text='Limit number of aggregate results to display (leave blank or enter 0 to display all results)')
 
-    program_type_all = forms.BooleanField(required=False, initial=False, widget=forms.CheckboxInput(), label='Search All Programs?', help_text='Uncheck to select a program type')
-    program_type = forms.ChoiceField(required=False, choices=((None, ''),), widget=forms.Select(), help_text='Type of Program')
-    program_instance_all = forms.BooleanField(required=False, initial=True, widget=forms.CheckboxInput(), label='Search All Instances?', help_text='Uncheck to select specific instances')
-    program_instances = forms.MultipleChoiceField(required=False, choices=((None, ''),), widget=forms.SelectMultiple(), label='Instance[s] of Program')  #   Choices will be replaced by Ajax request if necessary
+    program_type_all = forms.BooleanField(required=False, initial=False, widget=forms.CheckboxInput(), label='Search All Programs?', help_text='Uncheck to select program type(s)')
+    program_type = forms.ChoiceField(required=False, choices=((None, ''),), widget=forms.Select())
+    program_instance_all = forms.BooleanField(required=False, initial=True, widget=forms.CheckboxInput(), label='Search All Instances?', help_text='Uncheck to select specific instance(s)')
+    program_instances = forms.MultipleChoiceField(required=False, choices=((None, ''),), widget=forms.SelectMultiple(), label='Instance(s) of Program')  #   Choices will be replaced by Ajax request if necessary
 
-    reg_types = forms.MultipleChoiceField(choices=reg_categories, widget=forms.SelectMultiple(), initial=['classreg'], label='Registration Categories')
+    student_reg_type_all = forms.BooleanField(required=False, initial=True, widget=forms.CheckboxInput(), label='Search All Students?', help_text='Uncheck to select student registration type(s)')
+    student_reg_types = forms.MultipleChoiceField(required=False, choices=student_reg_categories, widget=forms.SelectMultiple(), label='Registration Categories')
+    teacher_reg_type_all = forms.BooleanField(required=False, initial=True, widget=forms.CheckboxInput(), label='Search All Teachers?', help_text='Uncheck to select teacher registration type(s)')
+    teacher_reg_types = forms.MultipleChoiceField(required=False, choices=teacher_reg_categories, widget=forms.SelectMultiple(), label='Registration Categories')
 
-    school_query_type = forms.ChoiceField(choices=(('all', 'Match any school'), ('name', 'Enter partial school name'), ('list', 'Select school[s] from list')), initial='all', widget=forms.RadioSelect(), label='School Query Type')
+    school_query_type = forms.ChoiceField(choices=(('all', 'Match any school'), ('name', 'Enter partial school name')), initial='all', widget=forms.RadioSelect(), label='School Query Type')
     school_name = forms.CharField(required=False, widget=forms.TextInput(), label='[Partial] School Name')
-    school_multisel = forms.MultipleChoiceField(required=False, choices=(), widget=forms.SelectMultiple(), label='School[s]', help_text='Hold down Ctrl to select more than one')
+    school_multisel = forms.MultipleChoiceField(required=False, choices=(), widget=forms.SelectMultiple(), label='School(s)', help_text='Hold down Ctrl to select more than one')
 
     zip_query_type = forms.ChoiceField(choices=(('all', 'Any Zip code'), ('exact', 'Exact match'), ('partial', 'Partial match'), ('distance', 'Distance from Zip code')), initial='all', widget=forms.RadioSelect(), label='Zip Code Query Type')
     zip_code = forms.CharField(required=False, widget=forms.TextInput())
@@ -249,8 +263,10 @@ class StatisticsQueryForm(forms.Form):
         self.fields['program_type'].choices = StatisticsQueryForm.get_program_type_choices()
         self.fields['program_instances'].choices = StatisticsQueryForm.get_program_instance_choices(self.fields['program_type'].choices[0][0])
 
-        #   This will be done later if they ask
-        #   self.fields['school_multisel'].choices = StatisticsQueryForm.get_school_choices()
+        school_choices = StatisticsQueryForm.get_school_choices()
+        if len(school_choices) > 0:
+            self.fields['school_query_type'].choices.append(('list', 'Select school(s) from list'))
+            self.fields['school_multisel'].choices = school_choices
 
     def clean(self):
         """ Check that either 'All Programs' is selected or a program is selected   """
@@ -327,7 +343,6 @@ class StatisticsQueryForm(forms.Form):
             if hasattr(self, 'initial'):
                 data.update(self.initial)
 
-
         #   Program selection
         if 'program_type_all' in data and data['program_type_all']:
             self.hide_field('program_type')
@@ -365,6 +380,20 @@ class StatisticsQueryForm(forms.Form):
         #   Limit queries
         if 'query' not in data or data['query'] not in ['zipcodes', 'heardabout', 'schools']:
             self.hide_field('limit')
+
+        if 'query' in data and data['query'] in ['teacher_reg', 'class_reg']:
+            #   Hide fields that don't apply to teachers
+            self.hide_field('student_reg_types')
+            self.hide_field('school_query_type')
+            self.hide_field('student_reg_type_all')
+            if 'teacher_reg_type_all' in data and data['teacher_reg_type_all']:
+                self.hide_field('teacher_reg_types')
+        else:
+            #   Hide fields that don't apply to students
+            self.hide_field('teacher_reg_types')
+            self.hide_field('teacher_reg_type_all')
+            if 'student_reg_type_all' in data and data['student_reg_type_all']:
+                self.hide_field('student_reg_types')
 
     @staticmethod
     def get_multiselect_fields():

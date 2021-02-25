@@ -29,8 +29,13 @@
       shared: true,
     },
     xAxis: {
+      {% if categories %}
+      type: 'category',
+      categories: {{ categories|safe }},
+      {% else %}
       type: 'datetime',
       minRange: 24 * 60 * 60 * 1000, // one day
+      {% endif %}
     },
     yAxis: [
       {% for axis in left_axis_data %}
@@ -58,11 +63,13 @@
           type: 'line',
           yAxis: {{ forloop.parentloop.counter0 }},
           name: '{{series.description}}',
+          {% if not categories %}
           pointInterval: 60 * 60 * 1000, // one hour
           pointStart: Date.UTC(
               {{first_hour.year}}, {{first_hour.month}} - 1,
               {{first_hour.day}}, {{first_hour.hour}}),
-          data: {{series.data}},
+          {% endif %}
+          data: {{series.data|safe}},
         },
         {% empty %}
         {
@@ -79,11 +86,13 @@
           type: 'line',
           yAxis: {{ forloop.parentloop.counter0 }} + left_axes,
           name: '{{series.description}}',
+          {% if not categories %}
           pointInterval: 60 * 60 * 1000, // one hour
           pointStart: Date.UTC(
               {{first_hour.year}}, {{first_hour.month}} - 1,
               {{first_hour.day}}, {{first_hour.hour}}),
-          data: {{series.data}},
+          {% endif %}
+          data: {{series.data|safe}},
         },
         {% empty %}
         {
