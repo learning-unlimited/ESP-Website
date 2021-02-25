@@ -50,6 +50,8 @@ body {
 
 #student_selector_area {
     position: relative;
+    height: 100px;
+    font-size: 1.1em;
 }
 
 #compact-classes-body td {
@@ -158,10 +160,6 @@ table.narrow {
 .section_hidden > input, .section_search_hidden > input,
 .section_conflict_hidden > input {
     display: none;
-}
-
-#student_selector_area {
-    height: 100px;
 }
 
 input #student_selector {

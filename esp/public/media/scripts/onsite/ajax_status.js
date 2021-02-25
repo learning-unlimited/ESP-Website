@@ -800,10 +800,10 @@ function setup_autocomplete()
             $j( "#student_selector" ).val( ui.item.label );
             return false;
         },
-    }).data("autocomplete")._renderItem = function (ul, item) {
+    }).data("ui-autocomplete")._renderItem = function (ul, item) {
         var listItem = $j("<li>")
                         .attr( "data-value", item.value )
-                        .append("<a href='#'>" + item.label + "</a>")
+                        .append("<div>" + item.label + "</div>")
                         .data("item.autocomplete", item);
 
         if(item.noProfile) {
