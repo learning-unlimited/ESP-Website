@@ -57,14 +57,17 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
         context = {'prog': prog, 'one': one, 'two': two}
         
         if request.GET.get('op') == 'edit':
+            # load selected line item type in form
             lineitem = LineItemType.objects.get(id=request.GET['id'])
             context['lineitem'] = lineitem
             context['lineitem_form'] = LineItemForm(instance = lineitem)
             context['option_formset'] = OptionFormset(queryset = lineitem.lineitemoptions_set.all(), prefix='options')
         elif request.GET.get('op') == 'delete':
+            # show delete confirmation page
             context['lineitem'] = LineItemType.objects.get(id=request.GET['id'])
-            #render some page for confirmation
+            return render_to_response(self.baseDir()+'lineitem_delete.html', request, context)
         elif request.GET.get('op') == 'import':
+            # show import confirmation page
             import_form = LineItemImportForm(request.POST, cur_prog = prog)
             if not import_form.is_valid():
                 context['import_lineitem_form'] = import_form
@@ -75,11 +78,12 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
                 return render_to_response(self.baseDir()+'lineitem_import.html', request, context)
         elif request.method == 'POST':
             if request.POST.get('command') == 'reallyremove':
+                # deletion confirmed
                 lineitem = LineItemType.objects.get(id=request.POST['id'])
                 lineitem.lineitemoptions_set.all().delete()
                 lineitem.delete()
             elif request.POST.get('command') == 'reallyimport':
-                #import 
+                # import confirmed
                 past_program = Program.objects.get(id=request.POST['program'])
                 past_lineitems = past_program.lineitemtype_set.exclude(text__in=["Sibling discount", "Program admission", "Financial aid grant", "Student payment"])
                 for past_lineitem in past_lineitems:
@@ -92,6 +96,7 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
                         old_option.lineitem_type = past_lineitem
                         old_option.save()
             elif request.POST.get('command') == 'addedit':
+                # addedit form submitted
                 if request.POST.get('id_lineitem'):
                     lineitem_form = LineItemForm(request.POST, instance = LineItemType.objects.get(id=request.POST['id_lineitem']))
                 else:
@@ -103,7 +108,7 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
                     lineitem.program = prog
                     lineitem.save()
                     for options_form in options_formset:
-                        # so that `book` instance can be attached.
+                        # save and attach each option to the line item
                         option = options_form.save(commit=False)
                         option.lineitem_type = lineitem
                         option.save()
