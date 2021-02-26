@@ -55,7 +55,7 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
     @needs_admin
     def lineitems(self, request, tl, one, two, module, extra, prog):
         context = {'prog': prog, 'one': one, 'two': two}
-        
+
         if request.GET.get('op') == 'edit':
             # load selected line item type in form
             lineitem = LineItemType.objects.get(id=request.GET['id'])
