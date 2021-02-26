@@ -18,20 +18,23 @@ Please select from the option below to continue.
 </p>
 
 <br />
-<strong>Your Options:</strong>
-<ul>
+<strong>Your Options:</strong><br>
+
+
+
+
 
 {% for module in modules %}
 {% if module.isStep %}
   {% if not module.useTemplate %}
-    <li>{% autoescape off %}{{ module.makeLink }}{% endautoescape %}</li>
+    {% autoescape off %}{{ module.makeButtonLink }}{% endautoescape %}<br>
   {% else %}
-    <li><em>{{ module.module.link_title }} (below)</em></li>
+    <<em>{{ module.module.link_title }} (below)</em><br>
   {% endif %}
 {% endif %}
 {% endfor %}
 
-</ul>
+
 
 
 <br />
