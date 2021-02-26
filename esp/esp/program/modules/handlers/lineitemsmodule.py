@@ -32,7 +32,6 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.accounting.controllers import ProgramAccountingController
 from esp.accounting.models import LineItemType, LineItemOptions
 from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call
