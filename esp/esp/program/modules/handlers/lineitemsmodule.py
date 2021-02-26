@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.accounting.controllers import ProgramAccountingController
 from esp.accounting.models import LineItemType, LineItemOptions
+from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call
 from esp.program.modules.forms.lineitems import OptionFormset, LineItemForm, LineItemImportForm
 from esp.utils.web import render_to_response
@@ -54,7 +55,6 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
     @needs_admin
     def lineitems(self, request, tl, one, two, module, extra, prog):
         context = {'prog': prog, 'one': one, 'two': two}
-        context['lineitems'] = prog.lineitemtype_set.exclude(text__in=["Sibling discount", "Program admission", "Financial aid grant", "Student payment"])# exclude ones that shouldn't be edited here
         
         if request.GET.get('op') == 'edit':
             lineitem = LineItemType.objects.get(id=request.GET['id'])
@@ -65,13 +65,32 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
             context['lineitem'] = LineItemType.objects.get(id=request.GET['id'])
             #render some page for confirmation
         elif request.GET.get('op') == 'import':
-            #show import page
-            pass
+            import_form = LineItemImportForm(request.POST, cur_prog = prog)
+            if not import_form.is_valid():
+                context['import_lineitem_form'] = import_form
+            else:
+                past_program = import_form.cleaned_data['program']
+                context['past_program'] = past_program
+                context['lineitems'] = past_program.lineitemtype_set.exclude(text__in=["Sibling discount", "Program admission", "Financial aid grant", "Student payment"])
+                return render_to_response(self.baseDir()+'lineitem_import.html', request, context)
         elif request.method == 'POST':
             if request.POST.get('command') == 'reallyremove':
                 lineitem = LineItemType.objects.get(id=request.POST['id'])
                 lineitem.lineitemoptions_set.all().delete()
                 lineitem.delete()
+            elif request.POST.get('command') == 'reallyimport':
+                #import 
+                past_program = Program.objects.get(id=request.POST['program'])
+                past_lineitems = past_program.lineitemtype_set.exclude(text__in=["Sibling discount", "Program admission", "Financial aid grant", "Student payment"])
+                for past_lineitem in past_lineitems:
+                    old_options = past_lineitem.lineitemoptions_set.all()
+                    past_lineitem.pk = None
+                    past_lineitem.program = prog
+                    past_lineitem.save()
+                    for old_option in old_options:
+                        old_option.pk = None
+                        old_option.lineitem_type = past_lineitem
+                        old_option.save()
             elif request.POST.get('command') == 'addedit':
                 if request.POST.get('id_lineitem'):
                     lineitem_form = LineItemForm(request.POST, instance = LineItemType.objects.get(id=request.POST['id_lineitem']))
@@ -95,7 +114,9 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
             context['lineitem_form'] = LineItemForm()
         if 'option_formset' not in context:
             context['option_formset'] = OptionFormset(queryset = LineItemOptions.objects.none(), prefix = "options")
-        context['import_lineitem_form'] = LineItemImportForm(cur_prog = prog)
+        if 'import_lineitem_form' not in context:
+            context['import_lineitem_form'] = LineItemImportForm(cur_prog = prog)
+        context['lineitems'] = prog.lineitemtype_set.exclude(text__in=["Sibling discount", "Program admission", "Financial aid grant", "Student payment"])# exclude ones that shouldn't be edited here
 
         return render_to_response(self.baseDir()+'lineitems.html', request, context)
 
