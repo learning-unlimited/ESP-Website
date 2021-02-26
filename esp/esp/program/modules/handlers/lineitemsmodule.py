@@ -54,21 +54,48 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
     @needs_admin
     def lineitems(self, request, tl, one, two, module, extra, prog):
         context = {'prog': prog, 'one': one, 'two': two}
-        context['lineitems'] = prog.lineitemtype_set.all() # exclude ones that shouldn't be edited here
-        context['option_formset'] = OptionFormset(queryset = LineItemOptions.objects.none(), prefix = "options")
-        context['lineitem_form'] = LineItemForm()
-        context['import_lineitem_form'] = LineItemImportForm(cur_prog = prog)
+        context['lineitems'] = prog.lineitemtype_set.exclude(text__in=["Sibling discount", "Program admission", "Financial aid grant", "Student payment"])# exclude ones that shouldn't be edited here
         
         if request.GET.get('op') == 'edit':
-            line_item = LineItemType.objects.get(id=request.GET['id'])
-            context['lineitem_form'] = LineItemForm(instance = line_item)
-            context['option_formset'] = OptionFormset(queryset = line_item.lineitemoptions_set.all(), prefix='options')
+            lineitem = LineItemType.objects.get(id=request.GET['id'])
+            context['lineitem'] = lineitem
+            context['lineitem_form'] = LineItemForm(instance = lineitem)
+            context['option_formset'] = OptionFormset(queryset = lineitem.lineitemoptions_set.all(), prefix='options')
         elif request.GET.get('op') == 'delete':
-            line_item = LineItemType.objects.get(id=request.GET['id'])
+            context['lineitem'] = LineItemType.objects.get(id=request.GET['id'])
             #render some page for confirmation
+        elif request.GET.get('op') == 'import':
+            #show import page
+            pass
         elif request.method == 'POST':
-            data = request.POST
-            #process submitted form
+            if request.POST.get('command') == 'reallyremove':
+                lineitem = LineItemType.objects.get(id=request.POST['id'])
+                lineitem.lineitemoptions_set.all().delete()
+                lineitem.delete()
+            elif request.POST.get('command') == 'addedit':
+                if request.POST.get('id_lineitem'):
+                    lineitem_form = LineItemForm(request.POST, instance = LineItemType.objects.get(id=request.POST['id_lineitem']))
+                else:
+                    lineitem_form = LineItemForm(request.POST)
+                options_formset = OptionFormset(request.POST, prefix='options')
+                if lineitem_form.is_valid() and options_formset.is_valid():
+                    # first save the line item, as its reference will be used for the line item options
+                    lineitem = lineitem_form.save(commit = False)
+                    lineitem.program = prog
+                    lineitem.save()
+                    for options_form in options_formset:
+                        # so that `book` instance can be attached.
+                        option = options_form.save(commit=False)
+                        option.lineitem_type = lineitem
+                        option.save()
+                else:
+                    context['lineitem_form'] = lineitem_form
+                    context['option_formset'] = options_formset
+        if 'lineitem_form' not in context:
+            context['lineitem_form'] = LineItemForm()
+        if 'option_formset' not in context:
+            context['option_formset'] = OptionFormset(queryset = LineItemOptions.objects.none(), prefix = "options")
+        context['import_lineitem_form'] = LineItemImportForm(cur_prog = prog)
 
         return render_to_response(self.baseDir()+'lineitems.html', request, context)
 
