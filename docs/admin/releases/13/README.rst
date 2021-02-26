@@ -40,6 +40,10 @@ Class management changes
 ~~~~~~~~~~~~~~~~~~~~~~~~
 - All of the section cancellation forms have been merged into a single form allowing admins to cancel multiple sections at once for the same reason.
 
+Statistics and data visualization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- New queries have been added to the /manage/statistics page, including multiprogram statistics on student and teacher registration. The results of these queries included graphs to visualize the change of various metrics across programs through time (e.g. # class-student-hours approved).
+
 Volunteer registration changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Help text is now shown for the comments field.
@@ -78,6 +82,7 @@ Minor new features
 - Timeslots for classrooms and floating resources on the resources page are no longer grouped if they occur <15 minutes apart.
 - Added a new tag `grade_increment_date` that allows admins to adjust when student grades increment (e.g. before or after a summer program).
 - Added a button to the scheduling checks page that, when clicked, causes all of the checks to refresh at some interval that is specified by the user.
+- Added links to usernames in the scheduler, financial aid approval module, and the manage events page.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -94,6 +99,10 @@ Minor bug fixes
 - Fixed the cutoff at the bottom of the manage programs page.
 - Fixed pluralizations and capitalizations in the admin pages.
 - Fixed an issue that had broken email "plain" redirects.
+- Fixed some error pages so that theme and admin toolbar content is rendered properly.
+- Fixed the top marin of the catalog sorted by category printable.
+- Fixed the teachers with limited availability scheduling check for cases where teachers somehow had no availability.
+- The subject of a comm panel email is now required, which prevents errors caused by sending comm panel emails without subjects.
 
 Development changes
 ===================
