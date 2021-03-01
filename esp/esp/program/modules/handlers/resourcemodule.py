@@ -633,7 +633,7 @@ class ResourceModule(ProgramModuleObj):
 
         #   Group contiguous blocks of time for the program
         time_options = self.program.getTimeSlots(types=['Class Time Block','Open Class Time Block'])
-        time_groups = Event.group_contiguous(list(time_options))
+        time_groups = Event.group_contiguous(list(time_options), int(Tag.getTag('availability_group_tolerance')))
 
         #   Retrieve remaining context information
         context['timeslots'] = [{'selections': group} for group in time_groups]

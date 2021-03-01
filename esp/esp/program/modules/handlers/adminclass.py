@@ -476,7 +476,7 @@ class AdminClass(ProgramModuleObj):
         if not Tag.getBooleanTag('availability_group_timeslots'):
             time_groups = [list(time_options)]
         else:
-            time_groups = Event.group_contiguous(list(time_options))
+            time_groups = Event.group_contiguous(list(time_options), int(Tag.getTag('availability_group_tolerance')))
 
         teachers = cls.get_teachers()
 
@@ -521,7 +521,7 @@ class AdminClass(ProgramModuleObj):
         context['unscheduled'] = unscheduled_sections
         context['conflict_found'] = conflict_found
         # this seems kinda hacky, but it's probably fine for now
-        context['is_overbooked'] = sum([sec.duration for sec in cls.get_sections()]) > sum([Event.total_length(events).seconds/3600.0 for events in Event.group_contiguous(viable_times)])
+        context['is_overbooked'] = sum([sec.duration for sec in cls.get_sections()]) > sum([Event.total_length(events).seconds/3600.0 for events in Event.group_contiguous(viable_times, int(Tag.getTag('timeblock_contiguous_tolerance')))])
         context['num_groups'] = len(context['groups'])
         context['program'] = prog
 

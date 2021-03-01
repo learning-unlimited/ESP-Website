@@ -736,7 +736,7 @@ class ClassSection(models.Model):
                 if k not in available_times:
                     available_times.append(k)
 
-        timeslots = Event.group_contiguous(available_times)
+        timeslots = Event.group_contiguous(available_times, int(Tag.getTag('timeblock_contiguous_tolerance')))
 
         viable_list = []
 
