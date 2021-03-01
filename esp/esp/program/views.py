@@ -785,6 +785,7 @@ def tags(request, section=""):
         form = TagSettingsForm(request.POST)
         if form.is_valid():
             form.save()
+            form = TagSettingsForm() # replace null responses with defaults if processed successfully
     else:
         form = TagSettingsForm()
 
