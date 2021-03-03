@@ -183,7 +183,7 @@ span {
     font-style: italic;
 }
 
-#messages, #category_controls, #settings_controls, #class_search_controls {
+#messages, #category_controls, #settings_controls, #class_search_controls, #sort_controls {
     text-align: left;
     background-color: #EEF3FF;
     border: 1px solid #99CCFF;

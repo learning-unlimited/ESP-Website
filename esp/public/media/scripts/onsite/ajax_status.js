@@ -23,7 +23,8 @@ var settings = {
     hide_past_time_blocks: false,
     hide_conflicting: false,
     search_term: "",
-    categories_to_display: {}
+    categories_to_display: {},
+    sort_setting: "length"
 };
 
 /*  Ajax status flags
@@ -162,6 +163,7 @@ function setup_settings()
     $j("#show_closed_reg").unbind("change");
     $j("#hide_past_time_blocks").unbind("change");
     $j("#hide_conflicting").unbind("change");
+    $j("#sort_control").unbind("change");
 
 
     //  Apply settings
@@ -174,6 +176,7 @@ function setup_settings()
     settings.show_closed_reg = $j("#show_closed_reg").prop("checked");
     settings.hide_past_time_blocks = $j("#hide_past_time_blocks").prop("checked");
     settings.hide_conflicting = $j("#hide_conflicting").prop("checked");
+    settings.sort_setting = $j("#sort_control").val();
 
     $j("#hide_full_control").change(handle_settings_change);
     $j("#override_control").change(handle_settings_change);
@@ -184,6 +187,7 @@ function setup_settings()
     $j("#show_closed_reg").change(handle_settings_change);
     $j("#hide_past_time_blocks").change(handle_settings_change);
     $j("#hide_conflicting").change(handle_settings_change);
+    $j("#sort_control").change(handle_settings_change);
 }
 
 function hide_sidebar()
@@ -898,6 +902,21 @@ function render_table(display_mode, student_id)
     //exclude the class if it started in the past (and we're not showing past timeblocks)
     if (settings.hide_past_time_blocks) {
         filtered_sections = filtered_sections.filter(sec_id => check_timeslots(sec_id));
+    }
+    
+    //sort the sections as desired
+    switch(settings.sort_setting) {
+        case "length":
+            break; //we've already sorted by this
+        case "class_id":
+            filtered_sections.sort((a, b) => data.sections[a].class_id - data.sections[b].class_id);
+            break;
+        case "category":
+            filtered_sections.sort((a, b) => (data.classes[data.sections[a].class_id].category__id > data.classes[data.sections[b].class_id].category__id) ? 1 : -1);
+            break;
+        case "fullness":
+            filtered_sections.sort((a, b) => data.sections[a].num_students_enrolled / data.sections[a].capacity - data.sections[b].num_students_enrolled / data.sections[b].capacity);
+            break;
     }
     
     for (var sec_id of filtered_sections)
