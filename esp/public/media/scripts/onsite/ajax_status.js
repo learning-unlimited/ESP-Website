@@ -912,7 +912,7 @@ function render_table(display_mode, student_id)
             filtered_sections.sort((a, b) => data.sections[a].class_id - data.sections[b].class_id);
             break;
         case "category":
-            filtered_sections.sort((a, b) => (data.classes[data.sections[a].class_id].category__id > data.classes[data.sections[b].class_id].category__id) ? 1 : -1);
+            filtered_sections.sort((a, b) => data.classes[data.sections[a].class_id].category__id - data.classes[data.sections[b].class_id].category__id);
             break;
         case "fullness":
             filtered_sections.sort((a, b) => data.sections[a].num_students_enrolled / data.sections[a].capacity - data.sections[b].num_students_enrolled / data.sections[b].capacity);
