@@ -192,14 +192,6 @@ class AvailabilityModule(ProgramModuleObj):
 
         #   Show new form
 
-        if not (len(available_slots) or blank): # I'm not sure whether or not we want the "or blank"
-            #   If they didn't enter anything, make everything checked by default.
-            available_slots = self.program.getTimeSlots(types=[self.event_type()])
-            #   The following 2 lines mark the teacher as always available.  This
-            #   is sometimes helpful, but not usually the desired behavior.
-            #   for a in available_slots:
-            #       teacher.addAvailableTime(self.program, a)
-
         context =   {
                         'groups': [
                             [
