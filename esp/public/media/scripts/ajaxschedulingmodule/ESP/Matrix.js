@@ -72,8 +72,8 @@ function Matrix(
     /**
      * Get the rooms satisfying the search criteria.
      */
-    this.filtered_rooms = function(allowScheduled){
-        var returned_rooms = [];
+    this.filteredRooms = function(){
+        var returnedRooms = [];
         $j.each(this.rooms, function(index, room) {
             var roomValid;
             // check every criterion in the room filter tab, short-circuiting if possible
@@ -89,18 +89,18 @@ function Matrix(
                 }
             }
             if (roomValid) {
-                returned_rooms.push(room);
+                returnedRooms.push(room);
             }
         }.bind(this));
-        return returned_rooms;
+        return returnedRooms;
     };
     
-    this.update = function(){
-        var filt_rooms = this.filtered_rooms()
+    this.updateRooms = function(){
+        var filtRooms = this.filteredRooms()
         $j.each(this.rooms, function(index, room) {
             // get rows to show or hide
             var rows = $j(".room[data-id='" + room.id + "']").parent();
-            if (filt_rooms.includes(room)) {
+            if (filtRooms.includes(room)) {
                 rows.css("display", "table-row");
             } else {
                 rows.css("display", "none");
@@ -111,6 +111,22 @@ function Matrix(
     this.sections = sections;
     this.sections.bindMatrix(this);
 
+    // Set up scheduling checks
+    this.updateCells = function(){
+        var filt_rooms = this.filteredRooms()
+        $j.each(this.cells, function(index, room) {
+            $j.each(room, function(index, cell) {
+                if(!cell.disabled && cell.section) cell.update();
+            })
+        });
+    };
+    
+    this.scheduling_check = "";
+    $j('input[type=radio][name=scheduling-checks]').change(function() {
+        this.scheduling_check = event.target.value;
+        this.updateCells();
+    }.bind(this));
+
     this.messagePanel = messagePanel;
     this.sectionInfoPanel = sectionInfoPanel;
     this.timeslotHeaders = {};
@@ -119,7 +135,7 @@ function Matrix(
      * Initialize the matrix
      */
     this.init = function(){
-        $j("body").on("room-filters-changed", this.update.bind(this));
+        $j("body").on("room-filters-changed", this.updateRooms.bind(this));
         // set up cells
         var matrix = this;
         this.cells = function(){

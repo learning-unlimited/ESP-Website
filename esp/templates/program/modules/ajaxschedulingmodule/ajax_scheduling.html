@@ -72,6 +72,7 @@
             <li><a href="#classes">Classes</a></li>
             <li><a href="#filters">Class Filters</a></li>
             <li><a href="#filters2">Room Filters</a></li>
+            <li><a href="#checks">Checks</a></li>
           </ul>
           <div id="side-panel-inner">
                 <div id="classes">
@@ -164,6 +165,31 @@
                     <div id="room-filter-name">
                         <label for="room-filter-name-text"><b>Name</b></label><br />
                         <input id="room-filter-name-text"></input>
+                    </div>
+                  </form>
+                </div>
+                <div id="checks">
+                  <form>
+                    <label for="scheduling-checks"><b>Scheduling Checks</b></label><br />
+                    <div id="scheduling-checks">
+                        <input type="radio" name="scheduling-checks" value="" checked></input> None
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="capacity"></input> Room Capacity Mismatch
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="unapproved"></input> Unapproved Classes
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="requests"></input> Unfulfilled Resource Requests
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="lunch"></input> Classes Scheduled Over Lunch
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="hungry"></input> Hungry Teachers
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="running"></input> Running Teachers
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="double_booked"></input> Double-Booked Teachers
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="unavailable"></input> Unavailable Teachers
+                        <br />
                     </div>
                   </form>
                 </div>

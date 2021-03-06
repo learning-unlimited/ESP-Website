@@ -14,8 +14,6 @@
  * @prop timeslot_id
  * @prop matrix
  * @prop disabled
- * @prop availableTimeslots: The timeslots that should be highlighted for the selected cell.
- *                           //TODO: Move availableTimeslots to Sections
  *
  * @method select()
  * @method unselect()
@@ -81,8 +79,14 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
             this.el.addClass("available-cell");
 
             if(this.ghostSection) {
-                this.el.css("background", this.cellColors.background(this.ghostSection));
-                this.el.css("color", this.cellColors.textColor(this.ghostSection));
+                var color = this.cellBackground(this.ghostSection);
+                if(this.ghostSection.flags.indexOf("Special scheduling needs") !== -1) {
+                    this.el.css("background", "linear-gradient(to bottom right, " + this.cellColors.specialColor + " 0%," +
+                        this.cellColors.RGBToString(color) + " 50%," + this.cellColors.specialColor + " 100%)");
+                } else {
+                    this.el.css("background", this.cellColors.RGBToString(color));
+                }
+                this.el.css("color", this.cellColors.textColor(color));
                 this.el.addClass("ghost-section");
                 this.el[0].innerHTML = this.ghostSection.emailcode;
             }
@@ -96,11 +100,173 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
             if(this.selected) {
                 this.el.addClass("selected-section");
             }
-            this.el.css("background", this.cellColors.background(this.section));
-            this.el.css("color", this.cellColors.textColor(this.section));
+            var color = this.cellBackground(this.section);
+            if(this.section.flags.indexOf("Special scheduling needs") !== -1) {
+                this.el.css("background", "linear-gradient(to bottom right, " + this.cellColors.specialColor + " 0%," +
+                    this.cellColors.RGBToString(color) + " 50%," + this.cellColors.specialColor + " 100%)");
+            } else {
+                this.el.css("background", this.cellColors.RGBToString(color));
+            }
+            this.el.css("color", this.cellColors.textColor(color));
             this.el.css("background-size", "cover");
             this.el[0].innerHTML = "<a href='#'>" + this.section.emailcode + "</a>";
         }
+    };
+
+    this.cellBackground = function(section) {
+        var grey = {r: 119, g: 119, b: 119};
+        var red = {r: 255, g: 0, b: 0};
+        // If this cell is in the directory, always color it normally
+        if(!this.room_id) return this.cellColors.color(section);
+        // If there is a ghostScheduleAssignment, use that
+        if(Object.keys(this.matrix.sections.ghostScheduleAssignment).length > 0){
+            var scheduleAssignment = this.matrix.sections.ghostScheduleAssignment;
+        } else {
+            var scheduleAssignment = this.matrix.sections.scheduleAssignments[section.id];
+        }
+        switch(this.matrix.scheduling_check) {
+            // Color cell based on which scheduling_check is selected
+            case "unapproved":
+                // Color sections that aren't approved
+                if(section.status > 0){
+                    return grey;
+                } else {
+                    return red;
+                }
+            case "capacity":
+                // Color cell based on how well room capacity matches section capacity
+                if(this.matrix.rooms[this.room_id].num_students < .5 * section.class_size_max) { // Class size is too big, make cell red
+                    return this.cellColors.HSLToRGB(0,100,50 + 50 * (this.matrix.rooms[this.room_id].num_students / section.class_size_max));
+                } else if(this.matrix.rooms[this.room_id].num_students > 1.5 * section.class_size_max) { // Class size is too small, make cell red
+                    return this.cellColors.HSLToRGB(0,100,50 + 50 * (section.class_size_max / this.matrix.rooms[this.room_id].num_students));
+                } else { // Class size is good, make cell green
+                    return this.cellColors.HSLToRGB(120,100,100 - 50 * (Math.min(section.class_size_max, this.matrix.rooms[this.room_id].num_students) / Math.max(section.class_size_max, this.matrix.rooms[this.room_id].num_students)));
+                }
+            case "lunch":
+                // Check if section overlaps with all lunch timeslots for a single day
+                for(day in this.matrix.timeslots.lunch_timeslots){
+                    var n_overlap = 0;
+                    var n_lunch = this.matrix.timeslots.lunch_timeslots[day].length;
+                    for(lunch_timeslot of this.matrix.timeslots.lunch_timeslots[day]){
+                        if(scheduleAssignment.timeslots.includes(lunch_timeslot.id)) n_overlap += 1;
+                    }
+                    if(n_overlap == n_lunch) return red;
+                }
+                return grey;
+            case "requests":
+                // Count how many resoure requests are not fulfilled by the room
+                var n_req = 0;
+                req_loop:
+                    for(req of section.resource_requests[section.id]){
+                        for(res of this.matrix.rooms[this.room_id].associated_resources){
+                            if(req[0].id == res.res_type_id && req[1] == res.value) continue req_loop;
+                        }
+                        n_req += 1;
+                        if(n_req == 5) break req_loop;
+                    }
+                if(n_req == 0) return grey;
+                return this.cellColors.HSLToRGB(0,100,100 - 10 * n_req); // Color red based on number of resource requests
+            case "hungry":
+                // If this section overlaps with lunch, count how many teachers are teaching other sections that overlap with the rest of the lunch time timeslots
+                var today = undefined;
+                var n_teachers = 0;
+                // Find which day, if any, of lunch constraints to worry about (we only care if this section overlaps with lunch at all)
+                day_loop:
+                    for(day in this.matrix.timeslots.lunch_timeslots){
+                        for(ts of this.matrix.timeslots.lunch_timeslots[day].map(x => x.id)){
+                            if(scheduleAssignment.timeslots.includes(ts)){
+                                today = day;
+                                break day_loop;
+                            }
+                        }
+                    }
+                if(today){
+                    // Figure out which teachers, if any, have sections that overlap with all of the lunch constraints for that day
+                    teacher_loop:
+                        for(teacher of section.teacher_data){
+                            var lunch_ids = this.matrix.timeslots.lunch_timeslots[today].map(x => x.id);
+                            // Address this section separately, since it might be a ghost section (and therefore not in sections.scheduleAssignments)
+                            for(ts of scheduleAssignment.timeslots){
+                                if(lunch_ids.includes(ts)){
+                                    lunch_ids.splice(lunch_ids.indexOf(ts), 1)
+                                }
+                                if(lunch_ids.length == 0){
+                                    n_teachers += 1;
+                                    continue teacher_loop;
+                                }
+                            }
+                            for(sec of teacher.sections){
+                                for(ts of this.matrix.sections.scheduleAssignments[sec].timeslots){
+                                    if(lunch_ids.includes(ts)){
+                                        lunch_ids.splice(lunch_ids.indexOf(ts), 1)
+                                    }
+                                    if(lunch_ids.length == 0){
+                                        n_teachers += 1;
+                                        continue teacher_loop;
+                                    }
+                                }
+                            }
+                        }
+                }
+                if(n_teachers == 0) return grey;
+                return this.cellColors.HSLToRGB(0,100,100 - 10 * n_teachers); // Color red based on number of teachers
+            case "double_booked":
+                // Count how many teachers are teaching other sections at the same time as this one
+                var n_teachers = 0;
+                teacher_loop:
+                    for(teacher of section.teacher_data){
+                        for(sec of teacher.sections){
+                            if(sec == section.id) continue;
+                            for(ts of this.matrix.sections.scheduleAssignments[sec].timeslots){
+                                if(scheduleAssignment.timeslots.includes(ts)){
+                                    n_teachers += 1;
+                                    continue teacher_loop;
+                                }
+                            }
+                        }
+                        if(n_teachers == 5) break teacher_loop;
+                    }
+                if(n_teachers == 0) return grey;
+                return this.cellColors.HSLToRGB(0,100,100 - 10 * n_teachers); // Color red based on number of teachers
+            case "running":
+                // Count how many teachers are teaching other sections immediately before or after this one in a different room
+                var n_teachers = 0;
+                teacher_loop:
+                    for(teacher of section.teacher_data){
+                        for(sec of teacher.sections){
+                            if(sec == section.id || this.matrix.sections.scheduleAssignments[sec].room_id == scheduleAssignment.room_id) continue;
+                            for(ts1 of this.matrix.sections.scheduleAssignments[sec].timeslots){
+                                for(ts2 of scheduleAssignment.timeslots){
+                                    if(ts1==ts2) continue;
+                                    if(this.matrix.timeslots.are_timeslots_contiguous([this.matrix.timeslots.get_by_id(ts1), this.matrix.timeslots.get_by_id(ts2)]) ||
+                                       this.matrix.timeslots.are_timeslots_contiguous([this.matrix.timeslots.get_by_id(ts2), this.matrix.timeslots.get_by_id(ts1)])){
+                                        n_teachers += 1;
+                                        continue teacher_loop;
+                                    }
+                                }
+                            }
+                        }
+                        if(n_teachers == 5) break teacher_loop;
+                    }
+                if(n_teachers == 0) return grey;
+                return this.cellColors.HSLToRGB(0,100,100 - 10 * n_teachers); // Color red based on number of teachers
+            case "unavailable":
+                // Count how many teachers are not available for some or all of this section
+                var n_teachers = 0;
+                teacher_loop:
+                    for(teacher of section.teacher_data){
+                        for(ts of scheduleAssignment.timeslots){
+                            if(!teacher.availability.includes(ts)){
+                                n_teachers += 1;
+                                continue teacher_loop;
+                            }
+                        }
+                        if(n_teachers == 5) break teacher_loop;
+                    }
+                if(n_teachers == 0) return grey;
+                return this.cellColors.HSLToRGB(0,100,100 - 10 * n_teachers); // Color red based on number of teachers
+        }
+        return this.cellColors.color(section); // Selected scheduling check isn't implemented or none is selected
     };
 
     /**
