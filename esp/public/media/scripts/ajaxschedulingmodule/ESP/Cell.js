@@ -144,10 +144,10 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 }
             case "lunch":
                 // Check if section overlaps with all lunch timeslots for a single day
-                for(day in this.matrix.timeslots.lunch_timeslots){
+                for(var day in this.matrix.timeslots.lunch_timeslots){
                     var n_overlap = 0;
                     var n_lunch = this.matrix.timeslots.lunch_timeslots[day].length;
-                    for(lunch_timeslot of this.matrix.timeslots.lunch_timeslots[day]){
+                    for(var lunch_timeslot of this.matrix.timeslots.lunch_timeslots[day]){
                         if(scheduleAssignment.timeslots.includes(lunch_timeslot.id)) n_overlap += 1;
                     }
                     if(n_overlap == n_lunch) return red;
@@ -157,8 +157,8 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 // Count how many resoure requests are not fulfilled by the room
                 var n_req = 0;
                 req_loop:
-                    for(req of section.resource_requests[section.id]){
-                        for(res of this.matrix.rooms[this.room_id].associated_resources){
+                    for(var req of section.resource_requests[section.id]){
+                        for(var res of this.matrix.rooms[this.room_id].associated_resources){
                             if(req[0].id == res.res_type_id && req[1] == res.value) continue req_loop;
                         }
                         n_req += 1;
@@ -172,8 +172,8 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 var n_teachers = 0;
                 // Find which day, if any, of lunch constraints to worry about (we only care if this section overlaps with lunch at all)
                 day_loop:
-                    for(day in this.matrix.timeslots.lunch_timeslots){
-                        for(ts of this.matrix.timeslots.lunch_timeslots[day].map(x => x.id)){
+                    for(var day in this.matrix.timeslots.lunch_timeslots){
+                        for(var ts of this.matrix.timeslots.lunch_timeslots[day].map(x => x.id)){
                             if(scheduleAssignment.timeslots.includes(ts)){
                                 today = day;
                                 break day_loop;
@@ -183,10 +183,10 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 if(today){
                     // Figure out which teachers, if any, have sections that overlap with all of the lunch constraints for that day
                     teacher_loop:
-                        for(teacher of section.teacher_data){
+                        for(var teacher of section.teacher_data){
                             var lunch_ids = this.matrix.timeslots.lunch_timeslots[today].map(x => x.id);
                             // Address this section separately, since it might be a ghost section (and therefore not in sections.scheduleAssignments)
-                            for(ts of scheduleAssignment.timeslots){
+                            for(var ts of scheduleAssignment.timeslots){
                                 if(lunch_ids.includes(ts)){
                                     lunch_ids.splice(lunch_ids.indexOf(ts), 1)
                                 }
@@ -195,8 +195,8 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                                     continue teacher_loop;
                                 }
                             }
-                            for(sec of teacher.sections){
-                                for(ts of this.matrix.sections.scheduleAssignments[sec].timeslots){
+                            for(var sec of teacher.sections){
+                                for(var ts of this.matrix.sections.scheduleAssignments[sec].timeslots){
                                     if(lunch_ids.includes(ts)){
                                         lunch_ids.splice(lunch_ids.indexOf(ts), 1)
                                     }
@@ -214,10 +214,10 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 // Count how many teachers are teaching other sections at the same time as this one
                 var n_teachers = 0;
                 teacher_loop:
-                    for(teacher of section.teacher_data){
-                        for(sec of teacher.sections){
+                    for(var teacher of section.teacher_data){
+                        for(var sec of teacher.sections){
                             if(sec == section.id) continue;
-                            for(ts of this.matrix.sections.scheduleAssignments[sec].timeslots){
+                            for(var ts of this.matrix.sections.scheduleAssignments[sec].timeslots){
                                 if(scheduleAssignment.timeslots.includes(ts)){
                                     n_teachers += 1;
                                     continue teacher_loop;
@@ -232,11 +232,11 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 // Count how many teachers are teaching other sections immediately before or after this one in a different room
                 var n_teachers = 0;
                 teacher_loop:
-                    for(teacher of section.teacher_data){
-                        for(sec of teacher.sections){
+                    for(var teacher of section.teacher_data){
+                        for(var sec of teacher.sections){
                             if(sec == section.id || this.matrix.sections.scheduleAssignments[sec].room_id == scheduleAssignment.room_id) continue;
-                            for(ts1 of this.matrix.sections.scheduleAssignments[sec].timeslots){
-                                for(ts2 of scheduleAssignment.timeslots){
+                            for(var ts1 of this.matrix.sections.scheduleAssignments[sec].timeslots){
+                                for(var ts2 of scheduleAssignment.timeslots){
                                     if(ts1==ts2) continue;
                                     if(this.matrix.timeslots.are_timeslots_contiguous([this.matrix.timeslots.get_by_id(ts1), this.matrix.timeslots.get_by_id(ts2)]) ||
                                        this.matrix.timeslots.are_timeslots_contiguous([this.matrix.timeslots.get_by_id(ts2), this.matrix.timeslots.get_by_id(ts1)])){
@@ -254,8 +254,8 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 // Count how many teachers are not available for some or all of this section
                 var n_teachers = 0;
                 teacher_loop:
-                    for(teacher of section.teacher_data){
-                        for(ts of scheduleAssignment.timeslots){
+                    for(var teacher of section.teacher_data){
+                        for(var ts of scheduleAssignment.timeslots){
                             if(!teacher.availability.includes(ts)){
                                 n_teachers += 1;
                                 continue teacher_loop;

@@ -113,7 +113,6 @@ function Matrix(
 
     // Set up scheduling checks
     this.updateCells = function(){
-        var filt_rooms = this.filteredRooms()
         $j.each(this.cells, function(index, room) {
             $j.each(room, function(index, cell) {
                 if(!cell.disabled && cell.section) cell.update();
