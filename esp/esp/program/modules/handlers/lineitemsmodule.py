@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from esp.accounting.models import LineItemType, LineItemOptions
 from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call
-from esp.program.modules.forms.lineitems import OptionFormset, LineItemForm, LineItemImportForm
+from esp.program.modules.forms.lineitems import OptionFormset, LineItemForm, LineItemImportForm, exclude_line_items
 from esp.utils.web import render_to_response
 
 class LineItemsModule(ProgramModuleObj, CoreModule):
@@ -73,7 +73,7 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
             else:
                 past_program = import_form.cleaned_data['program']
                 context['past_program'] = past_program
-                context['lineitems'] = past_program.lineitemtype_set.exclude(text__in=["Sibling discount", "Program admission", "Financial aid grant", "Student payment"])
+                context['lineitems'] = past_program.lineitemtype_set.exclude(text__in=exclude_line_items)
                 return render_to_response(self.baseDir()+'lineitem_import.html', request, context)
         elif request.method == 'POST':
             if request.POST.get('command') == 'reallyremove':
@@ -84,7 +84,7 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
             elif request.POST.get('command') == 'reallyimport':
                 # import confirmed
                 past_program = Program.objects.get(id=request.POST['program'])
-                past_lineitems = past_program.lineitemtype_set.exclude(text__in=["Sibling discount", "Program admission", "Financial aid grant", "Student payment"])
+                past_lineitems = past_program.lineitemtype_set.exclude(text__in=exclude_line_items)
                 for past_lineitem in past_lineitems:
                     old_options = past_lineitem.lineitemoptions_set.all()
                     past_lineitem.pk = None
@@ -120,7 +120,7 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
             context['option_formset'] = OptionFormset(queryset = LineItemOptions.objects.none(), prefix = "options")
         if 'import_lineitem_form' not in context:
             context['import_lineitem_form'] = LineItemImportForm(cur_prog = prog)
-        context['lineitems'] = prog.lineitemtype_set.exclude(text__in=["Sibling discount", "Program admission", "Financial aid grant", "Student payment"])# exclude ones that shouldn't be edited here
+        context['lineitems'] = prog.lineitemtype_set.exclude(text__in=exclude_line_items)# exclude ones that shouldn't be edited here
 
         return render_to_response(self.baseDir()+'lineitems.html', request, context)
 

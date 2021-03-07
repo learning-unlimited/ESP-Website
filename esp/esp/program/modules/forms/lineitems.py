@@ -3,6 +3,8 @@ from django import forms
 from esp.accounting.models import LineItemType, LineItemOptions
 from esp.program.models import Program
 
+exclude_line_items = ["Sibling discount", "Program admission", "Financial aid grant", "Student payment", "Donation to Learning Unlimited", "Saturday Lunch", "Sunday Lunch"]
+
 class LineItemForm(forms.ModelForm):
     class Meta:
         model = LineItemType
@@ -45,7 +47,7 @@ class LineItemImportForm(forms.Form):
     def __init__(self, *args, **kwargs):
         cur_prog = kwargs.pop('cur_prog', None)
         super(LineItemImportForm, self).__init__(*args, **kwargs)
-        progs = LineItemType.objects.exclude(text__in=["Sibling discount", "Program admission", "Financial aid grant", "Student payment"]).values_list('program', flat = True).distinct()
+        progs = LineItemType.objects.exclude(text__in=exclude_line_items).values_list('program', flat = True).distinct()
         qs = Program.objects.filter(id__in=progs)
         if cur_prog is not None:
             qs = qs.exclude(id=cur_prog.id)
