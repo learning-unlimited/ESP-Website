@@ -128,7 +128,7 @@ class AvailabilityModule(ProgramModuleObj):
         if not Tag.getBooleanTag('availability_group_timeslots'):
             time_groups = [list(time_options)]
         else:
-            time_groups = Event.group_contiguous(list(time_options), int(Tag.getTag('availability_group_tolerance')))
+            time_groups = Event.group_contiguous(list(time_options), int(Tag.getProgramTag('availability_group_tolerance', program = prog)))
 
         blank = False
 
