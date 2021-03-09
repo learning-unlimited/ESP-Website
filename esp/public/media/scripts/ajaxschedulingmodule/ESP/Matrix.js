@@ -177,9 +177,6 @@ function Matrix(
         var teaching_timeslots = timeslots[1];
         addClassToTimeslots(available_timeslots, "teacher-available-cell");
         addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
-        if(section.length<=1) {
-            return;
-        }
         $j.each(available_timeslots, function(j, timeslot_id) {
             var timeslot = this.timeslots.get_by_id(timeslot_id);
             $j.each(this.rooms, function(k, room) {
