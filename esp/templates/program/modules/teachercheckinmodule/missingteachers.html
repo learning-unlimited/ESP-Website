@@ -8,12 +8,17 @@
     <link rel='stylesheet' type='text/css' href='/media/styles/flags.css' />
     <link rel='stylesheet' type='text/css' href='/media/styles/assignments.css' />
     <link rel='stylesheet' type='text/css' href='/media/styles/missingteachers.css' />
+    <link rel='stylesheet' type='text/css' href='/media/styles/barcodescanner.css' />
+    <link rel="stylesheet" type='text/css' href="https://use.fontawesome.com/releases/v5.0.9/css/all.css">
 {% endblock %}
 
 {% block javascript %}
     {{ block.super }}
     <script src="/media/scripts/program/modules/flag-edit.js"></script>
     <script src="/media/scripts/onsite/assignment-edit.js"></script>
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/gh/serratus/quaggaJS@e96eb9f7888507689cf33f1e6ce325959dde314e/dist/quagga.min.js" type="text/javascript"></script>
+    <script src="/media/scripts/barcodescanner.js" type="text/javascript"></script>
     <script src="/media/scripts/onsite/teacher_checkin.js"></script>
 {% endblock %}
 
@@ -54,7 +59,21 @@
 <input type="checkbox" id="skip-semi-checked-in" {% if not text_configured %} disabled{% endif %}/> Skip teachers of classes with at least one checked-in teacher
 </div>
 
-<p style="text-align: center">
+<div class="controls">
+    <button type="button" class="scan"><i class="fas fa-barcode"></i>&ensp;Scan barcodes with your device</button>
+    <select style="display:none">
+        <option selected value="code_39_reader">Code 39</option>
+        <option value="codabar_reader">Codabar</option>
+        <option value="code_128_reader">Code 128</option>
+        <option value="i2of5_reader">Interleaved 2 of 5</option>
+    </select>
+</div>
+<div class="overlay overlay--inline">
+    <div class="overlay__content viewport" id="interactive">
+        <div id="scaninfo" class="scan_popup"></div>
+        <div class="overlay__close">X</div>
+    </div>
+</div>
 
 {% if missing_resources %}
 <table width="100%">
@@ -186,10 +205,10 @@
         <td class="checkin-column">
             {% if teacher.id not in arrived %}
             <span class="message"></span>
-            <input id="checkin_{{ teacher.username }}" name="{{ section.parent_class.emailcode }}: {{ section.title }}"
+            <input data-username="checkin_{{ teacher.username }}" name="{{ section.parent_class.emailcode }}: {{ section.title }}"
                    class="button checkin" type="button" value="Check In" {% if when %}disabled="disabled"{% endif %} /><span />
             {% else %}
-            <input id="uncheckin_{{ teacher.username }}" class="button uncheckin" type="button" value="Undo Check-In"
+            <input data-username="uncheckin_{{ teacher.username }}" class="button uncheckin" type="button" value="Undo Check-In"
                {% if when %}disabled="disabled"{% endif %} />
             {% endif %}
         </td>

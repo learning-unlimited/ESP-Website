@@ -135,12 +135,17 @@ class TeacherCheckinModule(ProgramModuleObj):
                               "%m/%d/%Y %H:%M".
         """
         json_data = {}
+        teachers = []
         if 'teacher' in request.POST:
             teachers = ESPUser.objects.filter(username=request.POST['teacher'])
+        elif 'teacherid' in request.POST:
+            teachers = ESPUser.objects.filter(id=request.POST['teacherid'])
+        if teachers:
             if not teachers.exists():
                 json_data['message'] = 'User not found!'
             else:
                 json_data['name'] = teachers[0].name()
+                json_data['username'] = teachers[0].username
                 when = None
                 if 'when' in request.POST:
                     try:
