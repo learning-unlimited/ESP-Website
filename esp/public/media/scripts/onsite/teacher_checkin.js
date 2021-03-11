@@ -338,31 +338,33 @@ $j(function(){
             lastResult = code;
             beep();
             checkInById(code, function(response) {
-                var username = response.username;
-                var tds = []
-                $j("[data-username=checkin_" + username +"]:not([disabled])").each(function() {
-                    var $me = $j(this);
-                    var $td = $j(this.parentNode);
-                    var $msg = $td.children('.message');
-                    var $txtbtn = $j(this).closest('tr').find('.text');
-                    
-                    $msg.text(response.message);
-                    $td.prev().prop('class', 'checked-in');
-                    $me.hide().prop('disabled', true);
-                    $txtbtn.prop('disabled', true);
-                    $txtbtn.attr("title","Teacher already checked-in");
-                    updateSelected(false);
+                if (response.username) {
+                    var username = response.username;
+                    var tds = []
+                    $j("[data-username=checkin_" + username +"]:not([disabled])").each(function() {
+                        var $me = $j(this);
+                        var $td = $j(this.parentNode);
+                        var $msg = $td.children('.message');
+                        var $txtbtn = $j(this).closest('tr').find('.text');
+                        
+                        $msg.text(response.message);
+                        $td.prev().prop('class', 'checked-in');
+                        $me.hide().prop('disabled', true);
+                        $txtbtn.prop('disabled', true);
+                        $txtbtn.attr("title","Teacher already checked-in");
+                        updateSelected(false);
 
-                    var $undoButton = $j(document.createElement('button'));
-                    $undoButton.prop('class', 'btn btn-default btn-mini undo-button');
-                    $undoButton.text('Undo');
-                    $undoButton.click(function () {
-                        undoLiveCheckIn(username);
+                        var $undoButton = $j(document.createElement('button'));
+                        $undoButton.prop('class', 'btn btn-default btn-mini undo-button');
+                        $undoButton.text('Undo');
+                        $undoButton.click(function () {
+                            undoLiveCheckIn(username);
+                        });
+                        $msg.append(' ', $undoButton);
+                        tds.push($td);
                     });
-                    $msg.append(' ', $undoButton);
-                    tds.push($td);
-                });
-                checkins.push({username: username, name: response.name, $tds: tds});
+                    checkins.push({username: username, name: response.name, $tds: tds});
+                }
                 $j('#scaninfo').show();
                 $j('#scaninfo').html(response.message);
                 setTimeout("$j('#scaninfo').fadeOut(); ", 4000);
