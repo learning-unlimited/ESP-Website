@@ -524,7 +524,11 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline('/Classes/Coteachers')
     def coteachers(self, request, tl, one, two, module, extra, prog):
-        if not 'clsid' in request.POST:
+        if 'clsid' in request.GET:
+            classes = ClassSubject.objects.filter(id = request.GET['clsid'])
+        elif 'clsid' in request.POST:
+            classes = ClassSubject.objects.filter(id = request.POST['clsid'])
+        else:
             return self.goToCore(tl) # just fails.
 
         if extra == 'nojs':
@@ -532,7 +536,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         else:
             ajax = True
 
-        classes = ClassSubject.objects.filter(id = request.POST['clsid'])
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
