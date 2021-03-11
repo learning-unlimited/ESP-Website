@@ -946,6 +946,22 @@ all_program_tags = {
         'category': 'teach',
         'is_setting': True,
     },
+    'availability_group_tolerance': {
+        'is_boolean': False,
+        'help_text': 'Time blocks must be less than this many minutes apart to be shown as contiguous for the availability module(s). This will not impact the calculation of possible class durations (see the "Timeblock contiguous tolerance" tag below).',
+        'default': '20',
+        'category': 'teach',
+        'is_setting': True,
+        'field': forms.IntegerField(min_value=0),
+    },
+    'timeblock_contiguous_tolerance': {
+        'is_boolean': False,
+        'help_text': 'Time blocks must be less than this many minutes apart to be considered contiguous for a single class.',
+        'default': '20',
+        'category': 'teach',
+        'is_setting': True,
+        'field': forms.IntegerField(min_value=0),
+    },
 }
 
 # Dictionary of categories that tags fall into (for grouping on the tag settings page)

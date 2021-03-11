@@ -117,7 +117,7 @@ class AvailabilityModule(ProgramModuleObj):
         #   Renders the teacher availability page and handles submissions of said page.
 
         if tl == "manage":
-            # They probably want to be check or edit someone's availability instead
+            # They probably want to check or edit someone's availability instead
             return HttpResponseRedirect( '/manage/%s/%s/edit_availability' % (one, two) )
         else:
             return self.availabilityForm(request, tl, one, two, prog, request.user, False)
@@ -128,7 +128,7 @@ class AvailabilityModule(ProgramModuleObj):
         if not Tag.getBooleanTag('availability_group_timeslots'):
             time_groups = [list(time_options)]
         else:
-            time_groups = Event.group_contiguous(list(time_options))
+            time_groups = Event.group_contiguous(list(time_options), int(Tag.getProgramTag('availability_group_tolerance', program = prog)))
 
         blank = False
 

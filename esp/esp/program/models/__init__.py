@@ -997,7 +997,7 @@ class Program(models.Model, CustomFormsLinkModel):
         from esp.program.modules.module_ext import ClassRegModuleInfo
         from decimal import Decimal
 
-        times = Event.group_contiguous(list(self.getTimeSlots()))
+        times = Event.group_contiguous(list(self.getTimeSlots()), int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = self)))
         crmi = self.classregmoduleinfo
         if crmi and crmi.class_max_duration is not None:
             max_seconds = crmi.class_max_duration * 60
