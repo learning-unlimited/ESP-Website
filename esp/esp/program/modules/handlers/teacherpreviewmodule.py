@@ -56,7 +56,7 @@ class TeacherPreviewModule(ProgramModuleObj):
             "choosable": 1,
             }
 
-    def teacherhandout(self, request, tl, one, two, module, extra, prog, template_file='teacherschedules.html'):
+    def teacherhandout(self, request, tl, one, two, module, extra, prog, template_file='teacherschedule.html'):
         #   Use the template defined in ProgramPrintables
         from esp.program.modules.handlers import ProgramPrintables
         context = {'module': self}
@@ -68,11 +68,16 @@ class TeacherPreviewModule(ProgramModuleObj):
             else:
                 teacher = request.user
             scheditems = []
-            for cls in teacher.getTaughtClasses().filter(parent_program = self.program):
-                if cls.isAccepted():
-                    for section in cls.sections.all():
-                        scheditems.append({'name': teacher.name(), 'teacher': teacher, 'cls': section})
-            scheditems.sort()
+            classes = [cls for cls in teacher.getTaughtSections()
+                    if cls.parent_program == self.program
+                    and cls.meeting_times.all().exists()
+                    and cls.resourceassignment_set.all().exists()
+                    and cls.status > 0]
+            classes.sort()
+            for cls in classes:
+                scheditems.append({'name': teacher.name(),
+                                   'teacher': teacher,
+                                   'cls' : cls})
             context['scheditems'] = scheditems
             return render_to_response(pmo.baseDir()+template_file, request, context)
         else:
