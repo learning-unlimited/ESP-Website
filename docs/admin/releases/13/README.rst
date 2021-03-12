@@ -90,9 +90,9 @@ Survey changes
 
 Printable changes
 ~~~~~~~~~~~~~~~~~
- - Changed individual teacher schedules (accessed from the userview page) to only show scheduled classes.
- - Fixed the top marin of the catalog sorted by category printable.
- - Fixed the completion certificate to now include the program email and name.
+- Changed individual teacher schedules (accessed from the userview page) to only show scheduled classes.
+- Fixed the top marin of the catalog sorted by category printable.
+- Fixed the completion certificate to now include the program email and name.
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
