@@ -114,3 +114,7 @@ input.not-found {
     padding-bottom: 20px;
     margin: auto;
 }
+
+#shortcuts-box .message {
+    color: red;
+}
