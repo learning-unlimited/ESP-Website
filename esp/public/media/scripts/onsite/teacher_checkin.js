@@ -108,10 +108,8 @@ $j(function(){
 
     $j(".checkin:enabled").click(function(){
         var username = $j(this).data("username").replace("checkin_", "");
-        var $me = $j(this);
         var $td = $j(this.parentNode);
         var $msg = $td.children('.message');
-        var $txtbtn = $j(this).closest('tr').find('.text');
         var tds = [$td]
         checkIn(username, function(response) {
             $j("[data-username=checkin_" + username +"]:not([disabled])").each(function() {
@@ -233,7 +231,6 @@ $j(function(){
         }
         username = targetCheckin.username;
         var $tds = targetCheckin.$tds;
-        var $txtbtn = $tds[0].closest('tr').find('.text');
         var $msg = $tds[0].children('.message');
         var $undoButton = $msg.children('.undo-button');
         $undoButton.text('Undoing...').prop('disabled', true);
@@ -364,7 +361,6 @@ $j(function(){
         lastLength = input.val().length;
     });
 
-    var message = '';
     var lastResult = '';
     Quagga.onDetected(function(result) {
         var code = result.codeResult.code;
