@@ -216,7 +216,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 teacher_loop:
                     for(var teacher of section.teacher_data){
                         for(var sec of teacher.sections){
-                            if(sec == section.id) continue;
+                            if(sec == section.id || !(sec in this.matrix.sections.scheduleAssignments[sec])) continue;
                             for(var ts of this.matrix.sections.scheduleAssignments[sec].timeslots){
                                 if(scheduleAssignment.timeslots.includes(ts)){
                                     n_teachers += 1;
@@ -234,7 +234,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 teacher_loop:
                     for(var teacher of section.teacher_data){
                         for(var sec of teacher.sections){
-                            if(sec == section.id || this.matrix.sections.scheduleAssignments[sec].room_id == scheduleAssignment.room_id) continue;
+                            if(sec == section.id || (sec in this.matrix.sections.scheduleAssignments[sec] && this.matrix.sections.scheduleAssignments[sec].room_id == scheduleAssignment.room_id)) continue;
                             for(var ts1 of this.matrix.sections.scheduleAssignments[sec].timeslots){
                                 for(var ts2 of scheduleAssignment.timeslots){
                                     if(ts1==ts2) continue;
