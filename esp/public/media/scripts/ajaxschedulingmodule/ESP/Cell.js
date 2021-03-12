@@ -211,7 +211,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 if(n_teachers == 0) return grey;
                 return this.cellColors.HSLToRGB(0,100,100 - 10 * n_teachers); // Color red based on number of teachers
             case "double_booked":
-                // Count how many teachers are teaching other sections at the same time as this one
+                // Count how many of the coteachers are teaching other sections at the same time as this one
                 var n_teachers = 0;
                 teacher_loop:
                     for(var teacher of section.teacher_data){
@@ -229,16 +229,16 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 if(n_teachers == 0) return grey;
                 return this.cellColors.HSLToRGB(0,100,100 - 10 * n_teachers); // Color red based on number of teachers
             case "running":
-                // Count how many teachers are teaching other sections immediately before or after this one in a different room
+                // Count how many of the coteachers are teaching other sections immediately before or after this one in a different room
                 var n_teachers = 0;
                 teacher_loop:
                     for(var teacher of section.teacher_data){
                         for(var sec of teacher.sections){
                             if(sec == section.id || !(sec in this.matrix.sections.scheduleAssignments)) continue;
-                            if(sec in this.matrix.sections.scheduleAssignments && this.matrix.sections.scheduleAssignments[sec].room_id == scheduleAssignment.room_id) continue;
+                            if(this.matrix.sections.scheduleAssignments[sec].room_id == scheduleAssignment.room_id) continue;
                             for(var ts1 of this.matrix.sections.scheduleAssignments[sec].timeslots){
+                                if(scheduleAssignment.timeslots.includes(ts1)) continue;
                                 for(var ts2 of scheduleAssignment.timeslots){
-                                    if(ts1==ts2) continue;
                                     if(this.matrix.timeslots.are_timeslots_contiguous([this.matrix.timeslots.get_by_id(ts1), this.matrix.timeslots.get_by_id(ts2)]) ||
                                        this.matrix.timeslots.are_timeslots_contiguous([this.matrix.timeslots.get_by_id(ts2), this.matrix.timeslots.get_by_id(ts1)])){
                                         n_teachers += 1;
