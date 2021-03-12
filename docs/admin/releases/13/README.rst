@@ -10,6 +10,9 @@ Changelog
 Program management changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 - When importing the settings from a previous program, class registration module info settings, student class registration module info settings, and tag settings are now copied to the new program. New programs based on previous programs should now function almost exactly like the previous programs.
+- Added new program tags to change the tolerance (in minutes) of contiguous blocks for the teacher availability page and for scheduling purposes.
+- Added custom widgets to many of the tag settings (preventing potentially site-breaking tag values).
+- Added a new tag `grade_increment_date` that allows admins to adjust when student grades increment (e.g. before or after a summer program).
 
 User search modules changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -35,6 +38,8 @@ Teacher registration changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Some modules will no longer show up in registration if they are not set up correctly (teacher availability, teacher training/interviews, and teacher quiz).
 - Implemented several improvements to the attendance interface (normal and webapp versions).
+- The default availability for the teacher availability form is now none (instead of all/full).
+- Added links on the class edit page to the coteachers and catalog preview pages.
 
 Class management changes
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -49,6 +54,15 @@ Volunteer registration changes
 - Help text is now shown for the comments field.
 - Required fields are now marked with asterisks.
 
+Scheduling changes
+~~~~~~~~~~~~~~~~~~
+- Added a button to the scheduling checks page that, when clicked, causes all of the checks to refresh at some interval that is specified by the user.
+- Fixed the alignment of the headers in the ajax scheduler when rooms have really long names.
+- Fixed the wrong class length scheduling check.
+- Fixed the "Mismatched rooms and meeting times" and "Classes not completely scheduled or with gaps" scheduling checks for classes with assigned floating resources.
+- Fixed the teachers with limited availability scheduling check for cases where teachers somehow had no availability.
+- Fixed the highlighting on the ajax scheduler for when a user is trying to schedule a single-block class on a day with a single lunch block.
+
 Onsite changes
 ~~~~~~~~~~~~~~
 - The search on the teacher check-in page now permits regular expressions and searches all parts of teacher name and class titles/codes.
@@ -56,6 +70,8 @@ Onsite changes
 - Added teacher lists to classes on the grid-based class changes interface. Also added teachers as a filterable field.
 - Fixed the "Hide past timeblocks" option in the grid-based class changes interface.
 - Added an attendance-through-time chart on the attendance landing page that shows the cumulative number of students that have checked in to the program and the number of students that are attending classes for each hour.
+- Fixed a page-breaking bug on the teacher check-in page (this was also patched on SR12).
+- Added sorting options to the grid-based class changes page (length of section, class ID, fullness, and category).
 
 Theme changes
 ~~~~~~~~~~~~~
@@ -72,16 +88,19 @@ Survey changes
 ~~~~~~~~~~~~~~
 - Survey results are now cached, which should result in much faster load times when viewing any survey result page.
 
+Printable changes
+~~~~~~~~~~~~~~~~~
+ - Changed individual teacher schedules (accessed from the userview page) to only show scheduled classes.
+ - Fixed the top marin of the catalog sorted by category printable.
+ - Fixed the completion certificate to now include the program email and name.
+
 Minor new features
 ~~~~~~~~~~~~~~~~~~
 - Added options to customize the amount of financial aid granted using the financial aid approval module.
-- Added custom widgets to many of the tag settings (preventing potentially site-breaking tag values).
 - Added a public view for emails that have been marked as public (this is a new option in the comm panel). Anonymous (not signed in) users can read a generic (no private information) version of an email at /email/<id> (actual links are on the email monitoring page and comm panel confirmation page).
 - The "choice" field for classroom furnishings and floating resources now accepts up to 200 characters.
 - Added a default FAQ page at /faq (/faq.html should also work).
 - Timeslots for classrooms and floating resources on the resources page are no longer grouped if they occur <15 minutes apart.
-- Added a new tag `grade_increment_date` that allows admins to adjust when student grades increment (e.g. before or after a summer program).
-- Added a button to the scheduling checks page that, when clicked, causes all of the checks to refresh at some interval that is specified by the user.
 - Added links to usernames in the scheduler, financial aid approval module, and the manage events page.
 
 Minor bug fixes
@@ -91,17 +110,12 @@ Minor bug fixes
 - Fixed a bug that had broken the credit card module.
 - Fixed a bug where students that had yet to fill out a profile would cause the phase zero management page to break. If such students are in the phase zero lottery, they are now reported on the management page.
 - Fixed a bug that reported an error when a class's duration was some whole number of hours.
-- Fixed the alignment of the headers in the scheduling app when rooms have really long names.
-- Fixed the wrong class length scheduling check.
 - Fixed the "lottery preferences" count on the student big board (was previously including enrollments).
-- Fixed the completion certificate to now include the program email and name.
 - Fixed elements that were supposed to be full width (e.g. surveys).
 - Fixed the cutoff at the bottom of the manage programs page.
 - Fixed pluralizations and capitalizations in the admin pages.
 - Fixed an issue that had broken email "plain" redirects.
 - Fixed some error pages so that theme and admin toolbar content is rendered properly.
-- Fixed the top marin of the catalog sorted by category printable.
-- Fixed the teachers with limited availability scheduling check for cases where teachers somehow had no availability.
 - The subject of a comm panel email is now required, which prevents errors caused by sending comm panel emails without subjects.
 
 Development changes
