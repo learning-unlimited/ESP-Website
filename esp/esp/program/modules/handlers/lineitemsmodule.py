@@ -96,21 +96,26 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
                         old_option.save()
             elif request.POST.get('command') == 'addedit':
                 # addedit form submitted
-                if request.POST.get('id_lineitem'):
+                if 'id_lineitem' in request.POST:
                     lineitem_form = LineItemForm(request.POST, instance = LineItemType.objects.get(id=request.POST['id_lineitem']))
                 else:
                     lineitem_form = LineItemForm(request.POST)
                 options_formset = OptionFormset(request.POST, prefix='options')
                 if lineitem_form.is_valid() and options_formset.is_valid():
-                    # first save the line item, as its reference will be used for the line item options
-                    lineitem = lineitem_form.save(commit = False)
-                    lineitem.program = prog
-                    lineitem.save()
-                    for options_form in options_formset:
-                        # save and attach each option to the line item
-                        option = options_form.save(commit=False)
-                        option.lineitem_type = lineitem
-                        option.save()
+                    if LineItemType.objects.filter(text = lineitem_form.cleaned_data['text'], program = prog).exists() and 'id_lineitem' not in request.POST:
+                        lineitem_form.add_error('text', 'A line item with that name already exists. Please choose another name.')
+                        context['lineitem_form'] = lineitem_form
+                        context['option_formset'] = options_formset
+                    else:
+                        # first save the line item, as its reference will be used for the line item options
+                        lineitem = lineitem_form.save(commit = False)
+                        lineitem.program = prog
+                        lineitem.save()
+                        for options_form in options_formset:
+                            # save and attach each option to the line item
+                            option = options_form.save(commit=False)
+                            option.lineitem_type = lineitem
+                            option.save()
                 else:
                     context['lineitem_form'] = lineitem_form
                     context['option_formset'] = options_formset
