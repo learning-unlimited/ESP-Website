@@ -167,7 +167,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 if(n_req == 0) return grey;
                 return this.cellColors.HSLToRGB(0,100,100 - 10 * n_req); // Color red based on number of resource requests
             case "hungry":
-                // If this section overlaps with lunch, count how many teachers are teaching other sections that overlap with the rest of the lunch time timeslots
+                // If this section overlaps with lunch, count how many of the coteachers are teaching other sections that overlap with the rest of the lunch time timeslots
                 var today = undefined;
                 var n_teachers = 0;
                 // Find which day, if any, of lunch constraints to worry about (we only care if this section overlaps with lunch at all)
@@ -181,7 +181,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                         }
                     }
                 if(today){
-                    // Figure out which teachers, if any, have sections that overlap with all of the lunch constraints for that day
+                    // Count how many of the coteachers have sections that overlap with all of the lunch constraints for that day
                     teacher_loop:
                         for(var teacher of section.teacher_data){
                             var lunch_ids = this.matrix.timeslots.lunch_timeslots[today].map(x => x.id);
