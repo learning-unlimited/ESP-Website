@@ -308,6 +308,8 @@ class ClassSection(models.Model):
 
     parent_class = AjaxForeignKey('ClassSubject', related_name='sections')
 
+    moderators = models.ManyToManyField(ESPUser, blank=True, related_name="moderators")
+
     registrations = models.ManyToManyField(ESPUser, through='StudentRegistration')
 
     @classmethod
@@ -369,6 +371,9 @@ class ClassSection(models.Model):
 
     def get_edit_absolute_url(self):
         return self.parent_class.get_edit_absolute_url()
+
+    def get_moderators(self):
+        return self.moderators.all()
 
     @cache_function
     def get_meeting_times(self):

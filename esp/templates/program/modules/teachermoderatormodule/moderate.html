@@ -1,0 +1,27 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Moderator Signup{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+<h2>Moderator Signup for {{program.niceName}} </h2>
+<br />
+{% load render_qsd %}
+{% inline_program_qsd_block program "teach:moderator_instructions" %}
+{{ prog.niceName }} will be on {{ prog.date_range }}! Please acknowledge that you are aware of this and commit to teaching at one of the times you have specified for your availability. You may not cancel your classes after student registration opens. In the case of extenuating circumstances like illness or serious emergency, you must notify the directors ASAP at <a href="mailto:{{ prog.director_email }}">{{ prog.director_email }}</a> and assist in finding a substitute for your classes. If you do not meet these expectations, it is unfair for the students who registered for your class and makes organization difficult for us. Note that not being responsible with respect to your classes will affect your ability to teach for us in the future.
+{% end_inline_program_qsd_block %}
+
+<div id="program_form">
+<form action="{{ request.path }}" method="post">
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
+{{ form }}
+<tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Submit" /></td></tr>
+<!--do some fun javascript to hide all fields but the checkbox unless the checkbox is checked, and if the checkbox is unchecked, wipe the other fields and set the timeslots to 0-->
+</table>
+</form>
+</div>
+{% endblock %}

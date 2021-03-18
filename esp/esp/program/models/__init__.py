@@ -2140,6 +2140,20 @@ class PhaseZeroRecord(models.Model):
         return ', '.join([user.username for user in self.user.all()])
     display_user.short_description = 'Username(s)'
 
+class ModeratorRecord(models.Model):
+    def __unicode__(self):
+        return str(self.id)
+
+    user = AjaxForeignKey(ESPUser)
+    program = models.ForeignKey(Program)
+    will_moderate = models.BooleanField(default = False)
+    num_slots = models.PositiveIntegerField(default = 0)
+    class_categories = models.ManyToManyField('ClassCategories', blank=True)
+    comments = models.TextField(blank=True, null=True)
+
+    class Meta:
+        app_label = 'program'
+
 class StudentRegistration(ExpirableModel):
     """
     Model relating a student with a class section (interest, priority,
