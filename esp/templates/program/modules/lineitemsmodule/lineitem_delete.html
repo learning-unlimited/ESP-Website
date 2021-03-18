@@ -1,0 +1,55 @@
+{% extends "main.html" %}
+
+{% block title %}Manage Line Items for {{ prog.niceName }}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/lineitems.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+
+<h1>Manage Line Items for {{ prog.niceName }}</h1>
+
+<h2>Confirm Line Item Deletion</h2>
+
+<p>
+You have chosen to delete the following line item. Please review the table below carefully before clicking "Delete" to complete the deletion.
+</p>
+
+<div id="program_form">
+<form method="post" action="/manage/{{ prog.url }}/lineitems">
+<input type="hidden" name="command" value="reallyremove" />
+<input type="hidden" name="id" value="{{ lineitem.id }}" />
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
+    <tr><th colspan="2">Line Item to Be Deleted</th></tr>
+    <tr><td colspan="2"><table cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+        <td class="underline"><b>Name</b></td>
+        <td class="underline"><b>Cost</b></td>
+        <td class="underline"><b>Required</b></td>
+        <td class="underline"><b>Max Quantity</b></td>
+        <td class="underline"><b>Options</b></td>
+    </tr>
+    <tr>
+        <td class="underline">{{ lineitem.text }}</td>
+        <td class="underline">{{ lineitem.amount_dec }}</td>
+        <td class="underline">{% if lineitem.required %}&#10003;{% endif %}</td>
+        <td class="underline">{{ lineitem.max_quantity }}</td>
+        <td class="underline">
+            <ol>
+            {% for opt in lineitem.lineitemoptions_set.all %}
+            <li>{{ opt.description }}: {{ opt.amount_dec }}{% if opt.is_custom %} (Custom){% endif %}</li>
+            {% endfor %}</td>
+            </ol>
+    </tr>
+    </table></td></tr>
+    <tr><td colspan="5" align="center"><input class="fancybutton" type="submit" value="Delete" /></td></tr>
+</table>
+</div>
+
+<br /><br />
+<button type="button" class="btn btn-primary" onclick="location.href = '/manage/{{ prog.url }}/lineitems';">Main Line Items Page</button>
+<br /><br />
+{% endblock %}
