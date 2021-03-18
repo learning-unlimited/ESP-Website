@@ -48,7 +48,7 @@ class ModeratorForm(forms.ModelForm):
         choices = [(0, 'Please select an option')] + [(num, num) for num in range(1, self.program.num_timeslots() + 1)]
         self.fields['num_slots'].choices = choices
         self.fields['num_slots'].widget.choices = choices
-        # specify help text/labels with tags?
+        # specify help text/labels with tags
 
     class Meta:
         model = ModeratorRecord

@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}{{program.niceName}} Moderator Signup{% endblock %}
+{% block title %}{{program.niceName}} {{ program.getModeratorTitle }} Signup{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-<h2>Moderator Signup for {{program.niceName}} </h2>
+<h2>{{ program.getModeratorTitle }} Signup for {{program.niceName}} </h2>
 <br />
 {% load render_qsd %}
 {% inline_program_qsd_block program "teach:moderator_instructions" %}

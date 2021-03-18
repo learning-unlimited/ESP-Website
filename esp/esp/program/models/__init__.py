@@ -1031,6 +1031,8 @@ class Program(models.Model, CustomFormsLinkModel):
         from esp.survey.models import Survey
         return Survey.objects.filter(program=self)
 
+    def getModeratorTitle(self):
+        return Tag.getProgramTag('moderator_title', program = self)
 
     def getLineItemTypes(self, user=None, required=True):
         from esp.accounting.controllers import ProgramAccountingController

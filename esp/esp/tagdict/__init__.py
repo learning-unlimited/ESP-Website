@@ -962,6 +962,13 @@ all_program_tags = {
         'is_setting': True,
         'field': forms.IntegerField(min_value=0),
     },
+    'moderator_title': {
+        'is_boolean': False,
+        'help_text': 'The name used to refer to a section moderator throughout the website.',
+        'default': 'Moderator',
+        'category': 'teach',
+        'is_setting': True,
+    },
 }
 
 # Dictionary of categories that tags fall into (for grouping on the tag settings page)

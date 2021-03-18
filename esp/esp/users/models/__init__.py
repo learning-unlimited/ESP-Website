@@ -400,6 +400,16 @@ class BaseESPUser(object):
     getTaughtClassesFromProgram.depend_on_row('program.ClassSubject', lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
 
     @cache_function
+    def getModeratingSectionsFromProgram(self, program):
+        from esp.program.models import Program # Need the Class object.
+        if not isinstance(program, Program): # if we did not receive a program
+            raise ESPError("getModeratingSectionsFromProgram expects a Program, not a `" + str(type(program)) + "'.")
+        else:
+            return self.moderating_sections.filter(parent_class__parent_program = program)
+    getModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
+    getModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
+
+    @cache_function
     def getTaughtClassesAll(self, include_rejected = False):
         if include_rejected:
             return self.classsubject_set.all()
