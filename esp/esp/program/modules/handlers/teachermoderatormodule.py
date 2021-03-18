@@ -9,8 +9,8 @@ class TeacherModeratorModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
-            "admin_title": "Moderator Module",
-            "link_title": "Moderator Module",
+            "admin_title": "Moderator Signup",
+            "link_title": "Moderator Signup",
             "module_type": "teach",
             "required": True,
             'seq': 2,
@@ -36,6 +36,7 @@ class TeacherModeratorModule(ProgramModuleObj):
                 modrec.user = request.user
                 modrec.program = prog
                 modrec.save()
+                form.save_m2m()
                 return self.goToCore(tl)
             else:
                 context['form'] = form
