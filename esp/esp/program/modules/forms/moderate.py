@@ -59,7 +59,7 @@ class ModeratorForm(forms.ModelForm):
         }
         help_texts = {
             'will_moderate': 'Would you like to moderate the classes of other teachers?',
-            'num_slots': 'How many timeslots would you like to moderate?',
+            'num_slots': 'How many timeslots can you moderate (we will use your teacher availability)?',
             'class_categories': 'Which categories of classes are you most interested in moderating?',
         }
         widgets = {
