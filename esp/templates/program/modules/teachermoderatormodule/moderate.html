@@ -5,6 +5,17 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <style>
+        #id_will_moderate {
+            margin: 0px;
+        }
+        #id_will_moderate + br {
+            display: none;
+        }
+        #id_will_moderate + br + span {
+            padding-left: 5px;
+        }
+    </style>
 {% endblock %}
 
 {% block xtrajs %}
