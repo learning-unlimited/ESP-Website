@@ -4,6 +4,14 @@ table,th,td
     border-collapse: collapse;
 }
 
+.moderator-cell{
+    height: 40px;
+    min-width: 80px;
+    max-width: 80px;
+    width: 80px;
+    text-align: center;
+}
+
 .matrix-cell{
     height: 40px;
     min-width: 80px;

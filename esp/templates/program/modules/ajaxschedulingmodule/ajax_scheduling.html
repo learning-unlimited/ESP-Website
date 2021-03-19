@@ -34,6 +34,7 @@
   var base_url = "{{ program.getUrlBase }}";
   var program_base_url = "/json/"+base_url+"/";
   var has_autoscheduler_frontend = "{{ has_autoscheduler_frontend }}";
+  var has_moderator_module = "{{ has_moderator_module }}";
 </script>
 
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
@@ -44,6 +45,7 @@
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Cell.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Sections.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Directory.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Moderators.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Matrix.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/MessagePanel.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/SectionCommentDialog.js"></script>
@@ -201,7 +203,7 @@
                 </div>
                 {% if has_moderator_module %}
                 <div id="moderators">
-                    <div id="moderator_directory"></div>
+                    <div id="moderator-directory"></div>
                 </div>
                 {% endif %}
           </div>

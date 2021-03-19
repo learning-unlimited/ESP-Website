@@ -165,4 +165,63 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         this.el.append(getContent(section));
     };
 
+    var getModeratorHeader = function(moderator) {
+        var header = $j("<div class='ui-widget-header'>")
+        header.append("Information for " + moderator.first_name + " " + moderator.last_name);
+        return header;
+    };
+
+    var getModeratorToolbar = function(moderator) {
+        var toolbar = $j("<div>");
+
+        var overrideCheckbox = $j("<input id='schedule-override' type='checkbox'></input>");
+        overrideCheckbox.prop('checked', this.override)
+            .change(function(box) {
+                var override = $j(box.target).prop("checked");
+                // Reload the moderator to update the availability
+                this.sections.unselectModerator(override);
+                this.sections.selectModerator(section);
+            }.bind(this)
+        );
+        toolbar.append(overrideCheckbox);
+        toolbar.append($j("<label for='schedule-override'>Override availability</label>"));
+
+        var baseURL = this.sections.getBaseUrlString();
+        var links =  $j(
+            "<br/><a target='_blank' href='" + baseURL +
+            "edit_availability?user=" + moderator.username +
+            "'>Edit Availability</a>" + " <a target='_blank' href='/manage/userview?username=" +
+            moderator.username + "'>Userview</a>");
+        toolbar.append(links);
+        return toolbar;
+
+    }.bind(this);
+
+    var getModeratorContent = function(moderator) {
+        var contentDiv = $j("<div class='ui-widget-content'></div>");
+
+        var content_parts = {};
+
+        content_parts['Will Moderate'] = (moderator.will_moderate)? "Yes" : "No";
+        content_parts['Number of Slots'] = moderator.num_slots;
+        content_parts['Class Categories'] = moderator.categories;
+        content_parts['Comments'] = moderator.comments;
+
+        for(var header in content_parts) {
+            var partDiv = $j('<div>');
+            partDiv.append('<b>' + header + ': </b>');
+            partDiv.append(content_parts[header]);
+            contentDiv.append(partDiv);
+        }
+
+        return contentDiv;
+    }.bind(this);
+
+    this.displayModerator = function(moderator) {
+        this.el[0].innerHTML = "";
+        this.show();
+        this.el.append(getModeratorHeader(moderator));
+        this.el.append(getModeratorToolbar(moderator));
+        this.el.append(getModeratorContent(moderator));
+    };
 }

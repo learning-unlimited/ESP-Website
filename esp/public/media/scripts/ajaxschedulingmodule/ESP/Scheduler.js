@@ -12,6 +12,7 @@
 function Scheduler(
     data,
     directoryEl,
+    moderatorEl,
     matrixEl,
     messageEl,
     sectionInfoEl,
@@ -86,6 +87,12 @@ function Scheduler(
                                    data.schedule_assignments,
                                    this.matrix);
 
+    if(has_moderator_module){
+        this.moderatorDirectory = new ModeratorDirectory(moderatorEl,
+                                                         data.moderators,
+                                                         this.matrix);
+    }
+
     this.changelogFetcher = new ChangelogFetcher(
         this.matrix,
         new ApiClient(),
@@ -123,6 +130,11 @@ function Scheduler(
         this.sections.selectSection(cell.section);
     }.bind(this));
 
+    $j("body").on("click", "td.moderator-cell > a", function(evt, ui) {
+        var moderatorCell = $j(evt.currentTarget.parentElement).data("moderatorCell");
+        this.moderatorDirectory.selectModerator(moderatorCell.moderator);
+    }.bind(this));
+
     $j("body").on("mouseleave click", "td.teacher-available-cell", function(evt, ui) {
         this.sections.unscheduleAsGhost();
     }.bind(this));
@@ -147,6 +159,7 @@ function Scheduler(
     // Render all the objects on the page
     this.render = function(){
         this.directory.render();
+        this.moderatorDirectory.render();
         this.matrix.render();
         this.changelogFetcher.pollForChanges(update_interval);
     };
