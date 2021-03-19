@@ -46,7 +46,7 @@ from django.http import Http404, HttpResponse
 from esp.cal.models import Event
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
-from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType, ClassFlag
+from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType, ClassFlag, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, no_auth, main_call, aux_call
 from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.program.modules.handlers.splashinfomodule import SplashInfoModule
@@ -113,6 +113,28 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         return {'rooms': classrooms_dicts}
     rooms.method.cached_function.depend_on_model('resources.Resource')
+
+    @aux_call
+    @json_response()
+    @needs_admin
+    @cached_module_view
+    def moderators(prog):
+        # Get any teacher that has either offered to moderate or is assigned as a moderator
+        moderators = ESPUser.objects.filter(Q(moderatorrecord__program=prog, moderatorrecord__will_moderate=True) | Q(moderating_sections__parent_class__parent_program=prog))
+        moderator_list = []
+        for m in moderators:
+            moderator_list.append({
+                'id': m.id,
+                'username': m.username,
+                'first_name': m.first_name,
+                'last_name': m.last_name,
+                'sections': [s.id for s in m.getModeratingSectionsFromProgram(prog)]
+            })
+        for m in moderator_list:
+            m['availability'] = [event.id for event in ESPUser.objects.get(id=m['id']).getAvailableTimes(prog, ignore_classes=True)]
+        return {'moderators': moderator_list}
+    moderators.method.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
+    moderators.method.cached_function.depend_on_model(ModeratorRecord)
 
     @aux_call
     @json_response()
@@ -227,6 +249,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             if catalog:
                 section['times'] = s.friendly_times_with_date()
                 section['capacity'] = s.capacity
+            section['moderators'] = [m.id for m in s.get_moderators()]
             class_teachers = s.parent_class.get_teachers()
             section['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:
@@ -249,6 +272,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         return {'sections': sections, 'teachers': teachers}
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
+    sections.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
     sections.cached_function.depend_on_row(ClassSubject, lambda subj: {'prog': subj.parent_program})
     sections.cached_function.depend_on_model(UserAvailability)
     # Put this import here rather than at the toplevel, because wildcard messes things up
@@ -264,6 +288,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def sections_admin(extra, prog):
         teacher_dict = {}
         teachers = []
+        moderator_dict = {}
+        moderators = []
         sections = []
         qs = prog.sections().prefetch_related(
             'parent_class__category',
@@ -300,6 +326,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             section['index'] = s.index()
             section['emailcode'] = s.emailcode()
             section['length'] = float(s.duration)
+            section['moderators'] = [m.id for m in s.get_moderators()]
             class_teachers = cls.get_teachers()
             section['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:

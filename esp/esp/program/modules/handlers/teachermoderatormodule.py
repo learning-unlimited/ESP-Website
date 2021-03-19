@@ -48,18 +48,21 @@ class TeacherModeratorModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'moderate.html', request, context)
 
     def teachers(self, QObject = False):
-        """ Returns a list of teachers who have signed up to moderate. """
-        from datetime import datetime
-        qo = Q(moderatorrecord__program=self.program, will_moderate=True)
+        """ Returns lists of teachers who have offered or are assigned to moderate. """
+        qw = Q(moderatorrecord__program=self.program, moderatorrecord__will_moderate=True)
+        qa = Q(moderating_sections__parent_class__parent_program=self.program)
         if QObject is True:
-            return {'moderator': qo}
+            return {'will_moderate': qw, 'assigned_moderator': qa}
 
-        teacher_list = ESPUser.objects.filter(qo).distinct()
+        offered_list = ESPUser.objects.filter(qw).distinct()
+        assigned_list = ESPUser.objects.filter(qa).distinct()
 
-        return {'moderator': teacher_list }
+        return {'will_moderate': offered_list,
+                'assigned_moderater': assigned_list}
 
     def teacherDesc(self):
-        return {'moderator': """Teachers who have also signed up to moderate"""}
+        return {'will_moderate': """Teachers who have also offered to moderate""",
+                'assigned_moderater': """Teachers who are assigned as moderators"""}
 
     class Meta:
         proxy = True

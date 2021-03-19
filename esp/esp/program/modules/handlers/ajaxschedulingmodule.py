@@ -86,8 +86,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         #actually return the page
         context = {
-            "has_autoscheduler_frontend":
-                prog.hasModule("AutoschedulerFrontendModule")}
+            "has_autoscheduler_frontend": prog.hasModule("AutoschedulerFrontendModule"),
+            "has_moderator_module": prog.hasModule("TeacherModeratorModule")
+            }
 
         return render_to_response(self.baseDir()+'ajax_scheduling.html', request, context)
 
