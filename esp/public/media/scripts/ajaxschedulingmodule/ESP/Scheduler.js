@@ -62,8 +62,16 @@ function Scheduler(
     this.sections = new Sections(data.sections,
                                  data.section_details,
                                  data.teachers,
+                                 data.moderators,
                                  data.schedule_assignments,
                                  new ApiClient());
+
+    if(has_moderator_module){
+        this.moderatorDirectory = new ModeratorDirectory(moderatorEl,
+                                                         data.moderators);
+    } else {
+        this.moderatorDirectory = null;
+    }
 
     this.messagePanel = new MessagePanel(messageEl,
                                          "Welcome to the Ajax Scheduler!");
@@ -79,19 +87,14 @@ function Scheduler(
         this.sections,
         matrixEl,
         this.messagePanel,
-        this.sectionInfoPanel
+        this.sectionInfoPanel,
+        this.moderatorDirectory
     );
 
     this.directory = new Directory(this.sections,
                                    directoryEl,
                                    data.schedule_assignments,
                                    this.matrix);
-
-    if(has_moderator_module){
-        this.moderatorDirectory = new ModeratorDirectory(moderatorEl,
-                                                         data.moderators,
-                                                         this.matrix);
-    }
 
     this.changelogFetcher = new ChangelogFetcher(
         this.matrix,

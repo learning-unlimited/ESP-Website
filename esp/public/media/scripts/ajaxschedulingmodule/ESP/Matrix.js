@@ -7,6 +7,7 @@
  * @param el: The element to morph into the matrix
  * @param messsagePanel: The panel that can display messages and errors
  * @param secionInfoPanel: The panel that displays section info
+ * @param moderatorDirectory: The interface for moderator scheduling
  */
 function Matrix(
         timeslots,
@@ -14,7 +15,8 @@ function Matrix(
         sections,
         el,
         messagePanel,
-        sectionInfoPanel
+        sectionInfoPanel,
+        moderatorDirectory
         ){
     this.el = el;
     this.el.id = "matrix-table";
@@ -110,6 +112,8 @@ function Matrix(
 
     this.sections = sections;
     this.sections.bindMatrix(this);
+    this.moderatorDirectory = moderatorDirectory;
+    this.moderatorDirectory.bindMatrix(this);
 
     // Set up scheduling checks
     this.updateCells = function(){

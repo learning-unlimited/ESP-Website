@@ -46,6 +46,15 @@ function ModeratorDirectory(el, moderators, matrix) {
     }
     this.init();
 
+    /**
+     * Bind a matrix to the sections to allow the scheduling methods to work
+     *
+     * @param matrix: The matrix to bind
+     */
+    this.bindMatrix = function(matrix) {
+        this.matrix = matrix;
+    }
+
     this.selectModerator = function(moderator) {
         if(this.selectedModerator) {
             if(this.selectedModerator === moderator) {

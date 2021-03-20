@@ -68,7 +68,7 @@ function ApiClient() {
             block_room_assignments: assignments,
             override: override
         };
-        return this.send_request(req, callback, errorReporter);
+        return this.send_request('ajax_schedule_class', req, callback, errorReporter);
     };
 
     /**
@@ -85,7 +85,47 @@ function ApiClient() {
             csrfmiddlewaretoken: csrf_token(),
             cls: section_id
         };
-        this.send_request(req, callback, errorReporter);
+        this.send_request('ajax_schedule_class', req, callback, errorReporter);
+    };
+
+    /**
+     * Assign a moderator to a section on the server.
+     *
+     * @param section_id: The ID of the section to which to assign a moderator.
+     * @param room_id: The ID of the moderator to assign.
+     * @param override: Should teacher/moderator availability be overriden?
+     * @param callback: If successful, this function will be called. Takes no params.
+     * @param errorReporter: If server reports an error, this function will be called.
+     *                       Takes one param msg with an error message.
+     */
+    this.assign_moderator = function(section_id, moderator_id, override, callback, errorReporter){
+        var req = {
+            action: 'assignmod',
+            csrfmiddlewaretoken: csrf_token(),
+            sec: section_id,
+            mod: moderator_id,
+            override: override
+        };
+        return this.send_request('ajax_assign_moderator', req, callback, errorReporter);
+    };
+
+    /**
+     * Unassign a moderator from a section on the server.
+     *
+     * @param section_id: The ID of the section from which to unassign the moderator
+     * @param moderator_id: The ID of the moderator to unassign from the section
+     * @param callback: If successful, this function will be called. Takes no params.
+     * @param errorReporter: If server reports an error, this function will be called.
+     *                       Takes one param msg with an error message.
+     */
+    this.unassign_moderator = function(section_id, moderator_id, callback, errorReporter){
+        var req = {
+            action: 'removemod',
+            csrfmiddlewaretoken: csrf_token(),
+            sec: section_id,
+            mod: moderator_id
+        };
+        this.send_request('ajax_assign_moderator', req, callback, errorReporter);
     };
 
     /**
@@ -96,8 +136,8 @@ function ApiClient() {
      * @param errorReporter: If server reports an error, this function will be called.
      *                       Takes one param msg with an error message.
      */
-    this.send_request = function(req, callback, errorReporter){
-        $j.post('ajax_schedule_class', req, "json")
+    this.send_request = function(fnc, req, callback, errorReporter){
+        $j.post(fnc, req, "json")
             .success(function(ajax_data, status) {
                 if (ajax_data.ret){
                     console.log("success");
@@ -110,7 +150,7 @@ function ApiClient() {
             })
             .error(function(ajax_data, status) {
                 console.log("error");
-                errorReporter("An error occurred saving the schedule change.");
+                errorReporter("An error occurred while attempting the requested change.");
             });
     };
 }

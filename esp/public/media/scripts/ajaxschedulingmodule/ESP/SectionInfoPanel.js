@@ -112,6 +112,15 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         return $j(teacher_links);
     };
 
+    var getModeratorLinks = function(section) {
+        var moderator_links_list = []
+            $j.each(section.moderator_data, function(index, moderator) {
+                moderator_links_list.push("<a target='_blank' href=/manage/userview?username=" + encodeURIComponent(moderator.username) + ">" + moderator.first_name + " " + moderator.last_name + "</a>");
+            });
+        var moderator_links = moderator_links_list.join(", ");
+        return $j(moderator_links);
+    };
+
     // The content to put on the panel
     var getContent = function(section) {
         var contentDiv = $j("<div class='ui-widget-content'></div>");
@@ -128,6 +137,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
 
         content_parts['Title'] = section.title;
         content_parts['Teachers'] = teacher_links;
+        if(has_moderator_module) content_parts[moderator_title + 's'] = getModeratorLinks(section);
         content_parts['Class size max'] = section.class_size_max;
         content_parts['Length'] = Math.ceil(section.length);
         content_parts['Grades'] = section.grade_min + "-" + section.grade_max;
@@ -179,8 +189,8 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
             .change(function(box) {
                 var override = $j(box.target).prop("checked");
                 // Reload the moderator to update the availability
-                this.sections.unselectModerator(override);
-                this.sections.selectModerator(section);
+                this.sections.matrix.moderatorDirectory.unselectModerator(override);
+                this.sections.matrix.moderatorDirectory.selectModerator(moderator);
             }.bind(this)
         );
         toolbar.append(overrideCheckbox);

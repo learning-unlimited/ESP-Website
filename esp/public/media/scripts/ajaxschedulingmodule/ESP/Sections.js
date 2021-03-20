@@ -8,7 +8,7 @@
  * @params scheduleAssignments: The scheule assignments
  * @params apiClient: The object that can communicate with the server
  */
-function Sections(sections_data, section_details_data, teacher_data, scheduleAssignments, apiClient) {
+function Sections(sections_data, section_details_data, teacher_data, moderator_data, scheduleAssignments, apiClient) {
     this.sections_data = sections_data;
     this.scheduleAssignments = scheduleAssignments;
     this.apiClient = apiClient;
@@ -120,6 +120,11 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
             section.teacher_data = []
             $j.each(section.teachers, function(index, teacher_id) {
                 section.teacher_data.push(teacher_data[teacher_id]);
+            });
+
+            section.moderator_data = []
+            $j.each(section.moderators, function(index, moderator_id) {
+                section.moderator_data.push(moderator_data[moderator_id]);
             });
 
             sectionDetails = section_details_data[section_id];
@@ -332,7 +337,15 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
             resource_names.push("<li>" + resource_array[0].name + ": " + resource_array[1] + "</li>");
         });
         return "<ul>" + resource_names.join(" ") + "</ul>";
+    };
 
+    this.getModeratorsString = function(section) {
+        var moderator_list = []
+            $j.each(section.moderator_data, function(index, moderator) {
+                moderator_list.push(moderator.first_name + " " + moderator.last_name);
+            });
+        var moderators = moderator_list.join(", ");
+        return moderators;
     };
 
     /**

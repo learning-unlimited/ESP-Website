@@ -524,7 +524,7 @@ class BaseESPUser(object):
             return ESPUser.objects.filter(Q_useroftype)
 
     @cache_function
-    def getAvailableTimes(self, program, ignore_classes=False):
+    def getAvailableTimes(self, program, ignore_classes=False, ignore_moderation=False):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
         from esp.cal.models import Event
@@ -539,9 +539,14 @@ class BaseESPUser(object):
         if not ignore_classes:
             #   Subtract out the times that they are already teaching.
             other_sections = self.getTaughtSections(program)
-
             other_times = [sec.meeting_times.values_list('id', flat=True) for sec in other_sections]
             for lst in other_times:
+                valid_events = valid_events.exclude(id__in=lst)
+        if not ignore_moderation:
+            #   Subtract out the times that they are moderating
+            moderating_sections = self.getModeratingSectionsFromProgram(program)
+            moderating_times = [sec.meeting_times.values_list('id', flat=True) for sec in moderating_sections]
+            for lst in moderating_times:
                 valid_events = valid_events.exclude(id__in=lst)
 
         return list(valid_events)
