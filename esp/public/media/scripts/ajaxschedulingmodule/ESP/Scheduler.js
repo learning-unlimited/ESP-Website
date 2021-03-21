@@ -154,9 +154,11 @@ function Scheduler(
         this.sections.unselectSection();
     }.bind(this));
 
-   $j("body").on("mouseenter", "td.teacher-available-cell", function(evt, ui) {
-        var cell = $j(evt.currentTarget).data("cell");
-        this.sections.scheduleAsGhost(cell.room_id, cell.timeslot_id);
+    $j("body").on("mouseenter", "td.teacher-available-cell", function(evt, ui) {
+        if(this.sections.selectedSection){
+            var cell = $j(evt.currentTarget).data("cell");
+            this.sections.scheduleAsGhost(cell.room_id, cell.timeslot_id);
+        }
     }.bind(this));
 
     // Render all the objects on the page

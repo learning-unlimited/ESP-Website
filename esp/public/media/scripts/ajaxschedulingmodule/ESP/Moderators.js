@@ -43,7 +43,7 @@ function ModeratorDirectory(el, moderators, matrix) {
     this.init = function(){
         // set up handlers
         $j("body").on("schedule-changed", this.render.bind(this));
-    }
+    };
     this.init();
 
     /**
@@ -53,9 +53,42 @@ function ModeratorDirectory(el, moderators, matrix) {
      */
     this.bindMatrix = function(matrix) {
         this.matrix = matrix;
-    }
+    };
+
+    this.getAvailableTimeslots = function(moderator) {
+        var availableTimeslots = [];
+        var already_teaching = [];
+        if(this.matrix.sectionInfoPanel.override){
+            $j.each(this.matrix.timeslots.timeslots, function(index, timeslot) {
+                availableTimeslots.push(timeslot.id);
+            }.bind(this));
+        } else {
+            var availableTimeslots = moderator.availability.slice();
+            availableTimeslots = availableTimeslots.filter(function(val) {
+                return this.matrix.timeslots.get_by_id(val);
+            }.bind(this));
+            // get when the moderator is teaching or moderating
+            var sections = Array.from(new Set(this.matrix.sections.teacher_data[moderator.id].sections.concat(moderator.sections)));
+            $j.each(sections, function(index, section_id) {
+                var assignment = this.matrix.sections.scheduleAssignments[section_id];
+                if(assignment) {
+                    $j.each(assignment.timeslots, function(index, timeslot_id) {
+                        var availability_index = availableTimeslots.indexOf(timeslot_id);
+                        if(availability_index >= 0) {
+                            availableTimeslots.splice(availability_index, 1);
+                            already_teaching.push(timeslot_id);
+                        }
+                    }.bind(this));
+                }
+            }.bind(this));
+        }
+        return [availableTimeslots, already_teaching];
+    };
 
     this.selectModerator = function(moderator) {
+        if(this.matrix.sections.selectedSection) {
+            this.matrix.sections.unselectSection();
+        }
         if(this.selectedModerator) {
             if(this.selectedModerator === moderator) {
                 this.unselectModerator();
@@ -76,8 +109,8 @@ function ModeratorDirectory(el, moderators, matrix) {
         // }
         this.selectedModerator = moderator;
         this.matrix.sectionInfoPanel.displayModerator(moderator);
-        //this.availableTimeslots = this.getAvailableTimeslots(section);
-        //this.matrix.highlightTimeslots(this.availableTimeslots, section);
+        this.availableTimeslots = this.getAvailableTimeslots(moderator);
+        this.matrix.highlightTimeslots(this.availableTimeslots, null);
     };
 
     this.unselectModerator = function(override = false) {
@@ -97,7 +130,7 @@ function ModeratorDirectory(el, moderators, matrix) {
         this.selectedModerator = null;
         this.matrix.sectionInfoPanel.hide();
         this.matrix.sectionInfoPanel.override = override;
-        //this.matrix.unhighlightTimeslots(this.availableTimeslots);
+        this.matrix.unhighlightTimeslots(this.availableTimeslots);
 
     };
 }

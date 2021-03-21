@@ -10,6 +10,7 @@
  */
 function Sections(sections_data, section_details_data, teacher_data, moderator_data, scheduleAssignments, apiClient) {
     this.sections_data = sections_data;
+    this.teacher_data = teacher_data;
     this.scheduleAssignments = scheduleAssignments;
     this.apiClient = apiClient;
 
@@ -221,6 +222,9 @@ function Sections(sections_data, section_details_data, teacher_data, moderator_d
      * @param section: The section to select
      */
     this.selectSection = function(section) {
+        if(this.matrix.moderatorDirectory.selectedModerator) {
+            this.matrix.moderatorDirectory.unselectModerator();
+        }
         if(this.selectedSection) {
             if(this.selectedSection === section) {
                 this.unselectSection();
@@ -243,8 +247,6 @@ function Sections(sections_data, section_details_data, teacher_data, moderator_d
         this.matrix.sectionInfoPanel.displaySection(section);
         this.availableTimeslots = this.getAvailableTimeslots(section);
         this.matrix.highlightTimeslots(this.availableTimeslots, section);
-
-
     };
 
     /**
@@ -270,7 +272,6 @@ function Sections(sections_data, section_details_data, teacher_data, moderator_d
         this.matrix.sectionInfoPanel.hide();
         this.matrix.sectionInfoPanel.override = override;
         this.matrix.unhighlightTimeslots(this.availableTimeslots);
-
     };
 
     /**

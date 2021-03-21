@@ -196,29 +196,31 @@ function Matrix(
         var teaching_timeslots = timeslots[1];
         addClassToTimeslots(available_timeslots, "teacher-available-cell");
         addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
-        $j.each(available_timeslots, function(j, timeslot_id) {
-            var timeslot = this.timeslots.get_by_id(timeslot_id);
-            $j.each(this.rooms, function(k, room) {
-                var cell = this.getCell(room.id, timeslot_id);
-                if(cell.el.hasClass("teacher-available-cell")) {
-                    var scheduleTimeslots = [timeslot.id];
-                    var notEnoughSlots = false;
-                    for(var i=1; i<section.length; i++) {
-                        var nextTimeslot = this.timeslots.get_by_order(timeslot.order+i);
-                        if(nextTimeslot) {
-                            scheduleTimeslots.push(nextTimeslot.id);
-                        } else {
-                            notEnoughSlots = true;
+        if(section){
+            $j.each(available_timeslots, function(j, timeslot_id) {
+                var timeslot = this.timeslots.get_by_id(timeslot_id);
+                $j.each(this.rooms, function(k, room) {
+                    var cell = this.getCell(room.id, timeslot_id);
+                    if(cell.el.hasClass("teacher-available-cell")) {
+                        var scheduleTimeslots = [timeslot.id];
+                        var notEnoughSlots = false;
+                        for(var i=1; i<section.length; i++) {
+                            var nextTimeslot = this.timeslots.get_by_order(timeslot.order+i);
+                            if(nextTimeslot) {
+                                scheduleTimeslots.push(nextTimeslot.id);
+                            } else {
+                                notEnoughSlots = true;
+                            }
+                        }
+                        if(notEnoughSlots ||
+                           !this.validateAssignment(section, room.id, scheduleTimeslots).valid) {
+                                    cell.el.removeClass("teacher-available-cell");
+                                    cell.el.addClass("teacher-available-not-first-cell");
                         }
                     }
-                    if(notEnoughSlots ||
-                       !this.validateAssignment(section, room.id, scheduleTimeslots).valid) {
-                                cell.el.removeClass("teacher-available-cell");
-                                cell.el.addClass("teacher-available-not-first-cell");
-                    }
-                }
+                }.bind(this));
             }.bind(this));
-        }.bind(this));
+        }
     }
 
     /**
