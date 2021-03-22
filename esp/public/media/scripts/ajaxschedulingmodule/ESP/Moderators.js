@@ -110,7 +110,7 @@ function ModeratorDirectory(el, moderators, matrix) {
         this.selectedModerator = moderator;
         this.matrix.sectionInfoPanel.displayModerator(moderator);
         this.availableTimeslots = this.getAvailableTimeslots(moderator);
-        this.matrix.highlightTimeslots(this.availableTimeslots, null);
+        this.matrix.highlightTimeslots(this.availableTimeslots, null, moderator);
     };
 
     this.unselectModerator = function(override = false) {

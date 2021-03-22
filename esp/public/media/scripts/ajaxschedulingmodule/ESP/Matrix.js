@@ -173,7 +173,7 @@ function Matrix(
      *                   The second is an array of timeslots where one or more
      *                   teachers are teaching, but would be available otherwise.
      */
-    this.highlightTimeslots = function(timeslots, section) {
+    this.highlightTimeslots = function(timeslots, section, moderator = null) {
         /**
          * Adds a class to all non-disabled cells corresponding to each
          * timeslot in timeslots.
@@ -181,12 +181,16 @@ function Matrix(
          * @param timeslots: A 1-d array of tiemslot IDs
          * @param className: The class to add to the cells
          */
-        addClassToTimeslots = function(timeslots, className) {
+        addClassToTimeslots = function(timeslots, className, moderator = null) {
             $j.each(timeslots, function(j, timeslot) {
                 this.timeslotHeaders[timeslot].addClass(className);
                 $j.each(this.rooms, function(k, room) {
                     var cell = this.getCell(room.id, timeslot);
-                    if(!cell.section && !cell.disabled) {
+                    if(moderator){
+                        if(cell.section && !cell.section.moderators.includes(moderator.id)) {
+                            cell.el.addClass(className);
+                        }
+                    } else if(!cell.section && !cell.disabled) {
                         cell.el.addClass(className);
                     }
                 }.bind(this));
@@ -194,8 +198,14 @@ function Matrix(
         }.bind(this);
         var available_timeslots = timeslots[0];
         var teaching_timeslots = timeslots[1];
-        addClassToTimeslots(available_timeslots, "teacher-available-cell");
-        addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
+        if(moderator){
+            addClassToTimeslots(available_timeslots, "moderator-available-cell", moderator);
+            addClassToTimeslots(teaching_timeslots, "moderator-teaching-cell", moderator);
+        } else {
+            addClassToTimeslots(available_timeslots, "teacher-available-cell");
+            addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
+        }
+        
         if(section){
             $j.each(available_timeslots, function(j, timeslot_id) {
                 var timeslot = this.timeslots.get_by_id(timeslot_id);
@@ -251,8 +261,8 @@ function Matrix(
 
         var available_timeslots = timeslots[0];
         var teaching_timeslots = timeslots[1];
-        removeClassFromTimeslots(available_timeslots, "teacher-available-cell teacher-available-not-first-cell");
-        removeClassFromTimeslots(teaching_timeslots, "teacher-teaching-cell");
+        removeClassFromTimeslots(available_timeslots, "teacher-available-cell teacher-available-not-first-cell moderator-available-cell");
+        removeClassFromTimeslots(teaching_timeslots, "teacher-teaching-cell moderator-teaching-cell");
     };
 
 
