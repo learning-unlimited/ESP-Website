@@ -131,7 +131,11 @@ function Scheduler(
     // set up handlers for selecting and scheduling classes
     $j("body").on("click", "td.matrix-cell > a", function(evt, ui) {
         var cell = $j(evt.currentTarget.parentElement).data("cell");
-        this.sections.selectSection(cell.section);
+        if(evt.ctrlKey || evt.metaKey) {
+            // assign moderator to this section
+        } else {
+            this.sections.selectSection(cell.section);
+        }
     }.bind(this));
 
     $j("body").on("click", "td.moderator-cell > a", function(evt, ui) {

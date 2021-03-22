@@ -223,6 +223,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
             partDiv.append(content_parts[header]);
             contentDiv.append(partDiv);
         }
+        contentDiv.append($j('<br><div><b>Click on a section while holding down "Ctrl"/"Cmd" to assign this moderator</b>'));
 
         return contentDiv;
     }.bind(this);

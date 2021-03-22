@@ -109,7 +109,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
             }
             this.el.css("color", this.cellColors.textColor(color));
             this.el.css("background-size", "cover");
-            this.el[0].innerHTML = "<a href='#'>" + this.section.emailcode + "</a>";
+            this.el[0].innerHTML = "<a>" + this.section.emailcode + "</a>";
         }
     };
 

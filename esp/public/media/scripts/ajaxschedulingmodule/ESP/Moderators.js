@@ -198,7 +198,7 @@ function ModeratorCell(el, moderator, matrix) {
         });
 
         this.el.addClass("moderator-cell");
-        this.el[0].innerHTML = "<a href='#'>" + this.moderator.id + "</a>";
+        this.el[0].innerHTML = "<a>" + this.moderator.id + "</a>";
     }
 
     this.tooltip = function(){
