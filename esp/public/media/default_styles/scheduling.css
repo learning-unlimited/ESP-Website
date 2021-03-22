@@ -61,13 +61,13 @@ table,th,td
     opacity: .9;
 }
 
-.moderator-available-cell {
+td.moderator-available-cell {
     background: #32cd32 !important;
     opacity: .9 !important;
     color: white !important;
 }
 
-.moderator-teaching-cell {
+td.moderator-teaching-cell {
     background-color: yellow !important;
     opacity: .9 !important;
     color: black !important;
