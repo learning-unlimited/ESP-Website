@@ -131,7 +131,60 @@ function ModeratorDirectory(el, moderators, matrix) {
         this.matrix.sectionInfoPanel.hide();
         this.matrix.sectionInfoPanel.override = override;
         this.matrix.unhighlightTimeslots(this.availableTimeslots);
+    };
 
+    this.assignModerator = function(section) {
+        var override = this.matrix.sectionInfoPanel.override;
+        this.matrix.sections.apiClient.assign_moderator(
+            section.id,
+            this.selectedModerator.id,
+            override,
+            function() {
+                // If successful, update moderator info
+                this.assignModeratorLocal(section);
+            }.bind(this),
+            function(msg) {
+                // If unsuccessful, report the error message
+                this.matrix.messagePanel.addMessage("Error: " + msg)
+                console.log(msg);
+            }.bind(this)
+        );
+        // Reset the availability override
+        this.matrix.sectionInfoPanel.override = false;
+    };
+
+    this.assignModeratorLocal = function(section) {
+        this.selectedModerator.sections.push(section.id);
+        section.moderators.push(this.selectedModerator.id);
+        section.moderator_data.push(this.selectedModerator);
+        $j("body").trigger("schedule-changed");
+        this.unselectModerator();
+    };
+
+    this.unassignModerator = function(section) {
+        this.matrix.sections.apiClient.unassign_moderator(
+            section.id,
+            this.selectedModerator.id,
+            function() {
+                // If successful, update moderator info
+                this.unassignModeratorLocal(section);
+            }.bind(this),
+            function(msg) {
+                // If unsuccessful, report the error message
+                this.matrix.messagePanel.addMessage("Error: " + msg)
+                console.log(msg);
+            }.bind(this)
+        );
+        // Reset the availability override
+        this.matrix.sectionInfoPanel.override = false;
+    };
+
+    this.unassignModeratorLocal = function(section) {
+        this.selectedModerator.sections.splice(this.selectedModerator.sections.indexOf(section.id), 1);
+        section.moderators.splice(section.moderators.indexOf(this.selectedModerator.id), 1);
+        section.moderator_data.splice(section.moderator_data.indexOf(this.selectedModerator), 1);
+        $j("body").trigger("schedule-changed");
+        this.unselectModerator();
     };
 }
 

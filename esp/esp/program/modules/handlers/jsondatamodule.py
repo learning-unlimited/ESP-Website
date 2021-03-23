@@ -124,17 +124,28 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         moderator_list = []
         for m in moderators:
             rec = ModeratorRecord.objects.filter(program=prog, user = m)
-            moderator_list.append({
+            mod_dict = {
                 'id': m.id,
                 'username': m.username,
                 'first_name': m.first_name,
                 'last_name': m.last_name,
                 'sections': [s.id for s in m.getModeratingSectionsFromProgram(prog)],
-                'will_moderate': rec[0].will_moderate if rec.exists() else False,
-                'num_slots': rec[0].num_slots if rec.exists() else 0,
-                'categories': [c.id for c in rec[0].class_categories.all()] if rec.exists else [],
-                'comments': rec[0].comments if rec.exists() else "",
-            })
+            }
+            if rec.exists():
+                mod_dict.update({
+                    'will_moderate': rec[0].will_moderate if rec.exists() else False,
+                    'num_slots': rec[0].num_slots if rec.exists() else 0,
+                    'categories': [c.id for c in rec[0].class_categories.all()] if rec.exists else [],
+                    'comments': rec[0].comments if rec.exists() else "",
+                })
+            else:
+                mod_dict.update({
+                    'will_moderate': False,
+                    'num_slots': 0,
+                    'categories': [],
+                    'comments': "",
+                })
+            moderator_list.append(mod_dict)
         for m in moderator_list:
             m['availability'] = [event.id for event in ESPUser.objects.get(id=m['id']).getAvailableTimes(prog, ignore_classes=True)]
         return {'moderators': moderator_list}
