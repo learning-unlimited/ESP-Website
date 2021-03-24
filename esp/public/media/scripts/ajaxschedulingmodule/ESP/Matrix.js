@@ -178,7 +178,7 @@ function Matrix(
          * Adds a class to all non-disabled cells corresponding to each
          * timeslot in timeslots.
          *
-         * @param timeslots: A 1-d array of tiemslot IDs
+         * @param timeslots: A 1-d array of timeslot IDs
          * @param className: The class to add to the cells
          */
         addClassToTimeslots = function(timeslots, className, moderator = null) {
@@ -186,11 +186,30 @@ function Matrix(
                 this.timeslotHeaders[timeslot].addClass(className);
                 $j.each(this.rooms, function(k, room) {
                     var cell = this.getCell(room.id, timeslot);
-                    if(moderator){
+                    if(moderator){ // If we are doing moderator availability, we want to highlight cells with sections
                         if(cell.section && !cell.section.moderators.includes(moderator.id)) {
                             cell.el.addClass(className);
                         }
-                    } else if(!cell.section && !cell.disabled) {
+                    } else if(!cell.section && !cell.disabled) { // If we're doing class availability, we want to highlight cells without sections
+                        cell.el.addClass(className);
+                    }
+                }.bind(this));
+            }.bind(this));
+        }.bind(this);
+        /**
+         * Adds a class to all non-disabled cells corresponding to each
+         * section in sections.
+         *
+         * @param sections: A 1-d array of section IDs
+         * @param className: The class to add to the cells
+         */
+        addClassToSections = function(sections, className) {
+            $j.each(sections, function(j, section) {
+                var assignments = this.sections.scheduleAssignments[section];
+                var roomID = assignments.room_id
+                $j.each(assignments.timeslots, function(k, timeslot) {
+                    var cell = this.getCell(roomID, timeslot);
+                    if(!cell.disabled) {
                         cell.el.addClass(className);
                     }
                 }.bind(this));
@@ -201,6 +220,8 @@ function Matrix(
         if(moderator){
             addClassToTimeslots(available_timeslots, "moderator-available-cell", moderator);
             addClassToTimeslots(teaching_timeslots, "moderator-teaching-cell", moderator);
+            addClassToTimeslots(Object.values(this.timeslots.timeslots).map(el => el.id).filter(el => !(available_timeslots.includes(el) || teaching_timeslots.includes(el))), "moderator-unavailable-cell", moderator);
+            addClassToSections(moderator.sections, "moderator-moderating-cell");
         } else {
             addClassToTimeslots(available_timeslots, "teacher-available-cell");
             addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
@@ -241,12 +262,12 @@ function Matrix(
      *                   The second is an array of timeslots where one or more
      *                   teachers are teaching, but would be available otherwise.
      */
-    this.unhighlightTimeslots = function(timeslots) {
+    this.unhighlightTimeslots = function(timeslots, moderator = null) {
         /**
          * Removes a class from all non-disabled cells corresponding to each
          * timeslot in timeslots.
          *
-         * @param timeslots: A 1-d array of tiemslot IDs
+         * @param timeslots: A 1-d array of timeslot IDs
          * @param className: The class to remove from the cells
          */
         removeClassFromTimeslots = function(timeslots, className) {
@@ -258,11 +279,37 @@ function Matrix(
                 }.bind(this));
             }.bind(this));
         }.bind(this);
+        /**
+         * Removes a class from all non-disabled cells corresponding to each
+         * section in sections.
+         *
+         * @param sections: A 1-d array of section IDs
+         * @param className: The class to remove from the cells
+         */
+        removeClassFromSections = function(sections, className) {
+            $j.each(sections, function(j, section) {
+                var assignments = this.sections.scheduleAssignments[section];
+                var roomID = assignments.room_id
+                $j.each(assignments.timeslots, function(k, timeslot) {
+                    var cell = this.getCell(roomID, timeslot);
+                    if(!cell.disabled) {
+                        cell.el.removeClass(className);
+                    }
+                }.bind(this));
+            }.bind(this));
+        }.bind(this);
 
         var available_timeslots = timeslots[0];
         var teaching_timeslots = timeslots[1];
-        removeClassFromTimeslots(available_timeslots, "teacher-available-cell teacher-available-not-first-cell moderator-available-cell");
-        removeClassFromTimeslots(teaching_timeslots, "teacher-teaching-cell moderator-teaching-cell");
+        if(moderator) {
+            removeClassFromTimeslots(available_timeslots, "moderator-available-cell");
+            removeClassFromTimeslots(teaching_timeslots, "moderator-teaching-cell");
+            removeClassFromTimeslots(Object.values(this.timeslots.timeslots).map(el => el.id).filter(el => !(available_timeslots.includes(el) || teaching_timeslots.includes(el))), "moderator-unavailable-cell");
+            removeClassFromSections(moderator.sections, "moderator-moderating-cell");
+        } else {
+            removeClassFromTimeslots(available_timeslots, "teacher-available-cell teacher-available-not-first-cell");
+            removeClassFromTimeslots(teaching_timeslots, "teacher-teaching-cell");
+        }
     };
 
 

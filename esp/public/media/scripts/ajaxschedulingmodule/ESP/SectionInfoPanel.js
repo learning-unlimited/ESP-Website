@@ -115,7 +115,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
     var getModeratorLinks = function(section) {
         var moderator_links_list = []
             $j.each(section.moderator_data, function(index, moderator) {
-                moderator_links_list.push("<a target='_blank' href=/manage/userview?username=" + encodeURIComponent(moderator.username) + ">" + moderator.first_name + " " + moderator.last_name + "</a>");
+                moderator_links_list.push("<a href='#' class='moderator-link' data-moderator='" + moderator.id + "'>" + moderator.first_name + " " + moderator.last_name + "</a>");
             });
         var moderator_links = moderator_links_list.join(", ");
         return $j(moderator_links);

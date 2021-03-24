@@ -72,9 +72,21 @@ td.moderator-available-cell {
 }
 
 td.moderator-teaching-cell {
-    background-color: yellow !important;
+    background: yellow !important;
     opacity: .9 !important;
     color: black !important;
+}
+
+td.moderator-moderating-cell {
+    background: #42b3f4 !important;
+    opacity: .9 !important;
+    color: black !important;
+}
+
+td.moderator-unavailable-cell {
+    background: grey !important;
+    opacity: .9 !important;
+    color: white !important;
 }
 
 td .selected-section {

@@ -146,6 +146,11 @@ function Scheduler(
         var moderatorCell = $j(evt.currentTarget.parentElement).data("moderatorCell");
         this.moderatorDirectory.selectModerator(moderatorCell.moderator);
     }.bind(this));
+    
+    $j("body").on("click", "a.moderator-link", function(evt, ui) {
+        var modID = $j(evt.currentTarget).data("moderator");
+        this.moderatorDirectory.selectModerator(this.moderatorDirectory.moderators[modID]);
+    }.bind(this));
 
     $j("body").on("mouseleave click", "td.teacher-available-cell", function(evt, ui) {
         this.sections.unscheduleAsGhost();

@@ -127,10 +127,10 @@ function ModeratorDirectory(el, moderators, matrix) {
             // this.selectedSection.directoryCell.unselect();
         // }
 
-        this.selectedModerator = null;
         this.matrix.sectionInfoPanel.hide();
         this.matrix.sectionInfoPanel.override = override;
-        this.matrix.unhighlightTimeslots(this.availableTimeslots);
+        this.matrix.unhighlightTimeslots(this.availableTimeslots, this.selectedModerator);
+        this.selectedModerator = null;
     };
 
     this.assignModerator = function(section) {
@@ -154,11 +154,12 @@ function ModeratorDirectory(el, moderators, matrix) {
     };
 
     this.assignModeratorLocal = function(section) {
-        this.selectedModerator.sections.push(section.id);
-        section.moderators.push(this.selectedModerator.id);
-        section.moderator_data.push(this.selectedModerator);
-        $j("body").trigger("schedule-changed");
+        moderator = this.selectedModerator;
         this.unselectModerator();
+        moderator.sections.push(section.id);
+        section.moderators.push(moderator.id);
+        section.moderator_data.push(moderator);
+        $j("body").trigger("schedule-changed");
     };
 
     this.unassignModerator = function(section) {
@@ -180,11 +181,12 @@ function ModeratorDirectory(el, moderators, matrix) {
     };
 
     this.unassignModeratorLocal = function(section) {
-        this.selectedModerator.sections.splice(this.selectedModerator.sections.indexOf(section.id), 1);
-        section.moderators.splice(section.moderators.indexOf(this.selectedModerator.id), 1);
-        section.moderator_data.splice(section.moderator_data.indexOf(this.selectedModerator), 1);
-        $j("body").trigger("schedule-changed");
+        moderator = this.selectedModerator;
         this.unselectModerator();
+        moderator.sections.splice(moderator.sections.indexOf(section.id), 1);
+        section.moderators.splice(section.moderators.indexOf(moderator), 1);
+        section.moderator_data.splice(section.moderator_data.indexOf(moderator), 1);
+        $j("body").trigger("schedule-changed");
     };
 }
 
