@@ -61,6 +61,7 @@ function Scheduler(
 
     this.sections = new Sections(data.sections,
                                  data.section_details,
+                                 data.categories,
                                  data.teachers,
                                  data.moderators,
                                  data.schedule_assignments,
@@ -84,6 +85,7 @@ function Scheduler(
     this.matrix = new Matrix(
         this.timeslots,
         this.rooms,
+        data.categories,
         this.sections,
         matrixEl,
         this.messagePanel,

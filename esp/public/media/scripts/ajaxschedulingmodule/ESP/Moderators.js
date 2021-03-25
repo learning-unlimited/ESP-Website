@@ -260,7 +260,7 @@ function ModeratorCell(el, moderator, matrix) {
         var tooltip_parts = {};
         tooltip_parts['Will Moderate'] = (this.moderator.will_moderate)? "Yes" : "No";
         tooltip_parts['Number of Slots'] = this.moderator.num_slots;
-        tooltip_parts['Class Categories'] = this.moderator.categories;
+        tooltip_parts['Class Categories'] = this.moderator.categories.map(cat => this.matrix.categories[cat].name).join(', ');
         tooltip_parts['Comments'] = this.moderator.comments;
 
         var tooltipText = "<b>" + this.moderator.first_name + " " + this.moderator.last_name + "</b>";

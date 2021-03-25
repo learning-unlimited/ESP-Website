@@ -8,8 +8,9 @@
  * @params scheduleAssignments: The scheule assignments
  * @params apiClient: The object that can communicate with the server
  */
-function Sections(sections_data, section_details_data, teacher_data, moderator_data, scheduleAssignments, apiClient) {
+function Sections(sections_data, section_details_data, categories_data, teacher_data, moderator_data, scheduleAssignments, apiClient) {
     this.sections_data = sections_data;
+    this.categories_data = categories_data;
     this.teacher_data = teacher_data;
     this.scheduleAssignments = scheduleAssignments;
     this.apiClient = apiClient;

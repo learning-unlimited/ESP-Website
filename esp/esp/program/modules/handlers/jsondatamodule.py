@@ -156,6 +156,26 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @json_response()
     @no_auth
     @cached_module_view
+    def categories(prog):
+        categories = prog.class_categories.all()
+        if len(categories) == 0:
+            categories = ClassCategories.objects.filter(program__isnull=True)
+
+        categories_dicts = [
+            {
+                'id': cat.id,
+                'name': cat.category,
+                'symbol': cat.symbol,
+            }
+            for cat in categories ]
+
+        return {'categories': categories_dicts}
+    categories.cached_function.depend_on_m2m(Program, 'class_categories', lambda prog, cat: {'prog': prog})
+
+    @aux_call
+    @json_response()
+    @no_auth
+    @cached_module_view
     def resource_types(prog):
         res_types = prog.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes'))
         if len(res_types) == 0:

@@ -12,6 +12,7 @@
 function Matrix(
         timeslots,
         rooms,
+        categories,
         sections,
         el,
         messagePanel,
@@ -22,6 +23,7 @@ function Matrix(
     this.el.id = "matrix-table";
 
     this.timeslots = timeslots;
+    this.categories = categories;
     this.rooms = rooms;
     
     // Set up filtering

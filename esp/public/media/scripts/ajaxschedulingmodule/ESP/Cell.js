@@ -290,7 +290,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
      * Create data for the tooltip
      *
      * Note: This has to be bound to the cell for the tooltip jquery function to
-     *       work. It would be nice if this was in Sectinos instead.
+     *       work. It would be nice if this was in Sections instead.
      */
     this.tooltip = function(){
         var tooltip_parts = {};
@@ -298,6 +298,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
             tooltip_parts['Scheduling Comment'] = this.section.schedulingComment +
                 (this.section.schedulingLocked ? ' <b><i>(locked)</i></b>' : '');
         }
+        tooltip_parts['Category'] = this.matrix.categories[this.section.category_id || this.ghostSection.category_id].name;
         tooltip_parts['Teachers'] = this.matrix.sections.getTeachersString(this.section);
         if(has_moderator_module) tooltip_parts[moderator_title + 's'] = this.matrix.sections.getModeratorsString(this.section);
         tooltip_parts['Class size max'] = this.section.class_size_max;

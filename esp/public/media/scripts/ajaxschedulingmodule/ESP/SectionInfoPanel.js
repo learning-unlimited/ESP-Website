@@ -136,6 +136,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         }
 
         content_parts['Title'] = section.title;
+        content_parts['Category'] = this.sections.categories_data[section.category_id].name;
         content_parts['Teachers'] = teacher_links;
         if(has_moderator_module) content_parts[moderator_title + 's'] = getModeratorLinks(section);
         content_parts['Class size max'] = section.class_size_max;
@@ -214,7 +215,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
 
         content_parts['Will Moderate'] = (moderator.will_moderate)? "Yes" : "No";
         content_parts['Number of Slots'] = moderator.num_slots;
-        content_parts['Class Categories'] = moderator.categories;
+        content_parts['Class Categories'] = moderator.categories.map(cat => this.sections.categories_data[cat].name).join(', ');
         content_parts['Comments'] = moderator.comments;
 
         for(var header in content_parts) {
@@ -223,7 +224,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
             partDiv.append(content_parts[header]);
             contentDiv.append(partDiv);
         }
-        contentDiv.append($j('<br><div><b>Click on a section while holding down "Ctrl"/"Cmd" to assign this moderator</b>'));
+        contentDiv.append($j('<br><div><b>Click on a section while holding down "Ctrl"/"Cmd" to assign/unassign this moderator</b>'));
 
         return contentDiv;
     }.bind(this);
