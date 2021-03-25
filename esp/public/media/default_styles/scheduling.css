@@ -71,6 +71,17 @@ td.moderator-available-cell {
     color: white !important;
 }
 
+td.moderator-available-not-first-cell {
+    background: repeating-linear-gradient(
+                45deg,
+                #32cd32,
+                #32cd32 15px,
+                #555555 15px,
+                #555555 20px
+    ) !important;
+    opacity: .9 !important;
+}
+
 td.moderator-teaching-cell {
     background: yellow !important;
     opacity: .9 !important;
@@ -84,7 +95,7 @@ td.moderator-moderating-cell {
 }
 
 td.moderator-unavailable-cell {
-    background: grey !important;
+    background: #555555 !important;
     opacity: .9 !important;
     color: white !important;
 }

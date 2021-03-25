@@ -222,6 +222,17 @@ function Matrix(
         if(moderator){
             addClassToTimeslots(available_timeslots, "moderator-available-cell", moderator);
             addClassToTimeslots(teaching_timeslots, "moderator-teaching-cell", moderator);
+            var not_first_sections = [];
+            section_loop:
+                for(section in this.sections.scheduleAssignments) {
+                    for(timeslot of this.sections.scheduleAssignments[section].timeslots) {
+                        if(teaching_timeslots.includes(timeslot)){
+                            not_first_sections.push(section);
+                            continue section_loop;
+                        }
+                    }
+                }
+            addClassToSections(not_first_sections, "moderator-available-not-first-cell");
             addClassToTimeslots(Object.values(this.timeslots.timeslots).map(el => el.id).filter(el => !(available_timeslots.includes(el) || teaching_timeslots.includes(el))), "moderator-unavailable-cell", moderator);
             addClassToSections(moderator.sections, "moderator-moderating-cell");
         } else {
@@ -304,10 +315,7 @@ function Matrix(
         var available_timeslots = timeslots[0];
         var teaching_timeslots = timeslots[1];
         if(moderator) {
-            removeClassFromTimeslots(available_timeslots, "moderator-available-cell");
-            removeClassFromTimeslots(teaching_timeslots, "moderator-teaching-cell");
-            removeClassFromTimeslots(Object.values(this.timeslots.timeslots).map(el => el.id).filter(el => !(available_timeslots.includes(el) || teaching_timeslots.includes(el))), "moderator-unavailable-cell");
-            removeClassFromSections(moderator.sections, "moderator-moderating-cell");
+            removeClassFromSections(Object.keys(this.sections.scheduleAssignments), "moderator-teaching-cell moderator-unavailable-cell moderator-available-cell moderator-moderating-cell moderator-available-not-first-cell");
         } else {
             removeClassFromTimeslots(available_timeslots, "teacher-available-cell teacher-available-not-first-cell");
             removeClassFromTimeslots(teaching_timeslots, "teacher-teaching-cell");
