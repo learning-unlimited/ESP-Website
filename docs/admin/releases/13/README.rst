@@ -13,6 +13,7 @@ Program management changes
 - Added new program tags to change the tolerance (in minutes) of contiguous blocks for the teacher availability page and for scheduling purposes.
 - Added custom widgets to many of the tag settings (preventing potentially site-breaking tag values).
 - Added a new tag `grade_increment_date` that allows admins to adjust when student grades increment (e.g. before or after a summer program).
+- Added a frontend user interface to add, remove, edit, and import line items.
 
 User search modules changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,6 +63,7 @@ Scheduling changes
 - Fixed the "Mismatched rooms and meeting times" and "Classes not completely scheduled or with gaps" scheduling checks for classes with assigned floating resources.
 - Fixed the teachers with limited availability scheduling check for cases where teachers somehow had no availability.
 - Fixed the highlighting on the ajax scheduler for when a user is trying to schedule a single-block class on a day with a single lunch block.
+- Added scheduling checks to the ajax scheduler that let you see if there are any errors or inconsistencies with how classes have been scheduled (e.g., capacity mismatches, resource mismatches, availability mismatches, double-booked teachers). This does not include all checks from the scheduling checks module, and we plan to keep the scheduling checks module around for the foreseeable future.
 
 Onsite changes
 ~~~~~~~~~~~~~~
