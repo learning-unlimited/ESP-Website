@@ -233,6 +233,7 @@ function Matrix(
                     }
                 }
             addClassToSections(not_first_sections, "moderator-available-not-first-cell");
+            addClassToSections(Object.keys(this.sections.scheduleAssignments).filter(section => this.sections.sections_data[section].moderators.length > 0), "lowOpacity");
             addClassToTimeslots(Object.values(this.timeslots.timeslots).map(el => el.id).filter(el => !(available_timeslots.includes(el) || teaching_timeslots.includes(el))), "moderator-unavailable-cell", moderator);
             addClassToSections(moderator.sections, "moderator-moderating-cell");
         } else {
@@ -315,7 +316,7 @@ function Matrix(
         var available_timeslots = timeslots[0];
         var teaching_timeslots = timeslots[1];
         if(moderator) {
-            removeClassFromSections(Object.keys(this.sections.scheduleAssignments), "moderator-teaching-cell moderator-unavailable-cell moderator-available-cell moderator-moderating-cell moderator-available-not-first-cell");
+            removeClassFromSections(Object.keys(this.sections.scheduleAssignments), "moderator-teaching-cell moderator-unavailable-cell moderator-available-cell moderator-moderating-cell moderator-available-not-first-cell lowOpacity");
         } else {
             removeClassFromTimeslots(available_timeslots, "teacher-available-cell teacher-available-not-first-cell");
             removeClassFromTimeslots(teaching_timeslots, "teacher-teaching-cell");

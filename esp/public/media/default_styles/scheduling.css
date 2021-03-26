@@ -113,6 +113,10 @@ td.matrix-cell > a:hover {
     text-decoration: underline;
 }
 
+td.lowOpacity {
+    opacity: .2 !important;
+}
+
 .component-div {
     overflow-y: scroll;
 }
