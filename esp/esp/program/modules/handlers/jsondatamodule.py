@@ -147,7 +147,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 })
             moderator_list.append(mod_dict)
         for m in moderator_list:
-            m['availability'] = [event.id for event in ESPUser.objects.get(id=m['id']).getAvailableTimes(prog, ignore_classes=True)]
+            m['availability'] = [event.id for event in ESPUser.objects.get(id=m['id']).getAvailableTimes(prog, ignore_classes=True, ignore_moderation=True)]
         return {'moderators': moderator_list}
     moderators.method.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
     moderators.method.cached_function.depend_on_model(ModeratorRecord)
