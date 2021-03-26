@@ -144,10 +144,14 @@ function Scheduler(
         }
     }.bind(this));
 
-    $j("body").on("click", "td.moderator-cell > a", function(evt, ui) {
-        var moderatorCell = $j(evt.currentTarget.parentElement).data("moderatorCell");
+    $j("body").on("click", "td.moderator-cell", function(evt, ui) {
+        var moderatorCell = $j(evt.currentTarget).data("moderatorCell");
         this.moderatorDirectory.selectModerator(moderatorCell.moderator);
     }.bind(this));
+
+    $j("body").on("click", "td.moderator-cell > a", function(evt){
+         evt.stopPropagation();
+    });
     
     $j("body").on("click", "a.moderator-link", function(evt, ui) {
         var modID = $j(evt.currentTarget).data("moderator");

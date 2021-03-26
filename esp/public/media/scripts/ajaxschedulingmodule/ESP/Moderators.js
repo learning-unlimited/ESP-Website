@@ -29,6 +29,7 @@ function ModeratorDirectory(el, moderators, matrix) {
 
         // Create the directory table
         var table = $j("<table/>").css("width", "100%");
+        table.append($j("<tr/>").append("<th>Moderator</th>").append("<th>Available</br>Slots</th>").append("<th>Remaining</br>Slots</th>"));
         $j.each(this.moderators, function(id, moderator){
             var row = new ModeratorRow(moderator, $j("<tr/>"), this);
             row.render();
@@ -55,6 +56,25 @@ function ModeratorDirectory(el, moderators, matrix) {
         this.matrix = matrix;
     };
 
+    this.numAvailableSlots = function(moderator) {
+        var avail_slots = moderator.num_slots;
+        for(section of moderator.sections) {
+            var assignment = this.matrix.sections.scheduleAssignments[section]
+            if(assignment){
+                avail_slots -= assignment.timeslots.length;
+            }
+        }
+        return avail_slots;
+    };
+
+    this.getTeachingAndModeratingSections = function(moderator) {
+        if(this.matrix.sections.teacher_data[moderator.id]) {
+            return Array.from(new Set(this.matrix.sections.teacher_data[moderator.id].sections.concat(moderator.sections)));
+        } else {
+            return moderator.sections;
+        }
+    };
+
     this.getAvailableTimeslots = function(moderator) {
         var availableTimeslots = [];
         var already_teaching = [];
@@ -68,8 +88,7 @@ function ModeratorDirectory(el, moderators, matrix) {
                 return this.matrix.timeslots.get_by_id(val);
             }.bind(this));
             // get when the moderator is teaching or moderating
-            var sections = Array.from(new Set(this.matrix.sections.teacher_data[moderator.id].sections.concat(moderator.sections)));
-            $j.each(sections, function(index, section_id) {
+            $j.each(this.getTeachingAndModeratingSections(moderator), function(index, section_id) {
                 var assignment = this.matrix.sections.scheduleAssignments[section_id];
                 if(assignment) {
                     $j.each(assignment.timeslots, function(index, timeslot_id) {
@@ -212,13 +231,9 @@ function ModeratorRow(moderator, el, moderatorDirectory){
      * Style el into a row
      */
     this.render = function(){
-        var baseURL = moderatorDirectory.matrix.sections.getBaseUrlString();
-        this.el[0].innerHTML = "<td>" + this.moderator.first_name + " " + this.moderator.last_name + 
-            " <a target='_blank' href='" + baseURL +
-            "edit_availability?user=" + this.moderator.username +
-            "'>Edit Availability</a>" + " <a target='_blank' href='/manage/userview?username=" +
-            this.moderator.username + "'>Userview</a>" + "</td>";
         this.el.append(this.moderatorCell.el);
+        this.el.append($j("<td>" + moderator.num_slots + "</td>").addClass("num-avail").css("text-align", "center"));
+        this.el.append($j("<td>" + this.moderatorDirectory.numAvailableSlots(moderator) + "</td>").addClass("num-remain").attr("id", "num-remain-" + moderator.id).css("text-align", "center")); // need to calculate how many slots are still available
     };
 
     /**
@@ -253,7 +268,12 @@ function ModeratorCell(el, moderator, matrix) {
         });
 
         this.el.addClass("moderator-cell");
-        this.el[0].innerHTML = "<a>" + this.moderator.id + "</a>";
+        var baseURL = this.matrix.sections.getBaseUrlString();
+        this.el[0].innerHTML = this.el[0].innerHTML = "<td>" + this.moderator.first_name + " " + this.moderator.last_name + 
+            "</br><a target='_blank' href='" + baseURL +
+            "edit_availability?user=" + this.moderator.username +
+            "'>Edit Availability</a>" + " <a target='_blank' href='/manage/userview?username=" +
+            this.moderator.username + "'>Userview</a>" + "</td>";
     }
 
     this.tooltip = function(){

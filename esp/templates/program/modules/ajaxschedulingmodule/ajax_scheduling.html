@@ -204,6 +204,43 @@
                 </div>
                 {% if has_moderator_module %}
                 <div id="moderators">
+                    <div id="mod-filters-accordion">
+                        <h3>Moderator Filters</h3>
+                        <div id="mod-filters">
+                            <form>
+                                <label for="mod-filter-avail"><b>Available Slots</b></label><br />
+                                <div id="mod-filter-avail">
+                                    <label for="mod-filter-avail-min">Min:</label>
+                                    <input id="mod-filter-avail-min" class="numeric"></input> Slots
+                                    <br />
+                                    <label for="mod-filter-avail-max">Max:</label>
+                                    <input id="mod-filter-avail-max" class="numeric"></input> Slots
+                                </div>
+                                <br />
+                                <label for="mod-filter-remain"><b>Remaining Slots</b></label><br />
+                                <div id="mod-filter-remain">
+                                    <label for="mod-filter-remain-min">Min:</label>
+                                    <input id="mod-filter-remain-min" class="numeric"></input> Slots
+                                    <br />
+                                    <label for="mod-filter-remain-max">Max:</label>
+                                    <input id="mod-filter-remain-max" class="numeric"></input> Slots
+                                </div>
+                                <br />
+                                <div id="mod-filter-category">
+                                    <label for="mod-filter-category-text"><b>Category</b></label><br />
+                                    <input id="mod-filter-category-text"></input>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <br>
+                    <div id="mod-search">
+                        <form>
+                            <label for="mod-search-text">Search:</label>
+                            <input id="mod-search-text"
+                                   style="width: 8em;"></input>
+                        </form>
+                    </div>
                     <div id="moderator-directory"></div>
                 </div>
                 {% endif %}
@@ -235,6 +272,13 @@ $j("#info-panel").resizable({
 });
 $j(function() {
     $j("#filters-accordion").accordion({
+        active: false,
+        collapsible: true
+    });
+});
+
+$j(function() {
+    $j("#mod-filters-accordion").accordion({
         active: false,
         collapsible: true
     });
