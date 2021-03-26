@@ -773,6 +773,46 @@ class ProgramPrintables(ProgramModuleObj):
 
     @aux_call
     @needs_admin
+    def teachermoderatorschedules(self, request, tl, one, two, module, extra, prog):
+        """ generate teacher/moderator schedules """
+
+        filterObj, found = UserSearchController().create_filter(request, self.program)
+        if not found:
+            return filterObj
+
+        context = {'module': self     }
+        teachers = list(filterObj.getList(ESPUser).distinct())
+        teachers.sort()
+
+        scheditems = []
+
+        for teacher in teachers:
+            # get list of valid classes
+            classes = [cls for cls in teacher.getTaughtSectionsFromProgram(self.program) |
+                       teacher.getModeratingSectionsFromProgram(self.program)
+                    if cls.meeting_times.all().exists()
+                    and cls.resourceassignment_set.all().exists()
+                    and cls.status > 0]
+            # now we sort them by time/title
+            classes.sort()
+            for cls in classes:
+                if teacher in cls.parent_class.get_teachers():
+                    role = 'Teacher'
+                else:
+                    role = self.program.getModeratorTitle()
+                scheditems.append({'name': teacher.name(),
+                                   'teacher': teacher,
+                                   'cls': cls,
+                                   'role': role})
+
+        context['scheditems'] = scheditems
+        context['moderators'] = True
+        context['teachers'] = True
+
+        return render_to_response(self.baseDir()+'teacherschedule.html', request, context)
+
+    @aux_call
+    @needs_admin
     def teacherschedules(self, request, tl, one, two, module, extra, prog):
         """ generate teacher schedules """
 
@@ -788,9 +828,8 @@ class ProgramPrintables(ProgramModuleObj):
 
         for teacher in teachers:
             # get list of valid classes
-            classes = [cls for cls in teacher.getTaughtSections()
-                    if cls.parent_program == self.program
-                    and cls.meeting_times.all().exists()
+            classes = [cls for cls in teacher.getTaughtSectionsFromProgram(self.program)
+                    if cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
                     and cls.status > 0]
             # now we sort them by time/title
@@ -798,9 +837,45 @@ class ProgramPrintables(ProgramModuleObj):
             for cls in classes:
                 scheditems.append({'name': teacher.name(),
                                    'teacher': teacher,
-                                   'cls' : cls})
+                                   'cls': cls})
 
         context['scheditems'] = scheditems
+        context['moderators'] = None
+        context['teachers'] = True
+
+        return render_to_response(self.baseDir()+'teacherschedule.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def moderatorschedules(self, request, tl, one, two, module, extra, prog):
+        """ generate moderator schedules """
+
+        filterObj, found = UserSearchController().create_filter(request, self.program)
+        if not found:
+            return filterObj
+
+        context = {'module': self     }
+        teachers = list(filterObj.getList(ESPUser).distinct())
+        teachers.sort()
+
+        scheditems = []
+
+        for teacher in teachers:
+            # get list of valid classes
+            classes = [cls for cls in teacher.getModeratingSectionsFromProgram(self.program)
+                    if cls.meeting_times.all().exists()
+                    and cls.resourceassignment_set.all().exists()
+                    and cls.status > 0]
+            # now we sort them by time/title
+            classes.sort()
+            for cls in classes:
+                scheditems.append({'name': teacher.name(),
+                                   'teacher': teacher,
+                                   'cls': cls})
+
+        context['scheditems'] = scheditems
+        context['moderators'] = True
+        context['teachers'] = None
 
         return render_to_response(self.baseDir()+'teacherschedule.html', request, context)
 

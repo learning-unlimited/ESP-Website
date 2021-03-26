@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>Teacher Schedules</title>
+<title>{% if teachers %}Teacher {% if moderators %} and {% endif %}{% endif %}{% if moderators %}{{ program.getModeratorTitle }} {% endif %}Schedules</title>
 <style type="text/css" media="print,screen">
 body { font-family: georgia; margin: 0; font-size: 12px;}
 .title { text-align: center; font-size: 12pt; font-family: georgia; }
@@ -28,7 +28,7 @@ td.newday { border-width: 2px 1px 0 1px;}
 <body>
 {% if scheditems|length_is:0 %}
 <div class="title">It looks like you don't have any classes scheduled yet.</div>
-{% endif %} 
+{% endif %}
 
 {% for scheditem in scheditems %}
 
@@ -38,7 +38,7 @@ td.newday { border-width: 2px 1px 0 1px;}
 <div id="pagebreak">&nbsp;</div>
 {% endif %}
 
-<div class="title">Teacher Schedule for <br /><br />
+<div class="title">{% if teachers %}Teacher {% if moderators %} and {% endif %}{% endif %}{% if moderators %}{{ program.getModeratorTitle }} {% endif %}Schedule for <br /><br />
     <span>{{ scheditem.name }}</span>
 </div>
 <div class="description">Here is your schedule.
@@ -58,6 +58,7 @@ td.newday { border-width: 2px 1px 0 1px;}
     <th>Time</th>
     <th>Room</th>
     <th>Class</th>
+    {% if moderators and teachers %}<th>Role</th> {% endif %}
 </tr>
 {% endifchanged %}
 {% autoescape off %}
@@ -66,6 +67,7 @@ td.newday { border-width: 2px 1px 0 1px;}
   <td>{% if scheditem.cls.classrooms|length_is:0 %}N/A{% else %}
       {{ scheditem.cls.prettyrooms|join:"<br />" }}{% endif %}</td>
   <td>{{ scheditem.cls.title }}</td>
+    {% if moderators and teachers %} <td>{{ scheditem.role }}</td> {% endif %}
 </tr>
 {% endautoescape %}
 {% endfor %}
