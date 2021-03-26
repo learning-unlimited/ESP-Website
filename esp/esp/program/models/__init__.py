@@ -861,18 +861,15 @@ class Program(models.Model, CustomFormsLinkModel):
     @cache_function_for(60*60*24)
     def current_programs():
         """Guess a list of "current programs" by their time ranges.
-
-        - All programs' time ranges are determined by the start of their first
-          timeslot and the end of their last timeslot.
-        - If there are any programs currently running, any programs whose first
-          timeslot is in less than 60 days, or any programs whose last timeslot
-          was less than 30 days ago, we return all such programs as current
-          programs.
-        - Otherwise, the current program is the one program in the future (<100
-          years) that will start the soonest.
-        - If still no such program exists, the current program is the program
-          in the past that ended the most recently.
-        - Test programs (programs with "test" in their name) are skipped.
+            - All programs whose time ranges include today,
+              programs whose first timeslot is in less than 60 days,
+              and programs whose last timeslot was less than 30 days ago
+              are returned as current programs.
+            - If there are no such programs, the next upcoming program
+              (within 100 years) is returned as the current program.
+            - If there is no upcoming program, the most recent past program
+              is returned as the current program.
+            - Programs with "test" in their names are skipped.
         """
 
         now = datetime.now()
@@ -1000,7 +997,7 @@ class Program(models.Model, CustomFormsLinkModel):
         from esp.program.modules.module_ext import ClassRegModuleInfo
         from decimal import Decimal
 
-        times = Event.group_contiguous(list(self.getTimeSlots()))
+        times = Event.group_contiguous(list(self.getTimeSlots()), int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = self)))
         crmi = self.classregmoduleinfo
         if crmi and crmi.class_max_duration is not None:
             max_seconds = crmi.class_max_duration * 60

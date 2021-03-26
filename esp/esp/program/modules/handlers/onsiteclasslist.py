@@ -386,6 +386,9 @@ class OnSiteClassList(ProgramModuleObj):
         else:
             window_start = time_now + timedelta(-1, 85200)  # 20 minutes ago
             curtime = Event.objects.filter(start__gte=window_start, event_type__description='Class Time Block').order_by('start')
+            # If there are no events after the current time, just pick the first event of the program
+            if curtime.count() == 0:
+                curtime = Event.objects.filter(program=self.program, event_type__description='Class Time Block').order_by('start')
 
         end_id = int(options.get('end', -1))
         if end_id != -1:
@@ -402,6 +405,7 @@ class OnSiteClassList(ProgramModuleObj):
         if int(context['refresh']) < min_refresh:
             context['refresh'] = min_refresh
 
+        classes = []
         if curtime:
             curtime = curtime[0]
             if endtime:

@@ -103,12 +103,21 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
 
     }.bind(this);
 
+    var getTeacherLinks = function(section) {
+        var teacher_links_list = []
+            $j.each(section.teacher_data, function(index, teacher) {
+                teacher_links_list.push("<a target='_blank' href=/manage/userview?username=" + encodeURIComponent(teacher.username) + ">" + teacher.first_name + " " + teacher.last_name + "</a>");
+            });
+        var teacher_links = teacher_links_list.join(", ");
+        return $j(teacher_links);
+    };
+
     // The content to put on the panel
     var getContent = function(section) {
         var contentDiv = $j("<div class='ui-widget-content'></div>");
 
         // Make content
-        var teachers = this.sections.getTeachersString(section);
+        var teacher_links = getTeacherLinks(section);
         var resources = this.sections.getResourceString(section);
 
         var content_parts = {};
@@ -118,7 +127,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         }
 
         content_parts['Title'] = section.title;
-        content_parts['Teachers'] = teachers;
+        content_parts['Teachers'] = teacher_links;
         content_parts['Class size max'] = section.class_size_max;
         content_parts['Length'] = Math.ceil(section.length);
         content_parts['Grades'] = section.grade_min + "-" + section.grade_max;

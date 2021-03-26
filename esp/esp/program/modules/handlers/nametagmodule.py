@@ -36,7 +36,9 @@ from django.conf import settings
 
 from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.users.controllers.usersearch import UserSearchController
+from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
@@ -63,6 +65,7 @@ class NameTagModule(ProgramModuleObj):
         """ Display a page for admins to pick users for nametags """
         context = {'module': self}
         context['groups'] = Group.objects.all()
+        context['student_search_form'] = StudentSearchForm()
         usc = UserSearchController()
         context.update(usc.prepare_context(prog, target_path='/manage/%s/generatetags' % prog.url))
 
@@ -97,9 +100,7 @@ class NameTagModule(ProgramModuleObj):
 
         if idtype == 'aul':
             user_title = request.POST['blanktitle']
-            data = {}
-            for key in request.POST:
-                data[key] = request.POST[key]
+            data = ListGenModule.processPost(request)
             usc = UserSearchController()
             filterObj = usc.filter_from_postdata(prog, data)
             users = self.nametag_data(ESPUser.objects.filter(filterObj.get_Q()).distinct(), user_title)

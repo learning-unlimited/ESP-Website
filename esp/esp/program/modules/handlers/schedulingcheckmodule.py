@@ -237,7 +237,7 @@ class SchedulingCheckRunner:
         problem_classes = []
         for s in self._all_class_sections():
             mt =  sorted(s.get_meeting_times())
-            rooms = s.getResources()
+            rooms = [a.resource for a in s.classroomassignments()]
             if(len(rooms) != len(mt)):
                 problem_classes.append(s)
             else:
@@ -250,7 +250,7 @@ class SchedulingCheckRunner:
         output = []
         for s in self._all_class_sections():
             mt = sorted(s.get_meeting_times())
-            rooms = s.getResources()
+            rooms = [a.resource for a in s.classroomassignments()]
             res_events = sorted([x.event for x in rooms])
             if res_events != mt:
                 output.append({"Section": s, "Resource events": res_events,
@@ -641,7 +641,7 @@ class SchedulingCheckRunner:
              class_hours = teacher.getTaughtTime(program=self.p, round_to=1).seconds/3600
              delta = availability - class_hours
              # Arbitrary formula, seems to do a good job of catching the cases I care about
-             if class_hours/float(availability) >= 2/float(3):
+             if (availability == 0) or (class_hours/float(availability) >= 2/float(3)):
                  inflexible.append({'Username': teacher.username,
                                'Teacher Name': teacher.name(),
                                'Class hours': class_hours,

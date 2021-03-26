@@ -41,7 +41,6 @@ import sys
 from django.conf import settings
 from django.db.models.base import ObjectDoesNotExist
 from django.http import HttpResponse, Http404
-from django.shortcuts import render
 from django.template import RequestContext
 from django.utils.translation import ugettext as _
 
@@ -165,6 +164,7 @@ class ESPErrorMiddleware(MiddlewareMixin):
     """
 
     def process_exception(self, request, exception):
+        from esp.utils.web import render_to_response
 
         if exception == ESPError_Log or exception == ESPError_NoLog:
             # TODO(benkraft): remove remaining instances of this.
@@ -211,6 +211,6 @@ class ESPErrorMiddleware(MiddlewareMixin):
         # TODO(benkraft): merge our various error templates (403, 500, error).
         # They're all slightly different, but should probably be more similar
         # and share code.
-        response = render(request, template, context)
+        response = render_to_response(template, request, context)
         response.status_code = status
         return response

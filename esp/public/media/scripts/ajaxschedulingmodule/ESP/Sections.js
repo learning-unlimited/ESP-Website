@@ -410,7 +410,6 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
             this.unselectSection();
         }
 
-
         // Add section to cells
         for(timeslot_index in schedule_timeslots){
             var timeslot_id = schedule_timeslots[timeslot_index];
@@ -426,6 +425,9 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
 
         // Trigger the event that tells the directory to update itself.
         $j("body").trigger("schedule-changed");
+
+        // Update cell coloring
+        this.matrix.updateCells();
     }
 
     /**
@@ -437,10 +439,10 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
     this.scheduleAsGhost = function(room_id, first_timeslot_id) {
         var schedule_timeslots = this.matrix.timeslots.
             get_timeslots_to_schedule_section(this.selectedSection, first_timeslot_id);
+        this.ghostScheduleAssignment = {'room_id': room_id, 'timeslots': schedule_timeslots};
         $j.each(schedule_timeslots, function(index, timeslot_id) {
             this.matrix.getCell(room_id, timeslot_id).addGhostSection(this.selectedSection);
         }.bind(this));
-        this.ghostScheduleAssignment = {'room_id': room_id, 'timeslots': schedule_timeslots};
     };
 
     /**

@@ -40,7 +40,7 @@ fi
 # Install pip
 sudo add-apt-repository universe
 sudo apt-get install -y curl
-curl https://bootstrap.pypa.io/2.7/get-pip.py --output get-pip.py
+curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
 sudo python2 get-pip.py
 
 # Ensure that the virtualenv exists and is activated.

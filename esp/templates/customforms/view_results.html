@@ -1,13 +1,10 @@
 {% extends "elements/html" %}
 
-{% block doctype %}{% endblock %}{# for some reason, this page breaks if you use our standard DOCTYPE #}
-
 {% block fulltitle %}Form responses{% endblock %}
 
 {% block stylesheets %}
-    {{ block.super }}
-		<link rel="stylesheet" type="text/css" href="/media/default_styles/customforms-style.css">
-		<link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/ui.jqgrid.css" />
+	<link href="https://ajax.googleapis.com/ajax/libs/jqueryui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+    <link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/ui.jqgrid.css" />
 {% endblock %}
 
 {% block js1 %}

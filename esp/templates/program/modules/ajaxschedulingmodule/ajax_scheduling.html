@@ -16,12 +16,13 @@
 <!-- STYLE -->
 <link id='sch_css' href='/media/default_styles/scheduling.css' type='text/css' rel='stylesheet' />
 <link id='tooltip_css' href='/media/default_styles/tooltips.css' type='text/css' rel='stylesheet' />
-<link rel="stylesheet" href='/media/default_styles/jquery-ui/jquery-ui.css'/>
+<link href="https://ajax.googleapis.com/ajax/libs/jqueryui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
 <link rel="stylesheet" type="text/css" href="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.css" />
 
 <!-- 3rd party -->
-<script type='text/javascript' src='/media/scripts/jquery.js'></script>
-<script type='text/javascript' src='/media/scripts/jquery-ui.js'></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/{{ settings.JQUERY_VERSION }}/jquery.min.js" integrity="{{ settings.JQUERY_HASH }}" crossorigin="anonymous"></script>
+<script src="http://code.jquery.com/jquery-migrate-1.4.1.{% if not settings.DEBUG %}min.{% endif %}js"></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/{{ settings.JQUERY_UI_VERSION }}/jquery-ui.js"></script>
 <script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
 <script type='text/javascript' src='/media/scripts/common.js'></script>
 <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
@@ -71,6 +72,7 @@
             <li><a href="#classes">Classes</a></li>
             <li><a href="#filters">Class Filters</a></li>
             <li><a href="#filters2">Room Filters</a></li>
+            <li><a href="#checks">Checks</a></li>
           </ul>
           <div id="side-panel-inner">
                 <div id="classes">
@@ -163,6 +165,31 @@
                     <div id="room-filter-name">
                         <label for="room-filter-name-text"><b>Name</b></label><br />
                         <input id="room-filter-name-text"></input>
+                    </div>
+                  </form>
+                </div>
+                <div id="checks">
+                  <form>
+                    <label for="scheduling-checks"><b>Scheduling Checks</b></label><br />
+                    <div id="scheduling-checks">
+                        <input type="radio" name="scheduling-checks" value="" checked></input> None
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="capacity"></input> Room Capacity Mismatch
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="unapproved"></input> Unapproved Classes
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="requests"></input> Unfulfilled Resource Requests
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="lunch"></input> Classes Scheduled Over Lunch
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="hungry"></input> Hungry Teachers
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="running"></input> Running Teachers
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="double_booked"></input> Double-Booked Teachers
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="unavailable"></input> Unavailable Teachers
+                        <br />
                     </div>
                   </form>
                 </div>
