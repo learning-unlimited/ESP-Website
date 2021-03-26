@@ -809,7 +809,7 @@ class ProgramPrintables(ProgramModuleObj):
         context['moderators'] = True
         context['teachers'] = True
 
-        return render_to_response(self.baseDir()+'teacherschedule.html', request, context)
+        return render_to_response(self.baseDir()+'teachermoderatorschedule.html', request, context)
 
     @aux_call
     @needs_admin
@@ -877,7 +877,7 @@ class ProgramPrintables(ProgramModuleObj):
         context['moderators'] = True
         context['teachers'] = None
 
-        return render_to_response(self.baseDir()+'teacherschedule.html', request, context)
+        return render_to_response(self.baseDir()+'moderatorschedule.html', request, context)
 
     @aux_call
     @needs_admin
