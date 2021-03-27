@@ -58,11 +58,11 @@ class TeacherModeratorModule(ProgramModuleObj):
         assigned_list = ESPUser.objects.filter(qa).distinct()
 
         return {'will_moderate': offered_list,
-                'assigned_moderater': assigned_list}
+                'assigned_moderator': assigned_list}
 
     def teacherDesc(self):
         return {'will_moderate': """Teachers who have also offered to moderate""",
-                'assigned_moderater': """Teachers who are assigned as moderators"""}
+                'assigned_moderator': """Teachers who are assigned as moderators"""}
 
     class Meta:
         proxy = True
