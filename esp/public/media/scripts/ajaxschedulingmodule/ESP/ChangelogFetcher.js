@@ -42,7 +42,6 @@ function ChangelogFetcher(matrix, api_client, start_index){
      */
     this.applyChangeLog = function(data){
         $j.each(data.changelog, function(id, change){
-            console.log(change);
             var section = matrix.sections.getById(change.id);
             if (change.is_scheduling) {
                 if (change.timeslots.length == 0){
