@@ -266,6 +266,18 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                     }
                 if(n_teachers == 0) return grey;
                 return this.cellColors.HSLToRGB(0,100,100 - 10 * n_teachers); // Color red based on number of teachers
+            case "num_teachers":
+                // Color cell based on the number of teachers for the class
+                var n_teachers = Math.min(section.teachers.length, 5)
+                return this.cellColors.HSLToRGB(120,100,100 - 10 * n_teachers);
+            case "num_moderators":
+                // Color cell based on the number of teachers for the class
+                var n_moderators = Math.min(section.moderators.length, 5)
+                return this.cellColors.HSLToRGB(120,100,100 - 10 * n_moderators);
+            case "num_both":
+                // Color cell based on the number of teachers and/or moderators for the class
+                var n_moderators = Math.min(section.moderators.length + section.teachers.length, 5)
+                return this.cellColors.HSLToRGB(120,100,100 - 10 * n_moderators);
         }
         return this.cellColors.color(section); // Selected scheduling check isn't implemented or none is selected
     };

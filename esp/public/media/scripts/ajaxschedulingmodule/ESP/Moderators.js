@@ -5,11 +5,119 @@
  * @param moderators
  * @param matrix
  */
-function ModeratorDirectory(el, moderators, matrix) {
+function ModeratorDirectory(el, moderators) {
     this.el = el;
     this.moderators = moderators;
-    this.matrix = matrix;
     this.selectedModerator = null;
+
+    // Set up filtering
+    this.filter = {
+        availMin: {active: false, el: $j("input#mod-filter-avail-min"), type: "number"},
+        availMax: {active: false, el: $j("input#mod-filter-avail-max"), type: "number"},
+        remainMin: {active: false, el: $j("input#mod-filter-remain-min"), type: "number"},
+        remainMax: {active: false, el: $j("input#mod-filter-remain-max"), type: "number"},
+        categoryName: {active: false, el: $j("input#mod-filter-category-text"), type: "string"},
+    };
+    this.filter.availMin.valid = function(a) {
+        return a.num_slots >= this.filter.availMin.val;
+    }.bind(this);
+    this.filter.availMax.valid = function(a) {
+        return a.num_slots <= this.filter.availMax.val;
+    }.bind(this);
+    this.filter.remainMin.valid = function(a) {
+        return this.numAvailableSlots(a) >= this.filter.remainMin.val;
+    }.bind(this);
+    this.filter.remainMax.valid = function(a) {
+        return this.numAvailableSlots(a) <= this.filter.remainMax.val;
+    }.bind(this);
+    this.filter.categoryName.valid = function(a) {
+        var result = false;
+        $j.each(a.categories, function(index, category) {
+            if(this.matrix.sections.categories_data[category].name.toLowerCase().search(this.filter.categoryName.val)>-1) {
+                result = true;
+            }
+        }.bind(this));
+        return result;
+    }.bind(this);
+
+    $j.each(this.filter, function(filterName, filterObject) {
+        filterObject.el.change(function() {
+            filterObject.val = filterObject.el.val().trim();
+            if(filterObject.type==="number") {
+                filterObject.val = parseInt(filterObject.val);
+            } else if(filterObject.type==="string") {
+                filterObject.val = filterObject.val.toLowerCase()
+            } else if(filterObject.type==="boolean") {
+                filterObject.val = filterObject.el.prop('checked');
+            }
+            if((filterObject.type==="number" && isNaN(filterObject.val))
+                || (filterObject.type==="string" && filterObject.val.trim()==="")
+                || (filterObject.type==="boolean" && !filterObject.val)) {
+                filterObject.active = false;
+            } else {
+                filterObject.active = true;
+            }
+            $j("body").trigger("schedule-changed");
+        });
+    }.bind(this));
+
+    // Set up search
+    this.searchObject = {active: false, text: ""}
+    $j("#mod-search-text").on("keyup change", function(evt) {
+        this.searchObject.active = evt.currentTarget.value.trim() !== "";
+        this.searchObject.text = evt.currentTarget.value;
+        $j("body").trigger("schedule-changed");
+    }.bind(this));
+    
+    /**
+     * Get the sections satisfying the search criteria. By default, filter
+     * out sections that have been scheduled.
+     */
+    this.filtered_moderators = function(){
+        var returned_moderators = [];
+        $j.each(this.moderators, function(moderator_id, moderator) {
+            var moderatorValid;
+            if(this.searchObject.active) {
+                // if searchObject is active, ignore searching criteria in the
+                // other tab; only filter for sections that match the
+                // searchObject text (note this is a regex match)
+                moderatorValid = (moderator.first_name + moderator.last_name).toLowerCase().search(this.searchObject.text.toLowerCase()) > -1;
+            } else {
+                // if searchObject is not active, check every criterion in the
+                // other tab, short-circuiting if possible
+                moderatorValid = true;
+                for (var filterName in this.filter) {
+                    if (this.filter.hasOwnProperty(filterName)) {
+                        var filterObject = this.filter[filterName];
+                        // this loops over properties in this.filter
+
+                        if (filterObject.active && !filterObject.valid(moderator)) {
+                            moderatorValid = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (moderatorValid) {
+                returned_moderators.push(moderator);
+            }
+        }.bind(this));
+        return returned_moderators;
+    };
+    
+    this.updateRooms = function(){
+        var filtRooms = this.filteredRooms()
+        $j.each(this.rooms, function(index, room) {
+            // get rows to show or hide
+            var rows = $j(".room[data-id='" + room.id + "']").parent();
+            if (filtRooms.includes(room)) {
+                rows.css("display", "table-row");
+            } else {
+                rows.css("display", "none");
+            }
+        }.bind(this));
+    };
 
     /**
      * Render the directory.
@@ -30,7 +138,7 @@ function ModeratorDirectory(el, moderators, matrix) {
         // Create the directory table
         var table = $j("<table/>").css("width", "100%");
         table.append($j("<tr/>").append("<th>Moderator</th>").append("<th>Available</br>Slots</th>").append("<th>Remaining</br>Slots</th>"));
-        $j.each(this.moderators, function(id, moderator){
+        $j.each(this.filtered_moderators(), function(id, moderator){
             var row = new ModeratorRow(moderator, $j("<tr/>"), this);
             row.render();
             row.el.appendTo(table);
@@ -189,6 +297,8 @@ function ModeratorDirectory(el, moderators, matrix) {
             section.moderators.push(moderator.id);
             section.moderator_data.push(moderator);
             $j("body").trigger("schedule-changed");
+            // Update cell coloring
+            this.matrix.updateCells();
         }
     };
 
@@ -218,6 +328,8 @@ function ModeratorDirectory(el, moderators, matrix) {
             section.moderators.splice(section.moderators.indexOf(moderator), 1);
             section.moderator_data.splice(section.moderator_data.indexOf(moderator), 1);
             $j("body").trigger("schedule-changed");
+            // Update cell coloring
+            this.matrix.updateCells();
         }
     };
 }

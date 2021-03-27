@@ -34,10 +34,10 @@ function Matrix(
         roomName: {active: false, el: $j("input#room-filter-name-text"), type: "string"},
     };
     this.filter.roomCapacityMin.valid = function(a) {
-        return Math.ceil(a.num_students) >= this.filter.roomCapacityMin.val;
+        return a.num_students >= this.filter.roomCapacityMin.val;
     }.bind(this);
     this.filter.roomCapacityMax.valid = function(a) {
-        return Math.ceil(a.num_students) <= this.filter.roomCapacityMax.val;
+        return a.num_students <= this.filter.roomCapacityMax.val;
     }.bind(this);
     this.filter.roomResource.valid = function(a) {
         var result = false;
