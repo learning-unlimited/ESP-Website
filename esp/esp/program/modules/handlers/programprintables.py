@@ -942,6 +942,14 @@ class ProgramPrintables(ProgramModuleObj):
             return ProgramPrintables.getSchedule(self.program, user, u'Teacher')
         elif key == 'teacher_schedule_dates':
             return ProgramPrintables.getSchedule(self.program, user, u'Teacher', include_date=True)
+        elif key == 'teachermoderator_schedule':
+            return ProgramPrintables.getSchedule(self.program, user, u'TeacherModerator')
+        elif key == 'teachermoderator_schedule_dates':
+            return ProgramPrintables.getSchedule(self.program, user, u'TeacherModerator', include_date=True)
+        elif key == 'moderator_schedule':
+            return ProgramPrintables.getSchedule(self.program, user, u'Moderator')
+        elif key == 'moderator_schedule_dates':
+            return ProgramPrintables.getSchedule(self.program, user, u'Moderator', include_date=True)
         elif key == 'volunteer_schedule':
             return ProgramPrintables.getSchedule(self.program, user, u'Volunteer')
         elif key == 'volunteer_schedule_dates':
@@ -966,15 +974,28 @@ class ProgramPrintables(ProgramModuleObj):
         return classes
 
     @staticmethod
-    def get_teacher_classlist(program, teacher):
+    def get_teacher_classlist(program, teacher, teaching = True, moderating = False):
         # get list of valid classes
-        classes = [ cls for cls in teacher.getTaughtSections()]
+        classes = []
+        if teaching:
+            classes += [ cls for cls in teacher.getTaughtSectionsFromProgram(program)]
+        if moderating:
+            classes += [ cls for cls in teacher.getModeratingSectionsFromProgram(program)]
         classes = [ cls for cls in classes
-                    if cls.parent_program == program
-                    and cls.meeting_times.exists()
-                    and cls.status >= 0                       ]
+                    if cls.meeting_times.exists()
+                    and cls.status >= 0 ]
         classes.sort()
-        return classes
+
+        scheditems = []
+        for cls in classes:
+            if teacher in cls.parent_class.get_teachers():
+                role = 'Teacher'
+            else:
+                role = program.getModeratorTitle()
+            scheditems.append({'cls': cls,
+                               'role': role})
+
+        return scheditems
 
     @staticmethod
     def getTranscript(program, student, format='text'):
@@ -1009,15 +1030,23 @@ class ProgramPrintables(ProgramModuleObj):
             elif user.isVolunteer():
                 schedule_type = u'Volunteer'
 
-
+        include_roles = None
+        pretty_schedule_type = schedule_type
         if schedule_type == u'Student':
             template = get_template('program/modules/programprintables/studentschedule_email.html')
             sched_items = ProgramPrintables.get_student_classlist(program, user)
-            sched_items.sort()
         elif schedule_type == u'Teacher':
             template = get_template('program/modules/programprintables/teacherschedule_email.html')
-            sched_items = ProgramPrintables.get_teacher_classlist(program, user)
-            sched_items.sort()
+            sched_items = ProgramPrintables.get_teacher_classlist(program, user, teaching = True, moderating = False)
+        elif schedule_type == u'TeacherModerator':
+            include_roles = True
+            pretty_schedule_type = u'Teacher and ' + program.getModeratorTitle().lower()
+            template = get_template('program/modules/programprintables/teacherschedule_email.html')
+            sched_items = ProgramPrintables.get_teacher_classlist(program, user, teaching = True, moderating = True)
+        elif schedule_type == u'Moderator':
+            pretty_schedule_type = program.getModeratorTitle()
+            template = get_template('program/modules/programprintables/teacherschedule_email.html')
+            sched_items = ProgramPrintables.get_teacher_classlist(program, user, teaching = False, moderating = True)
         elif schedule_type == u'Volunteer':
             template = get_template('program/modules/programprintables/volunteerschedule_email.html')
             sched_items = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
@@ -1025,10 +1054,11 @@ class ProgramPrintables(ProgramModuleObj):
         context = {
                    'program': program,
                    'user': user,
-                   'schedule_type': schedule_type,
+                   'schedule_type': pretty_schedule_type,
                    'room_numbers': room_numbers,
                    'include_date': include_date,
                    'sched_items': sched_items,
+                   'include_roles': include_roles
                    }
         schedule = template.render(context)
 
