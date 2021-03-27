@@ -255,6 +255,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         if action == 'removemod':
             sec.moderators.remove(mod)
+            self.get_change_log(prog).appendModerator(mod_id, sec_id, False, request.user)
             return self.makeret(prog, ret=True, msg="Moderator '%s' removed from Class Section '%s'" % (mod.name(), sec.emailcode()))
         elif action == 'assignmod':
             override = request.POST['override'] == "true"
@@ -265,6 +266,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                     if time.id not in avail_times:
                         return self.makeret(prog, ret=False, msg="Moderator '%s' is not available to moderate Class Section '%s'" % (mod.name(), sec.emailcode()))
             sec.moderators.add(mod)
+            self.get_change_log(prog).appendModerator(mod_id, sec_id, True, request.user)
             return self.makeret(prog, ret=True, msg="Moderator '%s' assigned to Class Section '%s'" % (mod.name(), sec.emailcode()))
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)

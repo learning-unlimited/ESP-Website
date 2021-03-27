@@ -42,12 +42,20 @@ function ChangelogFetcher(matrix, api_client, start_index){
      */
     this.applyChangeLog = function(data){
         $j.each(data.changelog, function(id, change){
+            console.log(change);
             var section = matrix.sections.getById(change.id);
             if (change.is_scheduling) {
                 if (change.timeslots.length == 0){
                     this.matrix.sections.unscheduleSectionLocal(section);
                 } else {
                     this.matrix.sections.scheduleSectionLocal(section, parseInt(change.room_name,10), change.timeslots);
+                }
+            } else if (change.is_moderator) {
+                this.matrix.moderatorDirectory.selectModerator(this.matrix.moderatorDirectory.getById(change.moderator));
+                if (change.assigned) {
+                    this.matrix.moderatorDirectory.assignModeratorLocal(section);
+                } else {
+                    this.matrix.moderatorDirectory.unassignModeratorLocal(section);
                 }
             } else {
                 this.matrix.sections.setComment(section, change.comment, change.locked, true);

@@ -56,6 +56,15 @@ function ModeratorDirectory(el, moderators, matrix) {
         this.matrix = matrix;
     };
 
+    /**
+     * Get a moderator by their ID
+     *
+     * @param moderator_id: The id of the moderator to get
+     */
+    this.getById = function(moderator_id) {
+        return moderators[moderator_id];
+    };
+
     this.numAvailableSlots = function(moderator) {
         var avail_slots = moderator.num_slots;
         for(section of moderator.sections) {
@@ -175,10 +184,12 @@ function ModeratorDirectory(el, moderators, matrix) {
     this.assignModeratorLocal = function(section) {
         moderator = this.selectedModerator;
         this.unselectModerator();
-        moderator.sections.push(section.id);
-        section.moderators.push(moderator.id);
-        section.moderator_data.push(moderator);
-        $j("body").trigger("schedule-changed");
+        if (!section.moderators.includes(moderator.id)) {
+            moderator.sections.push(section.id);
+            section.moderators.push(moderator.id);
+            section.moderator_data.push(moderator);
+            $j("body").trigger("schedule-changed");
+        }
     };
 
     this.unassignModerator = function(section) {
@@ -202,10 +213,12 @@ function ModeratorDirectory(el, moderators, matrix) {
     this.unassignModeratorLocal = function(section) {
         moderator = this.selectedModerator;
         this.unselectModerator();
-        moderator.sections.splice(moderator.sections.indexOf(section.id), 1);
-        section.moderators.splice(section.moderators.indexOf(moderator), 1);
-        section.moderator_data.splice(section.moderator_data.indexOf(moderator), 1);
-        $j("body").trigger("schedule-changed");
+        if (section.moderators.includes(moderator.id)) {
+            moderator.sections.splice(moderator.sections.indexOf(section.id), 1);
+            section.moderators.splice(section.moderators.indexOf(moderator), 1);
+            section.moderator_data.splice(section.moderator_data.indexOf(moderator), 1);
+            $j("body").trigger("schedule-changed");
+        }
     };
 }
 
