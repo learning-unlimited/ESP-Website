@@ -1792,6 +1792,7 @@ class AllClassesFieldConverter(object):
     CSV spreadsheet.
     """
     TEACHERS = 'teachers'
+    MODERATORS = 'moderators'
     TIMES = 'times'
     ROOMS = 'rooms'
     NUM_SECTIONS = "number of sections"
@@ -1800,7 +1801,7 @@ class AllClassesFieldConverter(object):
     def __init__(self):
         field_list = [field for field in ClassSubject._meta.fields if field.name not in self.exclude_fields]
         #field_list.sort(key=lambda x: x.name)
-        self.field_choices = [(f, f.title()) for f in (self.TEACHERS, self.TIMES, self.ROOMS, self.NUM_SECTIONS)]
+        self.field_choices = [(f, f.title()) for f in (self.TEACHERS, self.MODERATORS, self.TIMES, self.ROOMS, self.NUM_SECTIONS)]
         self.field_choices += [(field.name, field.verbose_name.title()) for field in field_list]
 
         #sort tuple list by field name
@@ -1811,6 +1812,7 @@ class AllClassesFieldConverter(object):
         #of field data that should have a different format than the default.
         self.field_converters = {
             self.TEACHERS: lambda x: ", ".join([smart_str(t.name()) for t in x.get_teachers()]),
+            self.MODERATORS: lambda x: ", ".join([smart_str(t.name()) for t in x.moderators()]),
             self.TIMES: lambda x: ", ".join(x.friendly_times()),
             self.ROOMS: lambda x: ", ".join(x.prettyrooms()),
             self.NUM_SECTIONS: lambda x: x.sections.count()
