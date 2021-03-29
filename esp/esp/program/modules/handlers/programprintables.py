@@ -564,7 +564,10 @@ class ProgramPrintables(ProgramModuleObj):
         return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_id)
 
     @needs_admin
-    def teachersbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'teacherlist.html', extra_func = lambda x: {}):
+    def teachersbyFOO(self, request, tl, one, two, module, extra, prog,
+                      sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True,
+                      template_file = 'teacherlist.html', extra_func = lambda x: {},
+                      teaching = True, moderating = False):
         from esp.users.models import ContactInfo
 
         filterObj, found = UserSearchController().create_filter(request, self.program)
@@ -591,7 +594,13 @@ class ProgramPrintables(ProgramModuleObj):
 
         for teacher in teachers:
             # get list of valid classes
-            classes = [ cls for cls in teacher.getTaughtSections(self.program)
+            if teaching and moderating:
+                class_objects = teacher.getTaughtSections(self.program) | teacher.getModeratingSectionsFromProgram(self.program)
+            elif teaching:
+                class_objects = teacher.getTaughtSections(self.program)
+            else:
+                class_objects = teacher.getModeratingSectionsFromProgram(self.program)
+            classes = [ cls for cls in class_objects
                     if cls.isAccepted() and cls.meeting_times.count() > 0 ]
             # now we sort them by time/title
             classes.sort()
@@ -631,8 +640,15 @@ class ProgramPrintables(ProgramModuleObj):
         context['scheditems'] = scheditems
 
         if extra and 'csv' in extra:
+            if teaching and moderating:
+                filename = "teacher" + self.program.getModeratorTitle().lower() + "list.csv"
+            elif teaching:
+                filename = "teacherlist.csv"
+            else:
+                filename = self.program.getModeratorTitle().lower() + "list.csv"
+
             response = HttpResponse(content_type='text/csv')
-            response['Content-Disposition'] = 'attachment; filename="teacherlist.csv"'
+            response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
             t = loader.get_template(self.baseDir()+'teacherlist.csv')
             c = Context(context)
             response.write(t.render(c))
@@ -644,41 +660,72 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def teacherlist(self, request, tl, one, two, module, extra, prog):
         """ default list of teachers; function left in for compatibility """
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog)
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching = True, moderating = False)
+
+    @aux_call
+    @needs_admin
+    def teachermoderatorlist(self, request, tl, one, two, module, extra, prog):
+        """ default list of teachers; function left in for compatibility """
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=True, moderating=True)
+
+    @aux_call
+    @needs_admin
+    def moderatorlist(self, request, tl, one, two, module, extra, prog):
+        """ default list of teachers; function left in for compatibility """
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=False, moderating=True)
+
+    @staticmethod
+    def cmpsorttime(one,other):
+        if (one['cls'].meeting_times.count() > 0 and other['cls'].meeting_times.count() > 0):
+            cmp0 = cmp(one['cls'].meeting_times.all()[0].start, other['cls'].meeting_times.all()[0].start)
+        else:
+            cmp0 = cmp(one['cls'].meeting_times.count(), other['cls'].meeting_times.count())
+
+        if cmp0 != 0:
+            return cmp0
+
+        return cmp(one, other)
 
     @aux_call
     @needs_admin
     def teachersbytime(self, request, tl, one, two, module, extra, prog):
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = True, moderating = False)
 
-        def cmpsort(one,other):
-            if (one['cls'].meeting_times.count() > 0 and other['cls'].meeting_times.count() > 0):
-                cmp0 = cmp(one['cls'].meeting_times.all()[0].start, other['cls'].meeting_times.all()[0].start)
-            else:
-                cmp0 = cmp(one['cls'].meeting_times.count(), other['cls'].meeting_times.count())
+    @aux_call
+    @needs_admin
+    def teachermoderatorsbytime(self, request, tl, one, two, module, extra, prog):
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = True, moderating = True)
 
-            if cmp0 != 0:
-                return cmp0
+    @aux_call
+    @needs_admin
+    def moderatorsbytime(self, request, tl, one, two, module, extra, prog):
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = False, moderating = True)
 
-            return cmp(one, other)
+    @staticmethod
+    def cmpsortname(one, other):
+        one_name = one['user'].last_name.upper()
+        other_name = other['user'].last_name.upper()
+        cmp0 = cmp(one_name, other_name)
 
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, cmpsort)
+        if cmp0 != 0:
+            return cmp0
 
+        return cmp(one['name'].upper(), other['name'].upper())
 
     @aux_call
     @needs_admin
     def teachersbyname(self, request, tl, one, two, module, extra, prog):
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = True, moderating = False)
 
-        def cmpsort(one,other):
-            one_name = one['user'].last_name.upper()
-            other_name = other['user'].last_name.upper()
-            cmp0 = cmp(one_name, other_name)
+    @aux_call
+    @needs_admin
+    def teachermoderatorsbyname(self, request, tl, one, two, module, extra, prog):
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = True, moderating = True)
 
-            if cmp0 != 0:
-                return cmp0
-
-            return cmp(one['name'].upper(), other['name'].upper())
-
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, cmpsort)
+    @aux_call
+    @needs_admin
+    def moderatorsbyname(self, request, tl, one, two, module, extra, prog):
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = False, moderating = True)
 
     @needs_admin
     def roomsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'roomlist.html', extra_func = lambda x: {}):
