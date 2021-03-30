@@ -650,8 +650,7 @@ class ProgramPrintables(ProgramModuleObj):
             response = HttpResponse(content_type='text/csv')
             response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
             t = loader.get_template(self.baseDir()+'teacherlist.csv')
-            c = Context(context)
-            response.write(t.render(c))
+            response.write(t.render(context))
             return response
         else:
             return render_to_response(self.baseDir()+template_file, request, context)
