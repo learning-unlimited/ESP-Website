@@ -1465,6 +1465,40 @@ class ProgramPrintables(ProgramModuleObj):
                                        'cls'    : cls})
 
         context['scheditems'] = scheditems
+        context['bymoderator'] = None
+        if extra == 'attendance':
+            tpl = 'classattendance.html'
+        else:
+            tpl = 'classrosters.html'
+
+        return render_to_response(self.baseDir()+tpl, request, context)
+
+    @aux_call
+    @needs_admin
+    def classrostersbymoderator(self, request, tl, one, two, module, extra, prog):
+        """ generate class rosters by moderator"""
+
+
+        filterObj, found = UserSearchController().create_filter(request, self.program)
+        if not found:
+            return filterObj
+
+
+
+        context = {'module': self, 'program': prog}
+        teachers = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
+        teachers.sort()
+
+        scheditems = []
+
+        for teacher in teachers:
+            for cls in teacher.getModeratingSectionsFromProgram(self.program):
+                if cls.isAccepted():
+                    scheditems.append({'teacher': teacher,
+                                       'cls'    : cls})
+
+        context['scheditems'] = scheditems
+        context['bymoderator'] = True
         if extra == 'attendance':
             tpl = 'classattendance.html'
         else:
