@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from django import forms
 from esp.program.models import ModeratorRecord
+from esp.tagdict.models import Tag
 
 class ModeratorForm(forms.ModelForm):
 
@@ -48,7 +49,15 @@ class ModeratorForm(forms.ModelForm):
         choices = [(0, 'Please select an option')] + [(num, num) for num in range(1, self.program.num_timeslots() + 1)]
         self.fields['num_slots'].choices = choices
         self.fields['num_slots'].widget.choices = choices
+
         # specify help text/labels with tags
+        for field in self.fields.keys():
+            tag_data = Tag.getProgramTag('moderatorreg_label_%s' % field, self.program)
+            if tag_data:
+                self.fields[field].label = tag_data
+            tag_data = Tag.getProgramTag('moderatorreg_help_text_%s' % field, self.program)
+            if tag_data:
+                self.fields[field].help_text = tag_data
 
     class Meta:
         model = ModeratorRecord
