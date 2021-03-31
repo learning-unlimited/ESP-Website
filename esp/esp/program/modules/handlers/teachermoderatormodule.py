@@ -1,6 +1,7 @@
 from esp.program.models import ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, meets_deadline
 from esp.program.modules.forms.moderate import ModeratorForm
+from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
