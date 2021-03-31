@@ -410,6 +410,22 @@ class BaseESPUser(object):
     getModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
 
     @cache_function
+    def getTaughtOrModeratingSectionsFromProgram(self, program, include_rejected = False):
+        from esp.program.models import Program
+        from esp.program.models import ClassSection
+        if not isinstance(program, Program): # if we did not receive a program
+            raise ESPError("getTaughtOrModeratingSectionsFromProgram expects a Program, not a `" + str(type(program)) + "'.")
+        else:
+            classes = list(self.getTaughtClasses(program, include_rejected = include_rejected))
+            if include_rejected:
+                return self.moderating_sections.filter(parent_class__parent_program = program) | ClassSection.objects.filter(parent_class__in=classes)
+            else:
+                return self.moderating_sections.filter(parent_class__parent_program = program) | ClassSection.objects.filter(parent_class__in=classes).exclude(status=-10)
+    getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
+    getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda sec, teacher: {'self': teacher})
+    getTaughtOrModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
+
+    @cache_function
     def getTaughtClassesAll(self, include_rejected = False):
         if include_rejected:
             return self.classsubject_set.all()
@@ -423,7 +439,6 @@ class BaseESPUser(object):
         full_classes = [cls for cls in self.getTaughtClassesFromProgram(program) if cls.is_nearly_full()]
         return "\n".join([cls.emailcode()+": "+cls.title for cls in full_classes])
     getFullClasses_pretty.depend_on_model('program.ClassSubject') # should filter by teachers... eh.
-
 
     def getTaughtSections(self, program = None, include_rejected = False):
         if program is None:
@@ -442,6 +457,7 @@ class BaseESPUser(object):
     getTaughtSectionsAll.depend_on_model('program.ClassSection')
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
                                                               {'self':self})
+
     @cache_function
     def getTaughtSectionsFromProgram(self, program, include_rejected = False):
         from esp.program.models import ClassSection
@@ -900,10 +916,18 @@ class BaseESPUser(object):
     def canEdit(self, cls):
         """Returns if the user can edit the class
 
-A user can edit a class if they can administrate the program or if they
-are a teacher of the class"""
+        A user can edit a class if they can administrate the program or if they
+        are a teacher of the class"""
         if self in cls.get_teachers(): return True
         return self.isAdmin(cls.parent_program)
+
+    def canMod(self, sec):
+        """Returns if the user can moderate the section
+
+        A user can moderate a section if they can administrate the program or if they
+        are a moderator of the section or a teacher of the parent class"""
+        if self in sec.get_moderators() or self in sec.parent_class.get_teachers(): return True
+        return self.isAdmin(sec.parent_class.parent_program)
 
     def getVolunteerOffers(self, program):
         return self.volunteeroffer_set.filter(request__program=program)
