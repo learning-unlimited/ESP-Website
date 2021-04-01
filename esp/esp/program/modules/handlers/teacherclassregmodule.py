@@ -90,6 +90,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                                      self.program.getTimeSlots()[0].start < datetime.datetime.now())
         context['crmi'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
+        context['modlist'] = get_current_request().user.getModeratingSectionsFromProgram(self.program)
         context['friendly_times_with_date'] = Tag.getBooleanTag('friendly_times_with_date', self.program)
         context['open_class_category'] = self.program.open_class_category.category
         return context
@@ -388,7 +389,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         else:
             secid = extra
         sections = ClassSection.objects.filter(id = secid)
-        if len(sections) != 1 or not request.user.canEdit(sections[0].parent_class):
+        if len(sections) != 1 or not (request.user.canEdit(sections[0].parent_class) or request.user.canMod(sections[0])):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         section = sections[0]
 
