@@ -115,7 +115,7 @@ function Matrix(
     this.sections = sections;
     this.sections.bindMatrix(this);
     this.moderatorDirectory = moderatorDirectory;
-    this.moderatorDirectory.bindMatrix(this);
+    if(has_moderator_module === "True") this.moderatorDirectory.bindMatrix(this);
 
     // Set up scheduling checks
     this.updateCells = function(){
