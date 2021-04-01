@@ -81,7 +81,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             else:
                 return '%s has already been checked in until %s.' % (teacher.name(), str(endtime))
         else:
-            return '%s is not a teacher or %s for %s.' % (teacher.name(), prog.getModeratorTitle(), prog.niceName())
+            return '%s is not a teacher or %s for %s.' % (teacher.name(), prog.getModeratorTitle().lower(), prog.niceName())
 
     def undoCheckIn(self, teacher, prog, when=None):
         """Undo what checkIn does"""
