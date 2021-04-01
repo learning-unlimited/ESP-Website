@@ -396,10 +396,9 @@ class TeacherCheckinModule(ProgramModuleObj):
         if starttime is not None:
             sections = sections.filter(end_time__lt=starttime)
 
-        teachers = ESPUser.objects.filter(classsubject__sections__in=sections).distinct()
-        moderators = ESPUser.objects.filter(moderating_sections__in=sections).distinct()
+        teachers = ESPUser.objects.filter(classsubject__sections__in=sections).distinct() |\
+                   ESPUser.objects.filter(moderating_sections__in=sections).distinct()
         teacher_phones = self.get_phones(teachers, default_phone)
-        moderator_phones = self.get_phones(moderators, default_phone)
 
         sections_list = []
         for section in sections:
@@ -409,11 +408,10 @@ class TeacherCheckinModule(ProgramModuleObj):
                 section.missing_resources = resources
                 section.room = (section.prettyrooms() or [None])[-1]
                 section.teachers_list = list(section.teachers)
-                section.moderators_list = list(section.get_moderators())
+                section.teachers_list.extend(list(section.get_moderators()))
+                print(section.teachers_list)
                 for teacher in section.teachers_list:
                     teacher.phone = teacher_phones.get(teacher.id, default_phone)
-                for moderator in section.moderators_list:
-                    moderator.phone = moderator_phones.get(moderator.id, default_phone)
                 sections_list.append(section)
 
         return sections_list

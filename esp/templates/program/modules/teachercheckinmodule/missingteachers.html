@@ -76,7 +76,7 @@
         End Time and Location
     </th>
     <th colspan="2">
-        Teachers
+        Teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle }}s{% endif %}
     </th>
     <th>
         Missing Resources
@@ -84,10 +84,10 @@
 </tr>
 {% for section in missing_resources %}
 <tr class="section-first-row" data-sec-id="{{ section.emailcode }}">
-    <td rowspan="{{ section.teachers|length }}" class="section-code" style="border-bottom: 1px solid #ccc;">
+    <td rowspan="{{ section.teachers_list|length }}" class="section-code" style="border-bottom: 1px solid #ccc;">
         {{ section }}
     </td>
-    <td class="room" rowspan="{{ section.teachers|length }}" style="border-bottom: 1px solid #ccc;">
+    <td class="room" rowspan="{{ section.teachers_list|length }}" style="border-bottom: 1px solid #ccc;">
         {{ section.end_time }} in {{ section.room }}
     </td>
     {% for teacher in section.teachers_list %}
@@ -96,7 +96,7 @@
         </td>
         <td class="phone"{% if forloop.last %} style="border-bottom: 1px solid #ccc;"{% endif %}> {{ teacher.phone }} </td>
         {% if forloop.first %}
-            <td rowspan="{{ section.teachers|length }}" class="section-detail-td" style="border-bottom: 1px solid #ccc;">
+            <td rowspan="{{ section.teachers_list|length }}" class="section-detail-td" style="border-bottom: 1px solid #ccc;">
                 <div class="section-detail fqr-class">
                     <div class="assignment-name-list fqr-class-assignments" style="white-space:nowrap;">
                         {% for assignment in section.missing_resources.all %}
