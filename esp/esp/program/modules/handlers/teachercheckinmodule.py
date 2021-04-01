@@ -409,7 +409,6 @@ class TeacherCheckinModule(ProgramModuleObj):
                 section.room = (section.prettyrooms() or [None])[-1]
                 section.teachers_list = list(section.teachers)
                 section.teachers_list.extend(list(section.get_moderators()))
-                print(section.teachers_list)
                 for teacher in section.teachers_list:
                     teacher.phone = teacher_phones.get(teacher.id, default_phone)
                 sections_list.append(section)

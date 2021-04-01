@@ -375,6 +375,15 @@ class ClassSection(models.Model):
     def get_moderators(self):
         return self.moderators.all()
 
+    def getModeratorNamesLast(self):
+        moderators = []
+        for moderator in self.get_moderators():
+            name = moderator.name_last_first()
+            if name.strip() == '':
+                name = moderator.username
+            moderators.append(name)
+        return moderators
+
     @cache_function
     def get_meeting_times(self):
         return self.meeting_times.all()

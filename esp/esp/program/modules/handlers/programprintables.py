@@ -441,8 +441,7 @@ class ProgramPrintables(ProgramModuleObj):
             response = HttpResponse(content_type='text/csv')
             response['Content-Disposition'] = 'attachment; filename="classes_list.csv"'
             t = loader.get_template(self.baseDir()+'classes_list.csv')
-            c = Context(context)
-            response.write(t.render(c))
+            response.write(t.render(context))
             return response
         else:
             return render_to_response(self.baseDir()+template_file, request, context)
@@ -485,8 +484,7 @@ class ProgramPrintables(ProgramModuleObj):
             response = HttpResponse(content_type='text/csv')
             response['Content-Disposition'] = 'attachment; filename="sections_list.csv"'
             t = loader.get_template(self.baseDir()+'sections_list.csv')
-            c = Context(context)
-            response.write(t.render(c))
+            response.write(t.render(context))
             return response
         else:
             return render_to_response(self.baseDir()+template_file, request, context)
@@ -1063,7 +1061,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         context = {'classlist': ProgramPrintables.get_student_classlist(program, student)}
 
-        return t.render(Context(context))
+        return t.render(context)
 
     @staticmethod
     def getSchedule(program, user, schedule_type=None, room_numbers=True, include_date=False):
