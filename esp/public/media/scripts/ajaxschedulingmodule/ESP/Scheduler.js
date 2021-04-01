@@ -184,7 +184,7 @@ function Scheduler(
     // Render all the objects on the page
     this.render = function(){
         this.directory.render();
-        this.moderatorDirectory.render();
+        if(has_moderator_module === "True") this.moderatorDirectory.render();
         this.matrix.render();
         this.changelogFetcher.pollForChanges(update_interval);
     };
