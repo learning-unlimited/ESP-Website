@@ -67,7 +67,7 @@ function Scheduler(
                                  data.schedule_assignments,
                                  new ApiClient());
 
-    if(has_moderator_module){
+    if(has_moderator_module === "True"){
         this.moderatorDirectory = new ModeratorDirectory(moderatorEl,
                                                          data.moderators);
     } else {

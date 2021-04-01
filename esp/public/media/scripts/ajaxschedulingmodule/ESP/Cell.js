@@ -312,7 +312,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
         }
         tooltip_parts['Category'] = this.matrix.categories[this.section.category_id || this.ghostSection.category_id].name;
         tooltip_parts['Teachers'] = this.matrix.sections.getTeachersString(this.section);
-        if(has_moderator_module) tooltip_parts[moderator_title + 's'] = this.matrix.sections.getModeratorsString(this.section);
+        if(has_moderator_module === "True") tooltip_parts[moderator_title + 's'] = this.matrix.sections.getModeratorsString(this.section);
         tooltip_parts['Class size max'] = this.section.class_size_max;
         tooltip_parts['Length'] = Math.ceil(this.section.length);
         tooltip_parts['Grades'] = this.section.grade_min + "-" + this.section.grade_max;
