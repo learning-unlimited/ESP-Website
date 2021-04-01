@@ -112,7 +112,7 @@ function Scheduler(
             this.sections.unscheduleSection(this.sections.selectedSection);
         } else if(evt.keyCode == 27) { // escape is pressed
             this.sections.unselectSection()
-            this.moderatorDirectory.unselectModerator()
+            if(has_moderator_module === "True") this.moderatorDirectory.unselectModerator()
         } else if(evt.keyCode == 112) { // F1 is pressed
             evt.preventDefault();
             $j("#side-panel").tabs({active: 0});
