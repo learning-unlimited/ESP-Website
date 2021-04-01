@@ -59,7 +59,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
 
         context = self.onsitecontext(request, tl, one, two, prog)
 
-        classes = [cls for cls in user.getTaughtSections(program = prog)
+        classes = [cls for cls in user.getTaughtOrModeratingSectionsFromProgram(program = prog)
                    if cls.meeting_times.all().exists()
                    and cls.resourceassignment_set.all().exists()
                    and cls.status > 0]
@@ -112,10 +112,10 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         if extra:
             secid = extra
             sections = ClassSection.objects.filter(id = secid)
-            if len(sections) != 1 or not request.user.canEdit(sections[0].parent_class):
+            if len(sections) != 1 or not (request.user.canEdit(sections[0].parent_class) or request.user.canMod(sections[0])):
                 return render_to_response('program/modules/teacherclassregmodule/cannoteditclass.html', request, {})
         else:
-            sections = user.getTaughtSections(program = prog).annotate(
+            sections = user.getTaughtOrModeratingSectionsFromProgram(program = prog).annotate(
                 num_meeting_times=Count("meeting_times")).filter(
                 num_meeting_times__gt=0, status__gt=0)
         context['sections'] = sections
@@ -135,10 +135,10 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         if extra:
             secid = extra
             sections = ClassSection.objects.filter(id = secid)
-            if len(sections) != 1 or not request.user.canEdit(sections[0].parent_class):
+            if len(sections) != 1 or not (request.user.canEdit(sections[0].parent_class) or request.user.canMod(sections[0])):
                 return render_to_response('program/modules/teacherclassregmodule/cannoteditclass.html', request, {})
         else:
-            sections = user.getTaughtSections(program = prog).annotate(
+            sections = user.getTaughtOrModeratingSectionsFromProgram(program = prog).annotate(
                 num_meeting_times=Count("meeting_times")).filter(
                 num_meeting_times__gt=0, status__gt=0)
         section_list = []

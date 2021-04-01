@@ -137,7 +137,7 @@ function ModeratorDirectory(el, moderators) {
 
         // Create the directory table
         var table = $j("<table/>").css("width", "100%");
-        table.append($j("<tr/>").append("<th>Moderator</th>").append("<th>Available</br>Slots</th>").append("<th>Remaining</br>Slots</th>"));
+        table.append($j("<tr/>").append("<th>" + moderator_title + "</th>").append("<th>Available</br>Slots</th>").append("<th>Remaining</br>Slots</th>"));
         $j.each(this.filtered_moderators(), function(id, moderator){
             var row = new ModeratorRow(moderator, $j("<tr/>"), this);
             row.render();
