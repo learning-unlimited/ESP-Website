@@ -175,7 +175,7 @@ function ModeratorDirectory(el, moderators) {
 
     this.numAvailableSlots = function(moderator) {
         var avail_slots = moderator.num_slots;
-        for(section of moderator.sections) {
+        for(var section of moderator.sections) {
             var assignment = this.matrix.sections.scheduleAssignments[section]
             if(assignment){
                 avail_slots -= assignment.timeslots.length;
@@ -290,7 +290,7 @@ function ModeratorDirectory(el, moderators) {
     };
 
     this.assignModeratorLocal = function(section) {
-        moderator = this.selectedModerator;
+        var moderator = this.selectedModerator;
         this.unselectModerator();
         if (!section.moderators.includes(moderator.id)) {
             moderator.sections.push(section.id);
@@ -321,7 +321,7 @@ function ModeratorDirectory(el, moderators) {
     };
 
     this.unassignModeratorLocal = function(section) {
-        moderator = this.selectedModerator;
+        var moderator = this.selectedModerator;
         this.unselectModerator();
         if (section.moderators.includes(moderator.id)) {
             moderator.sections.splice(moderator.sections.indexOf(section.id), 1);

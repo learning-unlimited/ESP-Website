@@ -226,8 +226,8 @@ function Matrix(
             addClassToTimeslots(teaching_timeslots, "moderator-teaching-cell", moderator);
             var not_first_sections = [];
             var not_available_sections = []
-            for(section in this.sections.scheduleAssignments) {
-                for(timeslot of this.sections.scheduleAssignments[section].timeslots) {
+            for(var section in this.sections.scheduleAssignments) {
+                for(var timeslot of this.sections.scheduleAssignments[section].timeslots) {
                     if(teaching_timeslots.includes(timeslot) && !(not_first_sections.includes(section))){
                         not_first_sections.push(section);
                     }

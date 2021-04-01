@@ -53,7 +53,7 @@ from django import forms
 from django.conf import settings
 from django.http import HttpResponse
 from django.db.models import IntegerField, Case, When, Count
-from django.template import Context, loader
+from django.template import loader
 from django.template.loader import render_to_string, get_template
 from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
