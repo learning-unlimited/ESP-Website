@@ -434,7 +434,7 @@ class AdminClass(ProgramModuleObj):
 
             elif request.POST['moderator_selected'] in request.POST.get('moderators', '').split(','):
                 error = 'Error - You already added this ' + prog.getModeratorTitle().lower() + ' to this section!'
-            
+
             sections = ClassSection.objects.filter(id = request.POST.get('secid'))
             if len(sections) != 1:
                 error = 'Error - Please use the form to add a ' + prog.getModeratorTitle().lower() + '.'
