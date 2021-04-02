@@ -201,10 +201,14 @@
                         <br />
                         <input type="radio" name="scheduling-checks" value="num_teachers"></input> Number of Teachers
                         <br />
-                        <input type="radio" name="scheduling-checks" value="num_moderators"></input> Number of Moderators
+                        {% if has_moderator_module %}
+                        <input type="radio" name="scheduling-checks" value="num_moderators"></input> Number of {{ program.getModeratorTitle }}s
                         <br />
-                        <input type="radio" name="scheduling-checks" value="num_both"></input> Number of Teachers and Moderators
+                        <input type="radio" name="scheduling-checks" value="num_both"></input> Number of Teachers and {{ program.getModeratorTitle }}s
                         <br />
+                        <input type="radio" name="scheduling-checks" value="mod_cats"></input> {{ program.getModeratorTitle }}s with Mismatched Categories
+                        <br />
+                        {% endif %}
                     </div>
                   </form>
                 </div>

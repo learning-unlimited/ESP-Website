@@ -132,9 +132,10 @@ class AvailabilityModule(ProgramModuleObj):
 
         blank = False
 
-        available_slots = teacher.getAvailableTimes(self.program, True)
+        available_slots = teacher.getAvailableTimes(self.program, True, True)
         # must set the ignore_classes=True parameter above, otherwise when a teacher tries to edit their
         # availability, it will show their scheduled times as unavailable.
+        # same with the ignore_moderation parameter
 
         #   Fetch the timeslots the teacher is scheduled in and grey them out.
         #   If we found a timeslot that they are scheduled in but is not available, show a warning.

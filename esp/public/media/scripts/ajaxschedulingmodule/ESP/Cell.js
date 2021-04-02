@@ -278,6 +278,14 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 // Color cell based on the number of teachers and/or moderators for the class
                 var n_moderators = Math.min(section.moderators.length + section.teachers.length, 5)
                 return this.cellColors.HSLToRGB(120,100,100 - 10 * n_moderators);
+            case "mod_cats":
+                var n_moderators = 0;
+                for(var moderator of section.moderator_data){
+                    if(!(section.category_id in moderator.categories)){
+                        n_moderators += 1;
+                    }
+                }
+                return this.cellColors.HSLToRGB(0,100,100 - 10 * n_moderators);
         }
         return this.cellColors.color(section); // Selected scheduling check isn't implemented or none is selected
     };
