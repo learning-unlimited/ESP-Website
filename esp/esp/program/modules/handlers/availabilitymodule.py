@@ -154,7 +154,24 @@ class AvailabilityModule(ProgramModuleObj):
                     conflict_found = True
                 else:
                     avail_and_teaching.append(timeslot)
-                teaching_times[timeslot]=section
+                if timeslot in teaching_times:
+                    teaching_times[timeslot].append(section)
+                else:
+                    teaching_times[timeslot] = [section]
+        if self.program.hasModule("TeacherModeratorModule"):
+            for section in teacher.getModeratingSectionsFromProgram(self.program):
+                section.moderating = True
+                sec_times = section.get_meeting_times()
+                for timeslot in sec_times:
+                    taken_slots.append(timeslot)
+                    if timeslot not in available_slots:
+                        conflict_found = True
+                    else:
+                        avail_and_teaching.append(timeslot)
+                    if timeslot in teaching_times:
+                        teaching_times[timeslot].append(section)
+                    else:
+                        teaching_times[timeslot] = [section]
 
         if request.method == 'POST' and 'search' not in request.POST:
             #   Process form
@@ -200,7 +217,7 @@ class AvailabilityModule(ProgramModuleObj):
                                     'taken': t in taken_slots,
                                     'slot': t,
                                     'id': t.id,
-                                    'section': teaching_times.get(t),
+                                    'sections': teaching_times.get(t),
                                 }
                             for t in group]
                         for group in time_groups]
