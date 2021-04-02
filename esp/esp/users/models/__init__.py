@@ -2376,6 +2376,7 @@ class Permission(ExpirableModel):
             ("Teacher/Acknowledgement", "Teacher acknowledgement"),
             ("Teacher/AppReview", "Review students' apps"),
             ("Teacher/Availability", "Set availability"),
+            ("Teacher/Moderate", "Fill out the moderator form"),
             ("Teacher/Catalog", "Catalog"),
             ("Teacher/Classes", "Classes"),
             ("Teacher/Classes/All", "Classes/All"),
