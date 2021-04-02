@@ -1,5 +1,5 @@
 from esp.program.models import ModeratorRecord
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, meets_deadline
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, meets_deadline, needs_admin, aux_call
 from esp.program.modules.forms.moderate import ModeratorForm
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
@@ -64,6 +64,66 @@ class TeacherModeratorModule(ProgramModuleObj):
     def teacherDesc(self):
         return {'will_moderate': """Teachers who have also offered to moderate""",
                 'assigned_moderator': """Teachers who are assigned as moderators"""}
+
+    @aux_call
+    @needs_admin
+    def moderatorlookup(self, request, tl, one, two, module, extra, prog):
+
+        # Search for teachers with names that start with search string
+        if not 'name' in request.GET or 'name' in request.POST:
+            return self.goToCore(tl)
+
+        return self.moderatorlookup_logic(request, tl, one, two, module, extra, prog)
+
+    @staticmethod
+    def moderatorlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
+        limit = 10
+        from esp.web.views.json_utils import JsonResponse
+
+        queryset = prog.teachers()['will_moderate']
+
+        if not 'name' in request.GET:
+            startswith = request.POST['name']
+        else:
+            startswith = request.GET['name']
+        s = ''
+        spaces = ''
+        after_comma = False
+        for char in startswith:
+            if char == ' ':
+                if not after_comma:
+                    spaces += ' '
+            elif char == ',':
+                s += ','
+                spaces = ''
+                after_comma = True
+            else:
+                s += spaces + char
+                spaces = ''
+                after_comma = False
+        startswith = s
+        parts = [x.strip('*') for x in startswith.split(',')]
+
+        #   Don't return anything if there's no input.
+        if len(parts[0]) > 0:
+            Q_name = Q(last_name__istartswith=parts[0])
+
+            if len(parts) > 1:
+                Q_name = Q_name & Q(first_name__istartswith=parts[1])
+
+            # Isolate user objects
+            queryset = queryset.filter(Q_name)[:(limit*10)]
+            user_dict = {}
+            for user in queryset:
+                user_dict[user.id] = user
+            users = user_dict.values()
+
+            # Construct combo-box items
+            obj_list = [{'name': "%s, %s" % (user.last_name, user.first_name), 'username': user.username, 'id': user.id} for user in users]
+        else:
+            obj_list = []
+
+        return JsonResponse(obj_list)
 
     class Meta:
         proxy = True

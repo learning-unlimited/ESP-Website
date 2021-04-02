@@ -428,6 +428,75 @@ class AdminClass(ProgramModuleObj):
                 cls.removeTeacher(teacher)
             ccc.send_class_mail_to_directors(cls)
 
+        elif op == "addmod":
+            if len(request.POST['moderator_selected'].strip()) == 0:
+                error = 'Error - Please click on the name when it drops down.'
+
+            elif request.POST['moderator_selected'] in request.POST.get('moderators', '').split(','):
+                error = 'Error - You already added this ' + prog.getModeratorTitle().lower() + ' to this section!'
+            
+            sections = ClassSection.objects.filter(id = request.POST.get('secid'))
+            if len(sections) != 1:
+                error = 'Error - Please use the form to add a ' + prog.getModeratorTitle().lower() + '.'
+            else:
+                section = sections[0]
+
+            if error:
+                return render_to_response(self.baseDir()+'coteachers.html', request,
+                                          {'class': cls,
+                                           'ajax': ajax,
+                                           'txtTeachers': txtTeachers,
+                                           'coteachers': coteachers,
+                                           'error': error,
+                                           'conflict': []})
+
+            # add schedule conflict checking here...
+            moderator = ESPUser.objects.get(id = request.POST['moderator_selected'])
+
+            if section.conflicts(moderator):
+                conflictinguser = moderator
+            else:
+                lastProf = RegistrationProfile.getLastForProgram(moderator, prog)
+                if not lastProf.teacher_info:
+                    anyInfo = moderator.getLastProfile().teacher_info
+                    if anyInfo:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(moderator, lastProf,
+                                                                        {'graduation_year': anyInfo.graduation_year,
+                                                                         'affiliation': anyInfo.affiliation,
+                                                                         'major': anyInfo.major,
+                                                                         'shirt_size': anyInfo.shirt_size,
+                                                                         'shirt_type': anyInfo.shirt_type})
+                    else:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(moderator, lastProf, {})
+                lastProf.save()
+                section.moderators.add(moderator)
+                # should we send the moderator or directors an email?
+
+        elif op == "delmod":
+            sections = ClassSection.objects.filter(id = request.POST.get('secid'))
+            if len(sections) != 1:
+                error = 'Error - Please use the form to add a ' + prog.getModeratorTitle().lower() + '.'
+            else:
+                section = sections[0]
+            if error:
+                return render_to_response(self.baseDir()+'coteachers.html', request,
+                                          {'class': cls,
+                                           'ajax': ajax,
+                                           'txtTeachers': txtTeachers,
+                                           'coteachers': coteachers,
+                                           'error': error,
+                                           'conflict': []})
+            ids = request.POST.getlist('delete_moderators')
+            newmoderators = []
+            for moderator in section.get_moderators():
+                if str(moderator.id) not in ids:
+                    newmoderators.append(moderator)
+            new_moderators_set = set(newmoderators)
+            to_be_deleted = set(section.get_moderators()) - new_moderators_set
+            for moderator in to_be_deleted:
+                section.moderators.remove(moderator)
+            # should we send the moderator or directors an email?
+
         return render_to_response(self.baseDir()+'coteachers.html', request,
                                   {'class': cls,
                                    'ajax': ajax,
