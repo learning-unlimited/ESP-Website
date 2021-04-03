@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, ContactInfo
 from esp.users.controllers.usersearch import UserSearchController
@@ -64,14 +65,7 @@ class MapGenModule(ProgramModuleObj):
         context['program'] = prog
 
         if request.method == 'POST':
-            #   Turn multi-valued QueryDict into standard dictionary
-            data = {}
-            for key in request.POST:
-                #   Some keys have list values
-                if key in ['regtypes']:
-                    data[key] = request.POST.getlist(key)
-                else:
-                    data[key] = request.POST[key]
+            data = ListGenModule.processPost(request)
             filterObj = usc.filter_from_postdata(prog, data)
 
             users = ESPUser.objects.filter(filterObj.get_Q()).distinct()

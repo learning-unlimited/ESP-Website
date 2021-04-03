@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 from collections import defaultdict
 from esp.users.models import ESPUser, ZipCode, PersistentQueryFilter, Record
+from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.middleware import ESPError
 from esp.utils.web import render_to_response
 from esp.program.models import Program, RegistrationType, StudentRegistration
@@ -406,6 +407,7 @@ class UserSearchController(object):
     def prepare_context(self, program, target_path=None):
         context = {}
         context['program'] = program
+        context['student_search_form'] = StudentSearchForm()
         context['user_types'] = ESPUser.getTypes()
         category_lists = {}
         list_descriptions = program.getListDescriptions()
