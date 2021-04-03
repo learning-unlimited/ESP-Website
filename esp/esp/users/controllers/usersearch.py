@@ -455,10 +455,27 @@ class UserSearchController(object):
             template = 'users/usersearch/usersearch_default.html'
 
         if request.method == 'POST':
-            #   Turn multi-valued QueryDict into standard dictionary
+            # TODO: This should just be 'data = ListGenModule.processPost(request)' but for some reason it wont let me import ListGenModule
             data = {}
             for key in request.POST:
-                data[key] = request.POST[key]
+                #   Some keys have list values
+                if key in ['regtypes', 'teaching_times', 'teacher_events', 'class_times', 'groups_include',
+                           'groups_exclude']:
+                    data[key] = request.POST.getlist(key)
+                elif key == 'target_user':
+                    if request.POST['target_user']:
+                        student_search_form = StudentSearchForm(request.POST)
+                        if student_search_form.is_valid():
+                            student = student_search_form.cleaned_data['target_user']
+                            #   Check that this is a student user
+                            if student.isStudent():
+                                data[key] = student
+                            else:
+                                data[key] = "invalid"
+                    elif request.POST['target_user_raw']:
+                        data[key] = "invalid"
+                else:
+                    data[key] = request.POST[key]
 
             #   Look for signs that this request contains user search options and act accordingly
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
