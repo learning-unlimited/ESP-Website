@@ -138,7 +138,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         content_parts['Title'] = section.title;
         content_parts['Category'] = this.sections.categories_data[section.category_id].name;
         content_parts['Teachers'] = teacher_links;
-        if(has_moderator_module) content_parts[moderator_title + 's'] = getModeratorLinks(section);
+        if(has_moderator_module === "True") content_parts[moderator_title + 's'] = getModeratorLinks(section);
         content_parts['Class size max'] = section.class_size_max;
         content_parts['Length'] = Math.ceil(section.length);
         content_parts['Grades'] = section.grade_min + "-" + section.grade_max;

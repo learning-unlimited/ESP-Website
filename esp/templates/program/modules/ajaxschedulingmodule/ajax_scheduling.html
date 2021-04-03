@@ -21,7 +21,7 @@
 
 <!-- 3rd party -->
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/{{ settings.JQUERY_VERSION }}/jquery.min.js" integrity="{{ settings.JQUERY_HASH }}" crossorigin="anonymous"></script>
-<script src="http://code.jquery.com/jquery-migrate-1.4.1.{% if not settings.DEBUG %}min.{% endif %}js"></script>
+<script src="https://code.jquery.com/jquery-migrate-1.4.1.{% if not settings.DEBUG %}min.{% endif %}js"></script>
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/{{ settings.JQUERY_UI_VERSION }}/jquery-ui.js"></script>
 <script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
 <script type='text/javascript' src='/media/scripts/common.js'></script>
@@ -201,10 +201,14 @@
                         <br />
                         <input type="radio" name="scheduling-checks" value="num_teachers"></input> Number of Teachers
                         <br />
-                        <input type="radio" name="scheduling-checks" value="num_moderators"></input> Number of Moderators
+                        {% if has_moderator_module %}
+                        <input type="radio" name="scheduling-checks" value="num_moderators"></input> Number of {{ program.getModeratorTitle }}s
                         <br />
-                        <input type="radio" name="scheduling-checks" value="num_both"></input> Number of Teachers and Moderators
+                        <input type="radio" name="scheduling-checks" value="num_both"></input> Number of Teachers and {{ program.getModeratorTitle }}s
                         <br />
+                        <input type="radio" name="scheduling-checks" value="mod_cats"></input> {{ program.getModeratorTitle }}s with Mismatched Categories
+                        <br />
+                        {% endif %}
                     </div>
                   </form>
                 </div>

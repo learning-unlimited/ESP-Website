@@ -223,7 +223,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
      * @param section: The section to select
      */
     this.selectSection = function(section) {
-        if(this.matrix.moderatorDirectory.selectedModerator) {
+        if(has_moderator_module === "True" && this.matrix.moderatorDirectory.selectedModerator) {
             this.matrix.moderatorDirectory.unselectModerator();
         }
         if(this.selectedSection) {

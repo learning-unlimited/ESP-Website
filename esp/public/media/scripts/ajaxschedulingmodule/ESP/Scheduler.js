@@ -67,7 +67,7 @@ function Scheduler(
                                  data.schedule_assignments,
                                  new ApiClient());
 
-    if(has_moderator_module){
+    if(has_moderator_module === "True"){
         this.moderatorDirectory = new ModeratorDirectory(moderatorEl,
                                                          data.moderators);
     } else {
@@ -112,7 +112,7 @@ function Scheduler(
             this.sections.unscheduleSection(this.sections.selectedSection);
         } else if(evt.keyCode == 27) { // escape is pressed
             this.sections.unselectSection()
-            this.moderatorDirectory.unselectModerator()
+            if(has_moderator_module === "True") this.moderatorDirectory.unselectModerator()
         } else if(evt.keyCode == 112) { // F1 is pressed
             evt.preventDefault();
             $j("#side-panel").tabs({active: 0});
@@ -133,7 +133,7 @@ function Scheduler(
     // set up handlers for selecting and scheduling classes
     $j("body").on("click", "td.matrix-cell > a", function(evt, ui) {
         var cell = $j(evt.currentTarget.parentElement).data("cell");
-        if((evt.ctrlKey || evt.metaKey) && this.moderatorDirectory.selectedModerator) {
+        if((evt.ctrlKey || evt.metaKey) && has_moderator_module === "True" && this.moderatorDirectory.selectedModerator) {
             if(this.moderatorDirectory.selectedModerator.sections.includes(cell.section.id)) {
                 this.moderatorDirectory.unassignModerator(cell.section);
             } else {
@@ -184,7 +184,7 @@ function Scheduler(
     // Render all the objects on the page
     this.render = function(){
         this.directory.render();
-        this.moderatorDirectory.render();
+        if(has_moderator_module === "True") this.moderatorDirectory.render();
         this.matrix.render();
         this.changelogFetcher.pollForChanges(update_interval);
     };

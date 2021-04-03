@@ -324,8 +324,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def sections_admin(extra, prog):
         teacher_dict = {}
         teachers = []
-        moderator_dict = {}
-        moderators = []
         sections = []
         qs = prog.sections().prefetch_related(
             'parent_class__category',
