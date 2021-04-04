@@ -72,7 +72,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         'when' defaults to datetime.now()."""
         if when is None:
             when = datetime.now()
-        if teacher.getTaughtClassesFromProgram(prog).exists():
+        if teacher.getTaughtClassesFromProgram(prog).exists() or teacher.getModeratingSectionsFromProgram(prog).exists():
             endtime = datetime(when.year, when.month, when.day) + timedelta(days=1, seconds=-1)
             checked_in_already = Record.user_completed(teacher, 'teacher_checked_in', prog, when, only_today=True)
             if not checked_in_already:
@@ -81,7 +81,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             else:
                 return '%s has already been checked in until %s.' % (teacher.name(), str(endtime))
         else:
-            return '%s is not a teacher for %s.' % (teacher.name(), prog.niceName())
+            return '%s is not a teacher or %s for %s.' % (teacher.name(), prog.getModeratorTitle().lower(), prog.niceName())
 
     def undoCheckIn(self, teacher, prog, when=None):
         """Undo what checkIn does"""
@@ -260,9 +260,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         Returns the 2-tuple (sections, arrived):
             sections: A list of all sections starting at the given time or on
                       the given date which do not have all teachers checked in,
-                      with those with no teachers checked in first.  If a date
-                      was given, includes only the first section of each class
-                      on that date.
+                      with those with no teachers checked in first.
             arrived:  A dict of id -> teacher for all teachers who have already
                       checked in.
         """
@@ -270,7 +268,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             when = datetime.now()
 
         sections = prog.sections().annotate(begin_time=Min("meeting_times__start")) \
-                                  .filter(status=10, parent_class__status=10, begin_time__isnull=False)
+            .filter(status=10, parent_class__status=10, begin_time__isnull=False)
         if date is not None:
             # Only consider classes happening on this date.
             sections = sections.filter(meeting_times__start__year  = date.year,
@@ -302,7 +300,16 @@ class TeacherCheckinModule(ProgramModuleObj):
         # - which is from the same date as 'when'.
         teachers = ESPUser.objects.filter(
             classsubject__sections__in=sections).distinct()
+        moderators = ESPUser.objects.filter(
+            moderating_sections__in=sections).distinct()
         arrived_teachers = teachers.filter(
+            record__program=prog,
+            record__event='teacher_checked_in',
+            record__time__lte=when,
+            record__time__year=when.year,
+            record__time__month=when.month,
+            record__time__day=when.day).distinct()
+        arrived_moderators = moderators.filter(
             record__program=prog,
             record__event='teacher_checked_in',
             record__time__lte=when,
@@ -313,38 +320,47 @@ class TeacherCheckinModule(ProgramModuleObj):
         # To save multiple calls to getLastProfile, precompute the teacher
         # phones.
         teacher_phones = self.get_phones(teachers, default_phone)
+        moderator_phones = self.get_phones(moderators, default_phone)
         arrived = dict()
         for teacher in arrived_teachers:
             teacher.phone = teacher_phones.get(teacher.id, default_phone)
             arrived[teacher.id] = teacher
+        for moderator in arrived_moderators:
+            moderator.phone = moderator_phones.get(moderator.id, default_phone)
+            arrived[moderator.id] = moderator
 
-        sections_by_class = {}
+        sections_list = []
         for section in sections:
-            # Put the first section of each class into sections_by_class
-            if (section.parent_class.id not in sections_by_class
-                    or sections_by_class[section.parent_class_id].begin_time > section.begin_time):
-                # Precompute some things and pack them on the section.
-                teacher_status = [teacher.id in arrived for teacher in section.teachers]
-                section.all_arrived = all(teacher_status) and len(section.teachers) > 0
-                section.any_arrived = any(teacher_status) and len(section.teachers) > 0
-                section.room = (section.prettyrooms() or [None])[0]
-                section.unique_resources = section.resourceassignments().order_by('assignment_group').distinct('assignment_group')
-                # section.teachers is a property, so we can't add extra
-                # data to the ESPUser objects and have them stick. We must
-                # make a new list and then modify that.
-                section.teachers_list = list(section.teachers)
-                for teacher in section.teachers_list:
-                    teacher.phone = teacher_phones.get(teacher.id, default_phone)
-                sections_by_class[section.parent_class_id] = section
+            # Precompute some things and pack them on the section.
+            teacher_status = [teacher.id in arrived for teacher in section.teachers]
+            moderator_status = [moderator.id in arrived for moderator in section.get_moderators()]
+            section.all_teachers_arrived = all(teacher_status) and len(section.teachers) > 0
+            section.all_moderators_arrived = all(moderator_status) and len(section.get_moderators()) > 0
+            section.any_teachers_arrived = any(teacher_status) and len(section.teachers) > 0
+            section.any_moderators_arrived = any(moderator_status) and len(section.get_moderators()) > 0
+            section.all_arrived = section.all_teachers_arrived and section.all_moderators_arrived
+            section.any_arrived = section.any_moderators_arrived and section.any_teachers_arrived
+            section.room = (section.prettyrooms() or [None])[0]
+            section.unique_resources = section.resourceassignments().order_by('assignment_group').distinct('assignment_group')
+            # section.teachers is a property, so we can't add extra
+            # data to the ESPUser objects and have them stick. We must
+            # make a new list and then modify that.
+            section.teachers_list = list(section.teachers)
+            section.moderators_list = list(section.get_moderators())
+            for teacher in section.teachers_list:
+                teacher.phone = teacher_phones.get(teacher.id, default_phone)
+            for moderator in section.moderators_list:
+                moderator.phone = moderator_phones.get(moderator.id, default_phone)
+            sections_list.append(section)
 
         sections = [
-            section for section in sections_by_class.values()
+            section for section in sections_list
             if not section.any_arrived
         ] + [
-            section for section in sections_by_class.values()
+            section for section in sections_list
             if section.any_arrived and not section.all_arrived
         ] + [
-            section for section in sections_by_class.values()
+            section for section in sections_list
             if section.all_arrived
         ]
 
@@ -380,7 +396,8 @@ class TeacherCheckinModule(ProgramModuleObj):
         if starttime is not None:
             sections = sections.filter(end_time__lt=starttime)
 
-        teachers = ESPUser.objects.filter(classsubject__sections__in=sections).distinct()
+        teachers = ESPUser.objects.filter(classsubject__sections__in=sections).distinct() |\
+                   ESPUser.objects.filter(moderating_sections__in=sections).distinct()
         teacher_phones = self.get_phones(teachers, default_phone)
 
         sections_list = []
@@ -391,6 +408,7 @@ class TeacherCheckinModule(ProgramModuleObj):
                 section.missing_resources = resources
                 section.room = (section.prettyrooms() or [None])[-1]
                 section.teachers_list = list(section.teachers)
+                section.teachers_list.extend(list(section.get_moderators()))
                 for teacher in section.teachers_list:
                     teacher.phone = teacher_phones.get(teacher.id, default_phone)
                 sections_list.append(section)

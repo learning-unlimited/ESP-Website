@@ -72,6 +72,10 @@ def myesp_passwd(request):
                                                     'Success': False})
 
 @login_required
+def myesp_accountmanage(request):
+    return render_to_response('users/account_manage.html', request, {})
+
+@login_required
 def myesp_switchback(request):
     user = request.user
     user.updateOnsite(request)
@@ -170,15 +174,15 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             if new_data['address_postal'] == '':
                 new_data['address_postal'] = False
 
-            regProf.contact_user = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_user, '', curUser)
-            regProf.contact_emergency = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_emergency, 'emerg_')
+            regProf.contact_user = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_user, '')
 
             if new_data.get('dietary_restrictions'):
                 regProf.dietary_restrictions = new_data['dietary_restrictions']
 
             if role == 'student':
                 regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, new_data)
-                regProf.contact_guardian = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_guardian, 'guard_')
+                regProf.contact_guardian = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_guardian, 'guard_')
+                regProf.contact_emergency = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_emergency, 'emerg_')
             elif role == 'teacher':
                 regProf.teacher_info = TeacherInfo.addOrUpdate(curUser, regProf, new_data)
             elif role == 'guardian':
@@ -203,7 +207,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             except:
                 pass
             form = FormClass(curUser, replacement_data)
-            if not Tag.getBooleanTag('allow_change_grade_level', default = False):
+            if not Tag.getBooleanTag('allow_change_grade_level'):
                 if prog_input is None:
                     regProf = RegistrationProfile.getLastProfile(curUser)
                 else:
@@ -250,7 +254,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
     context['request'] = request
     context['form'] = form
-    context['require_student_phonenum'] = Tag.getBooleanTag('require_student_phonenum', default=True)
+    context['require_student_phonenum'] = Tag.getBooleanTag('require_student_phonenum')
     return render_to_response('users/profile.html', request, context)
 
 @login_required

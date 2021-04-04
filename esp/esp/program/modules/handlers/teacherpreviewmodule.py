@@ -56,7 +56,7 @@ class TeacherPreviewModule(ProgramModuleObj):
             "choosable": 1,
             }
 
-    def teacherhandout(self, request, tl, one, two, module, extra, prog, template_file='teacherschedules.html'):
+    def teacherhandout(self, request, tl, one, two, module, extra, prog, template_file='teacherschedule.html'):
         #   Use the template defined in ProgramPrintables
         from esp.program.modules.handlers import ProgramPrintables
         context = {'module': self}
@@ -68,12 +68,18 @@ class TeacherPreviewModule(ProgramModuleObj):
             else:
                 teacher = request.user
             scheditems = []
-            for cls in teacher.getTaughtClasses().filter(parent_program = self.program):
-                if cls.isAccepted():
-                    for section in cls.sections.all():
-                        scheditems.append({'name': teacher.name(), 'teacher': teacher, 'cls': section})
-            scheditems.sort()
+            classes = [cls for cls in teacher.getTaughtSectionsFromProgram(self.program)
+                    if cls.meeting_times.all().exists()
+                    and cls.resourceassignment_set.all().exists()
+                    and cls.status > 0]
+            classes.sort()
+            for cls in classes:
+                scheditems.append({'name': teacher.name(),
+                                   'teacher': teacher,
+                                   'cls': cls})
             context['scheditems'] = scheditems
+            context['teachers'] = True
+            context['moderators'] = None
             return render_to_response(pmo.baseDir()+template_file, request, context)
         else:
             raise ESPError('No printables module resolved, so this document cannot be generated.  Consult the webmasters.', log=False)
@@ -83,6 +89,80 @@ class TeacherPreviewModule(ProgramModuleObj):
     @needs_account
     def teacherschedule(self, request, tl, one, two, module, extra, prog):
         return self.teacherhandout(request, tl, one, two, module, extra, prog, template_file='teacherschedule.html')
+
+    def teachermoderatorhandout(self, request, tl, one, two, module, extra, prog, template_file='teachermoderatorschedule.html'):
+        #   Use the template defined in ProgramPrintables
+        from esp.program.modules.handlers import ProgramPrintables
+        context = {'module': self}
+        pmos = ProgramModuleObj.objects.filter(program=prog,module__handler__icontains='printables')
+        if pmos.count() == 1:
+            pmo = ProgramPrintables(pmos[0])
+            if request.user.isAdmin() and 'user' in request.GET:
+                teacher = ESPUser.objects.get(id=request.GET['user'])
+            else:
+                teacher = request.user
+            scheditems = []
+            classes = [cls for cls in teacher.getTaughtSectionsFromProgram(self.program) |
+                       teacher.getModeratingSectionsFromProgram(self.program)
+                    if cls.meeting_times.all().exists()
+                    and cls.resourceassignment_set.all().exists()
+                    and cls.status > 0]
+            classes.sort()
+            for cls in classes:
+                if teacher in cls.parent_class.get_teachers():
+                    role = 'Teacher'
+                else:
+                    role = self.program.getModeratorTitle()
+                scheditems.append({'name': teacher.name(),
+                                   'teacher': teacher,
+                                   'cls': cls,
+                                   'role': role})
+            context['scheditems'] = scheditems
+            context['teachers'] = True
+            context['moderators'] = True
+            return render_to_response(pmo.baseDir()+template_file, request, context)
+        else:
+            raise ESPError('No printables module resolved, so this document cannot be generated.  Consult the webmasters.', log=False)
+
+    @aux_call
+    # No need for needs_teacher, since it depends on request.user, and onsite may want to use it (with ?user=foo).
+    @needs_account
+    def teachermoderatorschedule(self, request, tl, one, two, module, extra, prog):
+        return self.teachermoderatorhandout(request, tl, one, two, module, extra, prog, template_file='teachermoderatorschedule.html')
+
+    def moderatorhandout(self, request, tl, one, two, module, extra, prog, template_file='moderatorschedule.html'):
+        #   Use the template defined in ProgramPrintables
+        from esp.program.modules.handlers import ProgramPrintables
+        context = {'module': self}
+        pmos = ProgramModuleObj.objects.filter(program=prog,module__handler__icontains='printables')
+        if pmos.count() == 1:
+            pmo = ProgramPrintables(pmos[0])
+            if request.user.isAdmin() and 'user' in request.GET:
+                teacher = ESPUser.objects.get(id=request.GET['user'])
+            else:
+                teacher = request.user
+            scheditems = []
+            classes = [cls for cls in teacher.getModeratingSectionsFromProgram(self.program)
+                    if cls.meeting_times.all().exists()
+                    and cls.resourceassignment_set.all().exists()
+                    and cls.status > 0]
+            classes.sort()
+            for cls in classes:
+                scheditems.append({'name': teacher.name(),
+                                   'teacher': teacher,
+                                   'cls' : cls})
+            context['scheditems'] = scheditems
+            context['teachers'] = None
+            context['moderators'] = True
+            return render_to_response(pmo.baseDir()+template_file, request, context)
+        else:
+            raise ESPError('No printables module resolved, so this document cannot be generated.  Consult the webmasters.', log=False)
+
+    @aux_call
+    # No need for needs_teacher, since it depends on request.user, and onsite may want to use it (with ?user=foo).
+    @needs_account
+    def moderatorschedule(self, request, tl, one, two, module, extra, prog):
+        return self.moderatorhandout(request, tl, one, two, module, extra, prog, template_file='moderatorschedule.html')
 
     @aux_call
     # No need for needs_teacher, since it depends on request.user, and onsite may want to use it (with ?user=foo).

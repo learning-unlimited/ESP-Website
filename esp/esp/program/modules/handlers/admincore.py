@@ -36,6 +36,7 @@ from django import forms
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from django.forms.formsets import formset_factory
+from django.forms.models import model_to_dict
 from django.http import HttpResponseRedirect
 
 from esp.accounting.controllers import ProgramAccountingController
@@ -130,7 +131,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         #Set up any other forms on the page
         if submitted_form != "program":
             prog_dict = {}
-            prog_dict.update(prog.__dict__)
+            prog_dict.update(model_to_dict(prog))
             #We need to populate all of these manually
             prog_dict['term'] = prog.program_instance
             prog_dict['term_friendly'] = prog.name.replace(prog.program_type, "", 1).strip()
@@ -139,9 +140,6 @@ class AdminCore(ProgramModuleObj, CoreModule):
             line_items = pac.get_lineitemtypes(required_only=True).values('amount_dec')
             prog_dict['base_cost'] = int(sum(x["amount_dec"] for x in line_items))
             prog_dict["sibling_discount"] = prog.sibling_discount
-            prog_dict['program_modules'] = prog.program_modules.all().values_list("id", flat=True)
-            prog_dict['class_categories'] = prog.class_categories.all().values_list("id", flat=True)
-            prog_dict['flag_types'] = prog.flag_types.all().values_list("id", flat=True)
             prog_form = ProgramSettingsForm(prog_dict, instance = prog)
 
         if submitted_form != "crmi":
@@ -172,8 +170,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
             form = ProgramTagSettingsForm(request.POST, program = prog)
             if form.is_valid():
                 form.save()
-
-        form = ProgramTagSettingsForm(program = prog)
+                form = ProgramTagSettingsForm(program = prog) # replace null responses with defaults if processed successfully
+        else:
+            form = ProgramTagSettingsForm(program = prog)
 
         context['one'] = one
         context['two'] = two

@@ -1,0 +1,13 @@
+{% load latex %}
+\begin{center}
+\begin{longtable}{|p{0.48\linewidth}|p{0.48\linewidth}|} \hline
+\multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} ~ } \\
+\multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} \Large {Responses for {{ survey.name|texescape }}} } \\ 
+\multicolumn{2}{|C{\linewidth}|}{\cellcolor{esphead} ~ } \\\hline
+{% for q in display_data %}
+    {% with survey.num_participants as num_participants %}
+        {% include "survey/answers.tex" %}
+    {% endwith %}
+{% endfor %}
+\end{longtable}
+\end{center}

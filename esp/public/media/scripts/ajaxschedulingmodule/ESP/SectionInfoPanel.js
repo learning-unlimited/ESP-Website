@@ -103,12 +103,30 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
 
     }.bind(this);
 
+    var getTeacherLinks = function(section) {
+        var teacher_links_list = []
+            $j.each(section.teacher_data, function(index, teacher) {
+                teacher_links_list.push("<a target='_blank' href=/manage/userview?username=" + encodeURIComponent(teacher.username) + ">" + teacher.first_name + " " + teacher.last_name + "</a>");
+            });
+        var teacher_links = teacher_links_list.join(", ");
+        return $j(teacher_links);
+    };
+
+    var getModeratorLinks = function(section) {
+        var moderator_links_list = []
+            $j.each(section.moderator_data, function(index, moderator) {
+                moderator_links_list.push("<a href='#' class='moderator-link' data-moderator='" + moderator.id + "'>" + moderator.first_name + " " + moderator.last_name + "</a>");
+            });
+        var moderator_links = moderator_links_list.join(", ");
+        return $j(moderator_links);
+    };
+
     // The content to put on the panel
     var getContent = function(section) {
         var contentDiv = $j("<div class='ui-widget-content'></div>");
 
         // Make content
-        var teachers = this.sections.getTeachersString(section);
+        var teacher_links = getTeacherLinks(section);
         var resources = this.sections.getResourceString(section);
 
         var content_parts = {};
@@ -118,7 +136,9 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         }
 
         content_parts['Title'] = section.title;
-        content_parts['Teachers'] = teachers;
+        content_parts['Category'] = this.sections.categories_data[section.category_id].name;
+        content_parts['Teachers'] = teacher_links;
+        if(has_moderator_module === "True") content_parts[moderator_title + 's'] = getModeratorLinks(section);
         content_parts['Class size max'] = section.class_size_max;
         content_parts['Length'] = Math.ceil(section.length);
         content_parts['Grades'] = section.grade_min + "-" + section.grade_max;
@@ -156,4 +176,64 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         this.el.append(getContent(section));
     };
 
+    var getModeratorHeader = function(moderator) {
+        var header = $j("<div class='ui-widget-header'>")
+        header.append("Information for " + moderator.first_name + " " + moderator.last_name);
+        return header;
+    };
+
+    var getModeratorToolbar = function(moderator) {
+        var toolbar = $j("<div>");
+
+        var overrideCheckbox = $j("<input id='schedule-override' type='checkbox'></input>");
+        overrideCheckbox.prop('checked', this.override)
+            .change(function(box) {
+                var override = $j(box.target).prop("checked");
+                // Reload the moderator to update the availability
+                this.sections.matrix.moderatorDirectory.unselectModerator(override);
+                this.sections.matrix.moderatorDirectory.selectModerator(moderator);
+            }.bind(this)
+        );
+        toolbar.append(overrideCheckbox);
+        toolbar.append($j("<label for='schedule-override'>Override availability</label>"));
+
+        var baseURL = this.sections.getBaseUrlString();
+        var links =  $j(
+            "<br/><a target='_blank' href='" + baseURL +
+            "edit_availability?user=" + moderator.username +
+            "'>Edit Availability</a>" + " <a target='_blank' href='/manage/userview?username=" +
+            moderator.username + "'>Userview</a>");
+        toolbar.append(links);
+        return toolbar;
+
+    }.bind(this);
+
+    var getModeratorContent = function(moderator) {
+        var contentDiv = $j("<div class='ui-widget-content'></div>");
+
+        var content_parts = {};
+
+        content_parts['Will Moderate'] = (moderator.will_moderate)? "Yes" : "No";
+        content_parts['Number of Slots'] = moderator.num_slots;
+        content_parts['Class Categories'] = moderator.categories.map(cat => this.sections.categories_data[cat].name).join(', ');
+        content_parts['Comments'] = moderator.comments;
+
+        for(var header in content_parts) {
+            var partDiv = $j('<div>');
+            partDiv.append('<b>' + header + ': </b>');
+            partDiv.append(content_parts[header]);
+            contentDiv.append(partDiv);
+        }
+        contentDiv.append($j('<br><div><b>Click on a section while holding down "Ctrl"/"Cmd" to assign/unassign this moderator</b>'));
+
+        return contentDiv;
+    }.bind(this);
+
+    this.displayModerator = function(moderator) {
+        this.el[0].innerHTML = "";
+        this.show();
+        this.el.append(getModeratorHeader(moderator));
+        this.el.append(getModeratorToolbar(moderator));
+        this.el.append(getModeratorContent(moderator));
+    };
 }

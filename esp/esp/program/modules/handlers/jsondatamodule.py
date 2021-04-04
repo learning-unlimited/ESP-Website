@@ -46,7 +46,7 @@ from django.http import Http404, HttpResponse
 from esp.cal.models import Event
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
-from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType, ClassFlag
+from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType, ClassFlag, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, no_auth, main_call, aux_call
 from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.program.modules.handlers.splashinfomodule import SplashInfoModule
@@ -116,10 +116,68 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @json_response()
+    @needs_admin
+    @cached_module_view
+    def moderators(prog):
+        # Get any teacher that has either offered to moderate or is assigned as a moderator
+        moderators = ESPUser.objects.filter(Q(moderatorrecord__program=prog, moderatorrecord__will_moderate=True) | Q(moderating_sections__parent_class__parent_program=prog))
+        moderator_list = []
+        for m in moderators:
+            rec = ModeratorRecord.objects.filter(program=prog, user = m)
+            mod_dict = {
+                'id': m.id,
+                'username': m.username,
+                'first_name': m.first_name,
+                'last_name': m.last_name,
+                'sections': [s.id for s in m.getModeratingSectionsFromProgram(prog)],
+            }
+            if rec.exists():
+                mod_dict.update({
+                    'will_moderate': rec[0].will_moderate if rec.exists() else False,
+                    'num_slots': rec[0].num_slots if rec.exists() else 0,
+                    'categories': [c.id for c in rec[0].class_categories.all()] if rec.exists else [],
+                    'comments': rec[0].comments if rec.exists() else "",
+                })
+            else:
+                mod_dict.update({
+                    'will_moderate': False,
+                    'num_slots': 0,
+                    'categories': [],
+                    'comments': "",
+                })
+            moderator_list.append(mod_dict)
+        for m in moderator_list:
+            m['availability'] = [event.id for event in ESPUser.objects.get(id=m['id']).getAvailableTimes(prog, ignore_classes=True, ignore_moderation=True)]
+        return {'moderators': moderator_list}
+    moderators.method.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
+    moderators.method.cached_function.depend_on_model(ModeratorRecord)
+
+    @aux_call
+    @json_response()
+    @no_auth
+    @cached_module_view
+    def categories(prog):
+        categories = prog.class_categories.all()
+        if len(categories) == 0:
+            categories = ClassCategories.objects.filter(program__isnull=True)
+
+        categories_dicts = [
+            {
+                'id': cat.id,
+                'name': cat.category,
+                'symbol': cat.symbol,
+            }
+            for cat in categories ]
+
+        return {'categories': categories_dicts}
+    categories.cached_function.depend_on_m2m(Program, 'class_categories', lambda prog, cat: {'prog': prog})
+
+    @aux_call
+    @json_response()
     @no_auth
     @cached_module_view
     def resource_types(prog):
-        res_types = prog.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes', default = False))
+        res_types = prog.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes'))
         if len(res_types) == 0:
             res_types = ResourceType.objects.filter(program__isnull=True)
 
@@ -227,6 +285,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             if catalog:
                 section['times'] = s.friendly_times_with_date()
                 section['capacity'] = s.capacity
+            section['moderators'] = [m.id for m in s.get_moderators()]
             class_teachers = s.parent_class.get_teachers()
             section['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:
@@ -249,6 +308,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         return {'sections': sections, 'teachers': teachers}
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
+    sections.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
     sections.cached_function.depend_on_row(ClassSubject, lambda subj: {'prog': subj.parent_program})
     sections.cached_function.depend_on_model(UserAvailability)
     # Put this import here rather than at the toplevel, because wildcard messes things up
@@ -300,6 +360,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             section['index'] = s.index()
             section['emailcode'] = s.emailcode()
             section['length'] = float(s.duration)
+            section['moderators'] = [m.id for m in s.get_moderators()]
             class_teachers = cls.get_teachers()
             section['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:
@@ -692,12 +753,24 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @staticmethod
     def calc_hours(classes):
-        hours = {"class-hours": 0, "class-student-hours": 0, "class-registered-hours": 0}
+        hours = {"class-hours": 0, "class-student-hours": 0, "class-registered-hours": 0, "class-checked-in-hours": 0}
         for cls in classes:
             if cls['subject_duration']:
                 hours["class-hours"] += float(cls['subject_duration'])
                 hours["class-student-hours"] += float(cls['subject_duration']) * (float(cls['class_size_max']) if cls['class_size_max'] else 0)
                 hours["class-registered-hours"] += float(cls['subject_duration']) * float(cls['subject_students']) / float(cls['num_sections'])
+                hours["class-checked-in-hours"] += float(cls['subject_duration']) * float(cls['subject_checked_in_students']) / float(cls['num_sections'])
+        return hours
+
+    @staticmethod
+    def calc_section_hours(sections):
+        hours = {"class-hours": 0, "class-student-hours": 0, "class-registered-hours": 0}
+        for sec in sections:
+            if sec['duration']:
+                hours["class-hours"] += float(sec['duration'])
+                capacity = ClassSection.objects.get(id=sec['id']).capacity
+                hours["class-student-hours"] += float(sec['duration']) * float(capacity)
+                hours["class-registered-hours"] += float(sec['duration']) * float(sec['enrolled_students'])
         return hours
 
     @aux_call
@@ -713,7 +786,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         class_num_list = []
         class_num_list.append(("Total # of Classes", classes.distinct().count()))
+        class_num_list.append(("Total # of Classes Scheduled", classes.filter(sections__meeting_times__isnull=False).distinct().count()))
         class_num_list.append(("Total # of Class Sections", prog.sections().select_related().distinct().count()))
+        class_num_list.append(("Total # of Class Sections Scheduled", prog.sections().select_related().filter(meeting_times__isnull=False).distinct().count()))
         class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category = "Lunch").filter(status=10).distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=0).exclude(category__category='Lunch').distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=10).exclude(category__category='Lunch').distinct().count()))
@@ -777,18 +852,23 @@ teachers[key].filter(is_active = True).distinct().count()))
         ## minimize the number of objects that we're creating.
         ## One dict and two Decimals per row, as opposed to
         ## an Object per field and all kinds of stuff...
-        reg_classes = prog.classes().exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students')).values('num_sections', 'subject_duration', 'subject_students', 'class_size_max')
+        reg_classes = prog.classes().exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'), subject_checked_in_students=Sum('sections__ever_checked_in_students')).values('num_sections', 'subject_duration', 'subject_students', 'subject_checked_in_students', 'class_size_max')
         reg_hours = JSONDataModule.calc_hours(reg_classes)
-        app_classes = prog.classes().filter(status__gt=0, sections__status__gt=0).exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students')).values('num_sections', 'subject_duration', 'subject_students', 'class_size_max')
+        app_classes = prog.classes().filter(status__gt=0, sections__status__gt=0).exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'), subject_checked_in_students=Sum('sections__ever_checked_in_students')).values('num_sections', 'subject_duration', 'subject_students', 'subject_checked_in_students', 'class_size_max')
         app_hours = JSONDataModule.calc_hours(app_classes)
+        sched_sections = prog.sections().filter(status__gt=0, meeting_times__isnull=False).exclude(parent_class__category__category='Lunch').values('duration', 'enrolled_students', 'id')
+        sched_hours = JSONDataModule.calc_section_hours(sched_sections)
         vitals["hournum"] = []
         vitals["hournum"].append(("Total # of Class-Hours (registered)", reg_hours["class-hours"]))
         vitals["hournum"].append(("Total # of Class-Hours (approved)", app_hours["class-hours"]))
+        vitals["hournum"].append(("Total # of Class-Hours (scheduled)", sched_hours["class-hours"]))
         vitals["hournum"].append(("Total # of Class-Student-Hours (registered)", reg_hours["class-student-hours"]))
         vitals["hournum"].append(("Total # of Class-Student-Hours (approved)", app_hours["class-student-hours"]))
+        vitals["hournum"].append(("Total # of Class-Student-Hours (scheduled)", sched_hours["class-student-hours"]))
         vitals["hournum"].append(("Total # of Class-Student-Hours (enrolled)", reg_hours["class-registered-hours"]))
-        if app_hours["class-student-hours"]:
-            vitals["hournum"].append(("Class-Student-Hours Utilization", str(round(100 * reg_hours["class-registered-hours"] / app_hours["class-student-hours"], 2)) + "%"))
+        vitals["hournum"].append(("Total # of Class-Student-Hours (attended program)", reg_hours["class-checked-in-hours"]))
+        if sched_hours["class-student-hours"]:
+            vitals["hournum"].append(("Class-Student-Hours Utilization", str(round(100 * reg_hours["class-registered-hours"] / sched_hours["class-student-hours"], 2)) + "%"))
 
 
         ## Prefetch enough data that get_meeting_times() and num_students() don't have to hit the db
@@ -830,7 +910,6 @@ teachers[key].filter(is_active = True).distinct().count()))
 
         shirt_data = {"id": "shirtnum"};
         adminvitals_shirt = prog.getShirtInfo()
-        shirt_data["sizes"] = adminvitals_shirt['shirt_sizes'];
         shirt_data["types"] = adminvitals_shirt['shirt_types'];
         shirt_data["data"] = adminvitals_shirt['shirts'];
         dictOut["stats"].append(shirt_data);

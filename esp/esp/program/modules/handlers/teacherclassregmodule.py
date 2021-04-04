@@ -90,7 +90,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                                      self.program.getTimeSlots()[0].start < datetime.datetime.now())
         context['crmi'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
-        context['friendly_times_with_date'] = Tag.getBooleanTag('friendly_times_with_date', self.program, False)
+        context['modlist'] = get_current_request().user.getModeratingSectionsFromProgram(self.program)
+        context['friendly_times_with_date'] = Tag.getBooleanTag('friendly_times_with_date', self.program)
         context['open_class_category'] = self.program.open_class_category.category
         return context
 
@@ -226,7 +227,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         context = {'program': prog, 'tl': tl, 'one': one, 'two': two}
 
         user = request.user
-        context['sched_sections'] = [sec for sec in user.getTaughtSections(program = prog) if sec.meeting_times.count() > 0]
+        context['sched_sections'] = [sec for sec in user.getTaughtOrModeratingSectionsFromProgram(program = prog) if sec.meeting_times.count() > 0]
 
         secid = 0
         if 'secid' in request.POST:
@@ -237,7 +238,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             secid = extra
         sections = ClassSection.objects.filter(id = secid)
         if len(sections) == 1:
-            if not request.user.canEdit(sections[0].parent_class):
+            if not request.user.canEdit(sections[0].parent_class) and not request.user.canMod(sections[0]):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
             else:
                 section = sections[0]
@@ -388,7 +389,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         else:
             secid = extra
         sections = ClassSection.objects.filter(id = secid)
-        if len(sections) != 1 or not request.user.canEdit(sections[0].parent_class):
+        if len(sections) != 1 or not (request.user.canEdit(sections[0].parent_class) or request.user.canMod(sections[0])):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         section = sections[0]
 
@@ -524,7 +525,11 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline('/Classes/Coteachers')
     def coteachers(self, request, tl, one, two, module, extra, prog):
-        if not 'clsid' in request.POST:
+        if 'clsid' in request.GET:
+            classes = ClassSubject.objects.filter(id = request.GET['clsid'])
+        elif 'clsid' in request.POST:
+            classes = ClassSubject.objects.filter(id = request.POST['clsid'])
+        else:
             return self.goToCore(tl) # just fails.
 
         if extra == 'nojs':
@@ -532,7 +537,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         else:
             ajax = True
 
-        classes = ClassSubject.objects.filter(id = request.POST['clsid'])
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
@@ -775,7 +779,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             # Thus, if default_restype isn't set, we display everything
             # potentially relevant
             resource_types = prog.getResourceTypes(include_classroom=True,
-                                                   include_global=Tag.getBooleanTag('allow_global_restypes', default = False),
+                                                   include_global=Tag.getBooleanTag('allow_global_restypes'),
                                                    include_hidden=False)
             resource_types = list(resource_types)
             resource_types.reverse()
@@ -869,7 +873,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['formset'] = resource_formset
         context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
         context['classroom_form_advisories'] = 'classroom_form_advisories'
-        context['grade_range_popup'] = Tag.getBooleanTag('grade_range_popup', self.program, default=True)
+        context['grade_range_popup'] = Tag.getBooleanTag('grade_range_popup', self.program)
 
         if newclass is None:
             context['addoredit'] = 'Add'

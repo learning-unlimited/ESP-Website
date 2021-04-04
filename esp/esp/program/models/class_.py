@@ -55,11 +55,11 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 
+from django_extensions.db.fields.json import JSONField
 
 # ESP Util
 from esp.db.fields import AjaxForeignKey
 from esp.utils.property import PropertyDict
-from esp.utils.fields import JSONField
 from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
 from esp.mailman import add_list_member, remove_list_member
@@ -308,6 +308,8 @@ class ClassSection(models.Model):
 
     parent_class = AjaxForeignKey('ClassSubject', related_name='sections')
 
+    moderators = models.ManyToManyField(ESPUser, blank=True, related_name="moderating_sections")
+
     registrations = models.ManyToManyField(ESPUser, through='StudentRegistration')
 
     @classmethod
@@ -369,6 +371,18 @@ class ClassSection(models.Model):
 
     def get_edit_absolute_url(self):
         return self.parent_class.get_edit_absolute_url()
+
+    def get_moderators(self):
+        return self.moderators.all()
+
+    def getModeratorNamesLast(self):
+        moderators = []
+        for moderator in self.get_moderators():
+            name = moderator.name_last_first()
+            if name.strip() == '':
+                name = moderator.username
+            moderators.append(name)
+        return moderators
 
     @cache_function
     def get_meeting_times(self):
@@ -736,7 +750,7 @@ class ClassSection(models.Model):
                 if k not in available_times:
                     available_times.append(k)
 
-        timeslots = Event.group_contiguous(available_times)
+        timeslots = Event.group_contiguous(available_times, int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = self.parent_class.parent_program)))
 
         viable_list = []
 
@@ -957,6 +971,14 @@ class ClassSection(models.Model):
         return self.students_checked_in().count()
     num_students_checked_in.depend_on_model('users.Record')
     num_students_checked_in.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
+
+    @cache_function
+    def count_ever_checked_in_students(self):
+        return (self.students() & ESPUser.objects.filter(Q(record__event="attended", record__program=self.parent_program)).distinct()).count()
+    count_ever_checked_in_students.depend_on_model('users.Record')
+    count_ever_checked_in_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
+
+    ever_checked_in_students = DerivedField(models.IntegerField, count_ever_checked_in_students)(null=False, default=0)
 
     @cache_function
     def num_students_prereg(self):
@@ -1180,8 +1202,7 @@ class ClassSection(models.Model):
         # "Sun, July 10" instead of just "Sun"
         include_date = include_date or Tag.getBooleanTag(
             key='friendly_times_with_date',
-            program=self.parent_program,
-            default=False,
+            program=self.parent_program
         )
 
         txtTimes = []
@@ -1565,6 +1586,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         result = ESPUser.objects.none()
         for sec in self.get_sections():
             result = result | sec.students(verbs=verbs)
+        return result
+
+    def moderators(self):
+        result = ESPUser.objects.none()
+        for sec in self.get_sections():
+            result = result | sec.get_moderators()
         return result
 
     def num_students(self, verbs=['Enrolled']):
@@ -2008,7 +2035,7 @@ class ClassCategories(models.Model):
     seq = models.IntegerField(default=0)
 
     class Meta:
-        verbose_name_plural = 'Class Categories'
+        verbose_name_plural = 'Class categories'
         app_label = 'program'
         db_table = 'program_classcategories'
 

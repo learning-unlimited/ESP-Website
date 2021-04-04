@@ -36,7 +36,9 @@ from django.conf import settings
 
 from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.users.controllers.usersearch import UserSearchController
+from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
@@ -63,19 +65,24 @@ class NameTagModule(ProgramModuleObj):
         """ Display a page for admins to pick users for nametags """
         context = {'module': self}
         context['groups'] = Group.objects.all()
+        context['student_search_form'] = StudentSearchForm()
         usc = UserSearchController()
         context.update(usc.prepare_context(prog, target_path='/manage/%s/generatetags' % prog.url))
 
         return render_to_response(self.baseDir()+'selectoptions.html', request, context)
 
-    def nametag_data(self, users_list, user_title):
+    def nametag_data(self, users_list1, user_title1, users_list2 = ESPUser.objects.none(), user_title2 = None):
         users = []
-        users_list = [ user for user in users_list ]
+        users_list = [ user for user in users_list1 | users_list2]
         users_list = filter(lambda x: len(x.first_name+x.last_name), users_list)
         users_list.sort()
 
         for user in users_list:
-            users.append({'title': user_title,
+            if user in users_list1:
+                title = user_title1
+            else:
+                title = user_title2
+            users.append({'title': title,
                           'name' : '%s %s' % (user.first_name, user.last_name),
                           'id'   : user.id,
                           'username': user.username})
@@ -97,9 +104,7 @@ class NameTagModule(ProgramModuleObj):
 
         if idtype == 'aul':
             user_title = request.POST['blanktitle']
-            data = {}
-            for key in request.POST:
-                data[key] = request.POST[key]
+            data = ListGenModule.processPost(request)
             usc = UserSearchController()
             filterObj = usc.filter_from_postdata(prog, data)
             users = self.nametag_data(ESPUser.objects.filter(filterObj.get_Q()).distinct(), user_title)
@@ -120,6 +125,22 @@ class NameTagModule(ProgramModuleObj):
             teachers = ESPUser.objects.filter(teacher_dict['class_approved']).distinct()
 
             users = self.nametag_data(teachers, user_title)
+
+        elif idtype == 'teachermoderators':
+            user_title = "Teacher"
+            user_title2 = self.program.getModeratorTitle()
+            teacher_dict = self.program.teachers(QObjects=True)
+            teachers = ESPUser.objects.filter(teacher_dict['class_approved']).distinct()
+            moderators = ESPUser.objects.filter(teacher_dict['assigned_moderator']).distinct()
+
+            users = self.nametag_data(teachers, user_title, moderators, user_title2)
+
+        elif idtype == 'moderators':
+            user_title = self.program.getModeratorTitle()
+            teacher_dict = self.program.teachers(QObjects=True)
+            moderators = ESPUser.objects.filter(teacher_dict['assigned_moderator']).distinct()
+
+            users = self.nametag_data(moderators, user_title)
 
         elif idtype == 'other':
             user_title = request.POST['blanktitle']

@@ -58,7 +58,7 @@ function toggle(source) {
             <i align="center" class="glyphicon glyphicon-minus-sign" style="color:firebrick; width:100%; font-size:1.5em;" />
             {% endif %}
           </td>
-          <td align="center" style="max-width: 70px; overflow-wrap:break-word;">{{ req.user.name }}</td>
+          <td align="center" style="max-width: 70px; overflow-wrap:break-word;"><a href="/manage/userview?username={{ req.user.username|urlencode }}">{{ req.user.name }}</a></td>
           <td align="center">
             {% if req.reduced_lunch %}
             <i align="center" class="glyphicon glyphicon-ok-sign" style="color:green; width:100%; font-size:1.5em;" />
@@ -80,8 +80,14 @@ function toggle(source) {
       </table>
     </div>
 
+    <label for="amount_max_dec">{{ amount_max_dec_help_text }}</label>
+    <input name="amount_max_dec" type="number" min="0.00" step="0.01" max="2500" value="0.00" required>
+    <br />
+    <label for="amount_max_dec">{{ percent_help_text }}</label>
+    <input name="percent" type="number" min="0" step="1" max="100" value="100" required>
+    <br />
     <input type="submit" value="Approve Requests" class="btn btn-primary" >
-    <input type="checkbox" id="approve_blanks_checkbox" name="approve_blanks" value=True> Approve blank requests?
+    <input type="checkbox" id="approve_blanks_checkbox" name="approve_blanks" checked> Approve blank requests?
   </form>
 
   {% if error %}
@@ -93,7 +99,7 @@ function toggle(source) {
   <h4>
     {{ users_approved|join:", " }}
   </h4>
-  {% else %}
+  {% elif POST %}
   <h3 style="padding-top: 10px;"> 0 New Approvals </h3>
   {% endif %}
 

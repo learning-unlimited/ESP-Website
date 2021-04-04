@@ -1,4 +1,5 @@
 {% extends "main.html" %}
+{% load modules %}
 
 {% block title %}{{program.niceName}} Management{% endblock %}
 
@@ -18,16 +19,16 @@
 {% endblock %}
 
 {% block content %}
-<h1>Missing Teachers for {{ program.niceName }}</h1>
+<h1>Missing Teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle }}s{% endif %} for {{ program.niceName }}</h1>
 
 <div id="shortcuts-box">
     <input type="text" />
-    <p>Type to search</p>
+    <p>Type to search by teacher or class (supports regex)</p>
     <p>Up/Down/PgUp/PgDown to select teacher</p>
     <p>'?' to view information about teacher</p>
     <p>'Shift-Enter' to check in teacher</p>
     <p>'Ctrl-Z' to un-check-in <span id='last_checkin'></span></p>
-    <p>Click a class title for more info{% if show_flags %} and class flags{% endif %}</p>
+    <p>Click a class title for more info</p>
 </div>
 
 <div id='program_form'>
@@ -75,7 +76,7 @@
         End Time and Location
     </th>
     <th colspan="2">
-        Teachers
+        Teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle }}s{% endif %}
     </th>
     <th>
         Missing Resources
@@ -83,10 +84,10 @@
 </tr>
 {% for section in missing_resources %}
 <tr class="section-first-row" data-sec-id="{{ section.emailcode }}">
-    <td rowspan="{{ section.teachers|length }}" class="section-code" style="border-bottom: 1px solid #ccc;">
+    <td rowspan="{{ section.teachers_list|length }}" class="section-code" style="border-bottom: 1px solid #ccc;">
         {{ section }}
     </td>
-    <td class="room" rowspan="{{ section.teachers|length }}" style="border-bottom: 1px solid #ccc;">
+    <td class="room" rowspan="{{ section.teachers_list|length }}" style="border-bottom: 1px solid #ccc;">
         {{ section.end_time }} in {{ section.room }}
     </td>
     {% for teacher in section.teachers_list %}
@@ -95,7 +96,7 @@
         </td>
         <td class="phone"{% if forloop.last %} style="border-bottom: 1px solid #ccc;"{% endif %}> {{ teacher.phone }} </td>
         {% if forloop.first %}
-            <td rowspan="{{ section.teachers|length }}" class="section-detail-td" style="border-bottom: 1px solid #ccc;">
+            <td rowspan="{{ section.teachers_list|length }}" class="section-detail-td" style="border-bottom: 1px solid #ccc;">
                 <div class="section-detail fqr-class">
                     <div class="assignment-name-list fqr-class-assignments" style="white-space:nowrap;">
                         {% for assignment in section.missing_resources.all %}
@@ -117,18 +118,18 @@
 
 <table>
 <tr>
-    <th colspan="6">
+    <th colspan="5">
         {% if start_time %}
-            Teachers for classes starting at {{ start_time.pretty_start_time }}
+            Teachers {% if program|hasModule:"TeacherModeratorModule" %}and {{ program.getModeratorTitle|lower }}s {% endif %}for classes starting at {{ start_time.pretty_start_time }}
         {% else %}
-            Teachers for all classes{% if date %} on {{ date|date:"D m/d/Y" }}{% endif %}
+            Teachers {% if program|hasModule:"TeacherModeratorModule" %}and {{ program.getModeratorTitle }}s {% endif %}for all classes{% if date %} on {{ date|date:"D m/d/Y" }}{% endif %}
         {% endif %}
         {% if when %} as of {{ when }} {% endif %}
     </th>
 </tr>
 {% if sections|length_is:0 %}
 <tr>
-    <td colspan="6">
+    <td colspan="5">
         There are no class sections
         {% if start_time %} starting in this timeslot
         {% else %} scheduled for the program{% if date %} on {{ date|date:"D m/d/Y" }}{% endif %}
@@ -140,14 +141,14 @@
 {% ifchanged section.any_arrived %}
     {% if section.any_arrived == False %}
     <tr>
-        <th colspan="6" style="border-top: 4px solid #ccc;">
-            Sections with no teachers checked in
+        <th colspan="5" style="border-top: 4px solid #ccc;">
+            Sections with no teachers{% if program|hasModule:"TeacherModeratorModule" %} or no {{ program.getModeratorTitle|lower }}s{% endif %} checked in
         </th>
     </tr>
     {% elif section.any_arrived == True and section.all_arrived == False %}
     <tr>
-        <th colspan="6" style="border-top: 4px solid #ccc;">
-            Sections with some teachers checked in
+        <th colspan="5" style="border-top: 4px solid #ccc;">
+            Sections with some teachers{% if program|hasModule:"TeacherModeratorModule" %} and some {{ program.getModeratorTitle|lower }}s{% endif %} checked in
         </th>
     </tr>
     {% endif %}
@@ -155,16 +156,19 @@
 {% ifchanged section.all_arrived %}
     {% if section.all_arrived == True %}
     <tr>
-        <th colspan="6" style="border-top: 4px solid #ccc;">
-            Sections with all teachers checked in
+        <th colspan="5" style="border-top: 4px solid #ccc;">
+            Sections with all teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle|lower }}s{% endif %} checked in
         </th>
     </tr>
     {% endif %}
 {% endifchanged %}
 <tr class="section-first-row" data-sec-id="{{ section.emailcode }}">
-    <td rowspan="{% if section.teachers %}{{ section.teachers|length }}{% else %}1{% endif %}" class="section-code">
-        {{ section.parent_class.emailcode }}: {{ section.name }}
+    <td class="section-detail-header" title="Click to toggle class details" colspan="5">
+        {{ section }}
+        (<a href="{{section.get_absolute_url|urlencode}}">manage</a> | <a href="{{section.get_edit_absolute_url|urlencode}}">edit</a>)
     </td>
+</tr>
+<tr>
     <td class="room" rowspan="{% if section.teachers %}{{ section.teachers|length }}{% else %}1{% endif %}">
         {% if start_time %}
             {{ section.room }}
@@ -183,7 +187,7 @@
         <td class="checkin-column">
             {% if teacher.id not in arrived %}
             <span class="message"></span>
-            <input id="checkin_{{ teacher.username }}" name="{{ section.parent_class.emailcode }}: {{ section.name }}"
+            <input id="checkin_{{ teacher.username }}" name="{{ section.parent_class.emailcode }}: {{ section.title }}"
                    class="button checkin" type="button" value="Check In" {% if when %}disabled="disabled"{% endif %} /><span />
             {% else %}
             <input id="uncheckin_{{ teacher.username }}" class="button uncheckin" type="button" value="Undo Check-In"
@@ -199,20 +203,57 @@
                    {% elif not text_configured %} disabled title="Twilio texting settings are not configured"
                    {% elif teacher.phone == default_phone %} disabled title="No contact info"{% endif %}/>
         </tr>
-        <tr data-sec-id="{{ section.emailcode }}">
+        <tr data-sec-id="{{ section.emailcode }}"{% if forloop.last %} class="section-detail-tr"{% endif %}>
     {% empty %}
         <td colspan="4">
             No teachers for this class
         </td>
         </tr>
-        <tr data-sec-id="{{ section.emailcode }}">
+        <tr data-sec-id="{{ section.emailcode }}" class="section-detail-tr">
     {% endfor %}
-    <td colspan="6" class="section-detail-td">
+    {% if program|hasModule:"TeacherModeratorModule" %}
+            <td rowspan="{% if section.moderators_list %}{{ section.moderators_list|length }}{% else %}1{% endif %}" style="border-top:1px solid #ccc;">
+                {{ program.getModeratorTitle }}s:
+            </td>
+        {% for teacher in section.moderators_list %}
+            {% if teacher.id in arrived %}
+            <td class="checked-in"{% if forloop.first %} style="border-top:1px solid #ccc;"{% endif %}>
+            {% else %}
+            <td class="not-checked-in"{% if forloop.first %} style="border-top:1px solid #ccc;"{% endif %}>
+            {% endif %}
+                <a href="/manage/userview?username={{ teacher.username }}" target="_blank">{{ teacher.name }}</a>
+            </td>
+            <td class="checkin-column"{% if forloop.first %} style="border-top:1px solid #ccc;"{% endif %}>
+                {% if teacher.id not in arrived %}
+                <span class="message"></span>
+                <input id="checkin_{{ teacher.username }}" name="{{ section.parent_class.emailcode }}: {{ section.title }}"
+                       class="button checkin" type="button" value="Check In" {% if when %}disabled="disabled"{% endif %} /><span />
+                {% else %}
+                <input id="uncheckin_{{ teacher.username }}" class="button uncheckin" type="button" value="Undo Check-In"
+                   {% if when %}disabled="disabled"{% endif %} />
+                {% endif %}
+            </td>
+            <td class="phone"{% if forloop.first %} style="border-top:1px solid #ccc;"{% endif %}> {{ teacher.phone }} </td>
+            <td class="text-teacher"{% if forloop.first %} style="border-top:1px solid #ccc;"{% endif %}>
+                <span class="message"></span>
+                <input data-username="{{ teacher.username }}" data-section="{{ section.id }}"
+                       class="button text" type="button" value="Text Teacher"
+                       {% if teacher.id in arrived %} disabled title="Teacher already checked in"
+                       {% elif not text_configured %} disabled title="Twilio texting settings are not configured"
+                       {% elif teacher.phone == default_phone %} disabled title="No contact info"{% endif %}/>
+            </tr>
+            <tr data-sec-id="{{ section.emailcode }}"{% if forloop.last %} class="section-detail-tr"{% endif %}>
+        {% empty %}
+            <td colspan="4" style="border-top:1px solid #ccc;">
+                No {{ program.getModeratorTitle|lower }}s for this class
+            </td>
+            </tr>
+            <tr data-sec-id="{{ section.emailcode }}" class="section-detail-tr">
+        {% endfor %}
+    {% endif %}
+
+    <td colspan="5" class="section-detail-td">
         <div class="section-detail fqr-class">
-            <div class="section-detail-header" title="Click to toggle class details">
-                {{section.title}}
-                (<a href="{{section.get_absolute_url|urlencode}}">manage</a> | <a href="{{section.get_edit_absolute_url|urlencode}}">edit</a>)
-            </div>
             {% if show_flags %}
                 <div class="flag-name-list fqr-class-flags">
                     {% for flag in section.parent_class.flags.all %}

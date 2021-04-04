@@ -6,6 +6,7 @@
     {{ block.super }}
     <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
     <link rel='stylesheet' type='text/css' href='/media/styles/barcodescanner.css' />
+    <link rel='stylesheet' type='text/css' href='/media/styles/attendance.css' />
     <link rel="stylesheet" type='text/css' href="https://use.fontawesome.com/releases/v5.0.9/css/all.css">
 {% endblock %}
 
@@ -79,7 +80,7 @@ Please select a section from the dropdown below.
     <td style="padding: 0px;">
         <table align="center" width="100%" class="sortable" style="border: none;">
             <tr>
-                <th width="5%">#</th>
+                <th width="5%" class="sorttable_nosort">#</th>
                 <th width="17.5%">First Name</th>
                 <th width="17.5%">Last Name</th>
                 <th width="10%">ID #</th>
@@ -88,30 +89,38 @@ Please select a section from the dropdown below.
                 <th width="10%">Checked In?</th>
                 <th width="10%">Attending Section?</th>
             </tr>
-            {% for student in section.enrolled_list %}
+                {% for student in section.enrolled_list %}
+                    <tr>
+                        <th class="small">{{ forloop.counter }}</th>
+                        <td>{{ student.first_name }}</td>
+                        <td>{{ student.last_name }}</td>
+                        <td align="center">{{ student.id }}</td>
+                        <td align="center">{{ student|getGradeForProg:program.id }}</td>
+                        <td align="center">{{ student.getLastProfile.student_info.getSchool }}</td>
+                        <td align="center" data-st-key="{% if student.checked_in %}2{% else %}1{% endif %}">
+                            <input name="checkedin" type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
+                        </td>
+                        <td align="center" data-st-key="{% if student.attended %}2{% else %}1{% endif %}">
+                            <input name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
+                            value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
+                            <br /><span class="msg"></span>
+                        </td>
+                    </tr>
+                {% empty %}
                 <tr>
-                    <th class="small">{{ forloop.counter }}</th>
-                    <td>{{ student.first_name }}</td>
-                    <td>{{ student.last_name }}</td>
-                    <td>{{ student.id }}</td>
-                    <td>{{ student|getGradeForProg:program.id }}</td>
-                    <td>{{ student.getLastProfile.student_info.getSchool }}</td>
-                    <td align="center" sorttable_customkey="{% if student.checked_in %}2{% else %}1{% endif %}">
-                        <input name="checkedin" type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
-                    </td>
-                    <td align="center" sorttable_customkey="{% if student.attended %}2{% else %}1{% endif %}">
-                        <input name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
-                        value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
-                        <br /><span class="msg"></span>
+                    <td colspan="8" align="center">
+                        No students enrolled in this section
                     </td>
                 </tr>
-            {% empty %}
-            <tr>
-                <td colspan="8" align="center">
-                    No students enrolled in this section
-                </td>
-            </tr>
-            {% endfor %}
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="6">TOTAL</th>
+                    <th align="center" name="checkedin_total"></th>
+                    <th align="center" name="attending_total"></th>
+                </tr>
+            </tfoot>
         </table>
     </td>
 </tr>
@@ -128,34 +137,45 @@ Please select a section from the dropdown below.
 <tr>
     <td style="padding: 0px;">
         <table align="center" width="100%" class="sortable" style="border: none;">
-            <tr>
-                <th width="5%">#</th>
-                <th width="17.5%">First Name</th>
-                <th width="17.5%">Last Name</th>
-                <th width="10%">ID #</th>
-                <th width="10%">Grade</th>
-                <th width="20%">School</th>
-                <th width="10%">Checked In?</th>
-                <th width="10%">Attending Section?</th>
-            </tr>
-            {% for student in section.attended_list %}
+            <thead>
                 <tr>
-                    <th class="small">{{ forloop.counter }}</th>
-                    <td>{{ student.first_name }}</td>
-                    <td>{{ student.last_name }}</td>
-                    <td>{{ student.id }}</td>
-                    <td>{{ student|getGradeForProg:program.id }}</td>
-                    <td>{{ student.getLastProfile.student_info.getSchool }}</td>
-                    <td align="center" sorttable_customkey="{% if student.checked_in %}2{% else %}1{% endif %}">
-                        <input name="checkedin" type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
-                    </td>
-                    <td align="center" sorttable_customkey="{% if student.attended %}2{% else %}1{% endif %}">
-                        <input name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
-                        value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
-                        <br /><span class="msg"></span>
-                    </td>
+                    <th width="5%" class="sorttable_nosort">#</th>
+                    <th width="17.5%">First Name</th>
+                    <th width="17.5%">Last Name</th>
+                    <th width="10%">ID #</th>
+                    <th width="10%">Grade</th>
+                    <th width="20%">School</th>
+                    <th width="10%">Checked In?</th>
+                    <th width="10%">Attending Section?</th>
                 </tr>
-            {% endfor %}
+            </thead>
+            <tbody>
+                {% for student in section.attended_list %}
+                    <tr>
+                        <th class="small">{{ forloop.counter }}</th>
+                        <td>{{ student.first_name }}</td>
+                        <td>{{ student.last_name }}</td>
+                        <td align="center">{{ student.id }}</td>
+                        <td align="center">{{ student|getGradeForProg:program.id }}</td>
+                        <td align="center">{{ student.getLastProfile.student_info.getSchool }}</td>
+                        <td align="center" data-st-key="{% if student.checked_in %}2{% else %}1{% endif %}">
+                            <input name="checkedin" type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
+                        </td>
+                        <td align="center" data-st-key="{% if student.attended %}2{% else %}1{% endif %}">
+                            <input name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
+                            value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
+                            <br /><span class="msg"></span>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="6">TOTAL</th>
+                    <th align="center" name="checkedin_total"></th>
+                    <th align="center" name="attending_total"></th>
+                </tr>
+            </tfoot>
         </table>
     </td>
 </tr>

@@ -4,6 +4,19 @@ table,th,td
     border-collapse: collapse;
 }
 
+a {
+    cursor: pointer;
+}
+
+.moderator-cell{
+    height: 40px;
+    min-width: 80%;
+    max-width: 80%;
+    width: 80%;
+    text-align: left;
+    cursor: pointer;
+}
+
 .matrix-cell{
     height: 40px;
     min-width: 80px;
@@ -53,6 +66,41 @@ table,th,td
     opacity: .9;
 }
 
+td.moderator-available-cell {
+    background: #32cd32 !important;
+    opacity: .9 !important;
+    color: white !important;
+}
+
+td.moderator-available-not-first-cell {
+    background: repeating-linear-gradient(
+                45deg,
+                #32cd32,
+                #32cd32 15px,
+                #555555 15px,
+                #555555 20px
+    ) !important;
+    opacity: .9 !important;
+}
+
+td.moderator-teaching-cell {
+    background: yellow !important;
+    opacity: .9 !important;
+    color: black !important;
+}
+
+td.moderator-unavailable-cell {
+    background: #555555 !important;
+    opacity: .9 !important;
+    color: white !important;
+}
+
+td.moderator-moderating-or-teaching-cell {
+    background: #42b3f4 !important;
+    opacity: .9 !important;
+    color: black !important;
+}
+
 td .selected-section {
     outline: 1px solid yellow;
 }
@@ -66,6 +114,10 @@ td.matrix-cell > a:hover {
     text-decoration: underline;
 }
 
+td.lowOpacity {
+    opacity: .2 !important;
+}
+
 .component-div {
     overflow-y: scroll;
 }
@@ -74,7 +126,7 @@ input.numeric {
     width: 40px;
 }
 
-#class-search {
+#class-search, #mod-search {
     margin-bottom: 20px;
 }
 

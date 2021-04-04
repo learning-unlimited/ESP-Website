@@ -33,14 +33,18 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from django.db.models.aggregates import Min
 from django.db.models.query      import Q
+
+from argcache import cache_function_for
 
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
 from esp.program.models import StudentRegistration, ClassSection
 from esp.utils.web import render_to_response
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, Record
 from esp.cal.models import Event
 from esp.utils.query_utils import nest_Q
+from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
 import datetime
@@ -126,8 +130,55 @@ class OnSiteAttendance(ProgramModuleObj):
                                 'not_attending': not_attending,
                                 'no_attendance': no_attendance
                                })
+        else:
+            att_dict = self.times_attending_class(prog)
+            att_keys = sorted(att_dict.keys())
+            timess = [
+                ("checked in to the program", [(1, time) for time in self.times_checked_in(prog)], True), # cumulative
+                ("attended a class", [(len(att_dict[time]), time) for time in att_keys], False), # not cumulative
+            ]
+            timess_data, start = BigBoardModule.make_graph_data(timess)
+            context["left_axis_data"] = [{"axis_name": "# students", "series_data": timess_data}]
+            context["first_hour"] = start
 
         return render_to_response(self.baseDir()+'attendance.html', request, context)
+
+    @cache_function_for(105)
+    def times_checked_in(self, prog):
+        return list(
+            Record.objects
+            .filter(program=prog, event='attended')
+            .values('user').annotate(Min('time'))
+            .order_by('time__min').values_list('time__min', flat=True))
+
+    @cache_function_for(105)
+    def times_attending_class(self, prog):
+        srs = StudentRegistration.objects.filter(section__parent_class__parent_program=prog,
+            relationship__name="Attended", section__meeting_times__isnull=False
+            ).order_by('start_date')
+        att_dict = {}
+        for sr in srs:
+            # For classes that are multiple hours, we want to count a student for
+            # each hour starting from when they are marked and ending at the end of the class
+            # Also, for multi-week programs (e.g. Sprout), we want to adjust the start and end times based on the attendance sr
+            start_time = sr.start_date.replace(minute = 0, second = 0, microsecond = 0)
+            end_time = sr.section.end_time().end.replace(
+                year = sr.start_date.year, month = sr.start_date.month, day = sr.start_date.day,
+                minute = 0, second = 0, microsecond = 0)
+            user = sr.user
+            time = start_time
+            # loop through hours until we get to the end time of the section
+            while(True):
+                if time in att_dict:
+                    # Only count each student a maximum of one time per hour
+                    if user not in att_dict[time]:
+                        att_dict[time].append(user)
+                else:
+                    att_dict[time] = [user]
+                time = time + datetime.timedelta(hours = 1)
+                if time > end_time:
+                    break
+        return att_dict
 
     @aux_call
     @needs_onsite

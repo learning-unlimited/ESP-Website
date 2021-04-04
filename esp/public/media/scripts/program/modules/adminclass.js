@@ -221,7 +221,7 @@ function createClassTitleTd(clsObj) {
         $j('<span/>', {'class': title_css_class})
             .text(getShortTitle(clsObj) + ' ')
             .append(statusStrong)
-    );
+    ).attr("data-st-key", clsObj.id);
 }
 
 function createTeacherListTd(clsObj) {
@@ -319,17 +319,17 @@ function handle_sort_control()
         }
         var cls = classes_global[clsid];
         if (method == "id")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.id);
+            $j(this).children("td").first().attr("data-st-key", cls.id);
         else if (method == "category")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.emailcode);
+            $j(this).children("td").first().attr("data-st-key", cls.emailcode);
         else if (method == "name")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.title);
+            $j(this).children("td").first().attr("data-st-key", cls.title);
         else if (method == "status")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.status);
+            $j(this).children("td").first().attr("data-st-key", cls.status);
         else if (method == "size")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.class_size_max);
+            $j(this).children("td").first().attr("data-st-key", cls.class_size_max);
         else if (method == "special")
-            $j(this).children("td").first().attr("sorttable_customkey", (cls.message_for_directors || "").length + (cls.requested_special_resources || "").length);
+            $j(this).children("td").first().attr("data-st-key", (cls.message_for_directors || "").length + (cls.requested_special_resources || "").length);
     });
     
     $j("#header-row > th").first().removeClass("sorttable_sorted sorttable_sorted_reverse");

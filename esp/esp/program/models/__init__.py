@@ -185,10 +185,9 @@ class ArchiveClass(models.Model):
         return self.description
 
     def __unicode__(self):
-        from esp.middleware.threadlocalrequest import AutoRequestContext as Context
         from django.template import loader
         t = loader.get_template('program/archive_class.html')
-        return t.render(Context({'class': self}, autoescape=True))
+        return t.render({'class': self})
 
     def num_students(self):
         if self.student_ids is not None:
@@ -622,7 +621,7 @@ class Program(models.Model, CustomFormsLinkModel):
         Returns a dict with tuples of valid grades as keys, and caps as values,
         or an empty dict if the Tag does not exist.
         """
-        size_tag = Tag.getProgramTag("program_size_by_grade", self, "{}")
+        size_tag = Tag.getProgramTag("program_size_by_grade", self)
         size_dict = {}
         for k, v in json.loads(size_tag).iteritems():
             if '-' in k:
@@ -665,7 +664,7 @@ class Program(models.Model, CustomFormsLinkModel):
         Returns:
           A ClassCategories object if one was found, or None.
         """
-        pk = Tag.getProgramTag('open_class_category', self, default=None)
+        pk = Tag.getProgramTag('open_class_category', self)
         cc = None
         if pk is not None:
             try:
@@ -862,18 +861,15 @@ class Program(models.Model, CustomFormsLinkModel):
     @cache_function_for(60*60*24)
     def current_programs():
         """Guess a list of "current programs" by their time ranges.
-
-        - All programs' time ranges are determined by the start of their first
-          timeslot and the end of their last timeslot.
-        - If there are any programs currently running, any programs whose first
-          timeslot is in less than 60 days, or any programs whose last timeslot
-          was less than 30 days ago, we return all such programs as current
-          programs.
-        - Otherwise, the current program is the one program in the future (<100
-          years) that will start the soonest.
-        - If still no such program exists, the current program is the program
-          in the past that ended the most recently.
-        - Test programs (programs with "test" in their name) are skipped.
+            - All programs whose time ranges include today,
+              programs whose first timeslot is in less than 60 days,
+              and programs whose last timeslot was less than 30 days ago
+              are returned as current programs.
+            - If there are no such programs, the next upcoming program
+              (within 100 years) is returned as the current program.
+            - If there is no upcoming program, the most recent past program
+              is returned as the current program.
+            - Programs with "test" in their names are skipped.
         """
 
         now = datetime.now()
@@ -961,7 +957,7 @@ class Program(models.Model, CustomFormsLinkModel):
             exclude_types += [ResourceType.get_or_create('Classroom')]
 
         if include_global is None:
-            include_global = Tag.getBooleanTag('allow_global_restypes', default = False)
+            include_global = Tag.getBooleanTag('allow_global_restypes')
 
         if include_global:
             Q_filters = Q(program=self) | Q(program__isnull=True)
@@ -1001,7 +997,7 @@ class Program(models.Model, CustomFormsLinkModel):
         from esp.program.modules.module_ext import ClassRegModuleInfo
         from decimal import Decimal
 
-        times = Event.group_contiguous(list(self.getTimeSlots()))
+        times = Event.group_contiguous(list(self.getTimeSlots()), int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = self)))
         crmi = self.classregmoduleinfo
         if crmi and crmi.class_max_duration is not None:
             max_seconds = crmi.class_max_duration * 60
@@ -1023,7 +1019,7 @@ class Program(models.Model, CustomFormsLinkModel):
                     else:
                         rounded_seconds = durationSeconds
                     if (max_seconds is None) or (durationSeconds <= max_seconds):
-                        durationDict[(Decimal(durationSeconds) / 3600)] = \
+                        durationDict[(Decimal(durationSeconds) / 3600).quantize(Decimal('.01'))] = \
                                         str(rounded_seconds / 3600) + ':' + \
                                         str(int(round((rounded_seconds / 60.0) % 60))).rjust(2,'0')
 
@@ -1035,6 +1031,8 @@ class Program(models.Model, CustomFormsLinkModel):
         from esp.survey.models import Survey
         return Survey.objects.filter(program=self)
 
+    def getModeratorTitle(self):
+        return Tag.getProgramTag('moderator_title', program = self)
 
     def getLineItemTypes(self, user=None, required=True):
         from esp.accounting.controllers import ProgramAccountingController
@@ -1150,40 +1148,67 @@ class Program(models.Model, CustomFormsLinkModel):
     def getVolunteerRequests(self):
         return VolunteerRequest.objects.filter(timeslot__program=self).order_by('timeslot__start')
 
+    @staticmethod
+    def extractShirtStats(query, shirt_type_tag, values_list_prefix, default_shirt_type):
+        shirt_count = defaultdict(lambda: defaultdict(int))
+        if not Tag.getBooleanTag(shirt_type_tag):
+            query = query.values_list(values_list_prefix + '__shirt_size')
+            query = query.annotate(people=Count('id', distinct=True))
+
+            for row in query:
+                shirt_size, count = row
+                shirt_count[default_shirt_type][shirt_size] = count
+
+        else:
+            query = query.values_list(values_list_prefix + '__shirt_type',
+                                      values_list_prefix + '__shirt_size')
+            query = query.annotate(people=Count('id', distinct=True))
+
+            for row in query:
+                shirt_type, shirt_size, count = row
+                shirt_count[shirt_type][shirt_size] = count
+        return shirt_count
+
     @cache_function
     def getShirtInfo(self):
-        shirt_count = defaultdict(lambda: defaultdict(int))
+        shirts = []
+        shirt_types = [x.strip() for x in Tag.getTag('shirt_types').split(',')]
+
         teacher_dict = self.teachers()
-        if 'class_approved' in teacher_dict:
-            query = teacher_dict['class_approved']
-            query = query.filter(registrationprofile__most_recent_profile=True)
-            if not Tag.getBooleanTag('teacherinfo_shirt_type_selection', default=True):
-                query = query.values_list('registrationprofile__teacher_info__shirt_size')
-                query = query.annotate(people=Count('id', distinct=True))
+        teacher_types = {'Approved Teachers': 'class_approved', 'All Teachers': 'class_submitted'}
+        shirt_sizes = [x.strip() for x in Tag.getTag('teacher_shirt_sizes').split(',')]
+        for teacher_type in teacher_types.items():
+            if teacher_type[1] in teacher_dict:
+                query = teacher_dict[teacher_type[1]].filter(registrationprofile__most_recent_profile=True)
+                shirt_count = self.extractShirtStats(query, 'teacherinfo_shirt_type_selection', 'registrationprofile__teacher_info', shirt_types[0])
+                shirts.append({'name': teacher_type[0], 'shirt_sizes': shirt_sizes, 'distribution': [ { 'type': shirt_type, 'counts':[ shirt_count[shirt_type][shirt_size] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ] })
 
-                for row in query:
-                    shirt_size, count = row
-                    shirt_count['M'][shirt_size] = count
+        student_dict = self.students()
+        student_types = {'Enrolled Students': 'enrolled', 'Attended Students': 'attended'}
+        shirt_sizes = [x.strip() for x in Tag.getTag('student_shirt_sizes').split(',')]
+        for student_type in student_types.items():
+            if student_type[1] in student_dict:
+                query = student_dict[student_type[1]].filter(registrationprofile__most_recent_profile=True)
+                shirt_count = self.extractShirtStats(query, 'studentinfo_shirt_type_selection', 'registrationprofile__student_info', shirt_types[0])
+                shirts.append({'name': student_type[0], 'shirt_sizes': shirt_sizes, 'distribution': [ { 'type': shirt_type, 'counts':[ shirt_count[shirt_type][shirt_size] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ] })
 
-            else:
-                query = query.values_list('registrationprofile__teacher_info__shirt_type',
-                                          'registrationprofile__teacher_info__shirt_size')
-                query = query.annotate(people=Count('id', distinct=True))
+        volunteer_dict = self.volunteers()
+        volunteer_types = {'All Volunteers': 'volunteer_all'}
+        shirt_sizes = [x.strip() for x in Tag.getTag('volunteer_shirt_sizes').split(',')]
+        for volunteer_type in volunteer_types.items():
+            if volunteer_type[1] in volunteer_dict:
+                query = volunteer_dict[volunteer_type[1]].filter(registrationprofile__most_recent_profile=True)
+                shirt_count = self.extractShirtStats(query, 'volunteer_tshirt_type_selection', 'volunteeroffer', shirt_types[0])
+                shirts.append({'name': volunteer_type[0], 'shirt_sizes': shirt_sizes, 'distribution': [ { 'type': shirt_type, 'counts':[ shirt_count[shirt_type][shirt_size] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ] })
 
-                for row in query:
-                    shirt_type, shirt_size, count = row
-                    shirt_count[shirt_type][shirt_size] = count
+        return {'shirts' : shirts, 'shirt_types' : shirt_types }
 
-        shirt_sizes = [x.strip() for x in Tag.getTag('teacher_shirt_sizes', default = 'XS, S, M, L, XL, XXL').split(',')]
-        shirt_types = [x.strip() for x in Tag.getTag('shirt_types', default = 'Straight cut, Fitted cut').split(',')]
-        shirts = {}
-        shirts['teachers'] = [ { 'type': shirt_type, 'distribution':[ shirt_count[shirt_type][shirt_size] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
-
-        return {'shirts' : shirts, 'shirt_sizes' : shirt_sizes, 'shirt_types' : shirt_types }
-
-    #   Update cache whenever a class is approved or a teacher changes their profile
+    #   Update cache whenever a class is approved, a student is marked as attending, a teacher or student changes their profile, or a volunteer offer is changed
     getShirtInfo.depend_on_row('program.ClassSubject', lambda cls: {'self': cls.parent_program})
+    getShirtInfo.depend_on_row('users.Record', lambda record: {'self': record.program}, lambda record: record.event == 'attended')
     getShirtInfo.depend_on_model('users.TeacherInfo')
+    getShirtInfo.depend_on_model('users.StudentInfo')
+    getShirtInfo.depend_on_model('program.VolunteerOffer')
 
     @cache_function
     def incrementGrade(self):
@@ -1196,7 +1221,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         See ESPUser.program_schoolyear.
         """
-        return int(Tag.getBooleanTag('increment_default_grade_levels', self, False))
+        return int(Tag.getBooleanTag('increment_default_grade_levels', self))
     incrementGrade.depend_on_row('tagdict.Tag', lambda tag: {'self' :  tag.target})
 
     def priorityLimit(self):
@@ -1239,7 +1264,7 @@ class Program(models.Model, CustomFormsLinkModel):
         """
         if hasattr(self, "_sibling_discount"):
             return self._sibling_discount
-        self._sibling_discount = Decimal(Tag.getProgramTag('sibling_discount', program=self, default='0.00'))
+        self._sibling_discount = Decimal(Tag.getProgramTag('sibling_discount', program=self))
         return self._sibling_discount
 
     def _sibling_discount_set(self, value):
@@ -1349,7 +1374,7 @@ class SplashInfo(models.Model):
         LineItemType.objects.get_or_create(program=self.program, text='Sunday Lunch')
 
         #   Figure out how much everything costs
-        cost_info = json.loads(Tag.getProgramTag('splashinfo_costs', self.program, default='{}'))
+        cost_info = json.loads(Tag.getProgramTag('splashinfo_costs', self.program))
 
         #   Save accounting information
         iac = IndividualAccountingController(self.program, self.student)
@@ -1392,6 +1417,7 @@ class RegistrationProfile(models.Model):
     def _set_text_reminder(self, val):
         if not self.contact_user:
             contact_user = ContactInfo()
+            contact_user.user = self.user
             contact_user.first_name = self.user.first_name
             contact_user.last_name = self.user.last_name
             contact_user.save()
@@ -1965,6 +1991,7 @@ class ScheduleTestCategory(ScheduleTestTimeblock):
 
     class Meta:
         app_label = 'program'
+        verbose_name_plural = 'Schedule test categories'
 
 class ScheduleTestSectionList(ScheduleTestTimeblock):
     """ Boolean value testing: Does the schedule contain one of the specified
@@ -2114,6 +2141,20 @@ class PhaseZeroRecord(models.Model):
         # Creates a string for the Users. This is required to display user in Admin.
         return ', '.join([user.username for user in self.user.all()])
     display_user.short_description = 'Username(s)'
+
+class ModeratorRecord(models.Model):
+    def __unicode__(self):
+        return str(self.id)
+
+    user = AjaxForeignKey(ESPUser)
+    program = models.ForeignKey(Program)
+    will_moderate = models.BooleanField(default = False)
+    num_slots = models.PositiveIntegerField(default = 0)
+    class_categories = models.ManyToManyField('ClassCategories', blank=True)
+    comments = models.TextField(blank=True, null=True)
+
+    class Meta:
+        app_label = 'program'
 
 class StudentRegistration(ExpirableModel):
     """

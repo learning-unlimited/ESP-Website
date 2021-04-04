@@ -51,12 +51,12 @@ from django.template import Template #, VariableNode, TextNode
 import esp.dbmail.sendto_fns
 
 from django.conf import settings
+from django.contrib.sites.models import Site
 
 from django.core.mail import get_connection
 from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
 from django.core.exceptions import ImproperlyConfigured
-
 
 def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=None,
               return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={},
@@ -68,13 +68,28 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
+
+    # remove duplicate email addresses (sendgrid doesn't like them)
+    recipients = []
+    pat = '<(.+)>'
+    emails = {re.search(pat, x).group(1) if re.search(pat, x) else x for x in new_list}
+    for x in new_list:
+        if x in emails and not re.search(pat, x):
+            recipients.append(x)
+            emails.remove(x)
+        elif re.search(pat, x):
+            tmp = re.search(pat, x).group(1)
+            if tmp in emails:
+                recipients.append(x)
+                emails.remove(tmp)
+
     from django.core.mail import EmailMessage #send_mail as django_send_mail
-    logger.info("Sent mail to %s", new_list)
+    logger.info("Sent mail to %s", recipients)
 
     #   Get whatever type of email connection Django provides.
     #   Normally this will be SMTP, but it also has an in-memory backend for testing.
     connection = get_connection(fail_silently=fail_silently, return_path=return_path)
-    msg = EmailMessage(subject, message, from_email, new_list, bcc=bcc, connection=connection, headers=extra_headers)
+    msg = EmailMessage(subject, message, from_email, recipients, bcc=bcc, connection=connection, headers=extra_headers)
 
     #   Detect HTML tags in message and change content-type if they are found
     if '<html>' in message:
@@ -180,6 +195,11 @@ class MessageRequest(models.Model):
     processed_by = models.DateTimeField(null=True, default=None, db_index=True) # When should this be processed by?
     priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
 
+    public = models.BooleanField(default=False) # Should the subject and msgtext of this request be publicly viewable at /email/<id>?
+
+    def public_url(self):
+        return '%s/email/%s' % (Site.objects.get_current().domain, self.id)
+
     def __unicode__(self):
         return unicode(self.subject)
 
@@ -204,6 +224,7 @@ class MessageRequest(models.Model):
 
         if var_dict is not None:
             new_request.save()
+            var_dict['request'] = new_request
             MessageVars.createMessageVars(new_request, var_dict) # create the message Variables
         return new_request
 
@@ -441,7 +462,7 @@ class TextOfEmail(models.Model):
         return orm_class.objects.filter(Q(sent_by__isnull=True) | Q(sent_by__lt=now), sent__isnull=True, tries__gte=min_tries).update(sent=now)
 
     class Meta:
-        verbose_name_plural = 'Email Texts'
+        verbose_name_plural = 'Email texts'
 
 class MessageVars(models.Model):
     """ A storage of message variables for a specific message. """
@@ -521,7 +542,7 @@ class MessageVars(models.Model):
         return "Message Variables for %s" % self.messagerequest
 
     class Meta:
-        verbose_name_plural = 'Message Variables'
+        verbose_name_plural = 'Message variables'
 
 
 class EmailRequest(models.Model):

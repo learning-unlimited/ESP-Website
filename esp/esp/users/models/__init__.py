@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from collections import defaultdict
 from datetime import datetime, timedelta, date
+from pytz import country_names
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -43,7 +44,7 @@ from django import forms, dispatch
 from django.conf import settings
 from django.contrib.auth import logout, login, REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User, AnonymousUser, Group, UserManager
-from localflavor.us.models import USStateField, PhoneNumberField
+from localflavor.us.models import PhoneNumberField
 from localflavor.us.forms import USStateSelect
 
 from django.contrib.sites.models import Site
@@ -55,7 +56,7 @@ from django.db.models.base import ModelState
 from django.db.models.manager import Manager
 from django.db.models.query import Q
 from django.http import HttpResponseRedirect
-from django.template import loader, Context as DjangoContext
+from django.template import loader
 from django.template.defaultfilters import urlencode
 from django.template.loader import render_to_string
 from django_extensions.db.models import TimeStampedModel
@@ -111,6 +112,7 @@ class UserAvailability(models.Model):
     class Meta:
         app_label = 'users'
         db_table = 'users_useravailability'
+        verbose_name_plural = 'User availabilities'
 
     def __unicode__(self):
         return u'%s available as %s at %s' % (self.user.username, self.role.name, unicode(self.event))
@@ -398,6 +400,32 @@ class BaseESPUser(object):
     getTaughtClassesFromProgram.depend_on_row('program.ClassSubject', lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
 
     @cache_function
+    def getModeratingSectionsFromProgram(self, program):
+        from esp.program.models import Program # Need the Class object.
+        if not isinstance(program, Program): # if we did not receive a program
+            raise ESPError("getModeratingSectionsFromProgram expects a Program, not a `" + str(type(program)) + "'.")
+        else:
+            return self.moderating_sections.filter(parent_class__parent_program = program)
+    getModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
+    getModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
+
+    @cache_function
+    def getTaughtOrModeratingSectionsFromProgram(self, program, include_rejected = False):
+        from esp.program.models import Program
+        from esp.program.models import ClassSection
+        if not isinstance(program, Program): # if we did not receive a program
+            raise ESPError("getTaughtOrModeratingSectionsFromProgram expects a Program, not a `" + str(type(program)) + "'.")
+        else:
+            classes = list(self.getTaughtClasses(program, include_rejected = include_rejected))
+            if include_rejected:
+                return self.moderating_sections.filter(parent_class__parent_program = program) | ClassSection.objects.filter(parent_class__in=classes)
+            else:
+                return self.moderating_sections.filter(parent_class__parent_program = program) | ClassSection.objects.filter(parent_class__in=classes).exclude(status=-10)
+    getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
+    getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda sec, teacher: {'self': teacher})
+    getTaughtOrModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
+
+    @cache_function
     def getTaughtClassesAll(self, include_rejected = False):
         if include_rejected:
             return self.classsubject_set.all()
@@ -411,7 +439,6 @@ class BaseESPUser(object):
         full_classes = [cls for cls in self.getTaughtClassesFromProgram(program) if cls.is_nearly_full()]
         return "\n".join([cls.emailcode()+": "+cls.title for cls in full_classes])
     getFullClasses_pretty.depend_on_model('program.ClassSubject') # should filter by teachers... eh.
-
 
     def getTaughtSections(self, program = None, include_rejected = False):
         if program is None:
@@ -430,6 +457,7 @@ class BaseESPUser(object):
     getTaughtSectionsAll.depend_on_model('program.ClassSection')
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
                                                               {'self':self})
+
     @cache_function
     def getTaughtSectionsFromProgram(self, program, include_rejected = False):
         from esp.program.models import ClassSection
@@ -512,7 +540,7 @@ class BaseESPUser(object):
             return ESPUser.objects.filter(Q_useroftype)
 
     @cache_function
-    def getAvailableTimes(self, program, ignore_classes=False):
+    def getAvailableTimes(self, program, ignore_classes=False, ignore_moderation=False):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
         from esp.cal.models import Event
@@ -527,9 +555,14 @@ class BaseESPUser(object):
         if not ignore_classes:
             #   Subtract out the times that they are already teaching.
             other_sections = self.getTaughtSections(program)
-
             other_times = [sec.meeting_times.values_list('id', flat=True) for sec in other_sections]
             for lst in other_times:
+                valid_events = valid_events.exclude(id__in=lst)
+        if not ignore_moderation:
+            #   Subtract out the times that they are moderating
+            moderating_sections = self.getModeratingSectionsFromProgram(program)
+            moderating_times = [sec.meeting_times.values_list('id', flat=True) for sec in moderating_sections]
+            for lst in moderating_times:
                 valid_events = valid_events.exclude(id__in=lst)
 
         return list(valid_events)
@@ -768,11 +801,11 @@ class BaseESPUser(object):
 
         # generate the email text
         t = loader.get_template('email/password_recover')
-        msgtext = t.render(DjangoContext({'user': self,
-                                    'ticket': ticket,
-                                    'domainname': domainname,
-                                    'orgname': settings.ORGANIZATION_SHORT_NAME,
-                                    'institution': settings.INSTITUTION_NAME}))
+        msgtext = t.render({'user': self,
+                            'ticket': ticket,
+                            'domainname': domainname,
+                            'orgname': settings.ORGANIZATION_SHORT_NAME,
+                            'institution': settings.INSTITUTION_NAME})
 
         # Do NOT fail_silently. We want to know if there's a problem.
         send_mail(subject, msgtext, from_email, to_email)
@@ -826,7 +859,7 @@ class BaseESPUser(object):
         """
         user_types = DEFAULT_USER_TYPES
         if use_tag:
-            user_types = json.loads(Tag.getTag('user_types', default=json.dumps(user_types)))
+            user_types = json.loads(Tag.getTag('user_types'))
         return user_types
     getAllUserTypes.depend_on_model(Tag)
     getAllUserTypes = staticmethod(getAllUserTypes)
@@ -883,10 +916,18 @@ class BaseESPUser(object):
     def canEdit(self, cls):
         """Returns if the user can edit the class
 
-A user can edit a class if they can administrate the program or if they
-are a teacher of the class"""
+        A user can edit a class if they can administrate the program or if they
+        are a teacher of the class"""
         if self in cls.get_teachers(): return True
         return self.isAdmin(cls.parent_program)
+
+    def canMod(self, sec):
+        """Returns if the user can moderate the section
+
+        A user can moderate a section if they can administrate the program or if they
+        are a moderator of the section or a teacher of the parent class"""
+        if self in sec.get_moderators() or self in sec.parent_class.get_teachers(): return True
+        return self.isAdmin(sec.parent_class.parent_program)
 
     def getVolunteerOffers(self, program):
         return self.volunteeroffer_set.filter(request__program=program)
@@ -902,12 +943,13 @@ are a teacher of the class"""
         if now is None:
             now = date.today()
         curyear = now.year
-        # Changed from 6/1 to 5/1 rollover so as not to affect start of Summer HSSP registration
-        # - Michael P 5/24/2010
-        # Changed from 5/1 to 7/31 rollover to as to neither affect registration starts nor occur prior to graduation.
-        # Adam S 8/1/2010
-        #if datetime(curyear, 6, 1) > now:
-        if date(curyear, 7, 31) > now:
+        try:
+            # An error here can cause a good chunk of the site to break,
+            # so we'll just catch this if it fails and fall back on the default
+            d = datetime.strptime(Tag.getTag('grade_increment_date'), '%Y-%m-%d').date().replace(year=curyear)
+        except:
+            d = date(curyear, 7, 31)
+        if d > now:
             schoolyear = curyear
         else:
             schoolyear = curyear + 1
@@ -1059,7 +1101,7 @@ class ESPUser(User, BaseESPUser):
 
     class Meta:
         proxy = True
-        verbose_name = 'ESP User'
+        verbose_name = 'ESP user'
 
     def makeAdmin(self):
         """
@@ -1294,11 +1336,11 @@ class StudentInfo(models.Model):
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
         form_dict['gender']          = self.gender
-        if Tag.getBooleanTag('show_student_tshirt_size_options', default=False):
+        if Tag.getBooleanTag('show_student_tshirt_size_options'):
             form_dict['shirt_size']      = self.shirt_size
-        if Tag.getBooleanTag('studentinfo_shirt_type_selection', default=False):
+        if Tag.getBooleanTag('studentinfo_shirt_type_selection'):
             form_dict['shirt_type']      = self.shirt_type
-        if Tag.getBooleanTag('show_student_vegetarianism_options', default=False):
+        if Tag.getBooleanTag('show_student_vegetarianism_options'):
             form_dict['food_preference'] = self.food_preference
         form_dict['heard_about']      = self.heard_about
         form_dict['studentrep_expl'] = self.studentrep_expl
@@ -1726,7 +1768,7 @@ class ZipCodeSearches(models.Model):
     class Meta:
         app_label = 'users'
         db_table = 'users_zipcodesearches'
-        verbose_name_plural = 'Zip Code Searches'
+        verbose_name_plural = 'Zip code searches'
 
     def __unicode__(self):
         return u'%s Zip Codes that are less than %s miles from %s' % \
@@ -1766,7 +1808,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         if queryset: return queryset[0]
         else: return None
 
-    user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=False)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     e_mail = models.EmailField('Email address', blank=True, null=True, max_length=75)
@@ -1779,6 +1821,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     address_state = models.CharField('State',max_length=32,blank=True, null=True)
     address_zip = models.CharField('Zip code',max_length=5,blank=True, null=True)
     address_postal = models.TextField(blank=True,null=True)
+    address_country = models.CharField('Country', max_length=2, choices=sorted(country_names.items(), key = lambda x: x[1]), default='US')
     undeliverable = models.BooleanField(default=False)
 
     class Meta:
@@ -1830,15 +1873,14 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
             return "%s, %s (%s)" % (self.last_name, self.first_name, self.e_mail)
 
     @staticmethod
-    def addOrUpdate(regProfile, new_data, contactInfo, prefix='', curUser=None):
+    def addOrUpdate(curUser, regProfile, new_data, contactInfo, prefix=''):
         """ adds or updates a ContactInfo record """
         if contactInfo is None:
             contactInfo = ContactInfo()
         for i in contactInfo.__dict__.keys():
             if i != 'user_id' and i != 'id' and prefix+i in new_data:
                 contactInfo.__dict__[i] = new_data[prefix+i]
-        if curUser is not None:
-            contactInfo.user = curUser
+        contactInfo.user = curUser
         contactInfo.save()
         return contactInfo
 
@@ -2291,7 +2333,7 @@ def flatten(choices):
 class Permission(ExpirableModel):
 
     #a permission can be assigned to a user, or a role
-    user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True,
+    user = AjaxForeignKey(ESPUser, blank=True, null=True,
                           help_text="Blank does NOT mean apply to everyone, use role-based permissions for that.")
     role = models.ForeignKey("auth.Group", blank=True, null=True,
                              help_text="Apply this permission to an entire user role (can be blank).")
@@ -2334,6 +2376,7 @@ class Permission(ExpirableModel):
             ("Teacher/Acknowledgement", "Teacher acknowledgement"),
             ("Teacher/AppReview", "Review students' apps"),
             ("Teacher/Availability", "Set availability"),
+            ("Teacher/Moderate", "Fill out the moderator form"),
             ("Teacher/Catalog", "Catalog"),
             ("Teacher/Classes", "Classes"),
             ("Teacher/Classes/All", "Classes/All"),
@@ -2657,7 +2700,7 @@ class GradeChangeRequest(TimeStampedModel):
         super(GradeChangeRequest, self).__init__(*args, **kwargs)
         grade_options = ESPUser.grade_options()
 
-        self._meta.get_field('claimed_grade')._choices = zip(grade_options, grade_options)
+        self._meta.get_field('claimed_grade').choices = zip(grade_options, grade_options)
 
     def save(self, **kwargs):
         is_new = self.id is None

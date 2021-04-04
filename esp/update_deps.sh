@@ -30,12 +30,18 @@ done
 BASEDIR=$(dirname $(dirname $(readlink -e $0)))
 
 sudo apt-get update
-sudo apt-get install -y $(<"$BASEDIR/esp/packages_base.txt")
+xargs sudo apt-get install -y < $BASEDIR/esp/packages_base.txt
 $BASEDIR/esp/packages_base_manual_install.sh
 if [[ "$MODE_PROD" ]]
 then
-    sudo apt-get install -y $(<"$BASEDIR/esp/packages_prod.txt")
+    xargs sudo apt-get install -y < $BASEDIR/esp/packages_prod.txt
 fi
+
+# Install pip
+sudo add-apt-repository universe
+sudo apt-get install -y curl
+curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
+sudo python2 get-pip.py
 
 # Ensure that the virtualenv exists and is activated.
 if [[ -z "$VIRTUAL_ENV" ]]
@@ -48,7 +54,7 @@ then
     source "$VIRTUALENV_DIR/bin/activate"
 fi
 
-# Upgrade/install pip, setuptools, wheel, and application dependencies.
-pip install -U pip
-pip install -U setuptools wheel
-pip install -U -r "$BASEDIR/esp/requirements.txt"
+# Install/upgrade pip, setuptools, wheel, and application dependencies.
+pip2 install -U pip
+pip2 install -U setuptools wheel
+pip2 install -U -r "$BASEDIR/esp/requirements.txt"

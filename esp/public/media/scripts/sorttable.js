@@ -1,375 +1,405 @@
+(function(){'use strict';
+/*jshint -W069, bitwise: false*/
 /*
   Source attribution:
   SortTable
-  version 2
-  7th April 2007
-  Stuart Langridge, http://www.kryogenix.org/code/browser/sorttable/
-  
+  version 2e3 (enhanced)
+  7th April 2007 (17th April 2015)
+  https://github.com/White-Tiger/sorttable.js
   Instructions:
   Download this file
   Add <script src="sorttable.js"></script> to your HTML
   Add class="sortable" to any table you'd like to make sortable
   Click on the headers to sort
-  
   Thanks to many, many people for contributions and suggestions.
   Licenced as X11: http://www.kryogenix.org/code/browser/licence.html
   This basically means: do what you want with it.
   ===============
   Modifications made for Learning Unlimited
 */
+var sorttable = {
+	RE_NUMERIC: /^[+\-£$¤¥]{0,2}\s*(?:\d+(?:([ ',\.])(?:\d{3}([ ',\.]))*(\d*))?|([,\.])\d+)\s*[€₽%]?$/,
+	RE_DATE: /^(\d\d?)[\/\.\-](\d\d?)[\/\.\-](\d{4})$/,
+	CLASS_SORT: ['sorttable_sorted','sorttable_sorted_reverse'],
+	CLASS_ARROW: ['sorttable_sortfwdind','sorttable_sortrevind'],
+	ARROWS: /MSIE [5-8]\.\d/.test(navigator.userAgent) ? ['&nbsp<font face="webdings">5</font>','&nbsp<font face="webdings">6</font>'] : ['&nbsp;&#x25B4;','&nbsp;&#x25BE;'],
+	_isi: false,
+	_timer: null,
+	init: function() {
+		// quit if this function has already been called
+		if (sorttable._isi) return;
+		sorttable._isi = true;
+		// kill the init timer for Safari
+		if (sorttable._timer) clearInterval(sorttable._timer);
 
-var stIsIE = /*@cc_on!@*/false;
+		if (!document.createElement || !document.getElementsByTagName) return;
 
-sorttable = {
-  init: function() {
-    // quit if this function has already been called
-    if (arguments.callee.done) return;
-    // flag this function so we don't do the same thing twice
-    arguments.callee.done = true;
-    // kill the timer
-    if (_timer) clearInterval(_timer);
-    
-    if (!document.createElement || !document.getElementsByTagName) return;
-    
-    sorttable.DATE_RE = /^(\d\d?)[\/\.-](\d\d?)[\/\.-]((\d\d)?\d\d)$/;
-    
-    forEach(document.getElementsByTagName('table'), function(table) {
-      if (table.className.search(/\bsortable\b/) != -1) {
-        sorttable.makeSortable(table);
-      }
-    });
-    
-  },
-  
-  makeSortable: function(table) {
-    if (table.getElementsByTagName('thead').length == 0) {
-      // table doesn't have a tHead. Since it should have, create one and
-      // put the first table row in it.
-      the = document.createElement('thead');
-      the.appendChild(table.rows[0]);
-      table.insertBefore(the,table.firstChild);
-    }
-    // Safari doesn't support table.tHead, sigh
-    if (table.tHead == null) table.tHead = table.getElementsByTagName('thead')[0];
-    
-    if (table.tHead.rows.length != 1) return; // can't cope with two header rows
-    
-    // Sorttable v1 put rows with a class of "sortbottom" at the bottom (as
-    // "total" rows, for example). This is B&R, since what you're supposed
-    // to do is put them in a tfoot. So, if there are sortbottom rows,
-    // for backwards compatibility, move them to tfoot (creating it if needed).
-    sortbottomrows = [];
-    for (var i=0; i<table.rows.length; i++) {
-      if (table.rows[i].className.search(/\bsortbottom\b/) != -1) {
-        sortbottomrows[sortbottomrows.length] = table.rows[i];
-      }
-    }
-    if (sortbottomrows) {
-      if (table.tFoot == null) {
-        // table doesn't have a tfoot. Create one.
-        tfo = document.createElement('tfoot');
-        table.appendChild(tfo);
-      }
-      for (var i=0; i<sortbottomrows.length; i++) {
-        tfo.appendChild(sortbottomrows[i]);
-      }
-      delete sortbottomrows;
-    }
-    
-    // work through each column and calculate its type
-    headrow = table.tHead.rows[0].cells;
-    for (var i=0; i<headrow.length; i++) {
-      // manually override the type with a sorttable_type attribute
-      if (!headrow[i].className.match(/\bsorttable_nosort\b/)) { // skip this col
-        mtch = headrow[i].className.match(/\bsorttable_([a-z0-9]+)\b/);
-        if (mtch) { override = mtch[1]; }
-	      if (mtch && typeof sorttable["sort_"+override] == 'function') {
-	        headrow[i].sorttable_sortfunction = sorttable["sort_"+override];
-	      } else {
-	        headrow[i].sorttable_sortfunction = sorttable.guessType(table,i);
-	      }
-	      // make it clickable to sort
-	      headrow[i].sorttable_columnindex = i;
-	      headrow[i].sorttable_tbody = table.tBodies[0];
-	      dean_addEvent(headrow[i],"click", sorttable.innerSortFunction = function(e) {
+		var tables = document.getElementsByTagName('table');
+		for (var i=0,ie=tables.length; i<ie; ++i) {
+			if (tables[i].rows.length && tables[i].className.search(/\bsortable\b/) != -1)
+				sorttable.makeSortable(tables[i]);
+		}
+	},
 
-          if (this.className.search(/\bsorttable_sorted\b/) != -1) {
-            // if we're already sorted by this column, just 
-            // reverse the table, which is quicker
-            sorttable.reverse(this.sorttable_tbody);
-            this.className = this.className.replace('sorttable_sorted',
-                                                    'sorttable_sorted_reverse');
-            this.removeChild(document.getElementById('sorttable_sortfwdind'));
-            sortrevind = document.createElement('span');
-            sortrevind.id = "sorttable_sortrevind";
-            sortrevind.innerHTML = stIsIE ? '&nbsp<font face="webdings">5</font>' : '&nbsp;&#x25B4;';
-            this.appendChild(sortrevind);
-            return;
-          }
-          if (this.className.search(/\bsorttable_sorted_reverse\b/) != -1) {
-            // if we're already sorted by this column in reverse, just 
-            // re-reverse the table, which is quicker
-            sorttable.reverse(this.sorttable_tbody);
-            this.className = this.className.replace('sorttable_sorted_reverse',
-                                                    'sorttable_sorted');
-            this.removeChild(document.getElementById('sorttable_sortrevind'));
-            sortfwdind = document.createElement('span');
-            sortfwdind.id = "sorttable_sortfwdind";
-            sortfwdind.innerHTML = stIsIE ? '&nbsp<font face="webdings">6</font>' : '&nbsp;&#x25BE;';
-            this.appendChild(sortfwdind);
-            return;
-          }
-          
-          // remove sorttable_sorted classes
-          theadrow = this.parentNode;
-          forEach(theadrow.childNodes, function(cell) {
-            if (cell.nodeType == 1) { // an element
-              cell.className = cell.className.replace('sorttable_sorted_reverse','');
-              cell.className = cell.className.replace('sorttable_sorted','');
-            }
-          });
-          sortfwdind = document.getElementById('sorttable_sortfwdind');
-          if (sortfwdind) { sortfwdind.parentNode.removeChild(sortfwdind); }
-          sortrevind = document.getElementById('sorttable_sortrevind');
-          if (sortrevind) { sortrevind.parentNode.removeChild(sortrevind); }
-          
-          this.className += ' sorttable_sorted';
-          sortfwdind = document.createElement('span');
-          sortfwdind.id = "sorttable_sortfwdind";
-          sortfwdind.innerHTML = stIsIE ? '&nbsp<font face="webdings">6</font>' : '&nbsp;&#x25BE;';
-          this.appendChild(sortfwdind);
+	addOnClick: function(info,cells) {
+		for (var i=0,ie=cells.length; i<ie; ++i) {
+			if (/\bsorttable_nosort\b/.test(cells[i].className))
+				continue;
+			if (!info[i])
+				info[i] = {known:-1,func:null,heads:[]};
+			info[i].heads.push(cells[i]);
+			cells[i]['stCol'] = i;
+			dean_addEvent(cells[i], 'click', sorttable.innerSortFunction);
+		}
+	},
+	makeSortable: function(table) {
+		if (table['stInfo'])
+			return;
+		if (!table.getElementsByTagName('thead').length) {
+			// table doesn't have a tHead. Since it should have, create one and
+			// put the first table row in it.
+			var the = document.createElement('thead');
+			the.appendChild(table.rows[0]);
+			table.insertBefore(the, table.firstChild);
+		}
+		// Safari doesn't support table.tHead, sigh
+		if (!table.tHead) table.tHead = table.getElementsByTagName('thead')[0];
 
-	        // build an array to sort. This is a Schwartzian transform thing,
-	        // i.e., we "decorate" each row with the actual sort key,
-	        // sort based on the sort keys, and then put the rows back in order
-	        // which is a lot faster because you only do getInnerText once per row
-	        row_array = [];
-	        col = this.sorttable_columnindex;
-	        rows = this.sorttable_tbody.rows;
-	        for (var j=0; j<rows.length; j++) {
-	          row_array[row_array.length] = [sorttable.getInnerText(rows[j].cells[col]), rows[j]];
-	        }
-	        /* If you want a stable sort, uncomment the following line */
-	        sorttable.shaker_sort(row_array, this.sorttable_sortfunction);
-	        /* and comment out this one */
-	        //frow_array.sort(this.sorttable_sortfunction);
-	        
-	        tb = this.sorttable_tbody;
-	        for (var j=0; j<row_array.length; j++) {
-	          tb.appendChild(row_array[j][1]);
-	        }
-	        
-	        delete row_array;
-	      });
-	    }
-    }
-  },
-  
-  guessType: function(table, column) {
-    // guess the type of a column based on its first non-blank row
-    sortfn = sorttable.sort_alpha;
-    for (var i=0; i<table.tBodies[0].rows.length; i++) {
-      var text = '';
-      if (table.tBodies[0].rows[i].cells.length > column) {
-        text = sorttable.getInnerText(table.tBodies[0].rows[i].cells[column]);
-      }
-      if (text != '') {
-        if (text.match(/^-?[£$¤]?[\d,.]+%?$/)) {
-          return sorttable.sort_numeric;
+		var info = table['stInfo'] = [];
+		info.arrows = [];
+		// activate sorttable for columns
+		sorttable.addOnClick(info, table.tHead.rows[0].cells);
+		
+		var body = table.tBodies;
+		for (var i=0,ie=body.length; i<ie; ++i) {
+			var rows = body[i].rows;
+			if (rows.length === 1 && rows[0].cells[0].nodeName === 'TH') {
+				sorttable.addOnClick(info, rows[0].cells);
+			}
+		}
+		
+		var row = table.tFoot && table.tFoot.rows[0];
+		if (row && row.cells[0].nodeName === 'TH')
+			sorttable.addOnClick(info, row.cells);
+	},
+
+	guessType: function(table, column, sortle) {
+		// guess the type of a column based on its first non-blank row
+		var NUMERIC_POINT=1, NUMERIC_COMMA=2, DATE_DDMM=4, DATE_MMDD=8;
+		var NUMERIC = NUMERIC_POINT | NUMERIC_COMMA;
+		var DATE = DATE_DDMM | DATE_MMDD;
+		var ALL = NUMERIC | DATE;
+		var guess = ALL;
+		var text, mtch;
+		for (var tb=0,tbe=table.tBodies.length; tb<tbe; ++tb) {
+			var rows = table.tBodies[tb].rows;
+			if (rows.length === 1 && rows[0].cells[0].nodeName === 'TH'){
+				sortle.len[tb] = 0;
+				continue;
+			}
+			sortle.len[tb] = rows.length;
+			for (var i=0; i<rows.length; ++i) {
+				text = sorttable.getInnerText(rows[i].cells[column]);
+				sortle.val.push([text,rows[i]]);
+				if (i < 100) {
+					if (guess&NUMERIC && (mtch = sorttable.RE_NUMERIC.exec(text))) {
+						guess&=~DATE;
+						var decimal_point = null;
+						if (mtch[4]) {
+							decimal_point = mtch[4];
+						} else if (mtch[1]) {
+							if (mtch[2]) {
+								if (mtch[1] != mtch[2])
+									decimal_point = mtch[2];
+							} else if (mtch[3].length != 3) {
+								decimal_point = mtch[1];
+							}
+						}
+						if (decimal_point) {
+							if (decimal_point === ',') {
+								guess&=~NUMERIC_POINT;
+							} else {
+								guess&=~NUMERIC_COMMA;
+							}
+						}
+					} else if (guess&DATE) {
+						guess&=~NUMERIC;
+						// check for a date: dd/mm/yyyy | mm/dd/yyyy
+						// can have / or . or - as separator
+						mtch = sorttable.RE_DATE.exec(text);
+						if (mtch) {
+							if (mtch[1]<<0 > 12) {
+								guess&=~DATE_MMDD;
+							} else if (mtch[2]<<0 > 12) {
+								guess&=~DATE_DDMM;
+							}
+						} else {
+							guess&=~DATE;
+						}
+					} else {
+						guess = 0;
+					}
+				}
+			}
+		}
+		switch(guess){
+		case NUMERIC_COMMA:
+			return sorttable.sort_numeric_comma;
+		case NUMERIC_POINT:
+		case NUMERIC:
+			return sorttable.sort_numeric;
+		case DATE_MMDD:
+			return sorttable.sort_mmdd;
+		case DATE_DDMM:
+		case DATE:
+			return sorttable.sort_ddmm;
+		}
+		return sorttable.sort_alpha; // fallback as we couldn't decide
+	},
+
+	getInnerText: function(node) {
+		// gets the text we want to use for sorting for a cell.
+		// strips leading and trailing whitespace.
+		// this is *not* a generic getInnerText function; it's special to sorttable.
+		// for example, you can override the cell text with a customkey attribute.
+		// it also gets .value for <input> fields.
+
+		var attrib=node.getAttribute('data-st-key');
+		if (attrib)
+			return attrib;
+
+		var hasInputs = (typeof node.getElementsByTagName == 'function') &&
+			node.getElementsByTagName('input').length;
+		if (!hasInputs){
+			if (typeof node.textContent != 'undefined')
+				return node.textContent.replace(/^\s+|\s+$/g, '');
+			if (typeof node.innerText != 'undefined')
+				return node.innerText.replace(/^\s+|\s+$/g, '');
+			if (typeof node.text != 'undefined')
+				return node.text.replace(/^\s+|\s+$/g, '');
+		}
+		switch (node.nodeType) {
+		case 3: // TEXT_NODE
+			if (node.nodeName.toLowerCase() == 'input')
+				return node.value.replace(/^\s+|\s+$/g, '');
+			/* falls through */
+		case 4: // CDATA_SECTION_NODE
+			return node.nodeValue.replace(/^\s+|\s+$/g, '');
+		case 1: // ELEMENT_NODE
+		case 11: // DOCUMENT_FRAGMENT_NODE
+			var innerText = '';
+			var nodes = node.childNodes.length;
+			for (var i = 0; i < nodes; ++i) {
+				innerText += sorttable.getInnerText(node.childNodes[i]);
+			}
+			return innerText.replace(/^\s+|\s+$/g, '');
+		}
+		return '';
+	},
+
+	reverseSort: function(table) {
+		// reverse the rows in a table
+		var tb,tb2,rows;
+		var len = [], remain = [];
+		for (tb=0,tb2=table.tBodies.length; tb<tb2; ++tb) {
+			rows = table.tBodies[tb].rows;
+			if (rows.length === 1 && rows[0].cells[0].nodeName === 'TH'){
+				len[tb] = remain[tb] = 0;
+				continue;
+			}
+			len[tb] = remain[tb] = rows.length;
+		}
+		for (tb=len.length,tb2=0; tb--; ) {
+			rows = table.tBodies[tb].rows;
+			for (var i=len[tb]; i; ) {
+				if (remain[tb2]--) table.tBodies[tb2].appendChild(rows[--i]);
+				else ++tb2;
+			}
+		}
+	},
+
+	updateArrows: function(info,col,inverse,create) {
+		for (var i=info[col].heads.length; i--; ) {
+			var arrow = info.arrows[i];
+			var th = info[col].heads[i];
+			if (create){
+				if (arrow){
+					var th_old = arrow.parentNode;
+					th_old.className = th_old.className
+						.replace(new RegExp('\\s*\\b(?:'+sorttable.CLASS_SORT[0]+'|'+sorttable.CLASS_SORT[1]+')\\b\\s*'),'');
+				} else
+					arrow = document.createElement('span');
+				th.className += ' '+sorttable.CLASS_SORT[inverse];
+				info.arrows[i] = th.appendChild(arrow);
+			} else // toggle class
+				th.className = th.className.replace(new RegExp('\\b'+sorttable.CLASS_SORT[(1+inverse)%2]+'\\b'), sorttable.CLASS_SORT[inverse]);
+			arrow.className = sorttable.CLASS_ARROW[inverse];
+			arrow.innerHTML = sorttable.ARROWS[inverse];
+		}
+	},
+
+	/** @this {Element} */
+	innerSortFunction: function(e) {
+		var table = this.parentNode.parentNode.parentNode;
+		if (!table.tBodies.length)
+			return;
+		var sorted = (this.className.indexOf(sorttable.CLASS_SORT[0]) != -1);
+		var inverse = (sorted && this.className.indexOf(sorttable.CLASS_SORT[1])==-1) ? 1 : 0;
+		var col = this['stCol'];
+		var info = table['stInfo'];
+		var sortle = {len:[],val:null};
+		var i,tb,tbe;
+
+		sorttable.updateArrows(info,col,inverse,!sorted);
+		if (sorted) {
+			sorttable.reverseSort(table);
+			return;
+		} else { // determine sort function
+            info[col].known = table.rows.length;
+			var mtch = /\bsorttable_(\w+)\b/.exec(this.className);
+			if (mtch && sorttable['sort_'+mtch[1]]) {
+				info[col].func = sorttable['sort_'+mtch[1]];
+			} else {
+				sortle.val = [];
+				info[col].func = sorttable.guessType(table,col,sortle);
+			}
         }
-        // check for a date: dd/mm/yyyy or dd/mm/yy 
-        // can have / or . or - as separator
-        // can be mm/dd as well
-        possdate = text.match(sorttable.DATE_RE)
-        if (possdate) {
-          // looks like a date
-          first = parseInt(possdate[1]);
-          second = parseInt(possdate[2]);
-          if (first > 12) {
-            // definitely dd/mm
-            return sorttable.sort_ddmm;
-          } else if (second > 12) {
-            return sorttable.sort_mmdd;
-          } else {
-            // looks like a date, but we can't tell which, so assume
-            // that it's dd/mm (English imperialism!) and keep looking
-            sortfn = sorttable.sort_ddmm;
-          }
-        }
-      }
-    }
-    return sortfn;
-  },
-  
-  getInnerText: function(node) {
-    // gets the text we want to use for sorting for a cell.
-    // strips leading and trailing whitespace.
-    // this is *not* a generic getInnerText function; it's special to sorttable.
-    // for example, you can override the cell text with a customkey attribute.
-    // it also gets .value for <input> fields.
-    
-    hasInputs = (typeof node.getElementsByTagName == 'function') &&
-                 node.getElementsByTagName('input').length;
-    
-    if (node.getAttribute("sorttable_customkey") != null) {
-      return node.getAttribute("sorttable_customkey");
-    }
-    else if (typeof node.textContent != 'undefined' && !hasInputs) {
-      return node.textContent.replace(/^\s+|\s+$/g, '');
-    }
-    else if (typeof node.innerText != 'undefined' && !hasInputs) {
-      return node.innerText.replace(/^\s+|\s+$/g, '');
-    }
-    else if (typeof node.text != 'undefined' && !hasInputs) {
-      return node.text.replace(/^\s+|\s+$/g, '');
-    }
-    else {
-      switch (node.nodeType) {
-        case 3:
-          if (node.nodeName.toLowerCase() == 'input') {
-            return node.value.replace(/^\s+|\s+$/g, '');
-          }
-        case 4:
-          return node.nodeValue.replace(/^\s+|\s+$/g, '');
-          break;
-        case 1:
-        case 11:
-          var innerText = '';
-          for (var i = 0; i < node.childNodes.length; i++) {
-            innerText += sorttable.getInnerText(node.childNodes[i]);
-          }
-          return innerText.replace(/^\s+|\s+$/g, '');
-          break;
-        default:
-          return '';
-      }
-    }
-  },
-  
-  reverse: function(tbody) {
-    // reverse the rows in a tbody
-    newrows = [];
-    for (var i=0; i<tbody.rows.length; i++) {
-      newrows[newrows.length] = tbody.rows[i];
-    }
-    for (var i=newrows.length-1; i>=0; i--) {
-       tbody.appendChild(newrows[i]);
-    }
-    delete newrows;
-  },
-  
-  /* sort functions
-     each sort function takes two parameters, a and b
-     you are comparing a[0] and b[0] */
-  sort_numeric: function(a,b) {
-    aa = parseFloat(a[0].replace(/[^0-9.-]/g,''));
-    if (isNaN(aa)) aa = 0;
-    bb = parseFloat(b[0].replace(/[^0-9.-]/g,'')); 
-    if (isNaN(bb)) bb = 0;
-    return aa-bb;
-  },
-  sort_alpha: function(a,b) {
-    if (a[0].toLowerCase()==b[0].toLowerCase()) return 0;
-    if (a[0].toLowerCase()<b[0].toLowerCase()) return -1;
-    return 1;
-  },
-  sort_ddmm: function(a,b) {
-    mtch = a[0].match(sorttable.DATE_RE);
-    y = mtch[3]; m = mtch[2]; d = mtch[1];
-    if (m.length == 1) m = '0'+m;
-    if (d.length == 1) d = '0'+d;
-    dt1 = y+m+d;
-    mtch = b[0].match(sorttable.DATE_RE);
-    y = mtch[3]; m = mtch[2]; d = mtch[1];
-    if (m.length == 1) m = '0'+m;
-    if (d.length == 1) d = '0'+d;
-    dt2 = y+m+d;
-    if (dt1==dt2) return 0;
-    if (dt1<dt2) return -1;
-    return 1;
-  },
-  sort_mmdd: function(a,b) {
-    mtch = a[0].match(sorttable.DATE_RE);
-    y = mtch[3]; d = mtch[2]; m = mtch[1];
-    if (m.length == 1) m = '0'+m;
-    if (d.length == 1) d = '0'+d;
-    dt1 = y+m+d;
-    mtch = b[0].match(sorttable.DATE_RE);
-    y = mtch[3]; d = mtch[2]; m = mtch[1];
-    if (m.length == 1) m = '0'+m;
-    if (d.length == 1) d = '0'+d;
-    dt2 = y+m+d;
-    if (dt1==dt2) return 0;
-    if (dt1<dt2) return -1;
-    return 1;
-  },
-  
-  shaker_sort: function(list, comp_func) {
-    // A stable sort function to allow multi-level sorting of data
-    // see: http://en.wikipedia.org/wiki/Cocktail_sort
-    // thanks to Joseph Nahmias
-    var b = 0;
-    var t = list.length - 1;
-    var swap = true;
+		
+		if (!sortle.val) { // build an array to sort if we didn't had to guessType()
+			sortle.val = [];
+			for (tb=0,tbe=table.tBodies.length; tb<tbe; ++tb) {
+				var rows = table.tBodies[tb].rows;
+				if (rows.length === 1 && rows[0].cells[0].nodeName === 'TH'){
+					sortle.len[tb] = 0;
+					continue;
+				}
+				sortle.len[tb] = rows.length;
+				for (i=0; i<rows.length; ++i) {
+					sortle.val.push([sorttable.getInnerText(rows[i].cells[col]), rows[i]]);
+				}
+			}
+		}
 
-    while(swap) {
-        swap = false;
-        for(var i = b; i < t; ++i) {
-            if ( comp_func(list[i], list[i+1]) > 0 ) {
-                var q = list[i]; list[i] = list[i+1]; list[i+1] = q;
-                swap = true;
-            }
-        } // for
-        t--;
+		/* If you want a stable sort, uncomment the following line */
+		sorttable.shaker_sort(sortle.val, info[col].func);
+		/* and comment out this one */
+		//sortle.val.sort(info[col].func);
+		if (inverse) sortle.val.reverse();
 
-        if (!swap) break;
+		var idx = 0;
+		for (tb=0,tbe=table.tBodies.length; tb<tbe; ++tb) {
+			var tbody = table.tBodies[tb];
+			for (i=sortle.len[tb]; i--; ++idx) {
+				tbody.appendChild(sortle.val[idx][1]);
+			}
+		}
+	},
 
-        for(var i = t; i > b; --i) {
-            if ( comp_func(list[i], list[i-1]) < 0 ) {
-                var q = list[i]; list[i] = list[i-1]; list[i-1] = q;
-                swap = true;
-            }
-        } // for
-        b++;
+	shaker_sort: function(list, comp_func) {
+		// A stable sort function to allow multi-level sorting of data
+		// see: http://en.wikipedia.org/wiki/Cocktail_sort
+		// thanks to Joseph Nahmias
+		var i,tmp;
+		var start = 0;
+		var end = list.length - 1;
+		var swap = true;
 
-    } // while(swap)
-  }  
+		do{
+			swap = false;
+			for(i=start; i<end; ++i) {
+				if(comp_func(list[i], list[i+1]) > 0) {
+					tmp = list[i];
+					list[i] = list[i+1];
+					list[i+1] = tmp;
+					swap = true;
+				}
+			} // for
+			--end;
+
+			if (!swap) break;
+
+			for(i=end; i>start; --i) {
+				if(comp_func(list[i], list[i-1]) < 0) {
+					tmp = list[i];
+					list[i] = list[i-1];
+					list[i-1] = tmp;
+					swap = true;
+				}
+			} // for
+			++start;
+
+		}while(swap);
+	},
+
+	/* sort functions
+	   each sort function takes two parameters, a and b
+	   you are comparing a[0] and b[0] */
+	sort_numeric: function(a,b) {
+		var aa = parseFloat(a[0].replace(/[^\-\d.]/g,'')) || 0;
+		var bb = parseFloat(b[0].replace(/[^\-\d.]/g,'')) || 0;
+		return aa - bb;
+	},
+	sort_numeric_comma: function(a,b) {
+		var aa = parseFloat(a[0].replace(/[^\-\d,]/g,'').replace(/,/,'.')) || 0;
+		var bb = parseFloat(b[0].replace(/[^\-\d,]/g,'').replace(/,/,'.')) || 0;
+		return aa - bb;
+	},
+	sort_alpha: function(a,b) {
+		if (a[0].toLowerCase() == b[0].toLowerCase()) return 0;
+		if (a[0].toLowerCase() < b[0].toLowerCase()) return -1;
+		return 1;
+	},
+	dateToNumber: function(d,m,y){
+		return d | m<<5 | y<<9;
+	},
+	sort_ddmm: function(a,b) {
+		var mtch = sorttable.RE_DATE.exec(a[0]);
+		var aa = sorttable.dateToNumber(mtch[1],mtch[2],mtch[3]);
+		mtch = sorttable.RE_DATE.exec(b[0]);
+		return aa - sorttable.dateToNumber(mtch[1],mtch[2],mtch[3]);
+	},
+	sort_mmdd: function(a,b) {
+		var mtch = sorttable.RE_DATE.exec(a[0]);
+		var aa = sorttable.dateToNumber(mtch[2],mtch[1],mtch[3]);
+		mtch = sorttable.RE_DATE.exec(b[0]);
+		return aa - sorttable.dateToNumber(mtch[2],mtch[1],mtch[3]);
+	}
+};
+
+/* sorttable initialization */
+if (document.addEventListener) { // modern browser
+	document.addEventListener("DOMContentLoaded", sorttable.init, false);
+} else if (/MSIE [5-8]\.\d/.test(navigator.userAgent)){ // for Internet Explorer
+	document.write("<script id=__ie_onload defer src=javascript:void(0)><\/script>");
+	var script = document.getElementById("__ie_onload");
+	/** @this {Element} */
+	script.onreadystatechange = function() {
+		if (this.readyState == "complete") {
+			sorttable.init(); // call the onload handler
+		}
+	};
+} else if (/WebKit/i.test(navigator.userAgent)) { // for Safari
+	sorttable._timer = setInterval(function() {
+		if (/loaded|complete/.test(document.readyState))
+			sorttable.init(); // call the onload handler
+		},10);
 }
+window.onload = sorttable.init; // this alone would be enough, but triggers only after everything is fully loaded (eg. images)
+
+/* Google Closure Compiler exports ( https://developers.google.com/closure/compiler/docs/api-tutorial3#export ) */
+window['sorttable'] = sorttable;
+sorttable['ARROWS'] = sorttable.ARROWS;
+sorttable['makeSortable'] = sorttable.makeSortable;
+sorttable['innerSortFunction'] = sorttable.innerSortFunction;
+sorttable['sort_numeric'] = sorttable.sort_numeric;
+sorttable['sort_numeric_comma'] = sorttable.sort_numeric_comma;
+sorttable['sort_alpha'] = sorttable.sort_alpha;
+sorttable['sort_ddmm'] = sorttable.sort_ddmm;
+sorttable['sort_mmdd'] = sorttable.sort_mmdd;
 
 /* ******************************************************************
    Supporting functions: bundled here to avoid depending on a library
    ****************************************************************** */
-
-// Dean Edwards/Matthias Miller/John Resig
-
-/* for Mozilla/Opera9 */
-if (document.addEventListener) {
-    document.addEventListener("DOMContentLoaded", sorttable.init, false);
-}
-
-/* for Internet Explorer */
-/*@cc_on @*/
-/*@if (@_win32)
-    document.write("<script id=__ie_onload defer src=javascript:void(0)><\/script>");
-    var script = document.getElementById("__ie_onload");
-    script.onreadystatechange = function() {
-        if (this.readyState == "complete") {
-            sorttable.init(); // call the onload handler
-        }
-    };
-/*@end @*/
-
-/* for Safari */
-if (/WebKit/i.test(navigator.userAgent)) { // sniff
-    var _timer = setInterval(function() {
-        if (/loaded|complete/.test(document.readyState)) {
-            sorttable.init(); // call the onload handler
-        }
-    }, 10);
-}
-
-/* for other browsers */
-window.onload = sorttable.init;
 
 // written by Dean Edwards, 2005
 // with input from Tino Zijdel, Matthias Miller, Diego Perini
@@ -398,7 +428,7 @@ function dean_addEvent(element, type, handler) {
 		// assign a global event handler to do all the work
 		element["on" + type] = handleEvent;
 	}
-};
+}
 // a counter used to create unique IDs
 dean_addEvent.guid = 1;
 
@@ -411,8 +441,9 @@ function removeEvent(element, type, handler) {
 			delete element.events[type][handler.$$guid];
 		}
 	}
-};
+}
 
+/** @this {Element} */
 function handleEvent(event) {
 	var returnValue = true;
 	// grab the event object (IE uses a global event object)
@@ -427,72 +458,21 @@ function handleEvent(event) {
 		}
 	}
 	return returnValue;
-};
+}
 
 function fixEvent(event) {
 	// add W3C standard event methods
 	event.preventDefault = fixEvent.preventDefault;
 	event.stopPropagation = fixEvent.stopPropagation;
 	return event;
-};
+}
+/** @this {Element} */
 fixEvent.preventDefault = function() {
 	this.returnValue = false;
 };
+/** @this {Element} */
 fixEvent.stopPropagation = function() {
-  this.cancelBubble = true;
-}
-
-// Dean's forEach: http://dean.edwards.name/base/forEach.js
-/*
-	forEach, version 1.0
-	Copyright 2006, Dean Edwards
-	License: http://www.opensource.org/licenses/mit-license.php
-*/
-
-// array-like enumeration
-if (!Array.forEach) { // mozilla already supports this
-	Array.forEach = function(array, block, context) {
-		for (var i = 0; i < array.length; i++) {
-			block.call(context, array[i], i, array);
-		}
-	};
-}
-
-// generic enumeration
-Function.prototype.forEach = function(object, block, context) {
-	for (var key in object) {
-		if (typeof this.prototype[key] == "undefined") {
-			block.call(context, object[key], key, object);
-		}
-	}
+	this.cancelBubble = true;
 };
 
-// character enumeration
-String.forEach = function(string, block, context) {
-	Array.forEach(string.split(""), function(chr, index) {
-		block.call(context, chr, index, string);
-	});
-};
-
-// globally resolve forEach enumeration
-var forEach = function(object, block, context) {
-	if (object) {
-		var resolve = Object; // default
-		if (object instanceof Function) {
-			// functions have a "length" property
-			resolve = Function;
-		} else if (object.forEach instanceof Function) {
-			// the object implements a custom forEach method so use that
-			object.forEach(block, context);
-			return;
-		} else if (typeof object == "string") {
-			// the object is a string
-			resolve = String;
-		} else if (typeof object.length == "number") {
-			// the object is array-like
-			resolve = Array;
-		}
-		resolve.forEach(object, block, context);
-	}
-};
-
+})(); // sorttable scope

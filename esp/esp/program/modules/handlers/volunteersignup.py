@@ -56,7 +56,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             }
 
     def require_auth(self):
-        return Tag.getBooleanTag('volunteer_require_auth', self.program, default=False)
+        return Tag.getBooleanTag('volunteer_require_auth', self.program)
 
     @main_call
     @no_auth
@@ -94,10 +94,10 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         time_options_dict = dict(zip(time_options, vrs))
 
         #   Group contiguous blocks
-        if not Tag.getBooleanTag('availability_group_timeslots', default=True):
+        if not Tag.getBooleanTag('availability_group_timeslots'):
             time_groups = [list(time_options)]
         else:
-            time_groups = Event.group_contiguous(list(time_options))
+            time_groups = Event.group_contiguous(list(time_options), int(Tag.getProgramTag('availability_group_tolerance', program = prog)))
 
         context['groups'] = [[{'slot': t, 'id': time_options_dict[t].id} for t in group] for group in time_groups]
 

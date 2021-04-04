@@ -4,7 +4,8 @@
 <html>
 <head>
 <title>On-Site Schedule Printer</title>
-<script type="text/javascript" src="/media/scripts/jquery.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/{{ settings.JQUERY_VERSION }}/jquery.min.js" integrity="{{ settings.JQUERY_HASH }}" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-migrate-1.4.1.{% if not settings.DEBUG %}min.{% endif %}js"></script>
 <script type="text/javascript" src="/media/scripts/common.js"></script>
 <script type="text/javascript">
 <!--

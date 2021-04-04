@@ -8,8 +8,10 @@
  * @params scheduleAssignments: The scheule assignments
  * @params apiClient: The object that can communicate with the server
  */
-function Sections(sections_data, section_details_data, teacher_data, scheduleAssignments, apiClient) {
+function Sections(sections_data, section_details_data, categories_data, teacher_data, moderator_data, scheduleAssignments, apiClient) {
     this.sections_data = sections_data;
+    this.categories_data = categories_data;
+    this.teacher_data = teacher_data;
     this.scheduleAssignments = scheduleAssignments;
     this.apiClient = apiClient;
 
@@ -122,6 +124,11 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
                 section.teacher_data.push(teacher_data[teacher_id]);
             });
 
+            section.moderator_data = []
+            $j.each(section.moderators, function(index, moderator_id) {
+                section.moderator_data.push(moderator_data[moderator_id]);
+            });
+
             sectionDetails = section_details_data[section_id];
             if(sectionDetails) {
                 section.schedulingComment = sectionDetails[0].comment;
@@ -216,6 +223,9 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
      * @param section: The section to select
      */
     this.selectSection = function(section) {
+        if(has_moderator_module === "True" && this.matrix.moderatorDirectory.selectedModerator) {
+            this.matrix.moderatorDirectory.unselectModerator();
+        }
         if(this.selectedSection) {
             if(this.selectedSection === section) {
                 this.unselectSection();
@@ -238,8 +248,6 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         this.matrix.sectionInfoPanel.displaySection(section);
         this.availableTimeslots = this.getAvailableTimeslots(section);
         this.matrix.highlightTimeslots(this.availableTimeslots, section);
-
-
     };
 
     /**
@@ -265,7 +273,6 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         this.matrix.sectionInfoPanel.hide();
         this.matrix.sectionInfoPanel.override = override;
         this.matrix.unhighlightTimeslots(this.availableTimeslots);
-
     };
 
     /**
@@ -332,7 +339,15 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
             resource_names.push("<li>" + resource_array[0].name + ": " + resource_array[1] + "</li>");
         });
         return "<ul>" + resource_names.join(" ") + "</ul>";
+    };
 
+    this.getModeratorsString = function(section) {
+        var moderator_list = []
+            $j.each(section.moderator_data, function(index, moderator) {
+                moderator_list.push(moderator.first_name + " " + moderator.last_name);
+            });
+        var moderators = moderator_list.join(", ");
+        return moderators;
     };
 
     /**
@@ -410,7 +425,6 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
             this.unselectSection();
         }
 
-
         // Add section to cells
         for(timeslot_index in schedule_timeslots){
             var timeslot_id = schedule_timeslots[timeslot_index];
@@ -426,6 +440,9 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
 
         // Trigger the event that tells the directory to update itself.
         $j("body").trigger("schedule-changed");
+
+        // Update cell coloring
+        this.matrix.updateCells();
     }
 
     /**
@@ -437,10 +454,10 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
     this.scheduleAsGhost = function(room_id, first_timeslot_id) {
         var schedule_timeslots = this.matrix.timeslots.
             get_timeslots_to_schedule_section(this.selectedSection, first_timeslot_id);
+        this.ghostScheduleAssignment = {'room_id': room_id, 'timeslots': schedule_timeslots};
         $j.each(schedule_timeslots, function(index, timeslot_id) {
             this.matrix.getCell(room_id, timeslot_id).addGhostSection(this.selectedSection);
         }.bind(this));
-        this.ghostScheduleAssignment = {'room_id': room_id, 'timeslots': schedule_timeslots};
     };
 
     /**

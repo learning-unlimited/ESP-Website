@@ -197,13 +197,16 @@ class TeacherEventsModule(ProgramModuleObj):
         training_times = self.getTimes('training')
 
         for ts in list( interview_times ) + list( training_times ):
-            ts.teachers = [ x.user.first_name + ' ' + x.user.last_name + ' <' + x.user.email + '>' for x in self.entriesBySlot( ts ) ]
+            ts.teachers = self.entriesBySlot( ts )
 
         context['prog'] = prog
         context['interview_times'] = interview_times
         context['training_times'] = training_times
 
         return render_to_response( self.baseDir()+'teacher_events.html', request, context )
+
+    def isStep(self):
+        return Event.objects.filter(program=self.program, event_type__in=self.event_types().values()).exists()
 
     class Meta:
         proxy = True

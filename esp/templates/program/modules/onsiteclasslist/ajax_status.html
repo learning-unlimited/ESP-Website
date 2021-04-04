@@ -1,9 +1,11 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
 <head>
 <title>Live Registration Status</title>
-<script type="text/javascript" src="/media/scripts/jquery.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/{{ settings.JQUERY_VERSION }}/jquery.min.js" integrity="{{ settings.JQUERY_HASH }}" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-migrate-1.4.1.{% if not settings.DEBUG %}min.{% endif %}js"></script>
 <script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/jquery-ui.js"></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/{{ settings.JQUERY_UI_VERSION }}/jquery-ui.js"></script>
 <script type="text/javascript" src="/media/scripts/common.js"></script>
 <script type="text/javascript">
     $j(document).ready(function() {
@@ -25,7 +27,7 @@
         background-color: #f7d0d0;
     }
 </style>
-<link href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+<link href="https://ajax.googleapis.com/ajax/libs/jqueryui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 <link rel="stylesheet" type="text/css" href="/media/styles/onsite_ajax_status.css" />
 
@@ -51,6 +53,7 @@
     <div><input type="checkbox" id="override_control"/>Override size limits</div>
     <div><input type="checkbox" id="grade_limits_control"/>Show classes outside student's grade range</div>
     <div><input type="checkbox" id="show_class_titles"/>Display class titles</div>
+    <div><input type="checkbox" id="show_class_teachers"/>Display class teachers</div>
     <div><input type="checkbox" id="show_class_rooms"/>Display class rooms</div>
     <div><input type="checkbox" id="show_closed_reg"/>Show sections that are closed to registration</div>
     <div><input type="checkbox" id="hide_past_time_blocks"/>Hide past timeblocks</div>
@@ -62,8 +65,23 @@
 <td>
   <div id="class_search_controls">
     <b>Find a class</b>
-    <input type="text" id="class_search" placeholder="class ID or title"/></input>
+    <input type="text" id="class_search" placeholder="class ID, title, or teacher"/></input>
   </div>
+</td>
+</tr>
+<tr>
+<td>
+    <div id="sort_controls">
+        <b>Sort sections by:</b>
+        <div>
+            <select id="sort_control">
+                <option value="length" selected># of Timeblocks</option>
+                <option value="class_id">Class ID</option>
+                <option value="category">Category</option>
+                <option value="fullness">Fullness</option>
+            </select>
+        </div>
+    </div>
 </td>
 </tr>
 <tr>

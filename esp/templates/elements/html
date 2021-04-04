@@ -14,13 +14,13 @@
     {% block stylesheets %}
     <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
 
-    <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/css/bootstrap-responsive.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap-responsive.css" rel="stylesheet"/>
     <link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css"/>
     <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet"/>
 
     <link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
     {% block jquery_ui_stylesheet_version %}
-    <link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" />
+    <link href="https://ajax.googleapis.com/ajax/libs/jqueryui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
     {% endblock jquery_ui_stylesheet_version %}
     {% endblock %}
 
@@ -31,13 +31,15 @@
 
     {% block jquery %}
     {% block jquery_version %}
-    <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/jquery/jquery-1.7.2.js"> </script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/{{ settings.JQUERY_VERSION }}/jquery.min.js" integrity="{{ settings.JQUERY_HASH }}" crossorigin="anonymous"></script>
+    <!-- Included in case there is any remaining deprecated jquery code -->
+    <script src="https://code.jquery.com/jquery-migrate-1.4.1.{% if not settings.DEBUG %}min.{% endif %}js"></script>
     {% endblock jquery_version %}
     {% block jquery_cookie_version %}
     <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
     {% endblock %}
     {% block jquery_ui_version %}
-    <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/{{ settings.JQUERY_UI_VERSION }}/jquery-ui.js"></script>
     <script type="text/javascript" src="/media/scripts/jquery-ui.timepicker.js"></script>
     <script type="text/javascript" src="/media/scripts/datepicker-duration.js"></script>
     {% endblock %}
@@ -93,19 +95,7 @@
     {% block javascript_footer %}
     <!-- Placed at the end of the document so the pages load faster -->
     <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/google-code-prettify/prettify.js"></script>
-    <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-transition.js"></script>
-    <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-alert.js"></script>
-    <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-modal.js"></script>
-    <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-dropdown.js"></script>
-    <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-scrollspy.js"></script>
-    <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-tab.js"></script>
-    <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-tooltip.js"></script>
-    <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-popover.js"></script>
-    <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-button.js"></script>
-    <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-collapse.js"></script>
-    <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-carousel.js"></script>
-    <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-typeahead.js"></script>
-    <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/application.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/js/bootstrap.js"></script>
     
     <script src="/media/scripts/nav.js" type="text/javascript"></script>
 

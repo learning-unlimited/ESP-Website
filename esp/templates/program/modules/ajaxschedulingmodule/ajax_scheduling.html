@@ -16,12 +16,13 @@
 <!-- STYLE -->
 <link id='sch_css' href='/media/default_styles/scheduling.css' type='text/css' rel='stylesheet' />
 <link id='tooltip_css' href='/media/default_styles/tooltips.css' type='text/css' rel='stylesheet' />
-<link rel="stylesheet" href='/media/default_styles/jquery-ui/jquery-ui.css'/>
+<link href="https://ajax.googleapis.com/ajax/libs/jqueryui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
 <link rel="stylesheet" type="text/css" href="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.css" />
 
 <!-- 3rd party -->
-<script type='text/javascript' src='/media/scripts/jquery.js'></script>
-<script type='text/javascript' src='/media/scripts/jquery-ui.js'></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/{{ settings.JQUERY_VERSION }}/jquery.min.js" integrity="{{ settings.JQUERY_HASH }}" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-migrate-1.4.1.{% if not settings.DEBUG %}min.{% endif %}js"></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/{{ settings.JQUERY_UI_VERSION }}/jquery-ui.js"></script>
 <script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
 <script type='text/javascript' src='/media/scripts/common.js'></script>
 <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
@@ -33,6 +34,8 @@
   var base_url = "{{ program.getUrlBase }}";
   var program_base_url = "/json/"+base_url+"/";
   var has_autoscheduler_frontend = "{{ has_autoscheduler_frontend }}";
+  var has_moderator_module = "{{ has_moderator_module }}";
+  var moderator_title = "{{ program.getModeratorTitle }}";
 </script>
 
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
@@ -43,6 +46,7 @@
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Cell.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Sections.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Directory.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Moderators.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Matrix.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/MessagePanel.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/SectionCommentDialog.js"></script>
@@ -69,11 +73,72 @@
         <div id="side-panel" class="component-div ui-widget">
           <ul>
             <li><a href="#classes">Classes</a></li>
-            <li><a href="#filters">Class Filters</a></li>
             <li><a href="#filters2">Room Filters</a></li>
+            <li><a href="#checks">Checks</a></li>
+            {% if has_moderator_module %}
+            <li><a href="#moderators">{{ program.getModeratorTitle }}s</a></li>
+            {% endif %}
           </ul>
           <div id="side-panel-inner">
                 <div id="classes">
+                    <div id="filters-accordion">
+                        <h3>Class Filters</h3>
+                        <div id="filters">
+                            <form>
+                                <div id="section-filter-unapproved-wrapper">
+                                    <input id="section-filter-unapproved" type="checkbox"></input>
+                                    <label for="section-filter-unapproved">Hide unapproved classes</label>
+                                </div>
+                                <br />
+                                <label for="section-filter-length"><b>Class Length</b></label><br />
+                                <div id="section-filter-length">
+                                    <label for="section-filter-length-min">Min:</label>
+                                    <input id="section-filter-length-min" class="numeric"></input> Hours
+                                    <br />
+                                    <label for="section-filter-length-max">Max:</label>
+                                    <input id="section-filter-length-max" class="numeric"></input> Hours
+                                </div>
+                                <br />
+                                <label for="section-filter-capacity"><b>Class Capacity</b></label><br />
+                                <div id="section-filter-capacity">
+                                    <label for="section-filter-capacity-min">Min:</label>
+                                    <input id="section-filter-capacity-min" class="numeric"></input> Students
+                                    <br />
+                                    <label for="section-filter-capacity-max">Max:</label>
+                                    <input id="section-filter-capacity-max" class="numeric"></input> Students
+                                </div>
+                                <br />
+                                <label for="section-filter-grade"><b>Class Grades</b></label><br />
+                                <div id="section-filter-grade">
+                                    <label for="section-filter-grade-min">Min:</label>
+                                    <input id="section-filter-grade-min" class="numeric"></input>
+                                    <br />
+                                    <label for="section-filter-grade-max">Max:</label>
+                                    <input id="section-filter-grade-max" class="numeric"></input>
+                                </div>
+                                <br />
+                                <div id="section-filter-teacher">
+                                    <label for="section-filter-teacher-text"><b>Teacher</b></label><br />
+                                    <input id="section-filter-teacher-text"></input>
+                                </div>
+                                <div id="section-filter-admin-wrapper">
+                                    <input id="section-filter-admin" type="checkbox"></input>
+                                    <label for="section-filter-admin">Has admin teacher</label>
+                                </div>
+                                <br />
+                                <div id="section-filter-flags">
+                                    <label for="section-filter-flags-text"><b>Flag(s)</b></label><br />
+                                    <input id="section-filter-flags-text"></input>
+                                </div>
+                                <br />
+                                <div id="section-filter-resources">
+                                    <label for="section-filter-resources-text"><b>Resource(s)</b></label><br />
+                                    <input id="section-filter-resources-text"></input>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <br>
                     <div id="class-search">
                         <form>
                             <label for="class-search-text">Search:</label>
@@ -89,60 +154,6 @@
                         </form>
                     </div>
                     <div id="directory"></div>
-                </div>
-                <div id="filters">
-                  <form>
-                    <div id="section-filter-unapproved-wrapper">
-                        <input id="section-filter-unapproved" type="checkbox"></input>
-                        <label for="section-filter-unapproved">Hide unapproved classes</label>
-                    </div>
-                    <br />
-                    <label for="section-filter-length"><b>Class Length</b></label><br />
-                    <div id="section-filter-length">
-                        <label for="section-filter-length-min">Min:</label>
-                        <input id="section-filter-length-min" class="numeric"></input> Hours
-                        <br />
-                        <label for="section-filter-length-max">Max:</label>
-                        <input id="section-filter-length-max" class="numeric"></input> Hours
-                    </div>
-                    <br />
-                    <label for="section-filter-capacity"><b>Class Capacity</b></label><br />
-                    <div id="section-filter-capacity">
-                        <label for="section-filter-capacity-min">Min:</label>
-                        <input id="section-filter-capacity-min" class="numeric"></input> Students
-                        <br />
-                        <label for="section-filter-capacity-max">Max:</label>
-                        <input id="section-filter-capacity-max" class="numeric"></input> Students
-                    </div>
-                    <br />
-                    <label for="section-filter-grade"><b>Class Grades</b></label><br />
-                    <div id="section-filter-grade">
-                        <label for="section-filter-grade-min">Min:</label>
-                        <input id="section-filter-grade-min" class="numeric"></input>
-                        <br />
-                        <label for="section-filter-grade-max">Max:</label>
-                        <input id="section-filter-grade-max" class="numeric"></input>
-                    </div>
-                    <br />
-                    <div id="section-filter-teacher">
-                        <label for="section-filter-teacher-text"><b>Teacher</b></label><br />
-                        <input id="section-filter-teacher-text"></input>
-                    </div>
-                    <div id="section-filter-admin-wrapper">
-                        <input id="section-filter-admin" type="checkbox"></input>
-                        <label for="section-filter-admin">Has admin teacher</label>
-                    </div>
-                    <br />
-                    <div id="section-filter-flags">
-                        <label for="section-filter-flags-text"><b>Flag(s)</b></label><br />
-                        <input id="section-filter-flags-text"></input>
-                    </div>
-                    <br />
-                    <div id="section-filter-resources">
-                        <label for="section-filter-resources-text"><b>Resource(s)</b></label><br />
-                        <input id="section-filter-resources-text"></input>
-                    </div>
-                  </form>
                 </div>
                 <div id="filters2">
                   <form>
@@ -166,6 +177,83 @@
                     </div>
                   </form>
                 </div>
+                <div id="checks">
+                  <form>
+                    <label for="scheduling-checks"><b>Scheduling Checks</b></label><br />
+                    <div id="scheduling-checks">
+                        <input type="radio" name="scheduling-checks" value="" checked></input> None
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="capacity"></input> Room Capacity Mismatch
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="unapproved"></input> Unapproved Classes
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="requests"></input> Unfulfilled Resource Requests
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="lunch"></input> Classes Scheduled Over Lunch
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="hungry"></input> Hungry Teachers
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="running"></input> Running Teachers
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="double_booked"></input> Double-Booked Teachers
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="unavailable"></input> Unavailable Teachers
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="num_teachers"></input> Number of Teachers
+                        <br />
+                        {% if has_moderator_module %}
+                        <input type="radio" name="scheduling-checks" value="num_moderators"></input> Number of {{ program.getModeratorTitle }}s
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="num_both"></input> Number of Teachers and {{ program.getModeratorTitle }}s
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="mod_cats"></input> {{ program.getModeratorTitle }}s with Mismatched Categories
+                        <br />
+                        {% endif %}
+                    </div>
+                  </form>
+                </div>
+                {% if has_moderator_module %}
+                <div id="moderators">
+                    <div id="mod-filters-accordion">
+                        <h3>{{ program.getModeratorTitle }} Filters</h3>
+                        <div id="mod-filters">
+                            <form>
+                                <label for="mod-filter-avail"><b>Available Slots</b></label><br />
+                                <div id="mod-filter-avail">
+                                    <label for="mod-filter-avail-min">Min:</label>
+                                    <input id="mod-filter-avail-min" class="numeric"></input> Slots
+                                    <br />
+                                    <label for="mod-filter-avail-max">Max:</label>
+                                    <input id="mod-filter-avail-max" class="numeric"></input> Slots
+                                </div>
+                                <br />
+                                <label for="mod-filter-remain"><b>Remaining Slots</b></label><br />
+                                <div id="mod-filter-remain">
+                                    <label for="mod-filter-remain-min">Min:</label>
+                                    <input id="mod-filter-remain-min" class="numeric"></input> Slots
+                                    <br />
+                                    <label for="mod-filter-remain-max">Max:</label>
+                                    <input id="mod-filter-remain-max" class="numeric"></input> Slots
+                                </div>
+                                <br />
+                                <div id="mod-filter-category">
+                                    <label for="mod-filter-category-text"><b>Category</b></label><br />
+                                    <input id="mod-filter-category-text"></input>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <br>
+                    <div id="mod-search">
+                        <form>
+                            <label for="mod-search-text">Search:</label>
+                            <input id="mod-search-text"
+                                   style="width: 8em;"></input>
+                        </form>
+                    </div>
+                    <div id="moderator-directory"></div>
+                </div>
+                {% endif %}
           </div>
         </div>
       </div>
@@ -191,6 +279,19 @@ $j("#info-panel").resizable({
   resize: function() {
     $j("#side-panel").outerHeight($j("#side-panel-wrapper").innerHeight() - $j("#info-panel").outerHeight());
   }
+});
+$j(function() {
+    $j("#filters-accordion").accordion({
+        active: false,
+        collapsible: true
+    });
+});
+
+$j(function() {
+    $j("#mod-filters-accordion").accordion({
+        active: false,
+        collapsible: true
+    });
 });
 </script>
 

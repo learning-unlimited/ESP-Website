@@ -48,17 +48,20 @@ from django.core.mail import send_mail
 from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability
 
 from django.contrib.auth.decorators import login_required
+from django.contrib.contenttypes.models import ContentType
 from django.db.models.query import Q
 from django.db.models import Min
 from django.db import transaction
 from django.core.mail import mail_admins
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
+from django.forms.models import model_to_dict
 from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
 
+from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm
 from esp.program.setup import prepare_program, commit_program
@@ -291,40 +294,41 @@ def find_user(userstr):
         # first branch of the if statement gets taken
         userstr_parts = ["".join(userstr_parts)]
 
-    # single search token, could be username, id or email
-    #worth noting that a username may be an integer or an email so we will just check them all
+    # Single search token, could be username, id or email
+    # worth noting that a username may be an integer or an email so we will just check them all
     found_users = None
     if len(userstr_parts) == 1:
-        #try username?
+        # Try username?
         user_q = Q(username__iexact=userstr)
-        #try pk
+        # Try user id
         if userstr.isnumeric():
             user_q = user_q | Q(id=userstr)
-        #try email?
-        if '@' in userstr:  # but don't even bother hitting the DB if it doesn't even have an '@'
+        # Try email
+        if '@' in userstr:  # Don't even bother hitting the DB if it doesn't even have an '@'
             user_q = user_q | Q(email__iexact=userstr)
-            user_q = user_q | Q(contactinfo__e_mail__iexact=userstr)  # search parent contact info, too
-        #try phone
+            user_q = user_q | Q(contactinfo__e_mail__iexact=userstr)  # Search parent contact info, too
+        # Try phone
         cleaned = userstr
         for char in "-.() ":
             cleaned = cleaned.replace(char, "")
         if cleaned.isnumeric() and len(cleaned) == 10:
             formatted = "%s%s%s-%s%s%s-%s%s%s%s" % tuple(cleaned)
             user_q = user_q | Q(contactinfo__phone_day=formatted) | Q(contactinfo__phone_cell=formatted)
-
+        # Try name (including parent/emergency contact)
         user_q = user_q | (Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr))
+        user_q = user_q | (Q(contactinfo__first_name__icontains=userstr) | Q(contactinfo__last_name__icontains=userstr))
         found_users = ESPUser.objects.filter(user_q).distinct()
     else:
         q_list = []
         for i in xrange(len(userstr_parts)):
             q_list.append( Q( first_name__icontains = ' '.join(userstr_parts[:i]), last_name__icontains = ' '.join(userstr_parts[i:]) ) )
+            q_list.append( Q( contactinfo__first_name__icontains = ' '.join(userstr_parts[:i]), contactinfo__last_name__icontains = ' '.join(userstr_parts[i:]) ) )
         # Allow any of the above permutations
         q = reduce(operator.or_, q_list)
         found_users = ESPUser.objects.filter( q ).distinct()
 
     #if the previous search attempt failed, try titles of courses a teacher has taught?
     if not found_users.exists():
-        # lastly,
         found_users = ESPUser.objects.filter(classsubject__title__icontains=userstr).distinct()
 
     return found_users
@@ -463,11 +467,9 @@ def newprogram(request):
         tprogram = Program.objects.get(id=template_prog_id)
         request.session['template_prog'] = template_prog_id
         template_prog = {}
-        template_prog.update(tprogram.__dict__)
+        template_prog.update(model_to_dict(tprogram))
         del template_prog["id"]
         template_prog["program_type"] = tprogram.program_type
-        template_prog["program_modules"] = tprogram.program_modules.all().values_list("id", flat=True)
-        template_prog["class_categories"] = tprogram.class_categories.all().values_list("id", flat=True)
         '''
         As Program Name should be new for each new program created then it is better to not to show old program names in input box .
         template_prog["term"] = tprogram.program_instance()
@@ -513,12 +515,36 @@ def newprogram(request):
                 resource_type_labels = json.loads(default_restypes)
                 resource_types = [ResourceType.get_or_create(x, new_prog) for x in resource_type_labels]
 
-            # Force all ProgramModuleObjs and their extensions to be created now
-            # If we are using another program as a template, let's copy the seq and required values from that program.
             if 'template_prog' in request.session:
+                # Force all ProgramModuleObjs and their extensions to be created now
+                # If we are using another program as a template, let's copy the seq and required values from that program.
                 old_prog = Program.objects.get(id=request.session['template_prog'])
                 new_prog.getModules(old_prog=old_prog)
+                # Copy CRMI settings from old program
+                old_crmi = ClassRegModuleInfo.objects.get(program=old_prog)
+                new_crmi = ClassRegModuleInfo.objects.get(program=new_prog)
+                for field in old_crmi._meta.fields:
+                    if field.name not in ["id", "program"]:
+                        setattr(new_crmi, field.name, getattr(old_crmi, field.name))
+                new_crmi.save()
+                # Copy SCRMI settings from old program
+                old_scrmi = StudentClassRegModuleInfo.objects.get(program=old_prog)
+                new_scrmi = StudentClassRegModuleInfo.objects.get(program=new_prog)
+                for field in old_scrmi._meta.fields:
+                    if field.name not in ["id", "program"]:
+                        setattr(new_scrmi, field.name, getattr(old_scrmi, field.name))
+                new_scrmi.save()
+                # Copy tags from old program
+                ct = ContentType.objects.get_for_model(old_prog)
+                old_tags = Tag.objects.filter(content_type=ct, object_id=old_prog.id)
+                for old_tag in old_tags:
+                    new_tag, created = Tag.objects.get_or_create(key=old_tag.key, content_type=ct, object_id=new_prog.id)
+                    # Some tags get created during program creation (e.g. sibling discount), and we don't want to override those
+                    if created:
+                        new_tag.value = old_tag.value
+                        new_tag.save()
             else:
+                # Create new modules
                 new_prog.getModules()
 
             manage_url = '/manage/' + new_prog.url + '/resources'
@@ -759,8 +785,9 @@ def tags(request, section=""):
         form = TagSettingsForm(request.POST)
         if form.is_valid():
             form.save()
-
-    form = TagSettingsForm()
+            form = TagSettingsForm() # replace null responses with defaults if processed successfully
+    else:
+        form = TagSettingsForm()
 
     context['form'] = form
     context['categories'] = form.categories
@@ -820,15 +847,23 @@ def statistics(request, program=None):
                 programs = programs.filter(url__in=form.cleaned_data['program_instances'])
             result_dict['programs'] = programs
 
-            #   Get list of students the query applies to
-            students_q = Q()
+            #   Get list of users the query applies to
+            users_q = Q()
             for program in programs:
-                for reg_type in form.cleaned_data['reg_types']:
-                    students_q = students_q | program.students(QObjects=True)[reg_type]
+                if 'student_reg_types' in form.cleaned_data and form.cleaned_data['student_reg_types'] and not form.cleaned_data['student_reg_types']:
+                    students_objects = program.students(QObjects=True)
+                    for reg_type in form.cleaned_data['student_reg_types']:
+                        if reg_type in students_objects.keys():
+                            users_q = users_q | students_objects[reg_type]
+                elif 'teacher_reg_types' in form.cleaned_data and form.cleaned_data['teacher_reg_types'] and not form.cleaned_data['teacher_reg_types']:
+                    teachers_objects = program.teachers(QObjects=True)
+                    for reg_type in form.cleaned_data['teacher_reg_types']:
+                        if reg_type in teachers_objects.keys():
+                            users_q = users_q | teachers_objects[reg_type]
 
             #   Narrow down by school (perhaps not ideal results, but faster)
             if form.cleaned_data['school_query_type'] == 'name':
-                students_q = students_q & (Q(studentinfo__school__icontains=form.cleaned_data['school_name']) | Q(studentinfo__k12school__name__icontains=form.cleaned_data['school_name']))
+                users_q = users_q & (Q(studentinfo__school__icontains=form.cleaned_data['school_name']) | Q(studentinfo__k12school__name__icontains=form.cleaned_data['school_name']))
             elif form.cleaned_data['school_query_type'] == 'list':
                 k12school_ids = []
                 school_names = []
@@ -837,27 +872,27 @@ def statistics(request, program=None):
                         k12school_ids.append(int(item[4:]))
                     elif item.startwith('Sch:'):
                         school_names.append(item[4:])
-                students_q = students_q & (Q(studentinfo__school__in=school_names) | Q(studentinfo__k12school__id__in=k12school_ids))
+                users_q = users_q & (Q(studentinfo__school__in=school_names) | Q(studentinfo__k12school__id__in=k12school_ids))
 
             #   Narrow down by Zip code, simply using the latest profile
-            #   Note: it would be harder to track students better (i.e. zip code A in fall 2008, zip code B in fall 2009)
+            #   Note: it would be harder to track users better (i.e. zip code A in fall 2008, zip code B in fall 2009)
             if form.cleaned_data['zip_query_type'] == 'exact':
-                students_q = students_q & Q(registrationprofile__contact_user__address_zip=form.cleaned_data['zip_code'], registrationprofile__most_recent_profile=True)
+                users_q = users_q & Q(registrationprofile__contact_user__address_zip=form.cleaned_data['zip_code'], registrationprofile__most_recent_profile=True)
             elif form.cleaned_data['zip_query_type'] == 'partial':
-                students_q = students_q & Q(registrationprofile__contact_user__address_zip__startswith=form.cleaned_data['zip_code_partial'], registrationprofile__most_recent_profile=True)
+                users_q = users_q & Q(registrationprofile__contact_user__address_zip__startswith=form.cleaned_data['zip_code_partial'], registrationprofile__most_recent_profile=True)
             elif form.cleaned_data['zip_query_type'] == 'distance':
                 zipc = ZipCode.objects.get(zip_code=form.cleaned_data['zip_code'])
                 zipcodes = zipc.close_zipcodes(form.cleaned_data['zip_code_distance'])
-                students_q = students_q & Q(registrationprofile__contact_user__address_zip__in = zipcodes, registrationprofile__most_recent_profile=True)
+                users_q = users_q & Q(registrationprofile__contact_user__address_zip__in = zipcodes, registrationprofile__most_recent_profile=True)
 
-            students = ESPUser.objects.filter(students_q).distinct()
-            result_dict['num_students'] = students.count()
-            profiles = [student.getLastProfile() for student in students]
+            users = ESPUser.objects.filter(users_q).distinct()
+            result_dict['num_users'] = users.count()
+            profiles = [user.getLastProfile() for user in users]
 
             #   Accumulate desired information for selected query
             from esp.program import statistics as statistics_functions
             if hasattr(statistics_functions, form.cleaned_data['query']):
-                context['result'] = getattr(statistics_functions, form.cleaned_data['query'])(form, programs, students, profiles, result_dict)
+                context['result'] = getattr(statistics_functions, form.cleaned_data['query'])(form, programs, users, profiles, result_dict)
             else:
                 context['result'] = 'Unsupported query'
 

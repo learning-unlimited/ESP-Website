@@ -633,7 +633,7 @@ class ResourceModule(ProgramModuleObj):
 
         #   Group contiguous blocks of time for the program
         time_options = self.program.getTimeSlots(types=['Class Time Block','Open Class Time Block'])
-        time_groups = Event.group_contiguous(list(time_options))
+        time_groups = Event.group_contiguous(list(time_options), int(Tag.getProgramTag('availability_group_tolerance', program = prog)))
 
         #   Retrieve remaining context information
         context['timeslots'] = [{'selections': group} for group in time_groups]
@@ -641,7 +641,7 @@ class ResourceModule(ProgramModuleObj):
         if 'timeslot_form' not in context:
             context['timeslot_form'] = TimeslotForm()
 
-        res_types = self.program.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes', default = False))
+        res_types = self.program.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes'))
         context['resource_types'] = sorted(res_types, key = lambda x: (not x.hidden, x.priority_default), reverse = True)
         for c in context['resource_types']:
             if c.program is None:

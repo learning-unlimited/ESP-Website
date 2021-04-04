@@ -64,24 +64,16 @@ function submit_prev_selection()
 
 function prepare_accordion(accordion_id, rb_selected)
 {
+    $j("#" + accordion_id).children(".ui-accordion-header:not(.any)").hide();
+    
     //  Show school/grade options for students, graduation year options for teachers
     if (rb_selected.toLowerCase().substr(0, 7) == "student")
     {
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(7).show();
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(8).show();
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(9).hide();
+        $j("#" + accordion_id).children(".ui-accordion-header.student").show();
     }
     else if (rb_selected.toLowerCase().substr(0, 7) == "teacher")
     {
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(7).hide();
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(8).hide();
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(9).show();
-    }
-    else
-    {
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(7).hide();
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(8).hide();
-        $j("#" + accordion_id).children(".ui-accordion-header").eq(9).hide();
+        $j("#" + accordion_id).children(".ui-accordion-header.teacher").show();
     }
 }
 
@@ -114,22 +106,25 @@ function clear_filters(form_name)
 {
     //  Remove any existing data in the "user filtering options" part of a comm panel form
     var form = $j("#"+form_name)[0];
-    field_names = ["userid", "username", "first_name", "last_name", "email", "zipcode", "zipdistance", "zipdistance_exclude", "states", "school", "grade_min", "grade_max", "gradyear_min", "gradyear_max", "group", "clsid", "regtypes"];
+    field_names = ["userid", "username", "first_name", "last_name", "email", "zipcode", "zipdistance", "zipdistance_exclude", "states", "school", "grade_min", "grade_max", "gradyear_min", "gradyear_max", "groups_include", "groups_exclude", "clsid", "regtypes", "hours_min", "hours_max", "teaching_times", "teacher_events", "class_times", "target_user"];
     for (var i = 0; i < field_names.length; i++)
     {
-        var form_field = $j(form).find(':input[name=' + field_names[i] + ']')[0];
-        switch (form_field.type) {
-            case 'password':
-            case 'select-multiple':
-            case 'select-one':
-            case 'text':
-            case 'textarea':
-                $j(form_field).val('');
-                break;
-            case 'checkbox':
-            case 'radio':
-                form_field.checked = false;
-        };
+        var form_fields = $j(form).find(':input[name=' + field_names[i] + ']');
+        if (form_fields.length) {
+            var form_field = form_fields[0];
+            switch (form_field.type) {
+                case 'password':
+                case 'select-multiple':
+                case 'select-one':
+                case 'text':
+                case 'textarea':
+                    $j(form_field).val('');
+                    break;
+                case 'checkbox':
+                case 'radio':
+                    form_field.checked = false;
+            };
+        }
     }
 }
 
@@ -151,8 +146,8 @@ function initialize()
     $j("#filter_accordion").accordion({
         heightStyle: "content",
         collapsible: true,
+        active: false,
     });
-    $j("#filter_accordion").accordion("option", "active", false);
 
     //  Handle changes in the recipient type
     recipient_type_change = function () {
@@ -215,6 +210,7 @@ function initialize()
     $j("#combo_filter_accordion").accordion({
         heightStyle: "content",
         collapsible: true,
+        active: false,
     });
     $j("#combo_filter_accordion").accordion("option", "active", false);
 
@@ -310,7 +306,7 @@ function initialize()
     $j("#prev_select_done").click(submit_prev_selection);
 
     //  Populate fields with GET parameters
-    var items = location.search.substr(1).split("&");
+    var items = location.search.substr(1).split("&").filter(Boolean);
     for (var index = 0; index < items.length; index++) {
         var key_val = items[index].split("=");
         $j("[name=" + key_val[0] + "]").val(key_val[1].split(",")).change();

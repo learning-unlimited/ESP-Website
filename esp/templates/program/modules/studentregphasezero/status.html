@@ -75,6 +75,7 @@ td {
 <center>
 <hr>
 {% if error %}<p><font color="red">{{ error }}</font></p>{% endif %}
+{% if invalid_grades %}<p><font color="red">The following students have invalid grades:</br>{% for student in invalid_grades %}{{ student }}</br>{% endfor %}</font></p>{% endif %}
 {% autoescape off %}
 {% if lottery_messages %}<p><font color="blue">{{ lottery_messages|join:"<br/>" }}</font></p>{% endif %}
 {% endautoescape %}

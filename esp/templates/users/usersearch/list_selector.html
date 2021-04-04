@@ -1,3 +1,9 @@
+<script>
+$j(document).ready(function() {
+    $j("#id_target_user").removeClass("span6");
+});
+</script>
+
 <div id="list_descriptions" class="commpanel_hidden">
 {% for kv in lists.items %}{% for item in kv.1 %}
 <div id="list_description_{{ item.name }}">{{ item.description }}</div>
@@ -71,70 +77,7 @@
             <div class="step_instructions">(For any criteria you don't need, just leave them blank.)</div>
             <div class="step_instructions step_highlight">Currently selected: <span id="filter_current_list"></span></div>
             <div id="filter_accordion">
-
-                <h4><a href="#">User ID</a></h4>
-                <div>Enter ID number: <input type="text" size="6" name="userid" id="userid" /> <br />
-                <small>(Can be a comma-separated list)</small></div>
-
-                <h4><a href="#">User name</a></h4>
-                <div>Enter a username: <input type="text" size="30" name="username" id="username" autocomplete="new-username" /> <br />
-                <small>(Supports regular expressions)</small></div>
-
-                <h4><a href="#">Last name</a></h4>
-                <div>Enter a portion of the last name: <input type="text" size="30" name="last_name" id="last_name" /> <br />
-                <small>(Supports regular expressions)</small></div>
-
-                <h4><a href="#">First name</a></h4>
-                <div>Enter a portion of the first name: <input type="text" size="30" name="first_name" id="first_name" /> <br />
-                <small>(Supports regular expressions)</small></div>
-
-                <h4><a href="#">Email address</a></h4>
-                <div>Enter a portion of the email address: <input type="text" size="30" name="email" id="email" /> <br />
-                <small>(Supports regular expressions)</small></div>
-
-                <h4><a href="#">Zip Code</a></h4>
-                <div>
-                    Center of region: <input type="text" size="5" name="zipcode" value="02139" /> <br />
-                    Minimum distance: <input type="text" size="4" name="zipdistance_exclude" value="" /> miles <br />
-                    Maximum distance: <input type="text" size="4" name="zipdistance" value="" /> miles
-                </div>
-
-                <h4><a href="#">States</a></h4>
-                <div>Enter a list of states: <input type="text" size="18" name="states" value="" /> <br />
-                <small>Example: MA,CT,NY</small></div>
-
-                <h4><a href="#">School</a></h4>
-                <div>Enter a portion of the school name: <input type="text" size="30" name="school" value="" /></div>
-
-                <h4><a href="#">Grade</a></h4>
-                <div>
-                Min Grade: <input type="text" size="3" name="grade_min" value="" /><br />
-                Max Grade: <input type="text" size="3" name="grade_max" value="" />
-                </div>
-
-                <h4><a href="#">Graduation Year</a></h4>
-                <div>
-                Min: <input type="text" size="3" name="gradyear_min" value="" /> <br />
-                Max: <input type="text" size="3" name="gradyear_max" value="" />
-                </div>
-
-                <h4><a href="#">User Group</a></h4>
-                <div><select name="group" id="user-search-group">
-                    {% for group in groups %}
-                    <option value="{{ group.id }}">{{ group.name }}</option>
-                    {% endfor %}
-                    <option value="" selected hidden></option>
-                </select></div>
-
-                <h4><a href="#">Class Registrations</a></h4>
-                <div>Enter class ID number: <input type="text" size="6" name="clsid" id="clsid" /> <br />
-                <small>(Can be a comma-separated list)</small> <br /><br />
-                Select registration type(s): <select name="regtypes" id="regtypes" multiple>
-                    {% for regtype in regtypes %}
-                    <option {% if regtype.description %}title="{{ regtype.description }}" {% endif %}value="{{ regtype.name }}"{% if regtype.name == "Enrolled" %} selected{% endif %}>{{ regtype }}</option>
-                    {% endfor %}
-                </select></div>
-
+                {% include "users/usersearch/filter_accordion.html" %}
             </div>
 
             <button type="button" class="btn btn-default recipient_step_button" id="recipient_filter_back">Go back</button>
@@ -211,70 +154,7 @@
             <div class="step_header"><span class="step_label">Step 3:</span> <span class="step_text">Do you need to filter this list down?</span></div>
             <div class="step_instructions">(For any criteria you don't need, just leave them blank.)</div>
             <div id="combo_filter_accordion">
-
-                <h4><a href="#">User ID</a></h4>
-                <div>Enter ID number: <input type="text" size="6" name="userid" id="userid" /> <br />
-                <small>(Can be a comma-separated list)</small></div>
-
-                <h4><a href="#">User name</a></h4>
-                <div>Enter a username: <input type="text" size="30" name="username" id="username" autocomplete="new-username" /> <br />
-                <small>(Supports regular expressions)</small></div>
-
-                <h4><a href="#">Last name</a></h4>
-                <div>Enter a portion of the last name: <input type="text" size="30" name="last_name" id="last_name" /> <br />
-                <small>(Supports regular expressions)</small></div>
-
-                <h4><a href="#">First name</a></h4>
-                <div>Enter a portion of the first name: <input type="text" size="30" name="first_name" id="first_name" /> <br />
-                <small>(Supports regular expressions)</small></div>
-
-                <h4><a href="#">Email address</a></h4>
-                <div>Enter a portion of the email address: <input type="text" size="30" name="email" id="email" /> <br />
-                <small>(Supports regular expressions)</small></div>
-
-                <h4><a href="#">Zip Code</a></h4>
-                <div>
-                    Center of region: <input type="text" size="5" name="zipcode" value="02139" /> <br />
-                    Minimum distance: <input type="text" size="4" name="zipdistance_exclude" value="" /> miles <br />
-                    Maximum distance: <input type="text" size="4" name="zipdistance" value="" /> miles
-                </div>
-
-                <h4><a href="#">States</a></h4>
-                <div>Enter a list of states: <input type="text" size="18" name="states" value="" /> <br />
-                <small>Example: MA,CT,NY</small></div>
-
-                <h4><a href="#">School</a></h4>
-                <div>Enter a portion of the school name: <input type="text" size="30" name="school" value="" /></div>
-
-                <h4><a href="#">Grade</a></h4>
-                <div>
-                Min Grade: <input type="text" size="3" name="grade_min" value="" /><br />
-                Max Grade: <input type="text" size="3" name="grade_max" value="" />
-                </div>
-
-                <h4><a href="#">Graduation Year</a></h4>
-                <div>
-                Min: <input type="text" size="3" name="gradyear_min" value="" /> <br />
-                Max: <input type="text" size="3" name="gradyear_max" value="" />
-                </div>
-
-                <h4><a href="#">User Group</a></h4>
-                <div><select name="group" id="user-search-group">
-                    {% for group in groups %}
-                    <option value="{{ group.id }}">{{ group.name }}</option>
-                    {% endfor %}
-                    <option value="" selected hidden></option>
-                </select></div>
-
-                <h4><a href="#">Class Registrations</a></h4>
-                <div>Enter class ID number: <input type="text" size="6" name="clsid" id="clsid" /> <br />
-                <small>(Can be a comma-separated list)</small> <br /><br />
-                Select registration type(s): <select name="regtypes" id="regtypes" multiple>
-                    {% for regtype in regtypes %}
-                    <option {% if regtype.description %}title="{{ regtype.description }}" {% endif %}value="{{ regtype.name }}"{% if regtype.name == "Enrolled" %} selected{% endif %}>{{ regtype }}</option>
-                    {% endfor %}
-                </select></div>
-
+                {% include "users/usersearch/filter_accordion.html" %}
             </div>
 
             <button type="button" class="btn btn-default recipient_step_button" id="combo_filter_back">Go back</button>

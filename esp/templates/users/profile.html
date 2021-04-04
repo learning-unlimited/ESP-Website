@@ -71,7 +71,7 @@ div.required label:after {
             {% include "users/profiles/usercontact.html" %}
         {% else %}
 
-        {% include "../templates/themes/bs_form.html" %}
+        {% include "themes/bs_form.html" %}
 
         {% endifequal %}
         {% endifequal %}
@@ -87,9 +87,41 @@ div.required label:after {
 </div>
 
 <script>
+function check_state() {
+  if ($j("#id_address_state").val() == "International") {
+    $j("#id_address_country").removeClass("hidden");
+    if ($j("#id_address_country").val() == "US") {
+      $j("#id_address_country").val("");
+    }
+  } else {
+    $j("#id_address_country").addClass("hidden");
+    $j("#id_address_country").val("US");
+  }
+}
+function check_emerg_state() {
+  if ($j("#id_emerg_address_state").val() == "International") {
+    $j("#id_emerg_address_country").removeClass("hidden");
+    if ($j("#id_emerg_address_country").val() == "US") {
+      $j("#id_emerg_address_country").val("");
+    }
+  } else {
+    $j("#id_emerg_address_country").addClass("hidden");
+    $j("#id_emerg_address_country").val("US");
+  }
+}
 $j(document).ready(function() {
   $j(".required").each(function() {
     $j(this).closest(".control-group").addClass("required");
+  });
+  
+  check_state();
+  check_emerg_state();
+  
+  $j("#id_address_state").change(function() {
+    check_state();
+  });
+  $j("#id_emerg_address_state").change(function() {
+    check_emerg_state();
   });
 });
 </script>

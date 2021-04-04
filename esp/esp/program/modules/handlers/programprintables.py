@@ -53,7 +53,7 @@ from django import forms
 from django.conf import settings
 from django.http import HttpResponse
 from django.db.models import IntegerField, Case, When, Count
-from django.template import Context, loader
+from django.template import loader
 from django.template.loader import render_to_string, get_template
 from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
@@ -441,8 +441,7 @@ class ProgramPrintables(ProgramModuleObj):
             response = HttpResponse(content_type='text/csv')
             response['Content-Disposition'] = 'attachment; filename="classes_list.csv"'
             t = loader.get_template(self.baseDir()+'classes_list.csv')
-            c = Context(context)
-            response.write(t.render(c))
+            response.write(t.render(context))
             return response
         else:
             return render_to_response(self.baseDir()+template_file, request, context)
@@ -485,8 +484,7 @@ class ProgramPrintables(ProgramModuleObj):
             response = HttpResponse(content_type='text/csv')
             response['Content-Disposition'] = 'attachment; filename="sections_list.csv"'
             t = loader.get_template(self.baseDir()+'sections_list.csv')
-            c = Context(context)
-            response.write(t.render(c))
+            response.write(t.render(context))
             return response
         else:
             return render_to_response(self.baseDir()+template_file, request, context)
@@ -564,7 +562,10 @@ class ProgramPrintables(ProgramModuleObj):
         return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_id)
 
     @needs_admin
-    def teachersbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'teacherlist.html', extra_func = lambda x: {}):
+    def teachersbyFOO(self, request, tl, one, two, module, extra, prog,
+                      sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True,
+                      template_file = 'teacherlist.html', extra_func = lambda x: {},
+                      teaching = True, moderating = False):
         from esp.users.models import ContactInfo
 
         filterObj, found = UserSearchController().create_filter(request, self.program)
@@ -591,7 +592,13 @@ class ProgramPrintables(ProgramModuleObj):
 
         for teacher in teachers:
             # get list of valid classes
-            classes = [ cls for cls in teacher.getTaughtSections(self.program)
+            if teaching and moderating:
+                class_objects = teacher.getTaughtSections(self.program) | teacher.getModeratingSectionsFromProgram(self.program)
+            elif teaching:
+                class_objects = teacher.getTaughtSections(self.program)
+            else:
+                class_objects = teacher.getModeratingSectionsFromProgram(self.program)
+            classes = [ cls for cls in class_objects
                     if cls.isAccepted() and cls.meeting_times.count() > 0 ]
             # now we sort them by time/title
             classes.sort()
@@ -608,8 +615,7 @@ class ProgramPrintables(ProgramModuleObj):
 
                 classes = new_classes
 
-            # aseering 9-29-2007, 1:30am: There must be a better way to do this...
-            ci = ContactInfo.objects.filter(user=teacher, phone_cell__isnull=False).exclude(phone_cell='').order_by('id')
+            ci = ContactInfo.objects.filter(user=teacher, phone_cell__isnull=False, as_user__isnull=False).exclude(phone_cell='').distinct('user')
             if ci.count() > 0:
                 phone_day = ci[0].phone_day
                 phone_cell = ci[0].phone_cell
@@ -632,11 +638,17 @@ class ProgramPrintables(ProgramModuleObj):
         context['scheditems'] = scheditems
 
         if extra and 'csv' in extra:
+            if teaching and moderating:
+                filename = "teacher" + self.program.getModeratorTitle().lower() + "list.csv"
+            elif teaching:
+                filename = "teacherlist.csv"
+            else:
+                filename = self.program.getModeratorTitle().lower() + "list.csv"
+
             response = HttpResponse(content_type='text/csv')
-            response['Content-Disposition'] = 'attachment; filename="teacherlist.csv"'
+            response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
             t = loader.get_template(self.baseDir()+'teacherlist.csv')
-            c = Context(context)
-            response.write(t.render(c))
+            response.write(t.render(context))
             return response
         else:
             return render_to_response(self.baseDir()+template_file, request, context)
@@ -645,41 +657,72 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def teacherlist(self, request, tl, one, two, module, extra, prog):
         """ default list of teachers; function left in for compatibility """
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog)
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching = True, moderating = False)
+
+    @aux_call
+    @needs_admin
+    def teachermoderatorlist(self, request, tl, one, two, module, extra, prog):
+        """ default list of teachers; function left in for compatibility """
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=True, moderating=True)
+
+    @aux_call
+    @needs_admin
+    def moderatorlist(self, request, tl, one, two, module, extra, prog):
+        """ default list of teachers; function left in for compatibility """
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=False, moderating=True)
+
+    @staticmethod
+    def cmpsorttime(one,other):
+        if (one['cls'].meeting_times.count() > 0 and other['cls'].meeting_times.count() > 0):
+            cmp0 = cmp(one['cls'].meeting_times.all()[0].start, other['cls'].meeting_times.all()[0].start)
+        else:
+            cmp0 = cmp(one['cls'].meeting_times.count(), other['cls'].meeting_times.count())
+
+        if cmp0 != 0:
+            return cmp0
+
+        return cmp(one, other)
 
     @aux_call
     @needs_admin
     def teachersbytime(self, request, tl, one, two, module, extra, prog):
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = True, moderating = False)
 
-        def cmpsort(one,other):
-            if (one['cls'].meeting_times.count() > 0 and other['cls'].meeting_times.count() > 0):
-                cmp0 = cmp(one['cls'].meeting_times.all()[0].start, other['cls'].meeting_times.all()[0].start)
-            else:
-                cmp0 = cmp(one['cls'].meeting_times.count(), other['cls'].meeting_times.count())
+    @aux_call
+    @needs_admin
+    def teachermoderatorsbytime(self, request, tl, one, two, module, extra, prog):
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = True, moderating = True)
 
-            if cmp0 != 0:
-                return cmp0
+    @aux_call
+    @needs_admin
+    def moderatorsbytime(self, request, tl, one, two, module, extra, prog):
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = False, moderating = True)
 
-            return cmp(one, other)
+    @staticmethod
+    def cmpsortname(one, other):
+        one_name = one['user'].last_name.upper()
+        other_name = other['user'].last_name.upper()
+        cmp0 = cmp(one_name, other_name)
 
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, cmpsort)
+        if cmp0 != 0:
+            return cmp0
 
+        return cmp(one['name'].upper(), other['name'].upper())
 
     @aux_call
     @needs_admin
     def teachersbyname(self, request, tl, one, two, module, extra, prog):
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = True, moderating = False)
 
-        def cmpsort(one,other):
-            one_name = one['user'].last_name.upper()
-            other_name = other['user'].last_name.upper()
-            cmp0 = cmp(one_name, other_name)
+    @aux_call
+    @needs_admin
+    def teachermoderatorsbyname(self, request, tl, one, two, module, extra, prog):
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = True, moderating = True)
 
-            if cmp0 != 0:
-                return cmp0
-
-            return cmp(one['name'].upper(), other['name'].upper())
-
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, cmpsort)
+    @aux_call
+    @needs_admin
+    def moderatorsbyname(self, request, tl, one, two, module, extra, prog):
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = False, moderating = True)
 
     @needs_admin
     def roomsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'roomlist.html', extra_func = lambda x: {}):
@@ -774,6 +817,46 @@ class ProgramPrintables(ProgramModuleObj):
 
     @aux_call
     @needs_admin
+    def teachermoderatorschedules(self, request, tl, one, two, module, extra, prog):
+        """ generate teacher/moderator schedules """
+
+        filterObj, found = UserSearchController().create_filter(request, self.program)
+        if not found:
+            return filterObj
+
+        context = {'module': self     }
+        teachers = list(filterObj.getList(ESPUser).distinct())
+        teachers.sort()
+
+        scheditems = []
+
+        for teacher in teachers:
+            # get list of valid classes
+            classes = [cls for cls in teacher.getTaughtSectionsFromProgram(self.program) |
+                       teacher.getModeratingSectionsFromProgram(self.program)
+                    if cls.meeting_times.all().exists()
+                    and cls.resourceassignment_set.all().exists()
+                    and cls.status > 0]
+            # now we sort them by time/title
+            classes.sort()
+            for cls in classes:
+                if teacher in cls.parent_class.get_teachers():
+                    role = 'Teacher'
+                else:
+                    role = self.program.getModeratorTitle()
+                scheditems.append({'name': teacher.name(),
+                                   'teacher': teacher,
+                                   'cls': cls,
+                                   'role': role})
+
+        context['scheditems'] = scheditems
+        context['moderators'] = True
+        context['teachers'] = True
+
+        return render_to_response(self.baseDir()+'teachermoderatorschedule.html', request, context)
+
+    @aux_call
+    @needs_admin
     def teacherschedules(self, request, tl, one, two, module, extra, prog):
         """ generate teacher schedules """
 
@@ -789,9 +872,8 @@ class ProgramPrintables(ProgramModuleObj):
 
         for teacher in teachers:
             # get list of valid classes
-            classes = [cls for cls in teacher.getTaughtSections()
-                    if cls.parent_program == self.program
-                    and cls.meeting_times.all().exists()
+            classes = [cls for cls in teacher.getTaughtSectionsFromProgram(self.program)
+                    if cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
                     and cls.status > 0]
             # now we sort them by time/title
@@ -799,11 +881,47 @@ class ProgramPrintables(ProgramModuleObj):
             for cls in classes:
                 scheditems.append({'name': teacher.name(),
                                    'teacher': teacher,
-                                   'cls' : cls})
+                                   'cls': cls})
 
         context['scheditems'] = scheditems
+        context['moderators'] = None
+        context['teachers'] = True
 
         return render_to_response(self.baseDir()+'teacherschedule.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def moderatorschedules(self, request, tl, one, two, module, extra, prog):
+        """ generate moderator schedules """
+
+        filterObj, found = UserSearchController().create_filter(request, self.program)
+        if not found:
+            return filterObj
+
+        context = {'module': self     }
+        teachers = list(filterObj.getList(ESPUser).distinct())
+        teachers.sort()
+
+        scheditems = []
+
+        for teacher in teachers:
+            # get list of valid classes
+            classes = [cls for cls in teacher.getModeratingSectionsFromProgram(self.program)
+                    if cls.meeting_times.all().exists()
+                    and cls.resourceassignment_set.all().exists()
+                    and cls.status > 0]
+            # now we sort them by time/title
+            classes.sort()
+            for cls in classes:
+                scheditems.append({'name': teacher.name(),
+                                   'teacher': teacher,
+                                   'cls': cls})
+
+        context['scheditems'] = scheditems
+        context['moderators'] = True
+        context['teachers'] = None
+
+        return render_to_response(self.baseDir()+'moderatorschedule.html', request, context)
 
     @aux_call
     @needs_admin
@@ -868,6 +986,14 @@ class ProgramPrintables(ProgramModuleObj):
             return ProgramPrintables.getSchedule(self.program, user, u'Teacher')
         elif key == 'teacher_schedule_dates':
             return ProgramPrintables.getSchedule(self.program, user, u'Teacher', include_date=True)
+        elif key == 'teachermoderator_schedule':
+            return ProgramPrintables.getSchedule(self.program, user, u'TeacherModerator')
+        elif key == 'teachermoderator_schedule_dates':
+            return ProgramPrintables.getSchedule(self.program, user, u'TeacherModerator', include_date=True)
+        elif key == 'moderator_schedule':
+            return ProgramPrintables.getSchedule(self.program, user, u'Moderator')
+        elif key == 'moderator_schedule_dates':
+            return ProgramPrintables.getSchedule(self.program, user, u'Moderator', include_date=True)
         elif key == 'volunteer_schedule':
             return ProgramPrintables.getSchedule(self.program, user, u'Volunteer')
         elif key == 'volunteer_schedule_dates':
@@ -892,15 +1018,28 @@ class ProgramPrintables(ProgramModuleObj):
         return classes
 
     @staticmethod
-    def get_teacher_classlist(program, teacher):
+    def get_teacher_classlist(program, teacher, teaching = True, moderating = False):
         # get list of valid classes
-        classes = [ cls for cls in teacher.getTaughtSections()]
+        classes = []
+        if teaching:
+            classes += [ cls for cls in teacher.getTaughtSectionsFromProgram(program)]
+        if moderating:
+            classes += [ cls for cls in teacher.getModeratingSectionsFromProgram(program)]
         classes = [ cls for cls in classes
-                    if cls.parent_program == program
-                    and cls.meeting_times.exists()
-                    and cls.status >= 0                       ]
+                    if cls.meeting_times.exists()
+                    and cls.status >= 0 ]
         classes.sort()
-        return classes
+
+        scheditems = []
+        for cls in classes:
+            if teacher in cls.parent_class.get_teachers():
+                role = 'Teacher'
+            else:
+                role = program.getModeratorTitle()
+            scheditems.append({'cls': cls,
+                               'role': role})
+
+        return scheditems
 
     @staticmethod
     def getTranscript(program, student, format='text'):
@@ -922,7 +1061,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         context = {'classlist': ProgramPrintables.get_student_classlist(program, student)}
 
-        return t.render(Context(context))
+        return t.render(context)
 
     @staticmethod
     def getSchedule(program, user, schedule_type=None, room_numbers=True, include_date=False):
@@ -935,15 +1074,23 @@ class ProgramPrintables(ProgramModuleObj):
             elif user.isVolunteer():
                 schedule_type = u'Volunteer'
 
-
+        include_roles = None
+        pretty_schedule_type = schedule_type
         if schedule_type == u'Student':
             template = get_template('program/modules/programprintables/studentschedule_email.html')
             sched_items = ProgramPrintables.get_student_classlist(program, user)
-            sched_items.sort()
         elif schedule_type == u'Teacher':
             template = get_template('program/modules/programprintables/teacherschedule_email.html')
-            sched_items = ProgramPrintables.get_teacher_classlist(program, user)
-            sched_items.sort()
+            sched_items = ProgramPrintables.get_teacher_classlist(program, user, teaching = True, moderating = False)
+        elif schedule_type == u'TeacherModerator':
+            include_roles = True
+            pretty_schedule_type = u'Teacher and ' + program.getModeratorTitle().lower()
+            template = get_template('program/modules/programprintables/teacherschedule_email.html')
+            sched_items = ProgramPrintables.get_teacher_classlist(program, user, teaching = True, moderating = True)
+        elif schedule_type == u'Moderator':
+            pretty_schedule_type = program.getModeratorTitle()
+            template = get_template('program/modules/programprintables/teacherschedule_email.html')
+            sched_items = ProgramPrintables.get_teacher_classlist(program, user, teaching = False, moderating = True)
         elif schedule_type == u'Volunteer':
             template = get_template('program/modules/programprintables/volunteerschedule_email.html')
             sched_items = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
@@ -951,10 +1098,11 @@ class ProgramPrintables(ProgramModuleObj):
         context = {
                    'program': program,
                    'user': user,
-                   'schedule_type': schedule_type,
+                   'schedule_type': pretty_schedule_type,
                    'room_numbers': room_numbers,
                    'include_date': include_date,
                    'sched_items': sched_items,
+                   'include_roles': include_roles
                    }
         schedule = template.render(context)
 
@@ -1069,7 +1217,7 @@ class ProgramPrintables(ProgramModuleObj):
             t.friendly_times = [t.pretty_time()]
             t.initial_rooms = []
 
-        show_empty_blocks = Tag.getBooleanTag('studentschedule_show_empty_blocks', prog, default=False)
+        show_empty_blocks = Tag.getBooleanTag('studentschedule_show_empty_blocks', prog)
         timeslots = list(prog.getTimeSlots())
         for student in students:
             student.updateOnsite(request)
@@ -1314,6 +1462,40 @@ class ProgramPrintables(ProgramModuleObj):
                                        'cls'    : cls})
 
         context['scheditems'] = scheditems
+        context['bymoderator'] = None
+        if extra == 'attendance':
+            tpl = 'classattendance.html'
+        else:
+            tpl = 'classrosters.html'
+
+        return render_to_response(self.baseDir()+tpl, request, context)
+
+    @aux_call
+    @needs_admin
+    def classrostersbymoderator(self, request, tl, one, two, module, extra, prog):
+        """ generate class rosters by moderator"""
+
+
+        filterObj, found = UserSearchController().create_filter(request, self.program)
+        if not found:
+            return filterObj
+
+
+
+        context = {'module': self, 'program': prog}
+        teachers = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
+        teachers.sort()
+
+        scheditems = []
+
+        for teacher in teachers:
+            for cls in teacher.getModeratingSectionsFromProgram(self.program):
+                if cls.isAccepted():
+                    scheditems.append({'teacher': teacher,
+                                       'cls'    : cls})
+
+        context['scheditems'] = scheditems
+        context['bymoderator'] = True
         if extra == 'attendance':
             tpl = 'classattendance.html'
         else:
@@ -1544,7 +1726,7 @@ class ProgramPrintables(ProgramModuleObj):
             else:
                 return ' '
 
-        if Tag.getBooleanTag('oktimes_collapse', default=False):
+        if Tag.getBooleanTag('oktimes_collapse'):
             time_headers = ['Feasible Start Times']
         else:
             time_headers = [str(time) for time in times]
@@ -1559,7 +1741,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         # this writes each row associated with a section, for the columns determined above.
         for section, timeslist in sections_possible_times:
-            if Tag.getBooleanTag('oktimes_collapse', default=False):
+            if Tag.getBooleanTag('oktimes_collapse'):
                 time_values = [', '.join([e.start.strftime('%a %I:%M %p') for e in section.viable_times()])]
             else:
                 time_values = [time_possible(time, timeslist) for time in times]
@@ -1688,6 +1870,7 @@ class AllClassesFieldConverter(object):
     CSV spreadsheet.
     """
     TEACHERS = 'teachers'
+    MODERATORS = 'moderators'
     TIMES = 'times'
     ROOMS = 'rooms'
     NUM_SECTIONS = "number of sections"
@@ -1696,7 +1879,7 @@ class AllClassesFieldConverter(object):
     def __init__(self):
         field_list = [field for field in ClassSubject._meta.fields if field.name not in self.exclude_fields]
         #field_list.sort(key=lambda x: x.name)
-        self.field_choices = [(f, f.title()) for f in (self.TEACHERS, self.TIMES, self.ROOMS, self.NUM_SECTIONS)]
+        self.field_choices = [(f, f.title()) for f in (self.TEACHERS, self.MODERATORS, self.TIMES, self.ROOMS, self.NUM_SECTIONS)]
         self.field_choices += [(field.name, field.verbose_name.title()) for field in field_list]
 
         #sort tuple list by field name
@@ -1707,6 +1890,7 @@ class AllClassesFieldConverter(object):
         #of field data that should have a different format than the default.
         self.field_converters = {
             self.TEACHERS: lambda x: ", ".join([smart_str(t.name()) for t in x.get_teachers()]),
+            self.MODERATORS: lambda x: ", ".join([smart_str(t.name()) for t in x.moderators()]),
             self.TIMES: lambda x: ", ".join(x.friendly_times()),
             self.ROOMS: lambda x: ", ".join(x.prettyrooms()),
             self.NUM_SECTIONS: lambda x: x.sections.count()

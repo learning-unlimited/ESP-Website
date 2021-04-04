@@ -210,12 +210,7 @@ class AdminClass(ProgramModuleObj):
             cls_cancel_form = None
         else:
             cls_cancel_form = ClassCancellationForm(subject=cls)
-        sec_cancel_forms = []
-        for sec in sections:
-            if sec.isCancelled():
-                sec_cancel_forms.append(None)
-            else:
-                sec_cancel_forms.append(SectionCancellationForm(section=sec, prefix='sec'+str(sec.index())))
+        sec_cancel_forms = SectionCancellationForm(cls = cls)
 
         action = request.GET.get('action', None)
 
@@ -227,16 +222,15 @@ class AdminClass(ProgramModuleObj):
                     #   Call the Class{Subject,Section}.cancel() method to email and remove students, etc.
                     cls_cancel_form.cleaned_data['target'].cancel(email_students=True, include_lottery_students=cls_cancel_form.cleaned_data['email_lottery_students'], text_students=cls_cancel_form.cleaned_data['text_students'], email_teachers = cls_cancel_form.cleaned_data['email_teachers'], explanation=cls_cancel_form.cleaned_data['explanation'], unschedule=cls_cancel_form.cleaned_data['unschedule'])
                     cls_cancel_form = None
-            else:
-                j = 0
-                for i in [sec.index() for sec in sections]:
-                    if action == ('cancel_sec_%d' % i):
-                        sec_cancel_forms[j].data = request.POST
-                        sec_cancel_forms[j].is_bound = True
-                        if sec_cancel_forms[j].is_valid():
-                            sec_cancel_forms[j].cleaned_data['target'].cancel(email_students=True, include_lottery_students=sec_cancel_forms[j].cleaned_data['email_lottery_students'], text_students=sec_cancel_forms[j].cleaned_data['text_students'], email_teachers = sec_cancel_forms[j].cleaned_data['email_teachers'], explanation=sec_cancel_forms[j].cleaned_data['explanation'], unschedule=sec_cancel_forms[j].cleaned_data['unschedule'])
-                            sec_cancel_forms[j] = None
-                    j += 1
+            elif action == 'cancel_sec':
+                sec_cancel_forms.data = request.POST
+                sec_cancel_forms.is_bound = True
+                if sec_cancel_forms.is_valid():
+                    cleaned_data = sec_cancel_forms.cleaned_data
+                    for sec in sections:
+                        if not sec.isCancelled() and sec in cleaned_data['target']:
+                            sec.cancel(email_students=True, include_lottery_students=cleaned_data['email_lottery_students'], text_students=cleaned_data['text_students'], email_teachers = cleaned_data['email_teachers'], explanation=cleaned_data['explanation'], unschedule=cleaned_data['unschedule'])
+                            sec_cancel_forms = SectionCancellationForm(cls = cls)
 
         cls_form = ClassManageForm(self, subject=cls)
         sec_forms = [SectionManageForm(self, section=sec, prefix='sec'+str(sec.index())) for sec in cls.sections.all().order_by('id')]
@@ -434,6 +428,75 @@ class AdminClass(ProgramModuleObj):
                 cls.removeTeacher(teacher)
             ccc.send_class_mail_to_directors(cls)
 
+        elif op == "addmod":
+            if len(request.POST['moderator_selected'].strip()) == 0:
+                error = 'Error - Please click on the name when it drops down.'
+
+            elif request.POST['moderator_selected'] in request.POST.get('moderators', '').split(','):
+                error = 'Error - You already added this ' + prog.getModeratorTitle().lower() + ' to this section!'
+
+            sections = ClassSection.objects.filter(id = request.POST.get('secid'))
+            if len(sections) != 1:
+                error = 'Error - Please use the form to add a ' + prog.getModeratorTitle().lower() + '.'
+            else:
+                section = sections[0]
+
+            if error:
+                return render_to_response(self.baseDir()+'coteachers.html', request,
+                                          {'class': cls,
+                                           'ajax': ajax,
+                                           'txtTeachers': txtTeachers,
+                                           'coteachers': coteachers,
+                                           'error': error,
+                                           'conflict': []})
+
+            # add schedule conflict checking here...
+            moderator = ESPUser.objects.get(id = request.POST['moderator_selected'])
+
+            if section.conflicts(moderator):
+                conflictinguser = moderator
+            else:
+                lastProf = RegistrationProfile.getLastForProgram(moderator, prog)
+                if not lastProf.teacher_info:
+                    anyInfo = moderator.getLastProfile().teacher_info
+                    if anyInfo:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(moderator, lastProf,
+                                                                        {'graduation_year': anyInfo.graduation_year,
+                                                                         'affiliation': anyInfo.affiliation,
+                                                                         'major': anyInfo.major,
+                                                                         'shirt_size': anyInfo.shirt_size,
+                                                                         'shirt_type': anyInfo.shirt_type})
+                    else:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(moderator, lastProf, {})
+                lastProf.save()
+                section.moderators.add(moderator)
+                # should we send the moderator or directors an email?
+
+        elif op == "delmod":
+            sections = ClassSection.objects.filter(id = request.POST.get('secid'))
+            if len(sections) != 1:
+                error = 'Error - Please use the form to add a ' + prog.getModeratorTitle().lower() + '.'
+            else:
+                section = sections[0]
+            if error:
+                return render_to_response(self.baseDir()+'coteachers.html', request,
+                                          {'class': cls,
+                                           'ajax': ajax,
+                                           'txtTeachers': txtTeachers,
+                                           'coteachers': coteachers,
+                                           'error': error,
+                                           'conflict': []})
+            ids = request.POST.getlist('delete_moderators')
+            newmoderators = []
+            for moderator in section.get_moderators():
+                if str(moderator.id) not in ids:
+                    newmoderators.append(moderator)
+            new_moderators_set = set(newmoderators)
+            to_be_deleted = set(section.get_moderators()) - new_moderators_set
+            for moderator in to_be_deleted:
+                section.moderators.remove(moderator)
+            # should we send the moderator or directors an email?
+
         return render_to_response(self.baseDir()+'coteachers.html', request,
                                   {'class': cls,
                                    'ajax': ajax,
@@ -479,10 +542,10 @@ class AdminClass(ProgramModuleObj):
         cls = self.getClass(request,extra)
         time_options = prog.getTimeSlots()
         #   Group contiguous blocks
-        if not Tag.getBooleanTag('availability_group_timeslots', default=True):
+        if not Tag.getBooleanTag('availability_group_timeslots'):
             time_groups = [list(time_options)]
         else:
-            time_groups = Event.group_contiguous(list(time_options))
+            time_groups = Event.group_contiguous(list(time_options), int(Tag.getProgramTag('availability_group_tolerance', program = prog)))
 
         teachers = cls.get_teachers()
 
@@ -527,7 +590,7 @@ class AdminClass(ProgramModuleObj):
         context['unscheduled'] = unscheduled_sections
         context['conflict_found'] = conflict_found
         # this seems kinda hacky, but it's probably fine for now
-        context['is_overbooked'] = sum([sec.duration for sec in cls.get_sections()]) > sum([Event.total_length(events).seconds/3600.0 for events in Event.group_contiguous(viable_times)])
+        context['is_overbooked'] = sum([sec.duration for sec in cls.get_sections()]) > sum([Event.total_length(events).seconds/3600.0 for events in Event.group_contiguous(viable_times, int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = prog)))])
         context['num_groups'] = len(context['groups'])
         context['program'] = prog
 

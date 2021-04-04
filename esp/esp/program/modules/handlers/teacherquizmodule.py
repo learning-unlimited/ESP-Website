@@ -133,7 +133,7 @@ class TeacherQuizModule(ProgramModuleObj):
     @meets_deadline('/Quiz')
     def quiz(self, request, tl, one, two, module, extra, prog):
 
-        custom_form_id = Tag.getProgramTag('quiz_form_id', prog, None)
+        custom_form_id = Tag.getProgramTag('quiz_form_id', prog)
         if custom_form_id:
             cf = Form.objects.get(id=int(custom_form_id))
         else:
@@ -152,6 +152,10 @@ class TeacherQuizModule(ProgramModuleObj):
             form = form_wizard.get_form(0)
 
         return render_to_response(self.baseDir()+'quiz.html', request, {'prog':prog, 'form': form})
+
+    def isStep(self):
+        custom_form_id = Tag.getProgramTag('quiz_form_id', self.program)
+        return custom_form_id and Form.objects.filter(id=int(custom_form_id)).exists()
 
     class Meta:
         proxy = True

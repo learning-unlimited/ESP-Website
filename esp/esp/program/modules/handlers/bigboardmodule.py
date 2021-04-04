@@ -62,8 +62,8 @@ class BigBoardModule(ProgramModuleObj):
         numbers = [(desc, num) for desc, num in numbers if num]
 
         timess = [
-            ("completed the medical form", [(1, time) for time in self.times_medical(prog)]),
-            ("signed up for classes", [(1, time) for time in self.times_classes(prog)]),
+            ("completed the medical form", [(1, time) for time in self.times_medical(prog)], True),
+            ("signed up for classes", [(1, time) for time in self.times_classes(prog)], True),
         ]
 
         timess_data, start = self.make_graph_data(timess, 4, 0, 5)
@@ -89,31 +89,41 @@ class BigBoardModule(ProgramModuleObj):
     # time the page refreshes for the same admin, they will get new numbers
 
     @cache_function_for(105)
-    def num_users_enrolled(self, prog):
+    def users_enrolled(prog):
         # Querying for SRs and then extracting the users saves us joining the
         # users table.
         return StudentRegistration.valid_objects().filter(
             section__parent_class__parent_program=prog,
             relationship__name='Enrolled'
-        ).values_list('user').distinct().count()
+        ).values_list('user', flat = True).distinct()
+    users_enrolled = staticmethod(users_enrolled)
 
     @cache_function_for(105)
-    def num_users_with_lottery(self, prog):
+    def num_users_enrolled(self, prog):
+        return self.users_enrolled(prog).count()
+
+    @cache_function_for(105)
+    def users_with_lottery(prog):
         # Past empirical observation has shown that doing the union in SQL is
         # much, much slower for unknown reasons; it also means we would have to
         # query over the users table, so this saves us joining that table.
         users_with_ssis = set(
             StudentSubjectInterest.valid_objects()
             .filter(subject__parent_program=prog)
-            .values_list('user').distinct())
+            .values_list('user', flat = True).distinct())
         users_with_srs = set(
             StudentRegistration.valid_objects()
             .filter(
                 Q(relationship__name='Interested') |
                 Q(relationship__name__contains='Priority/'),
                 section__parent_class__parent_program=prog)
-            .values_list('user').distinct())
-        return len(users_with_ssis | users_with_srs)
+            .values_list('user', flat = True).distinct())
+        return users_with_ssis | users_with_srs
+    users_with_lottery = staticmethod(users_with_lottery)
+
+    @cache_function_for(105)
+    def num_users_with_lottery(self, prog):
+        return len(self.users_with_lottery(prog))
 
     @cache_function_for(105)
     def num_active_users(self, prog, minutes=10):
@@ -149,6 +159,8 @@ class BigBoardModule(ProgramModuleObj):
     @cache_function_for(105)
     def num_prefs(self, prog):
         num_srs = StudentRegistration.valid_objects().filter(
+            Q(relationship__name='Interested') |
+            Q(relationship__name__contains='Priority/'),
             section__parent_class__parent_program=prog).count()
         return num_srs + self.num_ssis(prog)
 
@@ -157,10 +169,14 @@ class BigBoardModule(ProgramModuleObj):
         return Record.objects.filter(program=prog,
                                      event__in=['med', 'med_bypass']).count()
 
+    @cache_function_for(105)
+    def checked_in_users(prog):
+        return Record.objects.filter(program=prog, event='attended').values_list('user', flat = True).distinct()
+    checked_in_users = staticmethod(checked_in_users)
 
     @cache_function_for(105)
     def num_checked_in_users(self, prog):
-        return Record.objects.filter(program=prog, event='attended').count()
+        return self.checked_in_users(prog).count()
 
     @cache_function_for(105)
     def popular_classes(self, prog, num=5):
@@ -240,12 +256,12 @@ class BigBoardModule(ProgramModuleObj):
         return sorted(ssi_times_dict.itervalues())
 
     @staticmethod
-    def chunk_times(times, start, end, delta=datetime.timedelta(0, 3600)):
+    def chunk_times(times, start, end, delta=datetime.timedelta(0, 3600), cumulative = True):
         """Given a list of times, return hourly summaries.
 
         `times` should be a list of tuples, sorted by time, containing some metric (duration, capacity, etc.) and datetime.datetime objects
-        `start` and `end` should be datetimes; the chunks will be for hours
-        between them, inclusive.
+        `start` and `end` should be datetimes; the chunks will be for hours between them, inclusive.
+        `cumulative` should be a boolean determining whether counts should be summed cumulatively for conseculative hours or if they should only be summed within individual hours
         Returns a list of integers, each of which is the number of times that
         precede the given hour.
         """
@@ -266,13 +282,15 @@ class BigBoardModule(ProgramModuleObj):
                 # times preceding it for the previous hour.
                 chunks.append(float(count))
                 start += delta
+                if not cumulative:
+                    count = 0
         return chunks
 
     @staticmethod
     def make_graph_data(timess, drop_beg = 0, drop_end = 0, cutoff = 1):
         """Given a list of time series, return graph data series.
 
-        `timess` should be a list of pairs (description, sorted tuples of metrics and datetime.datetime objects).
+        `timess` should be a list of tuples (description, sorted tuples of metrics and datetime.datetime objects, whether counts should be cumulative).
         `drop_beg` should be a number of items to drop from the beginning of each list
         `drop_end` should be a number of items to drop from the end of each list
         `cutoff` should be the minimum number of items that must exist in a time series
@@ -280,22 +298,22 @@ class BigBoardModule(ProgramModuleObj):
         Returns a dict of cleaned time series and the start time for graphing
         """
         #Remove any time series without at least 'cutoff' times
-        timess = [(desc, times) for desc, times in timess if len(times) >= cutoff]
+        timess = [(desc, times, cumulative) for desc, times, cumulative in timess if len(times) >= cutoff]
         # Drop the first and last times if specified
         # Then round start down and end up to the nearest day.
         if not timess:
             graph_data = []
             start = None
         else:
-            start = min([times[drop_beg:(len(times)-drop_end)][0][1] for desc, times in timess])
+            start = min([times[drop_beg:(len(times)-drop_end)][0][1] for desc, times, cumulative in timess])
             start = start.replace(hour=0, minute=0, second=0, microsecond=0)
-            end = max([times[drop_beg:(len(times)-drop_end)][-1][1] for desc, times in timess])
+            end = max([times[drop_beg:(len(times)-drop_end)][-1][1] for desc, times, cumulative in timess])
             end = end.replace(hour=0, minute=0, second=0, microsecond=0)
             end += datetime.timedelta(1)
             end = min(end, datetime.datetime.now())
             graph_data = [{"description": desc,
-                           "data": BigBoardModule.chunk_times(times, start, end)}
-                          for desc, times in timess]
+                           "data": BigBoardModule.chunk_times(times, start, end, cumulative = cumulative)}
+                          for desc, times, cumulative in timess]
         return graph_data, start
 
     # runs in 9ms, so don't bother caching
