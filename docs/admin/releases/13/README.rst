@@ -21,7 +21,7 @@ User search modules changes
 - Added a new module to generate a state and/or zipcode map of a set of users.
 - Added new user search filters for students, including number of registered class hours and registered class times.
 - Added new user search filters for teachers, including teaching times, training/interview times, and teachers of a particular student.
-- Added the ability to include and/or multiple user groups when filtering users.
+- Added the ability to include and/or exclude multiple user groups when filtering users.
 
 Contact info changes
 ~~~~~~~~~~~~~~~~~~~~
