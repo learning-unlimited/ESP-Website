@@ -174,6 +174,7 @@ function Matrix(
      *                   timeslots where all teachers are completely available.
      *                   The second is an array of timeslots where one or more
      *                   teachers are teaching, but would be available otherwise.
+     * @param moderator: An optional moderator (if specified, shows moderator availability)
      */
     this.highlightTimeslots = function(timeslots, section, moderator = null) {
         /**
@@ -182,6 +183,7 @@ function Matrix(
          *
          * @param timeslots: A 1-d array of timeslot IDs
          * @param className: The class to add to the cells
+         * @param moderator: An optional moderator (if specified, adds class to section cells)
          */
         addClassToTimeslots = function(timeslots, className, moderator = null) {
             $j.each(timeslots, function(j, timeslot) {
@@ -280,6 +282,7 @@ function Matrix(
      *                   timeslots where all teachers are completely available.
      *                   The second is an array of timeslots where one or more
      *                   teachers are teaching, but would be available otherwise.
+     * @param moderator: An optional moderator (if specified, removes moderator availability)
      */
     this.unhighlightTimeslots = function(timeslots, moderator = null) {
         /**
@@ -527,7 +530,6 @@ function Matrix(
             hide: {duration: 100},
         });
     };
-
 
     this.initSections();
 
