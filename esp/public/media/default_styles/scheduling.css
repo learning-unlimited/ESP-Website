@@ -118,6 +118,12 @@ td.lowOpacity {
     opacity: .2 !important;
 }
 
+td.hiddenCell {
+    background: #222222 !important;
+    opacity: 0.35 !important;
+    color: #222222 !important;
+}
+
 .component-div {
     overflow-y: scroll;
 }

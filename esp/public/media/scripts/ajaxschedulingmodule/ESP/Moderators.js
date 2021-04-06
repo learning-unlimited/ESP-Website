@@ -105,6 +105,15 @@ function ModeratorDirectory(el, moderators) {
         return returned_moderators;
     };
 
+    // Refresh moderator availability if category match checkbox is changed
+    $j("#mod-category-match").on("change", function(evt) {
+        if(this.selectedModerator) {
+            var moderator = this.selectedModerator;
+            this.unselectModerator();
+            this.selectModerator(moderator);
+        }
+    }.bind(this));
+
     /**
      * Render the moderator directory.
      */
