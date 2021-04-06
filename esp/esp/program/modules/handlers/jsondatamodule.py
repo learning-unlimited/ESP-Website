@@ -151,6 +151,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return {'moderators': moderator_list}
     moderators.method.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
     moderators.method.cached_function.depend_on_model(ModeratorRecord)
+    moderators.method.cached_function.depend_on_model(UserAvailability)
 
     @aux_call
     @json_response()
