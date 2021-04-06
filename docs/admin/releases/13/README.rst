@@ -48,7 +48,7 @@ Class management changes
 
 Statistics and data visualization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- New queries have been added to the /manage/statistics page, including multiprogram statistics on student and teacher registration. The results of these queries included graphs to visualize the change of various metrics across programs through time (e.g. # class-student-hours approved).
+- New queries have been added to the /manage/statistics page, including multiprogram statistics on student and teacher registration. The results of these queries include graphs to visualize the change of various metrics across programs through time (e.g. # class-student-hours approved).
 
 Volunteer registration changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -93,7 +93,7 @@ Survey changes
 Printable changes
 ~~~~~~~~~~~~~~~~~
 - Changed individual teacher schedules (accessed from the userview page) to only show scheduled classes.
-- Fixed the top marin of the catalog sorted by category printable.
+- Fixed the top margin of the catalog sorted by category printable.
 - Fixed the completion certificate to now include the program email and name.
 
 Minor new features
