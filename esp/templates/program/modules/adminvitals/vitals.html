@@ -1,7 +1,10 @@
+{% load modules %}
+
 {% block xtrajs %}
 <script type="text/javascript">
 // Initialize the json_data holder
-json_data = {};
+var json_data = {};
+var has_moderator_module = "{{ program|hasModule:"TeacherModeratorModule" }}"
 </script>
 
   <script type="text/javascript" src="/media/scripts/program/modules/adminvitals.js"></script>
@@ -11,6 +14,9 @@ json_data = {};
       $module_groups = $j("#stats_students")
         .add("#stats_teachers")
         .add("#stats_volunteers")
+        {% if program|hasModule:"TeacherModeratorModule" %}
+        .add("#stats_moderators")
+        {% endif %}
         .add("#stats_classes")
         .add("#stats_flags")
         .add("#stats_categories")
@@ -36,76 +42,84 @@ json_data = {};
     </p>
     <div id="program_vitals_wrapper" style="font-size: 0.8em">
       <div class="module_group" id="stats_students">
-	<div class="module_group_header module_group_expandable">Students <span class="expand_collapse_text">(click to expand)</span></div>
-	<div class="module_group_body" style="display:none">
-	  Loading data...
-	</div>
+        <div class="module_group_header module_group_expandable">Students <span class="expand_collapse_text">(click to expand)</span></div>
+        <div class="module_group_body" style="display:none">
+          Loading data...
+        </div>
       </div>
       <div class="module_group" id="stats_teachers">
-	<div class="module_group_header module_group_expandable">Teachers <span class="expand_collapse_text">(click to expand)</span></div>
-	<div class="module_group_body" style="display:none">
-	  Loading data...
-	</div>
+        <div class="module_group_header module_group_expandable">Teachers <span class="expand_collapse_text">(click to expand)</span></div>
+        <div class="module_group_body" style="display:none">
+          Loading data...
+        </div>
       </div>
       <div class="module_group" id="stats_volunteers">
-	<div class="module_group_header module_group_expandable">Volunteers <span class="expand_collapse_text">(click to expand)</span></div>
-	<div class="module_group_body" style="display:none">
-	  Loading data...
-	</div>
+        <div class="module_group_header module_group_expandable">Volunteers <span class="expand_collapse_text">(click to expand)</span></div>
+        <div class="module_group_body" style="display:none">
+          Loading data...
+        </div>
       </div>
+      {% if program|hasModule:"TeacherModeratorModule" %}
+      <div class="module_group" id="stats_moderators">
+        <div class="module_group_header module_group_expandable">Moderators <span class="expand_collapse_text">(click to expand)</span></div>
+        <div class="module_group_body" style="display:none">
+          Loading data...
+        </div>
+      </div>
+      {% endif %}
       <div class="module_group" id="stats_classes">
-	<div class="module_group_header module_group_expandable">Classes <span class="expand_collapse_text">(click to expand)</span></div>
-	<div class="module_group_body" style="display:none">
-	  Loading data...
-	</div>
+        <div class="module_group_header module_group_expandable">Classes <span class="expand_collapse_text">(click to expand)</span></div>
+        <div class="module_group_body" style="display:none">
+          Loading data...
+        </div>
       </div>
       <div class="module_group" id="stats_flags">
-	<div class="module_group_header module_group_expandable">Flags <span class="expand_collapse_text">(click to expand)</span></div>
-	<div class="module_group_body" style="display:none">
-	  Loading data...
-	</div>
+        <div class="module_group_header module_group_expandable">Flags <span class="expand_collapse_text">(click to expand)</span></div>
+        <div class="module_group_body" style="display:none">
+          Loading data...
+        </div>
       </div>
       <div class="module_group" id="stats_categories">
-	<div class="module_group_header module_group_expandable">Categories <span class="expand_collapse_text">(click to expand)</span></div>
-	<div class="module_group_body" style="display:none">
-	  Loading data...
-	</div>
+        <div class="module_group_header module_group_expandable">Categories <span class="expand_collapse_text">(click to expand)</span></div>
+        <div class="module_group_body" style="display:none">
+          Loading data...
+        </div>
       </div>
       <div class="module_group" id="stats_grades">
-	<div class="module_group_header module_group_expandable">Grades <span class="expand_collapse_text">(click to expand)</span></div>
-	<div class="module_group_body" style="display:none">
-	  Loading data...
-	</div>
+        <div class="module_group_header module_group_expandable">Grades <span class="expand_collapse_text">(click to expand)</span></div>
+        <div class="module_group_body" style="display:none">
+          Loading data...
+        </div>
       </div>
       <div class="module_group" id="stats_hours">
-	<div class="module_group_header module_group_expandable">Hours <span class="expand_collapse_text">(click to expand)</span></div>
-	<div class="module_group_body" style="display:none">
-	  Loading data...
-	</div>
+        <div class="module_group_header module_group_expandable">Hours <span class="expand_collapse_text">(click to expand)</span></div>
+        <div class="module_group_body" style="display:none">
+          Loading data...
+        </div>
       </div>
       <div class="module_group" id="stats_timeslots">
-	<div class="module_group_header module_group_expandable">Timeslots <span class="expand_collapse_text">(click to expand)</span></div>
-	<div class="module_group_body" style="display:none">
-	  Loading data...
-	</div>
+        <div class="module_group_header module_group_expandable">Timeslots <span class="expand_collapse_text">(click to expand)</span></div>
+        <div class="module_group_body" style="display:none">
+          Loading data...
+        </div>
       </div>
       <div class="module_group" id="stats_tshirts">
-	<div class="module_group_header module_group_expandable">T-Shirts <span class="expand_collapse_text">(click to expand)</span></div>
-	<div class="module_group_body" style="display:none">
-	  Loading data...
-	</div>
+        <div class="module_group_header module_group_expandable">T-Shirts <span class="expand_collapse_text">(click to expand)</span></div>
+        <div class="module_group_body" style="display:none">
+          Loading data...
+        </div>
       </div>
       <div class="module_group" id="stats_splashinfo">
         <div class="module_group_header module_group_expandable">Lunch and Sibling Discounts <span class="expand_collapse_text">(click to expand)</span></div>
-	<div class="module_group_body" style="display:none">
-	  Loading data...
-	</div>
+        <div class="module_group_body" style="display:none">
+          Loading data...
+        </div>
       </div>
       <div class="module_group" id="stats_accounting">
         <div class="module_group_header module_group_expandable">Accounting <span class="expand_collapse_text">(click to expand)</span></div>
-	<div class="module_group_body" style="display:none">
-	  Loading data...
-	</div>
+        <div class="module_group_body" style="display:none">
+          Loading data...
+        </div>
       </div>
     </div> <!-- div#program_vitals_wrapper -->
   </div>

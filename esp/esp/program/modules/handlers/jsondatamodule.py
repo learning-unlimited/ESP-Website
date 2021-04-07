@@ -840,6 +840,14 @@ teachers[key].filter(is_active = True).distinct().count()))
             volunteer_list.append(("Volunteers who are signed up for at least one time slot", volunteer_dict['volunteer_all'].count()))
         vitals['volunteernum'] = volunteer_list
 
+        if prog.hasModule("TeacherModeratorModule"):
+            moderator_list = []
+            if 'will_moderate' in teachers:
+                moderator_list.append(("Teachers who have offered to moderate", teachers['will_moderate'].count()))
+            if 'assigned_moderator' in teachers:
+                moderator_list.append(("Moderators who have been assigned to sections", teachers['assigned_moderator'].count()))
+            vitals['moderatornum'] = moderator_list
+
         timeslots = prog.getTimeSlots()
         vitals['timeslots'] = []
 
@@ -987,6 +995,8 @@ teachers[key].filter(is_active = True).distinct().count()))
     stats.method.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     stats.method.cached_function.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
     stats.method.cached_function.depend_on_row(Program, lambda prog: {'prog': prog})
+    stats.method.cached_function.depend_on_row(ModeratorRecord, lambda mr: {'prog': mr.program})
+    # TODO: this should have MANY more dependencies
 
     @aux_call
     @needs_student
