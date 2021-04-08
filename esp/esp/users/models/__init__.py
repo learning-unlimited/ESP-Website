@@ -409,6 +409,20 @@ class BaseESPUser(object):
     getModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
     getModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
 
+    def getModeratingTimesFromProgram(self, program, exclude = []):
+        """ Return the times moderated for a program as a set.
+            If exclude is specified (as a list of classes), exclude sections from the specified classes. """
+        from esp.program.models import Program # Need the Class object.
+        if not isinstance(program, Program): # if we did not receive a program
+            raise ESPError("getModeratingTimesFromProgram expects a Program, not a `" + str(type(program)) + "'.")
+        else:
+            sections = self.getModeratingSectionsFromProgram(program)
+            times = set()
+            for s in sections:
+                if s.parent_class not in exclude:
+                    times.update(s.meeting_times.all())
+            return times
+
     @cache_function
     def getTaughtOrModeratingSectionsFromProgram(self, program, include_rejected = False):
         from esp.program.models import Program
