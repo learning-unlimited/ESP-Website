@@ -1667,7 +1667,7 @@ class ProgramPrintables(ProgramModuleObj):
         converter = form.converter
 
         if request.method == 'POST':
-            form = AllClassesSelectionForm(request.POST, program = prog)
+            form = AllClassesSelectionForm(program = prog, data = request.POST)
             if form.is_valid():
                 response = HttpResponse(content_type="text/csv")
                 write_cvs = csv.writer(response)
