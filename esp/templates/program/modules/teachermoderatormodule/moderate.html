@@ -27,7 +27,7 @@
 <br />
 {% load render_qsd %}
 {% inline_program_qsd_block program "teach:moderator_instructions" %}
-For this program, we need volunteers to help moderate classes. Please check the box below and fill out the form if you are available to help moderate.
+For this program, we are looking for volunteers to serve as {{ program.getModeratorTitle|lower }}s for classes. Please check the box below and fill out the form if you are available to serve as a {{ program.getModeratorTitle|lower }}.
 {% end_inline_program_qsd_block %}
 
 <div id="program_form">
