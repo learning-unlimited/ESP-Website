@@ -623,12 +623,13 @@ class Program(models.Model, CustomFormsLinkModel):
         """
         size_tag = Tag.getProgramTag("program_size_by_grade", self)
         size_dict = {}
-        for k, v in json.loads(size_tag).iteritems():
-            if '-' in k:
-                low, high = map(int, k.split('-'))
-                size_dict[tuple(xrange(low, high + 1))] = v
-            else:
-                size_dict[(int(k),)] = v
+        if size_tag:
+            for k, v in json.loads(size_tag).iteritems():
+                if '-' in k:
+                    low, high = map(int, k.split('-'))
+                    size_dict[tuple(xrange(low, high + 1))] = v
+                else:
+                    size_dict[(int(k),)] = v
         return size_dict
     grade_caps.depend_on_model('tagdict.Tag')
 
