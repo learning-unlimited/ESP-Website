@@ -13,6 +13,9 @@
 
 {% block javascript %}
     {{ block.super }}
+    <script>
+        var moderator_title = "{{ program.getModeratorTitle|lower }}";
+    </script>
     <script src="/media/scripts/program/modules/flag-edit.js"></script>
     <script src="/media/scripts/onsite/assignment-edit.js"></script>
     <script src="/media/scripts/onsite/teacher_checkin.js"></script>
@@ -49,11 +52,20 @@
 {% endif %}
 
 <div style="text-align:right; float: right; width: 225px; padding-bottom: 10px;">
-<input class="button text-all" type="button" value="Text All Unchecked-In Teachers"
+<input class="button text-all-teachers" type="button" value="Text All Unchecked-In Teachers"
     {% if not text_configured %} disabled title="Twilio texting settings are not configured"{% endif %}/>
 </br>
-<input type="checkbox" id="skip-semi-checked-in" {% if not text_configured %} disabled{% endif %}/> Skip teachers of classes with at least one checked-in teacher
+<input type="checkbox" id="skip-semi-checked-in-teachers" {% if not text_configured %} disabled{% endif %}/> Skip teachers of classes with at least one checked-in teacher
 </div>
+
+{% if program|hasModule:"TeacherModeratorModule" %}
+<div style="text-align:left; float: left; width: 225px; padding-bottom: 10px;">
+<input class="button text-all-moderators" type="button" value="Text All Unchecked-In {{ program.getModeratorTitle }}s"
+    {% if not text_configured %} disabled title="Twilio texting settings are not configured"{% endif %}/>
+</br>
+<input type="checkbox" id="skip-semi-checked-in-moderators" {% if not text_configured %} disabled{% endif %}/> Skip {{ program.getModeratorTitle|lower }}s of classes with at least one checked-in {{ program.getModeratorTitle|lower }}
+</div>
+{% endif %}
 
 <p style="text-align: center">
 
@@ -168,7 +180,7 @@
         (<a href="{{section.get_absolute_url|urlencode}}">manage</a> | <a href="{{section.get_edit_absolute_url|urlencode}}">edit</a>)
     </td>
 </tr>
-<tr>
+<tr data-sec-id="{{ section.emailcode }}" data-role="teacher">
     <td class="room" rowspan="{% if section.teachers %}{{ section.teachers|length }}{% else %}1{% endif %}">
         {% if start_time %}
             {{ section.room }}
@@ -203,13 +215,13 @@
                    {% elif not text_configured %} disabled title="Twilio texting settings are not configured"
                    {% elif teacher.phone == default_phone %} disabled title="No contact info"{% endif %}/>
         </tr>
-        <tr data-sec-id="{{ section.emailcode }}"{% if forloop.last %} class="section-detail-tr"{% endif %}>
+        <tr data-sec-id="{{ section.emailcode }}" {% if forloop.last %}data-role="moderator" class="section-detail-tr"{% else %}data-role="teacher"{% endif %}>
     {% empty %}
         <td colspan="4">
             No teachers for this class
         </td>
         </tr>
-        <tr data-sec-id="{{ section.emailcode }}" class="section-detail-tr">
+        <tr data-sec-id="{{ section.emailcode }}" data-role="moderator" class="section-detail-tr">
     {% endfor %}
     {% if program|hasModule:"TeacherModeratorModule" %}
             <td rowspan="{% if section.moderators_list %}{{ section.moderators_list|length }}{% else %}1{% endif %}" style="border-top:1px solid #ccc;">
@@ -242,7 +254,7 @@
                        {% elif not text_configured %} disabled title="Twilio texting settings are not configured"
                        {% elif teacher.phone == default_phone %} disabled title="No contact info"{% endif %}/>
             </tr>
-            <tr data-sec-id="{{ section.emailcode }}"{% if forloop.last %} class="section-detail-tr"{% endif %}>
+            <tr data-sec-id="{{ section.emailcode }}" data-role="moderator"{% if forloop.last %} class="section-detail-tr"{% endif %}>
         {% empty %}
             <td colspan="4" style="border-top:1px solid #ccc;">
                 No {{ program.getModeratorTitle|lower }}s for this class
