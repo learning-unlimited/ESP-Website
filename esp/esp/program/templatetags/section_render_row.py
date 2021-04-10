@@ -10,7 +10,7 @@ register = template.Library()
 
 @cache_inclusion_tag(register, 'inclusion/program/section_moderator_list_row.html')
 def render_section_moderator_list_row(sec):
-    """Render a section for the teacher list of classes in teacherreg."""
+    """Render a section for the moderator list of classes in teacherreg."""
     prog = sec.parent_class.parent_program
     return {'sec': sec,
             'program': prog,
