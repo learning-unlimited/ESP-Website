@@ -131,6 +131,7 @@ function ApiClient() {
     /**
      * Send a request to the server
      *
+     * @param fnc: The view to post to
      * @param req: The object to send to the server.
      * @param callback: If successful, this function will be called. Takes no params.
      * @param errorReporter: If server reports an error, this function will be called.
