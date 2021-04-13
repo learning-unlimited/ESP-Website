@@ -8,7 +8,7 @@
 #
 
 from script_setup import *
-
+from esp.users.models import ESPUser
 from esp.program.models import FinancialAidRequest
 
 # CONFIGURATION
@@ -33,7 +33,7 @@ dates.sort()
 for date in dates:
     print "  " + str(date) + ":"
     for req in tagged_reqs[date]:
-        print "    %s <%s>" % (req.user.name(), req.user.email)
+        print "    " + ESPUser.email_sendto_address(req.user.email, req.user.name())
 
 if reqs.count() == 0:
     print "  No requests"

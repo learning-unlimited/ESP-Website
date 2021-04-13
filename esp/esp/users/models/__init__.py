@@ -263,7 +263,8 @@ class BaseESPUser(object):
         Given an email and a name, returns the string used to address mail.
         """
         if name:
-            return u'%s <%s>' % (name, email)
+            # enclose name in quotes per RFC 2822 so that special characters in names are handled properly
+            return u'"%s" <%s>' % (name.replace('"', '\\"'), email)
         else:
             return u'<%s>' % email
 
@@ -758,7 +759,7 @@ class BaseESPUser(object):
             raise ESPError('User %s has blank email address; cannot recover password. Please contact webmasters to reset your password.' % self.username)
 
         # email addresses
-        to_email = ['%s <%s>' % (self.name(), self.email)]
+        to_email = [ESPUser.email_sendto_address(self.email, self.name())]
         from_email = settings.SERVER_EMAIL
 
         # create the ticket
