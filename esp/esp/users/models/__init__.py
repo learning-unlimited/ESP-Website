@@ -264,7 +264,7 @@ class BaseESPUser(object):
         """
         if name:
             # enclose name in quotes per RFC 2822 so that special characters in names are handled properly
-            return u'"%s" <%s>' % (name.replace('"', '\\"'), email)
+            return u'"%s" <%s>' % (name.replace('\\', '\\\\').replace('"', '\\"'), email)
         else:
             return u'<%s>' % email
 
