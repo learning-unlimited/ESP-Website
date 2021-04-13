@@ -759,7 +759,7 @@ class BaseESPUser(object):
             raise ESPError('User %s has blank email address; cannot recover password. Please contact webmasters to reset your password.' % self.username)
 
         # email addresses
-        to_email = [ESPUser.email_sendto_address(self.email, self.name())]
+        to_email = [self.get_email_sendto_address()]
         from_email = settings.SERVER_EMAIL
 
         # create the ticket

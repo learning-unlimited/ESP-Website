@@ -1027,7 +1027,7 @@ class ClassSection(models.Model):
                 students_to_email[student] = True
 
             for student in students_to_email:
-                to_email = [ESPUser.email_sendto_address(student.email, student.name())]
+                to_email = [student.get_email_sendto_address()]
                 from_email = ESPUser.email_sendto_address(self.parent_program.director_email,
                                                           '%s at %s' % (self.parent_program.program_type,
                                                                         settings.INSTITUTION_NAME))
@@ -1068,7 +1068,7 @@ class ClassSection(models.Model):
                 email_content += '\n' + render_to_string('email/class_cancellation_body.txt', context)
             teachers = self.parent_class.get_teachers()
             for t in teachers:
-                to_email = [ESPUser.email_sendto_address(t.email, t.name())]
+                to_email = [t.get_email_sendto_address()]
                 send_mail(email_title, email_content, from_email, to_email)
 
         self.clearStudents()

@@ -177,7 +177,7 @@ class ClassCreationController(object):
                          'note': note,
                          'DEFAULT_HOST': settings.DEFAULT_HOST}
         email_contents = render_to_string('program/modules/availabilitymodule/update_email.txt', email_context)
-        email_to = [ESPUser.email_sendto_address(teacher.email, teacher.name())]
+        email_to = [teacher.get_email_sendto_address()]
         send_mail(email_title, email_contents, email_from, email_to, False)
 
     def teacher_has_time(self, user, hours):

@@ -33,7 +33,7 @@ dates.sort()
 for date in dates:
     print "  " + str(date) + ":"
     for req in tagged_reqs[date]:
-        print "    " + ESPUser.email_sendto_address(req.user.email, req.user.name())
+        print "    " + req.user.get_email_sendto_address()
 
 if reqs.count() == 0:
     print "  No requests"
