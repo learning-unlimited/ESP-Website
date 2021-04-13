@@ -8,7 +8,6 @@
 #
 
 from script_setup import *
-from esp.users.models import ESPUser
 from esp.program.models import FinancialAidRequest
 
 # CONFIGURATION
