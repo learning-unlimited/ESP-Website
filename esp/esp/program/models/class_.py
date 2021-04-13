@@ -1041,8 +1041,10 @@ class ClassSection(models.Model):
                 students_to_email[student] = True
 
             for student in students_to_email:
-                to_email = ['%s <%s>' % (student.name(), student.email)]
-                from_email = '%s at %s <%s>' % (self.parent_program.program_type, settings.INSTITUTION_NAME, self.parent_program.director_email)
+                to_email = [student.get_email_sendto_address()]
+                from_email = ESPUser.email_sendto_address(self.parent_program.director_email,
+                                                          '%s at %s' % (self.parent_program.program_type,
+                                                                        settings.INSTITUTION_NAME))
                 #   Here we render the template to include the username, and also whether the student is registered
                 context['classreg'] = students_to_email[student]
                 context['user'] = student
@@ -1064,20 +1066,23 @@ class ClassSection(models.Model):
         if email_ssis:
             context['classreg'] = False
             email_content += '\n' + render_to_string('email/class_cancellation_body.txt', context)
-        to_email = ['Directors <%s>' % (self.parent_program.director_email)]
-        from_email = '%s Web Site <%s>' % (self.parent_program.program_type, self.parent_program.director_email)
+        to_email = [ESPUser.email_sendto_address(self.parent_program.director_email, 'Directors')]
+        from_email = ESPUser.email_sendto_address(self.parent_program.director_email,
+                                                  '%s Web Site' % (self.parent_program.program_type))
         send_mail(email_title, email_content, from_email, to_email)
 
         #   Send email to teachers
         if email_teachers:
             context['director_email'] = self.parent_program.director_email
             email_content = render_to_string('email/class_cancellation_teacher.txt', context)
-            from_email = '%s at %s <%s>' % (self.parent_program.program_type, settings.INSTITUTION_NAME, self.parent_program.director_email)
+            from_email = ESPUser.email_sendto_address(self.parent_program.director_email,
+                                                      '%s at %s' % (self.parent_program.program_type,
+                                                                    settings.INSTITUTION_NAME))
             if email_ssis:
                 email_content += '\n' + render_to_string('email/class_cancellation_body.txt', context)
             teachers = self.parent_class.get_teachers()
             for t in teachers:
-                to_email = ['%s <%s>' % (t.name(), t.email)]
+                to_email = [t.get_email_sendto_address()]
                 send_mail(email_title, email_content, from_email, to_email)
 
         self.clearStudents()

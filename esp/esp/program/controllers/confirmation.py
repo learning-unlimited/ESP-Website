@@ -56,6 +56,6 @@ class ConfirmationEmailController(object):
                 receipt_template = select_template(['program/confemails/%s_confemail.txt' %(program.id),'program/confirm_email.txt'])
             send_mail("Thank you for registering for %s!" %(program.niceName()), \
                       receipt_template.render(Context({'user': user, 'program': program}, autoescape=False)), \
-                      ("%s <%s>" %(program.niceName() + " Directors", program.director_email)), \
+                      (ESPUser.email_sendto_address(program.director_email, program.niceName() + " Directors")), \
                       [user.email], True)
 

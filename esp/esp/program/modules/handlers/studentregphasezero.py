@@ -241,7 +241,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                          'note': note,
                          'DEFAULT_HOST': settings.DEFAULT_HOST}
         email_contents = render_to_string('program/modules/studentregphasezero/confirmation_email.txt', email_context)
-        email_to = ['%s <%s>' % (student.name(), student.email)]
+        email_to = [student.get_email_sendto_address()]
         send_mail(email_title, email_contents, email_from, email_to, False)
 
     def isStep(self):
