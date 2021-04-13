@@ -144,7 +144,7 @@ class TeacherEventsModule(ProgramModuleObj):
                         send_mail('['+self.program.niceName()+'] Teacher Interview for ' + request.user.first_name + ' ' + request.user.last_name + ': ' + event_name, \
                               """Teacher Interview Registration Notification\n--------------------------------- \n\nTeacher: %s %s\n\nTime: %s\n\n""" % \
                               (request.user.first_name, request.user.last_name, event_name) , \
-                              ('%s <%s>' % (request.user.first_name + ' ' + request.user.last_name, request.user.email,)), \
+                              (request.user.get_email_sendto_address()), \
                               [self.program.getDirectorCCEmail()], True)
 
                 # Register for training

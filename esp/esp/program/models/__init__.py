@@ -1677,7 +1677,7 @@ class FinancialAidRequest(models.Model):
                 self.save()
                 # send email to student
                 email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
-                email_to = ['%s <%s>' % (self.user.name(), self.user.email)]
+                email_to = [self.user.get_email_sendto_address()]
                 subj = 'Financial Aid Approved for %s for %s' % (self.user.name(), self.program.niceName())
                 email_context = {'student': self.user,
                                  'program': self.program,
