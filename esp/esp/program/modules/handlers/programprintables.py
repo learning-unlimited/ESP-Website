@@ -1663,11 +1663,11 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def all_classes_spreadsheet(self, request, tl, one, two, module, extra, prog):
-        form = AllClassesSelectionForm()
+        form = AllClassesSelectionForm(program = prog)
         converter = form.converter
 
         if request.method == 'POST':
-            form = AllClassesSelectionForm(request.POST)
+            form = AllClassesSelectionForm(program = prog, data = request.POST)
             if form.is_valid():
                 response = HttpResponse(content_type="text/csv")
                 write_cvs = csv.writer(response)
@@ -1876,14 +1876,15 @@ class AllClassesFieldConverter(object):
     NUM_SECTIONS = "number of sections"
     exclude_fields = ['session_count']
 
-    def __init__(self):
+    def __init__(self, program):
         field_list = [field for field in ClassSubject._meta.fields if field.name not in self.exclude_fields]
-        #field_list.sort(key=lambda x: x.name)
-        self.field_choices = [(f, f.title()) for f in (self.TEACHERS, self.MODERATORS, self.TIMES, self.ROOMS, self.NUM_SECTIONS)]
+
+        # only include the moderator field if the moderator module is enabled
+        self.field_choices = [(f, f.title()) for f in (self.TEACHERS, self.MODERATORS, self.TIMES, self.ROOMS, self.NUM_SECTIONS) if (f != 'moderators' or program.hasModule("TeacherModeratorModule"))]
         self.field_choices += [(field.name, field.verbose_name.title()) for field in field_list]
 
         #sort tuple list by field name
-        sorted(self.field_choices,key=lambda x: x[0])
+        self.field_choices.sort(key=lambda x: x[0])
         self.field_dict = dict(self.field_choices)
 
         #a dict of field names and asscoiated formatting lambdas to handle generation
@@ -1915,8 +1916,8 @@ class AllClassesFieldConverter(object):
 class AllClassesSelectionForm(forms.Form):
     subject_fields = forms.MultipleChoiceField()
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, program, *args, **kwargs):
         super(AllClassesSelectionForm, self).__init__(*args, **kwargs)
 
-        self.converter = AllClassesFieldConverter()
+        self.converter = AllClassesFieldConverter(program)
         self.fields['subject_fields'].choices = self.converter.field_choices

@@ -208,6 +208,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
 
     }.bind(this);
 
+    // The content to put on the panel for a moderator
     var getModeratorContent = function(moderator) {
         var contentDiv = $j("<div class='ui-widget-content'></div>");
 
@@ -229,6 +230,11 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         return contentDiv;
     }.bind(this);
 
+    /**
+     * Display info for a moderator.
+     *
+     * @param moderator: the moderator to display on the panel
+     */
     this.displayModerator = function(moderator) {
         this.el[0].innerHTML = "";
         this.show();

@@ -70,8 +70,7 @@ function ModeratorDirectory(el, moderators) {
     }.bind(this));
     
     /**
-     * Get the sections satisfying the search criteria. By default, filter
-     * out sections that have been scheduled.
+     * Get the moderators satisfying the search criteria.
      */
     this.filtered_moderators = function(){
         var returned_moderators = [];
@@ -79,7 +78,7 @@ function ModeratorDirectory(el, moderators) {
             var moderatorValid;
             if(this.searchObject.active) {
                 // if searchObject is active, ignore searching criteria in the
-                // other tab; only filter for sections that match the
+                // other tab; only filter for moderators that match the
                 // searchObject text (note this is a regex match)
                 moderatorValid = (moderator.first_name + moderator.last_name).toLowerCase().search(this.searchObject.text.toLowerCase()) > -1;
             } else {
@@ -105,22 +104,18 @@ function ModeratorDirectory(el, moderators) {
         }.bind(this));
         return returned_moderators;
     };
-    
-    this.updateRooms = function(){
-        var filtRooms = this.filteredRooms()
-        $j.each(this.rooms, function(index, room) {
-            // get rows to show or hide
-            var rows = $j(".room[data-id='" + room.id + "']").parent();
-            if (filtRooms.includes(room)) {
-                rows.css("display", "table-row");
-            } else {
-                rows.css("display", "none");
-            }
-        }.bind(this));
-    };
+
+    // Refresh moderator availability if category match checkbox is changed
+    $j("#mod-category-match").on("change", function(evt) {
+        if(this.selectedModerator) {
+            var moderator = this.selectedModerator;
+            this.unselectModerator();
+            this.selectModerator(moderator);
+        }
+    }.bind(this));
 
     /**
-     * Render the directory.
+     * Render the moderator directory.
      */
     this.render = function(){
         // Remove old moderators from the directory
@@ -147,7 +142,7 @@ function ModeratorDirectory(el, moderators) {
     };
 
     /**
-     * Initialize the direcotry
+     * Initialize the moderator direcotry
      */
     this.init = function(){
         // set up handlers
@@ -156,7 +151,7 @@ function ModeratorDirectory(el, moderators) {
     this.init();
 
     /**
-     * Bind a matrix to the sections to allow the scheduling methods to work
+     * Bind a matrix to the moderator directory to allow the assigning methods to work
      *
      * @param matrix: The matrix to bind
      */
@@ -173,6 +168,10 @@ function ModeratorDirectory(el, moderators) {
         return moderators[moderator_id];
     };
 
+    /**
+     * Calculate a moderator's number of available slots (based on the moderator form and their existing assignments)
+     * @param moderator: A moderator object
+     */
     this.numAvailableSlots = function(moderator) {
         var avail_slots = moderator.num_slots;
         for(var section of moderator.sections) {
@@ -184,6 +183,10 @@ function ModeratorDirectory(el, moderators) {
         return avail_slots;
     };
 
+    /**
+     * Get all sections for which a moderator is moderating or teaching
+     * @param moderator: A moderator object
+     */
     this.getTeachingAndModeratingSections = function(moderator) {
         if(this.matrix.sections.teacher_data[moderator.id]) {
             return Array.from(new Set(this.matrix.sections.teacher_data[moderator.id].sections.concat(moderator.sections)));
@@ -192,6 +195,10 @@ function ModeratorDirectory(el, moderators) {
         }
     };
 
+    /**
+     * Get timeslots for which a moderator is available
+     * @param moderator: A moderator object
+     */
     this.getAvailableTimeslots = function(moderator) {
         var availableTimeslots = [];
         var already_teaching = [];
@@ -234,15 +241,6 @@ function ModeratorDirectory(el, moderators) {
             }
         }
 
-        // var assignment = this.scheduleAssignments[section.id];
-        // if(assignment.room_id) {
-            // $j.each(assignment.timeslots, function(index, timeslot) {
-                // var cell = this.matrix.getCell(assignment.room_id, timeslot);
-                // cell.select();
-            // }.bind(this));
-        // } else {
-            // section.directoryCell.select();
-        // }
         this.selectedModerator = moderator;
         this.matrix.sectionInfoPanel.displayModerator(moderator);
         this.availableTimeslots = this.getAvailableTimeslots(moderator);
@@ -253,15 +251,6 @@ function ModeratorDirectory(el, moderators) {
         if(!this.selectedModerator) {
             return;
         }
-        // var assignment = this.scheduleAssignments[this.selectedSection.id];
-        // if(assignment.room_id) {
-            // $j.each(assignment.timeslots, function(index, timeslot) {
-                // var cell = this.matrix.getCell(assignment.room_id, timeslot);
-                // cell.unselect();
-            // }.bind(this));
-        // } else {
-            // this.selectedSection.directoryCell.unselect();
-        // }
 
         this.matrix.sectionInfoPanel.hide();
         this.matrix.sectionInfoPanel.override = override;
@@ -269,6 +258,10 @@ function ModeratorDirectory(el, moderators) {
         this.selectedModerator = null;
     };
 
+    /**
+     * Assign the selected moderator to the specified section
+     * @param section: A section object
+     */
     this.assignModerator = function(section) {
         var override = this.matrix.sectionInfoPanel.override;
         this.matrix.sections.apiClient.assign_moderator(
@@ -297,11 +290,16 @@ function ModeratorDirectory(el, moderators) {
             section.moderators.push(moderator.id);
             section.moderator_data.push(moderator);
             $j("body").trigger("schedule-changed");
+            this.matrix.messagePanel.addMessage("Success: " + moderator.first_name + " " + moderator.last_name + " was assigned to " + section.emailcode)
             // Update cell coloring
             this.matrix.updateCells();
         }
     };
 
+    /**
+     * Unassign the selected moderator from the specified section
+     * @param section: A section object
+     */
     this.unassignModerator = function(section) {
         this.matrix.sections.apiClient.unassign_moderator(
             section.id,
@@ -328,6 +326,7 @@ function ModeratorDirectory(el, moderators) {
             section.moderators.splice(section.moderators.indexOf(moderator), 1);
             section.moderator_data.splice(section.moderator_data.indexOf(moderator), 1);
             $j("body").trigger("schedule-changed");
+            this.matrix.messagePanel.addMessage("Success: " + moderator.first_name + " " + moderator.last_name + " was unassigned from " + section.emailcode)
             // Update cell coloring
             this.matrix.updateCells();
         }
@@ -335,7 +334,7 @@ function ModeratorDirectory(el, moderators) {
 }
 
 /**
- * This is one row in the directory containing a moderator to be assigned
+ * This is one row in the moderator directory containing a moderator to be assigned
  *
  * @param moderator: The moderator represented by that row
  * @param el: The element that will form the row
@@ -376,6 +375,17 @@ function ModeratorRow(moderator, el, moderatorDirectory){
     };
 }
 
+/**
+ * This is the hoverable cell containing the moderator in a moderator row
+ *
+ * @param moderator: The moderator represented by that row
+ * @param el: The element that will form the cell
+ * @param matrix: The scheduling matrix
+ *
+ * Public methods:
+ * @method init()
+ * @method tooltip()
+ */
 function ModeratorCell(el, moderator, matrix) {
     this.el = el;
     this.moderator = moderator;

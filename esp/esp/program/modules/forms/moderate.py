@@ -50,7 +50,14 @@ class ModeratorForm(forms.ModelForm):
         self.fields['num_slots'].choices = choices
         self.fields['num_slots'].widget.choices = choices
 
-        # specify help text/labels with tags
+        #set default labels that need custom title
+        self.fields['will_moderate'].label = 'Will you serve as a %s?' % (self.program.getModeratorTitle().lower())
+
+        # set default help texts that need custom title
+        self.fields['will_moderate'].help_text = "Would you like to serve as a %s for other teachers' classes?" % (self.program.getModeratorTitle().lower())
+        self.fields['num_slots'].help_text = 'For how many timeslots can you serve as a %s (we will use your teacher availability)?' % (self.program.getModeratorTitle().lower())
+
+        # override help text/labels with tags
         for field in self.fields.keys():
             tag_data = Tag.getProgramTag('moderatorreg_label_%s' % field, self.program)
             if tag_data:
@@ -63,13 +70,10 @@ class ModeratorForm(forms.ModelForm):
         model = ModeratorRecord
         fields = ('will_moderate', 'num_slots', 'class_categories', 'comments')
         labels = {
-            'will_moderate': 'Will you moderate classes?',
             'num_slots': 'Number of timeslots?',
         }
         help_texts = {
-            'will_moderate': 'Would you like to moderate the classes of other teachers?',
-            'num_slots': 'How many timeslots can you moderate (we will use your teacher availability)?',
-            'class_categories': 'Which categories of classes are you most interested in moderating?',
+            'class_categories': 'Which categories of classes are you most interested in?',
         }
         widgets = {
             'num_slots': forms.widgets.Select()

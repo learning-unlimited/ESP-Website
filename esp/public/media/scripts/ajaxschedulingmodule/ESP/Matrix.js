@@ -174,6 +174,7 @@ function Matrix(
      *                   timeslots where all teachers are completely available.
      *                   The second is an array of timeslots where one or more
      *                   teachers are teaching, but would be available otherwise.
+     * @param moderator: An optional moderator (if specified, shows moderator availability)
      */
     this.highlightTimeslots = function(timeslots, section, moderator = null) {
         /**
@@ -182,6 +183,7 @@ function Matrix(
          *
          * @param timeslots: A 1-d array of timeslot IDs
          * @param className: The class to add to the cells
+         * @param moderator: An optional moderator (if specified, adds class to section cells)
          */
         addClassToTimeslots = function(timeslots, className, moderator = null) {
             $j.each(timeslots, function(j, timeslot) {
@@ -241,6 +243,9 @@ function Matrix(
             addClassToSections(Object.keys(this.sections.scheduleAssignments).filter(section => this.sections.sections_data[section].moderators.length > 0), "lowOpacity");
             addClassToTimeslots(Object.values(this.timeslots.timeslots).map(el => el.id).filter(el => !(available_timeslots.includes(el) || teaching_timeslots.includes(el))), "moderator-unavailable-cell", moderator);
             addClassToSections(this.moderatorDirectory.getTeachingAndModeratingSections(moderator), "moderator-moderating-or-teaching-cell");
+            if($j("#mod-category-match").prop("checked")) {
+                addClassToSections(Object.keys(this.sections.scheduleAssignments).filter(section => !(moderator.categories.includes(this.sections.sections_data[section].category_id))), "hiddenCell")
+            }
         } else {
             addClassToTimeslots(available_timeslots, "teacher-available-cell");
             addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
@@ -280,6 +285,7 @@ function Matrix(
      *                   timeslots where all teachers are completely available.
      *                   The second is an array of timeslots where one or more
      *                   teachers are teaching, but would be available otherwise.
+     * @param moderator: An optional moderator (if specified, removes moderator availability)
      */
     this.unhighlightTimeslots = function(timeslots, moderator = null) {
         /**
@@ -321,7 +327,7 @@ function Matrix(
         var available_timeslots = timeslots[0];
         var teaching_timeslots = timeslots[1];
         if(moderator) {
-            removeClassFromSections(Object.keys(this.sections.scheduleAssignments), "moderator-teaching-cell moderator-unavailable-cell moderator-available-cell moderator-moderating-or-teaching-cell moderator-available-not-first-cell lowOpacity");
+            removeClassFromSections(Object.keys(this.sections.scheduleAssignments), "moderator-teaching-cell moderator-unavailable-cell moderator-available-cell moderator-moderating-or-teaching-cell moderator-available-not-first-cell lowOpacity hiddenCell");
         } else {
             removeClassFromTimeslots(available_timeslots, "teacher-available-cell teacher-available-not-first-cell");
             removeClassFromTimeslots(teaching_timeslots, "teacher-teaching-cell");
@@ -527,7 +533,6 @@ function Matrix(
             hide: {duration: 100},
         });
     };
-
 
     this.initSections();
 

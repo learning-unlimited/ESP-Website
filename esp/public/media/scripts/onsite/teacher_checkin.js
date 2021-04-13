@@ -145,17 +145,17 @@ $j(function(){
         textTeacher($j(this))
     });
 
-    var skip_semi_checked_in = false
-    $j("#skip-semi-checked-in").click(function() {
-        skip_semi_checked_in = !skip_semi_checked_in
+    var skip_semi_checked_in_teachers = false
+    $j("#skip-semi-checked-in-teachers").click(function() {
+        skip_semi_checked_in_teachers = !skip_semi_checked_in_teachers
     });
-    
-    $j(".text-all").click(function(){
-        var $buttons = $j(".checkin:visible").closest('tr').find('.text:enabled');
-        if (skip_semi_checked_in) {
+
+    $j(".text-all-teachers").click(function(){
+        var $buttons = $j(".checkin:visible").closest('tr[data-role="teacher"]').find('.text:enabled');
+        if (skip_semi_checked_in_teachers) {
             var keep = [];
             for (var i = 0; i < $buttons.length; i++) {
-                var teacher = $j($buttons[i]).closest("tr");
+                var teacher = $j($buttons[i]).closest('tr[data-role="teacher"]');
                 var sec_id = $j(teacher).data("sec-id");
                 if ($j(teacher).siblings("[data-sec-id='" + sec_id + "']").find("td.checked-in").length == 0) {
                     keep.push($buttons[i]);
@@ -165,6 +165,33 @@ $j(function(){
         }
         var num_teachers = $buttons.length;
         var r = confirm("Are you sure you'd like to text " + num_teachers + " unchecked-in teachers?");
+        if (r) {
+            $buttons.each(function() {
+                textTeacher($j(this));
+            });
+        }
+    });
+
+    var skip_semi_checked_in_moderators = false
+    $j("#skip-semi-checked-in-moderators").click(function() {
+        skip_semi_checked_in_moderators = !skip_semi_checked_in_moder
+    });
+
+    $j(".text-all-moderators").click(function(){
+        var $buttons = $j(".checkin:visible").closest('tr[data-role="moderator"]').find('.text:enabled');
+        if (skip_semi_checked_in_moderators) {
+            var keep = [];
+            for (var i = 0; i < $buttons.length; i++) {
+                var teacher = $j($buttons[i]).closest('tr[data-role="moderator"]');
+                var sec_id = $j(teacher).data("sec-id");
+                if ($j(teacher).siblings("[data-sec-id='" + sec_id + "']").find("td.checked-in").length == 0) {
+                    keep.push($buttons[i]);
+                }
+            }
+            $buttons = $j($buttons).filter(keep);
+        }
+        var num_teachers = $buttons.length;
+        var r = confirm("Are you sure you'd like to text " + num_teachers + " unchecked-in " + moderator_title + "s?");
         if (r) {
             $buttons.each(function() {
                 textTeacher($j(this));

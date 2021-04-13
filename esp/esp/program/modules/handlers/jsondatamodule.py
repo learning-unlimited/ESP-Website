@@ -151,6 +151,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return {'moderators': moderator_list}
     moderators.method.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
     moderators.method.cached_function.depend_on_model(ModeratorRecord)
+    moderators.method.cached_function.depend_on_model(UserAvailability)
 
     @aux_call
     @json_response()
@@ -839,6 +840,17 @@ teachers[key].filter(is_active = True).distinct().count()))
             volunteer_list.append(("Volunteers who are signed up for at least one time slot", volunteer_dict['volunteer_all'].count()))
         vitals['volunteernum'] = volunteer_list
 
+        if prog.hasModule("TeacherModeratorModule"):
+            moderator_list = []
+            if 'will_moderate' in teachers:
+                moderator_list.append(("Teachers who have offered to moderate", teachers['will_moderate'].count()))
+            if 'assigned_moderator' in teachers:
+                moderator_list.append(("Moderators who have been assigned to sections", teachers['assigned_moderator'].count()))
+            moderator_list.append(("Total number of time blocks offered by moderators", ModeratorRecord.objects.filter(program=prog).aggregate(Sum('num_slots'))['num_slots__sum']))
+            moderator_list.append(("Total number of time blocks assigned moderators", ClassSection.objects.filter(parent_class__parent_program=prog, moderators__isnull=False).distinct().aggregate(Count('meeting_times'))['meeting_times__count']))
+            moderator_list.append(("Total number of sections assigned moderators", ClassSection.objects.filter(parent_class__parent_program=prog, moderators__isnull=False).distinct().count()))
+            vitals['moderatornum'] = moderator_list
+
         timeslots = prog.getTimeSlots()
         vitals['timeslots'] = []
 
@@ -986,6 +998,11 @@ teachers[key].filter(is_active = True).distinct().count()))
     stats.method.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     stats.method.cached_function.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
     stats.method.cached_function.depend_on_row(Program, lambda prog: {'prog': prog})
+    stats.method.cached_function.depend_on_row(ModeratorRecord, lambda mr: {'prog': mr.program})
+    stats.method.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
+    # TODO: this should have MANY more dependencies
+    # really, we should probably pop the different parts (teachers, volunteers, etc)
+    # out and give them each specific cache dependencies - WG
 
     @aux_call
     @needs_student

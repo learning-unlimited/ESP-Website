@@ -558,10 +558,12 @@ class AdminClass(ProgramModuleObj):
         viable_times = []
         unavail_teachers = {}
         teaching_teachers = {}
+        moderating_teachers = {}
         conflict_found = False
         for time in time_options:
             unavail_teachers[time] = []
             teaching_teachers[time] = []
+            moderating_teachers[time] = []
             for teacher in teachers:
                 if time not in teacher.getAvailableTimes(prog, True):
                     unavail_teachers[time].append(teacher)
@@ -569,7 +571,9 @@ class AdminClass(ProgramModuleObj):
                         conflict_found = True
                 if time in teacher.getTaughtTimes(prog, exclude = [cls]):
                     teaching_teachers[time].append(teacher)
-            if (len(unavail_teachers[time]) + len(teaching_teachers[time])) == 0:
+                if time in teacher.getModeratingTimesFromProgram(prog):
+                    moderating_teachers[time].append(teacher)
+            if (len(unavail_teachers[time]) + len(teaching_teachers[time]) + len(moderating_teachers[time])) == 0:
                 viable_times.append(time)
 
         context =   {
@@ -582,6 +586,7 @@ class AdminClass(ProgramModuleObj):
                                     'section': cls.get_section(t),
                                     'unavail_teachers': unavail_teachers.get(t),
                                     'teaching_teachers': teaching_teachers.get(t),
+                                    'moderating_teachers': moderating_teachers.get(t),
                                 }
                             for t in group]
                         for group in time_groups]
