@@ -30,13 +30,12 @@ class ClassList(BaseHandler):
         user_type = user_type.strip().lower()
 
         if user_type in ('teachers','class'):
-            self.recipients += [ESPUser.email_sendto_address(user.email, '%s %s' % (user.first_name, user.last_name))
+            self.recipients += [user.get_email_sendto_address()
                                 for user in cls.get_teachers()     ]
 
         if user_type in ('students','class'):
             for section in sections:
-                self.recipients += [ESPUser.email_sendto_address(user.email, '%s %s' % (user.first_name,
-                                                                                        user.last_name))
+                self.recipients += [user.get_email_sendto_address()
                                     for user in section.students()     ]
 
         if len(self.recipients) > 0:
@@ -98,5 +97,4 @@ class ClassList(BaseHandler):
         self.recipients = ["%s@%s" % (list_name, Site.objects.get_current().domain)]
 
         self.send = True
-
 
