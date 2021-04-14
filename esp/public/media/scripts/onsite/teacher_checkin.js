@@ -174,7 +174,7 @@ $j(function(){
 
     var skip_semi_checked_in_moderators = false
     $j("#skip-semi-checked-in-moderators").click(function() {
-        skip_semi_checked_in_moderators = !skip_semi_checked_in_moder
+        skip_semi_checked_in_moderators = !skip_semi_checked_in_moderators
     });
 
     $j(".text-all-moderators").click(function(){
