@@ -623,12 +623,13 @@ class Program(models.Model, CustomFormsLinkModel):
         """
         size_tag = Tag.getProgramTag("program_size_by_grade", self)
         size_dict = {}
-        for k, v in json.loads(size_tag).iteritems():
-            if '-' in k:
-                low, high = map(int, k.split('-'))
-                size_dict[tuple(xrange(low, high + 1))] = v
-            else:
-                size_dict[(int(k),)] = v
+        if size_tag:
+            for k, v in json.loads(size_tag).iteritems():
+                if '-' in k:
+                    low, high = map(int, k.split('-'))
+                    size_dict[tuple(xrange(low, high + 1))] = v
+                else:
+                    size_dict[(int(k),)] = v
         return size_dict
     grade_caps.depend_on_model('tagdict.Tag')
 
@@ -1678,7 +1679,7 @@ class FinancialAidRequest(models.Model):
                 self.save()
                 # send email to student
                 email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
-                email_to = ['%s <%s>' % (self.user.name(), self.user.email)]
+                email_to = [self.user.get_email_sendto_address()]
                 subj = 'Financial Aid Approved for %s for %s' % (self.user.name(), self.program.niceName())
                 email_context = {'student': self.user,
                                  'program': self.program,

@@ -446,13 +446,13 @@ class TeacherClassRegModule(ProgramModuleObj):
             #Send email to all teachers confirming cancellation request
             email_contents = render_to_string('program/modules/teacherclassregmodule/cancelrequest.txt', email_context)
             for teacher in cls.get_teachers():
-                email_to = ['%s <%s>' % (teacher.name(), teacher.email)]
+                email_to = [teacher.get_email_sendto_address()]
                 send_mail(email_title, email_contents, email_from, email_to, False)
 
             #Send email to admin with link to manageclass page
             email_context['admin'] = True
             email_contents = render_to_string('program/modules/teacherclassregmodule/cancelrequest.txt', email_context)
-            email_to = ['Directors <%s>' % (cls.parent_program.director_email)]
+            email_to = [ESPUser.email_sendto_address(cls.parent_program.director_email, 'Directors')]
             send_mail(email_title, email_contents, email_from, email_to, False)
 
         return self.goToCore(tl)

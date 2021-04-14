@@ -331,7 +331,7 @@ class MessageRequest(models.Model):
             send_from = self.sender
         else:
             if self.creator is not None:
-                send_from = '%s <%s>' % (self.creator.name(), self.creator.email)
+                send_from = self.creator.get_email_sendto_address()
             else:
                 send_from = 'ESP Web Site <esp@mit.edu>'
 
