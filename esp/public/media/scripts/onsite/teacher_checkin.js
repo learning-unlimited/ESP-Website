@@ -147,7 +147,7 @@ $j(function(){
 
     var skip_semi_checked_in_teachers = false
     $j("#skip-semi-checked-in-teachers").click(function() {
-        skip_semi_checked_in_teachers = !skip_semi_checked_in_teachers
+        skip_semi_checked_in_teachers = this.checked;
     });
 
     $j(".text-all-teachers").click(function(){
@@ -174,7 +174,7 @@ $j(function(){
 
     var skip_semi_checked_in_moderators = false
     $j("#skip-semi-checked-in-moderators").click(function() {
-        skip_semi_checked_in_moderators = !skip_semi_checked_in_moderators
+        skip_semi_checked_in_moderators = this.checked;
     });
 
     $j(".text-all-moderators").click(function(){
