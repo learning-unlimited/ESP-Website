@@ -1,22 +1,25 @@
 <tr>
     <th class="smaller">Teacher(s):</th>
-	<td>{% for teacher in class.get_teachers %}<a href="/manage/userview?username={{ teacher.username|urlencode }}">{{ teacher.nonblank_name }}</a> (<a href="mailto:{{teacher.email}}" target="_blank">{{teacher.email}}</a>)<br/>{% endfor %}
-	<br />
-    <a href="/manage/{{ program.getUrlBase }}/coteachers?clsid={{ class.id }}">
-    Edit Teacher List</a>
-    <br />
-    <a href="/manage/{{ program.getUrlBase }}/classavailability/{{ class.id }}">
-    Check Class Availability</a>
-    </td>
+	<td>{% for teacher in class.get_teachers %}<a href="/manage/userview?username={{ teacher.username|urlencode }}">{{ teacher.nonblank_name }}</a> (<a href="mailto:{{teacher.email}}" target="_blank">{{teacher.email}}</a>)<br/>{% endfor %}</td>
 </tr>
 {% if class.moderators.count > 0 %}
 <tr>
     <th class="smaller">{{ program.getModeratorTitle }}(s):</th>
 	<td>
-        {% for mod in class.moderators.all %}<a href="/manage/userview?username={{ teacher.username|urlencode }}">{{ mod.nonblank_name }}</a> (<a href="mailto:{{ mod.email }}" target="_blank">{{ mod.email }}</a>)<br/>{% endfor %}
+        {% for mod in class.moderators.all %}<a href="/manage/userview?username={{ mod.username|urlencode }}">{{ mod.nonblank_name }}</a> (<a href="mailto:{{ mod.email }}" target="_blank">{{ mod.email }}</a>)<br/>{% endfor %}
     </td>
 </tr>
 {% endif %}
+<tr>
+    <th></th>
+    <td>
+        <a href="/manage/{{ program.getUrlBase }}/coteachers?clsid={{ class.id }}">
+        Edit Teacher{% if class.moderators.count > 0 %} and Moderator{% endif %} List</a>
+        <br />
+        <a href="/manage/{{ program.getUrlBase }}/classavailability/{{ class.id }}">
+        Check Class Availability</a>
+    </td>
+</tr>
 <tr>
     <th class="smaller">Reviewing Status:<br />
         (Unreviewed, Accepted, Cancelled, or Rejected)
