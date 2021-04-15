@@ -593,7 +593,7 @@ class ProgramPrintables(ProgramModuleObj):
         for teacher in teachers:
             # get list of valid classes
             if teaching and moderating:
-                class_objects = teacher.getTaughtSections(self.program) | teacher.getModeratingSectionsFromProgram(self.program)
+                class_objects = teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
             elif teaching:
                 class_objects = teacher.getTaughtSections(self.program)
             else:
@@ -832,8 +832,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         for teacher in teachers:
             # get list of valid classes
-            classes = [cls for cls in teacher.getTaughtSectionsFromProgram(self.program) |
-                       teacher.getModeratingSectionsFromProgram(self.program)
+            classes = [cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
                     if cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
                     and cls.status > 0]

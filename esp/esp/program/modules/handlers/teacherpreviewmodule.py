@@ -102,8 +102,7 @@ class TeacherPreviewModule(ProgramModuleObj):
             else:
                 teacher = request.user
             scheditems = []
-            classes = [cls for cls in teacher.getTaughtSectionsFromProgram(self.program) |
-                       teacher.getModeratingSectionsFromProgram(self.program)
+            classes = [cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
                     if cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
                     and cls.status > 0]
