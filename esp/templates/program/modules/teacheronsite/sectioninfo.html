@@ -29,6 +29,14 @@
                     </td>
                 </tr>
                 {% endif %}
+                {% if section.get_moderators.count > 1 %}
+                <tr>
+                    <td>Co-{{ program.getModeratorTitle }}s:</td>
+                    <td>
+                        {% for m in section.get_moderators %}{% ifnotequal m user %}<a href="mailto:{{ m.email }}">{{ m.first_name }} {{ m.last_name }}</a>{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}<br />
+                    </td>
+                </tr>
+                {% endif %}
                 <tr>
                     <td>Enrollment:</td>
                     <td>
