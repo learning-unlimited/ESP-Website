@@ -884,7 +884,7 @@ class ProgramPrintables(ProgramModuleObj):
                                    'cls': cls})
 
         context['scheditems'] = scheditems
-        context['moderators'] = None
+        context['moderators'] = False
         context['teachers'] = True
 
         return render_to_response(self.baseDir()+'teacherschedule.html', request, context)
@@ -919,7 +919,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         context['scheditems'] = scheditems
         context['moderators'] = True
-        context['teachers'] = None
+        context['teachers'] = False
 
         return render_to_response(self.baseDir()+'moderatorschedule.html', request, context)
 
@@ -1074,7 +1074,7 @@ class ProgramPrintables(ProgramModuleObj):
             elif user.isVolunteer():
                 schedule_type = u'Volunteer'
 
-        include_roles = None
+        include_roles = False
         pretty_schedule_type = schedule_type
         if schedule_type == u'Student':
             template = get_template('program/modules/programprintables/studentschedule_email.html')
@@ -1462,7 +1462,7 @@ class ProgramPrintables(ProgramModuleObj):
                                        'cls'    : cls})
 
         context['scheditems'] = scheditems
-        context['bymoderator'] = None
+        context['bymoderator'] = False
         if extra == 'attendance':
             tpl = 'classattendance.html'
         else:
