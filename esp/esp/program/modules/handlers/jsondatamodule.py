@@ -726,6 +726,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'location': ", ".join(cls.prettyrooms()),
             'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
             'teacher_names': cls.pretty_teachers(),
+            'moderator_names': cls.pretty_moderators(),
             'resource_requests': rrequest_dict,
             'comments': cls.message_for_directors,
             'special_requests': cls.requested_special_resources,

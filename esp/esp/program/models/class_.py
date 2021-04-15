@@ -1667,6 +1667,10 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         """ Return a prettified string listing of the class's teachers """
         return u", ".join([ u"%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
 
+    def pretty_moderators(self):
+        """ Return a prettified string listing of the class's moderators """
+        return u", ".join([ u"%s %s" % (u.first_name, u.last_name) for u in self.moderators() ])
+
     def isFull(self, ignore_changes=False, timeslot=None, webapp=False):
         """ A class subject is full if all of its sections are full. """
         if timeslot is not None:
