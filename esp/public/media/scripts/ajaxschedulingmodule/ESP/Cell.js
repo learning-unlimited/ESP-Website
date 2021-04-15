@@ -282,7 +282,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 // Color cell based on the number of moderators for the section that have not specified this section's category in the moderator form
                 var n_moderators = 0;
                 for(var moderator of section.moderator_data){
-                    if(!(section.category_id in moderator.categories)){
+                    if(!moderator.categories.includes(section.category_id)){
                         n_moderators += 1;
                     }
                 }
