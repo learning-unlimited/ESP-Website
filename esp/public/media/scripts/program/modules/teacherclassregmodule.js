@@ -41,4 +41,27 @@ function setup_autocomplete()
 	    $j("#teacher_id").val(ui.item.id);
 	}
     });
+
+    $j("#moderator_name").autocomplete({
+	source: function(request, response) {
+            $j.ajax({
+		url: "/teach/"+base_url+"/moderatorlookup/",
+		dataType: "json",
+		data: {name: request.term},
+		success: function(data) {
+		    var output = $j.map(data, function(item) {
+			return {
+			    label: item.name + " (" + item.username + ")",
+			    value: item.name,
+			    id: item.id
+			};
+		    });
+		    response(output);
+		}
+	    });
+	},
+	select: function(event, ui) {
+	    $j("#moderator_id").val(ui.item.id);
+	}
+    });
 }

@@ -428,6 +428,75 @@ class AdminClass(ProgramModuleObj):
                 cls.removeTeacher(teacher)
             ccc.send_class_mail_to_directors(cls)
 
+        elif op == "addmod":
+            if len(request.POST['moderator_selected'].strip()) == 0:
+                error = 'Error - Please click on the name when it drops down.'
+
+            elif request.POST['moderator_selected'] in request.POST.get('moderators', '').split(','):
+                error = 'Error - You already added this ' + prog.getModeratorTitle().lower() + ' to this section!'
+
+            sections = ClassSection.objects.filter(id = request.POST.get('secid'))
+            if len(sections) != 1:
+                error = 'Error - Please use the form to add a ' + prog.getModeratorTitle().lower() + '.'
+            else:
+                section = sections[0]
+
+            if error:
+                return render_to_response(self.baseDir()+'coteachers.html', request,
+                                          {'class': cls,
+                                           'ajax': ajax,
+                                           'txtTeachers': txtTeachers,
+                                           'coteachers': coteachers,
+                                           'error': error,
+                                           'conflict': []})
+
+            # add schedule conflict checking here...
+            moderator = ESPUser.objects.get(id = request.POST['moderator_selected'])
+
+            if section.conflicts(moderator):
+                conflictinguser = moderator
+            else:
+                lastProf = RegistrationProfile.getLastForProgram(moderator, prog)
+                if not lastProf.teacher_info:
+                    anyInfo = moderator.getLastProfile().teacher_info
+                    if anyInfo:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(moderator, lastProf,
+                                                                        {'graduation_year': anyInfo.graduation_year,
+                                                                         'affiliation': anyInfo.affiliation,
+                                                                         'major': anyInfo.major,
+                                                                         'shirt_size': anyInfo.shirt_size,
+                                                                         'shirt_type': anyInfo.shirt_type})
+                    else:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(moderator, lastProf, {})
+                lastProf.save()
+                section.moderators.add(moderator)
+                # should we send the moderator or directors an email?
+
+        elif op == "delmod":
+            sections = ClassSection.objects.filter(id = request.POST.get('secid'))
+            if len(sections) != 1:
+                error = 'Error - Please use the form to add a ' + prog.getModeratorTitle().lower() + '.'
+            else:
+                section = sections[0]
+            if error:
+                return render_to_response(self.baseDir()+'coteachers.html', request,
+                                          {'class': cls,
+                                           'ajax': ajax,
+                                           'txtTeachers': txtTeachers,
+                                           'coteachers': coteachers,
+                                           'error': error,
+                                           'conflict': []})
+            ids = request.POST.getlist('delete_moderators')
+            newmoderators = []
+            for moderator in section.get_moderators():
+                if str(moderator.id) not in ids:
+                    newmoderators.append(moderator)
+            new_moderators_set = set(newmoderators)
+            to_be_deleted = set(section.get_moderators()) - new_moderators_set
+            for moderator in to_be_deleted:
+                section.moderators.remove(moderator)
+            # should we send the moderator or directors an email?
+
         return render_to_response(self.baseDir()+'coteachers.html', request,
                                   {'class': cls,
                                    'ajax': ajax,
@@ -476,7 +545,7 @@ class AdminClass(ProgramModuleObj):
         if not Tag.getBooleanTag('availability_group_timeslots'):
             time_groups = [list(time_options)]
         else:
-            time_groups = Event.group_contiguous(list(time_options))
+            time_groups = Event.group_contiguous(list(time_options), int(Tag.getProgramTag('availability_group_tolerance', program = prog)))
 
         teachers = cls.get_teachers()
 
@@ -489,10 +558,12 @@ class AdminClass(ProgramModuleObj):
         viable_times = []
         unavail_teachers = {}
         teaching_teachers = {}
+        moderating_teachers = {}
         conflict_found = False
         for time in time_options:
             unavail_teachers[time] = []
             teaching_teachers[time] = []
+            moderating_teachers[time] = []
             for teacher in teachers:
                 if time not in teacher.getAvailableTimes(prog, True):
                     unavail_teachers[time].append(teacher)
@@ -500,7 +571,9 @@ class AdminClass(ProgramModuleObj):
                         conflict_found = True
                 if time in teacher.getTaughtTimes(prog, exclude = [cls]):
                     teaching_teachers[time].append(teacher)
-            if (len(unavail_teachers[time]) + len(teaching_teachers[time])) == 0:
+                if time in teacher.getModeratingTimesFromProgram(prog):
+                    moderating_teachers[time].append(teacher)
+            if (len(unavail_teachers[time]) + len(teaching_teachers[time]) + len(moderating_teachers[time])) == 0:
                 viable_times.append(time)
 
         context =   {
@@ -513,6 +586,7 @@ class AdminClass(ProgramModuleObj):
                                     'section': cls.get_section(t),
                                     'unavail_teachers': unavail_teachers.get(t),
                                     'teaching_teachers': teaching_teachers.get(t),
+                                    'moderating_teachers': moderating_teachers.get(t),
                                 }
                             for t in group]
                         for group in time_groups]
@@ -521,7 +595,7 @@ class AdminClass(ProgramModuleObj):
         context['unscheduled'] = unscheduled_sections
         context['conflict_found'] = conflict_found
         # this seems kinda hacky, but it's probably fine for now
-        context['is_overbooked'] = sum([sec.duration for sec in cls.get_sections()]) > sum([Event.total_length(events).seconds/3600.0 for events in Event.group_contiguous(viable_times)])
+        context['is_overbooked'] = sum([sec.duration for sec in cls.get_sections()]) > sum([Event.total_length(events).seconds/3600.0 for events in Event.group_contiguous(viable_times, int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = prog)))])
         context['num_groups'] = len(context['groups'])
         context['program'] = prog
 

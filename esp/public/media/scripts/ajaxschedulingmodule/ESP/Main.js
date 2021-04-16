@@ -26,7 +26,7 @@ window.onresize = resizeElements;
 var data = {};
 json_get('lunch_timeslots', {}, function(lunch_timeslots) {
     $j.getJSON('ajax_section_details', function(section_details) {
-        json_fetch(['sections_admin', 'lunch_timeslots', 'timeslots', 'rooms', 'schedule_assignments', "resource_types"], function(){
+        json_fetch(['sections_admin', 'lunch_timeslots', 'timeslots', 'rooms', 'schedule_assignments', 'resource_types', 'categories', 'moderators'], function(){
             console.log(data)
             resizeElements();
 
@@ -35,6 +35,7 @@ json_get('lunch_timeslots', {}, function(lunch_timeslots) {
             var s = new Scheduler(
                 data,
                 $j("#directory"),
+                $j("#moderator-directory"),
                 $j("#matrix-div"),
                 $j("#message-div"),
                 $j("#section-info-div"),

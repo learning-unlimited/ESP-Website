@@ -3,10 +3,10 @@ import subprocess
 
 from django.db.models.aggregates import Min
 from django.db.models.query import Q
-from django.db.models import Count
+from django.db.models import Count, Sum
 
 from argcache import cache_function_for
-from esp.program.models import ClassSubject, ClassSection
+from esp.program.models import ClassSubject, ClassSection, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.models import Record
 from esp.utils.decorators import cached_module_view
@@ -77,6 +77,13 @@ class TeacherBigBoardModule(ProgramModuleObj):
             ("teachers checked in today",
              self.num_checked_in_teachers(prog)),
         ]
+        if prog.hasModule("TeacherModeratorModule"):
+            numbers.extend([
+                ("moderators registered",
+                 self.num_moderators(prog)),
+                ("moderator blocks offered",
+                 self.num_moderator_blocks(prog)),
+            ])
 
         numbers = [(desc, num) for desc, num in numbers if num]
 
@@ -144,6 +151,16 @@ class TeacherBigBoardModule(ProgramModuleObj):
             ).exclude(teachers=None
             ).values_list('teachers', flat = True).distinct().count()
     num_teachers_teaching = staticmethod(num_teachers_teaching)
+
+    @cache_function_for(105)
+    def num_moderators(prog):
+        return prog.teachers()['will_moderate'].count()
+    num_moderators = staticmethod(num_moderators)
+
+    @cache_function_for(105)
+    def num_moderator_blocks(prog):
+        return ModeratorRecord.objects.filter(program=prog).aggregate(Sum('num_slots'))['num_slots__sum']
+    num_moderator_blocks = staticmethod(num_moderator_blocks)
 
     @cache_function_for(105)
     def num_active_users(self, prog, minutes=10):

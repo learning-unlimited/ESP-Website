@@ -170,6 +170,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             form = ProgramTagSettingsForm(request.POST, program = prog)
             if form.is_valid():
                 form.save()
+                form = ProgramTagSettingsForm(program = prog) # replace null responses with defaults if processed successfully
         else:
             form = ProgramTagSettingsForm(program = prog)
 
