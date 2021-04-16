@@ -38,7 +38,6 @@ from esp.utils.web import render_to_response
 from esp.dbmail.models import MessageRequest
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
-from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.users.views.usersearch import get_user_checklist
 from django.db.models.query   import Q
 from esp.dbmail.models import ActionHandler
@@ -277,10 +276,7 @@ class CommModule(ProgramModuleObj):
 
             else:
                 raise ESPError('What do I do without knowing what kind of users to look for?', log=True)
-        else:
-            student_search_form = StudentSearchForm()
 
-        context['student_search_form'] = student_search_form
         #   Otherwise, render a page that shows the list selection options
         context.update(usc.prepare_context(prog))
 

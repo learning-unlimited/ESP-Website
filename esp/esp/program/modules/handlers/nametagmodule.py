@@ -38,7 +38,6 @@ from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.users.controllers.usersearch import UserSearchController
-from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
@@ -65,7 +64,6 @@ class NameTagModule(ProgramModuleObj):
         """ Display a page for admins to pick users for nametags """
         context = {'module': self}
         context['groups'] = Group.objects.all()
-        context['student_search_form'] = StudentSearchForm()
         usc = UserSearchController()
         context.update(usc.prepare_context(prog, target_path='/manage/%s/generatetags' % prog.url))
 
