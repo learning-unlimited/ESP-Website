@@ -7,6 +7,20 @@
 Changelog
 =========
 
+Moderator integration
+~~~~~~~~~~~~~~~~~~~~~
+Moderators (or observers, teaching assistants, etc) for individual sections are now fully integrated and supported by the entirety (or close to it) of the website. This integration includes several additions and improvements to the website, which are activated by (and only by) enabling the new TeacherModeratorModule:
+
+- A form is added to teacher registration which allows users to indicate if they are interested in moderating. They can specify how many time blocks they want to moderate, select which categories they are most interested in, and provide any comments they might have.
+- The ajax scheduling page has a new panel that enables the assignment of moderators to specific sections. Various filters are included to filter moderators, and there is also an option to only show sections which match the preferred categories of the selected moderator. In this functionality, teacher availability is used as moderator availability. Also, while moderators specify how many time blocks they would like to moderate, there is no actual enforcement of this (but the interface does show when it has been exceeded).
+- Moderator info is listed on the /manageclass, /coteachers (admin version only), /editavailability, and /classavailability pages.
+- Assigned moderators have their section assignments listed on the main teacher registration page (beneath taught classes), where they can see details about the sections and access the attendance page.
+- Similar information is on the teacher webapp (in the schedule and in the specific section info pages).
+- Moderators are listed on and can be checked-in via the onsite teacher check-in page.
+- Several new printables are available which have moderator info (e.g. schedules).
+- Several existing printables have moderator information (e.g. class list).
+- Moderator stats are shown on the dashboard and teacher big board.
+
 Program management changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 - When importing the settings from a previous program, class registration module info settings, student class registration module info settings, and tag settings are now copied to the new program. New programs based on previous programs should now function almost exactly like the previous programs.
@@ -78,6 +92,7 @@ Onsite changes
 Theme changes
 ~~~~~~~~~~~~~
 - Added an account management page at /myesp/accountmanage. All themes now link to this page instead of specific profile/password pages.
+- Fixed a bug with the admin bar styling on the fruitsalad theme.
 
 Dashboard changes
 ~~~~~~~~~~~~~~~~~
@@ -119,6 +134,9 @@ Minor bug fixes
 - Fixed an issue that had broken email "plain" redirects.
 - Fixed some error pages so that theme and admin toolbar content is rendered properly.
 - The subject of a comm panel email is now required, which prevents errors caused by sending comm panel emails without subjects.
+- Fixed a bug on the phase zero management page when the grade cap tag was not set.
+- Fixed logging errors when sending emails.
+- Fixed errors that occurred when emailing users with particular symbols in their names.
 
 Development changes
 ===================
