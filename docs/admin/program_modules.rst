@@ -504,6 +504,11 @@ Views provided
 * /teach/<program>/onsitedetails -- Shows the details and links (classrooms, times, teachers, enrollment, documents, website) for a specific section (or all sections).
 * /teach/<program>/onsiteroster -- Shows the roster for a specific section (or all sections). If only a specific section is selected, this page also allows for marking attendance.
 
+Moderator Form & More (TeacherModeratorModule)
+----------------------------------------------
+
+This adds a form to teacher registration for people to indicate their interest in moderating for your program. The term "Moderator" can be changed for your program through the "Moderator title" program tag, so this module can also be used for observers, teaching assistants, and more. Once teachers have filled out the moderator form, admins can assign moderators to class sections via a new pane in the scheduler. Moderators then have access to information about their section assignments and can take attendance for their assigned sections through the website or the teacher webapp. In addition, moderator information is added throughout the website-- dashboard, teacher big board, printables, and more.
+
 Volunteer modules
 =================
 
