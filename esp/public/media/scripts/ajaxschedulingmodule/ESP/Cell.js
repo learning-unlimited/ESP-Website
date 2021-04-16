@@ -109,7 +109,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
             }
             this.el.css("color", this.cellColors.textColor(color));
             this.el.css("background-size", "cover");
-            this.el[0].innerHTML = "<a href='#'>" + this.section.emailcode + "</a>";
+            this.el[0].innerHTML = "<a>" + this.section.emailcode + "</a>";
         }
     };
 
@@ -266,6 +266,27 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                     }
                 if(n_teachers == 0) return grey;
                 return this.cellColors.HSLToRGB(0,100,100 - 10 * n_teachers); // Color red based on number of teachers
+            case "num_teachers":
+                // Color cell based on the number of teachers for the section
+                var n_teachers = Math.min(section.teachers.length, 5)
+                return this.cellColors.HSLToRGB(120,100,100 - 10 * n_teachers);
+            case "num_moderators":
+                // Color cell based on the number of moderators for the section
+                var n_moderators = Math.min(section.moderators.length, 5)
+                return this.cellColors.HSLToRGB(120,100,100 - 10 * n_moderators);
+            case "num_both":
+                // Color cell based on the number of teachers and/or moderators for the section
+                var n_moderators = Math.min(section.moderators.length + section.teachers.length, 5)
+                return this.cellColors.HSLToRGB(120,100,100 - 10 * n_moderators);
+            case "mod_cats":
+                // Color cell based on the number of moderators for the section that have not specified this section's category in the moderator form
+                var n_moderators = 0;
+                for(var moderator of section.moderator_data){
+                    if(!moderator.categories.includes(section.category_id)){
+                        n_moderators += 1;
+                    }
+                }
+                return this.cellColors.HSLToRGB(0,100,100 - 10 * n_moderators);
         }
         return this.cellColors.color(section); // Selected scheduling check isn't implemented or none is selected
     };
@@ -290,7 +311,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
      * Create data for the tooltip
      *
      * Note: This has to be bound to the cell for the tooltip jquery function to
-     *       work. It would be nice if this was in Sectinos instead.
+     *       work. It would be nice if this was in Sections instead.
      */
     this.tooltip = function(){
         var tooltip_parts = {};
@@ -298,7 +319,9 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
             tooltip_parts['Scheduling Comment'] = this.section.schedulingComment +
                 (this.section.schedulingLocked ? ' <b><i>(locked)</i></b>' : '');
         }
+        tooltip_parts['Category'] = this.matrix.categories[this.section.category_id || this.ghostSection.category_id].name;
         tooltip_parts['Teachers'] = this.matrix.sections.getTeachersString(this.section);
+        if(has_moderator_module === "True") tooltip_parts[moderator_title + 's'] = this.matrix.sections.getModeratorsString(this.section);
         tooltip_parts['Class size max'] = this.section.class_size_max;
         tooltip_parts['Length'] = Math.ceil(this.section.length);
         tooltip_parts['Grades'] = this.section.grade_min + "-" + this.section.grade_max;

@@ -623,12 +623,13 @@ class Program(models.Model, CustomFormsLinkModel):
         """
         size_tag = Tag.getProgramTag("program_size_by_grade", self)
         size_dict = {}
-        for k, v in json.loads(size_tag).iteritems():
-            if '-' in k:
-                low, high = map(int, k.split('-'))
-                size_dict[tuple(xrange(low, high + 1))] = v
-            else:
-                size_dict[(int(k),)] = v
+        if size_tag:
+            for k, v in json.loads(size_tag).iteritems():
+                if '-' in k:
+                    low, high = map(int, k.split('-'))
+                    size_dict[tuple(xrange(low, high + 1))] = v
+                else:
+                    size_dict[(int(k),)] = v
         return size_dict
     grade_caps.depend_on_model('tagdict.Tag')
 
@@ -1031,6 +1032,8 @@ class Program(models.Model, CustomFormsLinkModel):
         from esp.survey.models import Survey
         return Survey.objects.filter(program=self)
 
+    def getModeratorTitle(self):
+        return Tag.getProgramTag('moderator_title', program = self)
 
     def getLineItemTypes(self, user=None, required=True):
         from esp.accounting.controllers import ProgramAccountingController
@@ -1676,7 +1679,7 @@ class FinancialAidRequest(models.Model):
                 self.save()
                 # send email to student
                 email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
-                email_to = ['%s <%s>' % (self.user.name(), self.user.email)]
+                email_to = [self.user.get_email_sendto_address()]
                 subj = 'Financial Aid Approved for %s for %s' % (self.user.name(), self.program.niceName())
                 email_context = {'student': self.user,
                                  'program': self.program,
@@ -2139,6 +2142,20 @@ class PhaseZeroRecord(models.Model):
         # Creates a string for the Users. This is required to display user in Admin.
         return ', '.join([user.username for user in self.user.all()])
     display_user.short_description = 'Username(s)'
+
+class ModeratorRecord(models.Model):
+    def __unicode__(self):
+        return str(self.id)
+
+    user = AjaxForeignKey(ESPUser)
+    program = models.ForeignKey(Program)
+    will_moderate = models.BooleanField(default = False)
+    num_slots = models.PositiveIntegerField(default = 0)
+    class_categories = models.ManyToManyField('ClassCategories', blank=True)
+    comments = models.TextField(blank=True, null=True)
+
+    class Meta:
+        app_label = 'program'
 
 class StudentRegistration(ExpirableModel):
     """

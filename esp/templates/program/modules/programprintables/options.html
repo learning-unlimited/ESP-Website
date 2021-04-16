@@ -44,6 +44,8 @@
 {% endblock %}
 
 {% block content %}
+{% load modules %}
+
 <h1>Printables for {{program.niceName}}</h1>
 
 <p style="text-align: center">
@@ -64,6 +66,10 @@ Please select from options below.
 </li>
 <li><a href="./flatstudentschedules" title="Student Schedules">Flat Student Schedules</a> (by students)</li>
 <li><a href="./teacherschedules" title="Teacher Schedules">Teacher Schedules</a> (by teachers)</li>
+{% if program|hasModule:"TeacherModeratorModule" %}
+    <li><a href="./teachermoderatorschedules" title="Teacher and Moderator Schedules">Combined Teacher and {{ program.getModeratorTitle }} Schedules</a> (by teachers)</li>
+    <li><a href="./moderatorschedules" title="Moderator Schedules">{{ program.getModeratorTitle }} Schedules</a> (by teachers)</li>
+{% endif %}
 <li><a href="./volunteerschedules" title="Volunteer Schedules">Volunteer Schedules</a> (by volunteers)</li>
 <li><a href="./roomschedules" title="Room Schedules">Room Schedules</a></li>
 </ul>
@@ -75,8 +81,21 @@ Please select from options below.
 
 <h3>Student Lists</h3>
 <ul>
-<li><a href="./classrosters" title="Class Rosters">Class Rosters</a> (by teachers)</li>
-<li><a href="./classrosters/attendance" title="Attendance Sheets">Attendance Sheets</a> (by teachers)</li>
+{% if program|hasModule:"TeacherModeratorModule" %}
+    <li>Class Rosters</li>
+    <ul>
+        <li><a href="./classrosters" title="Class Rosters">By teachers</a></li>
+        <li><a href="./classrostersbymoderator" title="Class Rosters">By {{ program.getModeratorTitle|lower }}s</a></li>
+    </ul>
+    <li>Attendance Sheets</li>
+    <ul>
+        <li><a href="./classrosters/attendance" title="Attendance Sheets">By teachers</a></li>
+        <li><a href="./classrostersbymoderator/attendance" title="Attendance Sheets">By {{ program.getModeratorTitle|lower }}s</a></li>
+    </ul>
+{% else %}
+    <li><a href="./classrosters" title="Class Rosters">Class Rosters</a> (by teachers)</li>
+    <li><a href="./classrosters/attendance" title="Attendance Sheets">Attendance Sheets</a> (by teachers)</li>
+{% endif %}
 <li><a href="./classchecklists" title="Class Checlists">Class Checklists</a> (all confirmed students)</li>
 <li><a href="./studentchecklist" title="Student Checklist">Student Checklist</a> (by students)</li>
 <li><a href="./student_financial_spreadsheet">Student Financial Spreadsheet</a> (used by the check-scanning app)</li>
@@ -98,6 +117,16 @@ Please select from options below.
 <li><a href="./teachersbyname" title="Teacher List">Teacher List</a> (can be sorted by name, class, or start time) (<a href="./teachersbyname/csv">CSV</a>)
 <ul><li><a href="./teachersbyname/secondday">Teachers for second day of classes only</a> (<a href="./teachersbyname/seconddaycsv">CSV</a>)</li></ul></li>
 </ul>
+{% if program|hasModule:"TeacherModeratorModule" %}
+    <ul>
+    <li><a href="./teachermoderatorsbyname" title="Teacher and Moderator List">Combined Teacher and {{ program.getModeratorTitle }} List</a> (can be sorted by name, class, or start time) (<a href="./teachermoderatorsbyname/csv">CSV</a>)
+    <ul><li><a href="./teachermoderatorsbyname/secondday">{{ program.getModeratorTitle }}s and teachers for second day of classes only</a> (<a href="./teachermoderatorsbyname/seconddaycsv">CSV</a>)</li></ul></li>
+    </ul>
+    <ul>
+    <li><a href="./moderatorsbyname" title="Moderator List">{{ program.getModeratorTitle }} List</a> (can be sorted by name, class, or start time) (<a href="./moderatorsbyname/csv">CSV</a>)
+    <ul><li><a href="./moderatorsbyname/secondday">{{ program.getModeratorTitle }}s for second day of classes only</a> (<a href="./moderatorsbyname/seconddaycsv">CSV</a>)</li></ul></li>
+    </ul>
+{% endif %}
 
 <h3>Receipts</h3>
 <ul>

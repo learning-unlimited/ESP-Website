@@ -46,7 +46,7 @@ from django.http import Http404, HttpResponse
 from esp.cal.models import Event
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
-from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType, ClassFlag
+from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType, ClassFlag, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, no_auth, main_call, aux_call
 from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.program.modules.handlers.splashinfomodule import SplashInfoModule
@@ -113,6 +113,65 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         return {'rooms': classrooms_dicts}
     rooms.method.cached_function.depend_on_model('resources.Resource')
+
+    @aux_call
+    @json_response()
+    @needs_admin
+    @cached_module_view
+    def moderators(prog):
+        # Get any teacher that has either offered to moderate or is assigned as a moderator
+        moderators = ESPUser.objects.filter(Q(moderatorrecord__program=prog, moderatorrecord__will_moderate=True) | Q(moderating_sections__parent_class__parent_program=prog))
+        moderator_list = []
+        for m in moderators:
+            rec = ModeratorRecord.objects.filter(program=prog, user = m)
+            mod_dict = {
+                'id': m.id,
+                'username': m.username,
+                'first_name': m.first_name,
+                'last_name': m.last_name,
+                'sections': [s.id for s in m.getModeratingSectionsFromProgram(prog)],
+            }
+            if rec.exists():
+                mod_dict.update({
+                    'will_moderate': rec[0].will_moderate if rec.exists() else False,
+                    'num_slots': rec[0].num_slots if rec.exists() else 0,
+                    'categories': [c.id for c in rec[0].class_categories.all()] if rec.exists else [],
+                    'comments': rec[0].comments if rec.exists() else "",
+                })
+            else:
+                mod_dict.update({
+                    'will_moderate': False,
+                    'num_slots': 0,
+                    'categories': [],
+                    'comments': "",
+                })
+            moderator_list.append(mod_dict)
+        for m in moderator_list:
+            m['availability'] = [event.id for event in ESPUser.objects.get(id=m['id']).getAvailableTimes(prog, ignore_classes=True, ignore_moderation=True)]
+        return {'moderators': moderator_list}
+    moderators.method.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
+    moderators.method.cached_function.depend_on_model(ModeratorRecord)
+    moderators.method.cached_function.depend_on_model(UserAvailability)
+
+    @aux_call
+    @json_response()
+    @no_auth
+    @cached_module_view
+    def categories(prog):
+        categories = prog.class_categories.all()
+        if len(categories) == 0:
+            categories = ClassCategories.objects.filter(program__isnull=True)
+
+        categories_dicts = [
+            {
+                'id': cat.id,
+                'name': cat.category,
+                'symbol': cat.symbol,
+            }
+            for cat in categories ]
+
+        return {'categories': categories_dicts}
+    categories.cached_function.depend_on_m2m(Program, 'class_categories', lambda prog, cat: {'prog': prog})
 
     @aux_call
     @json_response()
@@ -227,6 +286,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             if catalog:
                 section['times'] = s.friendly_times_with_date()
                 section['capacity'] = s.capacity
+            section['moderators'] = [m.id for m in s.get_moderators()]
             class_teachers = s.parent_class.get_teachers()
             section['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:
@@ -249,6 +309,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         return {'sections': sections, 'teachers': teachers}
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
+    sections.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
     sections.cached_function.depend_on_row(ClassSubject, lambda subj: {'prog': subj.parent_program})
     sections.cached_function.depend_on_model(UserAvailability)
     # Put this import here rather than at the toplevel, because wildcard messes things up
@@ -300,6 +361,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             section['index'] = s.index()
             section['emailcode'] = s.emailcode()
             section['length'] = float(s.duration)
+            section['moderators'] = [m.id for m in s.get_moderators()]
             class_teachers = cls.get_teachers()
             section['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:
@@ -664,6 +726,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'location': ", ".join(cls.prettyrooms()),
             'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
             'teacher_names': cls.pretty_teachers(),
+            'moderator_names': cls.pretty_moderators(),
             'resource_requests': rrequest_dict,
             'comments': cls.message_for_directors,
             'special_requests': cls.requested_special_resources,
@@ -777,6 +840,17 @@ teachers[key].filter(is_active = True).distinct().count()))
         if 'volunteer_all' in volunteer_dict:
             volunteer_list.append(("Volunteers who are signed up for at least one time slot", volunteer_dict['volunteer_all'].count()))
         vitals['volunteernum'] = volunteer_list
+
+        if prog.hasModule("TeacherModeratorModule"):
+            moderator_list = []
+            if 'will_moderate' in teachers:
+                moderator_list.append(("Teachers who have offered to moderate", teachers['will_moderate'].count()))
+            if 'assigned_moderator' in teachers:
+                moderator_list.append(("Moderators who have been assigned to sections", teachers['assigned_moderator'].count()))
+            moderator_list.append(("Total number of time blocks offered by moderators", ModeratorRecord.objects.filter(program=prog).aggregate(Sum('num_slots'))['num_slots__sum']))
+            moderator_list.append(("Total number of time blocks assigned moderators", ClassSection.objects.filter(parent_class__parent_program=prog, moderators__isnull=False).distinct().aggregate(Count('meeting_times'))['meeting_times__count']))
+            moderator_list.append(("Total number of sections assigned moderators", ClassSection.objects.filter(parent_class__parent_program=prog, moderators__isnull=False).distinct().count()))
+            vitals['moderatornum'] = moderator_list
 
         timeslots = prog.getTimeSlots()
         vitals['timeslots'] = []
@@ -925,6 +999,11 @@ teachers[key].filter(is_active = True).distinct().count()))
     stats.method.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     stats.method.cached_function.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
     stats.method.cached_function.depend_on_row(Program, lambda prog: {'prog': prog})
+    stats.method.cached_function.depend_on_row(ModeratorRecord, lambda mr: {'prog': mr.program})
+    stats.method.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
+    # TODO: this should have MANY more dependencies
+    # really, we should probably pop the different parts (teachers, volunteers, etc)
+    # out and give them each specific cache dependencies - WG
 
     @aux_call
     @needs_student

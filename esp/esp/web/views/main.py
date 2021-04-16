@@ -177,7 +177,7 @@ def contact(request, section='esp'):
             to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
 
             if len(form.cleaned_data['name'].strip()) > 0:
-                email = '%s <%s>' % (form.cleaned_data['name'], email)
+                email = ESPUser.email_sendto_address(email, form.cleaned_data['name'])
 
             if ok_to_send:
                 t = loader.get_template('email/comment')

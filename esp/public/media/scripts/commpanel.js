@@ -109,19 +109,22 @@ function clear_filters(form_name)
     field_names = ["userid", "username", "first_name", "last_name", "email", "zipcode", "zipdistance", "zipdistance_exclude", "states", "school", "grade_min", "grade_max", "gradyear_min", "gradyear_max", "groups_include", "groups_exclude", "clsid", "regtypes", "hours_min", "hours_max", "teaching_times", "teacher_events", "class_times", "target_user"];
     for (var i = 0; i < field_names.length; i++)
     {
-        var form_field = $j(form).find(':input[name=' + field_names[i] + ']')[0];
-        switch (form_field.type) {
-            case 'password':
-            case 'select-multiple':
-            case 'select-one':
-            case 'text':
-            case 'textarea':
-                $j(form_field).val('');
-                break;
-            case 'checkbox':
-            case 'radio':
-                form_field.checked = false;
-        };
+        var form_fields = $j(form).find(':input[name=' + field_names[i] + ']');
+        if (form_fields.length) {
+            var form_field = form_fields[0];
+            switch (form_field.type) {
+                case 'password':
+                case 'select-multiple':
+                case 'select-one':
+                case 'text':
+                case 'textarea':
+                    $j(form_field).val('');
+                    break;
+                case 'checkbox':
+                case 'radio':
+                    form_field.checked = false;
+            };
+        }
     }
 }
 
