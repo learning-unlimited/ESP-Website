@@ -16,6 +16,7 @@
 <h1>Generate Nametags for {{program.niceName}} </h1>
 
 {% load render_qsd %}
+{% load modules %}
 {% inline_program_qsd_block program "manage:nametags" %}
 <p style="text-align: center">
 Using this tool you can generate nametags for your program.<br />
@@ -58,6 +59,14 @@ To have good quality IDs:<br />
   <li><input type="radio" name="type" value="teacher" id="teachers" />
       <label for="teachers">Teachers</label>
   </li>
+    {% if program|hasModule:"TeacherModeratorModule" %}
+      <li><input type="radio" name="type" value="teachermoderators" id="teachermoderators" />
+        <label for="teachermoderators">Teachers and {{ program.getModeratorTitle }}s</label>
+      </li>
+      <li><input type="radio" name="type" value="moderators" id="moderators" />
+        <label for="moderators">{{ program.getModeratorTitle }}s</label>
+      </li>
+    {% endif %}
   <li><input type="radio" name="type" value="other" id="other" />
       <label for="other">Other Group</label>&nbsp;&nbsp;&nbsp;
       <select name="group" id="group" disabled>

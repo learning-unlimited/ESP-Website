@@ -51,7 +51,7 @@ from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db import models
-from django.db.models import signals
+from django.db.models import signals, Min
 from django.db.models.base import ModelState
 from django.db.models.manager import Manager
 from django.db.models.query import Q
@@ -401,6 +401,46 @@ class BaseESPUser(object):
     getTaughtClassesFromProgram.depend_on_row('program.ClassSubject', lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
 
     @cache_function
+    def getModeratingSectionsFromProgram(self, program):
+        from esp.program.models import Program # Need the Class object.
+        if not isinstance(program, Program): # if we did not receive a program
+            raise ESPError("getModeratingSectionsFromProgram expects a Program, not a `" + str(type(program)) + "'.")
+        else:
+            return self.moderating_sections.filter(parent_class__parent_program = program).annotate(start_time = Min('meeting_times__start')).order_by('start_time')
+    getModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
+    getModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
+
+    def getModeratingTimesFromProgram(self, program, exclude = []):
+        """ Return the times moderated for a program as a set.
+            If exclude is specified (as a list of classes), exclude sections from the specified classes. """
+        from esp.program.models import Program # Need the Class object.
+        if not isinstance(program, Program): # if we did not receive a program
+            raise ESPError("getModeratingTimesFromProgram expects a Program, not a `" + str(type(program)) + "'.")
+        else:
+            sections = self.getModeratingSectionsFromProgram(program)
+            times = set()
+            for s in sections:
+                if s.parent_class not in exclude:
+                    times.update(s.meeting_times.all())
+            return times
+
+    @cache_function
+    def getTaughtOrModeratingSectionsFromProgram(self, program, include_rejected = False):
+        from esp.program.models import Program
+        from esp.program.models import ClassSection
+        if not isinstance(program, Program): # if we did not receive a program
+            raise ESPError("getTaughtOrModeratingSectionsFromProgram expects a Program, not a `" + str(type(program)) + "'.")
+        else:
+            classes = list(self.getTaughtClasses(program, include_rejected = include_rejected))
+            if include_rejected:
+                return self.moderating_sections.filter(parent_class__parent_program = program) | ClassSection.objects.filter(parent_class__in=classes)
+            else:
+                return self.moderating_sections.filter(parent_class__parent_program = program) | ClassSection.objects.filter(parent_class__in=classes).exclude(status=-10)
+    getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
+    getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda sec, teacher: {'self': teacher})
+    getTaughtOrModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
+
+    @cache_function
     def getTaughtClassesAll(self, include_rejected = False):
         if include_rejected:
             return self.classsubject_set.all()
@@ -414,7 +454,6 @@ class BaseESPUser(object):
         full_classes = [cls for cls in self.getTaughtClassesFromProgram(program) if cls.is_nearly_full()]
         return "\n".join([cls.emailcode()+": "+cls.title for cls in full_classes])
     getFullClasses_pretty.depend_on_model('program.ClassSubject') # should filter by teachers... eh.
-
 
     def getTaughtSections(self, program = None, include_rejected = False):
         if program is None:
@@ -433,6 +472,7 @@ class BaseESPUser(object):
     getTaughtSectionsAll.depend_on_model('program.ClassSection')
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
                                                               {'self':self})
+
     @cache_function
     def getTaughtSectionsFromProgram(self, program, include_rejected = False):
         from esp.program.models import ClassSection
@@ -515,7 +555,7 @@ class BaseESPUser(object):
             return ESPUser.objects.filter(Q_useroftype)
 
     @cache_function
-    def getAvailableTimes(self, program, ignore_classes=False):
+    def getAvailableTimes(self, program, ignore_classes=False, ignore_moderation=False):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
         from esp.cal.models import Event
@@ -530,9 +570,14 @@ class BaseESPUser(object):
         if not ignore_classes:
             #   Subtract out the times that they are already teaching.
             other_sections = self.getTaughtSections(program)
-
             other_times = [sec.meeting_times.values_list('id', flat=True) for sec in other_sections]
             for lst in other_times:
+                valid_events = valid_events.exclude(id__in=lst)
+        if not ignore_moderation:
+            #   Subtract out the times that they are moderating
+            moderating_sections = self.getModeratingSectionsFromProgram(program)
+            moderating_times = [sec.meeting_times.values_list('id', flat=True) for sec in moderating_sections]
+            for lst in moderating_times:
                 valid_events = valid_events.exclude(id__in=lst)
 
         return list(valid_events)
@@ -886,10 +931,18 @@ class BaseESPUser(object):
     def canEdit(self, cls):
         """Returns if the user can edit the class
 
-A user can edit a class if they can administrate the program or if they
-are a teacher of the class"""
+        A user can edit a class if they can administrate the program or if they
+        are a teacher of the class"""
         if self in cls.get_teachers(): return True
         return self.isAdmin(cls.parent_program)
+
+    def canMod(self, sec):
+        """Returns if the user can moderate the section
+
+        A user can moderate a section if they can administrate the program or if they
+        are a moderator of the section or a teacher of the parent class"""
+        if self in sec.get_moderators() or self in sec.parent_class.get_teachers(): return True
+        return self.isAdmin(sec.parent_class.parent_program)
 
     def getVolunteerOffers(self, program):
         return self.volunteeroffer_set.filter(request__program=program)
@@ -2338,6 +2391,7 @@ class Permission(ExpirableModel):
             ("Teacher/Acknowledgement", "Teacher acknowledgement"),
             ("Teacher/AppReview", "Review students' apps"),
             ("Teacher/Availability", "Set availability"),
+            ("Teacher/Moderate", "Fill out the moderator form"),
             ("Teacher/Catalog", "Catalog"),
             ("Teacher/Classes", "Classes"),
             ("Teacher/Classes/All", "Classes/All"),

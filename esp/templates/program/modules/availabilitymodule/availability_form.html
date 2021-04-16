@@ -76,7 +76,7 @@ You submitted a schedule with no available times.  You can't register a class wi
   <div hidden id="checkboxes">
     {% for group in groups %}
       {% for time in group %}
-        <input type="checkbox" name="timeslots" {% if time.section %}data-hover="{{ time.section }} ({{ time.section.prettyrooms|join:", " }})"{% endif %} value="{{ time.slot.id }}" {% if time.checked %}checked{% endif %} {% if time.taken %}disabled{% endif %}>
+        <input type="checkbox" name="timeslots" {% if time.sections %}data-hover="{% for section in time.sections %}{{ section }} ({{ section.prettyrooms|join:", " }}){% if section.moderating %} ({{ program.getModeratorTitle }}){% endif %}{% if not forloop.last %}<br><br>{% endif %}{% endfor %}"{% endif %} value="{{ time.slot.id }}" {% if time.checked %}checked{% endif %} {% if time.taken %}disabled{% endif %}>
       {% endfor %}
     {% endfor %}
   </div>
@@ -98,7 +98,7 @@ You submitted a schedule with no available times.  You can't register a class wi
 <div class="side right" hidden>
   <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
   <span class="summary" style="background-color: #00FF00;">Available</span>
-  <span class="summary" style="background-color: #42b3f4;">Scheduled to Teach</span>
+  <span class="summary" style="background-color: #42b3f4;">Scheduled</span>
 </div>
 {% endif %}
 

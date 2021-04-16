@@ -90,6 +90,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                                      self.program.getTimeSlots()[0].start < datetime.datetime.now())
         context['crmi'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
+        context['modlist'] = get_current_request().user.getModeratingSectionsFromProgram(self.program)
         context['friendly_times_with_date'] = Tag.getBooleanTag('friendly_times_with_date', self.program)
         context['open_class_category'] = self.program.open_class_category.category
         return context
@@ -226,7 +227,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         context = {'program': prog, 'tl': tl, 'one': one, 'two': two}
 
         user = request.user
-        context['sched_sections'] = [sec for sec in user.getTaughtSections(program = prog) if sec.meeting_times.count() > 0]
+        context['sched_sections'] = [sec for sec in user.getTaughtOrModeratingSectionsFromProgram(program = prog) if sec.meeting_times.count() > 0]
 
         secid = 0
         if 'secid' in request.POST:
@@ -237,7 +238,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             secid = extra
         sections = ClassSection.objects.filter(id = secid)
         if len(sections) == 1:
-            if not request.user.canEdit(sections[0].parent_class):
+            if not request.user.canEdit(sections[0].parent_class) and not request.user.canMod(sections[0]):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
             else:
                 section = sections[0]
@@ -388,7 +389,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         else:
             secid = extra
         sections = ClassSection.objects.filter(id = secid)
-        if len(sections) != 1 or not request.user.canEdit(sections[0].parent_class):
+        if len(sections) != 1 or not (request.user.canEdit(sections[0].parent_class) or request.user.canMod(sections[0])):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         section = sections[0]
 

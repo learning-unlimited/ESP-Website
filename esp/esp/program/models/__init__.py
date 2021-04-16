@@ -1032,6 +1032,8 @@ class Program(models.Model, CustomFormsLinkModel):
         from esp.survey.models import Survey
         return Survey.objects.filter(program=self)
 
+    def getModeratorTitle(self):
+        return Tag.getProgramTag('moderator_title', program = self)
 
     def getLineItemTypes(self, user=None, required=True):
         from esp.accounting.controllers import ProgramAccountingController
@@ -2140,6 +2142,20 @@ class PhaseZeroRecord(models.Model):
         # Creates a string for the Users. This is required to display user in Admin.
         return ', '.join([user.username for user in self.user.all()])
     display_user.short_description = 'Username(s)'
+
+class ModeratorRecord(models.Model):
+    def __unicode__(self):
+        return str(self.id)
+
+    user = AjaxForeignKey(ESPUser)
+    program = models.ForeignKey(Program)
+    will_moderate = models.BooleanField(default = False)
+    num_slots = models.PositiveIntegerField(default = 0)
+    class_categories = models.ManyToManyField('ClassCategories', blank=True)
+    comments = models.TextField(blank=True, null=True)
+
+    class Meta:
+        app_label = 'program'
 
 class StudentRegistration(ExpirableModel):
     """

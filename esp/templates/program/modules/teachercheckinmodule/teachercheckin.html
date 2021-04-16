@@ -1,4 +1,5 @@
 {% extends "main.html" %}
+{% load modules %}
 
 {% block title %}{{program.niceName}} Management{% endblock %}
 
@@ -13,13 +14,13 @@
 .nocheckmark { border: 1px solid black; }
 </style>
 <br />
-<h1>Teacher Check-in for {{ program.niceName }}</h1>
+<h1>Teacher{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle }}{% endif %} Check-in for {{ program.niceName }}</h1>
 
 <p style="text-align: center">
 {% if message %}
 <p align="center">{{ message }}</p>
 {% else %}
-Welcome to teacher check-in for {{program.niceName}}.
+Welcome to teacher{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle|lower }}{% endif %} check-in for {{program.niceName}}.
 <br/>
 Please select a timeslot:
 {% endif %}
@@ -32,11 +33,11 @@ Please select a timeslot:
     <b>
     {% if when %}
         <a href="missingteachers?date={{ time.start.date|date:"m/d/Y" }}&when={{ url_when }}">
-            View teachers from {{ when }} with classes starting on {{ time.start.date|date:"D m/d/Y" }}
+            View teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle|lower }}s{% endif %} from {{ when }} with classes starting on {{ time.start.date|date:"D m/d/Y" }}
         </a>
     {% else %}
         <a href="missingteachers?date={{ time.start.date|date:"m/d/Y" }}">
-            Check in teachers with classes starting on {{ time.start.date|date:"D m/d/Y" }}
+            Check in teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle|lower }}s{% endif %} with classes starting on {{ time.start.date|date:"D m/d/Y" }}
         </a>
     {% endif %}
     </b>
@@ -55,11 +56,11 @@ Please select a timeslot:
 
     {% if when %}
         <a href="missingteachers?start={{ time.id }}&when={{ url_when }}">
-            View teachers from {{ when }} with classes starting at {{ time.pretty_start_time }}
+            View teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle|lower }}s{% endif %} from {{ when }} with classes starting at {{ time.pretty_start_time }}
         </a>
     {% else %}
         <a href="missingteachers?start={{ time.id }}">
-            Check in teachers with classes starting at {{ time.pretty_start_time }}
+            Check in teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle|lower }}s{% endif %} with classes starting at {{ time.pretty_start_time }}
         </a>
     {% endif %}
 
@@ -70,9 +71,9 @@ Please select a timeslot:
 <li style="margin-top:40px; margin-bottom:40px;">
 <b><a href="missingteachers{% if when %}?when={{ url_when }}{% endif %}">
     {% if when %}
-        View all teachers from {{ when }}
+        View all teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle|lower }}s{% endif %} from {{ when }}
     {% else %}
-        Check in all teachers
+        Check in all teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle|lower }}s{% endif %}
     {% endif %}
 </b></a></li>
 </ul>
@@ -84,7 +85,7 @@ Please select a timeslot:
 <div id='program_form'>
 
 <form id="checkinform" name="checkinform" method="GET" action="{{ request.path }}">
-<h2>View teachers who checked-in (or were missing) on a previous day:</h2>
+<h2>View teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle|lower }}s{% endif %} who checked-in (or were missing) on a previous day:</h2>
 <table align="center">
     {{ form }}
     <tr>

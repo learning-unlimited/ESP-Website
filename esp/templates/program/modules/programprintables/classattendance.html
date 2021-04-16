@@ -25,9 +25,15 @@ body { font-family: georgia; }
 </head>
 <body>
 {% for item in scheditems %}
-{% if not forloop.first %}
-{% endif %}
-{% include "program/modules/programprintables/classattend.html" %}
+    {% if bymoderator %}
+        {% with item.cls as sec %}
+            {% include "program/modules/programprintables/classattend.html" %}
+        {% endwith %}
+    {% else %}
+        {% for sec in item.cls.sections.all %}
+            {% include "program/modules/programprintables/classattend.html" %}
+        {% endfor %}
+    {% endif %}
 {% endfor %}
 
 </body>

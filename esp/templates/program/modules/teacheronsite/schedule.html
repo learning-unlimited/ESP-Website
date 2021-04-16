@@ -24,7 +24,7 @@
             <tr class="schedule_row">
                 <td rowspan="2" class="time">{{ cls.time_blocks.0.short_time }}</td>
                 <td class="cls">
-                    <b>{{ cls.parent_class.title }}</b>
+                    <b>{{ cls.parent_class.title }}</b>{% if request.user in cls.get_moderators %}</br>({{ program.getModeratorTitle }}){% endif %}
                 </td>
                 <td rowspan="2" class="list">
                     <a class="no-dec" title="More Details" href="/teach/{{one}}/{{two}}/onsitedetails/{{ cls.id }}"><i class="material-icons md-4">list</i></a>
