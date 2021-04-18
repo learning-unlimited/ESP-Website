@@ -123,9 +123,9 @@ function fillStats(data)
     $tshirts.html(html_string);
     
     //  Fill in the lunch/sibling discount table
-    $splashinfo = $j("#stats_splashinfo > .module_group_body");
     if (splashinfo)
     {
+        $splashinfo = $j("#stats_splashinfo > .module_group_body");
         $splashinfo.html("<p><ul>    \
             <li>Saturday Lunch    \
                 <ul id=\"splashinfo_lunchsat_list\">    \
@@ -152,8 +152,6 @@ function fillStats(data)
             }
         }
     }
-    else
-        $splashinfo.html("SplashInfo module is not enabled -- no statistics");
     
     //  Fill in the accounting table
     $accounting = $j("#stats_accounting > .module_group_body");
