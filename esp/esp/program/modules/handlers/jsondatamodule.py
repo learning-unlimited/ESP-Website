@@ -935,6 +935,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @cache_function
     def splashinfo_nums(prog):
         splashinfo_module = prog.getModule('SplashInfoModule')
+        splashinfo_data = {}
         tag_data = Tag.getProgramTag('splashinfo_choices', prog)
         if tag_data:
             splashinfo_choices = json.loads(tag_data)
