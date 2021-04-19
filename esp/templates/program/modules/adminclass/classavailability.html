@@ -62,6 +62,7 @@ This class is scheduled during at least one timeslot in which at least one teach
         {% if time.section %}{{ time.section }}</br>{% endif %}
         {% for teacher in time.unavail_teachers %}{% if forloop.first %}Unavailable:</br>{% endif %}{{ teacher.nonblank_name }} ({{ teacher.username }})</br>{% endfor %}
         {% for teacher in time.teaching_teachers %}{% if forloop.first %}Teaching:</br>{% endif %}{{ teacher.nonblank_name }} ({{ teacher.username }})</br>{% endfor %}
+        {% for teacher in time.moderating_teachers %}{% if forloop.first %}Moderating:</br>{% endif %}{{ teacher.nonblank_name }} ({{ teacher.username }})</br>{% endfor %}
         {% endif %}">
       {% endfor %}
     {% endfor %}

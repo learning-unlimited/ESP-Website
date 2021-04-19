@@ -95,7 +95,7 @@
         {% endif %}
         {% if "Teacher" in user.getUserTypes or profile.teacher_info %}
             <h2>
-                Teacher links<br/>
+                Teacher {% if program|hasModule:"TeacherModeratorModule" %}and {{program.getModeratorTitle|lower}} {% endif %}links<br/>
                 (for {{program.niceName}})
             </h2>
             {% if program|hasModule:"CheckAvailabilityModule" %}
@@ -104,8 +104,16 @@
             {% endif %}
             {% if profile.teacher_info and profile.id %}
                 <div id="print-teacher-schedule">
-                    <a id="getteacherschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/teacherschedule?user={{user.id}}" target="_new">Print schedule locally</a>
+                    <a id="getteacherschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/teacherschedule?user={{user.id}}" target="_new">Print teacher schedule locally</a>
                 </div>
+                {% if program|hasModule:"TeacherModeratorModule" %}
+                    <div id="print-teachermoderator-schedule">
+                        <a id="getteachermoderatorschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/teachermoderatorschedule?user={{user.id}}" target="_new">Print combined teacher and {{program.getModeratorTitle|lower}} schedule locally</a>
+                    </div>
+                    <div id="print-moderator-schedule">
+                        <a id="getmoderatorschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/moderatorschedule?user={{user.id}}" target="_new">Print {{program.getModeratorTitle|lower}} schedule locally</a>
+                    </div>
+                {% endif %}
             {% else %}
                 (Teacher has no profile for this program)
             {% endif %}

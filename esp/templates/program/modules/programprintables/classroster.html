@@ -15,7 +15,7 @@
   </tr>
   </table>
   <br />
-  <div class="teachername"><span>{{ item.teacher.name }}</span></div>
+  <div class="teachername"><span>{% if bymoderator %}{{ program.getModeratorTitle }}{% else %}Teacher{% endif %}: {{ item.teacher.name }}</span></div>
   <br />
   <div class="teachername">Class Email: <tt>{{ section.emailcode }}-class@{{ EMAIL_HOST_SENDER }}</tt><br />
 Students Email: <tt>{{ section.emailcode }}-students@{{ EMAIL_HOST_SENDER }}</tt>

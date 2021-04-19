@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 from collections import defaultdict
 from esp.users.models import ESPUser, ZipCode, PersistentQueryFilter, Record
+from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.middleware import ESPError
 from esp.utils.web import render_to_response
 from esp.program.models import Program, RegistrationType, StudentRegistration
@@ -406,6 +407,7 @@ class UserSearchController(object):
     def prepare_context(self, program, target_path=None):
         context = {}
         context['program'] = program
+        context['student_search_form'] = StudentSearchForm()
         context['user_types'] = ESPUser.getTypes()
         category_lists = {}
         list_descriptions = program.getListDescriptions()
@@ -445,6 +447,7 @@ class UserSearchController(object):
         return context
 
     def create_filter(self, request, program, template=None, target_path=None):
+        from esp.program.modules.handlers.listgenmodule import ListGenModule
         """ Function to obtain a list of users, possibly requiring multiple requests.
             Similar to the old get_user_list function.
         """
@@ -453,10 +456,7 @@ class UserSearchController(object):
             template = 'users/usersearch/usersearch_default.html'
 
         if request.method == 'POST':
-            #   Turn multi-valued QueryDict into standard dictionary
-            data = {}
-            for key in request.POST:
-                data[key] = request.POST[key]
+            data = ListGenModule.processPost(request)
 
             #   Look for signs that this request contains user search options and act accordingly
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):

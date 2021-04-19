@@ -1,15 +1,13 @@
 <html>
 <head>
-<title>Teacher Schedules</title>
+<title>{% if teachers %}Teacher {% if moderators %}and {% endif %}{% endif %}{% if moderators %}{{ program.getModeratorTitle }} {% endif %}Schedules</title>
 <link rel='stylesheet' type='text/css' href='/media/styles/teacherschedule.css' />
-
 <script type="text/javascript" src="/media/scripts/nametag_barcodes.js"></script>
-
 </head>
 <body>
 {% if scheditems|length_is:0 %}
 <div class="title">It looks like you don't have any classes scheduled yet.</div>
-{% endif %} 
+{% endif %}
 
 {% for scheditem in scheditems %}
 
@@ -25,7 +23,7 @@
     </tr>
     <tr>
         <td width="20%"></td>
-        <td class="title">Teacher Schedule for<h2>{{ scheditem.name }}</h2></td>
+        <td class="title">{% if teachers %}Teacher {% if moderators %}and {% endif %}{% endif %}{% if moderators %}{{ program.getModeratorTitle }} {% endif %}Schedule for<h2>{{ scheditem.name }}</h2></td>
         <td width="20%">
             <div class="barcode">
                 <div id="inputdata{{ scheditem.teacher.id }}">{{ scheditem.teacher.id }}</div>
@@ -65,6 +63,7 @@
     <th>Time</th>
     <th>Room</th>
     <th>Class</th>
+    {% if moderators and teachers %}<th>Role</th> {% endif %}
 </tr>
 {% endifchanged %}
 {% autoescape off %}
@@ -73,6 +72,7 @@
   <td>{% if scheditem.cls.classrooms|length_is:0 %}N/A{% else %}
       {{ scheditem.cls.prettyrooms|join:"<br />" }}{% endif %}</td>
   <td>{{ scheditem.cls.title }}</td>
+    {% if moderators and teachers %}<td>{{ scheditem.role }}</td>{% endif %}
 </tr>
 {% endautoescape %}
 {% endfor %}

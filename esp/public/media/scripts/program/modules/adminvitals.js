@@ -35,6 +35,11 @@ function fillStats(data)
     // Fill in the volunteer num data
     fillData("#stats_volunteers", vitals.volunteernum)
 
+    if (has_moderator_module === "True") {
+        // Fill in the moderator num data
+        fillData("#stats_moderators", vitals.moderatornum)
+    }
+
     // Fill in the classes num data
     fillData("#stats_classes", vitals.classnum)
 

@@ -12,6 +12,7 @@
 function Scheduler(
     data,
     directoryEl,
+    moderatorEl,
     matrixEl,
     messageEl,
     sectionInfoEl,
@@ -60,9 +61,18 @@ function Scheduler(
 
     this.sections = new Sections(data.sections,
                                  data.section_details,
+                                 data.categories,
                                  data.teachers,
+                                 data.moderators,
                                  data.schedule_assignments,
                                  new ApiClient());
+
+    if(has_moderator_module === "True"){
+        this.moderatorDirectory = new ModeratorDirectory(moderatorEl,
+                                                         data.moderators);
+    } else {
+        this.moderatorDirectory = null;
+    }
 
     this.messagePanel = new MessagePanel(messageEl,
                                          "Welcome to the Ajax Scheduler!");
@@ -75,10 +85,12 @@ function Scheduler(
     this.matrix = new Matrix(
         this.timeslots,
         this.rooms,
+        data.categories,
         this.sections,
         matrixEl,
         this.messagePanel,
-        this.sectionInfoPanel
+        this.sectionInfoPanel,
+        this.moderatorDirectory
     );
 
     this.directory = new Directory(this.sections,
@@ -92,20 +104,26 @@ function Scheduler(
         last_applied_index
     );
 
-
-    // Set up keyboard shortcut for unscheduling
+    // Set up keyboard shortcuts
     $j("body").keydown(function(evt) {
         console.log(evt);
         if(evt.keyCode == 46) { // delete is pressed
             this.sections.unscheduleSection(this.sections.selectedSection);
         } else if(evt.keyCode == 27) { // escape is pressed
             this.sections.unselectSection()
+            if(has_moderator_module === "True") this.moderatorDirectory.unselectModerator()
         } else if(evt.keyCode == 112) { // F1 is pressed
             evt.preventDefault();
             $j("#side-panel").tabs({active: 0});
-        } else if(evt.keyCode == 113) { // F3 is pressed
+        } else if(evt.keyCode == 113) { // F2 is pressed
             evt.preventDefault();
             $j("#side-panel").tabs({active: 1});
+        } else if(evt.keyCode == 114) { // F3 is pressed
+            evt.preventDefault();
+            $j("#side-panel").tabs({active: 2});
+        } else if(evt.keyCode == 115) { // F4 is pressed
+            evt.preventDefault();
+            $j("#side-panel").tabs({active: 3});
         }
     }.bind(this));
 
@@ -116,11 +134,35 @@ function Scheduler(
         }
     });
 
-
-    // set up handlers for selecting and scheduling classes
+    // set up handlers for selecting/scheduling classes and assigning/unassigning moderators
     $j("body").on("click", "td.matrix-cell > a", function(evt, ui) {
         var cell = $j(evt.currentTarget.parentElement).data("cell");
-        this.sections.selectSection(cell.section);
+        if((evt.ctrlKey || evt.metaKey) && has_moderator_module === "True" && this.moderatorDirectory.selectedModerator) {
+            if(this.moderatorDirectory.selectedModerator.sections.includes(cell.section.id)) {
+                this.moderatorDirectory.unassignModerator(cell.section);
+            } else {
+                this.moderatorDirectory.assignModerator(cell.section);
+            }
+        } else {
+            this.sections.selectSection(cell.section);
+        }
+    }.bind(this));
+
+    // set up handler for selecting moderators
+    $j("body").on("click", "td.moderator-cell", function(evt, ui) {
+        var moderatorCell = $j(evt.currentTarget).data("moderatorCell");
+        this.moderatorDirectory.selectModerator(moderatorCell.moderator);
+    }.bind(this));
+
+    // prevent above handler if clicking a link within a moderator cell
+    $j("body").on("click", "td.moderator-cell > a", function(evt){
+         evt.stopPropagation();
+    });
+
+    // set up handler for selecting moderators from section info panel
+    $j("body").on("click", "a.moderator-link", function(evt, ui) {
+        var modID = $j(evt.currentTarget).data("moderator");
+        this.moderatorDirectory.selectModerator(this.moderatorDirectory.moderators[modID]);
     }.bind(this));
 
     $j("body").on("mouseleave click", "td.teacher-available-cell", function(evt, ui) {
@@ -139,14 +181,17 @@ function Scheduler(
         this.sections.unselectSection();
     }.bind(this));
 
-   $j("body").on("mouseenter", "td.teacher-available-cell", function(evt, ui) {
-        var cell = $j(evt.currentTarget).data("cell");
-        this.sections.scheduleAsGhost(cell.room_id, cell.timeslot_id);
+    $j("body").on("mouseenter", "td.teacher-available-cell", function(evt, ui) {
+        if(this.sections.selectedSection){
+            var cell = $j(evt.currentTarget).data("cell");
+            this.sections.scheduleAsGhost(cell.room_id, cell.timeslot_id);
+        }
     }.bind(this));
 
     // Render all the objects on the page
     this.render = function(){
         this.directory.render();
+        if(has_moderator_module === "True") this.moderatorDirectory.render();
         this.matrix.render();
         this.changelogFetcher.pollForChanges(update_interval);
     };
