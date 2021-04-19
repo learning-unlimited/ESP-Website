@@ -22,9 +22,9 @@
         <td colspan="3" style="text-align: center;"><h1>{{ program.niceName }}</h1><hr class="hr"></td>
     </tr>
     <tr>
-        <td width="20%"></td>
+        <td width="35%"></td>
         <td class="title">{% if teachers %}Teacher {% if moderators %}and {% endif %}{% endif %}{% if moderators %}{{ program.getModeratorTitle }} {% endif %}Schedule for<h2>{{ scheditem.name }}</h2></td>
-        <td width="20%">
+        <td width="35%">
             <div class="barcode">
                 <div id="inputdata{{ scheditem.teacher.id }}">{{ scheditem.teacher.id }}</div>
             </div>
@@ -41,7 +41,7 @@
                }
                return object;
               }
-            get_object("inputdata{{ scheditem.teacher.id }}").innerHTML=DrawHTMLBarcode_Code39(get_object("inputdata{{ scheditem.teacher.id }}").innerHTML,0,"yes","in",0,1,.75,2,"bottom","center", "","black","white");
+            get_object("inputdata{{ scheditem.teacher.id }}").innerHTML=DrawHTMLBarcode_Code39(get_object("inputdata{{ scheditem.teacher.id }}").innerHTML,0,"yes","in",0,1.5,.75,2.5,"bottom","center", "","black","white");
             /* ]]> */
             </script>
         </td>
