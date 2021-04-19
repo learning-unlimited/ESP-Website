@@ -112,7 +112,7 @@ $j(function(){
         var $msg = $td.children('.message');
         var tds = [$td]
         checkIn(username, function(response) {
-            $j("[data-username=checkin_" + username +"]:not([disabled])").each(function() {
+            $j("[data-username='checkin_" + username +"']:not([disabled])").each(function() {
                 var $me = $j(this);
                 var $td = $j(this.parentNode);
                 var $msg = $td.children('.message');
@@ -317,7 +317,7 @@ $j(function(){
                     if (response.username) {
                         var username = response.username;
                         var tds = []
-                        $j("[data-username=checkin_" + username +"]:not([disabled])").each(function() {
+                        $j("[data-username='checkin_" + username +"']:not([disabled])").each(function() {
                             var $me = $j(this);
                             var $td = $j(this.parentNode);
                             var $msg = $td.children('.message');
@@ -399,7 +399,7 @@ $j(function(){
                 if (response.username) {
                     var username = response.username;
                     var tds = []
-                    $j("[data-username=checkin_" + username +"]:not([disabled])").each(function() {
+                    $j("[data-username='checkin_" + username +"']:not([disabled])").each(function() {
                         var $me = $j(this);
                         var $td = $j(this.parentNode);
                         var $msg = $td.children('.message');
