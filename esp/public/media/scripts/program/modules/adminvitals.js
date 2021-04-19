@@ -125,7 +125,7 @@ function fillStats(data)
     //  Fill in the lunch/sibling discount table
     if (splashinfo)
     {
-        $splashinfo = $j("#stats_splashinfo > .module_group_body");
+        var $splashinfo = $j("#stats_splashinfo > .module_group_body");
         $splashinfo.html("<p><ul>    \
             <li>Saturday Lunch    \
                 <ul id=\"splashinfo_lunchsat_list\">    \

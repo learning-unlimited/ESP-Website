@@ -51,7 +51,6 @@ from esp.middleware import ESPError
 from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType, ClassFlag, ModeratorRecord, RegistrationProfile, TeacherBio, PhaseZeroRecord, FinancialAidRequest, VolunteerOffer
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, no_auth, main_call, aux_call
 from esp.program.modules.forms.splashinfo import SplashInfoForm
-from esp.program.modules.handlers.splashinfomodule import SplashInfoModule
 from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, UserAvailability, StudentInfo, Record
@@ -869,7 +868,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @cache_function
     def teacher_nums(prog):
         teachers = prog.teachers()
-        list_labels = prog.getListDescriptions()
+        list_labels = prog.teacherDesc()
         teacher_num_list = []
 
         ## Ew, queries in a for loop...
@@ -895,7 +894,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @cache_function
     def student_nums(prog):
         students = prog.students()
-        list_labels = prog.getListDescriptions()
+        list_labels = prog.studentDesc()
         student_num_list = []
 
         ## Ew, another set of queries in a for loop...
@@ -918,7 +917,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @cache_function
     def volunteer_nums(prog):
         volunteers = prog.volunteers()
-        list_labels = prog.getListDescriptions()
+        list_labels = prog.volunteerDesc()
         volunteer_num_list = []
 
         ## Ew, another set of queries in a for loop...

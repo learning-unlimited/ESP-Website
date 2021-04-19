@@ -292,6 +292,7 @@ class Program(models.Model, CustomFormsLinkModel):
             for i, user_type in enumerate(cls.USER_TYPE_LIST_FUNCS):
                 setattr(cls, user_type, cls.get_users_from_module(user_type))
                 setattr(cls, cls.USER_TYPE_LIST_NUM_FUNCS[i], cls.counts_from_query_dict(getattr(cls, user_type)))
+                setattr(cls, cls.USER_TYPE_LIST_DESC_FUNCS[i], cls.get_labels_from_module(cls.USER_TYPE_LIST_DESC_FUNCS[i]))
 
     def get_absolute_url(self):
         return "/manage/"+self.url+"/main"
@@ -363,6 +364,20 @@ class Program(models.Model, CustomFormsLinkModel):
         get_users.__name__  = method_name
         get_users.__doc__   = "Returns a dictionary of different sets of %s for this program, as defined by the enabled ProgramModules" % method_name
         return get_users
+
+    @staticmethod
+    def get_labels_from_module(method_name):
+        def get_labels(self):
+            modules = self.getModules(None)
+            labels = OrderedDict()
+            for module in modules:
+                tmplabels = getattr(module, method_name)()
+                if tmplabels is not None:
+                    labels.update(tmplabels)
+            return labels
+        get_labels.__name__  = method_name
+        get_labels.__doc__   = "Returns a dictionary of labels for the different sets of %s for this program, as defined by the enabled ProgramModules" % method_name
+        return get_labels
 
     @staticmethod
     def counts_from_query_dict(query_func):
