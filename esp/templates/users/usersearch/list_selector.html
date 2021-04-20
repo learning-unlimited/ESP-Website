@@ -95,7 +95,7 @@ $j(document).ready(function() {
     </div>
 
     <div id="tab_combo">
-        <form id="form_combo_list" method="POST" action="{{ action_path }}" autocomplete="off">
+        {% if combo_form %}<form id="form_combo_list" method="POST" action="{{ action_path }}" autocomplete="off">{% endif %}
         <div id="combo_step_container">
 
         <div id="starting_list_select">
@@ -147,7 +147,9 @@ $j(document).ready(function() {
             <p>&nbsp;</p>
             <button type="button" class="btn btn-default recipient_step_button" id="combo_options_back">Go back</button>
             <button type="button" class="btn btn-default recipient_step_button" id="combo_options_next">Add filters</button>
+            {% if include_continue %}
             <button type="button" class="btn btn-primary recipient_step_button" id="combo_options_done">Continue</button>
+            {% endif %}
         </div>
 
         <div id="combo_filter_select" class="commpanel_hidden">
@@ -162,11 +164,13 @@ $j(document).ready(function() {
             {% if include_checklist %}
             <button type="button" class="btn btn-default recipient_step_button" id="combo_filter_checklist">Recipient checklist</button>
             {% endif %}
+            {% if include_continue %}
             <button type="button" class="btn btn-primary recipient_step_button" id="combo_filter_done">Continue</button>
+            {% endif %}
         </div>
 
         </div>
-        </form>
+        {% if combo_form %}</form>{% endif %}
     </div>
 
     {% if include_prev_list %}
