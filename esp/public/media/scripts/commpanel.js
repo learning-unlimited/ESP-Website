@@ -133,6 +133,7 @@ function clear_filters()
 
 function move_filters(wrapper_name)
 {
+    clear_filters();
     $j("#filter_accordion").detach().appendTo('#'+wrapper_name)
     $j("#filter_accordion").accordion("option", "active", false);
 }
@@ -196,7 +197,6 @@ function initialize()
 
     //  Handle the outer level tabs
     $j("#tab_select_basic").click(function () {
-        clear_filters();
         move_filters("base_filter_accordion");
         recipient_type_change();
         set_step("basic_step_container", "recipient_type_select"); return false;
@@ -273,7 +273,6 @@ function initialize()
 
     //  Handle the outer level tabs
     $j("#tab_select_combo").click(function () {
-        clear_filters();
         move_filters("combo_filter_accordion");
         prepare_accordion("combo");
         $j("[name=base_list]").prop('checked', false);
