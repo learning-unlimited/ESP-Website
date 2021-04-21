@@ -76,7 +76,7 @@ $j(document).ready(function() {
             <div class="step_header"><span class="step_label">Step 3:</span> <span class="step_text">Do you need to filter this list down?</span></div>
             <div class="step_instructions">(For any criteria you don't need, just leave them blank.)</div>
             <div class="step_instructions step_highlight">Currently selected: <span id="filter_current_list"></span></div>
-            <div id="filter_accordion">
+            <div id="base_filter_accordion">
                 {% include "users/usersearch/filter_accordion.html" %}
             </div>
 
@@ -155,9 +155,7 @@ $j(document).ready(function() {
         <div id="combo_filter_select" class="commpanel_hidden">
             <div class="step_header"><span class="step_label">Step 3:</span> <span class="step_text">Do you need to filter this list down?</span></div>
             <div class="step_instructions">(For any criteria you don't need, just leave them blank.)</div>
-            <div id="combo_filter_accordion">
-                {% include "users/usersearch/filter_accordion.html" %}
-            </div>
+            <div id="combo_filter_accordion"></div>
 
             <button type="button" class="btn btn-default recipient_step_button" id="combo_filter_back">Go back</button>
             <input type="hidden" name="use_checklist" value="0" />
