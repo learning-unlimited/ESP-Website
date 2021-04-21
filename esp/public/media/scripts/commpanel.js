@@ -218,15 +218,6 @@ function initialize()
     });
 
     /*  Combination list tab    */
-
-    //  Initialize the filtering options accordion
-    $j("#filter_accordion").accordion({
-        heightStyle: "content",
-        collapsible: true,
-        active: false,
-    });
-    $j("#filter_accordion").accordion("option", "active", false);
-
     //  Make AND/OR/NOT into buttons
     for (var i = 0; i < list_names.length; i++)
     {
