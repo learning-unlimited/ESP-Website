@@ -109,26 +109,21 @@ function msgreq_select_item(event, ui)
 function clear_filters()
 {
     //  Remove any existing data in the "user filtering options" part of a comm panel form
-    var form = $j("#filter_accordion")[0];
-    var field_names = ["userid", "username", "first_name", "last_name", "email", "zipcode", "zipdistance", "zipdistance_exclude", "states", "school", "grade_min", "grade_max", "gradyear_min", "gradyear_max", "groups_include", "groups_exclude", "clsid", "regtypes", "hours_min", "hours_max", "teaching_times", "teacher_events", "class_times", "target_user", "target_user_raw"];
-    for (var i = 0; i < field_names.length; i++)
-    {
-        var form_fields = $j(form).find(':input[name=' + field_names[i] + ']');
-        if (form_fields.length) {
-            for (var form_field of form_fields) {
-                switch (form_field.type) {
-                    case 'checkbox':
-                        form_field.checked = false;
-                        break;
-                    case 'radio':
-                        form_field.checked = false;
-                        break;
-                    default:
-                        $j(form_field).val('');
-                };
-            }
+    var $form = $j("#filter_accordion");
+    var form_fields = $form.find('input');
+    form_fields.each(function(i, form_field) {
+        switch (form_field.type) {
+            case 'checkbox':
+                form_field.checked = false;
+                break;
+            case 'radio':
+                form_field.checked = false;
+                break;
+            default:
+                $j(form_field).val('');
         }
-    }
+    });
+    $j("#filter_accordion").accordion("option", "active", false);
 }
 
 function move_filters(wrapper_name)
@@ -168,7 +163,7 @@ function initialize()
         $j("#recipient_list_options_" + rb_selected).removeClass("commpanel_hidden");
         $j(".sendto_fn_select").addClass("commpanel_hidden");
         $j("." + rb_selected + ".sendto_fn_select").removeClass("commpanel_hidden");
-
+        clear_filters();
         prepare_accordion(rb_selected);
     }
     $j("select[name=recipient_type]").change(recipient_type_change);
@@ -245,7 +240,6 @@ function initialize()
     //  Handle step transitions
     combo_base_list_change = function () {
         clear_filters();
-        $j("#filter_accordion").accordion("option", "active", false);
         var list_selected = $j("select[name=combo_base_list]").val();
         $j("#combo_starting_list").html($j("#list_description_" + list_selected.substr(list_selected.indexOf(":") + 1)).html());
         $j("#tab_combo .sendto_fn_select").hide();
