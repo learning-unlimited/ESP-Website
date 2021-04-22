@@ -425,10 +425,6 @@ class ListGenModule(ProgramModuleObj):
             })
             return render_to_response(self.baseDir()+'options.html', request, context)
 
-        else:
-            student_search_form = StudentSearchForm()
-
-        context['student_search_form'] = student_search_form
         #   Otherwise, render a page that shows the list selection options
         context.update(usc.prepare_context(prog, target_path='/manage/%s/selectList' % prog.url))
         return render_to_response(self.baseDir()+'search.html', request, context)
