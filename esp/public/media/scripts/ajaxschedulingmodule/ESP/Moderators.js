@@ -131,7 +131,7 @@ function ModeratorDirectory(el, moderators) {
         }.bind(this), 0);
 
         // Create the directory table
-        var table = $j("<table/>").css("width", "100%");
+        var table = $j("<table/>").css("width", "100%").addClass("sortable");
         table.append($j("<tr/>").append("<th>" + moderator_title + "</th>").append("<th>Available</br>Slots</th>").append("<th>Remaining</br>Slots</th>"));
         $j.each(this.filtered_moderators(), function(id, moderator){
             var row = new ModeratorRow(moderator, $j("<tr/>"), this);
@@ -139,6 +139,7 @@ function ModeratorDirectory(el, moderators) {
             row.el.appendTo(table);
         }.bind(this))
         table.appendTo(this.el);
+        sorttable.makeSortable(table[0]);
     };
 
     /**
