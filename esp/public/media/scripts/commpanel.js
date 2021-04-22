@@ -110,7 +110,7 @@ function clear_filters()
 {
     //  Remove any existing data in the "user filtering options" part of a comm panel form
     var $form = $j("#filter_accordion");
-    var form_fields = $form.find('input');
+    var form_fields = $form.find(':input');
     form_fields.each(function(i, form_field) {
         switch (form_field.type) {
             case 'checkbox':
