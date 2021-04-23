@@ -198,20 +198,23 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     resource_types.cached_function.depend_on_model(ResourceType)
 
     @aux_call
-    @json_response({'resourceassignment__resource__name': 'room_name', 'resourceassignment__resource__id': 'room_id'})
+    @json_response()
     @needs_admin
     @cached_module_view
     def schedule_assignments(prog):
-        data = ClassSection.objects.filter(status__gte=0, parent_class__status__gte=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name', 'resourceassignment__resource__event').extra({'timeslots': 'ARRAY(SELECT resources_resource.event_id FROM resources_resource, resources_resourceassignment WHERE resources_resource.id = resources_resourceassignment.resource_id AND resources_resourceassignment.target_id = program_classsection.id)'}).values('id', 'resourceassignment__resource__name', 'resourceassignment__resource__id', 'timeslots').distinct()
+        sections = prog.sections().prefetch_related('meeting_times')
         data_list = []
-        for i in range(len(data)):
-            if data[i]['resourceassignment__resource__id'] != None:
-                res = Resource.objects.get(id=data[i]['resourceassignment__resource__id'])
-                # Ignore anything that isn't a classroom
-                if res.res_type.name != "Classroom":
-                    continue
-                data[i]['resourceassignment__resource__id'] = res.identical_id(prog)
-            data_list.append(data[i])
+        for section in sections:
+            room = None
+            rooms = section.initial_rooms()
+            if rooms.count() > 0:
+                room = rooms[0]
+            data_list.append({
+                              'id': section.id,
+                              'room_id': room.identical_id(prog) if room else None,
+                              'room_name': room.name if room else None,
+                              'timeslots': [time.id for time in section.get_meeting_times()]
+                              })
         return {'schedule_assignments': data_list}
     schedule_assignments.method.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     schedule_assignments.method.cached_function.depend_on_row(ResourceAssignment, lambda ra: {'prog': ra.target.parent_class.parent_program})
