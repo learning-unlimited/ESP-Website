@@ -50,7 +50,7 @@ from esp.program.models import Program, ClassSection, ClassSubject, StudentRegis
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, no_auth, main_call, aux_call
 from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.program.modules.handlers.splashinfomodule import SplashInfoModule
-from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
+from esp.resources.models import ResourceAssignment, ResourceRequest, ResourceType
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, UserAvailability
 from esp.utils.decorators import cached_module_view, json_response
