@@ -754,28 +754,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     message_requests.method.cached_function.depend_on_model('dbmail.MessageRequest')
 
-    @staticmethod
-    def calc_hours(classes):
-        hours = {"class-hours": 0, "class-student-hours": 0, "class-registered-hours": 0, "class-checked-in-hours": 0}
-        for cls in classes:
-            if cls['subject_duration']:
-                hours["class-hours"] += float(cls['subject_duration'])
-                hours["class-student-hours"] += float(cls['subject_duration']) * (float(cls['class_size_max']) if cls['class_size_max'] else 0)
-                hours["class-registered-hours"] += float(cls['subject_duration']) * float(cls['subject_students']) / float(cls['num_sections'])
-                hours["class-checked-in-hours"] += float(cls['subject_duration']) * float(cls['subject_checked_in_students']) / float(cls['num_sections'])
-        return hours
-
-    @staticmethod
-    def calc_section_hours(sections):
-        hours = {"class-hours": 0, "class-student-hours": 0, "class-registered-hours": 0}
-        for sec in sections:
-            if sec['duration']:
-                hours["class-hours"] += float(sec['duration'])
-                capacity = ClassSection.objects.get(id=sec['id']).capacity
-                hours["class-student-hours"] += float(sec['duration']) * float(capacity)
-                hours["class-registered-hours"] += float(sec['duration']) * float(sec['enrolled_students'])
-        return hours
-
     @cache_function
     def class_nums(prog):
         classes = prog.classes().select_related()
@@ -955,6 +933,28 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     splashinfo_nums.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
     splashinfo_nums = staticmethod(splashinfo_nums)
 
+    @staticmethod
+    def calc_hours(classes):
+        hours = {"class-hours": 0, "class-student-hours": 0, "class-registered-hours": 0, "class-checked-in-hours": 0}
+        for cls in classes:
+            if cls['subject_duration']:
+                hours["class-hours"] += float(cls['subject_duration'])
+                hours["class-student-hours"] += float(cls['subject_duration']) * (float(cls['class_size_max']) if cls['class_size_max'] else 0)
+                hours["class-registered-hours"] += float(cls['subject_duration']) * float(cls['subject_students']) / float(cls['num_sections'])
+                hours["class-checked-in-hours"] += float(cls['subject_duration']) * float(cls['subject_checked_in_students']) / float(cls['num_sections'])
+        return hours
+
+    @staticmethod
+    def calc_section_hours(sections):
+        hours = {"class-hours": 0, "class-student-hours": 0, "class-registered-hours": 0}
+        for sec in sections:
+            if sec['duration']:
+                hours["class-hours"] += float(sec['duration'])
+                capacity = ClassSection.objects.get(id=sec['id']).capacity
+                hours["class-student-hours"] += float(sec['duration']) * float(capacity)
+                hours["class-registered-hours"] += float(sec['duration']) * float(sec['enrolled_students'])
+        return hours
+
     @cache_function
     def hour_nums(prog):
         ## Write this as a 'for' loop because PostgreSQL can't do it in
@@ -966,10 +966,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         ## minimize the number of objects that we're creating.
         ## One dict and two Decimals per row, as opposed to
         ## an Object per field and all kinds of stuff...
-        reg_classes = prog.classes().exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'), subject_checked_in_students=Sum('sections__ever_checked_in_students')).values('num_sections', 'subject_duration', 'subject_students', 'subject_checked_in_students', 'class_size_max')
-        reg_hours = JSONDataModule.calc_hours(reg_classes)
-        app_classes = prog.classes().filter(status__gt=0, sections__status__gt=0).exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'), subject_checked_in_students=Sum('sections__ever_checked_in_students')).values('num_sections', 'subject_duration', 'subject_students', 'subject_checked_in_students', 'class_size_max')
-        app_hours = JSONDataModule.calc_hours(app_classes)
+        reg_classes = prog.classes().exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'))
+        for cls in reg_classes:
+            cls.subject_checked_in_students = sum([sec.count_ever_checked_in_students() for sec in cls.get_sections()])
+        reg_hours = JSONDataModule.calc_hours([{'num_sections': cls.num_sections, 'subject_duration': cls.subject_duration, 'subject_students': cls.subject_students, 'subject_checked_in_students': cls.subject_checked_in_students, 'class_size_max': cls.class_size_max} for cls in reg_classes])
+        app_classes = prog.classes().filter(status__gt=0, sections__status__gt=0).exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'))
+        for cls in app_classes:
+            cls.subject_checked_in_students = sum([sec.count_ever_checked_in_students() for sec in cls.get_sections()])
+        app_hours = JSONDataModule.calc_hours([{'num_sections': cls.num_sections, 'subject_duration': cls.subject_duration, 'subject_students': cls.subject_students, 'subject_checked_in_students': cls.subject_checked_in_students, 'class_size_max': cls.class_size_max} for cls in app_classes])
         sched_sections = prog.sections().filter(status__gt=0, meeting_times__isnull=False).exclude(parent_class__category__category='Lunch').values('duration', 'enrolled_students', 'id')
         sched_hours = JSONDataModule.calc_section_hours(sched_sections)
         hour_num_list = []
@@ -988,6 +992,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     hour_nums.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     hour_nums.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
     hour_nums.depend_on_row(StudentRegistration, lambda sr: {'prog': sr.section.parent_class.parent_program})
+    hour_nums.depend_on_row(Record, lambda rec: {'prog': rec.program}, lambda rec: rec.event == 'attended')
     hour_nums = staticmethod(hour_nums)
 
     @cache_function
