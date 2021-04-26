@@ -93,6 +93,7 @@ Theme changes
 ~~~~~~~~~~~~~
 - Added an account management page at /myesp/accountmanage. All themes now link to this page instead of specific profile/password pages.
 - Fixed a bug with the admin bar styling on the fruitsalad theme.
+- Centered the main content for the bigpicture theme.
 
 Dashboard changes
 ~~~~~~~~~~~~~~~~~
@@ -137,6 +138,7 @@ Minor bug fixes
 - Fixed a bug on the phase zero management page when the grade cap tag was not set.
 - Fixed logging errors when sending emails.
 - Fixed errors that occurred when emailing users with particular symbols in their names.
+- Fixed a bug affecting ranks beyond the first choice in the class lottery.
 
 Development changes
 ===================
@@ -158,4 +160,5 @@ Dependency changes
 - Upgraded jQuery (1.7.2 -> 1.12.4)
 - Upgraded jQuery UI (1.8.9 -> 1.12.1)
 - Upgraded jqGrid (4.3.1 -> 5.5.2)
+- Upgraded django-debug-toolbar (1.5 -> 1.11.1)
 
