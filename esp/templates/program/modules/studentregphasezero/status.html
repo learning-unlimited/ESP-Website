@@ -109,8 +109,9 @@ td {
             You must set the <i>program_size_by_grade</i> <a href="/manage/{{ program.getUrlBase }}/tags">tag</a>.
         {% endif %}
         <!--<b>Specify Role Name for Winners: </b>--><input type="hidden" name="rolename" value="{{role}}"></br></br>
+        <input type="checkbox" name="perms" checked>  Open all student registration deadlines for lottery winners.</br></br>
         <input type="checkbox" name="confirm">  I confirm that I would like to run the default student lottery algorithm.</br></br>
-        <input {% if not grade_caps %}disabled {% endif %}type="submit" style="float:none" value="Run Default Student Lottery Algorithm" />
+        <input {% if lottery_run or not grade_caps %}disabled {% endif %}{% if lottery_run %} title="Lottery has already been run" {% endif %}type="submit" style="float:none" value="Run Default Student Lottery Algorithm" />
     </form>
 </div>
 
@@ -125,8 +126,9 @@ td {
         <textarea name="usernames" rows="6" placeholder="Enter comma-separated or space-separated student usernames here"></textarea>
         <!--<b>Specify Role Name for Winners: </b>--><input type="hidden" name="rolename" value="{{role}}"></br></br>
         <input type="checkbox" name="groups">  I would also like to accept any students in the same lottery groups.</br></br>
+        <input type="checkbox" name="perms" checked>  Open all student registration deadlines for lottery winners.</br></br>
         <input type="checkbox" name="confirm">  I confirm that I would like to use the above list of students for a manual student lottery.</br></br>
-        <input type="submit" style="float:none" value="Run Manual Student Lottery" />
+        <input {% if lottery_run %}disabled title="Lottery has already been run" {% endif %}type="submit" style="float:none" value="Run Manual Student Lottery" />
     </form>
 </div>
 
