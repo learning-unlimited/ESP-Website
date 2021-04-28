@@ -161,7 +161,7 @@ $j(document).ready(function() {
 	});
 	//end of csrf stuff
 	
-	$j('#form_toolbox').accordion({autoHeight:false, icons:{}});
+	$j('#form_toolbox').accordion({autoHeight:false, icons:{}, collapsible: true});
 	$j.data($j('div.outline')[0], 'data', {'question_text':'', 'help_text':''});
 	$j.data($currPage[0], 'data', {'parent_id':-1});
 	
@@ -177,6 +177,12 @@ $j(document).ready(function() {
 	
 	//Initializing UI
 	//initUI();
+
+    if(edit_form){
+        $j("#base_form").val(edit_form);
+        createFromBase();
+        $j("#id_modify").prop('checked', true).change();
+    }
 });
 
 var getFieldCategory=function(field_type) {
@@ -660,6 +666,7 @@ var setRequired=function(item){
 
 var updateField=function() {
 	var curr_field_type=$j.data($currField[0],'data').field_type;
+    var curr_field_id=$j.data($currField[0],'data').parent_id;
 	if(curr_field_type=='section'){
 		$currField.find('h2').html($j('#id_question').val());
 		$currField.children('p.field_text').html($j('#id_instructions').val());
@@ -669,6 +676,7 @@ var updateField=function() {
 	$currField.remove();
 	$currField=addElement(curr_field_type,$prevField);
 	$currField.addClass('field_selected');
+    $j.data($currField[0],'data').parent_id = curr_field_id;
 };
 
 var onSelectField=function($elem, field_data) {

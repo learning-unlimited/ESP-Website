@@ -4,6 +4,7 @@ import os
 from django.db import models
 from django.apps import apps
 from django.db import connection, transaction
+from django.db.models.fields import NOT_PROVIDED
 from esp.customforms.models import Field
 from argcache import cache_function
 from esp.users.models import ESPUser
@@ -217,15 +218,20 @@ class DynamicModelHandler:
     def addField(self, field):
         with connection.schema_editor() as schema_editor:
             model = self.createDynModel()
-            field_name = self.get_field_name(field)
-            schema_editor.add_field(model, model._meta.get_field(field_name))
+            new_field = self._getModelField(field.field_type)
+            new_field.column = self.get_field_name(field)
+            # We need to set a default (if one isn't set already) in case there are already responses to the form
+            if new_field.default == NOT_PROVIDED:
+                new_field.default = ''
+            schema_editor.add_field(model, new_field)
 
     def updateField(self, field, old_field):
         with connection.schema_editor() as schema_editor:
             model = self.createDynModel()
-            field_name = self.get_field_name(field)
-            schema_editor.alter_field(model, self._getModelField(old_field),
-                                      model._meta.get_field(field_name))
+            old_field_name = self.get_field_name(old_field)
+            new_field = self._getModelField(field.field_type)
+            new_field.column = self.get_field_name(field)
+            schema_editor.alter_field(model, model._meta.get_field(old_field_name), new_field)
 
     def removeField(self, field):
         """

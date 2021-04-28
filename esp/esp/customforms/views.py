@@ -34,10 +34,10 @@ def formBuilder(request):
     form_list = Form.objects.all().order_by('-date_created')
     if not request.user.isAdministrator():
         form_list = form_list.filter(created_by=request.user)
-    return render_to_response(
-                            'customforms/index.html', request,
-                            {'prog_list': prog_list, 'form_list': form_list, 'only_fkey_models': cf_cache.only_fkey_models.keys()}
-                            )
+    context = {'prog_list': prog_list, 'form_list': form_list, 'only_fkey_models': cf_cache.only_fkey_models.keys()}
+    if 'edit' in request.GET and request.GET.get('edit'):
+        context['edit'] = request.GET.get('edit')
+    return render_to_response('customforms/index.html', request, context)
 
 @user_passes_test(test_func)
 def formBuilderData(request):

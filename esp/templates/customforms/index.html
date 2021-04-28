@@ -11,6 +11,11 @@
     {{ block.super }}
     <script src="/media/scripts/json2.js"></script>
     <script src="/media/scripts/custom_form.js"></script>
+    {% if edit %}
+    <script>
+        var edit_form = {{ edit }};
+    </script>
+    {% endif %}
 {% endblock %}
 
 {% block body %}
