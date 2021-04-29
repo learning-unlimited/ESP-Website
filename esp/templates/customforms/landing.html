@@ -12,7 +12,7 @@
     <table class="form_list">
         {% for form in form_list %}
             <tr>
-                <td>{{form.title}} (ID # {{ form.id }})</td>
+                <td>{{form.title}} (ID# {{ form.id }})</td>
                 <td><a href="/customforms/create?edit={{ form.id }}">Edit</a></td>
                 <td><a href="/customforms/view/{{ form.id }}/">Fill</a></td>
                 <td><a href="/customforms/responses/{{ form.id }}/">View Responses</a></td>
