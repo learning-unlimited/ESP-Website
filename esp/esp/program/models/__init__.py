@@ -292,6 +292,7 @@ class Program(models.Model, CustomFormsLinkModel):
             for i, user_type in enumerate(cls.USER_TYPE_LIST_FUNCS):
                 setattr(cls, user_type, cls.get_users_from_module(user_type))
                 setattr(cls, cls.USER_TYPE_LIST_NUM_FUNCS[i], cls.counts_from_query_dict(getattr(cls, user_type)))
+                setattr(cls, cls.USER_TYPE_LIST_DESC_FUNCS[i], cls.get_labels_from_module(cls.USER_TYPE_LIST_DESC_FUNCS[i]))
 
     def get_absolute_url(self):
         return "/manage/"+self.url+"/main"
@@ -363,6 +364,20 @@ class Program(models.Model, CustomFormsLinkModel):
         get_users.__name__  = method_name
         get_users.__doc__   = "Returns a dictionary of different sets of %s for this program, as defined by the enabled ProgramModules" % method_name
         return get_users
+
+    @staticmethod
+    def get_labels_from_module(method_name):
+        def get_labels(self):
+            modules = self.getModules(None)
+            labels = OrderedDict()
+            for module in modules:
+                tmplabels = getattr(module, method_name)()
+                if tmplabels is not None:
+                    labels.update(tmplabels)
+            return labels
+        get_labels.__name__  = method_name
+        get_labels.__doc__   = "Returns a dictionary of labels for the different sets of %s for this program, as defined by the enabled ProgramModules" % method_name
+        return get_labels
 
     @staticmethod
     def counts_from_query_dict(query_func):
@@ -730,7 +745,7 @@ class Program(models.Model, CustomFormsLinkModel):
     @cache_function
     def currentlyCheckedOutStudents(self):
         return self.checkedOutStudents(time_max=datetime.now())
-    currentlyCheckedOutStudents.depend_on_model('users.Record')
+    currentlyCheckedOutStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event in ['attended', "checked_out"])
 
     """ Returns a queryset of students that are checked in to the program at the specified time """
     def checkedInStudents(self, time_max = datetime.now()):
@@ -740,7 +755,7 @@ class Program(models.Model, CustomFormsLinkModel):
     @cache_function
     def currentlyCheckedInStudents(self):
         return self.checkedInStudents(time_max=datetime.now())
-    currentlyCheckedInStudents.depend_on_model('users.Record')
+    currentlyCheckedInStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event == 'attended')
 
     """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
     "Classrooms."  So, if you try to call the old functions (which have no point anymore), then
