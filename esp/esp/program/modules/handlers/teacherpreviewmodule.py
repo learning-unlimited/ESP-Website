@@ -79,7 +79,7 @@ class TeacherPreviewModule(ProgramModuleObj):
                                    'cls': cls})
             context['scheditems'] = scheditems
             context['teachers'] = True
-            context['moderators'] = None
+            context['moderators'] = False
             return render_to_response(pmo.baseDir()+template_file, request, context)
         else:
             raise ESPError('No printables module resolved, so this document cannot be generated.  Consult the webmasters.', log=False)
@@ -102,8 +102,7 @@ class TeacherPreviewModule(ProgramModuleObj):
             else:
                 teacher = request.user
             scheditems = []
-            classes = [cls for cls in teacher.getTaughtSectionsFromProgram(self.program) |
-                       teacher.getModeratingSectionsFromProgram(self.program)
+            classes = [cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
                     if cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
                     and cls.status > 0]
@@ -152,7 +151,7 @@ class TeacherPreviewModule(ProgramModuleObj):
                                    'teacher': teacher,
                                    'cls' : cls})
             context['scheditems'] = scheditems
-            context['teachers'] = None
+            context['teachers'] = False
             context['moderators'] = True
             return render_to_response(pmo.baseDir()+template_file, request, context)
         else:

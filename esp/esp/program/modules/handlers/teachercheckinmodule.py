@@ -72,7 +72,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         'when' defaults to datetime.now()."""
         if when is None:
             when = datetime.now()
-        if teacher.getTaughtClassesFromProgram(prog).exists() or teacher.getModeratingSectionsFromProgram(prog).exists():
+        if teacher.getTaughtOrModeratingSectionsFromProgram(prog).exists():
             endtime = datetime(when.year, when.month, when.day) + timedelta(days=1, seconds=-1)
             checked_in_already = Record.user_completed(teacher, 'teacher_checked_in', prog, when, only_today=True)
             if not checked_in_already:
@@ -81,7 +81,10 @@ class TeacherCheckinModule(ProgramModuleObj):
             else:
                 return '%s has already been checked in until %s.' % (teacher.name(), str(endtime))
         else:
-            return '%s is not a teacher or %s for %s.' % (teacher.name(), prog.getModeratorTitle().lower(), prog.niceName())
+            if prog.hasModule("TeacherModeratorModule"):
+                return '%s is not a teacher or %s for %s.' % (teacher.name(), prog.getModeratorTitle().lower(), prog.niceName())
+            else:
+                return '%s is not a teacher for %s.' % (teacher.name(), prog.niceName())
 
     def undoCheckIn(self, teacher, prog, when=None):
         """Undo what checkIn does"""

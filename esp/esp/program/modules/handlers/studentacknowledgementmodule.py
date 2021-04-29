@@ -55,14 +55,14 @@ class StudentAcknowledgementModule(ProgramModuleObj):
         """ Returns a list of students who have submitted the acknowledgement. """
         qo = Q(record__program=self.program, record__event="studentacknowledgement")
         if QObject is True:
-            return {'acknowledgement': qo}
+            return {'studentacknowledgement': qo}
 
         student_list = ESPUser.objects.filter(qo).distinct()
 
-        return {'acknowledgement': student_list }
+        return {'studentacknowledgement': student_list }
 
     def studentDesc(self):
-        return {'acknowledgement': """Students who have submitted the acknowledgement for the program"""}
+        return {'studentacknowledgement': """Students who have submitted the acknowledgement for the program"""}
 
     class Meta:
         proxy = True

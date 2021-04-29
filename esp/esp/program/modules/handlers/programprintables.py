@@ -593,7 +593,7 @@ class ProgramPrintables(ProgramModuleObj):
         for teacher in teachers:
             # get list of valid classes
             if teaching and moderating:
-                class_objects = teacher.getTaughtSections(self.program) | teacher.getModeratingSectionsFromProgram(self.program)
+                class_objects = teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
             elif teaching:
                 class_objects = teacher.getTaughtSections(self.program)
             else:
@@ -832,8 +832,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         for teacher in teachers:
             # get list of valid classes
-            classes = [cls for cls in teacher.getTaughtSectionsFromProgram(self.program) |
-                       teacher.getModeratingSectionsFromProgram(self.program)
+            classes = [cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
                     if cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
                     and cls.status > 0]
@@ -884,7 +883,7 @@ class ProgramPrintables(ProgramModuleObj):
                                    'cls': cls})
 
         context['scheditems'] = scheditems
-        context['moderators'] = None
+        context['moderators'] = False
         context['teachers'] = True
 
         return render_to_response(self.baseDir()+'teacherschedule.html', request, context)
@@ -919,7 +918,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         context['scheditems'] = scheditems
         context['moderators'] = True
-        context['teachers'] = None
+        context['teachers'] = False
 
         return render_to_response(self.baseDir()+'moderatorschedule.html', request, context)
 
@@ -1074,7 +1073,7 @@ class ProgramPrintables(ProgramModuleObj):
             elif user.isVolunteer():
                 schedule_type = u'Volunteer'
 
-        include_roles = None
+        include_roles = False
         pretty_schedule_type = schedule_type
         if schedule_type == u'Student':
             template = get_template('program/modules/programprintables/studentschedule_email.html')
@@ -1462,7 +1461,7 @@ class ProgramPrintables(ProgramModuleObj):
                                        'cls'    : cls})
 
         context['scheditems'] = scheditems
-        context['bymoderator'] = None
+        context['bymoderator'] = False
         if extra == 'attendance':
             tpl = 'classattendance.html'
         else:

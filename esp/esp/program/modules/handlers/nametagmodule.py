@@ -121,24 +121,23 @@ class NameTagModule(ProgramModuleObj):
 
         elif idtype == 'teacher':
             user_title = "Teacher"
-            teacher_dict = self.program.teachers(QObjects=True)
-            teachers = ESPUser.objects.filter(teacher_dict['class_approved']).distinct()
+            teachers = self.program.teachers()['class_approved'].distinct()
 
             users = self.nametag_data(teachers, user_title)
 
         elif idtype == 'teachermoderators':
             user_title = "Teacher"
             user_title2 = self.program.getModeratorTitle()
-            teacher_dict = self.program.teachers(QObjects=True)
-            teachers = ESPUser.objects.filter(teacher_dict['class_approved']).distinct()
-            moderators = ESPUser.objects.filter(teacher_dict['assigned_moderator']).distinct()
+            teacher_dict = self.program.teachers()
+            teachers = teacher_dict['class_approved'].distinct()
+            moderators = teacher_dict['assigned_moderator'].distinct()
 
             users = self.nametag_data(teachers, user_title, moderators, user_title2)
 
         elif idtype == 'moderators':
             user_title = self.program.getModeratorTitle()
-            teacher_dict = self.program.teachers(QObjects=True)
-            moderators = ESPUser.objects.filter(teacher_dict['assigned_moderator']).distinct()
+            teacher_dict = self.program.teachers()
+            moderators = teacher_dict['assigned_moderator'].distinct()
 
             users = self.nametag_data(moderators, user_title)
 

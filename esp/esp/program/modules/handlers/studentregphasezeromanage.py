@@ -94,7 +94,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         elif post.get('mode') == 'manual':
             usernames = filter(None, re.split(r'[;,\s]\s*', post.get('usernames')))
 
-            #check that all usernames are valid
+            # check that all usernames are valid
             for username in usernames:
                 try:
                     student = ESPUser.objects.get(username=username)
@@ -113,16 +113,20 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                 else:
                     messages.append(username + " is not a student")
 
+        else:
+            messages.append("Lottery mode " + post.get('mode') + " is not supported")
+
         ###############################################################################
         # Post lottery, assign permissions to people in the lottery winners group
         # Assign OverridePhaseZero permission and Student/All permissions
         if len(messages) == 0:
-            #Add users to winners group once we are sure there were no problems
+            # Add users to winners group once we are sure there were no problems
             winners.user_set.add(*students)
             override_perm = Permission(permission_type='OverridePhaseZero', role=winners, start_date=datetime.datetime.now(), program=prog)
-            studentAll_perm = Permission(permission_type='Student/All', role=winners, start_date=datetime.datetime.now(), program=prog)
             override_perm.save()
-            studentAll_perm.save()
+            if 'perms' in post:
+                studentAll_perm = Permission(permission_type='Student/All', role=winners, start_date=datetime.datetime.now(), program=prog)
+                studentAll_perm.save()
             # Add tag to indicate student lottery has been run
             Tag.setTag('student_lottery_run', target=prog, value='True')
             messages.append("The student lottery has been run successfully")
@@ -149,7 +153,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         stats = {}
         invalid_grades = set()
 
-        #Calculate grade counts
+        # Calculate grade counts
         for grade in grades:
             stats[grade] = {}
             stats[grade]['in_lottery'] = 0
@@ -165,7 +169,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                     stats['Invalid Grade']['in_lottery'] = 0
                 stats['Invalid Grade']['in_lottery'] += 1
 
-        #Run lottery if requested
+        # Run lottery if requested
         if request.POST:
             if Tag.getBooleanTag('student_lottery_run', prog):
                 context['error'] = "You've already run the student lottery!"
@@ -177,8 +181,9 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                 else:
                     context['error'] = "You did not confirm that you would like to run the lottery"
 
-        #If lottery has been run, calculate acceptance stats
+        # If lottery has been run, calculate acceptance stats
         if Tag.getBooleanTag('student_lottery_run', prog):
+            context['lottery_run'] = True
             for grade in stats:
                 stats[grade]['num_accepted'] = stats[grade]['per_accepted'] = 0
             winners = ESPUser.objects.filter(groups__name=role).distinct()

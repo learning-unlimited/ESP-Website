@@ -48,8 +48,9 @@
 {% if next %}<a class="btn" href="missingteachers?date={{ next }}{% if when %}&when={{ url_when }}{% endif %}">Next day&gt;&gt;</a>{% endif %}
 {% endif %}
 </div>
-<br>
 {% endif %}
+<div style="clear: both;"></div>
+<br>
 
 <div style="text-align:right; float: right; width: 225px; padding-bottom: 10px;">
 <input class="button text-all-teachers" type="button" value="Text All Unchecked-In Teachers"
@@ -57,6 +58,15 @@
 </br>
 <input type="checkbox" id="skip-semi-checked-in-teachers" {% if not text_configured %} disabled{% endif %}/> Skip teachers of classes with at least one checked-in teacher
 </div>
+
+{% if program|hasModule:"TeacherModeratorModule" %}
+<div style="text-align:left; float: left; width: 225px; padding-bottom: 10px;">
+<input class="button text-all-moderators" type="button" value="Text All Unchecked-In {{ program.getModeratorTitle }}s"
+    {% if not text_configured %} disabled title="Twilio texting settings are not configured"{% endif %}/>
+</br>
+<input type="checkbox" id="skip-semi-checked-in-moderators" {% if not text_configured %} disabled{% endif %}/> Skip {{ program.getModeratorTitle|lower }}s of classes with at least one checked-in {{ program.getModeratorTitle|lower }}
+</div>
+{% endif %}
 
 {% if program|hasModule:"TeacherModeratorModule" %}
 <div style="text-align:left; float: left; width: 225px; padding-bottom: 10px;">

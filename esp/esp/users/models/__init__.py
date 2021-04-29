@@ -51,7 +51,7 @@ from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db import models
-from django.db.models import signals
+from django.db.models import signals, Min
 from django.db.models.base import ModelState
 from django.db.models.manager import Manager
 from django.db.models.query import Q
@@ -406,7 +406,7 @@ class BaseESPUser(object):
         if not isinstance(program, Program): # if we did not receive a program
             raise ESPError("getModeratingSectionsFromProgram expects a Program, not a `" + str(type(program)) + "'.")
         else:
-            return self.moderating_sections.filter(parent_class__parent_program = program)
+            return self.moderating_sections.filter(parent_class__parent_program = program).annotate(start_time = Min('meeting_times__start')).order_by('start_time')
     getModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
     getModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
 
