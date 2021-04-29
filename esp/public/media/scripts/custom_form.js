@@ -161,7 +161,7 @@ $j(document).ready(function() {
 	});
 	//end of csrf stuff
 	
-	$j('#form_toolbox').accordion({autoHeight:false, icons:{}, collapsible: true});
+	$j('#form_toolbox').accordion({heightStyle:'content', icons:{}, collapsible: true});
 	$j.data($j('div.outline')[0], 'data', {'question_text':'', 'help_text':''});
 	$j.data($currPage[0], 'data', {'parent_id':-1});
 	
@@ -540,16 +540,31 @@ var addSpecificOptions=function(elem, options, limtype) {
 		$div.appendTo($j('#other_options'));	
 	}
 	else if(elem=='textField' || elem=='longTextField' || elem=='longAns' || elem=='reallyLongAns'){
-		if(options && options!='')
+		if(options && options!=''){
 			limits=options.split(',');
-		else limits=['',''];
+        } else if(elem=='textField'){
+            limits=[0,30];
+        } else if(elem=='longTextField'){
+            limits=[0,60];
+        } else {
+            limits=['',''];
+        }
 		frag='<div id="text_limits" class="toolboxText">';
-		frag+='<select id="charOrWord">';
-		frag+='<option value="chars">Characters</option>';
-		frag+='<option value="words">Words</option>';
-		frag+='</select>';
-		frag+='<p>Min <input type="text" id="text_min" value="'+limits[0]+'"/> &nbsp;&nbsp;'; 
-		frag+='Max <input type="text" id="text_max" value="'+limits[1]+'"/></p>';
+        frag+='Characters';
+		frag+='<p>Min <input type="number" id="text_min"';
+        if(elem=='textField'){
+            frag+='min="0" max="30"';
+        } else if(elem=='longTextField'){
+            frag+='min="0" max="60"';
+        }
+        frag+=' value="'+limits[0]+'"/> &nbsp;&nbsp;'; 
+		frag+='Max <input type="number" id="text_max"';
+        if(elem=='textField'){
+            frag+='min="0" max="30"';
+        } else if(elem=='longTextField'){
+            frag+='min="0" max="60"';
+        }
+        frag+=' value="'+limits[1]+'"/></p>';
 		frag+='</div>';
 		var $div=$j(frag);
 		$div.appendTo($j('#other_options'));
@@ -971,11 +986,15 @@ var renderNormalField=function(item, field_options, data){
 			type:'radio',
 			value:'Male',
 			name:'gender'
-		})).append($j('<span class="field_text">Male&nbsp;&nbsp;</span>')).append($j('<input/>').attr({
+		})).append($j('<span class="field_text">Male&nbsp;&nbsp;</span><br>')).append($j('<input/>').attr({
 				type:'radio',
 				value:'Female',
 				name:'gender'
-		})).append($j('<span class="field_text">Female</span>'));
+		})).append($j('<span class="field_text">Female&nbsp;&nbsp;</span><br>')).append($j('<input/>').attr({
+				type:'radio',
+				value:'Other',
+				name:'gender'
+		})).append($j('<span class="field_text">Other</span>'));
 	}
     else if((item=="boolean") || (item == "null_boolean")) {
 		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
