@@ -408,6 +408,8 @@ class UserSearchController(object):
         context = {}
         context['program'] = program
         context['student_search_form'] = StudentSearchForm()
+        context['combo_form'] = True
+        context['include_continue'] = True
         context['user_types'] = ESPUser.getTypes()
         category_lists = {}
         list_descriptions = program.getListDescriptions()
