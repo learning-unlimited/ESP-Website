@@ -14,6 +14,7 @@ urlpatterns = [
     url(r'^/metadata/$', views.getRebuildData),
     url(r'^/getperms/$', views.getPerms),
     url(r'^/getlinks/$', views.get_links),
+    url(r'^/getmodules/$', views.get_modules),
     url(r'^/builddata/$', views.formBuilderData),
     url(r'^/exceldata/(?P<form_id>\d{1,6})/$', views.getExcelData),
 ]

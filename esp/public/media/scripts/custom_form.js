@@ -66,6 +66,8 @@ var only_fkey_models=[];
 
 var model_instance_cache={};
 
+var modules={};
+
 var elemTypes = {
     // Stores the available types of form objects, and their number in the form
     'textField':0,
@@ -108,6 +110,8 @@ $j(document).ready(function() {
 	$j('#id_prog_belong').change(onChangeProgBelong);
 	$j('#links_id_main').change(onChangeMainLink);
 	$j('#links_id_specify').change(onChangeLinksSpecify);
+    $j('#links_id_pick').change(onChangeLinksProgram);
+    $j('#links_id_tl').change(onChangeLinksTL);
 	$j('#id_modify').change(function(){
 		if($j(this).prop('checked'))
 			$j('#submit').val('Modify Form');
@@ -261,6 +265,8 @@ var clearLinksArea=function(){
 	//Clears up the links area
 	$j('#links_id_specify').val('userdef').parent().hide();
 	$j('#links_id_pick').empty().parent().hide();
+    $j('#links_id_tl').parent().hide();
+    $j('#links_id_module').empty().parent().hide();
 };
 
 var onChangeMainLink=function(){
@@ -284,15 +290,44 @@ var onChangeLinksSpecify=function(){
 					html_str+='<option value="'+id+'">'+name+'</option>';
 				});
 				$j('#links_id_pick').html(html_str);
-				$j('#links_id_pick').parent().show();
+				$j('#links_id_pick').change().parent().show();
+                if($j("#links_id_main").val()=="Program"){
+                    $j('#links_id_tl').parent().show();
+                    $j('#links_id_module').parent().show();
+                }
 			}
 		});
 	}
 	else{
 		$j('#links_id_pick').html('');
 		$j('#links_id_pick').parent().hide();
+        $j('#links_id_tl').parent().hide();
+        $j('#links_id_module').html('');
+        $j('#links_id_module').parent().hide();
 	}
 };
+
+var onChangeLinksProgram=function(){
+    $j.ajax({
+        url:'/customforms/getmodules/',
+        data:{'program':$j('#links_id_pick').val()},
+        type:'GET',
+        dataType:'json',
+        async:false,
+        success: function(mods) {
+            modules = mods;
+            onChangeLinksTL();
+        }
+    });
+}
+
+var onChangeLinksTL=function(){
+    var html_str='';
+    $j.each(modules[$j('#links_id_tl').val()], function(id, tup){
+        html_str+='<option value="'+tup[0]+'">'+tup[1]+'</option>';
+    });
+    $j('#links_id_module').html(html_str);
+}
 
 var getPerms=function(prog_id){
 	//Queries the server for perms related to the currently selected program
@@ -1217,10 +1252,16 @@ var submit=function() {
 	
 	var form={'title':$j('#form_title').html(), 'desc':$j('#form_description').html(), 'anonymous':($j('#id_anonymous').prop('checked') == "checked"), 'pages':[]}, section, elem, page, section_seq, page_seq=0;
 	form['link_type']=$j('#links_id_main').val();
-	if(form['link_type']!='-1' && $j('#links_id_specify').val()=='particular')
+	if(form['link_type']!='-1' && $j('#links_id_specify').val()=='particular'){
 		form['link_id']=$j('#links_id_pick').val();
-	else form['link_id']=-1;	
-	
+        if($j("#links_id_main").val()=="Program"){
+            form['link_tl'] = $j("#links_id_tl").val();
+            form['link_module'] = $j("#links_id_module").val();
+        }
+	} else {
+        form['link_id']=-1;
+    }
+
 	form['success_message']=$j('#input_form_sucmsg').val();
     form['success_url']=$j('#input_suc_url').val();
 	var form_perms='';
@@ -1346,6 +1387,7 @@ var createFromBase=function(){
 };
 
 var rebuild=function(metadata) {
+    console.log(metadata)
 	//Takes form metadata, and reconstructs the form from it
 	
 	$j('#outline_0').remove();
@@ -1361,8 +1403,7 @@ var rebuild=function(metadata) {
 	//console.log($j('#links_id_main').val());
 	onChangeMainLink();
 	if(metadata['link_id']!=-1){
-		$j('#links_id_specify').val('particular');
-		onChangeLinksSpecify();
+		$j('#links_id_specify').val('particular').change();
 		$j('#links_id_pick').val(metadata['link_id']);
 	}
 	else $j('#links_id_specify').val('userdef');

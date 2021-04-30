@@ -11,6 +11,7 @@ from esp.program.models import Program
 from esp.customforms.DynamicModel import DynamicModelHandler as DMH
 from esp.customforms.DynamicForm import FormHandler
 from esp.customforms.linkfields import cf_cache
+from esp.tagdict.models import Tag
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.decorators import user_passes_test
 
@@ -101,6 +102,21 @@ def onSubmit(request):
             success_message=success_message, success_url=success_url
             )
 
+        # Set up tag to associate form with registration module
+        if 'link_module' in metadata:
+            try:
+                prog = Program.objects.get(id=metadata['link_id'])
+            except Program.DoesNotExist:
+                return ESPError('No program with that ID')
+            if not prog.hasModule(metadata['link_module']):
+                return ESPError('Program does not have ' + metadata['link_module'] + ' enabled')
+            if metadata['link_module'] == 'CustomFormModule':
+                Tag.setTag(key=metadata['link_tl'] + '_extraform_id', value=form.id, target=prog)
+            elif metadata['link_module'] == 'TeacherQuizModule':
+                Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
+            else:
+                return ESPError('Module ' + metadata['link_module'] + ' does not use a custom form or is not implemented')
+
         # Inserting pages
         for page in metadata['pages']:
             new_page = Page.objects.create(form=form, seq=int(page['seq']))
@@ -171,14 +187,32 @@ def onModify(request):
 
             # NOT updating 'anonymous'
             form.__dict__.update(title=metadata['title'], description=metadata['desc'], perms=metadata['perms'],
-                success_message=metadata['success_message'], success_url=metadata['success_url']
+                success_message=metadata['success_message'], success_url=metadata['success_url'],
+                link_id=int(metadata['link_id']), link_type = metadata['link_type'][0:Form._meta.get_field('link_type').max_length]
                 )
 
             form.save()
 
+            # Set up tag to associate form with registration module
+            if 'link_module' in metadata:
+                try:
+                    prog = Program.objects.get(id=metadata['link_id'])
+                except Program.DoesNotExist:
+                    return ESPError('No program with that ID')
+                # Delete old tags associated with this form
+                Tag.objects.filter(content_type=ContentType.objects.get_for_model(Program), object_id=prog.id, value=form.id).delete()
+                if not prog.hasModule(metadata['link_module']):
+                    return ESPError('Program does not have ' + metadata['link_module'] + ' enabled')
+                if metadata['link_module'] == 'CustomFormModule':
+                    Tag.setTag(key=metadata['link_tl'] + '_extraform_id', value=form.id, target=prog)
+                elif metadata['link_module'] == 'TeacherQuizModule':
+                    Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
+                else:
+                    return ESPError('Module ' + metadata['link_module'] + ' does not use a custom form or is not implemented')
+
             # Check if only_fkey links have changed
             if form.link_type != metadata['link_type']:
-                dmh.change_only_fkey(form, form.link_type, metadata['link_type'], link_id)
+                dmh.change_only_fkey(form, form.link_type, metadata['link_type'], form.link_id)
 
             curr_keys = {'pages': [], 'sections': [], 'fields': []}
             old_pages = Page.objects.filter(form=form)
@@ -383,4 +417,22 @@ def get_links(request):
             return HttpResponse(json.dumps(retval))
     return HttpResponse(status=400)
 
-
+@user_passes_test(test_func)
+def get_modules(request):
+    """
+    Returns the teacher modules that are enabled for the program that use custom forms.
+    """
+    # Not really sure there's an easier way to track which modules use custom forms,
+    # so we'll just need to update these if they change
+    teach_handlers = ['CustomFormModule', 'TeacherQuizModule']
+    learn_handlers = ['CustomFormModule']
+    if request.is_ajax():
+        if request.method == 'GET':
+            try:
+                prog = Program.objects.get(id=request.GET.get('program'))
+            except Program.DoesNotExist:
+                return HttpResponse(status=400)
+            retval = {'learn': [(mod.module.handler, mod.module.admin_title) for mod in prog.getModules(tl = 'learn') if mod.module.handler in learn_handlers],
+                      'teach': [(mod.module.handler, mod.module.admin_title) for mod in prog.getModules(tl = 'teach') if mod.module.handler in teach_handlers]}
+            return HttpResponse(json.dumps(retval))
+    return HttpResponse(status=400)

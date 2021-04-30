@@ -294,8 +294,9 @@ class DynamicModelHandler:
                 # New FK column needs to be inserted
                 model = self.createDynModel()
                 new_model_cls = cf_cache.only_fkey_models[new_link_type]
-                new_field_name = 'link_%s' % new_model_cls.__name__
-                schema_editor.add_field(model, model._meta.get_field(new_field_name))
+                new_field = self._getLinkModelField(new_model_cls)
+                new_field.column = 'link_%s' % new_model_cls.__name__
+                schema_editor.add_field(model, new_field) # this is broken because the new field isn't in the model
 
     def createDynModel(self):
         """
