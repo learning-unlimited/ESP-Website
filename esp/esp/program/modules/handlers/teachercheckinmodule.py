@@ -138,23 +138,25 @@ class TeacherCheckinModule(ProgramModuleObj):
                               it were that time.  Should be given in the format
                               "%m/%d/%Y %H:%M".
         """
-        json_data = {}
+        json_data = {'message': 'User not found'}
+        teachers = []
         if 'teacher' in request.POST:
             teachers = ESPUser.objects.filter(username=request.POST['teacher'])
-            if not teachers.exists():
-                json_data['message'] = 'User not found!'
+        elif 'teacherid' in request.POST:
+            teachers = ESPUser.objects.filter(id=request.POST['teacherid'])
+        if teachers and teachers.exists():
+            json_data['name'] = teachers[0].name()
+            json_data['username'] = teachers[0].username
+            when = None
+            if 'when' in request.POST:
+                try:
+                    when = datetime.strptime(request.POST['when'], "%m/%d/%Y %H:%M")
+                except:
+                    pass
+            if 'undo' in request.POST and request.POST['undo'].lower() == 'true':
+                json_data['message'] = self.undoCheckIn(teachers[0], prog, when)
             else:
-                json_data['name'] = teachers[0].name()
-                when = None
-                if 'when' in request.POST:
-                    try:
-                        when = datetime.strptime(request.POST['when'], "%m/%d/%Y %H:%M")
-                    except:
-                        pass
-                if 'undo' in request.POST and request.POST['undo'].lower() == 'true':
-                    json_data['message'] = self.undoCheckIn(teachers[0], prog, when)
-                else:
-                    json_data['message'] = self.checkIn(teachers[0], prog, when)
+                json_data['message'] = self.checkIn(teachers[0], prog, when)
         return HttpResponse(json.dumps(json_data), content_type='text/json')
 
     @aux_call
