@@ -46,6 +46,7 @@
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Cell.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Sections.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Directory.js"></script>
+<script type="text/javascript" src="/media/scripts/sorttable.js"></script> <!-- For the moderator directory -->
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Moderators.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Matrix.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/MessagePanel.js"></script>
@@ -151,6 +152,23 @@
                             <input type="radio" name="class-search-type" value="title"
                                    checked="checked">title</input>
                             <input type="radio" name="class-search-type" value="emailcode">code</input>
+                        </form>
+                    </div>
+                    <div id="class-sort">
+                        <form>
+                            <label for="class-sort-field">Sort by:</label>
+                            <select id="class-sort-field">
+                                <option value="id" selected>ID</option>
+                                <option value="category">Category</option>
+                                <option value="availability">Teacher availability</option>
+                                <option value="capacity">Capacity</option>
+                                <option value="length">Length</option>
+                            </select>
+
+                            <label for="class-sort-type" class="ui-helper-hidden">Sort Type</label>
+                            <input type="radio" name="class-sort-type" value="asc"
+                                   checked="checked">asc</input>
+                            <input type="radio" name="class-sort-type" value="des">des</input>
                         </form>
                     </div>
                     <div id="directory"></div>
