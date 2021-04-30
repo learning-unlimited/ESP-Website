@@ -8,6 +8,10 @@ a {
     cursor: pointer;
 }
 
+table.sortable thead th:not(.sorttable_sorted):not(.sorttable_sorted_reverse):not(.sorttable_nosort):after { 
+    content: " \25B4\25BE" 
+}
+
 .moderator-cell{
     height: 40px;
     min-width: 80%;
@@ -132,7 +136,11 @@ input.numeric {
     width: 40px;
 }
 
-#class-search, #mod-search {
+#class-search {
+    margin-bottom: 10px
+}
+
+#mod-search, #class-sort {
     margin-bottom: 20px;
 }
 
