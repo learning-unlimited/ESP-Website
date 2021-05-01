@@ -78,11 +78,11 @@ Scheduling changes
 - Fixed the alignment of the headers in the ajax scheduler when rooms have really long names.
 - Fixed the wrong class length scheduling check.
 - Fixed the "Mismatched rooms and meeting times" and "Classes not completely scheduled or with gaps" scheduling checks for classes with assigned floating resources.
-- Fixed the teachers with limited availability scheduling check for cases where teachers somehow had no availability.
+- Fixed the "Teachers with limited availability" scheduling check for cases where teachers somehow had no availability.
 - Fixed the highlighting on the ajax scheduler for when a user is trying to schedule a single-block class on a day with a single lunch block.
 - Added scheduling checks to the ajax scheduler that let you see if there are any errors or inconsistencies with how classes have been scheduled (e.g., capacity mismatches, resource mismatches, availability mismatches, double-booked teachers). This does not include all checks from the scheduling checks module, and we plan to keep the scheduling checks module around for the foreseeable future.
-- The class directory can now be sorted by ID, caetgory, length, capacity, and teacher availability.
-- Fixed a bug that caused sections with floating resources to not be shown in the class directory.
+- The class directory on the ajax scheduler can now be sorted by ID, caetgory, length, capacity, and teacher availability.
+- Fixed a bug that caused sections with floating resources to not be shown in the class directory on the ajax scheduler.
 
 Onsite changes
 ~~~~~~~~~~~~~~
