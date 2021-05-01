@@ -182,7 +182,7 @@ $j(document).ready(function() {
 	//Initializing UI
 	//initUI();
 
-    if(edit_form){
+    if(edit_form != -1){
         $j("#base_form").val(edit_form);
         createFromBase();
         $j("#id_modify").prop('checked', true).change();
@@ -1387,7 +1387,6 @@ var createFromBase=function(){
 };
 
 var rebuild=function(metadata) {
-    console.log(metadata)
 	//Takes form metadata, and reconstructs the form from it
 	
 	$j('#outline_0').remove();
@@ -1404,7 +1403,11 @@ var rebuild=function(metadata) {
 	onChangeMainLink();
 	if(metadata['link_id']!=-1){
 		$j('#links_id_specify').val('particular').change();
-		$j('#links_id_pick').val(metadata['link_id']);
+		$j('#links_id_pick').val(metadata['link_id']).change();
+        if(metadata['link_type'] == "Program"){
+            $j('#links_id_tl').val(metadata['link_tl']).change();
+            $j('#links_id_module').val(metadata['link_module']);
+        }
 	}
 	else $j('#links_id_specify').val('userdef');
 	

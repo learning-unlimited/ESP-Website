@@ -10,6 +10,7 @@ from django.http import HttpResponseRedirect
 from localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
 from esp.customforms.forms import NameField, AddressField
 from esp.customforms.DynamicModel import DMH
+from esp.tagdict.models import Tag
 from esp.utils.forms import DummyField
 from esp.users.models import ContactInfo, ESPUser
 from argcache import cache_function
@@ -756,6 +757,24 @@ class FormHandler:
             'perms': self.form.perms,
             'pages': self._getFormMetadata(self.form)
         }
+        # Identify if this form has been linked to a registration module
+        if self.form.link_type == 'Program' and self.form.link_id != -1:
+            try:
+                prog = Program.objects.get(id=self.form.link_id)
+            except Program.DoesNotExist:
+                raise ESPError('No program with ID %i' % (self.form.link_id))
+            tags = Tag.objects.filter(content_type=ContentType.objects.get_for_model(Program), object_id=prog.id, value=self.form.id)
+            if tags.count() == 1:
+                tag = tags[0]
+                if '_extraform_id' in tag.key:
+                    tl = tag.key.split("_")[0]
+                    module = "CustomFormModule"
+                elif tag.key == 'quiz_form_id':
+                    tl = "teach"
+                    module = "TeacherQuizModule"
+            else:
+                raise ESPError('Custom form # %i is linked to multiple registration modules for %s' % (self.form.id, prog.name))
+            metadata.update({'link_tl': tl, 'link_module': module})
         return metadata
 
 

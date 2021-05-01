@@ -107,15 +107,15 @@ def onSubmit(request):
             try:
                 prog = Program.objects.get(id=metadata['link_id'])
             except Program.DoesNotExist:
-                return ESPError('No program with that ID')
+                return ESPError('No program with ID %i' % (metadata['link_id']))
             if not prog.hasModule(metadata['link_module']):
-                return ESPError('Program does not have ' + metadata['link_module'] + ' enabled')
+                return ESPError('Program does not have %s enabled' % (metadata['link_module']))
             if metadata['link_module'] == 'CustomFormModule':
                 Tag.setTag(key=metadata['link_tl'] + '_extraform_id', value=form.id, target=prog)
             elif metadata['link_module'] == 'TeacherQuizModule':
                 Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
             else:
-                return ESPError('Module ' + metadata['link_module'] + ' does not use a custom form or is not implemented')
+                return ESPError('Module %s does not use a custom form or is not implemented' % (metadata['link_module']))
 
         # Inserting pages
         for page in metadata['pages']:
@@ -184,35 +184,35 @@ def onModify(request):
 
             # Populating the old fields list
             dmh._getModelFieldList()
-
+            
             # NOT updating 'anonymous'
             form.__dict__.update(title=metadata['title'], description=metadata['desc'], perms=metadata['perms'],
-                success_message=metadata['success_message'], success_url=metadata['success_url'],
-                link_id=int(metadata['link_id']), link_type = metadata['link_type'][0:Form._meta.get_field('link_type').max_length]
+                success_message=metadata['success_message'], success_url=metadata['success_url']
                 )
 
             form.save()
+
+            # Delete old tags associated with this form
+            Tag.objects.filter(value=form.id, key__in=['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id']).delete()
 
             # Set up tag to associate form with registration module
             if 'link_module' in metadata:
                 try:
                     prog = Program.objects.get(id=metadata['link_id'])
                 except Program.DoesNotExist:
-                    return ESPError('No program with that ID')
-                # Delete old tags associated with this form
-                Tag.objects.filter(content_type=ContentType.objects.get_for_model(Program), object_id=prog.id, value=form.id).delete()
+                    return ESPError('No program with ID %i' % (metadata['link_id']))
                 if not prog.hasModule(metadata['link_module']):
-                    return ESPError('Program does not have ' + metadata['link_module'] + ' enabled')
+                    return ESPError('Program does not have %s enabled' % (metadata['link_module']))
                 if metadata['link_module'] == 'CustomFormModule':
                     Tag.setTag(key=metadata['link_tl'] + '_extraform_id', value=form.id, target=prog)
                 elif metadata['link_module'] == 'TeacherQuizModule':
                     Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                 else:
-                    return ESPError('Module ' + metadata['link_module'] + ' does not use a custom form or is not implemented')
+                    return ESPError('Module %s does not use a custom form or is not implemented' % (metadata['link_module']))
 
             # Check if only_fkey links have changed
-            if form.link_type != metadata['link_type']:
-                dmh.change_only_fkey(form, form.link_type, metadata['link_type'], form.link_id)
+            if form.link_type != metadata['link_type'] or form.link_id != metadata['link_id']:
+                dmh.change_only_fkey(form, form.link_type, metadata['link_type'], metadata['link_id'])
 
             curr_keys = {'pages': [], 'sections': [], 'fields': []}
             old_pages = Page.objects.filter(form=form)

@@ -11,11 +11,9 @@
     {{ block.super }}
     <script src="/media/scripts/json2.js"></script>
     <script src="/media/scripts/custom_form.js"></script>
-    {% if edit %}
     <script>
-        var edit_form = {{ edit }};
+        var edit_form = {% if edit %}{{ edit }}{% else %}-1{% endif %};
     </script>
-    {% endif %}
 {% endblock %}
 
 {% block body %}
@@ -158,7 +156,7 @@
 					</select>
 					</p>
 					
-					<p>Program -
+					<p>Pick -
 					<select id="links_id_pick">
 					</select>
 					</p>
