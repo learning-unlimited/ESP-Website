@@ -36,6 +36,7 @@ User search modules changes
 - Added new user search filters for students, including number of registered class hours and registered class times.
 - Added new user search filters for teachers, including teaching times, training/interview times, and teachers of a particular student.
 - Added the ability to include and/or exclude multiple user groups when filtering users.
+- All user search filters are now cleared whenever you change user type or switch between the different tabs.
 
 Contact info changes
 ~~~~~~~~~~~~~~~~~~~~
@@ -48,6 +49,7 @@ Student registration changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Some modules will no longer show up in registration if they are not set up correctly (formstack medliab, extra costs, student applications, and lunch selection).
 - The extra costs and donation modules now work when a program has no admission cost.
+- Added an option to the student lottery management page to not open student registration once the lottery has been run.
 
 Teacher registration changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -59,6 +61,7 @@ Teacher registration changes
 Class management changes
 ~~~~~~~~~~~~~~~~~~~~~~~~
 - All of the section cancellation forms have been merged into a single form allowing admins to cancel multiple sections at once for the same reason.
+- Updated the caching of all of the statistics on the dashboard, so they should now always be up-to-date.
 
 Statistics and data visualization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -78,6 +81,8 @@ Scheduling changes
 - Fixed the teachers with limited availability scheduling check for cases where teachers somehow had no availability.
 - Fixed the highlighting on the ajax scheduler for when a user is trying to schedule a single-block class on a day with a single lunch block.
 - Added scheduling checks to the ajax scheduler that let you see if there are any errors or inconsistencies with how classes have been scheduled (e.g., capacity mismatches, resource mismatches, availability mismatches, double-booked teachers). This does not include all checks from the scheduling checks module, and we plan to keep the scheduling checks module around for the foreseeable future.
+- The class directory can now be sorted by ID, caetgory, length, capacity, and teacher availability.
+- Fixed a bug that caused sections with floating resources to not be shown in the class directory.
 
 Onsite changes
 ~~~~~~~~~~~~~~
@@ -88,6 +93,7 @@ Onsite changes
 - Added an attendance-through-time chart on the attendance landing page that shows the cumulative number of students that have checked in to the program and the number of students that are attending classes for each hour.
 - Fixed a page-breaking bug on the teacher check-in page (this was also patched on SR12).
 - Added sorting options to the grid-based class changes page (length of section, class ID, fullness, and category).
+- Added barcode scanning to teacher check-in. Admins can use physical scanners or personal smart devices.
 
 Theme changes
 ~~~~~~~~~~~~~
@@ -111,6 +117,8 @@ Printable changes
 - Changed individual teacher schedules (accessed from the userview page) to only show scheduled classes.
 - Fixed the top margin of the catalog sorted by category printable.
 - Fixed the completion certificate to now include the program email and name.
+- Added barcodes to teacher schedules and made teacher schedules prettier.
+- Fixed the combo selector on the nametags page.
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
