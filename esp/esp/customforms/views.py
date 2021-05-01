@@ -184,7 +184,7 @@ def onModify(request):
 
             # Populating the old fields list
             dmh._getModelFieldList()
-            
+
             # NOT updating 'anonymous'
             form.__dict__.update(title=metadata['title'], description=metadata['desc'], perms=metadata['perms'],
                 success_message=metadata['success_message'], success_url=metadata['success_url']
