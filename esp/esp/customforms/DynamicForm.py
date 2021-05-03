@@ -1,6 +1,7 @@
 from esp.customforms.models import Field, Attribute, Section, Page, Form
 from django import forms
 from django.forms.models import fields_for_model
+from django.utils.safestring import mark_safe
 from form_utils.forms import BetterForm
 from collections import OrderedDict
 from formtools.wizard.views import SessionWizardView
@@ -135,7 +136,7 @@ class CustomFormHandler():
 
             for field in section:
                 field_name = 'question_%d' % field['id']
-                field_attrs = {'label': field['label'], 'help_text': field['help_text'], 'required': field['required']}
+                field_attrs = {'label': mark_safe(field['label']), 'help_text': mark_safe(field['help_text']), 'required': field['required']}
 
                 # Setting the 'name' attribute for combo fields
                 """
