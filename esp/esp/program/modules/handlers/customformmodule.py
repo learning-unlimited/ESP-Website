@@ -98,7 +98,7 @@ class CustomFormModule(ProgramModuleObj):
                 form_model = dmh.createDynModel()
                 form_model.objects.filter(user=request.user).delete()
                 form_wizard.done([form])
-                bit, created = Record.objects.get_or_create(user=request.user, program=self.program, event=self.event)
+                bit = Record.objects.create(user=request.user, program=self.program, event=self.event)
                 return self.goToCore(tl)
         else:
             #   If the user already filled out the form, use their earlier response for the initial values
