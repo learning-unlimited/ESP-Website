@@ -219,11 +219,12 @@ class DynamicModelHandler:
         with connection.schema_editor() as schema_editor:
             model = self.createDynModel()
             new_field = self._getModelField(field.field_type)
-            new_field.column = self.get_field_name(field)
-            # We need to set a default (if one isn't set already) in case there are already responses to the form
-            if new_field.default == NOT_PROVIDED:
-                new_field.default = ''
-            schema_editor.add_field(model, new_field)
+            if new_field:
+                new_field.column = self.get_field_name(field)
+                # We need to set a default (if one isn't set already) in case there are already responses to the form
+                if new_field.default == NOT_PROVIDED:
+                    new_field.default = ''
+                schema_editor.add_field(model, new_field)
 
     def updateField(self, field, old_field):
         with connection.schema_editor() as schema_editor:
@@ -239,9 +240,10 @@ class DynamicModelHandler:
         """
         with connection.schema_editor() as schema_editor:
             model = self.createDynModel()
-            field_name = self.get_field_name(field)
-            #   TODO: Return early if this is a linked field
-            schema_editor.remove_field(model, model._meta.get_field(field_name))
+            if self._getModelField(field.field_type):
+                field_name = self.get_field_name(field)
+                #   TODO: Return early if this is a linked field
+                schema_editor.remove_field(model, model._meta.get_field(field_name))
 
     def removeLinkField(self, field):
         """
