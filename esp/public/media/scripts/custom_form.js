@@ -701,7 +701,7 @@ var onSelectElem = function(item) {
         $j('#id_question').val(question_text);
         $prevField=$currSection.children(":last");
         if($button.val()!='Add to Form')
-            $button.val('Add to Form').unbind('click').click(function(){insertField($j('#elem_selector').val(),$prevField)});
+            $button.val('Add to Form').html('Add Field to Form').unbind('click').click(function(){insertField($j('#elem_selector').val(),$prevField)});
     }
 };
 
@@ -737,7 +737,7 @@ var updateField=function() {
 	$prevField=$currField.prev();
 	$currField.remove();
 	$currField=addElement(field_type,$prevField);
-	$currField.addClass('field_selected');
+	$currField.click();
     $j.data($currField[0],'data').parent_id = curr_field_id;
 };
 
@@ -747,9 +747,11 @@ var onSelectField=function($elem, field_data, ftype=null) {
 		Also called by rebuild(..) to recreate a form from metadata
 	*/
 	
-	clearSpecificOptions();
 	//De-selecting any previously selected field
-	$j('div.field_selected').removeClass('field_selected');
+	$j('div.field_selected').click();
+    $j('div.field_wrapper').removeClass('field_hover');
+    $j('div.field_wrapper').find(".wrapper_button").removeClass("wrapper_button_hover");
+    clearSpecificOptions();
 		
 	var $wrap=$elem, $button=$j('#button_add'), options;
     if(ftype == null) ftype=field_data.field_type;
@@ -809,7 +811,7 @@ var onSelectField=function($elem, field_data, ftype=null) {
 	addCorrectnessOptions(ftype);
 	$j('#'+ftype+'_correct_answer').val(field_data.attrs['correct_answer']);
 	if($button.val()=='Add to Form')
-		$button.val('Update').unbind('click').click(updateField);
+		$button.val('Update').html("Update Field").unbind('click').click(updateField);
 		
 	//Set 'Required' depending on item
 	setRequired(ftype);	
@@ -1474,10 +1476,12 @@ var rebuild=function(metadata) {
 				}
 				onSelectField([], field_data);		
 				$prevField=addElement(field['field_type'], $prevField);
-				$j.data($prevField[0], 'data')['parent_id']=field['id'];	
+				$j.data($prevField[0], 'data')['parent_id']=field['id'];
 			});
 		});
-	});	
-	
+	});
+    // Reset add field form
+	onSelectCategory('Generic');
+    onSelectElem('textField');
 };
 
