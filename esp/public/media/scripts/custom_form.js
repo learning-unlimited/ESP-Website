@@ -564,7 +564,7 @@ var addSpecificOptions=function(elem, options, limtype) {
 
 	var limits, frag, $div;
 	if(elem=='numeric'){
-		if(options!='')
+		if(options && options!='')
 			limits=options.split(',');
 		else limits=[0,0];
 		frag='<div class="toolboxText">';
@@ -587,19 +587,27 @@ var addSpecificOptions=function(elem, options, limtype) {
 		frag='<div id="text_limits" class="toolboxText">';
         frag+='Characters';
 		frag+='<p>Min <input type="number" id="text_min"';
+        var limit_min, limit_max;
         if(elem=='textField'){
             frag+='min="0" max="30"';
+            limit_min = Math.min(30, limits[0]);
+            limit_max = Math.min(30, limits[1]);
         } else if(elem=='longTextField'){
             frag+='min="0" max="60"';
+            limit_min = Math.min(60, limits[0]);
+            limit_max = Math.min(60, limits[1]);
+        } else {
+            limit_min = limits[0];
+            limit_max = limits[1];
         }
-        frag+=' value="'+limits[0]+'"/> &nbsp;&nbsp;'; 
+        frag+=' value="'+limit_min+'"/> &nbsp;&nbsp;'; 
 		frag+='Max <input type="number" id="text_max"';
         if(elem=='textField'){
             frag+='min="0" max="30"';
         } else if(elem=='longTextField'){
             frag+='min="0" max="60"';
         }
-        frag+=' value="'+limits[1]+'"/></p>';
+        frag+=' value="'+limit_max+'"/></p>';
 		frag+='</div>';
 		var $div=$j(frag);
 		$div.appendTo($j('#other_options'));
@@ -661,37 +669,40 @@ var onSelectElem = function(item) {
 	$j('#id_instructions').val('');
 	$j('#id_required').prop('checked','');
 	
-	$j('div.field_selected').removeClass('field_selected');
-	var currCategory=$j('#cat_selector').val();	
-	var $option,$wrap_option,i, question_text=formElements[currCategory][item]['ques'], $button=$j('#button_add');
-	
-    //  Add validation options
-    if (item in formElements['Generic'])
-    {
-        addCorrectnessOptions(item);
+	if($j('div.field_selected').length){
+        onSelectField($j('div.field_selected'), $j.data($j('div.field_selected')[0], 'data'), item);
+    } else {
+        var currCategory=$j('#cat_selector').val();
+        var $option,$wrap_option,i, question_text=formElements[currCategory][item]['ques'], $button=$j('#button_add');
+        
+        //  Add validation options
+        if (item in formElements['Generic'])
+        {
+            addCorrectnessOptions(item);
+        }
+        
+        //Defining actions for generic elements
+        if(item=='textField' || item=='longTextField' || item=='longAns' || item=='reallyLongAns')
+            addSpecificOptions(item, '', '');
+        else if(item=="radio" || item=="dropdown" || item=="multiselect" || item=="checkboxes") 
+            generateOptions();
+        else if(item=="numeric") 
+            addSpecificOptions(item, '', '');
+        else if(item=='section'){
+            $j('#id_instructions').val('Enter a short description about the section');
+        }
+        else if(item=='page'){
+            $j('#id_instructions').val('Not required');
+        }
+        
+        //Set 'Required' to a sensible default
+        setRequired(item);	
+            
+        $j('#id_question').val(question_text);
+        $prevField=$currSection.children(":last");
+        if($button.val()!='Add to Form')
+            $button.val('Add to Form').unbind('click').click(function(){insertField($j('#elem_selector').val(),$prevField)});
     }
-    
-	//Defining actions for generic elements
-	if(item=='textField' || item=='longTextField' || item=='longAns' || item=='reallyLongAns')
-		addSpecificOptions(item, '', '');
-	else if(item=="radio" || item=="dropdown" || item=="multiselect" || item=="checkboxes") 
-		generateOptions();
-	else if(item=="numeric") 
-		addSpecificOptions(item, '', '');
-	else if(item=='section'){
-		$j('#id_instructions').val('Enter a short description about the section');
-	}
-	else if(item=='page'){
-		$j('#id_instructions').val('Not required');
-	}
-	
-	//Set 'Required' to a sensible default
-	setRequired(item);	
-		
-	$j('#id_question').val(question_text);
-	$prevField=$currSection.children(":last");
-	if($button.val()!='Add to Form')
-		$button.val('Add to Form').unbind('click').click(function(){insertField($j('#elem_selector').val(),$prevField)});
 };
 
 var setRequired=function(item){
@@ -716,6 +727,7 @@ var setRequired=function(item){
 
 var updateField=function() {
 	var curr_field_type=$j.data($currField[0],'data').field_type;
+    var field_type=$j('#elem_selector').val();
     var curr_field_id=$j.data($currField[0],'data').parent_id;
 	if(curr_field_type=='section'){
 		$currField.find('h2').html($j('#id_question').val());
@@ -724,12 +736,12 @@ var updateField=function() {
 	}
 	$prevField=$currField.prev();
 	$currField.remove();
-	$currField=addElement(curr_field_type,$prevField);
+	$currField=addElement(field_type,$prevField);
 	$currField.addClass('field_selected');
     $j.data($currField[0],'data').parent_id = curr_field_id;
 };
 
-var onSelectField=function($elem, field_data) {
+var onSelectField=function($elem, field_data, ftype=null) {
 	/*
 		Handles clicks on field wrappers.
 		Also called by rebuild(..) to recreate a form from metadata
@@ -739,7 +751,8 @@ var onSelectField=function($elem, field_data) {
 	//De-selecting any previously selected field
 	$j('div.field_selected').removeClass('field_selected');
 		
-	var $wrap=$elem, $button=$j('#button_add'), options, ftype=field_data.field_type;
+	var $wrap=$elem, $button=$j('#button_add'), options;
+    if(ftype == null) ftype=field_data.field_type;
 	
 	//Select the current field and category in the field and category selectors
 	if(ftype in formElements['Generic']){
@@ -875,7 +888,8 @@ var renderNormalField=function(item, field_options, data){
 		else {
 			//Normal field
 			$text_inputs.each(function(idx,el) {
-					options_string+=$j(el).val()+"|";	
+				options_string+=$j(el).val();
+                if(idx != ($text_inputs.length - 1)) options_string+="|";
 			});
 		}
 		$j.each(options_string.split('|'), function(idx, el){
@@ -897,7 +911,8 @@ var renderNormalField=function(item, field_options, data){
 			options_string=field_options['options'];
 		else{
 			$text_inputs.each(function(idx,el) {
-				options_string+=$j(el).val()+"|";
+				options_string+=$j(el).val();
+                if(idx != ($text_inputs.length - 1)) options_string+="|";
 			});
 		}
 		$j.each(options_string.split('|'), function(idx, el){
@@ -921,7 +936,8 @@ var renderNormalField=function(item, field_options, data){
 			options_string=field_options['options'];
 		else {
 			$text_inputs.each(function(idx,el) {
-				options_string+=$j(el).val()+"|";
+				options_string+=$j(el).val();
+                if(idx != ($text_inputs.length - 1)) options_string+="|";
 			});
 		}
 		$j.each(options_string.split('|'), function(idx, el){
@@ -940,7 +956,8 @@ var renderNormalField=function(item, field_options, data){
 			options_string=field_options['options'];
 		else {
 			$text_inputs.each(function(idx,el) {
-				options_string+=$j(el).val()+"|";
+				options_string+=$j(el).val();
+                if(idx != ($text_inputs.length - 1)) options_string+="|";
 			});
 		}
 		$j.each(options_string.split('|'), function(idx, el){
