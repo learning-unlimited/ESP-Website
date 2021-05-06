@@ -375,6 +375,15 @@ class ClassSection(models.Model):
     def get_moderators(self):
         return self.moderators.all()
 
+    def getModeratorNames(self):
+        moderators = []
+        for moderator in self.get_moderators():
+            name = moderator.name()
+            if name.strip() == '':
+                name = moderator.username
+            moderators.append(name)
+        return moderators
+
     def getModeratorNamesLast(self):
         moderators = []
         for moderator in self.get_moderators():
