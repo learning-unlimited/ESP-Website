@@ -395,11 +395,11 @@ class LotteryAssignmentController(object):
 
         #   Filter students by who has fewer than the max number of timeslot enrollments
         if self.options['max_sections']:
-            possible_students *= ~(numpy.sum(self.student_sections, axis=1) < self.options['max_sections'])
+            possible_students *= (numpy.sum(self.student_sections, axis=1) < self.options['max_sections'])
 
         #   Filter students by who has fewer than the max number of timeslot enrollments
         if self.options['max_timeslots']:
-            possible_students *= ~(numpy.sum(self.student_schedules, axis=1) < self.options['max_timeslots'])
+            possible_students *= (numpy.sum(self.student_schedules, axis=1) < self.options['max_timeslots'])
 
         #   Filter students by who has all of the section's timeslots available
         for i in range(timeslots.shape[0]):
