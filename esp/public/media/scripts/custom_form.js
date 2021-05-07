@@ -121,6 +121,7 @@ $j(document).ready(function() {
 	$j('#elem_selector').change(function(){onSelectElem($j('#elem_selector').val());});
 	$j('#main_cat_spec').change(onChangeMainCatSpec);
 	$j('#id_perm_program').change(onChangePermProg);
+    $j('#base_form').change(onChangeBase);
 	
 	$currSection=$j('#section_0');
 	$currPage=$j('#page_0');
@@ -183,7 +184,7 @@ $j(document).ready(function() {
 	//initUI();
 
     if(edit_form != -1){
-        $j("#base_form").val(edit_form);
+        $j("#base_form").val(edit_form).change();
         createFromBase();
         $j("#id_modify").prop('checked', true).change();
     }
@@ -286,8 +287,8 @@ var onChangeLinksSpecify=function(){
 			async:false,
 			success: function(link_objects) {
 				var html_str='';
-				$j.each(link_objects, function(id, name){
-					html_str+='<option value="'+id+'">'+name+'</option>';
+				$j.each(link_objects, function(idx, data){
+					html_str+='<option value="'+data.id+'">'+data.name+'</option>';
 				});
 				$j('#links_id_pick').html(html_str);
 				$j('#links_id_pick').change().parent().show();
@@ -418,8 +419,8 @@ var onChangeMainCatSpec=function() {
 				dataType:'json',
 				async:false,
 				success: function(link_objects) {
-					$j.each(link_objects, function(id, name){
-						model_instance_cache[curr_category]['options'][id]=name;
+					$j.each(link_objects, function(idx, data){
+						model_instance_cache[curr_category]['options'][data.id]=data.name;
 					});
 				}
 			});
@@ -1371,6 +1372,16 @@ var updateDesc=function() {
 	$j('#form_description').html($j('#input_form_description').val());
 	
 };
+
+var onChangeBase=function(){
+    if($j('#base_form').val()!="-1"){
+        $j("#create_from_base").show();
+    } else {
+        $j("#create_from_base").hide();
+        $j('#id_modify_wrapper').hide();
+		$j('#id_modify').prop('checked', false);
+    }
+}
 
 var createFromBase=function(){
 	//Clearing previous fields, if any

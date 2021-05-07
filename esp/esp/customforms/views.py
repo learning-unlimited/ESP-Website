@@ -409,10 +409,10 @@ def get_links(request):
                     link_model = cf_cache.link_fields[request.GET['link_model']]['model']
                 except KeyError:
                     return HttpResponse(status=400)
-            link_objects = link_model.objects.all()
-            retval = {}
+            link_objects = link_model.objects.all().order_by('-id')
+            retval = []
             for obj in link_objects:
-                retval[obj.id] = unicode(obj)
+                retval.append({'id': obj.id, 'name': unicode(obj)})
 
             return HttpResponse(json.dumps(retval))
     return HttpResponse(status=400)

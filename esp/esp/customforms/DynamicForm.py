@@ -764,7 +764,7 @@ class FormHandler:
                 prog = Program.objects.get(id=self.form.link_id)
             except Program.DoesNotExist:
                 raise ESPError('No program with ID %i' % (self.form.link_id))
-            tags = Tag.objects.filter(content_type=ContentType.objects.get_for_model(Program), object_id=prog.id, value=self.form.id)
+            tags = Tag.objects.filter(content_type=ContentType.objects.get_for_model(Program), object_id=prog.id, value=self.form.id, key__in=['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id'])
             if tags.count() == 1:
                 tag = tags[0]
                 if '_extraform_id' in tag.key:
@@ -773,8 +773,11 @@ class FormHandler:
                 elif tag.key == 'quiz_form_id':
                     tl = "teach"
                     module = "TeacherQuizModule"
-            else:
+            elif tags.count() > 1:
                 raise ESPError('Custom form # %i is linked to multiple registration modules for %s' % (self.form.id, prog.name))
+            else:
+                tl = ''
+                module = ''
             metadata.update({'link_tl': tl, 'link_module': module})
         return metadata
 

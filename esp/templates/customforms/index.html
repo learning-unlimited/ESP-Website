@@ -46,12 +46,12 @@
 					<p>Anonymous Form <input type='checkbox' id='id_anonymous'/></p>
 					<p>Create from existing form</p>
 					<select id="base_form">
-						<option value="-1">None (Blank Form)</option>
+						<option value="-1">None</option>
 						{% for form in form_list %}
 							<option value="{{form.id}}">{{form.title}}</option>
 						{% endfor %}	
 					</select>
-					<input type="button" value="Create from previous form" onclick="createFromBase()"/>
+					<button type="button" id="create_from_base" hidden type="button" onclick="createFromBase()">Create from previous form</button>
 					<div id="id_modify_wrapper"><p>Modify this form <input type="checkbox" id="id_modify"/></p>
 					<p>(Please check this off <b>only</b> if you want to modify this form. If you just want to create a form that
 						resembles this one, leave this unchecked.)</p>
