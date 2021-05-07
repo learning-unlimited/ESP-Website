@@ -113,6 +113,16 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         $j("body").trigger("schedule-changed");
     }.bind(this));
 
+    // Set up sort
+    this.sortObject = {field: "id", type: "asc"}
+    $j("#class-sort-field, [name='class-sort-type']").on("change", function(evt) {
+        if(evt.currentTarget.id === "class-sort-field") {
+            this.sortObject.field = evt.currentTarget.value;
+        } else {
+            this.sortObject.type = evt.currentTarget.value;
+        }
+        $j("body").trigger("schedule-changed");
+    }.bind(this));
 
     /**
      * Populate the sections data with teacher and section-detail info
@@ -175,8 +185,8 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
     this.filtered_sections = function(allowScheduled){
         var returned_sections = [];
         $j.each(this.sections_data, function(section_id, section) {
-            if (!this.scheduleAssignments[section.id]) {
-                // filter out rejected sections
+            if (section.status < 0) {
+                // filter out rejected and cancelled sections
                 return;
             }
             if (this.isScheduled(section) && !allowScheduled) {
@@ -213,7 +223,28 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                 returned_sections.push(section);
             }
         }.bind(this));
+        // sort sections based on selected field
+        switch(this.sortObject.field) {
+            case "id":
+                returned_sections.sort((a, b) => a.id - b.id);
+                break;
+            case "category":
+                returned_sections.sort((a, b) => a.category.localeCompare(b.category));
+                break;
+            case "length":
+                returned_sections.sort((a, b) => a.length - b.length);
+                break;
+            case "capacity":
+                returned_sections.sort((a, b) => a.class_size_max - b.class_size_max);
+                break;
+            case "availability":
+                returned_sections.sort((a, b) => this.getAvailableTimeslots(a)[0].length - this.getAvailableTimeslots(b)[0].length);
+                break;
+        }
+        // reverse if descending selected
+        if(this.sortObject.type === "des") returned_sections.reverse()
         return returned_sections;
+        
     };
 
     /**

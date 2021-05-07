@@ -109,3 +109,12 @@ input.not-found {
 .add-assignment {
     margin-bottom: 4px;
 }
+
+.overlay {
+    padding-bottom: 20px;
+    margin: auto;
+}
+
+#shortcuts-box .message {
+    color: red;
+}

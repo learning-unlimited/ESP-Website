@@ -62,18 +62,22 @@ function submit_prev_selection()
     return true;
 }
 
-function prepare_accordion(accordion_id, rb_selected)
+function prepare_accordion(rb_selected)
 {
-    $j("#" + accordion_id).children(".ui-accordion-header:not(.any)").hide();
+    $j("#filter_accordion").children(".ui-accordion-header:not(.any)").hide();
     
     //  Show school/grade options for students, graduation year options for teachers
     if (rb_selected.toLowerCase().substr(0, 7) == "student")
     {
-        $j("#" + accordion_id).children(".ui-accordion-header.student").show();
+        $j("#filter_accordion").children(".ui-accordion-header.student").show();
     }
     else if (rb_selected.toLowerCase().substr(0, 7) == "teacher")
     {
-        $j("#" + accordion_id).children(".ui-accordion-header.teacher").show();
+        $j("#filter_accordion").children(".ui-accordion-header.teacher").show();
+    }
+    else // otherwise, show all options
+    {
+        $j("#filter_accordion").children(".ui-accordion-header").show();
     }
 }
 
@@ -102,30 +106,31 @@ function msgreq_select_item(event, ui)
     target_div.append(inner_div3);
 }
 
-function clear_filters(form_name)
+function clear_filters()
 {
     //  Remove any existing data in the "user filtering options" part of a comm panel form
-    var form = $j("#"+form_name)[0];
-    field_names = ["userid", "username", "first_name", "last_name", "email", "zipcode", "zipdistance", "zipdistance_exclude", "states", "school", "grade_min", "grade_max", "gradyear_min", "gradyear_max", "groups_include", "groups_exclude", "clsid", "regtypes", "hours_min", "hours_max", "teaching_times", "teacher_events", "class_times", "target_user"];
-    for (var i = 0; i < field_names.length; i++)
-    {
-        var form_fields = $j(form).find(':input[name=' + field_names[i] + ']');
-        if (form_fields.length) {
-            var form_field = form_fields[0];
-            switch (form_field.type) {
-                case 'password':
-                case 'select-multiple':
-                case 'select-one':
-                case 'text':
-                case 'textarea':
-                    $j(form_field).val('');
-                    break;
-                case 'checkbox':
-                case 'radio':
-                    form_field.checked = false;
-            };
+    var $form = $j("#filter_accordion");
+    var form_fields = $form.find(':input');
+    form_fields.each(function(i, form_field) {
+        switch (form_field.type) {
+            case 'checkbox':
+                form_field.checked = false;
+                break;
+            case 'radio':
+                form_field.checked = false;
+                break;
+            default:
+                $j(form_field).val('');
         }
-    }
+    });
+    $j("#filter_accordion").accordion("option", "active", false);
+}
+
+function move_filters(wrapper_name)
+{
+    clear_filters();
+    $j("#filter_accordion").detach().appendTo('#'+wrapper_name)
+    $j("#filter_accordion").accordion("option", "active", false);
 }
 
 function set_field(form_name, field_name, value)
@@ -158,9 +163,8 @@ function initialize()
         $j("#recipient_list_options_" + rb_selected).removeClass("commpanel_hidden");
         $j(".sendto_fn_select").addClass("commpanel_hidden");
         $j("." + rb_selected + ".sendto_fn_select").removeClass("commpanel_hidden");
-        //  console.log("Selected " + rb_selected);
-
-        prepare_accordion("filter_accordion", rb_selected);
+        clear_filters();
+        prepare_accordion(rb_selected);
     }
     $j("select[name=recipient_type]").change(recipient_type_change);
     $j("#recipient_type_next").click(function () {
@@ -187,7 +191,11 @@ function initialize()
     $j("#recipient_list_select").children("div").addClass("commpanel_hidden");
 
     //  Handle the outer level tabs
-    $j("#tab_select_basic").click(function () {set_step("basic_step_container", "recipient_type_select"); return false;});
+    $j("#tab_select_basic").click(function () {
+        move_filters("base_filter_accordion");
+        recipient_type_change();
+        set_step("basic_step_container", "recipient_type_select"); return false;
+    });
 
     //  Prepare "back" buttons
     $j("#recipient_list_back").click(function () {set_step("basic_step_container", "recipient_type_select"); return false;});
@@ -205,15 +213,6 @@ function initialize()
     });
 
     /*  Combination list tab    */
-
-    //  Initialize the filtering options accordion
-    $j("#combo_filter_accordion").accordion({
-        heightStyle: "content",
-        collapsible: true,
-        active: false,
-    });
-    $j("#combo_filter_accordion").accordion("option", "active", false);
-
     //  Make AND/OR/NOT into buttons
     for (var i = 0; i < list_names.length; i++)
     {
@@ -240,16 +239,15 @@ function initialize()
 
     //  Handle step transitions
     combo_base_list_change = function () {
-        clear_filters("form_combo_list");
-        $j("#combo_filter_accordion").accordion("option", "active", false);
+        clear_filters();
         var list_selected = $j("select[name=combo_base_list]").val();
         $j("#combo_starting_list").html($j("#list_description_" + list_selected.substr(list_selected.indexOf(":") + 1)).html());
-        $j("#form_combo_list .sendto_fn_select").hide();
+        $j("#tab_combo .sendto_fn_select").hide();
         try {
-            $j("#form_combo_list .sendto_fn_select." + list_selected.split(":")[0]).show();
+            $j("#tab_combo .sendto_fn_select." + list_selected.split(":")[0]).show();
         } catch(e){}
         //  TODO: Prepare filtering options based on choice of starting list (students/teachers/other)
-        //  prepare_accordion("combo_filter_accordion", rb_selected);
+        prepare_accordion("combo");
     }
     combo_base_list_change();
     $j("select[name=combo_base_list]").change(combo_base_list_change);
@@ -259,7 +257,12 @@ function initialize()
     });
 
     //  Handle the outer level tabs
-    $j("#tab_select_combo").click(function () {set_step("combo_step_container", "starting_list_select"); return false;});
+    $j("#tab_select_combo").click(function () {
+        move_filters("combo_filter_accordion");
+        prepare_accordion("combo");
+        $j("[name=base_list]").prop('checked', false);
+        set_step("combo_step_container", "starting_list_select"); return false;
+    });
 
     //  Prepare "back" buttons
     $j("#combo_options_back").click(function () {set_step("combo_step_container", "starting_list_select"); return false;});

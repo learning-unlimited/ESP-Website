@@ -76,7 +76,7 @@ $j(document).ready(function() {
             <div class="step_header"><span class="step_label">Step 3:</span> <span class="step_text">Do you need to filter this list down?</span></div>
             <div class="step_instructions">(For any criteria you don't need, just leave them blank.)</div>
             <div class="step_instructions step_highlight">Currently selected: <span id="filter_current_list"></span></div>
-            <div id="filter_accordion">
+            <div id="base_filter_accordion">
                 {% include "users/usersearch/filter_accordion.html" %}
             </div>
 
@@ -95,7 +95,7 @@ $j(document).ready(function() {
     </div>
 
     <div id="tab_combo">
-        <form id="form_combo_list" method="POST" action="{{ action_path }}" autocomplete="off">
+        {% if combo_form %}<form id="form_combo_list" method="POST" action="{{ action_path }}" autocomplete="off">{% endif %}
         <div id="combo_step_container">
 
         <div id="starting_list_select">
@@ -147,26 +147,28 @@ $j(document).ready(function() {
             <p>&nbsp;</p>
             <button type="button" class="btn btn-default recipient_step_button" id="combo_options_back">Go back</button>
             <button type="button" class="btn btn-default recipient_step_button" id="combo_options_next">Add filters</button>
+            {% if include_continue %}
             <button type="button" class="btn btn-primary recipient_step_button" id="combo_options_done">Continue</button>
+            {% endif %}
         </div>
 
         <div id="combo_filter_select" class="commpanel_hidden">
             <div class="step_header"><span class="step_label">Step 3:</span> <span class="step_text">Do you need to filter this list down?</span></div>
             <div class="step_instructions">(For any criteria you don't need, just leave them blank.)</div>
-            <div id="combo_filter_accordion">
-                {% include "users/usersearch/filter_accordion.html" %}
-            </div>
+            <div id="combo_filter_accordion"></div>
 
             <button type="button" class="btn btn-default recipient_step_button" id="combo_filter_back">Go back</button>
             <input type="hidden" name="use_checklist" value="0" />
             {% if include_checklist %}
             <button type="button" class="btn btn-default recipient_step_button" id="combo_filter_checklist">Recipient checklist</button>
             {% endif %}
+            {% if include_continue %}
             <button type="button" class="btn btn-primary recipient_step_button" id="combo_filter_done">Continue</button>
+            {% endif %}
         </div>
 
         </div>
-        </form>
+        {% if combo_form %}</form>{% endif %}
     </div>
 
     {% if include_prev_list %}

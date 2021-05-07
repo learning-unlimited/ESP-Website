@@ -46,6 +46,7 @@
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Cell.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Sections.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Directory.js"></script>
+<script type="text/javascript" src="/media/scripts/sorttable.js"></script> <!-- For the moderator directory -->
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Moderators.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Matrix.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/MessagePanel.js"></script>
@@ -153,6 +154,23 @@
                             <input type="radio" name="class-search-type" value="emailcode">code</input>
                         </form>
                     </div>
+                    <div id="class-sort">
+                        <form>
+                            <label for="class-sort-field">Sort by:</label>
+                            <select id="class-sort-field">
+                                <option value="id" selected>ID</option>
+                                <option value="category">Category</option>
+                                <option value="availability">Teacher availability</option>
+                                <option value="capacity">Capacity</option>
+                                <option value="length">Length</option>
+                            </select>
+
+                            <label for="class-sort-type" class="ui-helper-hidden">Sort Type</label>
+                            <input type="radio" name="class-sort-type" value="asc"
+                                   checked="checked">asc</input>
+                            <input type="radio" name="class-sort-type" value="des">des</input>
+                        </form>
+                    </div>
                     <div id="directory"></div>
                 </div>
                 <div id="filters2">
@@ -181,32 +199,32 @@
                   <form>
                     <label for="scheduling-checks"><b>Scheduling Checks</b></label><br />
                     <div id="scheduling-checks">
-                        <input type="radio" name="scheduling-checks" value="" checked></input> None
+                        <input type="radio" name="scheduling-checks" value="" checked id="scheduling-checks-none"></input><label for="scheduling-checks-none"> None</label>
                         <br />
-                        <input type="radio" name="scheduling-checks" value="capacity"></input> Room Capacity Mismatch
+                        <input type="radio" name="scheduling-checks" value="capacity" id="scheduling-checks-capacity"></input><label for="scheduling-checks-capacity"> Room Capacity Mismatch</label>
                         <br />
-                        <input type="radio" name="scheduling-checks" value="unapproved"></input> Unapproved Classes
+                        <input type="radio" name="scheduling-checks" value="unapproved" id="scheduling-checks-unapproved"></input><label for="scheduling-checks-unapproved"> Unapproved Classes</label>
                         <br />
-                        <input type="radio" name="scheduling-checks" value="requests"></input> Unfulfilled Resource Requests
+                        <input type="radio" name="scheduling-checks" value="requests" id="scheduling-checks-requests"></input><label for="scheduling-checks-requests"> Unfulfilled Resource Requests</label>
                         <br />
-                        <input type="radio" name="scheduling-checks" value="lunch"></input> Classes Scheduled Over Lunch
+                        <input type="radio" name="scheduling-checks" value="lunch" id="scheduling-checks-lunch"></input><label for="scheduling-checks-lunch"> Classes Scheduled Over Lunch</label>
                         <br />
-                        <input type="radio" name="scheduling-checks" value="hungry"></input> Hungry Teachers
+                        <input type="radio" name="scheduling-checks" value="hungry" id="scheduling-checks-hungry"></input><label for="scheduling-checks-hungry"> Hungry Teachers</label>
                         <br />
-                        <input type="radio" name="scheduling-checks" value="running"></input> Running Teachers
+                        <input type="radio" name="scheduling-checks" value="running" id="scheduling-checks-running"></input><label for="scheduling-checks-running"> Running Teachers</label>
                         <br />
-                        <input type="radio" name="scheduling-checks" value="double_booked"></input> Double-Booked Teachers
+                        <input type="radio" name="scheduling-checks" value="double_booked" id="scheduling-checks-double_booked"></input><label for="scheduling-checks-double_booked"> Double-Booked Teachers</label>
                         <br />
-                        <input type="radio" name="scheduling-checks" value="unavailable"></input> Unavailable Teachers
+                        <input type="radio" name="scheduling-checks" value="unavailable" id="scheduling-checks-unavailable"></input><label for="scheduling-checks-unavailable"> Unavailable Teachers</label>
                         <br />
-                        <input type="radio" name="scheduling-checks" value="num_teachers"></input> Number of Teachers
+                        <input type="radio" name="scheduling-checks" value="num_teachers" id="scheduling-checks-num_teachers"></input><label for="scheduling-checks-num_teachers"> Number of Teachers</label>
                         <br />
                         {% if has_moderator_module %}
-                        <input type="radio" name="scheduling-checks" value="num_moderators"></input> Number of {{ program.getModeratorTitle }}s
+                        <input type="radio" name="scheduling-checks" value="num_moderators" id="scheduling-checks-num_moderators"></input><label for="scheduling-checks-num_moderators"> Number of {{ program.getModeratorTitle }}s</label>
                         <br />
-                        <input type="radio" name="scheduling-checks" value="num_both"></input> Number of Teachers and {{ program.getModeratorTitle }}s
+                        <input type="radio" name="scheduling-checks" value="num_both" id="scheduling-checks-num_both"></input><label for="scheduling-checks-num_both"> Number of Teachers and {{ program.getModeratorTitle }}s</label>
                         <br />
-                        <input type="radio" name="scheduling-checks" value="mod_cats"></input> {{ program.getModeratorTitle }}s with Mismatched Categories
+                        <input type="radio" name="scheduling-checks" value="mod_cats" id="scheduling-checks-mod_cats"></input><label for="scheduling-checks-mod_cats"> {{ program.getModeratorTitle }}s with Mismatched Categories</label>
                         <br />
                         {% endif %}
                     </div>
