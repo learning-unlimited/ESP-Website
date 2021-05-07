@@ -69,9 +69,9 @@ Please select from the option below to continue.
   {% comment %} am I a module that has not been called yet {% endcomment %}
   {% if not module.isOnSiteFeatured %}
   {% if not module.useTemplate %}
-    {% autoescape off %}{{ module.makeButtonLink }}{% endautoescape %}<br>
+    {% autoescape off %}{{ module.makeButtonLink }}{% endautoescape %}
   {% else %}
-    <em>{{ module.module.link_title }} (below)</em><br>
+    <em>{{ module.module.link_title }} (below)</em>
   {% endif %}
   {% endif %}
 {% endif %}
