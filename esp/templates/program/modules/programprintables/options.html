@@ -72,6 +72,9 @@ Please select from options below.
 {% endif %}
 <li><a href="./volunteerschedules" title="Volunteer Schedules">Volunteer Schedules</a> (by volunteers)</li>
 <li><a href="./roomschedules" title="Room Schedules">Room Schedules</a></li>
+{% if program|hasModule:"TeacherModeratorModule" %}
+    <li><a href="./moderator_rooms_spr" title="Complete Moderator Schedule by Room">Complete Moderator Schedule by Room</a> (CSV format)</li>
+{% endif %}
 </ul>
 
 <h3>Nametags</h3>

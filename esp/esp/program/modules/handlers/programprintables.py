@@ -1837,6 +1837,57 @@ class ProgramPrintables(ProgramModuleObj):
 
     @aux_call
     @needs_admin
+    def moderator_rooms_spr(self, request, tl, one, two, module, extra, prog):
+        """
+        Create a spreadsheet with a row for each room, a column for each timeblock,
+        filled out with moderator names and phone numbers.
+        """
+
+        response = HttpResponse(content_type="text/csv")
+        write_csv = csv.writer(response)
+
+        sections = list(self.program.sections().filter(status=10, parent_class__status=10))
+        sections.sort()
+
+        rooms = {}
+
+        for sec in sections:
+            for room in sec.initial_rooms():
+                for event_group in Event.collapse(list(sec.meeting_times.all())):
+                    update_dict = {'room': room.name,
+                                   'moderator': '; '.join(sec.getModeratorNames()),
+                                   'timeblock': event_group}
+                    if room.name in rooms:
+                        rooms[room.name].append(update_dict)
+                    else:
+                        rooms[room.name] = [update_dict]
+
+        # functions to determine what will fill in the spreadsheet cell for each thing
+        def get_room_time_moderator(room_name, time):
+            for val in rooms[room_name]:
+                if val['timeblock'] == time:
+                    return val['moderator']
+            return ' '
+
+        times = prog.getTimeSlots()
+        time_headers = [str(time) for time in times]
+
+        # header row, naming each column
+        write_csv.writerow(['Room'] + time_headers)
+
+        # this writes a row for each room
+        for room in rooms.keys():
+            row = [room]
+            for time in times:
+                row.append(get_room_time_moderator(room, time))
+
+            write_csv.writerow(row)
+
+        response['Content-Disposition'] = 'attachment; filename=master_moderator_schedule.csv'
+        return response
+
+    @aux_call
+    @needs_admin
     def csv_schedule(self, request, tl, one, two, module, extra, prog):
         """ A CSV-formatted list of existing schedule assignments, intended to
             be used as initial conditions for automatic scheduling.  The response
