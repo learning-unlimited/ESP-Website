@@ -1146,7 +1146,13 @@ var renderCustomField=function(item, field_options, data){
     //Rendering code for custom fields
 
 	var $new_elem;
-	if(item.match("name$")){
+	if(item.match("e_mail$")){
+        $new_elem=$j('<div>').css('display','inline-block');
+        $new_elem.append($j('<input/>').attr({
+			type:"text",
+			size:"30"
+		}));
+    } else if(item.match("name$")){
 		$new_elem=$j('<div>').css('display','inline-block');
 		var $first_div, $last_div;
 		$first_div=$j('<div>').append($j('<input/>',{
@@ -1158,8 +1164,7 @@ var renderCustomField=function(item, field_options, data){
 			size:'20'
 		})).append($j('<p class="field_text">Last</p>')).css('float','left');
 		$new_elem.append($first_div).append($last_div).append('<br/>');
-	}
-	else if(item.match("address$")){
+	} else if(item.match("address$")){
 		$new_elem=$j('<div>');
 		$new_elem.append($j('<p class="field_text">Street Address</p>')).append($j('<textarea>',{
 			'rows':4,
