@@ -1423,7 +1423,6 @@ var createFromBase=function(){
 
 var rebuild=function(metadata) {
 	//Takes form metadata, and reconstructs the form from it
-	
 	$j('#outline_0').remove();
 	//Setting form's title and description
 	$j('#input_form_title').val(metadata['title']).change();
@@ -1480,14 +1479,14 @@ var rebuild=function(metadata) {
 				var category=getFieldCategory(field_data['field_type']);
 				if(category!='Generic' && category!='Personal' && category!='NotReallyFields') {
 					$j('#cat_selector').val(category);
-					if(field_data.attrs['link_id']=="-1"){
-						$j('#main_cat_spec').val('automatic');
-						onChangeMainCatSpec();
-					}
-					else {
+					if(field_data.attrs['link_id'] && field_data.attrs['link_id']!="-1"){
 						$j('#main_cat_spec').val('particular');
 						onChangeMainCatSpec();
 						$j('#cat_instance_sel').val(field_data.attrs['link_id']);
+					}
+					else {
+						$j('#main_cat_spec').val('automatic');
+						onChangeMainCatSpec();
 					}
 				}
 				onSelectField([], field_data);		
@@ -1497,7 +1496,6 @@ var rebuild=function(metadata) {
 		});
 	});
     // Reset add field form
-	onSelectCategory('Generic');
-    onSelectElem('textField');
+	$j("#cat_selector").val('Generic').change();
 };
 

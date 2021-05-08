@@ -231,8 +231,9 @@ class DynamicModelHandler:
             model = self.createDynModel()
             old_field_name = self.get_field_name(old_field)
             new_field = self._getModelField(field.field_type)
-            new_field.column = self.get_field_name(field)
-            schema_editor.alter_field(model, model._meta.get_field(old_field_name), new_field)
+            if new_field:
+                new_field.column = self.get_field_name(field)
+                schema_editor.alter_field(model, model._meta.get_field(old_field_name), new_field)
 
     def removeField(self, field):
         """
@@ -271,8 +272,9 @@ class DynamicModelHandler:
             if link_model_cls.__name__ not in self.link_models_list:
                 # Add in the FK-column for this model
                 model = self.createDynModel()
-                field_name = self.get_field_name(field)
-                schema_editor.add_field(model, model._meta.get_field(field_name))
+                new_field = self._getLinkModelField(link_model_cls)
+                new_field.column = 'link_%s' % link_model_cls.__name__
+                schema_editor.add_field(model, new_field)
                 self.link_models_list.append(link_model_cls.__name__)
 
     def change_only_fkey(self, form, old_link_type, new_link_type, link_id):

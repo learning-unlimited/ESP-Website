@@ -88,7 +88,7 @@ class CustomFormHandler():
         for attr in attrs:
             if attr['attr_type'] == 'options':
                 other_attrs['choices'] = []
-                options_list = attr['value'].split('|')[:-1]
+                options_list = attr['value'].split('|')
                 for option in options_list:
                     other_attrs['choices'].append( (option, option) )
             elif attr['attr_type'] == 'limits':
@@ -200,7 +200,7 @@ class CustomFormHandler():
                     if not field_is_custom:
                         # Add in other classes for validation
                         generic_type = cf_cache.getGenericType(form_field)
-                        if 'widget_attrs' in self._field_types[generic_type] and 'class' in self._field_types[generic_type]['widget_attrs']:
+                        if generic_type in self._field_types and 'widget_attrs' in self._field_types[generic_type] and 'class' in self._field_types[generic_type]['widget_attrs']:
                             form_field.widget.attrs['class'] += self._field_types[generic_type]['widget_attrs']['class']
 
                     # Adding to field list
