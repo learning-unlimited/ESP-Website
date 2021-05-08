@@ -774,7 +774,7 @@ class FormHandler:
                     tl = "teach"
                     module = "TeacherQuizModule"
             elif tags.count() > 1:
-                raise ESPError('Custom form # %i is linked to multiple registration modules for %s' % (self.form.id, prog.name))
+                raise ESPError('Custom form #%i is linked to multiple registration modules for %s' % (self.form.id, prog.name))
             else:
                 tl = ''
                 module = ''

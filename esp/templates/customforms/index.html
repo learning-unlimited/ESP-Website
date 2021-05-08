@@ -52,6 +52,7 @@
 						{% endfor %}	
 					</select>
 					<button type="button" id="create_from_base" hidden type="button" onclick="createFromBase()">Create from previous form</button>
+                    <p id="create_from_base_error" hidden style="color: red;"></p>
 					<div id="id_modify_wrapper"><p>Modify this form <input type="checkbox" id="id_modify"/></p>
 					<p>(Please check this off <b>only</b> if you want to modify this form. If you just want to create a form that
 						resembles this one, leave this unchecked.)</p>
@@ -171,9 +172,11 @@
 					<select id="links_id_module">
 					</select>
 					</p>
+                    <p id="links_id_module_help_text" hidden style="color: red;"></p>
 				</div>	
 					
 				<input type="button" id="submit" value="Create Form"/>
+                <p id="submit_error" hidden style="color: red;"></p>
 			</div>		
 		</div>	
 {% endblock %}

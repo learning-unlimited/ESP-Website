@@ -324,10 +324,21 @@ var onChangeLinksProgram=function(){
 
 var onChangeLinksTL=function(){
     var html_str='';
-    $j.each(modules[$j('#links_id_tl').val()], function(id, tup){
-        html_str+='<option value="'+tup[0]+'">'+tup[1]+'</option>';
-    });
-    $j('#links_id_module').html(html_str);
+    if(modules[$j('#links_id_tl').val()].length > 0){
+        $j.each(modules[$j('#links_id_tl').val()], function(id, tup){
+            html_str+='<option value="'+tup[0]+'">'+tup[1]+'</option>';
+        });
+        $j('#links_id_module').html(html_str);
+        $j('#links_id_module_help_text').hide();
+    } else {
+        if($j('#links_id_tl').val() == 'learn'){
+            html_str = 'You must enable the Student Custom Form module first.';
+        } else {
+            html_str = 'You must enable the Teacher Custom Form and/or Teacher Logistics Quiz module(s) first.';
+        }
+        $j('#links_id_module').empty();
+        $j('#links_id_module_help_text').html(html_str).show();
+    }
 }
 
 var getPerms=function(prog_id){
@@ -1360,7 +1371,11 @@ var submit=function() {
 			//console.log(value);
 			if(value=='OK')
 				window.location='/customforms/';
-		}
+            $j("#submit_error").empty().hide();
+		},
+        error: function(error) {
+            $j("#submit_error").html(error.responseJSON.message).show();
+        }
 	});
 	$j('#submit').attr("disabled","true");
 		
@@ -1407,8 +1422,12 @@ var createFromBase=function(){
 			dataType:'json',
 			async:false,
 			success: function(metadata) {
+                $j("#create_from_base_error").empty().hide();
 				rebuild(metadata);
-			}
+			},
+            error: function(error) {
+                $j("#create_from_base_error").html(error.responseJSON.message).show();
+            }
 		});
 		$j('#id_modify_wrapper').show();
 	}
