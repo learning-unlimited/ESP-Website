@@ -17,8 +17,8 @@ Moderators (or observers, teaching assistants, etc) for individual sections are 
 - Assigned moderators have their section assignments listed on the main teacher registration page (beneath taught classes), where they can see details about the sections and access the attendance page.
 - Similar information is on the teacher webapp (in the schedule and in the specific section info pages).
 - Moderators are listed on and can be checked-in via the onsite teacher check-in page.
-- Several new printables are available which have moderator info (e.g. schedules).
-- Several existing printables have moderator information (e.g. class list).
+- Several new printables are available which have moderator info (e.g. individual schedules, moderator schedule spreadsheet).
+- Several existing printables have moderator information (e.g. class list, room schedules).
 - Moderator stats are shown on the dashboard and teacher big board.
 
 Program management changes
@@ -94,6 +94,7 @@ Onsite changes
 - Fixed a page-breaking bug on the teacher check-in page (this was also patched on SR12).
 - Added sorting options to the grid-based class changes page (length of section, class ID, fullness, and category).
 - Added barcode scanning to teacher check-in. Admins can use physical scanners or personal smart devices.
+- The main /onsite page has been redesigned to look like the main /manage page.
 
 Theme changes
 ~~~~~~~~~~~~~
