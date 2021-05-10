@@ -45,6 +45,8 @@ from esp.accounting.controllers import IndividualAccountingController
 
 
 class OnsitePaidItemsModule(ProgramModuleObj):
+    doc = """Lists the items that a student has requested/paid for."""
+
     @classmethod
     def module_properties(cls):
         return {

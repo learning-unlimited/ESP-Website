@@ -45,7 +45,7 @@ from esp.users.forms.generic_search_form import StudentSearchForm
 
 # hackish solution for Splash 2012
 class FormstackMedliabModule(ProgramModuleObj):
-    """ Module for collecting medical information online via Formstack """
+    doc = """ Module for collecting medical information online via Formstack """
 
     @classmethod
     def module_properties(cls):

@@ -39,6 +39,8 @@ from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegMo
 from django.db.models import Count
 
 class TeacherOnsite(ProgramModuleObj, CoreModule):
+    doc = """Provides a mobile-friendly interface for common onsite functions for teachers."""
+
     @classmethod
     def module_properties(cls):
         return {

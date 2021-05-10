@@ -43,6 +43,8 @@ class TextMessageForm(forms.Form):
     phone_number = USPhoneNumberField()
 
 class TextMessageModule(ProgramModuleObj):
+    doc = """Asks students for a cell phone number at which they would like to receive text message reminders."""
+
     @classmethod
     def module_properties(cls):
         return {

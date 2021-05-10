@@ -53,6 +53,8 @@ from django.template.loader import render_to_string, get_template, select_templa
 import operator
 
 class StudentRegCore(ProgramModuleObj, CoreModule):
+    doc = """Serves the main page for student registration."""
+
     @classmethod
     def module_properties(cls):
         return {

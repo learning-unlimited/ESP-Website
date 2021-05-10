@@ -62,7 +62,7 @@ from esp.accounting.models import Transfer
 from decimal import Decimal
 
 class JSONDataModule(ProgramModuleObj, CoreModule):
-    """ A program module dedicated to returning program-specific data in JSON form. """
+    doc = """ A program module dedicated to returning program-specific data in JSON form. """
 
     @classmethod
     def module_properties(cls):

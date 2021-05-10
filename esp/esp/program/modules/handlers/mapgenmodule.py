@@ -44,7 +44,8 @@ import json
 from collections import Counter
 
 class MapGenModule(ProgramModuleObj):
-    """ Allows you to generate a map showing the distribution of the selected users. """
+    doc = """ Allows you to generate a map showing the distribution of the selected users. """
+
     @classmethod
     def module_properties(cls):
         return {

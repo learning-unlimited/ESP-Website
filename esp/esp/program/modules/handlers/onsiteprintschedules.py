@@ -47,6 +47,8 @@ from django.db.models.query   import Q
 from django.template.loader import select_template
 
 class OnsitePrintSchedules(ProgramModuleObj):
+    doc = """Automatically print student schedules at onsite registration."""
+
     @classmethod
     def module_properties(cls):
         return {

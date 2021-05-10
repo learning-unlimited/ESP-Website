@@ -8,6 +8,7 @@ from esp.users.models import ESPUser
 from esp.utils.decorators import json_response
 
 class LotteryFrontendModule(ProgramModuleObj):
+    doc = """Run the class lottery and assign students to classes."""
 
     @classmethod
     def module_properties(cls):

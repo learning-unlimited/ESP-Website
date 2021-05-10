@@ -50,6 +50,8 @@ from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegMo
 import datetime
 
 class OnSiteAttendance(ProgramModuleObj):
+    doc = """Provides statistics on program attendance and allows admins to take attendance for classes."""
+
     @classmethod
     def module_properties(cls):
         return {

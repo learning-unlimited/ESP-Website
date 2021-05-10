@@ -38,6 +38,8 @@ from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 
 class AccountingModule(ProgramModuleObj):
+    doc = """Lists accounting information for the program for a single user."""
+
     @classmethod
     def module_properties(cls):
         return {

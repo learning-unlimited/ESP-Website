@@ -42,7 +42,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.web               import render_to_response
 
 class TeacherPreviewModule(ProgramModuleObj):
-    """ This program module allows teachers to view classes already added to the program.
+    doc = """ This program module allows teachers to view classes already added to the program.
         And, for now, also some printables. """
 
     @classmethod

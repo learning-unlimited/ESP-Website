@@ -87,6 +87,7 @@ class DonationForm(forms.Form):
 
 
 class DonationModule(ProgramModuleObj):
+    doc = """Solicit donations from students."""
 
     event = "donation_done"
 

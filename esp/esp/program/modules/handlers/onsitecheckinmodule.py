@@ -50,6 +50,8 @@ import json
 
 
 class OnSiteCheckinModule(ProgramModuleObj):
+    doc = """Check in students for a program (including for payments and forms)."""
+
     @classmethod
     def module_properties(cls):
         return {

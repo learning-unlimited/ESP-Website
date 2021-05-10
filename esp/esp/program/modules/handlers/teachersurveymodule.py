@@ -41,7 +41,7 @@ from esp.survey.views   import survey_view, survey_review, survey_graphical, sur
 import datetime
 
 class TeacherSurveyModule(ProgramModuleObj):
-    """ A module for people to take surveys. """
+    doc = """ Allows teachers to take post-program/class surveys. """
 
     @classmethod
     def module_properties(cls):

@@ -7,6 +7,8 @@ from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
 
 class TeacherModeratorModule(ProgramModuleObj):
+    doc = """Adds a form to teacher registration allowing teachers to sign up as section moderators (also adds moderator features elsewhere on the site)."""
+
     @classmethod
     def module_properties(cls):
         return {

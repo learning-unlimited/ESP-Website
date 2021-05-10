@@ -48,7 +48,7 @@ from esp.users.forms.generic_search_form import TeacherSearchForm
 
 
 class AvailabilityModule(ProgramModuleObj):
-    """ This program module allows teachers to indicate their availability for the program. """
+    doc = """ This program module allows teachers to indicate their availability for the program. """
 
     @classmethod
     def module_properties(cls):

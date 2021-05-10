@@ -47,6 +47,8 @@ from collections import OrderedDict
 import json
 
 class SurveyManagement(ProgramModuleObj):
+    doc = """Manage the post-program/class surveys that are served to students/teachers during registration (not to be confused with custom forms)."""
+
     @classmethod
     def module_properties(cls):
         return {
