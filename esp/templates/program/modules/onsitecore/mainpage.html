@@ -26,7 +26,7 @@ Please select from the option below to continue.
         Onsite Check-in
     </div>
     <div style="display: inline-block;" class="button_wrapper">
-        {% if program|hasModule:"OnSiteCheckinModule" %} <a href="/onsite/{{ program.getUrlBase }}/attendance"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">Check-in Students</div></button></a>{% endif %}
+        {% if program|hasModule:"OnSiteCheckinModule" %} <a href="/onsite/{{ program.getUrlBase }}/rapidcheckin"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">Check-in Students</div></button></a>{% endif %}
         {% if program|hasModule:"TeacherCheckinModule" %}<a href="/onsite/{{ program.getUrlBase }}/teachercheckin"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">Check-in Teachers{% if program|hasModule:"TeacherModeratorModule" %}/{{ program.getModeratorTitle }}s{% endif %}</div></button></a>{% endif %}
         {% if program|hasModule:"OnSiteCheckoutModule" %}<a href="/onsite/{{ program.getUrlBase }}/checkout"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">Check-out Students</div></button></a>{% endif %}
         {% if program|hasModule:"OnSiteRegister" %}<a href="/onsite/{{ program.getUrlBase }}/onsite_create"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">Register a New Student</div></button></a>{% endif %}
