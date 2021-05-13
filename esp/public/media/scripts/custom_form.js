@@ -13,8 +13,6 @@ var formElements={
         date:{'disp_name':'Date','ques':'Date'},
         time:{'disp_name':'Time','ques':'Time'},
         file:{'disp_name':'File', 'ques':'Upload a file'},
-        section:{'disp_name':'Section', 'ques':'Section'},
-        page:{'disp_name':'Page', 'ques':'Page'},
         radio_yesno: {'disp_name': 'Yes/No Field', 'ques': 'Choose Yes or No'},
         'boolean': {'disp_name': 'Boolean Field', 'ques': ''},
         null_boolean: {'disp_name': 'Null Boolean Field', 'ques':''}
@@ -27,7 +25,9 @@ var formElements={
         gender:{'disp_name':'Gender','ques':'Your gender'}
     },  
     'NotReallyFields': {
-        instructions: {'disp_name': 'Instructions', 'ques': ''}
+        instructions: {'disp_name': 'Instructions', 'ques': ''},
+        section:{'disp_name':'Section', 'ques':'Section'},
+        page:{'disp_name':'Page', 'ques':'Page'},
     }
     /*'Personal':{
         name:{'disp_name':'Name','ques':'Your name', 'field_type':'custom', 'field_options':{}},
@@ -456,8 +456,9 @@ var onChangeMainCatSpec=function() {
 var createLabel=function(labeltext, required, help_text) {
     //Returns an HTML-formatted label, with a red * if the question is required
     var str='';
-    if(!required) str+='<p class="field_label">'+labeltext+':</p>';
-    else str+='<p class="field_label">'+labeltext+':<span class="asterisk">'+'*'+'</span></p>';
+    str+='<p class="field_label">'+labeltext+':';
+    if(required) str+='<span class="asterisk">'+'*'+'</span>';
+    str+='</p>';
     if(help_text) str+=' <img src="/media/default_images/question_mark.jpg" class="qmark" title="' + help_text + '">'
     str+='<br>';
     return str;
@@ -695,6 +696,7 @@ var onSelectElem = function(item) {
             addCorrectnessOptions(item);
         }
         
+        $j('#id_instructions').show();
         //Defining actions for generic elements
         if(item=='textField' || item=='longTextField' || item=='longAns' || item=='reallyLongAns')
             addSpecificOptions(item, '', '');
@@ -706,7 +708,7 @@ var onSelectElem = function(item) {
             $j('#id_instructions').val('Enter a short description about the section');
         }
         else if(item=='page'){
-            $j('#id_instructions').val('Not required');
+            $j('#id_instructions').val('').hide();
         }
         
         //Set 'Required' to a sensible default
@@ -723,9 +725,12 @@ var setRequired=function(item){
 	//Sets the 'Required' option according to item
 	
 	$j('#id_required').attr('disabled', false);
+    $j('.toolboxText').show();
 	//For 'section' and 'page', disable 'Required'
-	if(item=='page' || item=='section' || item in formElements['NotReallyFields'])
+	if(item=='page' || item=='section' || item in formElements['NotReallyFields']){
 		$j('#id_required').attr('disabled', true);
+        $j('.toolboxText').hide();
+    }
 	//Set 'Required' as checked for custom fields that are required on the model
 	if(!item in formElements['Generic']){
 		//Get the options for this item, and set 'Required' accordingly
@@ -1132,8 +1137,7 @@ var renderNormalField=function(item, field_options, data){
 			$j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
 			$j(this).removeClass('field_selected');
 			$j('#cat_selector').children('select[value=Generic]').attr('selected','selected');
-			onSelectCategory('Generic');
-			onSelectElem('textField');
+			$j('#cat_selector').val('Generic').change();
 		});
 		$outline.appendTo($currPage).dblclick(function(){
 			$currSection=$j(this).children('div.section');
