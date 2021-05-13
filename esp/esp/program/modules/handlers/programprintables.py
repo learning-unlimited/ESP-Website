@@ -1644,7 +1644,7 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def certificate(self, request, tl, one, two, module, extra, prog):
-        user, found = search_for_user(request, self.program.students_union())
+        user, found = search_for_user(request, self.program.students_union(), add_to_context = {'module': 'Completion Certificate'})
         if not found:
             return user
 
