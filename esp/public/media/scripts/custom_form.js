@@ -459,7 +459,7 @@ var createLabel=function(labeltext, required, help_text) {
     if(!required) str+='<p class="field_label">'+labeltext+':</p>';
     else str+='<p class="field_label">'+labeltext+':<span class="asterisk">'+'*'+'</span></p>';
     if(help_text) str+=' <img src="/media/default_images/question_mark.jpg" class="qmark" title="' + help_text + '">'
-    else str+='<br>';
+    str+='<br>';
     return str;
 };
 
@@ -1067,7 +1067,7 @@ var renderNormalField=function(item, field_options, data){
 				name:'gender'
 		})).append($j('<span class="field_text"> Other</span>'));
 	}
-    else if((item=="boolean") || (item == "null_boolean")) {
+    else if(item=="boolean") {
 		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
 		$new_elem=$j("<div>");
         options_string = 'Yes';
@@ -1079,6 +1079,20 @@ var renderNormalField=function(item, field_options, data){
 			$new_elem.append($j("<p>").append($one_option).append($j("<span>"+el+"</span>")));
 		});
 	}
+    else if(item == "null_boolean") {
+        $new_elem=$j('<select>');
+		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
+        options_string = "Unknown|No|Yes";
+		$j.each(options_string.split('|'), function(idx, el){
+			if(el!=''){
+				$one_option=$j('<option>').attr({
+						value:el
+				});	
+				$one_option.html(el);
+				$new_elem.append($one_option);
+			}
+		});
+    }
     else if(item=="radio_yesno") {
 		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
 		$new_elem=$j("<div>");
