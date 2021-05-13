@@ -759,6 +759,9 @@ var onSelectField=function($elem, field_data, ftype=null) {
 		Also called by rebuild(..) to recreate a form from metadata
 	*/
 	
+    //Open the field panel if not already open
+    $j('#header_fields.ui-accordion-header-collapsed').click();
+    
 	//De-selecting any previously selected field
 	$j('div.field_selected').click();
     $j('div.field_wrapper').removeClass('field_hover');
@@ -912,7 +915,7 @@ var renderNormalField=function(item, field_options, data){
 						type:"radio",
 						value:el
 				});
-				$new_elem.append($j("<p>").append($one_option).append($j("<span>"+el+"</span>")));
+				$new_elem.append($j("<p>").append($one_option).append($j("<span> "+el+"</span>")));
 			}
 		});
 		data['attrs']['options']=options_string;
@@ -1052,15 +1055,15 @@ var renderNormalField=function(item, field_options, data){
 			type:'radio',
 			value:'Male',
 			name:'gender'
-		})).append($j('<span class="field_text">Male&nbsp;&nbsp;</span><br>')).append($j('<input/>').attr({
+		})).append($j('<span class="field_text"> Male</span><br>')).append($j('<input/>').attr({
 				type:'radio',
 				value:'Female',
 				name:'gender'
-		})).append($j('<span class="field_text">Female&nbsp;&nbsp;</span><br>')).append($j('<input/>').attr({
+		})).append($j('<span class="field_text"> Female</span><br>')).append($j('<input/>').attr({
 				type:'radio',
 				value:'Other',
 				name:'gender'
-		})).append($j('<span class="field_text">Other</span>'));
+		})).append($j('<span class="field_text"> Other</span>'));
 	}
     else if((item=="boolean") || (item == "null_boolean")) {
 		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
@@ -1516,5 +1519,7 @@ var rebuild=function(metadata) {
 	});
     // Reset add field form
 	$j("#cat_selector").val('Generic').change();
+    //Open the information panel if not already open
+    $j("#header_information.ui-accordion-header-collapsed").click();
 };
 

@@ -77,7 +77,6 @@ body {
 
 .field_text {
 	font-size:0.9em;
-	font-style:italic;
 	margin:0px;
 	padding:0px;
 }
@@ -224,4 +223,8 @@ input {
 
 textarea {
     border: 1px solid #999999;
+}
+
+.field_wrapper input[type="radio"] {
+    margin-top: 0px;
 }
