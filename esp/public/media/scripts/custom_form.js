@@ -453,12 +453,14 @@ var onChangeMainCatSpec=function() {
 		$j("#cat_instance_sel").hide();
 };	
 
-var createLabel=function(labeltext, required) {
+var createLabel=function(labeltext, required, help_text) {
     //Returns an HTML-formatted label, with a red * if the question is required
-    
-    if(!required)
-        return '<p>'+labeltext+'</p>';
-    else return '<p>'+labeltext+'<span class="asterisk">'+'*'+'</span></p>';    
+    var str='';
+    if(!required) str+='<p class="field_label">'+labeltext+':</p>';
+    else str+='<p class="field_label">'+labeltext+':<span class="asterisk">'+'*'+'</span></p>';
+    if(help_text) str+=' <img src="/media/default_images/question_mark.jpg" class="qmark" title="' + help_text + '">'
+    else str+='<br>';
+    return str;
 };
 
 var removeField = function() {
@@ -1212,7 +1214,7 @@ var addElement=function(item, $prevField) {
 	html_name=item+"_"+elemTypes[item], html_id="id_"+item+"_"+elemTypes[item],
 	data={};
 	
-	$new_elem_label=$j(createLabel(label_text,$j('#id_required').prop('checked'))).appendTo($wrap);
+	$new_elem_label=$j(createLabel(label_text,$j('#id_required').prop('checked'),help_text)).appendTo($wrap);
 	$j('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($wrap);
 	
 	//Populating common data attributes

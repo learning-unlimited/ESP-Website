@@ -228,3 +228,12 @@ textarea {
 .field_wrapper input[type="radio"] {
     margin-top: 0px;
 }
+
+.qmark {
+    width: 15px;
+    height: 15px;
+}
+
+.field_label {
+    display: inline;
+}
