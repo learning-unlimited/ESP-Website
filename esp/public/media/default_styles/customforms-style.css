@@ -14,10 +14,12 @@ body {
 
 /* Form Preview Area */
 .preview_area {
+    position: fixed;
+    top: 0px;
+    overflow-y: scroll;
 	width:586px;
-	min-height:800px;
+	height: 100%;
 	background-color:#FFF;
-	float:left;
 	border:2px solid;
 	padding:5px;
 }
@@ -129,13 +131,15 @@ body {
 
 /* Form Toolbox */
 #form_toolbox {
+    position: fixed;
+    top: 0px;
+    margin-left: 600px;
+    overflow-y: scroll;
+    height: 100%;
 	width:360px;
-	min-height:800px;
 	background-color:#d2f8ff;
-	float:right;
 	
 	padding:0px;
-	min-height:800px;
 }
 
 #toolbox_header ul {
