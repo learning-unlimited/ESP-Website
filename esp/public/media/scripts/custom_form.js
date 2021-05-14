@@ -770,9 +770,11 @@ var onSelectField=function($elem, field_data, ftype=null) {
     $j('#header_fields.ui-accordion-header-collapsed').click();
     
 	//De-selecting any previously selected field
-	$j('div.field_selected').click();
-    $j('div.field_wrapper').removeClass('field_hover');
-    $j('div.field_wrapper').find(".wrapper_button").removeClass("wrapper_button_hover");
+	if($j('div.field_selected').length == 0 || !$elem.hasClass('field_selected')){
+        $j('div.field_selected').click();
+        $j('div.field_wrapper').removeClass('field_hover');
+        $j('div.field_wrapper').find(".wrapper_button").removeClass("wrapper_button_hover");
+    }
     clearSpecificOptions();
 		
 	var $wrap=$elem, $button=$j('#button_add'), options;
