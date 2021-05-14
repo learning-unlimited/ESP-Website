@@ -229,7 +229,7 @@ textarea {
     border: 1px solid #999999;
 }
 
-.field_wrapper input[type="radio"] {
+.field_wrapper input[type="radio"], .field_wrapper input[type="checkbox"] {
     margin-top: 0px;
 }
 
@@ -240,4 +240,8 @@ textarea {
 
 .field_label {
     display: inline;
+}
+
+.correct_answer {
+    color: blue;
 }

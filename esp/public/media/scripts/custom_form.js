@@ -641,7 +641,7 @@ var addCorrectnessOptions = function(elem) {
     if (elem == 'dropdown')
     {
         frag = '<div id="dropdown_correctness_options" class="toolboxText">';
-        frag += '<p>Correct answer index: ';
+        frag += '<p>Correct answer index (zero-based):<br>';
         frag += '<input type="text" id="dropdown_correct_answer" value=""/>';
         frag += '</p></div>';
         var $div = $j(frag);
@@ -650,7 +650,7 @@ var addCorrectnessOptions = function(elem) {
     else if (elem == 'radio')
     {
         frag = '<div id="radio_correctness_options" class="toolboxText">';
-        frag += '<p>Correct answer index: ';
+        frag += '<p>Correct answer index (zero-based):<br>';
         frag += '<input type="text" id="radio_correct_answer" value=""/>';
         frag += '</p></div>';
         var $div = $j(frag);
@@ -659,7 +659,7 @@ var addCorrectnessOptions = function(elem) {
     else if (elem == 'textField')
     {
         frag = '<div id="textField_correctness_options" class="toolboxText">';
-        frag += '<p>Correct answer: ';
+        frag += '<p>Correct answer:<br>';
         frag += '<input type="text" id="textField_correct_answer" value=""/>';
         frag += '</p></div>';
         var $div = $j(frag);
@@ -668,7 +668,7 @@ var addCorrectnessOptions = function(elem) {
     else if (elem == 'checkboxes')
     {
         frag = '<div id="checkboxes_correctness_options" class="toolboxText">';
-        frag += '<p>Correct answer indices (comma-separated): ';
+        frag += '<p>Correct answer indices (comma-separated, zero-based):<br>';
         frag += '<input type="text" id="checkboxes_correct_answer" value=""/>';
         frag += '</p></div>';
         var $div = $j(frag);
@@ -865,9 +865,10 @@ var renderNormalField=function(item, field_options, data){
 			type:"text",
 			size:"30"
 		});
+        $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + $j('#textField_correct_answer').val() + "</span>"));
 		if($j('#charOrWord').val()=='chars')
 			key='charlimits';
-		else key='wordlimits';	
+		else key='wordlimits';
 		data['attrs'][key]=$j('#text_min').val() + ',' + $j('#text_max').val();
         data['attrs']['correct_answer']=$j('#textField_correct_answer').val();
 	}
@@ -922,7 +923,9 @@ var renderNormalField=function(item, field_options, data){
 						type:"radio",
 						value:el
 				});
-				$new_elem.append($j("<p>").append($one_option).append($j("<span> "+el+"</span>")));
+                $one_option = $one_option.add($j("<span> "+el+"</span>"));
+                if(idx == parseInt($j('#radio_correct_answer').val())) $one_option = $one_option.add($j("<span class='correct_answer'> (correct) </span>"));
+				$new_elem.append($j("<p>").append($one_option));
 			}
 		});
 		data['attrs']['options']=options_string;
@@ -943,8 +946,13 @@ var renderNormalField=function(item, field_options, data){
 			if(el!=''){
 				$one_option=$j('<option>').attr({
 						value:el
-				});	
-				$one_option.html(el);
+				});
+                if(idx == parseInt($j('#dropdown_correct_answer').val())) {
+                    $one_option.html(el + " (correct)");
+                    $one_option.css('color', 'blue');
+                } else { 
+                    $one_option.html(el);
+                }
 				$new_elem.append($one_option);
 			}
 		});	
@@ -984,12 +992,15 @@ var renderNormalField=function(item, field_options, data){
                 if(idx != ($text_inputs.length - 1)) options_string+="|";
 			});
 		}
+        var correct_answers = $j('#checkboxes_correct_answer').val().split(",").filter(Boolean).map(Number);
 		$j.each(options_string.split('|'), function(idx, el){
 			$one_option=$j('<input>').attr({
 					type:"checkbox",
 					value:el
 			});
-			$new_elem.append($j("<p>").append($one_option).append($j("<span>"+el+"</span>")));
+            $one_option = $one_option.add($j("<span> "+el+"</span>"));
+            if(correct_answers.includes(idx)) $one_option = $one_option.add($j("<span class='correct_answer'> (correct) </span>"));
+            $new_elem.append($j("<p>").append($one_option));
 		});
 		data['attrs']['options']=options_string;
         data['attrs']['correct_answer']=$j('#checkboxes_correct_answer').val();
