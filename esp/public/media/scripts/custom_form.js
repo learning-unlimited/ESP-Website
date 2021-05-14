@@ -732,7 +732,7 @@ var setRequired=function(item){
         $j('.toolboxText').hide();
     }
 	//Set 'Required' as checked for custom fields that are required on the model
-	if(!item in formElements['Generic']){
+	if(!(item in formElements['Generic'])){
 		//Get the options for this item, and set 'Required' accordingly
 		$j.each(formElements, function(cat, flds){
 			if(item in flds){

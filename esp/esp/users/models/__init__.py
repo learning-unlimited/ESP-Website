@@ -1475,6 +1475,8 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     link_fields_widgets = {
         'from_here': NullCheckboxSelect,
         'is_graduate_student': NullCheckboxSelect,
+        'shirt_size': forms.TextInput,
+        'shirt_type': forms.TextInput
     }
 
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
