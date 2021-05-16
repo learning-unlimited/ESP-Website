@@ -66,6 +66,7 @@ Class management changes
 Statistics and data visualization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - New queries have been added to the /manage/statistics page, including multiprogram statistics on student and teacher registration. The results of these queries include graphs to visualize the change of various metrics across programs through time (e.g. # class-student-hours approved).
+- Adjusted the text of the link on the "Manage All Programs" page to reflect the addition of non-student statistics.
 
 Volunteer registration changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -83,6 +84,7 @@ Scheduling changes
 - Added scheduling checks to the ajax scheduler that let you see if there are any errors or inconsistencies with how classes have been scheduled (e.g., capacity mismatches, resource mismatches, availability mismatches, double-booked teachers). This does not include all checks from the scheduling checks module, and we plan to keep the scheduling checks module around for the foreseeable future.
 - The class directory on the ajax scheduler can now be sorted by ID, caetgory, length, capacity, and teacher availability.
 - Fixed a bug that caused sections with floating resources to not be shown in the class directory on the ajax scheduler.
+- Fixed a bug where pressing enter in the class search box would refresh the page.
 
 Onsite changes
 ~~~~~~~~~~~~~~
@@ -129,6 +131,7 @@ Minor new features
 - Added a default FAQ page at /faq (/faq.html should also work).
 - Timeslots for classrooms and floating resources on the resources page are no longer grouped if they occur <15 minutes apart.
 - Added links to usernames in the scheduler, financial aid approval module, and the manage events page.
+- Added a student search box to the accounting module.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -148,6 +151,7 @@ Minor bug fixes
 - Fixed logging errors when sending emails.
 - Fixed errors that occurred when emailing users with particular symbols in their names.
 - Fixed a bug affecting ranks beyond the first choice in the class lottery.
+- Fixed a bug where selecting a timeslot on a different day on the onsite attendance module would have unexpected behavior.
 
 Development changes
 ===================
