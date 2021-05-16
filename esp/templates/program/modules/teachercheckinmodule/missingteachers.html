@@ -260,10 +260,10 @@
             <td class="checkin-column"{% if forloop.first %} style="border-top:1px solid #ccc;"{% endif %}>
                 {% if teacher.id not in arrived %}
                 <span class="message"></span>
-                <input id="checkin_{{ teacher.username }}" name="{{ section.parent_class.emailcode }}: {{ section.title }}"
+                <input data-username="checkin_{{ teacher.username }}" name="{{ section.parent_class.emailcode }}: {{ section.title }}"
                        class="button checkin" type="button" value="Check In" {% if when %}disabled="disabled"{% endif %} /><span />
                 {% else %}
-                <input id="uncheckin_{{ teacher.username }}" class="button uncheckin" type="button" value="Undo Check-In"
+                <input data-username="uncheckin_{{ teacher.username }}" class="button uncheckin" type="button" value="Undo Check-In"
                    {% if when %}disabled="disabled"{% endif %} />
                 {% endif %}
             </td>
