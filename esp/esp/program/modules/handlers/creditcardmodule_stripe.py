@@ -316,7 +316,6 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         if 'error_type' in context:
             #   If we got any sort of error, send an email to the admins and render an error page.
             self.send_error_email(request, context)
-            context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
             return render_to_response(self.baseDir() + 'failure.html', request, context)
 
         #   Render the success page, which doesn't do much except direct back to studentreg.
