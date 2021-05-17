@@ -42,11 +42,8 @@ from django.http import HttpResponse
 import json
 
 class AdmissionsDashboard(ProgramModuleObj):
-    """
-    A dashboard for Junction core teachers to review applications for their class.
-
-    Not to be confused with TeacherReviewApps, the app questions module.
-    """
+    doc = """A dashboard for Junction core teachers to review applications for their class.
+    Not to be confused with TeacherReviewApps, the app questions module."""
 
     @classmethod
     def module_properties(cls):

@@ -19,7 +19,8 @@ from esp.utils.web import render_to_response
 
 
 class ClassSearchModule(ProgramModuleObj):
-    """Search for classes matching certain criteria."""
+    doc = """Search for classes matching certain criteria."""
+
     @classmethod
     def module_properties(cls):
         return {

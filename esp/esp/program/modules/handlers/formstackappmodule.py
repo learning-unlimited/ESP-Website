@@ -44,9 +44,8 @@ from esp.application.models import FormstackStudentProgramApp
 from urllib import urlencode
 
 class FormstackAppModule(ProgramModuleObj):
-    """
+    doc = """
     Student application module for Junction.
-
     Not to be confused with StudentJunctionAppModule, the app questions module.
     """
 

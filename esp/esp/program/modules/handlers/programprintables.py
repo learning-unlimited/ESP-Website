@@ -65,6 +65,8 @@ import copy
 import csv
 
 class ProgramPrintables(ProgramModuleObj):
+    doc = """A wide variety of printable documents that are useful for a program."""
+
     """ This is extremely useful for printing a wide array of documents for your program.
     Things from checklists to rosters to attendance sheets can be found here. """
     @classmethod

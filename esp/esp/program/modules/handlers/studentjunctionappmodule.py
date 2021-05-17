@@ -43,8 +43,9 @@ from esp.program.models  import StudentApplication
 from django              import forms
 from esp.middleware.threadlocalrequest import get_current_request
 
-# student class picker module
 class StudentJunctionAppModule(ProgramModuleObj):
+    doc = """Allows students to submit applications for a program."""
+
     @classmethod
     def module_properties(cls):
         return {

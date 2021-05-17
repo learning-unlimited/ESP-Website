@@ -103,6 +103,7 @@ class StudentLunchSelectionForm(forms.Form):
 
 
 class StudentLunchSelection(ProgramModuleObj):
+    doc = """Allows students to enroll in lunch blocks."""
 
     @classmethod
     def module_properties(cls):

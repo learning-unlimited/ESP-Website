@@ -279,6 +279,7 @@ class ListGenForm(forms.Form):
         self.fields['fields'].initial = ['02_username','04_firstname','05_lastname','06_email']
 
 class ListGenModule(ProgramModuleObj):
+    doc = """Get information for users that match specific search criteria."""
     """ While far from complete, this will allow you to just generate a simple list of users matching a criteria (criteria very similar to the communications panel)."""
     @classmethod
     def module_properties(cls):

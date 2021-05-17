@@ -39,6 +39,7 @@ from esp.program.modules.forms.lineitems import OptionFormset, LineItemForm, Lin
 from esp.utils.web import render_to_response
 
 class LineItemsModule(ProgramModuleObj, CoreModule):
+    doc = """Create and/or edit line items for the program."""
 
     @classmethod
     def module_properties(cls):

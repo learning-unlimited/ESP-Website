@@ -14,6 +14,7 @@ from esp.utils.web import render_to_response
 
 
 class BigBoardModule(ProgramModuleObj):
+    doc = """Shows statistics about student registration that refresh automatically."""
 
     @classmethod
     def module_properties(cls):

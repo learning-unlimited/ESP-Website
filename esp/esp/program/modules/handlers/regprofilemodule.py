@@ -41,6 +41,8 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 # reg profile module
 class RegProfileModule(ProgramModuleObj):
+    doc = """Serves the profile editor during student and/or teacher registration."""
+
     @classmethod
     def module_properties(cls):
         return [ {
