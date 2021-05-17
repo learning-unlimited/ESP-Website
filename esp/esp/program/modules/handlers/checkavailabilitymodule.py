@@ -41,7 +41,7 @@ from esp.program.modules.handlers.availabilitymodule import AvailabilityModule
 
 
 class CheckAvailabilityModule(ProgramModuleObj):
-    doc = """ Check a teacher's availability for the program. """
+    doc = """Check a teacher's availability for the program."""
 
     @classmethod
     def module_properties(cls):

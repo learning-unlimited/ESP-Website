@@ -46,7 +46,7 @@ import operator
 
 
 class MailingLabels(ProgramModuleObj):
-    doc = """ This allows one to generate Mailing Labels for both schools and users. You have the option of either creating a file which can be sent to MIT mailing services or actually create printable files.
+    doc = """This allows one to generate Mailing Labels for both schools and users. You have the option of either creating a file which can be sent to MIT mailing services or actually create printable files.
     """
 
     @classmethod

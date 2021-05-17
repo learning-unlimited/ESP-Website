@@ -52,7 +52,7 @@ from esp.utils.decorators         import json_response
 import calendar, time, datetime
 
 class AJAXSchedulingModule(ProgramModuleObj):
-    doc = """ Provides an application to use for scheduling classes. """
+    doc = """Provides an application to use for scheduling classes."""
 
     @classmethod
     def module_properties(cls):

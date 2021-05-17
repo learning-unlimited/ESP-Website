@@ -38,7 +38,7 @@ class KeyDoesNotExist(Exception):
     pass
 
 class AdminVitals(ProgramModuleObj):
-    doc = """ This allows you to view the major numbers for your program on the dashboard. """
+    doc = """This allows you to view the major numbers for your program on the dashboard."""
 
     @classmethod
     def module_properties(cls):

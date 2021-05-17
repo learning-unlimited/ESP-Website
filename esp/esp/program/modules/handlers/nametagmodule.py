@@ -47,7 +47,7 @@ from django.db.models.query import Q
 
 
 class NameTagModule(ProgramModuleObj):
-    doc = """ This module allows you to generate a bunch of IDs for users that match specific criteria. """
+    doc = """This module allows you to generate a bunch of IDs for users that match specific criteria."""
 
     @classmethod
     def module_properties(cls):
