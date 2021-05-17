@@ -106,6 +106,16 @@ function msgreq_select_item(event, ui)
     target_div.append(inner_div3);
 }
 
+function populate_get()
+{
+    //  Populate fields with GET parameters
+    var items = location.search.substr(1).split("&").filter(Boolean);
+    for (var index = 0; index < items.length; index++) {
+        var key_val = items[index].split("=");
+        $j("[name=" + key_val[0] + "]").val(key_val[1].split(",")).change();
+    }
+}
+
 function clear_filters()
 {
     //  Remove any existing data in the "user filtering options" part of a comm panel form
@@ -124,6 +134,7 @@ function clear_filters()
         }
     });
     $j("#filter_accordion").accordion("option", "active", false);
+    populate_get(); // Repopulate any filters with GET parameters
 }
 
 function move_filters(wrapper_name)
@@ -308,12 +319,7 @@ function initialize()
     //  Handle submit button
     $j("#prev_select_done").click(submit_prev_selection);
 
-    //  Populate fields with GET parameters
-    var items = location.search.substr(1).split("&").filter(Boolean);
-    for (var index = 0; index < items.length; index++) {
-        var key_val = items[index].split("=");
-        $j("[name=" + key_val[0] + "]").val(key_val[1].split(",")).change();
-    }
+    populate_get();
 }
 
 $j(document).ready(initialize);
