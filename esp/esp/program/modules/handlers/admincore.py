@@ -137,7 +137,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             prog_dict['term_friendly'] = prog.name.replace(prog.program_type, "", 1).strip()
             prog_dict["program_type"] = prog.program_type
             pac = ProgramAccountingController(prog)
-            line_items = pac.get_lineitemtypes(required_only=True).values('amount_dec')
+            line_items = pac.get_lineitemtypes(required_only=True).filter(text="Program admission").values('amount_dec')
             prog_dict['base_cost'] = int(sum(x["amount_dec"] for x in line_items))
             prog_dict["sibling_discount"] = prog.sibling_discount
             prog_form = ProgramSettingsForm(prog_dict, instance = prog)
