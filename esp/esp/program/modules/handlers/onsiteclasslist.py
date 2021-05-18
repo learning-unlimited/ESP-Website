@@ -59,6 +59,8 @@ from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
 
 class OnSiteClassList(ProgramModuleObj):
+    doc = """Display lists of classes for onsite registration purposes."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -460,6 +462,12 @@ class OnSiteClassList(ProgramModuleObj):
         strings = [u'<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
                 ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1], call[1]) for call in calls]
         return "</li><li>".join(strings)
+
+    def makeButtonLink(self):
+        calls = [("classchange_grid","Grid-based Class Changes Interface"), ("classList","Scrolling Class List"), (self.get_main_view(),self.module.link_title)]
+        strings = [u'<a href="%s"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">%s</div></button></a>' % \
+                ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1]) for call in calls]
+        return "<br>".join(strings)
 
 
 

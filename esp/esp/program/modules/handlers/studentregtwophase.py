@@ -51,6 +51,7 @@ from esp.utils.web import render_to_response
 from esp.utils.query_utils import nest_Q
 
 class StudentRegTwoPhase(ProgramModuleObj):
+    doc = """Allows students to set preferences for the class lottery."""
 
     def students(self, QObject = False):
         q_sr = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')

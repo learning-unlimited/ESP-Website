@@ -37,6 +37,8 @@ from esp.utils.web import render_to_response
 from esp.miniblog.models import Entry
 
 class TeacherRegCore(ProgramModuleObj, CoreModule):
+    doc = """Serves the main teacher registration page."""
+
     @classmethod
     def module_properties(cls):
         return {

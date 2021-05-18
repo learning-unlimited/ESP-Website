@@ -45,6 +45,8 @@ from django.db.models.query import Q
 from esp.tagdict.models import Tag
 
 class VolunteerSignup(ProgramModuleObj, CoreModule):
+    doc = """Provides a form for volunteers to signup for particular timeslots."""
+
     @classmethod
     def module_properties(cls):
         return {

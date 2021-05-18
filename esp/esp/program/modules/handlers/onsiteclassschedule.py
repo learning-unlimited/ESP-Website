@@ -41,6 +41,8 @@ from esp.utils.models import Printer, PrintRequest
 from datetime         import datetime, timedelta
 
 class OnsiteClassSchedule(ProgramModuleObj):
+    doc = """Get and/or print a student's schedule for the program."""
+
     @classmethod
     def module_properties(cls):
         return {

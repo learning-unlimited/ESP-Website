@@ -38,6 +38,8 @@ from esp.accounting.controllers import ProgramAccountingController, IndividualAc
 from argcache            import cache_function
 
 class CreditCardViewer(ProgramModuleObj):
+    doc = """Lists the credit card payments for the program."""
+
     @classmethod
     def module_properties(cls):
         return {

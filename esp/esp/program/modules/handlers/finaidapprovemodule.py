@@ -40,6 +40,8 @@ from esp.accounting.models import FinancialAidGrant
 
 
 class FinAidApproveModule(ProgramModuleObj):
+    doc = """View and approve student financial aid applications."""
+
     @classmethod
     def module_properties(cls):
         return {

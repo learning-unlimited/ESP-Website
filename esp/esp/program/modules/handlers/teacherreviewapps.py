@@ -47,6 +47,8 @@ from esp.middleware.threadlocalrequest import get_current_request
 __all__ = ['TeacherReviewApps']
 
 class TeacherReviewApps(ProgramModuleObj):
+    doc = """Allows teachers to review student applications for their classes."""
+
     @classmethod
     def module_properties(cls):
         return {

@@ -17,6 +17,7 @@ import re
 
 
 class SchedulingCheckModule(ProgramModuleObj):
+    doc = """Provides diagnostics to check for invalid class schedule assignments."""
 
     @classmethod
     def module_properties(cls):
