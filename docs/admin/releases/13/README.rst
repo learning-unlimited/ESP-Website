@@ -103,6 +103,7 @@ Theme changes
 - Added an account management page at /myesp/accountmanage. All themes now link to this page instead of specific profile/password pages.
 - Fixed a bug with the admin bar styling on the fruitsalad theme.
 - Centered the main content for the bigpicture theme.
+- Fixed the color of some buttons for the fruitsalad theme when using the default theme settings.
 
 Dashboard changes
 ~~~~~~~~~~~~~~~~~
@@ -132,6 +133,9 @@ Minor new features
 - Timeslots for classrooms and floating resources on the resources page are no longer grouped if they occur <15 minutes apart.
 - Added links to usernames in the scheduler, financial aid approval module, and the manage events page.
 - Added a student search box to the accounting module.
+- Added documentation for modules, which is shown on the main program management page. The additional modules on this page are now alphabetized.
+- Pages that use the usersearch form interface now list the module name.
+- Added enrollment limit options (max timeslots and max sections) to the class lottery.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -152,6 +156,7 @@ Minor bug fixes
 - Fixed errors that occurred when emailing users with particular symbols in their names.
 - Fixed a bug affecting ranks beyond the first choice in the class lottery.
 - Fixed a bug where selecting a timeslot on a different day on the onsite attendance module would have unexpected behavior.
+- Fixed email links on the stripe failure page.
 
 Development changes
 ===================
