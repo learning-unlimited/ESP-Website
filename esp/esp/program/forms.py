@@ -127,7 +127,7 @@ class ProgramCreationForm(BetterModelForm):
         pass
 
     def clean_program_modules(self):
-        mods = self.cleaned_data['program_modules'][:] # take a copy of the list to be safe
+        mods = list(self.cleaned_data['program_modules'])[:] # take a copy of the list to be safe
         # Add "include by default" modules (choosable property = 1)
         mods.extend(ProgramModule.objects.filter(choosable=1))
         return list(set(mods)) # Database wants a unique collection, so take set
