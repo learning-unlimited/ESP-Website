@@ -42,7 +42,7 @@ function setup_autocomplete()
 	}
     });
 
-    $j("#moderator_name").autocomplete({
+    $j("[name=moderator_name]").autocomplete({
 	source: function(request, response) {
             $j.ajax({
 		url: "/teach/"+base_url+"/moderatorlookup/",
@@ -61,7 +61,7 @@ function setup_autocomplete()
 	    });
 	},
 	select: function(event, ui) {
-	    $j("#moderator_id").val(ui.item.id);
+	    $j("#moderator_id_" + $j(this).data("secid")).val(ui.item.id);
 	}
     });
 }

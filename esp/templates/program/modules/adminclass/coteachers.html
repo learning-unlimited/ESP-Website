@@ -71,7 +71,7 @@
     </tr>
 </table>
 </form>
-<form action="{{request.path}}" method="post" name="addteacher" onsubmit="cleanTeacherSubmit($j(this))">
+<form action="{{request.path}}" method="post" name="addteacher">
 <table align="center" width="400">
     <tr>
         <th colspan="2">Add a coteacher</th>
@@ -113,7 +113,7 @@
             <input type="hidden" name="secid" value="{{ section.id }}" />
             <input type="hidden" name="moderators" value="{% for moderator in section.get_moderators %}{{ moderator.id }}{% if not forloop.last %},{% endif %}{% endfor %}" />
 
-            <select id="current_moderators"
+            <select id="current_moderators_{{ section.id }}"
                     class="moderators" name="delete_moderators" 
                     size="5" multiple="multiple">
             {% for moderator in section.get_moderators %}
@@ -131,7 +131,7 @@
     </tr>
 </table>
 </form>
-<form action="{{request.path}}" method="post" name="addmoderator" onsubmit="cleanTeacherSubmit($j(this))">
+<form action="{{request.path}}" method="post" name="addmoderator">
 <table align="center" width="400">
     <tr>
         <th colspan="2">Add a {{ program.getModeratorTitle|lower }}</th>
@@ -146,8 +146,8 @@
             <input type="hidden" name="op" value="addmod" />
             <input type="hidden" name="moderators" value="{% for moderator in section.get_moderators %}{{ moderator.id }}{% if not forloop.last %},{% endif %}{% endfor %}" />
 
-	    <input type="text" name="moderator_name" id="moderator_name" />
-	    <input type="hidden" name="moderator_selected" id="moderator_id" />
+	    <input type="text" name="moderator_name" id="moderator_name_{{ section.id }}" data-secid="{{ section.id }}"/>
+	    <input type="hidden" name="moderator_selected" id="moderator_id_{{ section.id }}" data-secid="{{ section.id }}"/>
         </td>
         <td>
             <input type="submit" class="button" value="Add {{ program.getModeratorTitle }}" />
