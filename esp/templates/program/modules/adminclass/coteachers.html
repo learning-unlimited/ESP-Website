@@ -147,7 +147,7 @@
             <input type="hidden" name="moderators" value="{% for moderator in section.get_moderators %}{{ moderator.id }}{% if not forloop.last %},{% endif %}{% endfor %}" />
 
 	    <input type="text" name="moderator_name" id="moderator_name_{{ section.id }}" data-secid="{{ section.id }}"/>
-	    <input type="hidden" name="moderator_selected" id="moderator_id_{{ section.id }}" data-secid="{{ section.id }}"/>
+	    <input type="hidden" name="moderator_selected" id="moderator_id_{{ section.id }}"/>
         </td>
         <td>
             <input type="submit" class="button" value="Add {{ program.getModeratorTitle }}" />
