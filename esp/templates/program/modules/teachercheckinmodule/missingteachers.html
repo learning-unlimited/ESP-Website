@@ -92,6 +92,7 @@
 </div>
 
 {% if missing_resources %}
+<br><br><br>
 <table width="100%">
 <tr>
     <th colspan="5">
@@ -147,9 +148,9 @@
 </tr>
 {% endfor %}
 </table>
-<br/>
 {% endif %}
 
+<br><br><br>
 <table>
 <tr>
     <th colspan="5">
@@ -180,6 +181,9 @@
         </th>
     </tr>
     {% elif section.any_arrived == True and section.all_arrived == False %}
+    </table>
+    <br><br><br>
+    <table>
     <tr>
         <th colspan="5" style="border-top: 4px solid #ccc;">
             Sections with some teachers{% if program|hasModule:"TeacherModeratorModule" %} and some {{ program.getModeratorTitle|lower }}s{% endif %} checked in
@@ -189,6 +193,9 @@
 {% endifchanged %}
 {% ifchanged section.all_arrived %}
     {% if section.all_arrived == True %}
+    </table>
+    <br><br><br>
+    <table>
     <tr>
         <th colspan="5" style="border-top: 4px solid #ccc;">
             Sections with all teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle|lower }}s{% endif %} checked in
@@ -237,13 +244,13 @@
                    {% elif not text_configured %} disabled title="Twilio texting settings are not configured"
                    {% elif teacher.phone == default_phone %} disabled title="No contact info"{% endif %}/>
         </tr>
-        <tr data-sec-id="{{ section.emailcode }}" {% if forloop.last %}data-role="moderator" class="section-detail-tr"{% else %}data-role="teacher"{% endif %}>
+        <tr data-sec-id="{{ section.emailcode }}" {% if forloop.last %}{% if program|hasModule:"TeacherModeratorModule" %}data-role="moderator"{% else %}class="section-detail-tr"{% endif %}{% else %}data-role="teacher"{% endif %}>
     {% empty %}
         <td colspan="4">
             No teachers for this class
         </td>
         </tr>
-        <tr data-sec-id="{{ section.emailcode }}" data-role="moderator" class="section-detail-tr">
+        <tr data-sec-id="{{ section.emailcode }}" {% if program|hasModule:"TeacherModeratorModule" %}data-role="moderator"{% else %}class="section-detail-tr"{% endif %}>
     {% endfor %}
     {% if program|hasModule:"TeacherModeratorModule" %}
             <td rowspan="{% if section.moderators_list %}{{ section.moderators_list|length }}{% else %}1{% endif %}" style="border-top:1px solid #ccc;">
@@ -276,7 +283,7 @@
                        {% elif not text_configured %} disabled title="Twilio texting settings are not configured"
                        {% elif teacher.phone == default_phone %} disabled title="No contact info"{% endif %}/>
             </tr>
-            <tr data-sec-id="{{ section.emailcode }}" data-role="moderator"{% if forloop.last %} class="section-detail-tr"{% endif %}>
+            <tr data-sec-id="{{ section.emailcode }}" {% if forloop.last %}class="section-detail-tr"{% else %}data-role="moderator"{% endif %}>
         {% empty %}
             <td colspan="4" style="border-top:1px solid #ccc;">
                 No {{ program.getModeratorTitle|lower }}s for this class
