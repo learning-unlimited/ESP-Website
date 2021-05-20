@@ -133,21 +133,21 @@ or select a timeslot from the dropdown below to see attendance stats:
 <table width="100%" style="border: none;">
     {% if program|hasModule:"ListGenModule" %}
         <td width="33%" align="center">
-            <a href="/manage/{{ one }}/{{ two }}/selectList?userid={% for student in checked_in_ts %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+            <a href="/manage/{{ one }}/{{ two }}/selectList?recipient_type=Student&userid={% for student in checked_in_ts %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                 Get Student Information
             </a>
         </td>
     {% endif %}
     {% if program|hasModule:"CommModule" %}
         <td width="33%" align="center">
-            <a href="/manage/{{ one }}/{{ two }}/commpanel?userid={% for student in checked_in_ts %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+            <a href="/manage/{{ one }}/{{ two }}/commpanel?recipient_type=Student&userid={% for student in checked_in_ts %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                 Email Students
             </a>
         </td>
     {% endif %}
     {% if program|hasModule:"GroupTextModule" %}
         <td width="33%" align="center">
-            <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?userid={% for student in checked_in_ts %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+            <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?recipient_type=Student&userid={% for student in checked_in_ts %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                 Text Students
             </a>
         </td>
@@ -191,21 +191,21 @@ or select a timeslot from the dropdown below to see attendance stats:
 <table width="100%" style="border: none;">
     {% if program|hasModule:"ListGenModule" %}
         <td width="33%" align="center">
-            <a href="/manage/{{ one }}/{{ two }}/selectList?userid={% for student in not_attending %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+            <a href="/manage/{{ one }}/{{ two }}/selectList?recipient_type=Student&userid={% for student in not_attending %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                 Get Student Information
             </a>
         </td>
     {% endif %}
     {% if program|hasModule:"CommModule" %}
         <td width="33%" align="center">
-            <a href="/manage/{{ one }}/{{ two }}/commpanel?userid={% for student in not_attending %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+            <a href="/manage/{{ one }}/{{ two }}/commpanel?recipient_type=Student&userid={% for student in not_attending %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                 Email Students
             </a>
         </td>
     {% endif %}
     {% if program|hasModule:"GroupTextModule" %}
         <td width="33%" align="center">
-            <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?userid={% for student in not_attending %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+            <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?recipient_type=Student&userid={% for student in not_attending %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                 Text Students
             </a>
         </td>
@@ -250,21 +250,21 @@ or select a timeslot from the dropdown below to see attendance stats:
 <table width="100%" style="border: none;">
     {% if program|hasModule:"ListGenModule" %}
         <td width="33%" align="center">
-            <a href="/manage/{{ one }}/{{ two }}/selectList?userid={% for student in onsite %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+            <a href="/manage/{{ one }}/{{ two }}/selectList?recipient_type=Student&userid={% for student in onsite %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                 Get Student Information
             </a>
         </td>
     {% endif %}
     {% if program|hasModule:"CommModule" %}
         <td width="33%" align="center">
-            <a href="/manage/{{ one }}/{{ two }}/commpanel?userid={% for student in onsite %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+            <a href="/manage/{{ one }}/{{ two }}/commpanel?recipient_type=Student&userid={% for student in onsite %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                 Email Students
             </a>
         </td>
     {% endif %}
     {% if program|hasModule:"GroupTextModule" %}
         <td width="33%" align="center">
-            <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?userid={% for student in onsite %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+            <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?recipient_type=Student&userid={% for student in onsite %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                 Text Students
             </a>
         </td>
@@ -281,7 +281,7 @@ or select a timeslot from the dropdown below to see attendance stats:
     <th width="5%">#</th>
     <th width="10%">Email Code</th>
     <th width="30%">Class Title</th>
-    <th width="20%">Teachers</th>
+    <th width="20%">Teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle }}s{% endif %}</th>
     <th width="20%">Times</th>
     <th width="15%"># Students Enrolled</th>
 </tr>
@@ -290,7 +290,10 @@ or select a timeslot from the dropdown below to see attendance stats:
     <th class="small">{{ forloop.counter }}</th>
     <td>{{ section.emailcode }}</td>
     <td>{{ section.title }}</td>
-    <td>{% for teacher in section.parent_class.get_teachers %}<a href="/manage/userview?username={{ teacher.username|urlencode }}">{{ teacher.nonblank_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+    <td>
+        {% if program|hasModule:"TeacherModeratorModule" %}Teachers:<br>{% endif %}{% for teacher in section.parent_class.get_teachers %}<a href="/manage/userview?username={{ teacher.username|urlencode }}">{{ teacher.nonblank_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
+        {% if program|hasModule:"TeacherModeratorModule" and section.get_moderators %}<br>Moderators:<br>{% for moderator in section.get_moderators %}<a href="/manage/userview?username={{ moderator.username|urlencode }}">{{ moderator.nonblank_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}
+    </td>
     <td>{{ section.friendly_times_with_date|join:", " }}</td>
     <td>{{ section.num_students }}</td>
 </tr>
@@ -303,26 +306,51 @@ or select a timeslot from the dropdown below to see attendance stats:
 <table width="100%" style="border: none;">
     {% if program|hasModule:"ListGenModule" %}
         <td width="33%" align="center">
-            <a href="/manage/{{ one }}/{{ two }}/selectList?userid={% for section in no_attendance %}{% for teacher in section.teachers %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if not forloop.last %},{% endif %}{% endfor %}">
+            <a href="/manage/{{ one }}/{{ two }}/selectList?recipient_type=Student&userid={% for section in no_attendance %}{% for teacher in section.teachers %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if not forloop.last %},{% endif %}{% endfor %}">
                 Get Teacher Information
             </a>
         </td>
     {% endif %}
     {% if program|hasModule:"CommModule" %}
         <td width="33%" align="center">
-            <a href="/manage/{{ one }}/{{ two }}/commpanel?userid={% for section in no_attendance %}{% for teacher in section.teachers %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if not forloop.last %},{% endif %}{% endfor %}">
+            <a href="/manage/{{ one }}/{{ two }}/commpanel?recipient_type=Student&userid={% for section in no_attendance %}{% for teacher in section.teachers %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if not forloop.last %},{% endif %}{% endfor %}">
                 Email Teachers
             </a>
         </td>
     {% endif %}
     {% if program|hasModule:"GroupTextModule" %}
         <td width="33%" align="center">
-            <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?userid={% for section in no_attendance %}{% for teacher in section.teachers %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if not forloop.last %},{% endif %}{% endfor %}">
+            <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?recipient_type=Student&userid={% for section in no_attendance %}{% for teacher in section.teachers %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if not forloop.last %},{% endif %}{% endfor %}">
                 Text Teachers
             </a>
         </td>
     {% endif %}
 </table>
+{% if program|hasModule:"TeacherModeratorModule" %}
+<table width="100%" style="border: none;">
+    {% if program|hasModule:"ListGenModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/selectList?recipient_type=Teacher&userid={% for section in no_attendance %}{% for moderator in section.get_moderators %}{{ moderator.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Get {{ program.getModeratorTitle }} Information
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"CommModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/commpanel?recipient_type=Teacher&userid={% for section in no_attendance %}{% for moderator in section.get_moderators %}{{ moderator.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Email {{ program.getModeratorTitle }}s
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"GroupTextModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?recipient_type=Teacher&userid={% for section in no_attendance %}{% for moderator in section.get_moderators %}{{ moderator.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Text {{ program.getModeratorTitle }}s
+            </a>
+        </td>
+    {% endif %}
+</table>
+{% endif %}
 </div>
 </center>
 
