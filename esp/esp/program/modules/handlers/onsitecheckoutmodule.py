@@ -42,6 +42,8 @@ from esp.program.modules.handlers.studentclassregmodule import StudentClassRegMo
 from esp.middleware.esperrormiddleware import ESPError
 
 class OnSiteCheckoutModule(ProgramModuleObj):
+    doc = """Check students out (temporarily or indefinitely) from a program."""
+
     @classmethod
     def module_properties(cls):
         return {

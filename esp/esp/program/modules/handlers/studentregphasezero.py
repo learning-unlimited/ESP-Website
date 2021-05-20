@@ -51,6 +51,8 @@ from django.db.models.query import Q
 import random, copy, datetime, re
 
 class StudentRegPhaseZero(ProgramModuleObj):
+    doc = """Allows students to enter a lottery for admission to the program."""
+
     def students(self, QObject = False):
         q_phasezero = Q(phasezerorecord__program=self.program)
 

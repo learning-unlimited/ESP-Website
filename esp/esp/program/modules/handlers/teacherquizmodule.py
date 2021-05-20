@@ -80,6 +80,8 @@ class TeacherQuizController(object):
         return False
 
 class TeacherQuizModule(ProgramModuleObj):
+    doc = """Serves a custom form quiz during teacher registration."""
+
     # Initialization
     def __init__(self, *args, **kwargs):
         super(TeacherQuizModule, self).__init__(*args, **kwargs)

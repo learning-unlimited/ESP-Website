@@ -2,8 +2,49 @@
 
 {% block title %}{{program.niceName}} Accounting{% endblock %}
 
+{% block stylesheets %}
+{{ block.super }}
+<link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
+
+<style type="text/css">
+table {
+    table-layout: fixed;
+    width: 100%;
+}
+#id_target_user {
+    width: calc(100% - 10px);
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>Accounting for {{ target_user.name }} ({{ target_user.username }} / {{ target_user.id }})</h2>
+<h2>Accounting{% if target_user %} for {{ target_user.name }} ({{ target_user.username }} / {{ target_user.id }}){% endif %} for {{ program.niceName }}</h2>
+<div id="program_form">
+<form id="accountingsearchform" name="accountingsearchform" method="POST" action="/manage/{{ program.getUrlBase }}/accounting">
+<table>
+    <col width="85%">
+    <col width="15%">
+    <tr>
+        <th colspan="2">
+            Choose Individual Student for Accounting
+        </th>
+    </tr>
+    <tr>
+        <td>
+            <table>
+                <col width="20%">
+                <col width="80%">
+                {{ form }}
+            </table>
+        </td>
+        <td align="center">
+            <input class="button" type="submit" value="Select" />
+        </td>
+    </tr>
+</table>
+</form>
+</div>
+{% if target_user %}
 <h3>Transfers</h3>
 <table class="table">
     <tr><th>Type</th><th>Line Item</th><th>Amount</th></tr>
@@ -50,5 +91,5 @@ No grant
     <tr><td><em>Paid</em></td><td><em>${{ paid|floatformat:"-2" }}</em></td></tr>
     <tr><td><strong>Owed</strong></td><td><strong>${{ due|floatformat:"-2" }}</strong></td></tr>
 </table>
-</div>
+{% endif %}
 {% endblock %}

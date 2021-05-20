@@ -50,6 +50,7 @@ from twilio import TwilioRestException
 from twilio.rest import TwilioRestClient
 
 class GroupTextModule(ProgramModuleObj):
+    doc = """Text users that match specific search criteria."""
     """ Want to tell all enrolled students about a last-minute lunch location
         change? Want to inform students about a cancelled class? The Group Text
         Panel is your friend!

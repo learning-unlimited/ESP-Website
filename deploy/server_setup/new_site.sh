@@ -182,24 +182,10 @@ done
 echo "Selected time zone: $TIMEZONE"
 echo "TIMEZONE=\"$TIMEZONE\"" >> $BASEDIR/.espsettings
 
-while [[ ! -n $DBNAME ]]; do
-    echo
-    echo "Please enter the name of the PostgreSQL database for this site"
-    echo -n "  (default = ${SITENAME}_django) --> "
-    read DBNAME
-    DEFAULT_DBNAME=${SITENAME}_django
-    DBNAME=${DBNAME:-$DEFAULT_DBNAME}
-done
-echo "Selected database name: $DBNAME"
+DBNAME=${SITENAME}_django
 echo "DBNAME=\"$DBNAME\"" >> $BASEDIR/.espsettings
 
-while [[ ! -n $DBUSER ]] ; do
-    echo "Please enter the name of the PostgreSQL user for this site"
-    echo -n "  (default = $SITENAME) --> "
-    read DBUSER
-    DBUSER=${DBUSER:-$SITENAME}
-done
-echo "Selected database username: $DBUSER"
+DBUSER=${DBUSER:-$SITENAME}
 echo "DBUSER=\"$DBUSER\"" >> $BASEDIR/.espsettings
 
 if [[ ! -n $DBPASS ]]

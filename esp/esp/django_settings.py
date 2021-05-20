@@ -320,8 +320,6 @@ ADDITIONAL_TEMPLATE_SCRIPTS = ''
 
 DEBUG_TOOLBAR = True # set to False in local_settings to globally disable the debug toolbar
 
-DEBUG_TOOLBAR_PATCH_SETTINGS = False
-
 DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.cache.CachePanel',
     'debug_toolbar.panels.headers.HeadersPanel',
@@ -352,7 +350,7 @@ DEBUG_TOOLBAR_CONFIG = {
         'argcache.signals.cache_deleted',
     ],
     'SHOW_TEMPLATE_CONTEXT': True,
-    'INSERT_BEFORE': '</div>',
+    'INSERT_BEFORE': '</body>',
     'ENABLE_STACKTRACES' : True,
     'RENDER_PANELS': None,
     'SHOW_COLLAPSED': False, # Ideally would be True, but there is a bug in their code.

@@ -53,7 +53,7 @@ or select a timeslot from the dropdown below to see attendance stats:
 
 
 <center>
-    <select name="tsid" onchange="location.href='/onsite/{{ one }}/{{ two }}/attendance/'+$j(this).children('option:selected').val(){% if when %}+'?when={{ when|date:'Y-m-d' }}'{% endif %}" style="width:auto;">
+    <select name="tsid" onchange="location.href='/onsite/{{ one }}/{{ two }}/attendance/'+$j(this).children('option:selected').val(){% if when and when != timeslot.end %}+'?when={{ when|date:'Y-m-d' }}'{% endif %}" style="width:auto;">
         {% if not timeslot %}
             <option disabled selected="selected">
                 (Select a timeslot)

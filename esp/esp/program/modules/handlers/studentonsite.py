@@ -47,6 +47,8 @@ from django.http import HttpResponseRedirect
 from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
 
 class StudentOnsite(ProgramModuleObj, CoreModule):
+    doc = """Serves a mobile-friendly interface for common onsite functions for students."""
+
     @classmethod
     def module_properties(cls):
         return {

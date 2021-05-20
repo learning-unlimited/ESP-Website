@@ -1597,7 +1597,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def moderators(self):
         result = ESPUser.objects.none()
         for sec in self.get_sections():
-            result = result | sec.get_moderators()
+            result = result.union(sec.get_moderators())
         return result
 
     def num_students(self, verbs=['Enrolled']):
