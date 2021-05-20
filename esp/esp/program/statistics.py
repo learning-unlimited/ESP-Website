@@ -330,7 +330,7 @@ def student_reg(form, programs, students, profiles, result_dict={}):
     for program in programs:
         stats_list = []
         # entered student lottery
-        stud_lott_num = len(program.students().get('phasezero', ESPUser.objects.none()) & students)
+        stud_lott_num = ESPUser.objects.filter(phasezerorecord__program=program).intersection(students).distinct().count()
         series_data['Student Lottery'].append([program.name, stud_lott_num])
         stats_list.append(stud_lott_num)
         # set class lottery preferences
@@ -418,7 +418,7 @@ def class_reg(form, programs, teachers, profiles, result_dict={}):
         series_data['Classes Approved'].append([program.name, class_app])
         stats_list.append(class_app)
         class_sch = TeacherBigBoardModule.num_class_reg(program, approved = True, scheduled = True, teachers = teachers)
-        series_data['Classes Approved'].append([program.name, class_sch])
+        series_data['Classes Scheduled'].append([program.name, class_sch])
         stats_list.append(class_sch)
         class_hours, student_hours = TeacherBigBoardModule.static_hours(program, teachers = teachers)
         series_data['Class-student-hours Registered'].append([program.name, float(student_hours)])
