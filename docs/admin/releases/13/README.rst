@@ -61,7 +61,6 @@ Teacher registration changes
 Class management changes
 ~~~~~~~~~~~~~~~~~~~~~~~~
 - All of the section cancellation forms have been merged into a single form allowing admins to cancel multiple sections at once for the same reason.
-- Updated the caching of all of the statistics on the dashboard, so they should now always be up-to-date.
 
 Statistics and data visualization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -111,6 +110,7 @@ Dashboard changes
 - Changed the Class-Student-Hours Utilization stat on the dashboard to enrolled hours / scheduled hours instead of enrolled hours / approved hours.
 - Added attended class-student-hours to the dashboard.
 - Added shirt statistics for all teachers with a submitted class, enrolled students, attended students, and volunteers to the dashboard.
+- Updated the caching of all of the statistics on the dashboard, so they should now always be up-to-date.
 
 Survey changes
 ~~~~~~~~~~~~~~
@@ -157,6 +157,7 @@ Minor bug fixes
 - Fixed a bug affecting ranks beyond the first choice in the class lottery.
 - Fixed a bug where selecting a timeslot on a different day on the onsite attendance module would have unexpected behavior.
 - Fixed email links on the stripe failure page.
+- Fixed section alignment on the main program management page.
 
 Development changes
 ===================
