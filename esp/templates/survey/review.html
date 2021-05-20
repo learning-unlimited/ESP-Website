@@ -99,7 +99,7 @@ td, th {
             <tr><th><h2><a name="class{{ c.class.parent_class.id }}"></a>Responses for {{ sec.parent_class.emailcode }}: {{ sec.title }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2></th></tr>
             {% endifchanged %}
             <tr style="border-top: 1px dashed black;"><th><h3><a name="class{{ sec.parent_class.id }}-{{ sec.index }}"></a>Responses for Section {{ sec.index }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h3></th></tr>
-            {% render_responses_for_section sec s %}
+            {% render_responses_for_section sec s tl %}
             {% if forloop.last %}
             </table></br></br>
             {% endif %}
@@ -115,7 +115,7 @@ td, th {
         <tr><th><h2><a name="class{{ sec.parent_class.id }}"></a>Responses for {{ sec.parent_class.emailcode }}: {{ sec.title }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2></th></tr>
         {% endifchanged %}
         <tr style="border-top: 1px dashed black;"><th><h3><a name="class{{ sec.parent_class.id }}-{{ sec.index }}"></a>Responses for Section {{ sec.index }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h3></th></tr>
-        {% render_responses_for_section sec survey %}
+        {% render_responses_for_section sec survey tl %}
         {% if forloop.last %}
         </table>
         {% endif %}
