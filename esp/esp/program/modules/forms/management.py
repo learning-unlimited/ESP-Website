@@ -180,8 +180,13 @@ class ClassCancellationForm(forms.Form):
         if not initial['target'].parent_program.hasModule('GroupTextModule') or not GroupTextModule.is_configured():
             self.fields['text_students'].widget = forms.HiddenInput()
 
+class SectionMultipleChoiceField(forms.ModelMultipleChoiceField):
+    """ Custom field to customize the section labels """
+    def label_from_instance(self, sec):
+        return u'%s: %s (%s)' % (sec.emailcode(), sec.title(), ', '.join(sec.friendly_times(include_date = True)))
+
 class SectionCancellationForm(forms.Form):
-    target = forms.ModelMultipleChoiceField(label = "Section(s)", queryset=ClassSection.objects.all(), widget = forms.CheckboxSelectMultiple(), required=False)
+    target = SectionMultipleChoiceField(label = "Section(s)", queryset=ClassSection.objects.all(), widget = forms.CheckboxSelectMultiple(), required=False)
     explanation = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 60}), required=False, help_text='Optional but recommended')
     unschedule = forms.BooleanField(help_text='Check this box to unschedule this section in order to free up space for others.  This will delete the original time and location and you won\'t be able to recover them.', required=False)
     email_lottery_students = forms.BooleanField(help_text='Check this box to email students who applied for this section in a lottery, in addition to those that are actually enrolled.', required=False)
