@@ -46,6 +46,8 @@ from django.http import HttpResponse, HttpResponseRedirect
 import csv
 
 class VolunteerManage(ProgramModuleObj):
+    doc = """Manage timeslots for volunteers and the volunteers that have signed up for those timeslots."""
+
     @classmethod
     def module_properties(cls):
         return {

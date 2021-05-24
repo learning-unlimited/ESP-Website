@@ -44,6 +44,8 @@ from esp.program.modules.forms.onsite import OnSiteRegForm
 from esp.accounting.controllers import IndividualAccountingController
 
 class OnSiteRegister(ProgramModuleObj):
+    doc = """Register a new student onsite."""
+
     @classmethod
     def module_properties(cls):
         return {

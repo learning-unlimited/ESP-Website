@@ -53,6 +53,8 @@ import json
 import re
 
 class CreditCardModule_Stripe(ProgramModuleObj):
+    doc = """Accept credit card payments via Stripe."""
+
     @classmethod
     def module_properties(cls):
         return {

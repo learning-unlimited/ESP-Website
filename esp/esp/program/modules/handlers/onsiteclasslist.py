@@ -59,6 +59,8 @@ from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
 
 class OnSiteClassList(ProgramModuleObj):
+    doc = """Display lists of classes for onsite registration purposes."""
+
     @classmethod
     def module_properties(cls):
         return {

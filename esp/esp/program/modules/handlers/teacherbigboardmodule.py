@@ -27,6 +27,7 @@ def get_filter(prog, approved = False, scheduled = False, teachers = None):
 mindate = datetime.datetime(2016, 1, 30)
 
 class TeacherBigBoardModule(ProgramModuleObj):
+    doc = """Shows lots of statistics for teacher registration that are updated automatically."""
 
     @classmethod
     def module_properties(cls):

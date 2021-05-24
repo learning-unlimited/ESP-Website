@@ -60,6 +60,7 @@ class NewPermissionForm(forms.Form):
     end_date = forms.DateTimeField(label='Closing date/time', initial=None, widget=DateTimeWidget(), required=False)
 
 class AdminCore(ProgramModuleObj, CoreModule):
+    doc = """Includes the core views for managing a program (e.g. settings, dashboard)."""
 
     @classmethod
     def module_properties(cls):
@@ -76,7 +77,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context = {}
         modules = self.program.getModules(request.user, 'manage')
 
-        context['modules'] = modules
+        context['modules'] = sorted(modules, key = lambda pmo: pmo.module.link_title)
         context['one'] = one
         context['two'] = two
 

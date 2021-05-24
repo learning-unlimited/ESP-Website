@@ -47,8 +47,9 @@ from esp.middleware.threadlocalrequest import get_current_request
 from django              import forms
 
 
-# student class picker module
 class FinancialAidAppModule(ProgramModuleObj):
+    doc = """Serve a financial aid application to students."""
+
     @classmethod
     def module_properties(cls):
         return {

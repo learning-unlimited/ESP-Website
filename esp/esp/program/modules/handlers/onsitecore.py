@@ -42,6 +42,8 @@ from django.http import HttpResponseRedirect
 
 
 class OnsiteCore(ProgramModuleObj, CoreModule):
+    doc = """Serves the main onsite page."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -55,7 +57,7 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
     @main_call
     @needs_onsite
     def main(self, request, tl, one, two, module, extra, prog):
-        """ Display a teacher eg page """
+        """ Display the onsite landing page """
         context = {}
         modules = self.program.getModules(request.user, 'onsite')
 
