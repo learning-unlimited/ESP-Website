@@ -867,7 +867,8 @@ var renderNormalField=function(item, field_options, data){
 			type:"text",
 			size:"30"
 		});
-        $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + $j('#textField_correct_answer').val() + "</span>"));
+        if($j('#textField_correct_answer').val())
+            $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + $j('#textField_correct_answer').val() + "</span>"));
 		if($j('#charOrWord').val()=='chars')
 			key='charlimits';
 		else key='wordlimits';
