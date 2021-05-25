@@ -45,6 +45,8 @@ from esp.users.models import ESPUser
 from django.db.models.query import Q
 
 class SplashInfoModule(ProgramModuleObj):
+    doc = """Serves a form during student registration that asks for lunch preferences and if a student has a sibling(s)."""
+
     @classmethod
     def module_properties(cls):
       return {

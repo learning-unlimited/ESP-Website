@@ -11,6 +11,7 @@ from esp.utils.decorators import json_response
 
 
 class AutoschedulerFrontendModule(ProgramModuleObj):
+    doc = """Augments the AJAX scheduler, adding an interface to automatically schedule individual sections."""
 
     @classmethod
     def module_properties(cls):
@@ -111,6 +112,9 @@ class AutoschedulerFrontendModule(ProgramModuleObj):
     @needs_admin
     def autoscheduler_clear(self, request, tl, one, two, module, extra, prog):
         return {'response': [{'success': 'yes'}]}
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

@@ -48,6 +48,8 @@ from datetime import datetime
 from django.contrib.auth.models import Group
 
 class TeacherEventsModule(ProgramModuleObj):
+    doc = """Allows teachers to sign up for one or more teacher events (e.g. interviews, training)."""
+
     # Initialization
     def __init__(self, *args, **kwargs):
         super(TeacherEventsModule, self).__init__(*args, **kwargs)

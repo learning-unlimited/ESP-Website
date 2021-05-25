@@ -47,6 +47,7 @@ from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.middleware import ESPError
 
 class CommModule(ProgramModuleObj):
+    doc = """Email users that match specific search criteria."""
     """ Want to email all ESP students within a 60 mile radius of NYC?
     How about emailing all esp users within a 30 mile radius of New Hampshire whose last name contains 'e' and 'a'?
     Do that and even more useful things in the communication panel.

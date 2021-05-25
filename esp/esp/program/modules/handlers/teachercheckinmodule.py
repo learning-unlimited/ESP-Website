@@ -56,6 +56,8 @@ import collections
 import json
 
 class TeacherCheckinModule(ProgramModuleObj):
+    doc = """Check in teachers for a program."""
+
     @classmethod
     def module_properties(cls):
         return {

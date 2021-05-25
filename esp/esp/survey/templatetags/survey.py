@@ -66,12 +66,12 @@ def _render_responses_for_program_helper(survey):
     """Render the survey responses for admin review."""
     questions = survey.questions.filter(per_class=False).order_by('-question_type__is_numeric', 'seq')
     display_data = [ { 'question': y, 'answers': y.answer_set.all() } for y in questions ]
-    return {'display_data': display_data, 'survey': survey}
+    return {'display_data': display_data, 'survey': survey, 'tl': 'manage'}
 
 @cache_inclusion_tag(register, 'inclusion/survey/responses_for_section.html')
-def render_responses_for_section(sec, survey):
+def render_responses_for_section(sec, survey, tl):
     """Render the survey responses for teacher review in HTML."""
-    return _render_responses_for_section_helper(sec, survey)
+    return _render_responses_for_section_helper(sec, survey, tl)
 render_responses_for_section.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey, 'sec': ClassSection.objects.get(id=ans.object_id)}, filter=lambda ans: (ans.content_type == ContentType.objects.get_for_model(ClassSection)))
 
 @cache_inclusion_tag(register, 'inclusion/survey/responses_for_section.tex')
@@ -80,11 +80,13 @@ def render_responses_for_section_pdf(sec, survey):
     return _render_responses_for_section_helper(sec, survey)
 render_responses_for_section_pdf.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey, 'sec': ClassSection.objects.get(id=ans.object_id)}, filter=lambda ans: (ans.content_type == ContentType.objects.get_for_model(ClassSection)))
 
-def _render_responses_for_section_helper(sec, survey):
+def _render_responses_for_section_helper(sec, survey, tl = None):
     """Render the survey responses for teacher review."""
     class_questions = survey.questions.filter(per_class=True).order_by('-question_type__is_numeric', 'seq')
     class_data = [ { 'question': question, 'answers': question.answer_set.filter(Q(content_type=ContentType.objects.get_for_model(ClassSection),object_id=sec.id) | Q(content_type=ContentType.objects.get_for_model(ClassSubject),object_id=sec.parent_class.id)) } for question in class_questions ]
-    return {'class_data': class_data, 'sec': sec, 'survey': survey}
+    dict = {'class_data': class_data, 'sec': sec, 'survey': survey}
+    if tl: dict['tl'] = tl
+    return dict
 
 @register.filter
 def midValue(sizeLs0):

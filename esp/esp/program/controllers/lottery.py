@@ -83,7 +83,9 @@ class LotteryAssignmentController(object):
         'stats_display': (False, False),
         'directory': (os.getenv("HOME"), False),
         'use_student_apps': (False, 'Whether to use student application ranks'),
-        'fill_low_priorities': (False, 'Whether to push students who have interested classes marked but no priority, to priority')
+        'fill_low_priorities': (False, 'Whether to push students who have interested classes marked but no priority, to priority'),
+        'max_timeslots': (0, 'The maximum number of timeslots for which a student should be enrolled (0 means no limit)'),
+        'max_sections': (0, 'The maximum number of sections in which a student should be enrolled (0 means no limit)')
     }
 
     def __init__(self, program, **kwargs):
@@ -390,6 +392,14 @@ class LotteryAssignmentController(object):
 
         if self.options['use_student_apps']:
             possible_students *= (self.ranks[:, si] == rank)
+
+        #   Filter students by who has fewer than the max number of timeslot enrollments
+        if self.options['max_sections']:
+            possible_students *= (numpy.sum(self.student_sections, axis=1) < self.options['max_sections'])
+
+        #   Filter students by who has fewer than the max number of timeslot enrollments
+        if self.options['max_timeslots']:
+            possible_students *= (numpy.sum(self.student_schedules, axis=1) < self.options['max_timeslots'])
 
         #   Filter students by who has all of the section's timeslots available
         for i in range(timeslots.shape[0]):

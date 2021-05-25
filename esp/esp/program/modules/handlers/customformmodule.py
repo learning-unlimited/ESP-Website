@@ -50,6 +50,7 @@ from django import forms
 import re
 
 class CustomFormModule(ProgramModuleObj):
+    doc = """Serve a custom form as part of student and/or teacher registration."""
 
     def __init__(self, *args, **kwargs):
         super(CustomFormModule, self).__init__(*args, **kwargs)

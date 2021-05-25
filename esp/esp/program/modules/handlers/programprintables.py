@@ -65,6 +65,8 @@ import copy
 import csv
 
 class ProgramPrintables(ProgramModuleObj):
+    doc = """A wide variety of printable documents that are useful for a program."""
+
     """ This is extremely useful for printing a wide array of documents for your program.
     Things from checklists to rosters to attendance sheets can be found here. """
     @classmethod
@@ -1644,7 +1646,7 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def certificate(self, request, tl, one, two, module, extra, prog):
-        user, found = search_for_user(request, self.program.students_union())
+        user, found = search_for_user(request, self.program.students_union(), add_to_context = {'module': 'Completion Certificate'})
         if not found:
             return user
 

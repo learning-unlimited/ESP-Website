@@ -14,6 +14,8 @@
 # Parse options
 OPTSETTINGS=`getopt -o 'pv:' -l 'prod,virtualenv:' -- "$@"`
 
+UBUNTU_VERSION=$(lsb_release -sr)
+
 eval set -- "$OPTSETTINGS"
 
 while [ ! -z "$1" ]
@@ -31,17 +33,38 @@ BASEDIR=$(dirname $(dirname $(readlink -e $0)))
 
 sudo apt-get update
 xargs sudo apt-get install -y < $BASEDIR/esp/packages_base.txt
+
+# This nodejs/less installation only works on Ubuntu 16+
+# The versions on the production server don't seem to break anything, so we'll just skip it
+if [ $((${UBUNTU_VERSION%.*}+0)) -ge 16 ]
+then
 $BASEDIR/esp/packages_base_manual_install.sh
+fi
+
 if [[ "$MODE_PROD" ]]
 then
     xargs sudo apt-get install -y < $BASEDIR/esp/packages_prod.txt
 fi
 
 # Install pip
+# How we add the repository depends on the version of Ubuntu
+if [ $((${UBUNTU_VERSION%.*}+0)) -gt 12 ]
+then
 sudo add-apt-repository universe
+else
+sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu $(lsb_release -sc) universe"
+fi
+
+sudo apt-get update
 sudo apt-get install -y curl
+
+# This doesn't seem to work on the production server
+# It already has pip, so we can just skip this
+if [ $((${UBUNTU_VERSION%.*}+0)) -gt 12 ]
+then
 curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
 sudo python2 get-pip.py
+fi
 
 # Ensure that the virtualenv exists and is activated.
 if [[ -z "$VIRTUAL_ENV" ]]
