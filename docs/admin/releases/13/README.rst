@@ -17,6 +17,7 @@ Moderators (or observers, teaching assistants, etc) for individual sections are 
 - Assigned moderators have their section assignments listed on the main teacher registration page (beneath taught classes), where they can see details about the sections and access the attendance page.
 - Similar information is on the teacher webapp (in the schedule and in the specific section info pages).
 - Moderators are listed on and can be checked-in via the onsite teacher check-in page.
+- Moderators are listed in the onsite attendance module for classes without attendance.
 - Several new printables are available which have moderator info (e.g. individual schedules, moderator schedule spreadsheet).
 - Several existing printables have moderator information (e.g. class list, room schedules).
 - Moderator stats are shown on the dashboard and teacher big board.
@@ -60,7 +61,7 @@ Teacher registration changes
 
 Class management changes
 ~~~~~~~~~~~~~~~~~~~~~~~~
-- All of the section cancellation forms have been merged into a single form allowing admins to cancel multiple sections at once for the same reason.
+- All of the section cancellation forms have been merged into a single form allowing admins to cancel multiple sections at once for the same reason. Each section has it's time and date listed.
 
 Statistics and data visualization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -103,6 +104,7 @@ Theme changes
 - Fixed a bug with the admin bar styling on the fruitsalad theme.
 - Centered the main content for the bigpicture theme.
 - Fixed the color of some buttons for the fruitsalad theme when using the default theme settings.
+- Fixed the background color of the top tabs on the fruitsalad theme.
 
 Dashboard changes
 ~~~~~~~~~~~~~~~~~
