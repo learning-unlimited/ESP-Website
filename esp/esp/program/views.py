@@ -493,7 +493,7 @@ def newprogram(request):
             template_prog["teacher_reg_end"] = newest_bit.end_date
 
         pac = ProgramAccountingController(tprogram)
-        line_items = pac.get_lineitemtypes(required_only=True).values('amount_dec')
+        line_items = pac.get_lineitemtypes(required_only=True).filter(text="Program admission").values('amount_dec')
 
         template_prog["base_cost"] = int(sum(x["amount_dec"] for x in line_items))
         template_prog["sibling_discount"] = tprogram.sibling_discount

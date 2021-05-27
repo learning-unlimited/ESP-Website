@@ -66,7 +66,7 @@ class ProgramCreationForm(BetterModelForm):
     program_type      = forms.CharField(label = "Program Type", help_text='e.g. Splash or Cascade')
     program_module_questions   = forms.MultipleChoiceField(choices=[],
                                                            label='Program Modules',
-                                                           widget=forms.CheckboxSelectMultiple(attrs={'class': 'input-xxlarge'}),
+                                                           widget=forms.CheckboxSelectMultiple(),
                                                            help_text=Program.program_modules.field.help_text,
                                                            required=False)
 
@@ -83,8 +83,11 @@ class ProgramCreationForm(BetterModelForm):
                                                         ('Do you plan to have teacher training or interviews?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Training and Interview Signups', 'Manage Teacher Training and Interviews'])]),
                                                         (mark_safe('Will you use lottery admission (as opposed to first come, first served) for <b>classes</b>?'), [x.id for x in ProgramModule.objects.filter(admin_title__in=['Two-Phase Student Registration', 'Lottery Frontend'])]),
                                                         (mark_safe('Will you use lottery registration (as opposed to first come, first served) to the <b>program</b>?'), [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Registration Phase Zero', 'Manage Student Registration Phase Zero'])]),
+                                                        ('Will you let students enter a lottery to switch classes after the program has started?', [x.id for x in ProgramModule.objects.filter(admin_title='Class Change Request')]),
+                                                        ('Will you have students accept some sort of agreement?', [x.id for x in ProgramModule.objects.filter(admin_title='Student Acknowledgement')]),
                                                         ('Do students have to apply to individual classes?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Application Review for Admin', 'Admin Admissions Dashboard'])]),
-                                                        ('If yes, can teachers admit them (as opposed to just admins)?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Admissions Dashboard', 'Application Reviews for Teachers', 'Application Review for Admin', 'Admin Admissions Dashboard'])])
+                                                        ('If yes, can teachers admit them (as opposed to just admins)?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Admissions Dashboard', 'Application Reviews for Teachers', 'Application Review for Admin', 'Admin Admissions Dashboard'])]),
+                                                        ('Will you have moderators or assistants for individual class sections?', [x.id for x in ProgramModule.objects.filter(admin_title='Moderator Signup')]),
                                                        ])
         # Include additional or new modules that haven't been added to the list
         for x in ProgramModule.objects.filter(choosable=0):
@@ -124,7 +127,7 @@ class ProgramCreationForm(BetterModelForm):
         pass
 
     def clean_program_modules(self):
-        mods = self.cleaned_data['program_modules'][:] # take a copy of the list to be safe
+        mods = list(self.cleaned_data['program_modules'])[:] # take a copy of the list to be safe
         # Add "include by default" modules (choosable property = 1)
         mods.extend(ProgramModule.objects.filter(choosable=1))
         return list(set(mods)) # Database wants a unique collection, so take set
