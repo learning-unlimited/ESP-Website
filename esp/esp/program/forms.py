@@ -66,7 +66,7 @@ class ProgramCreationForm(BetterModelForm):
     program_type      = forms.CharField(label = "Program Type", help_text='e.g. Splash or Cascade')
     program_module_questions   = forms.MultipleChoiceField(choices=[],
                                                            label='Program Modules',
-                                                           widget=forms.CheckboxSelectMultiple(attrs={'class': 'input-xxlarge'}),
+                                                           widget=forms.CheckboxSelectMultiple(),
                                                            help_text=Program.program_modules.field.help_text,
                                                            required=False)
 
