@@ -22,6 +22,22 @@ Moderators (or observers, teaching assistants, etc) for individual sections are 
 - Several existing printables have moderator information (e.g. class list, room schedules).
 - Moderator stats are shown on the dashboard and teacher big board.
 
+Custom Forms
+~~~~~~~~~~~~
+Overhauled the custom forms creation frontend page and backend functionality. Most notably, this now allows for custom forms to be edited (even after users have responded to a custom form). This includes adding, removing, and editing fields, instructions, and pages/sections. To edit a custom form, you can select it from within the creation frontend or with one of the new links on the custom form landing page. In addition, the following changes/fixes were made:
+
+- Fixed the handling of long field titles in the responses table.
+- Added an "Other" option to the gender field.
+- Fixed a bug/error that occurred when users entered responses that were too long for a text field.
+- The custom form landing page now lists the ID of each custom form (for admin reference).
+- Custom forms can now be linked to specific program registration modules (e.g., the teacher custom form module), and the appropriate tags will be created upon form creation.
+- HTML in field labels and help texts is now rendered for users.
+- Better error handling and reporting during custom form creation.
+- The field type of existing fields can now be changed.
+- Fixed a bug where blank options were added to multi-answer fields (e.g., checkboxes, dropdown).
+- Fixed the teacherinfo and contactinfo fields.
+- Field help text is now shown in the form preview as it will be shown in the real form. Correct answers are also indicated on the form preview.
+
 Program management changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 - When importing the settings from a previous program, class registration module info settings, student class registration module info settings, and tag settings are now copied to the new program. New programs based on previous programs should now function almost exactly like the previous programs.
@@ -29,6 +45,11 @@ Program management changes
 - Added custom widgets to many of the tag settings (preventing potentially site-breaking tag values).
 - Added a new tag `grade_increment_date` that allows admins to adjust when student grades increment (e.g. before or after a summer program).
 - Added a frontend user interface to add, remove, edit, and import line items.
+- Fixed text wrapping for the module questions on the new program and program settings pages.
+- Fixed some modules that were always being included by default (class change request module).
+- Added module questions for the Class Change Request, Moderator, and Student Acknowledgment modules.
+- Fixed a bug that occurred when no modules were selected.
+- Fixed a bug that caused an invalid calculation of the program admission cost.
 
 User search modules changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -105,6 +126,7 @@ Theme changes
 - Centered the main content for the bigpicture theme.
 - Fixed the color of some buttons for the fruitsalad theme when using the default theme settings.
 - Fixed the background color of the top tabs on the fruitsalad theme.
+- Fixed a range of bugs related to arbitrary table widths in the bigpicture theme.
 
 Dashboard changes
 ~~~~~~~~~~~~~~~~~
