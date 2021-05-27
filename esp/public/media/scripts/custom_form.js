@@ -13,8 +13,6 @@ var formElements={
         date:{'disp_name':'Date','ques':'Date'},
         time:{'disp_name':'Time','ques':'Time'},
         file:{'disp_name':'File', 'ques':'Upload a file'},
-        section:{'disp_name':'Section', 'ques':'Section'},
-        page:{'disp_name':'Page', 'ques':'Page'},
         radio_yesno: {'disp_name': 'Yes/No Field', 'ques': 'Choose Yes or No'},
         'boolean': {'disp_name': 'Boolean Field', 'ques': ''},
         null_boolean: {'disp_name': 'Null Boolean Field', 'ques':''}
@@ -27,7 +25,9 @@ var formElements={
         gender:{'disp_name':'Gender','ques':'Your gender'}
     },  
     'NotReallyFields': {
-        instructions: {'disp_name': 'Instructions', 'ques': ''}
+        instructions: {'disp_name': 'Instructions', 'ques': ''},
+        section:{'disp_name':'Section', 'ques':'Section'},
+        page:{'disp_name':'Page', 'ques':'Page'},
     }
     /*'Personal':{
         name:{'disp_name':'Name','ques':'Your name', 'field_type':'custom', 'field_options':{}},
@@ -65,6 +65,8 @@ var inDefaultCategory = function(field_type) {
 var only_fkey_models=[];
 
 var model_instance_cache={};
+
+var modules={};
 
 var elemTypes = {
     // Stores the available types of form objects, and their number in the form
@@ -108,6 +110,8 @@ $j(document).ready(function() {
 	$j('#id_prog_belong').change(onChangeProgBelong);
 	$j('#links_id_main').change(onChangeMainLink);
 	$j('#links_id_specify').change(onChangeLinksSpecify);
+    $j('#links_id_pick').change(onChangeLinksProgram);
+    $j('#links_id_tl').change(onChangeLinksTL);
 	$j('#id_modify').change(function(){
 		if($j(this).prop('checked'))
 			$j('#submit').val('Modify Form');
@@ -117,6 +121,7 @@ $j(document).ready(function() {
 	$j('#elem_selector').change(function(){onSelectElem($j('#elem_selector').val());});
 	$j('#main_cat_spec').change(onChangeMainCatSpec);
 	$j('#id_perm_program').change(onChangePermProg);
+    $j('#base_form').change(onChangeBase);
 	
 	$currSection=$j('#section_0');
 	$currPage=$j('#page_0');
@@ -161,7 +166,7 @@ $j(document).ready(function() {
 	});
 	//end of csrf stuff
 	
-	$j('#form_toolbox').accordion({autoHeight:false, icons:{}});
+	$j('#form_toolbox').accordion({heightStyle:'content', icons:{}, collapsible: true});
 	$j.data($j('div.outline')[0], 'data', {'question_text':'', 'help_text':''});
 	$j.data($currPage[0], 'data', {'parent_id':-1});
 	
@@ -177,6 +182,12 @@ $j(document).ready(function() {
 	
 	//Initializing UI
 	//initUI();
+
+    if(edit_form != -1){
+        $j("#base_form").val(edit_form).change();
+        createFromBase();
+        $j("#id_modify").prop('checked', true).change();
+    }
 });
 
 var getFieldCategory=function(field_type) {
@@ -255,6 +266,8 @@ var clearLinksArea=function(){
 	//Clears up the links area
 	$j('#links_id_specify').val('userdef').parent().hide();
 	$j('#links_id_pick').empty().parent().hide();
+    $j('#links_id_tl').parent().hide();
+    $j('#links_id_module').empty().parent().hide();
 };
 
 var onChangeMainLink=function(){
@@ -274,19 +287,59 @@ var onChangeLinksSpecify=function(){
 			async:false,
 			success: function(link_objects) {
 				var html_str='';
-				$j.each(link_objects, function(id, name){
-					html_str+='<option value="'+id+'">'+name+'</option>';
+				$j.each(link_objects, function(idx, data){
+					html_str+='<option value="'+data.id+'">'+data.name+'</option>';
 				});
 				$j('#links_id_pick').html(html_str);
-				$j('#links_id_pick').parent().show();
+				$j('#links_id_pick').change().parent().show();
+                if($j("#links_id_main").val()=="Program"){
+                    $j('#links_id_tl').parent().show();
+                    $j('#links_id_module').parent().show();
+                }
 			}
 		});
 	}
 	else{
 		$j('#links_id_pick').html('');
 		$j('#links_id_pick').parent().hide();
+        $j('#links_id_tl').parent().hide();
+        $j('#links_id_module').html('');
+        $j('#links_id_module').parent().hide();
 	}
 };
+
+var onChangeLinksProgram=function(){
+    $j.ajax({
+        url:'/customforms/getmodules/',
+        data:{'program':$j('#links_id_pick').val()},
+        type:'GET',
+        dataType:'json',
+        async:false,
+        success: function(mods) {
+            modules = mods;
+            onChangeLinksTL();
+        }
+    });
+}
+
+var onChangeLinksTL=function(){
+    var html_str='';
+    if(modules[$j('#links_id_tl').val()].length > 0){
+        $j.each(modules[$j('#links_id_tl').val()], function(id, tup){
+            html_str+='<option value="'+tup[0]+'">'+tup[1]+'</option>';
+        });
+        $j('#links_id_module').html(html_str);
+        $j('#links_id_module_help_text').hide();
+    } else {
+        if($j('#links_id_tl').val() == 'learn'){
+            html_str = 'You must enable the Student Custom Form module first.';
+        } else {
+            html_str = 'You must enable the Teacher Custom Form and/or Teacher Logistics Quiz module(s) first.';
+        }
+        $j('#links_id_module').empty();
+        $j('#links_id_module_help_text').html(html_str).show();
+    }
+}
 
 var getPerms=function(prog_id){
 	//Queries the server for perms related to the currently selected program
@@ -377,8 +430,8 @@ var onChangeMainCatSpec=function() {
 				dataType:'json',
 				async:false,
 				success: function(link_objects) {
-					$j.each(link_objects, function(id, name){
-						model_instance_cache[curr_category]['options'][id]=name;
+					$j.each(link_objects, function(idx, data){
+						model_instance_cache[curr_category]['options'][data.id]=data.name;
 					});
 				}
 			});
@@ -400,12 +453,15 @@ var onChangeMainCatSpec=function() {
 		$j("#cat_instance_sel").hide();
 };	
 
-var createLabel=function(labeltext, required) {
+var createLabel=function(labeltext, required, help_text) {
     //Returns an HTML-formatted label, with a red * if the question is required
-    
-    if(!required)
-        return '<p>'+labeltext+'</p>';
-    else return '<p>'+labeltext+'<span class="asterisk">'+'*'+'</span></p>';    
+    var str='';
+    str+='<p class="field_label">'+labeltext+':';
+    if(required) str+='<span class="asterisk">'+'*'+'</span>';
+    str+='</p>';
+    if(help_text) str+=' <img src="/media/default_images/question_mark.jpg" class="qmark" title="' + help_text + '">'
+    str+='<br>';
+    return str;
 };
 
 var removeField = function() {
@@ -523,7 +579,7 @@ var addSpecificOptions=function(elem, options, limtype) {
 
 	var limits, frag, $div;
 	if(elem=='numeric'){
-		if(options!='')
+		if(options && options!='')
 			limits=options.split(',');
 		else limits=[0,0];
 		frag='<div class="toolboxText">';
@@ -534,16 +590,39 @@ var addSpecificOptions=function(elem, options, limtype) {
 		$div.appendTo($j('#other_options'));	
 	}
 	else if(elem=='textField' || elem=='longTextField' || elem=='longAns' || elem=='reallyLongAns'){
-		if(options && options!='')
+		if(options && options!=''){
 			limits=options.split(',');
-		else limits=['',''];
+        } else if(elem=='textField'){
+            limits=[0,30];
+        } else if(elem=='longTextField'){
+            limits=[0,60];
+        } else {
+            limits=['',''];
+        }
 		frag='<div id="text_limits" class="toolboxText">';
-		frag+='<select id="charOrWord">';
-		frag+='<option value="chars">Characters</option>';
-		frag+='<option value="words">Words</option>';
-		frag+='</select>';
-		frag+='<p>Min <input type="text" id="text_min" value="'+limits[0]+'"/> &nbsp;&nbsp;'; 
-		frag+='Max <input type="text" id="text_max" value="'+limits[1]+'"/></p>';
+        frag+='Characters';
+		frag+='<p>Min <input type="number" id="text_min"';
+        var limit_min, limit_max;
+        if(elem=='textField'){
+            frag+='min="0" max="30"';
+            limit_min = Math.min(30, limits[0]);
+            limit_max = Math.min(30, limits[1]);
+        } else if(elem=='longTextField'){
+            frag+='min="0" max="60"';
+            limit_min = Math.min(60, limits[0]);
+            limit_max = Math.min(60, limits[1]);
+        } else {
+            limit_min = limits[0];
+            limit_max = limits[1];
+        }
+        frag+=' value="'+limit_min+'"/> &nbsp;&nbsp;'; 
+		frag+='Max <input type="number" id="text_max"';
+        if(elem=='textField'){
+            frag+='min="0" max="30"';
+        } else if(elem=='longTextField'){
+            frag+='min="0" max="60"';
+        }
+        frag+=' value="'+limit_max+'"/></p>';
 		frag+='</div>';
 		var $div=$j(frag);
 		$div.appendTo($j('#other_options'));
@@ -562,7 +641,7 @@ var addCorrectnessOptions = function(elem) {
     if (elem == 'dropdown')
     {
         frag = '<div id="dropdown_correctness_options" class="toolboxText">';
-        frag += '<p>Correct answer index: ';
+        frag += '<p>Correct answer index (zero-based):<br>';
         frag += '<input type="text" id="dropdown_correct_answer" value=""/>';
         frag += '</p></div>';
         var $div = $j(frag);
@@ -571,7 +650,7 @@ var addCorrectnessOptions = function(elem) {
     else if (elem == 'radio')
     {
         frag = '<div id="radio_correctness_options" class="toolboxText">';
-        frag += '<p>Correct answer index: ';
+        frag += '<p>Correct answer index (zero-based):<br>';
         frag += '<input type="text" id="radio_correct_answer" value=""/>';
         frag += '</p></div>';
         var $div = $j(frag);
@@ -580,7 +659,7 @@ var addCorrectnessOptions = function(elem) {
     else if (elem == 'textField')
     {
         frag = '<div id="textField_correctness_options" class="toolboxText">';
-        frag += '<p>Correct answer: ';
+        frag += '<p>Correct answer:<br>';
         frag += '<input type="text" id="textField_correct_answer" value=""/>';
         frag += '</p></div>';
         var $div = $j(frag);
@@ -589,7 +668,7 @@ var addCorrectnessOptions = function(elem) {
     else if (elem == 'checkboxes')
     {
         frag = '<div id="checkboxes_correctness_options" class="toolboxText">';
-        frag += '<p>Correct answer indices (comma-separated): ';
+        frag += '<p>Correct answer indices (comma-separated, zero-based):<br>';
         frag += '<input type="text" id="checkboxes_correct_answer" value=""/>';
         frag += '</p></div>';
         var $div = $j(frag);
@@ -605,48 +684,55 @@ var onSelectElem = function(item) {
 	$j('#id_instructions').val('');
 	$j('#id_required').prop('checked','');
 	
-	$j('div.field_selected').removeClass('field_selected');
-	var currCategory=$j('#cat_selector').val();	
-	var $option,$wrap_option,i, question_text=formElements[currCategory][item]['ques'], $button=$j('#button_add');
-	
-    //  Add validation options
-    if (item in formElements['Generic'])
-    {
-        addCorrectnessOptions(item);
+	if($j('div.field_selected').length){
+        onSelectField($j('div.field_selected'), $j.data($j('div.field_selected')[0], 'data'), item);
+    } else {
+        var currCategory=$j('#cat_selector').val();
+        var $option,$wrap_option,i, question_text=formElements[currCategory][item]['ques'], $button=$j('#button_add');
+        
+        //  Add validation options
+        if (item in formElements['Generic'])
+        {
+            addCorrectnessOptions(item);
+        }
+        
+        $j('#id_instructions').show();
+        //Defining actions for generic elements
+        if(item=='textField' || item=='longTextField' || item=='longAns' || item=='reallyLongAns')
+            addSpecificOptions(item, '', '');
+        else if(item=="radio" || item=="dropdown" || item=="multiselect" || item=="checkboxes") 
+            generateOptions();
+        else if(item=="numeric") 
+            addSpecificOptions(item, '', '');
+        else if(item=='section'){
+            $j('#id_instructions').val('Enter a short description about the section');
+        }
+        else if(item=='page'){
+            $j('#id_instructions').val('').hide();
+        }
+        
+        //Set 'Required' to a sensible default
+        setRequired(item);	
+            
+        $j('#id_question').val(question_text);
+        $prevField=$currSection.children(":last");
+        if($button.val()!='Add to Form')
+            $button.val('Add to Form').html('Add Field to Form').unbind('click').click(function(){insertField($j('#elem_selector').val(),$prevField)});
     }
-    
-	//Defining actions for generic elements
-	if(item=='textField' || item=='longTextField' || item=='longAns' || item=='reallyLongAns')
-		addSpecificOptions(item, '', '');
-	else if(item=="radio" || item=="dropdown" || item=="multiselect" || item=="checkboxes") 
-		generateOptions();
-	else if(item=="numeric") 
-		addSpecificOptions(item, '', '');
-	else if(item=='section'){
-		$j('#id_instructions').val('Enter a short description about the section');
-	}
-	else if(item=='page'){
-		$j('#id_instructions').val('Not required');
-	}
-	
-	//Set 'Required' to a sensible default
-	setRequired(item);	
-		
-	$j('#id_question').val(question_text);
-	$prevField=$currSection.children(":last");
-	if($button.val()!='Add to Form')
-		$button.val('Add to Form').unbind('click').click(function(){insertField($j('#elem_selector').val(),$prevField)});
 };
 
 var setRequired=function(item){
 	//Sets the 'Required' option according to item
 	
 	$j('#id_required').attr('disabled', false);
+    $j('.toolboxText').show();
 	//For 'section' and 'page', disable 'Required'
-	if(item=='page' || item=='section' || item in formElements['NotReallyFields'])
+	if(item=='page' || item=='section' || item in formElements['NotReallyFields']){
 		$j('#id_required').attr('disabled', true);
+        $j('.toolboxText').hide();
+    }
 	//Set 'Required' as checked for custom fields that are required on the model
-	if(!item in formElements['Generic']){
+	if(!(item in formElements['Generic'])){
 		//Get the options for this item, and set 'Required' accordingly
 		$j.each(formElements, function(cat, flds){
 			if(item in flds){
@@ -660,6 +746,8 @@ var setRequired=function(item){
 
 var updateField=function() {
 	var curr_field_type=$j.data($currField[0],'data').field_type;
+    var field_type=$j('#elem_selector').val();
+    var curr_field_id=$j.data($currField[0],'data').parent_id;
 	if(curr_field_type=='section'){
 		$currField.find('h2').html($j('#id_question').val());
 		$currField.children('p.field_text').html($j('#id_instructions').val());
@@ -667,21 +755,30 @@ var updateField=function() {
 	}
 	$prevField=$currField.prev();
 	$currField.remove();
-	$currField=addElement(curr_field_type,$prevField);
-	$currField.addClass('field_selected');
+	$currField=addElement(field_type,$prevField);
+	$currField.click();
+    $j.data($currField[0],'data').parent_id = curr_field_id;
 };
 
-var onSelectField=function($elem, field_data) {
+var onSelectField=function($elem, field_data, ftype=null) {
 	/*
 		Handles clicks on field wrappers.
 		Also called by rebuild(..) to recreate a form from metadata
 	*/
 	
-	clearSpecificOptions();
+    //Open the field panel if not already open
+    $j('#header_fields.ui-accordion-header-collapsed').click();
+    
 	//De-selecting any previously selected field
-	$j('div.field_selected').removeClass('field_selected');
+	if($j('div.field_selected').length == 0 || !$elem.hasClass('field_selected')){
+        $j('div.field_selected').click();
+        $j('div.field_wrapper').removeClass('field_hover');
+        $j('div.field_wrapper').find(".wrapper_button").removeClass("wrapper_button_hover");
+    }
+    clearSpecificOptions();
 		
-	var $wrap=$elem, $button=$j('#button_add'), options, ftype=field_data.field_type;
+	var $wrap=$elem, $button=$j('#button_add'), options;
+    if(ftype == null) ftype=field_data.field_type;
 	
 	//Select the current field and category in the field and category selectors
 	if(ftype in formElements['Generic']){
@@ -738,7 +835,7 @@ var onSelectField=function($elem, field_data) {
 	addCorrectnessOptions(ftype);
 	$j('#'+ftype+'_correct_answer').val(field_data.attrs['correct_answer']);
 	if($button.val()=='Add to Form')
-		$button.val('Update').unbind('click').click(updateField);
+		$button.val('Update').html("Update Field").unbind('click').click(updateField);
 		
 	//Set 'Required' depending on item
 	setRequired(ftype);	
@@ -770,9 +867,11 @@ var renderNormalField=function(item, field_options, data){
 			type:"text",
 			size:"30"
 		});
+        if($j('#textField_correct_answer').val())
+            $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + $j('#textField_correct_answer').val() + "</span>"));
 		if($j('#charOrWord').val()=='chars')
 			key='charlimits';
-		else key='wordlimits';	
+		else key='wordlimits';
 		data['attrs'][key]=$j('#text_min').val() + ',' + $j('#text_max').val();
         data['attrs']['correct_answer']=$j('#textField_correct_answer').val();
 	}
@@ -817,7 +916,8 @@ var renderNormalField=function(item, field_options, data){
 		else {
 			//Normal field
 			$text_inputs.each(function(idx,el) {
-					options_string+=$j(el).val()+"|";	
+				options_string+=$j(el).val();
+                if(idx != ($text_inputs.length - 1)) options_string+="|";
 			});
 		}
 		$j.each(options_string.split('|'), function(idx, el){
@@ -826,7 +926,9 @@ var renderNormalField=function(item, field_options, data){
 						type:"radio",
 						value:el
 				});
-				$new_elem.append($j("<p>").append($one_option).append($j("<span>"+el+"</span>")));
+                $one_option = $one_option.add($j("<span> "+el+"</span>"));
+                if(idx == parseInt($j('#radio_correct_answer').val())) $one_option = $one_option.add($j("<span class='correct_answer'> (correct) </span>"));
+				$new_elem.append($j("<p>").append($one_option));
 			}
 		});
 		data['attrs']['options']=options_string;
@@ -839,15 +941,21 @@ var renderNormalField=function(item, field_options, data){
 			options_string=field_options['options'];
 		else{
 			$text_inputs.each(function(idx,el) {
-				options_string+=$j(el).val()+"|";
+				options_string+=$j(el).val();
+                if(idx != ($text_inputs.length - 1)) options_string+="|";
 			});
 		}
 		$j.each(options_string.split('|'), function(idx, el){
 			if(el!=''){
 				$one_option=$j('<option>').attr({
 						value:el
-				});	
-				$one_option.html(el);
+				});
+                if(idx == parseInt($j('#dropdown_correct_answer').val())) {
+                    $one_option.html(el + " (correct)");
+                    $one_option.css('color', 'blue');
+                } else { 
+                    $one_option.html(el);
+                }
 				$new_elem.append($one_option);
 			}
 		});	
@@ -863,7 +971,8 @@ var renderNormalField=function(item, field_options, data){
 			options_string=field_options['options'];
 		else {
 			$text_inputs.each(function(idx,el) {
-				options_string+=$j(el).val()+"|";
+				options_string+=$j(el).val();
+                if(idx != ($text_inputs.length - 1)) options_string+="|";
 			});
 		}
 		$j.each(options_string.split('|'), function(idx, el){
@@ -882,15 +991,19 @@ var renderNormalField=function(item, field_options, data){
 			options_string=field_options['options'];
 		else {
 			$text_inputs.each(function(idx,el) {
-				options_string+=$j(el).val()+"|";
+				options_string+=$j(el).val();
+                if(idx != ($text_inputs.length - 1)) options_string+="|";
 			});
 		}
+        var correct_answers = $j('#checkboxes_correct_answer').val().split(",").filter(Boolean).map(Number);
 		$j.each(options_string.split('|'), function(idx, el){
 			$one_option=$j('<input>').attr({
 					type:"checkbox",
 					value:el
 			});
-			$new_elem.append($j("<p>").append($one_option).append($j("<span>"+el+"</span>")));
+            $one_option = $one_option.add($j("<span> "+el+"</span>"));
+            if(correct_answers.includes(idx)) $one_option = $one_option.add($j("<span class='correct_answer'> (correct) </span>"));
+            $new_elem.append($j("<p>").append($one_option));
 		});
 		data['attrs']['options']=options_string;
         data['attrs']['correct_answer']=$j('#checkboxes_correct_answer').val();
@@ -963,13 +1076,17 @@ var renderNormalField=function(item, field_options, data){
 			type:'radio',
 			value:'Male',
 			name:'gender'
-		})).append($j('<span class="field_text">Male&nbsp;&nbsp;</span>')).append($j('<input/>').attr({
+		})).append($j('<span class="field_text"> Male</span><br>')).append($j('<input/>').attr({
 				type:'radio',
 				value:'Female',
 				name:'gender'
-		})).append($j('<span class="field_text">Female</span>'));
+		})).append($j('<span class="field_text"> Female</span><br>')).append($j('<input/>').attr({
+				type:'radio',
+				value:'Other',
+				name:'gender'
+		})).append($j('<span class="field_text"> Other</span>'));
 	}
-    else if((item=="boolean") || (item == "null_boolean")) {
+    else if(item=="boolean") {
 		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
 		$new_elem=$j("<div>");
         options_string = 'Yes';
@@ -981,6 +1098,20 @@ var renderNormalField=function(item, field_options, data){
 			$new_elem.append($j("<p>").append($one_option).append($j("<span>"+el+"</span>")));
 		});
 	}
+    else if(item == "null_boolean") {
+        $new_elem=$j('<select>');
+		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
+        options_string = "Unknown|No|Yes";
+		$j.each(options_string.split('|'), function(idx, el){
+			if(el!=''){
+				$one_option=$j('<option>').attr({
+						value:el
+				});	
+				$one_option.html(el);
+				$new_elem.append($one_option);
+			}
+		});
+    }
     else if(item=="radio_yesno") {
 		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
 		$new_elem=$j("<div>");
@@ -1020,8 +1151,7 @@ var renderNormalField=function(item, field_options, data){
 			$j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
 			$j(this).removeClass('field_selected');
 			$j('#cat_selector').children('select[value=Generic]').attr('selected','selected');
-			onSelectCategory('Generic');
-			onSelectElem('textField');
+			$j('#cat_selector').val('Generic').change();
 		});
 		$outline.appendTo($currPage).dblclick(function(){
 			$currSection=$j(this).children('div.section');
@@ -1064,7 +1194,13 @@ var renderCustomField=function(item, field_options, data){
     //Rendering code for custom fields
 
 	var $new_elem;
-	if(item.match("name$")){
+	if(item.match("e_mail$")){
+        $new_elem=$j('<div>').css('display','inline-block');
+        $new_elem.append($j('<input/>').attr({
+			type:"text",
+			size:"30"
+		}));
+    } else if(item.match("name$")){
 		$new_elem=$j('<div>').css('display','inline-block');
 		var $first_div, $last_div;
 		$first_div=$j('<div>').append($j('<input/>',{
@@ -1076,8 +1212,7 @@ var renderCustomField=function(item, field_options, data){
 			size:'20'
 		})).append($j('<p class="field_text">Last</p>')).css('float','left');
 		$new_elem.append($first_div).append($last_div).append('<br/>');
-	}
-	else if(item.match("address$")){
+	} else if(item.match("address$")){
 		$new_elem=$j('<div>');
 		$new_elem.append($j('<p class="field_text">Street Address</p>')).append($j('<textarea>',{
 			'rows':4,
@@ -1111,7 +1246,7 @@ var addElement=function(item, $prevField) {
 	html_name=item+"_"+elemTypes[item], html_id="id_"+item+"_"+elemTypes[item],
 	data={};
 	
-	$new_elem_label=$j(createLabel(label_text,$j('#id_required').prop('checked'))).appendTo($wrap);
+	$new_elem_label=$j(createLabel(label_text,$j('#id_required').prop('checked'),help_text)).appendTo($wrap);
 	$j('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($wrap);
 	
 	//Populating common data attributes
@@ -1190,10 +1325,16 @@ var submit=function() {
 	
 	var form={'title':$j('#form_title').html(), 'desc':$j('#form_description').html(), 'anonymous':($j('#id_anonymous').prop('checked') == "checked"), 'pages':[]}, section, elem, page, section_seq, page_seq=0;
 	form['link_type']=$j('#links_id_main').val();
-	if(form['link_type']!='-1' && $j('#links_id_specify').val()=='particular')
+	if(form['link_type']!='-1' && $j('#links_id_specify').val()=='particular'){
 		form['link_id']=$j('#links_id_pick').val();
-	else form['link_id']=-1;	
-	
+        if($j("#links_id_main").val()=="Program"){
+            form['link_tl'] = $j("#links_id_tl").val();
+            form['link_module'] = $j("#links_id_module").val();
+        }
+	} else {
+        form['link_id']=-1;
+    }
+
 	form['success_message']=$j('#input_form_sucmsg').val();
     form['success_url']=$j('#input_suc_url').val();
 	var form_perms='';
@@ -1267,7 +1408,11 @@ var submit=function() {
 			//console.log(value);
 			if(value=='OK')
 				window.location='/customforms/';
-		}
+            $j("#submit_error").empty().hide();
+		},
+        error: function(error) {
+            $j("#submit_error").html(error.responseJSON.message).show();
+        }
 	});
 	$j('#submit').attr("disabled","true");
 		
@@ -1284,6 +1429,16 @@ var updateDesc=function() {
 	$j('#form_description').html($j('#input_form_description').val());
 	
 };
+
+var onChangeBase=function(){
+    if($j('#base_form').val()!="-1"){
+        $j("#create_from_base").show();
+    } else {
+        $j("#create_from_base").hide();
+        $j('#id_modify_wrapper').hide();
+		$j('#id_modify').prop('checked', false);
+    }
+}
 
 var createFromBase=function(){
 	//Clearing previous fields, if any
@@ -1304,8 +1459,12 @@ var createFromBase=function(){
 			dataType:'json',
 			async:false,
 			success: function(metadata) {
+                $j("#create_from_base_error").empty().hide();
 				rebuild(metadata);
-			}
+			},
+            error: function(error) {
+                $j("#create_from_base_error").html(error.responseJSON.message).show();
+            }
 		});
 		$j('#id_modify_wrapper').show();
 	}
@@ -1320,7 +1479,6 @@ var createFromBase=function(){
 
 var rebuild=function(metadata) {
 	//Takes form metadata, and reconstructs the form from it
-	
 	$j('#outline_0').remove();
 	//Setting form's title and description
 	$j('#input_form_title').val(metadata['title']).change();
@@ -1334,9 +1492,12 @@ var rebuild=function(metadata) {
 	//console.log($j('#links_id_main').val());
 	onChangeMainLink();
 	if(metadata['link_id']!=-1){
-		$j('#links_id_specify').val('particular');
-		onChangeLinksSpecify();
-		$j('#links_id_pick').val(metadata['link_id']);
+		$j('#links_id_specify').val('particular').change();
+		$j('#links_id_pick').val(metadata['link_id']).change();
+        if(metadata['link_type'] == "Program"){
+            $j('#links_id_tl').val(metadata['link_tl']).change();
+            $j('#links_id_module').val(metadata['link_module']);
+        }
 	}
 	else $j('#links_id_specify').val('userdef');
 	
@@ -1374,22 +1535,25 @@ var rebuild=function(metadata) {
 				var category=getFieldCategory(field_data['field_type']);
 				if(category!='Generic' && category!='Personal' && category!='NotReallyFields') {
 					$j('#cat_selector').val(category);
-					if(field_data.attrs['link_id']=="-1"){
-						$j('#main_cat_spec').val('automatic');
-						onChangeMainCatSpec();
-					}
-					else {
+					if(field_data.attrs['link_id'] && field_data.attrs['link_id']!="-1"){
 						$j('#main_cat_spec').val('particular');
 						onChangeMainCatSpec();
 						$j('#cat_instance_sel').val(field_data.attrs['link_id']);
 					}
+					else {
+						$j('#main_cat_spec').val('automatic');
+						onChangeMainCatSpec();
+					}
 				}
 				onSelectField([], field_data);		
 				$prevField=addElement(field['field_type'], $prevField);
-				$j.data($prevField[0], 'data')['parent_id']=field['id'];	
+				$j.data($prevField[0], 'data')['parent_id']=field['id'];
 			});
 		});
-	});	
-	
+	});
+    // Reset add field form
+	$j("#cat_selector").val('Generic').change();
+    //Open the information panel if not already open
+    $j("#header_information.ui-accordion-header-collapsed").click();
 };
 

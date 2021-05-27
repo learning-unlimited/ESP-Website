@@ -4,6 +4,7 @@ import os
 from django.db import models
 from django.apps import apps
 from django.db import connection, transaction
+from django.db.models.fields import NOT_PROVIDED
 from esp.customforms.models import Field
 from argcache import cache_function
 from esp.users.models import ESPUser
@@ -217,15 +218,22 @@ class DynamicModelHandler:
     def addField(self, field):
         with connection.schema_editor() as schema_editor:
             model = self.createDynModel()
-            field_name = self.get_field_name(field)
-            schema_editor.add_field(model, model._meta.get_field(field_name))
+            new_field = self._getModelField(field.field_type)
+            if new_field:
+                new_field.column = self.get_field_name(field)
+                # We need to set a default (if one isn't set already) in case there are already responses to the form
+                if new_field.default == NOT_PROVIDED:
+                    new_field.default = ''
+                schema_editor.add_field(model, new_field)
 
     def updateField(self, field, old_field):
         with connection.schema_editor() as schema_editor:
             model = self.createDynModel()
-            field_name = self.get_field_name(field)
-            schema_editor.alter_field(model, self._getModelField(old_field),
-                                      model._meta.get_field(field_name))
+            old_field_name = self.get_field_name(old_field)
+            new_field = self._getModelField(field.field_type)
+            if new_field:
+                new_field.column = self.get_field_name(field)
+                schema_editor.alter_field(model, model._meta.get_field(old_field_name), new_field)
 
     def removeField(self, field):
         """
@@ -233,9 +241,10 @@ class DynamicModelHandler:
         """
         with connection.schema_editor() as schema_editor:
             model = self.createDynModel()
-            field_name = self.get_field_name(field)
-            #   TODO: Return early if this is a linked field
-            schema_editor.remove_field(model, model._meta.get_field(field_name))
+            if self._getModelField(field.field_type):
+                field_name = self.get_field_name(field)
+                #   TODO: Return early if this is a linked field
+                schema_editor.remove_field(model, model._meta.get_field(field_name))
 
     def removeLinkField(self, field):
         """
@@ -263,8 +272,9 @@ class DynamicModelHandler:
             if link_model_cls.__name__ not in self.link_models_list:
                 # Add in the FK-column for this model
                 model = self.createDynModel()
-                field_name = self.get_field_name(field)
-                schema_editor.add_field(model, model._meta.get_field(field_name))
+                new_field = self._getLinkModelField(link_model_cls)
+                new_field.column = 'link_%s' % link_model_cls.__name__
+                schema_editor.add_field(model, new_field)
                 self.link_models_list.append(link_model_cls.__name__)
 
     def change_only_fkey(self, form, old_link_type, new_link_type, link_id):
@@ -277,7 +287,7 @@ class DynamicModelHandler:
                 # Old FK column needs to go
                 model = self.createDynModel()
                 old_model_cls = cf_cache.only_fkey_models[old_link_type]
-                old_field_name = 'link_%s' % old_model_cls.__name__
+                old_field_name = 'link_%s_id' % old_model_cls.__name__
                 schema_editor.remove_field(model, model._meta.get_field(old_field_name))
 
             form.link_type = new_link_type
@@ -288,8 +298,9 @@ class DynamicModelHandler:
                 # New FK column needs to be inserted
                 model = self.createDynModel()
                 new_model_cls = cf_cache.only_fkey_models[new_link_type]
-                new_field_name = 'link_%s' % new_model_cls.__name__
-                schema_editor.add_field(model, model._meta.get_field(new_field_name))
+                new_field = self._getLinkModelField(new_model_cls)
+                new_field.column = 'link_%s_id' % new_model_cls.__name__
+                schema_editor.add_field(model, new_field)
 
     def createDynModel(self):
         """

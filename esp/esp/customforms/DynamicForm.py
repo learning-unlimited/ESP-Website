@@ -1,6 +1,7 @@
 from esp.customforms.models import Field, Attribute, Section, Page, Form
 from django import forms
 from django.forms.models import fields_for_model
+from django.utils.safestring import mark_safe
 from form_utils.forms import BetterForm
 from collections import OrderedDict
 from formtools.wizard.views import SessionWizardView
@@ -10,6 +11,7 @@ from django.http import HttpResponseRedirect
 from localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
 from esp.customforms.forms import NameField, AddressField
 from esp.customforms.DynamicModel import DMH
+from esp.tagdict.models import Tag
 from esp.utils.forms import DummyField
 from esp.users.models import ContactInfo, ESPUser
 from argcache import cache_function
@@ -86,7 +88,7 @@ class CustomFormHandler():
         for attr in attrs:
             if attr['attr_type'] == 'options':
                 other_attrs['choices'] = []
-                options_list = attr['value'].split('|')[:-1]
+                options_list = attr['value'].split('|')
                 for option in options_list:
                     other_attrs['choices'].append( (option, option) )
             elif attr['attr_type'] == 'limits':
@@ -134,7 +136,7 @@ class CustomFormHandler():
 
             for field in section:
                 field_name = 'question_%d' % field['id']
-                field_attrs = {'label': field['label'], 'help_text': field['help_text'], 'required': field['required']}
+                field_attrs = {'label': mark_safe(field['label']), 'help_text': mark_safe(field['help_text']), 'required': field['required']}
 
                 # Setting the 'name' attribute for combo fields
                 """
@@ -198,7 +200,7 @@ class CustomFormHandler():
                     if not field_is_custom:
                         # Add in other classes for validation
                         generic_type = cf_cache.getGenericType(form_field)
-                        if 'widget_attrs' in self._field_types[generic_type] and 'class' in self._field_types[generic_type]['widget_attrs']:
+                        if generic_type in self._field_types and 'widget_attrs' in self._field_types[generic_type] and 'class' in self._field_types[generic_type]['widget_attrs']:
                             form_field.widget.attrs['class'] += self._field_types[generic_type]['widget_attrs']['class']
 
                     # Adding to field list
@@ -756,6 +758,27 @@ class FormHandler:
             'perms': self.form.perms,
             'pages': self._getFormMetadata(self.form)
         }
+        # Identify if this form has been linked to a registration module
+        if self.form.link_type == 'Program' and self.form.link_id != -1:
+            try:
+                prog = Program.objects.get(id=self.form.link_id)
+            except Program.DoesNotExist:
+                raise ESPError('No program with ID %i' % (self.form.link_id))
+            tags = Tag.objects.filter(content_type=ContentType.objects.get_for_model(Program), object_id=prog.id, value=self.form.id, key__in=['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id'])
+            if tags.count() == 1:
+                tag = tags[0]
+                if '_extraform_id' in tag.key:
+                    tl = tag.key.split("_")[0]
+                    module = "CustomFormModule"
+                elif tag.key == 'quiz_form_id':
+                    tl = "teach"
+                    module = "TeacherQuizModule"
+            elif tags.count() > 1:
+                raise ESPError('Custom form #%i is linked to multiple registration modules for %s' % (self.form.id, prog.name))
+            else:
+                tl = ''
+                module = ''
+            metadata.update({'link_tl': tl, 'link_module': module})
         return metadata
 
 

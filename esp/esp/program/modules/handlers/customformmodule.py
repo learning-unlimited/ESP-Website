@@ -92,15 +92,18 @@ class CustomFormModule(ProgramModuleObj):
         form_wizard.curr_request = request
 
         if request.method == 'POST':
-            form = form_wizard.get_form(0, request.POST, request.FILES)
-            if form.is_valid():
-                #   Delete previous responses from this user
-                dmh = DynamicModelHandler(cf)
-                form_model = dmh.createDynModel()
-                form_model.objects.filter(user=request.user).delete()
-                form_wizard.done([form])
-                bit, created = Record.objects.get_or_create(user=request.user, program=self.program, event=self.event)
-                return self.goToCore(tl)
+            try:
+                form = form_wizard.get_form(0, request.POST, request.FILES)
+                if form.is_valid():
+                    #   Delete previous responses from this user
+                    dmh = DynamicModelHandler(cf)
+                    form_model = dmh.createDynModel()
+                    form_model.objects.filter(user=request.user).delete()
+                    form_wizard.done([form])
+                    bit = Record.objects.create(user=request.user, program=self.program, event=self.event)
+                    return self.goToCore(tl)
+            except:
+                raise ESPError("Error saving form data. Please report this to the program directors.", log=False)
         else:
             #   If the user already filled out the form, use their earlier response for the initial values
             if self.isCompleted():
