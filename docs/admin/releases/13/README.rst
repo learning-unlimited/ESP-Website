@@ -22,7 +22,7 @@ Moderators (or observers, teaching assistants, etc) for individual sections are 
 - Several existing printables have moderator information (e.g. class list, room schedules).
 - Moderator stats are shown on the dashboard and teacher big board.
 
-Custom Forms
+Custom forms
 ~~~~~~~~~~~~
 Overhauled the custom forms creation frontend page and backend functionality. Most notably, this now allows for custom forms to be edited (even after users have responded to a custom form). This includes adding, removing, and editing fields, instructions, and pages/sections. To edit a custom form, you can select it from within the creation frontend or with one of the new links on the custom form landing page. In addition, the following changes/fixes were made:
 
@@ -43,13 +43,17 @@ Program management changes
 - When importing the settings from a previous program, class registration module info settings, student class registration module info settings, and tag settings are now copied to the new program. New programs based on previous programs should now function almost exactly like the previous programs.
 - Added new program tags to change the tolerance (in minutes) of contiguous blocks for the teacher availability page and for scheduling purposes.
 - Added custom widgets to many of the tag settings (preventing potentially site-breaking tag values).
-- Added a new tag `grade_increment_date` that allows admins to adjust when student grades increment (e.g. before or after a summer program).
+- Added a new tag `grade_increment_date` that allows admins to adjust when student grades increment (e.g., before or after a summer program).
 - Added a frontend user interface to add, remove, edit, and import line items.
 - Fixed text wrapping for the module questions on the new program and program settings pages.
-- Fixed some modules that were always being included by default (class change request module).
+- Fixed some modules that were unintentionally being included by default (class change request module).
 - Added module questions for the Class Change Request, Moderator, and Student Acknowledgment modules.
 - Fixed a bug that occurred when no modules were selected.
 - Fixed a bug that caused an invalid calculation of the program admission cost.
+- The "choice" field for classroom furnishings and floating resources now accepts up to 200 characters.
+- Timeslots for classrooms and floating resources on the resources page are no longer grouped if they occur <15 minutes apart.
+- Added documentation for modules, which is shown on the main program management page. The additional modules on this page are now alphabetized.
+- Fixed section alignment on the main program management page.
 
 User search modules changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -64,7 +68,7 @@ Contact info changes
 ~~~~~~~~~~~~~~~~~~~~
 - Contact infos now require an associated user.
 - Old contact infos have been cleaned up, associating student accounts with their emergency contact and guardian contact infos. Any contact infos without associated users have been deleted, since they are useless.
-- Users can now be searched by any guardian or emergency contact information (e.g. find a student account by their parent's email address).
+- Users can now be searched by any guardian or emergency contact information (e.g., find a student account by their parent's email address).
 - Added a country field to contact infos. If "International" is selected for the state field in a user's profile, the country field is shown.
 
 Student registration changes
@@ -72,6 +76,8 @@ Student registration changes
 - Some modules will no longer show up in registration if they are not set up correctly (formstack medliab, extra costs, student applications, and lunch selection).
 - The extra costs and donation modules now work when a program has no admission cost.
 - Added an option to the student lottery management page to not open student registration once the lottery has been run.
+- Added enrollment limit options (max timeslots and max sections) to the class lottery.
+- Fixed a bug affecting ranks beyond the first choice in the class lottery.
 
 Teacher registration changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -79,6 +85,11 @@ Teacher registration changes
 - Implemented several improvements to the attendance interface (normal and webapp versions).
 - The default availability for the teacher availability form is now none (instead of all/full).
 - Added links on the class edit page to the coteachers and catalog preview pages.
+
+Volunteer registration changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Help text is now shown for the comments field.
+- Required fields are now marked with asterisks.
 
 Class management changes
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -89,11 +100,6 @@ Statistics and data visualization
 - New queries have been added to the /manage/statistics page, including multiprogram statistics on student and teacher registration. The results of these queries include graphs to visualize the change of various metrics across programs through time (e.g. # class-student-hours approved).
 - Adjusted the text of the link on the "Manage All Programs" page to reflect the addition of non-student statistics.
 
-Volunteer registration changes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- Help text is now shown for the comments field.
-- Required fields are now marked with asterisks.
-
 Scheduling changes
 ~~~~~~~~~~~~~~~~~~
 - Added a button to the scheduling checks page that, when clicked, causes all of the checks to refresh at some interval that is specified by the user.
@@ -103,13 +109,13 @@ Scheduling changes
 - Fixed the "Teachers with limited availability" scheduling check for cases where teachers somehow had no availability.
 - Fixed the highlighting on the ajax scheduler for when a user is trying to schedule a single-block class on a day with a single lunch block.
 - Added scheduling checks to the ajax scheduler that let you see if there are any errors or inconsistencies with how classes have been scheduled (e.g., capacity mismatches, resource mismatches, availability mismatches, double-booked teachers). This does not include all checks from the scheduling checks module, and we plan to keep the scheduling checks module around for the foreseeable future.
-- The class directory on the ajax scheduler can now be sorted by ID, caetgory, length, capacity, and teacher availability.
+- The class directory on the ajax scheduler can now be sorted by ID, category, length, capacity, and teacher availability.
 - Fixed a bug that caused sections with floating resources to not be shown in the class directory on the ajax scheduler.
 - Fixed a bug where pressing enter in the class search box would refresh the page.
 
 Onsite changes
 ~~~~~~~~~~~~~~
-- The search on the teacher check-in page now permits regular expressions and searches all parts of teacher name and class titles/codes.
+- The search on the teacher check-in page now permits regular expressions and searches all parts of teacher names and class titles/codes.
 - Teacher attendance changes also apply to the onsite attendance portal.
 - Added teacher lists to classes on the grid-based class changes interface. Also added teachers as a filterable field.
 - Fixed the "Hide past timeblocks" option in the grid-based class changes interface.
@@ -127,6 +133,7 @@ Theme changes
 - Fixed the color of some buttons for the fruitsalad theme when using the default theme settings.
 - Fixed the background color of the top tabs on the fruitsalad theme.
 - Fixed a range of bugs related to arbitrary table widths in the bigpicture theme.
+- Added a default FAQ page at /faq (/faq.html should also work).
 
 Dashboard changes
 ~~~~~~~~~~~~~~~~~
@@ -152,14 +159,9 @@ Minor new features
 ~~~~~~~~~~~~~~~~~~
 - Added options to customize the amount of financial aid granted using the financial aid approval module.
 - Added a public view for emails that have been marked as public (this is a new option in the comm panel). Anonymous (not signed in) users can read a generic (no private information) version of an email at /email/<id> (actual links are on the email monitoring page and comm panel confirmation page).
-- The "choice" field for classroom furnishings and floating resources now accepts up to 200 characters.
-- Added a default FAQ page at /faq (/faq.html should also work).
-- Timeslots for classrooms and floating resources on the resources page are no longer grouped if they occur <15 minutes apart.
 - Added links to usernames in the scheduler, financial aid approval module, and the manage events page.
 - Added a student search box to the accounting module.
-- Added documentation for modules, which is shown on the main program management page. The additional modules on this page are now alphabetized.
 - Pages that use the usersearch form interface now list the module name.
-- Added enrollment limit options (max timeslots and max sections) to the class lottery.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -169,7 +171,7 @@ Minor bug fixes
 - Fixed a bug where students that had yet to fill out a profile would cause the phase zero management page to break. If such students are in the phase zero lottery, they are now reported on the management page.
 - Fixed a bug that reported an error when a class's duration was some whole number of hours.
 - Fixed the "lottery preferences" count on the student big board (was previously including enrollments).
-- Fixed elements that were supposed to be full width (e.g. surveys).
+- Fixed elements that were supposed to be full width (e.g., surveys).
 - Fixed the cutoff at the bottom of the manage programs page.
 - Fixed pluralizations and capitalizations in the admin pages.
 - Fixed an issue that had broken email "plain" redirects.
@@ -178,10 +180,8 @@ Minor bug fixes
 - Fixed a bug on the phase zero management page when the grade cap tag was not set.
 - Fixed logging errors when sending emails.
 - Fixed errors that occurred when emailing users with particular symbols in their names.
-- Fixed a bug affecting ranks beyond the first choice in the class lottery.
 - Fixed a bug where selecting a timeslot on a different day on the onsite attendance module would have unexpected behavior.
 - Fixed email links on the stripe failure page.
-- Fixed section alignment on the main program management page.
 
 Development changes
 ===================
