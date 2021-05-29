@@ -20,6 +20,9 @@ table {
 #returntime {
     width: auto !important;
 }
+#return_options input {
+    margin: 0;
+}
 </style>
 {% endblock %}
 
@@ -117,11 +120,9 @@ $j(function() {
     <h2>
         Choose one of the following checkout options for {{ student.first_name }} {{ student.last_name }} ({{ student.username }}):<br />
     </h2>
-    <h3>
-        <input type="radio" name="return_option" value="checkout_all_day" checked /> This student is not returning today<br />
-        <input type="radio" name="return_option" value="checkout_forever" /> This student is not returning for the entire program<br />
-        <input type="radio" name="return_option" value="returntime" /> This student is returning at: <input type="datetime-local" id="returntime" name="returntime" value="{% now 'Y-m-d' %}T{% now 'H:i' %}" min="{% now 'Y-m-d' %}T{% now 'H:i' %}">
-    </h3>
+    <input type="radio" name="return_option" value="checkout_all_day" id="checkout_all_day" checked /> <label for="checkout_all_day">This student is not returning today</label><br />
+    <input type="radio" name="return_option" value="checkout_forever" id="checkout_forever" /> <label for="checkout_forever">This student is not returning for the entire program</label><br />
+    <input type="radio" name="return_option" value="returntime" id="returntime" /> <label for="returntime">This student is returning at: <input type="datetime-local" id="returntime" name="returntime" value="{% now 'Y-m-d' %}T{% now 'H:i' %}" min="{% now 'Y-m-d' %}T{% now 'H:i' %}"></label>
 </div>
 
 <br />
