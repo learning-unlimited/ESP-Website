@@ -795,7 +795,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             moderator_list.append(("Teachers who have offered to moderate", teachers['will_moderate'].count()))
         if 'assigned_moderator' in teachers:
             moderator_list.append(("Moderators who have been assigned to sections", teachers['assigned_moderator'].count()))
-        moderator_list.append(("Total number of time blocks offered by moderators", ModeratorRecord.objects.filter(program=prog).aggregate(Sum('num_slots'))['num_slots__sum']))
+        moderator_list.append(("Total number of time blocks offered by moderators", ModeratorRecord.objects.filter(program=prog).aggregate(Sum('num_slots'))['num_slots__sum'] or 0))
         moderator_list.append(("Total number of time blocks assigned moderators", ClassSection.objects.filter(parent_class__parent_program=prog, moderators__isnull=False).distinct().aggregate(Count('meeting_times'))['meeting_times__count']))
         moderator_list.append(("Total number of sections assigned moderators", ClassSection.objects.filter(parent_class__parent_program=prog, moderators__isnull=False).distinct().count()))
         return moderator_list
