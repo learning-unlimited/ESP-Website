@@ -119,6 +119,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
 
         content_parts['Title'] = section.title;
         content_parts['Teachers'] = teachers;
+	content_parts['Type'] = section.class_style;
         if (section.class_size_optimal && !section.class_size_max) {
             content_parts['Class size optimal'] = section.class_size_optimal;
         } else {

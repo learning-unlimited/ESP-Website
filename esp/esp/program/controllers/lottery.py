@@ -467,7 +467,7 @@ class LotteryAssignmentController(object):
                 #   Assign priority students to all sections in random order, grouped by duration
                 #   so that longer sections aren't disadvantaged by scheduling conflicts
                 #   Re-randomize for each priority level so that some sections don't keep getting screwed
-                sections_by_length = [numpy.nonzero(numpy.sum(self.section_schedules, axis=1) == i)[0] for i in range(self.num_timeslots, 0, -1)]
+                sections_by_length = [numpy.nonzero(numpy.sum(self.section_schedules, axis=1) == j)[0] for j in range(self.num_timeslots, 0, -1)]
                 for a in sections_by_length:
                     numpy.random.shuffle(a)
                     for section_index in a:
