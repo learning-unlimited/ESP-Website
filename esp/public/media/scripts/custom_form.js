@@ -186,6 +186,9 @@ $j(document).ready(function() {
     if(edit_form != -1){
         $j("#base_form").val(edit_form).change();
         createFromBase();
+        $j("#create_text").html("Modifying existing form:");
+        $j("#base_form").prop('disabled', true);
+        $j("#create_from_base").hide();
         $j("#id_modify").prop('checked', true).change();
     }
 });
@@ -456,9 +459,9 @@ var onChangeMainCatSpec=function() {
 var createLabel=function(labeltext, required, help_text) {
     //Returns an HTML-formatted label, with a red * if the question is required
     var str='';
-    str+='<p class="field_label">'+labeltext+':';
+    str+='<div class="field_label">'+labeltext+':';
     if(required) str+='<span class="asterisk">'+'*'+'</span>';
-    str+='</p>';
+    str+='</div>';
     if(help_text) str+=' <img src="/media/default_images/question_mark.jpg" class="qmark" title="' + help_text + '">'
     str+='<br>';
     return str;
@@ -775,6 +778,7 @@ var onSelectField=function($elem, field_data, ftype=null) {
         $j('div.field_wrapper').removeClass('field_hover');
         $j('div.field_wrapper').find(".wrapper_button").removeClass("wrapper_button_hover");
     }
+    
     clearSpecificOptions();
 		
 	var $wrap=$elem, $button=$j('#button_add'), options;
@@ -802,7 +806,7 @@ var onSelectField=function($elem, field_data, ftype=null) {
 	
 	if($wrap.length !=0){
 		$wrap.removeClass('field_hover').addClass('field_selected');
-		$wrap.find('.wrapper_button').removeClass('wrapper_button_hover');
+		$wrap.find('.wrapper_button').addClass('wrapper_button_hover');
 		$currField=$wrap;
 		$currSection=$wrap.parent();
 		$prevField=$wrap.prev('div.field_wrapper');	
@@ -846,7 +850,7 @@ var deSelectField=function() {
 	
 	$j(this).removeClass('field_selected');
 	$j(this).addClass('field_hover');
-	$j(this).find(".wrapper_button").toggleClass("wrapper_button_hover");
+	$j(this).find(".wrapper_button").addClass("wrapper_button_hover");
 	$j('#cat_selector').children('option[value=Generic]').prop('selected','selected');
 	onSelectCategory('Generic');
 	onSelectElem('textField');
@@ -1242,7 +1246,7 @@ var addElement=function(item, $prevField) {
 		$j(this).find(".wrapper_button").toggleClass("wrapper_button_hover");
 	}).toggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, deSelectField),
 	label_text=$j.trim($j('#id_question').val()),
-	help_text=$j.trim($j('#id_instructions').val()),
+	help_text=(item=='instructions') ? '' : $j.trim($j('#id_instructions').val()),
 	html_name=item+"_"+elemTypes[item], html_id="id_"+item+"_"+elemTypes[item],
 	data={};
 	
@@ -1466,7 +1470,7 @@ var createFromBase=function(){
                 $j("#create_from_base_error").html(error.responseJSON.message).show();
             }
 		});
-		$j('#id_modify_wrapper').show();
+		// $j('#id_modify_wrapper').show();
 	}
 	else {
 		$j('#id_modify_wrapper').hide();
