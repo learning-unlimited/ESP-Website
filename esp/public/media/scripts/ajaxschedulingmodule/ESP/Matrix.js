@@ -187,7 +187,7 @@ function Matrix(
                 if(cell.el.hasClass("teacher-available-cell")) {
                     var scheduleTimeslots = [timeslot.id];
                     var notEnoughSlots = false;
-                    for(var i=1; i<section.length; i++) {
+                    for(var i=1; i<Math.ceil(section.length) / ((timeslot.end[4] - timeslot.start[4]) / 60); i++) {
                         var nextTimeslot = this.timeslots.get_by_order(timeslot.order+i);
                         if(nextTimeslot) {
                             scheduleTimeslots.push(nextTimeslot.id);
