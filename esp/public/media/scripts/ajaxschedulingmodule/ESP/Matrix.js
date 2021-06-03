@@ -177,9 +177,6 @@ function Matrix(
         var teaching_timeslots = timeslots[1];
         addClassToTimeslots(available_timeslots, "teacher-available-cell");
         addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
-        if(section.length<=1) {
-            return;
-        }
         $j.each(available_timeslots, function(j, timeslot_id) {
             var timeslot = this.timeslots.get_by_id(timeslot_id);
             $j.each(this.rooms, function(k, room) {
@@ -187,7 +184,9 @@ function Matrix(
                 if(cell.el.hasClass("teacher-available-cell")) {
                     var scheduleTimeslots = [timeslot.id];
                     var notEnoughSlots = false;
-                    for(var i=1; i<Math.ceil(section.length) / ((timeslot.end[4] - timeslot.start[4]) / 60); i++) {
+                    var numBlocksInClass=Math.ceil(section.length / (Math.abs(timeslot.end[4] - timeslot.start[4]) / 60)); //COMMENT OUT THIS LINE FOR SPLARKS, KEEP IT FOR HSSPS
+                    //var numBlocksInClass=section.length //COMMENT OUT THIS LINE FOR HSSPS, KEEP IT FOR SPLARKS
+                    for(var i=1; i<numBlocksInClass; i++) {
                         var nextTimeslot = this.timeslots.get_by_order(timeslot.order+i);
                         if(nextTimeslot) {
                             scheduleTimeslots.push(nextTimeslot.id);
