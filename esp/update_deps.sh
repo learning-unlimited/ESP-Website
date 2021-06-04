@@ -52,7 +52,7 @@ if [ $((${UBUNTU_VERSION%.*}+0)) -gt 12 ]
 then
 sudo add-apt-repository universe
 else
-sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu $(lsb_release -sc) universe"
+sudo add-apt-repository "deb http://old-releases.ubuntu.com/ubuntu $(lsb_release -sc) universe"
 fi
 
 sudo apt-get update
