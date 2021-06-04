@@ -58,14 +58,6 @@ fi
 sudo apt-get update
 sudo apt-get install -y curl
 
-# This doesn't seem to work on the production server
-# It already has pip, so we can just skip this
-if [ $((${UBUNTU_VERSION%.*}+0)) -gt 12 ]
-then
-curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
-sudo python2 get-pip.py
-fi
-
 # Ensure that the virtualenv exists and is activated.
 if [[ -z "$VIRTUAL_ENV" ]]
 then
@@ -76,6 +68,9 @@ then
     fi
     source "$VIRTUALENV_DIR/bin/activate"
 fi
+
+curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
+python2 get-pip.py
 
 # Install/upgrade pip, setuptools, wheel, and application dependencies.
 pip2 install -U pip
