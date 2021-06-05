@@ -69,8 +69,8 @@ then
     source "$VIRTUALENV_DIR/bin/activate"
 fi
 
-curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
-python2 get-pip.py
+sudo curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
+sudo python2 get-pip.py
 
 # Install/upgrade pip, setuptools, wheel, and application dependencies.
 pip2 install -U pip
