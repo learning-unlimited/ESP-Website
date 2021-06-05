@@ -67,7 +67,7 @@ class BigBoardModule(ProgramModuleObj):
             ("signed up for classes", [(1, time) for time in self.times_classes(prog)], True),
         ]
 
-        timess_data, start = self.make_graph_data(timess, 4, 0, 5)
+        timess_data, start = self.make_graph_data(timess, 0, 0, 5)
 
         left_axis_data = [
             {"axis_name": "#", "series_data": timess_data},
