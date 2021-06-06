@@ -12,7 +12,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.hostname = 'ludev'
 
   # Forward port for Django dev server
-  config.vm.network :forwarded_port, guest: 8000, host: 8000
+  config.vm.network :forwarded_port, guest: 8000, host: 8001
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.  (For debugging, not needed for HTTP/SSH)
