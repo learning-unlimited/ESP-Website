@@ -67,7 +67,6 @@ sudo apt install -y curl
 else
 sudo apt-get update
 sudo apt-get install -y curl
-fi
 
 # Ensure that the virtualenv exists and is activated.
 if [[ -z "$VIRTUAL_ENV" ]]
