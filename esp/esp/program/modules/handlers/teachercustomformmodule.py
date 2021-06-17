@@ -46,13 +46,14 @@ from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
 from django import forms
+from django.db.models.query import Q
 
 class TeacherCustomFormModule(ProgramModuleObj):
     doc = """Serve a custom form as part of teacher registration."""
 
     def __init__(self, *args, **kwargs):
         super(TeacherCustomFormModule, self).__init__(*args, **kwargs)
-        self.event = "extra_form_done"
+        self.event = "teacher_extra_form_done"
 
     @classmethod
     def module_properties(cls):
@@ -64,6 +65,24 @@ class TeacherCustomFormModule(ProgramModuleObj):
             'seq': 4,
             'choosable': 0,
         } ]
+
+    def teachers(self, QObject = False):
+        """Returns lists of teachers who've completed the custom form."""
+
+        qo = Q(record__event=self.event, record__program=self.program)
+        if QObject is True:
+            return {
+                'teacher_custom_form': qo,
+            }
+        else:
+            return {
+                'teacher_custom_form': ESPUser.objects.filter(qo).distinct(),
+            }
+
+    def teacherDesc(self):
+        return {
+            'teacher_custom_form': """Teachers who have completed the custom form""",
+        }
 
     def isCompleted(self):
         """Return true if user has filled out the teacher custom form."""
