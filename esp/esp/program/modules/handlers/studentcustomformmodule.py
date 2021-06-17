@@ -36,7 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_student, main_call,
 
 from esp.utils.web import render_to_response
 
-from esp.users.models import Record
+from esp.users.models import ESPUser, Record
 from esp.customforms.models import Form
 from esp.customforms.DynamicForm import FormHandler
 from esp.customforms.DynamicModel import DynamicModelHandler
