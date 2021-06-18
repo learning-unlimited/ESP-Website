@@ -1192,6 +1192,8 @@ class Program(models.Model, CustomFormsLinkModel):
 
         teacher_dict = self.teachers()
         teacher_types = {'Approved Teachers': 'class_approved', 'All Teachers': 'class_submitted'}
+        if self.hasModule('TeacherModeratorModule'):
+            teacher_types.update({'Assigned Moderators': 'assigned_moderator'})
         shirt_sizes = [x.strip() for x in Tag.getTag('teacher_shirt_sizes').split(',')]
         for teacher_type in teacher_types.items():
             if teacher_type[1] in teacher_dict:
