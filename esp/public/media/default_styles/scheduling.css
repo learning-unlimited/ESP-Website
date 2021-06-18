@@ -116,6 +116,12 @@ td.lowOpacity {
     opacity: .2 !important;
 }
 
+td.hiddenCell {
+    background: #222222 !important;
+    opacity: 0.35 !important;
+    color: #222222 !important;
+}
+
 td.moderator-moderating-or-teaching-cell {
     background: #42b3f4 !important;
     opacity: .9 !important;
