@@ -32,13 +32,13 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_student, main_call, meets_grade
 
 from esp.utils.web import render_to_response
 
-from esp.users.models import ESPUser, User, Record
+from esp.users.models import ESPUser, Record
 from esp.customforms.models import Form
-from esp.customforms.DynamicForm import FormHandler, ComboForm
+from esp.customforms.DynamicForm import FormHandler
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.tagdict.models import Tag
 
@@ -46,47 +46,57 @@ from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
 from django import forms
+from django.db.models.query import Q
 
-import re
-
-class CustomFormModule(ProgramModuleObj):
-    doc = """Serve a custom form as part of student and/or teacher registration."""
+class StudentCustomFormModule(ProgramModuleObj):
+    doc = """Serve a custom form as part of student registration."""
 
     def __init__(self, *args, **kwargs):
-        super(CustomFormModule, self).__init__(*args, **kwargs)
-        self.event = "extra_form_done"
+        super(StudentCustomFormModule, self).__init__(*args, **kwargs)
+        self.event = "student_extra_form_done"
 
     @classmethod
     def module_properties(cls):
         return [ {
-            "module_type": "teach",
-            'required': False,
-            'admin_title': 'Teacher Custom Form',
-            'link_title': 'Additional Profile Information',
-            'seq': 4,
-            'choosable': 0,
-        },
-        {
             "module_type": "learn",
             'required': False,
             'admin_title': 'Student Custom Form',
-            'link_title': 'Additional Profile Information',
+            'link_title': 'Additional Student Information',
             'seq': 4,
             'choosable': 0,
-        },]
+        } ]
+
+    def students(self, QObject = False):
+        """Returns lists of students who've completed the custom form."""
+
+        qo = Q(record__event=self.event, record__program=self.program)
+        if QObject is True:
+            return {
+                'student_custom_form': qo,
+            }
+        else:
+            return {
+                'student_custom_form': ESPUser.objects.filter(qo).distinct(),
+            }
+
+    def studentDesc(self):
+        return {
+            'student_custom_form': """Students who have completed the custom form""",
+        }
 
     def isCompleted(self):
-        """Return true if user has filled out the teacher quiz."""
+        """Return true if user has filled out the student custom form."""
         return Record.objects.filter(user=get_current_request().user, program=self.program, event=self.event).exists()
 
     @main_call
-    @usercheck_usetl
+    @needs_student
+    @meets_grade
     def extraform(self, request, tl, one, two, module, extra, prog):
-        custom_form_id = Tag.getProgramTag('%s_extraform_id' % tl, prog)
+        custom_form_id = Tag.getProgramTag('learn_extraform_id', prog)
         if custom_form_id:
             cf = Form.objects.get(id=int(custom_form_id))
         else:
-            raise ESPError('Cannot find an appropriate form for the quiz.  Please ask your administrator to create a form and set the %s_extraform_id Tag.' % tl, log=False)
+            raise ESPError('Cannot find an appropriate form for the quiz. Please ask your administrator to create a form and set the learn_extraform_id Tag.', log=False)
 
         form_wizard = FormHandler(cf, request, request.user).get_wizard()
         form_wizard.curr_request = request
@@ -123,7 +133,11 @@ class CustomFormModule(ProgramModuleObj):
 
             form = form_wizard.get_form(0)
 
-        return render_to_response(self.baseDir()+'custom_form.html', request, {'prog':prog, 'form': form, 'qsd_name': tl+':customform_header'})
+        return render_to_response('program/modules/customformmodule/custom_form.html', request, {'prog':prog, 'form': form, 'qsd_name': 'learn:customform_header'})
+
+    def isStep(self):
+        custom_form_id = Tag.getProgramTag('learn_extraform_id', self.program)
+        return custom_form_id and Form.objects.filter(id=int(custom_form_id)).exists()
 
     class Meta:
         proxy = True

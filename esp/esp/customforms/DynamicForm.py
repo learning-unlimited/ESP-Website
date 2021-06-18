@@ -767,9 +767,12 @@ class FormHandler:
             tags = Tag.objects.filter(content_type=ContentType.objects.get_for_model(Program), object_id=prog.id, value=self.form.id, key__in=['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id'])
             if tags.count() == 1:
                 tag = tags[0]
-                if '_extraform_id' in tag.key:
-                    tl = tag.key.split("_")[0]
-                    module = "CustomFormModule"
+                if 'learn_extraform_id' in tag.key:
+                    tl = "learn"
+                    module = "StudentCustomFormModule"
+                elif 'teach_extraform_id' in tag.key:
+                    tl = "teach"
+                    module = "TeacherCustomFormModule"
                 elif tag.key == 'quiz_form_id':
                     tl = "teach"
                     module = "TeacherQuizModule"

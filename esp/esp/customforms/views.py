@@ -111,8 +111,10 @@ def onSubmit(request):
                         return ESPError('No program with ID %i' % (metadata['link_id']))
                     if not prog.hasModule(metadata['link_module']):
                         return ESPError('Program does not have %s enabled' % (metadata['link_module']))
-                    if metadata['link_module'] == 'CustomFormModule':
-                        Tag.setTag(key=metadata['link_tl'] + '_extraform_id', value=form.id, target=prog)
+                    if metadata['link_module'] == 'StudentCustomFormModule':
+                        Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
+                    elif metadata['link_module'] == 'TeacherCustomFormModule':
+                        Tag.setTag(key='teach_extraform_id', value=form.id, target=prog)
                     elif metadata['link_module'] == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                     else:
@@ -207,8 +209,10 @@ def onModify(request):
                         return ESPError('No program with ID %i' % (metadata['link_id']))
                     if not prog.hasModule(metadata['link_module']):
                         return ESPError('Program does not have %s enabled' % (metadata['link_module']))
-                    if metadata['link_module'] == 'CustomFormModule':
-                        Tag.setTag(key=metadata['link_tl'] + '_extraform_id', value=form.id, target=prog)
+                    if metadata['link_module'] == 'StudentCustomFormModule':
+                        Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
+                    elif metadata['link_module'] == 'TeacherCustomFormModule':
+                        Tag.setTag(key='teach_extraform_id', value=form.id, target=prog)
                     elif metadata['link_module'] == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                     else:
@@ -428,12 +432,12 @@ def get_links(request):
 @user_passes_test(test_func)
 def get_modules(request):
     """
-    Returns the teacher modules that are enabled for the program that use custom forms.
+    Returns the modules that are enabled for the program that use custom forms.
     """
     # Not really sure there's an easier way to track which modules use custom forms,
     # so we'll just need to update these if they change
-    teach_handlers = ['CustomFormModule', 'TeacherQuizModule']
-    learn_handlers = ['CustomFormModule']
+    teach_handlers = ['TeacherCustomFormModule', 'TeacherQuizModule']
+    learn_handlers = ['StudentCustomFormModule']
     if request.is_ajax():
         if request.method == 'GET':
             try:
