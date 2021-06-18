@@ -580,6 +580,8 @@ def newprogram(request):
 
         if form.is_valid():
             temp_prog = form.save(commit=False)
+            if Program.objects.filter(url=temp_prog.url).exists():
+                raise ESPError("A %s program already exists with this name. Please choose a new name or change the name of the old program." % temp_prog.program_type, log=False)
             perms, modules = prepare_program(temp_prog, form.cleaned_data)
             #   Save the form's raw data instead of the form itself, or its clean data.
             #   Unpacking of the data happens at the next step.

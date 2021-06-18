@@ -245,7 +245,7 @@ class Program(models.Model, CustomFormsLinkModel):
     #customforms definitions
     form_link_name='Program'
 
-    url = models.CharField(max_length=80)
+    url = models.CharField(max_length=80, unique=True)
     name = models.CharField(max_length=80)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
