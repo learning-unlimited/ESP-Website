@@ -1227,6 +1227,8 @@ class Program(models.Model, CustomFormsLinkModel):
     getShirtInfo.depend_on_model('users.TeacherInfo')
     getShirtInfo.depend_on_model('users.StudentInfo')
     getShirtInfo.depend_on_model('program.VolunteerOffer')
+    getShirtInfo.depend_on_model('program.ModeratorRecord')
+    getShirtInfo.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': sec.parent_class.parent_program})
 
     @cache_function
     def incrementGrade(self):
