@@ -825,7 +825,7 @@ var updateField=function() {
     var field_type=$j('#elem_selector').val();
     var curr_field_id=$j.data($currField[0],'data').parent_id;
 	if(curr_field_type=='section' && field_type=='section'){
-        $field_data = $currField.data('data')
+        var $field_data = $currField.data('data')
         $field_data.question_text = $j('#id_question').val()
         $currField.find('h2').html($j('#id_question').val());
         $field_data.help_text = $j('#id_instructions').val()
@@ -851,7 +851,7 @@ var onSelectField=function($elem, field_data, ftype=null) {
     
 	//De-selecting any previously selected field
 	if($j('div.field_selected').length == 0 || !$elem.hasClass('field_selected')){
-        $divs = $j('div.field_selected');
+        var $divs = $j('div.field_selected');
         $divs.click();
         $divs.removeClass('field_hover');
         $divs.children(".wrapper_button").removeClass("wrapper_button_hover");
