@@ -25,18 +25,21 @@
         <hr />
         <br /><br/>
         <div class="page_break" id="page_break_0"><span>** Page Break **</span></div>
-        <div class="form_preview" id="page_0">
-            <div class="outline" id="outline_0">
-                <div id="section_0" class="section">
-                </div>
-            </div>		
+        <div class="form_preview page_selected" id="page_0">
+            <div class="outline section_selected ui-sortable-handle">
+                <h2 class="section_header">Section</h2>
+                <p class="field_text section_text">Enter a short description about the section</p>
+                <hr>
+                <div id="section_0" class="section"></div><input type="button" value="X" class="section_button wrapper_button">
+            </div>
+            <input type="button" value="X" class="wrapper_button preview_button">
         </div>
     </div>
         
     <div id="form_toolbox">
         <h3 id="header_information"><a href='#'>Form information</a></h3>
         <div id="form_information">
-            <p>Form Title</p> <input type='text' id='input_form_title' size='30'/>
+            <p>Form Title</p> <input type='text' id='input_form_title' size='30' value='Form Title'/>
             <p>Description</p>
             <textarea rows='3' cols='30' id='input_form_description'></textarea>
             <p>Message on Success</p>
@@ -109,7 +112,7 @@
                 <p class="toolboxText">Instructions for user</p>
                 <textarea name="instructions" id="id_instructions" rows=4 cols=30></textarea>
                 <p class="toolboxText">Required&nbsp;
-                    <input type="checkbox" id="id_required" name="required" /></p><br/>
+                    <input type="checkbox" id="id_required" name="required" /><br/><br/></p>
                 <form id="elem_properties">
                     <div id="multi_options"></div>
                 </form>

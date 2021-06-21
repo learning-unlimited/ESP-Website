@@ -4,6 +4,10 @@ body {
 	text-decoration:none;
 }
 
+form {
+    margin: 0;
+}
+
 .wrapper {
 	width:960px;
 	margin:0 auto;
@@ -26,6 +30,7 @@ body {
 
 .form_preview {
 	position:relative;
+    padding: 20px;
 }
 
 .field_wrapper {
@@ -66,15 +71,25 @@ body {
 	color:#FF0000;
 }
 
+.outline, .field_wrapper, .form_preview {
+    border:2px solid transparent;
+}
+
 .field_hover {
-	border:2px dashed blue;
-	padding:8px 8px;
+	border:2px dashed blue !important;
+}
+
+.page_selected {
+    background-color:#edffed;
+}
+
+.section_selected {
+    background-color:#f5dff1;
 }
 
 .field_selected {
 	background-color:#d2f8ff;
-	border:1px dashed blue;
-	padding:9px 9px;
+	border: 2px dashed blue;
 }
 
 .field_text {
@@ -120,6 +135,7 @@ body {
 	position: relative; 
 	top: -0.5em;
 	cursor:pointer;
+    z-index: 1000;
 }
 
 #form_title{

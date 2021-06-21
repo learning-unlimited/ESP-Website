@@ -27,7 +27,7 @@ var formElements={
     'NotReallyFields': {
         instructions: {'disp_name': 'Instructions', 'ques': ''},
         section:{'disp_name':'Section', 'ques':'Section'},
-        page:{'disp_name':'Page', 'ques':'Page'},
+        page:{'disp_name':'Page', 'ques':'Section'},
     }
     /*'Personal':{
         name:{'disp_name':'Name','ques':'Your name', 'field_type':'custom', 'field_options':{}},
@@ -102,7 +102,7 @@ var perms={};
 $j(document).ready(function() {
 	
 	//Assigning event handlers
-    $j('#button_add').click(function(){insertField($j('#elem_selector').val(),$prevField)});
+    $j('#button_add').click(function(){insertField($j('#elem_selector').val())});
 	$j('#submit').click(submit);
 	$j('#input_form_title').bind('change', updateTitle);
 	$j('#input_form_description').bind('change', updateDesc);
@@ -125,7 +125,73 @@ $j(document).ready(function() {
 	
 	$currSection=$j('#section_0');
 	$currPage=$j('#page_0');
-	$j('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($currPage);	
+    
+    // Make the initial section editable
+    $j('#section_0').parent().mouseover(function(e) {
+        if($j(e.target).is('.outline, .outline > hr, .section, .section_header, .section_text, .section_button')){
+            if($j(this).hasClass('field_selected'))
+                return;
+            $j(this).addClass('field_hover');
+            $j(this).children(".wrapper_button").addClass("wrapper_button_hover");
+        }
+    }).mouseout(function() {
+        if($j(this).hasClass('field_selected'))
+            return;
+        $j(this).removeClass('field_hover');
+        $j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
+    }).toggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));});
+    $j('#section_0').parent().data('data', {attrs: {}, field_type: 'section', question_text: 'Section', help_text: 'Enter a short description about the section', parent_id:-1});
+	$j('.wrapper_button').click(function(e){removeField($j(this)); e.stopPropagation();});
+    
+    // Make the initial page selectable
+    $j("#page_break_0").dblclick(function(){
+		$currPage=$j(this).next('div.form_preview'); 
+		//$currSection=$j(this).children(":last").children("div.section");
+	}).toggle(function(){$j(this).next('div.form_preview').children(".wrapper_button").addClass("wrapper_button_hover");}, 
+			function(){$j(this).next('div.form_preview').children(".wrapper_button").removeClass("wrapper_button_hover");}
+			);
+
+    $j("#page_break_0").dblclick(function(){
+        $j('.form_preview').removeClass('page_selected');
+        $currPage=$j(this).next('div.form_preview'); 
+        $currPage.addClass('page_selected');
+        $currSection=$j(this).next().find(".section:first");
+        $j('.outline').removeClass('section_selected');
+        $currSection.parent().addClass('section_selected');
+    }).mouseover(function(e) {
+        if($j(e.target).is('.page_break, .page_break span, .form_preview, .preview_button')){
+            if($j(this).hasClass('field_selected'))
+                return;
+            $j(this).next('div.form_preview').addClass('field_hover');
+            $j(this).next('div.form_preview').children(".wrapper_button").addClass("wrapper_button_hover");
+        }
+    }).mouseout(function() {
+        if($j(this).hasClass('field_selected'))
+            return;
+        $j(this).next('div.form_preview').removeClass('field_hover');
+        $j(this).next('div.form_preview').children(".wrapper_button").removeClass("wrapper_button_hover");
+    })
+
+    $j("#page_0").mouseover(function(e) {
+        if($j(e.target).is('.form_preview, .preview_button')){
+            if($j(this).hasClass('field_selected'))
+                return;
+            $j(this).addClass('field_hover');
+            $j(this).children(".wrapper_button").addClass("wrapper_button_hover");
+        }
+    }).mouseout(function() {
+        if($j(this).hasClass('field_selected'))
+            return;
+        $j(this).removeClass('field_hover');
+        $j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
+    }).dblclick(function(){
+        $j('.form_preview').removeClass('page_selected');
+        $currPage=$j(this);
+        $currPage.addClass('page_selected');
+        $currSection=$j(this).find(".section:first");
+        $j('.outline').removeClass('section_selected');
+        $currSection.parent().addClass('section_selected');
+    });
 	
 	//csrf stuff
 	$j(document).ajaxSend(function(event, xhr, settings) {
@@ -167,15 +233,9 @@ $j(document).ready(function() {
 	//end of csrf stuff
 	
 	$j('#form_toolbox').accordion({heightStyle:'content', icons:{}, collapsible: true});
-	$j.data($j('div.outline')[0], 'data', {'question_text':'', 'help_text':''});
 	$j.data($currPage[0], 'data', {'parent_id':-1});
 	
-	$j("#page_break_0").dblclick(function(){
-		$currPage=$j(this).next('div.form_preview'); 
-		//$currSection=$j(this).children(":last").children("div.section");
-	}).toggle(function(){$j(this).next('div.form_preview').children(".wrapper_button").addClass("wrapper_button_hover");}, 
-			function(){$j(this).next('div.form_preview').children(".wrapper_button").removeClass("wrapper_button_hover");}
-			);
+	
 	
 	//Getting field information from server, and constructing the form-builder
 	constructBuilder();		
@@ -467,14 +527,28 @@ var createLabel=function(labeltext, required, help_text) {
     return str;
 };
 
-var removeField = function() {
+var removeField = function(field) {
 	//removes the selected element from the form by performing .remove() on the wrapper div
-	
-	if($j(this).parent().hasClass('form_preview')){
-		//If it's a page, remove the page-break text as well
-		$j(this).parent().prev().remove();
+    if(field.parent().hasClass('field_selected')){
+        deSelectField(field.parent());
+    }
+    if(field.parent().hasClass('outline')){
+        //Never remove the last section of a page
+        if(field.parent().siblings('.outline').length == 0){
+            alert("You can't delete the only section of this page!");
+            return;
+        }
+    }
+	if(field.parent().hasClass('form_preview')){
+		//Never remove the last page
+        if($j('.form_preview').length == 1){
+            alert("You can't delete the only page of this form!");
+            return;
+        }
+        //If it's a page, remove the page-break text as well
+		field.parent().prev().remove();
 	}
-	$j(this).parent().remove();
+	field.parent().remove();
 };
 
 var addOption=function(option_text) {
@@ -493,9 +567,10 @@ var addOption=function(option_text) {
 };
 
 var removeOption=function() {
-	//removes an option from the radio group
-	
-	$j(this).parent().remove();
+	//removes an option from the radio group, but never remove the last option
+	if($j('#multi_options').children(".option_element").length > 1){
+        $j(this).parent().remove();
+    }
 };
 
 var generateOptions=function() {
@@ -541,9 +616,8 @@ var showCategorySpecificOptions=function(category){
 
 var populateFieldsSelector=function(category){
 	//Populates the Field selector with the appropriate form fields
-	
 	var fields_list=formElements[category], options_html="";
-	if(fields_list.length ==0)
+	if(fields_list.length == 0)
 		return;
 	//Generating Options list
 	$j.each(fields_list, function(index,elem){
@@ -699,7 +773,6 @@ var onSelectElem = function(item) {
             addCorrectnessOptions(item);
         }
         
-        $j('#id_instructions').show();
         //Defining actions for generic elements
         if(item=='textField' || item=='longTextField' || item=='longAns' || item=='reallyLongAns')
             addSpecificOptions(item, '', '');
@@ -711,7 +784,7 @@ var onSelectElem = function(item) {
             $j('#id_instructions').val('Enter a short description about the section');
         }
         else if(item=='page'){
-            $j('#id_instructions').val('').hide();
+            $j('#id_instructions').val('Enter a short description about the section');
         }
         
         //Set 'Required' to a sensible default
@@ -720,7 +793,7 @@ var onSelectElem = function(item) {
         $j('#id_question').val(question_text);
         $prevField=$currSection.children(":last");
         if($button.val()!='Add to Form')
-            $button.val('Add to Form').html('Add Field to Form').unbind('click').click(function(){insertField($j('#elem_selector').val(),$prevField)});
+            $button.val('Add to Form').html('Add Field to Form').unbind('click').click(function(){insertField($j('#elem_selector').val())});
     }
 };
 
@@ -751,9 +824,13 @@ var updateField=function() {
 	var curr_field_type=$j.data($currField[0],'data').field_type;
     var field_type=$j('#elem_selector').val();
     var curr_field_id=$j.data($currField[0],'data').parent_id;
-	if(curr_field_type=='section'){
-		$currField.find('h2').html($j('#id_question').val());
+	if(curr_field_type=='section' && field_type=='section'){
+        $field_data = $currField.data('data')
+        $field_data.question_text = $j('#id_question').val()
+        $currField.find('h2').html($j('#id_question').val());
+        $field_data.help_text = $j('#id_instructions').val()
 		$currField.children('p.field_text').html($j('#id_instructions').val());
+        $currField.data('data', $field_data);
 		return;
 	}
 	$prevField=$currField.prev();
@@ -774,9 +851,10 @@ var onSelectField=function($elem, field_data, ftype=null) {
     
 	//De-selecting any previously selected field
 	if($j('div.field_selected').length == 0 || !$elem.hasClass('field_selected')){
-        $j('div.field_selected').click();
-        $j('div.field_wrapper').removeClass('field_hover');
-        $j('div.field_wrapper').find(".wrapper_button").removeClass("wrapper_button_hover");
+        $divs = $j('div.field_selected');
+        $divs.click();
+        $divs.removeClass('field_hover');
+        $divs.children(".wrapper_button").removeClass("wrapper_button_hover");
     }
     
     clearSpecificOptions();
@@ -806,9 +884,20 @@ var onSelectField=function($elem, field_data, ftype=null) {
 	
 	if($wrap.length !=0){
 		$wrap.removeClass('field_hover').addClass('field_selected');
-		$wrap.find('.wrapper_button').addClass('wrapper_button_hover');
+		$wrap.children('.wrapper_button').addClass('wrapper_button_hover');
 		$currField=$wrap;
-		$currSection=$wrap.parent();
+        if($currField.hasClass('outline')){
+            $currSection=$currField.find('.section');
+            $j('.outline').removeClass('section_selected');
+            $currField.addClass('section_selected');
+        } else {
+            $currSection=$wrap.parent('.section');
+            $j('.outline').removeClass('section_selected');
+            $currSection.parent().addClass('section_selected');
+        }
+        $currPage=$currField.parents('.form_preview');
+        $j('.form_preview').removeClass('page_selected');
+        $currPage.addClass('page_selected');
 		$prevField=$wrap.prev('div.field_wrapper');	
 	}
 	if(ftype!='section')
@@ -817,12 +906,19 @@ var onSelectField=function($elem, field_data, ftype=null) {
 	$j("#id_instructions").val(field_data.help_text);
 	
 	//Adding in field-specific options
-	if(field_data.attrs['options'] && $j.inArray(ftype, ['radio', 'dropdown', 'multiselect', 'checkboxes']) != -1){
-		options=field_data.attrs['options'].split("|");
-		$j.each(options, function(idx,el) {
-			if(el!="")
-				addOption(el);
-		});
+    addCorrectnessOptions(ftype);
+    $j('#'+ftype+'_correct_answer').val(field_data.attrs['correct_answer']);
+	if($j.inArray(ftype, ['radio', 'dropdown', 'multiselect', 'checkboxes']) != -1){
+        if(field_data.attrs['options']){
+            options=field_data.attrs['options'].split("|");
+            $j.each(options, function(idx,el) {
+                if(el!="")
+                    addOption(el);
+            });
+        }
+        if($j('#multi_options').children(".option_element").length == 0){
+            addOption('');
+        }
 	}
 	else if(ftype=='numeric')
 		addSpecificOptions('numeric', field_data.attrs['limits'], '');
@@ -836,8 +932,6 @@ var onSelectField=function($elem, field_data, ftype=null) {
 	else if(ftype=='section'){
 		$j("#id_required").prop('checked','');
 	}
-	addCorrectnessOptions(ftype);
-	$j('#'+ftype+'_correct_answer').val(field_data.attrs['correct_answer']);
 	if($button.val()=='Add to Form')
 		$button.val('Update').html("Update Field").unbind('click').click(updateField);
 		
@@ -845,21 +939,21 @@ var onSelectField=function($elem, field_data, ftype=null) {
 	setRequired(ftype);	
 };
 
-var deSelectField=function() {
-	//De-selects 'this' field
+var deSelectField=function(field) {
+	//De-selects specified field
 	
-	$j(this).removeClass('field_selected');
-	$j(this).addClass('field_hover');
-	$j(this).find(".wrapper_button").addClass("wrapper_button_hover");
+	field.removeClass('field_selected');
+	field.addClass('field_hover');
+	field.children(".wrapper_button").addClass("wrapper_button_hover");
 	$j('#cat_selector').children('option[value=Generic]').prop('selected','selected');
 	onSelectCategory('Generic');
 	onSelectElem('textField');
 };
 
-var insertField=function(item, $prevField){
+var insertField=function(item, $field=null){
     //Handles addition of a field into the form, as well as other ancillary functions. Calls addElement()
     
-    addElement(item,$prevField);
+    addElement(item,$field);
     onSelectElem(item);
 };
 
@@ -1139,27 +1233,30 @@ var renderNormalField=function(item, field_options, data){
 	else if(item=='section'){
 		//this one's processed differently from the others
 	
-		var $outline=$j('<div class="outline"></div>'), label_text=$j.trim($j('#id_question').val()),
+		var $outline=$j('<div class="outline section_selected"></div>'), label_text=$j.trim($j('#id_question').val()),
 			help_text=$j.trim($j('#id_instructions').val());
-		$outline.append('<hr/>').append($j('<h2 class="section_header">'+label_text+'</h2>')).append($j('<p class="field_text">'+help_text+'</p>'));
+        $j('.outline').removeClass('section_selected');
+		$outline.append($j('<h2 class="section_header">'+label_text+'</h2>')).append($j('<p class="field_text section_text">'+help_text+'</p>')).append('<hr>');
 		$currSection=$j('<div>').attr({
 			id:'section_'+secCount,
 			'class':'section'
 		});
 		$outline.append($currSection);
-		$j('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($outline);
-		$outline.toggle(function() {
-			onSelectField($j(this), $j.data(this, 'data'));
-			$j(this).children(".wrapper_button").addClass("wrapper_button_hover");
-		}, function(){
-			$j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
-			$j(this).removeClass('field_selected');
-			$j('#cat_selector').children('select[value=Generic]').attr('selected','selected');
-			$j('#cat_selector').val('Generic').change();
-		});
-		$outline.appendTo($currPage).dblclick(function(){
-			$currSection=$j(this).children('div.section');
-		});
+		$j('<input/>',{type:'button',value:'X'}).click(function(e){removeField($j(this)); e.stopPropagation();}).addClass("section_button wrapper_button").appendTo($outline);
+		$outline.mouseover(function(e) {
+            if($j(e.target).is('.outline, .outline > hr, .section, .section_header, .section_text, .section_button')){
+                if($j(this).hasClass('field_selected'))
+                    return;
+                $j(this).addClass('field_hover');
+                $j(this).children(".wrapper_button").addClass("wrapper_button_hover");
+            }
+        }).mouseout(function() {
+            if($j(this).hasClass('field_selected'))
+                return;
+            $j(this).removeClass('field_hover');
+            $j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
+        }).toggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));});
+		$outline.appendTo($currPage);
 		$currPage.sortable();
 		secCount++;
 		$j.data($outline[0],'data',data);
@@ -1169,26 +1266,79 @@ var renderNormalField=function(item, field_options, data){
 		//First putting in the page break text
 		var $page_break = $j('<div class="page_break"><span>** Page Break **</span></div>');
 		$page_break.dblclick(function(){
+            $j('.form_preview').removeClass('page_selected');
 			$currPage=$j(this).next('div.form_preview'); 
-			//$currSection=$j(this).children(":last").children("div.section");
-		}).toggle(function(){$j(this).next('div.form_preview').children(".wrapper_button").addClass("wrapper_button_hover");}, 
-				function(){$j(this).next('div.form_preview').children(".wrapper_button").removeClass("wrapper_button_hover");}
-				).appendTo($j('div.preview_area'));
+            $currPage.addClass('page_selected');
+			$currSection=$j(this).next().find(".section:first");
+            $j('.outline').removeClass('section_selected');
+            $currSection.parent().addClass('section_selected');
+		}).mouseover(function(e) {
+            if($j(e.target).is('.page_break, .page_break span, .form_preview, .preview_button')){
+                if($j(this).hasClass('field_selected'))
+                    return;
+                $j(this).next('div.form_preview').addClass('field_hover');
+                $j(this).next('div.form_preview').children(".wrapper_button").addClass("wrapper_button_hover");
+            }
+        }).mouseout(function() {
+            if($j(this).hasClass('field_selected'))
+                return;
+            $j(this).next('div.form_preview').removeClass('field_hover');
+            $j(this).next('div.form_preview').children(".wrapper_button").removeClass("wrapper_button_hover");
+        }).appendTo($j('div.preview_area'));
 		
 		//Now putting in the page div
 		$currPage=$j('<div class="form_preview"></div>');
-		$currSection=$j('<div class="section"></div>');
-		$currPage.append($j('<div class="outline"></div>').append($currSection));
-		$j('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($currPage);
-		$currPage.toggle( function(){$j(this).children(".wrapper_button").addClass("wrapper_button_hover");}, 
-						function(){$j(this).children(".wrapper_button").removeClass("wrapper_button_hover");});
-		$currPage.dblclick(function(){
-			$currPage=$j(this);
-			//$currSection=$j(this).children(":last").children("div.section");
+        $j('.outline').removeClass('section_selected');
+        $outline=$j('<div class="outline section_selected"></div>');
+        var label_text=$j.trim($j('#id_question').val()), help_text=$j.trim($j('#id_instructions').val());
+        $outline.append($j('<h2 class="section_header">'+label_text+'</h2>')).append($j('<p class="field_text section_text">'+help_text+'</p>')).append('<hr>');
+        $currSection=$j('<div>').attr({
+			id:'section_'+secCount,
+			'class':'section'
 		});
+		$outline.append($currSection);
+		$j('<input/>',{type:'button',value:'X'}).click(function(e){removeField($j(this)); e.stopPropagation();}).addClass("section_button wrapper_button").appendTo($outline);
+		$outline.mouseover(function(e) {
+            if($j(e.target).is('.outline, .outline > hr, .section, .section_header, .section_text, .section_button')){
+                if($j(this).hasClass('field_selected'))
+                    return;
+                $j(this).addClass('field_hover');
+                $j(this).children(".wrapper_button").addClass("wrapper_button_hover");
+            }
+        }).mouseout(function() {
+            if($j(this).hasClass('field_selected'))
+                return;
+            $j(this).removeClass('field_hover');
+            $j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
+        }).toggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));});
+		$outline.appendTo($currPage);
+		$j('<input/>',{type:'button',value:'X'}).click(function(e){removeField($j(this)); e.stopPropagation();}).addClass("wrapper_button preview_button").appendTo($currPage);
+		$currPage.mouseover(function(e) {
+            if($j(e.target).is('.form_preview, .preview_button')){
+                if($j(this).hasClass('field_selected'))
+                    return;
+                $j(this).addClass('field_hover');
+                $j(this).children(".wrapper_button").addClass("wrapper_button_hover");
+            }
+        }).mouseout(function() {
+            if($j(this).hasClass('field_selected'))
+                return;
+            $j(this).removeClass('field_hover');
+            $j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
+        }).dblclick(function(){
+            $j('.form_preview').removeClass('page_selected');
+			$currPage=$j(this);
+            $currPage.addClass('page_selected');
+			$currSection=$j(this).find(".section:first");
+            $j('.outline').removeClass('section_selected');
+            $currSection.parent().addClass('section_selected');
+		});
+        $j('.form_preview').removeClass('page_selected');
+        $currPage.addClass('page_selected');
 		$currPage.appendTo($j('div.preview_area'));
-		$j.data(($currSection.parent())[0], 'data', {'question_text':'', 'help_text':'', 'parent_id':-1});
-		$j.data($currPage[0], 'data', {'parent_id':-1});
+		$j.data(($currSection.parent())[0], 'data', {attrs: {}, field_type: 'section', question_text: label_text, help_text: help_text, parent_id:-1});
+		secCount++;
+        $j.data($currPage[0], 'data', {'parent_id':-1});
 		return $currPage;
 	}
 	return $new_elem; 
@@ -1234,24 +1384,29 @@ var renderCustomField=function(item, field_options, data){
 	return $new_elem;
 };
 
-var addElement=function(item, $prevField) {
+var addElement=function(item, $field=null) {
 	// This function adds the selected field to the form. 
 	//Data like help-text is stored in the wrapper div using jQuery's $j.data
 
 	var i,$new_elem_label, $new_elem, 
-	$wrap=$j('<div></div>').addClass('field_wrapper').hover(function() {
+	$wrap=$j('<div></div>').addClass('field_wrapper').mouseover(function() {
 		if($j(this).hasClass('field_selected'))
 			return;
-		$j(this).toggleClass('field_hover');
-		$j(this).find(".wrapper_button").toggleClass("wrapper_button_hover");
-	}).toggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, deSelectField),
+        $j(this).toggleClass('field_hover');
+		$j(this).children(".wrapper_button").toggleClass("wrapper_button_hover");
+	}).mouseout(function() {
+		if($j(this).hasClass('field_selected'))
+			return;
+        $j(this).removeClass('field_hover');
+		$j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
+	}).toggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));}),
 	label_text=$j.trim($j('#id_question').val()),
 	help_text=(item=='instructions') ? '' : $j.trim($j('#id_instructions').val()),
 	html_name=item+"_"+elemTypes[item], html_id="id_"+item+"_"+elemTypes[item],
 	data={};
 	
 	$new_elem_label=$j(createLabel(label_text,$j('#id_required').prop('checked'),help_text)).appendTo($wrap);
-	$j('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($wrap);
+	$j('<input/>',{type:'button',value:'X'}).click(function(e){removeField($j(this)); e.stopPropagation();}).addClass("wrapper_button").appendTo($wrap);
 	
 	//Populating common data attributes
 	data.question_text=label_text;
@@ -1314,10 +1469,17 @@ var addElement=function(item, $prevField) {
 	$new_elem.appendTo($wrap);
 	$j.data($wrap[0],'data',data);
 	
-	if($prevField.length==0)
-		$wrap.prependTo($currSection);
-	else
-		$wrap.insertAfter($prevField);
+	if($field){
+        if($field.length>0){
+            // Adding a new field after a particular field
+            $wrap.insertAfter($field);
+        } else {
+            // Updating the first element in a section
+            $wrap.prependTo($currSection);
+        }
+	} else { // Adding a new field to a section
+		$wrap.appendTo($currSection);
+    }
 	
 	//Making fields draggable
 	$currSection.sortable();
@@ -1507,18 +1669,14 @@ var rebuild=function(metadata) {
 	
 	//Putting in pages, sections and fields
 	$j.each(metadata['pages'], function(pidx, page){
-		addElement('page',[]);
+		addElement('page',null);
 		$j.data($currPage[0], 'data')['parent_id']=page[0][0]['section__page__id'];
 			
 		$j.each(page, function(sidx, section){
 			$j('#id_question').val(section[0]['section__title']);
 			$j('#id_instructions').val(section[0]['section__description']);
-			var $outline=addElement('section',[]);
+			var $outline=addElement('section',null);
 			$j.data($outline[0], 'data')['parent_id']=section[0]['section__id'];
-			if(sidx==0){
-				//Removing the <hr> that comes before every section
-				$outline.find('hr').remove();
-			}
 			$prevField=[];
 			$j.each(section, function(fidx, field){
 				/*
@@ -1555,6 +1713,8 @@ var rebuild=function(metadata) {
 			});
 		});
 	});
+    // Delete empty sections that are generated when making pages
+    $j(".section:empty").parent('.outline').remove();
     // Reset add field form
 	$j("#cat_selector").val('Generic').change();
     //Open the information panel if not already open
