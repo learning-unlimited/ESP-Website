@@ -144,37 +144,6 @@ $j(document).ready(function() {
 	$j('.wrapper_button').click(function(e){removeField($j(this)); e.stopPropagation();});
     
     // Make the initial page selectable
-    $j("#page_break_0").click(function(){
-        $j('.form_preview').removeClass('page_selected');
-        $currPage=$j(this).next('div.form_preview'); 
-        $currPage.addClass('page_selected');
-        // If the current section is in another section, switch to the first section in this page
-        if(!$currPage[0].contains($currSection[0])){
-            $currSection=$currPage.find(".section:first");
-            $j('.outline').removeClass('section_selected');
-            $currSection.parent().addClass('section_selected');
-        }
-        // If the currently selected field
-        if($currField && !$currPage[0].contains($currField[0])){
-            var $field=$currField;
-            $field.click();
-            $field.removeClass('field_hover');
-            $field.children(".wrapper_button").removeClass("wrapper_button_hover");
-        }
-    }).mouseover(function(e) {
-        if($j(e.target).is('.page_break, .page_break span, .form_preview, .preview_button')){
-            if($j(this).hasClass('field_selected'))
-                return;
-            $j(this).next('div.form_preview').addClass('field_hover');
-            $j(this).next('div.form_preview').children(".wrapper_button").addClass("wrapper_button_hover");
-        }
-    }).mouseout(function() {
-        if($j(this).hasClass('field_selected'))
-            return;
-        $j(this).next('div.form_preview').removeClass('field_hover');
-        $j(this).next('div.form_preview').children(".wrapper_button").removeClass("wrapper_button_hover");
-    })
-
     $j("#page_0").mouseover(function(e) {
         if($j(e.target).is('.form_preview, .preview_button')){
             if($j(this).hasClass('field_selected'))
@@ -1296,41 +1265,9 @@ var renderNormalField=function(item, field_options, data){
 		return $outline;
 	}
 	else if(item=='page'){
-		//First putting in the page break text
-		var $page_break = $j('<div class="page_break"><span>** Page Break **</span></div>');
-		$page_break.click(function(){
-            $j('.form_preview').removeClass('page_selected');
-			$currPage=$j(this).next('div.form_preview'); 
-            $currPage.addClass('page_selected');
-            // If the current section is in another section, switch to the first section in this page
-            if(!$currPage[0].contains($currSection[0])){
-                $currSection=$currPage.find(".section:first");
-                $j('.outline').removeClass('section_selected');
-                $currSection.parent().addClass('section_selected');
-            }
-            // If the currently selected field
-            if($currField && !$currPage[0].contains($currField[0])){
-                var $field=$currField;
-                $field.click();
-                $field.removeClass('field_hover');
-                $field.children(".wrapper_button").removeClass("wrapper_button_hover");
-            }
-		}).mouseover(function(e) {
-            if($j(e.target).is('.page_break, .page_break span, .form_preview, .preview_button')){
-                if($j(this).hasClass('field_selected'))
-                    return;
-                $j(this).next('div.form_preview').addClass('field_hover');
-                $j(this).next('div.form_preview').children(".wrapper_button").addClass("wrapper_button_hover");
-            }
-        }).mouseout(function() {
-            if($j(this).hasClass('field_selected'))
-                return;
-            $j(this).next('div.form_preview').removeClass('field_hover');
-            $j(this).next('div.form_preview').children(".wrapper_button").removeClass("wrapper_button_hover");
-        }).appendTo($j('div.pages'));
-		
-		//Now putting in the page div
+		// Putting in the page div
 		$currPage=$j('<div class="form_preview"></div>');
+        // Add a section to the page
         $j('.outline').removeClass('section_selected');
         $outline=$j('<div class="outline section_selected"></div>');
         var label_text=$j.trim($j('#id_question').val()), help_text=$j.trim($j('#id_instructions').val());
@@ -1666,7 +1603,6 @@ var onChangeBase=function(){
 var createFromBase=function(){
 	//Clearing previous fields, if any
 	$j('div.form_preview').remove();
-	$j('div.page_break').remove();
 	/*$currPage=$j('<div class="form_preview"></div>');
 	$currSection=$j('<div class="section"></div>');
 	$currPage.append($j('<div class="outline"></div>').append($currSection));

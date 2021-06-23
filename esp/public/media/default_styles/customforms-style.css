@@ -30,8 +30,23 @@ form {
 
 .form_preview {
 	position:relative;
-    padding: 20px;
+    padding: 0px 20px;
     min-height: 200px;
+}
+
+.form_preview::before {
+    content: '**Page Break**';
+    position: absolute;
+    width: 569px;
+    margin-left: -22px;
+    height: 20px;
+    text-align: center;
+    background: black;
+    color: white;
+}
+
+.form_preview .outline:first-of-type {
+    margin-top: 40px;
 }
 
 .field_wrapper {
