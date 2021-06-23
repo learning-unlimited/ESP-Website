@@ -144,20 +144,23 @@ $j(document).ready(function() {
 	$j('.wrapper_button').click(function(e){removeField($j(this)); e.stopPropagation();});
     
     // Make the initial page selectable
-    $j("#page_break_0").dblclick(function(){
-		$currPage=$j(this).next('div.form_preview'); 
-		//$currSection=$j(this).children(":last").children("div.section");
-	}).toggle(function(){$j(this).next('div.form_preview').children(".wrapper_button").addClass("wrapper_button_hover");}, 
-			function(){$j(this).next('div.form_preview').children(".wrapper_button").removeClass("wrapper_button_hover");}
-			);
-
-    $j("#page_break_0").dblclick(function(){
+    $j("#page_break_0").click(function(){
         $j('.form_preview').removeClass('page_selected');
         $currPage=$j(this).next('div.form_preview'); 
         $currPage.addClass('page_selected');
-        $currSection=$j(this).next().find(".section:first");
-        $j('.outline').removeClass('section_selected');
-        $currSection.parent().addClass('section_selected');
+        // If the current section is in another section, switch to the first section in this page
+        if(!$currPage[0].contains($currSection[0])){
+            $currSection=$currPage.find(".section:first");
+            $j('.outline').removeClass('section_selected');
+            $currSection.parent().addClass('section_selected');
+        }
+        // If the currently selected field
+        if($currField && !$currPage[0].contains($currField[0])){
+            var $field=$currField;
+            $field.click();
+            $field.removeClass('field_hover');
+            $field.children(".wrapper_button").removeClass("wrapper_button_hover");
+        }
     }).mouseover(function(e) {
         if($j(e.target).is('.page_break, .page_break span, .form_preview, .preview_button')){
             if($j(this).hasClass('field_selected'))
@@ -184,13 +187,23 @@ $j(document).ready(function() {
             return;
         $j(this).removeClass('field_hover');
         $j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
-    }).dblclick(function(){
+    }).click(function(){
         $j('.form_preview').removeClass('page_selected');
         $currPage=$j(this);
         $currPage.addClass('page_selected');
-        $currSection=$j(this).find(".section:first");
-        $j('.outline').removeClass('section_selected');
-        $currSection.parent().addClass('section_selected');
+        // If the current section is in another section, switch to the first section in this page
+        if(!$currPage[0].contains($currSection[0])){
+            $currSection=$currPage.find(".section:first");
+            $j('.outline').removeClass('section_selected');
+            $currSection.parent().addClass('section_selected');
+        }
+        // If the currently selected field
+        if($currField && !$currPage[0].contains($currField[0])){
+            var $field=$currField;
+            $field.click();
+            $field.removeClass('field_hover');
+            $field.children(".wrapper_button").removeClass("wrapper_button_hover");
+        }
     });
 	
 	//csrf stuff
@@ -962,8 +975,9 @@ var deSelectField=function(field) {
     disabled_fields=[];
 	onSelectCategory('Generic');
 	onSelectElem('textField');
-    $j('#cat_selector').prop('disabled', false);;
-    $j('#elem_selector').prop('disabled', false);;
+    $j('#cat_selector').prop('disabled', false);
+    $j('#elem_selector').prop('disabled', false);
+    $currField=null;
 };
 
 var insertField=function(item, $field=null){
@@ -1281,13 +1295,23 @@ var renderNormalField=function(item, field_options, data){
 	else if(item=='page'){
 		//First putting in the page break text
 		var $page_break = $j('<div class="page_break"><span>** Page Break **</span></div>');
-		$page_break.dblclick(function(){
+		$page_break.click(function(){
             $j('.form_preview').removeClass('page_selected');
 			$currPage=$j(this).next('div.form_preview'); 
             $currPage.addClass('page_selected');
-			$currSection=$j(this).next().find(".section:first");
-            $j('.outline').removeClass('section_selected');
-            $currSection.parent().addClass('section_selected');
+            // If the current section is in another section, switch to the first section in this page
+            if(!$currPage[0].contains($currSection[0])){
+                $currSection=$currPage.find(".section:first");
+                $j('.outline').removeClass('section_selected');
+                $currSection.parent().addClass('section_selected');
+            }
+            // If the currently selected field
+            if($currField && !$currPage[0].contains($currField[0])){
+                var $field=$currField;
+                $field.click();
+                $field.removeClass('field_hover');
+                $field.children(".wrapper_button").removeClass("wrapper_button_hover");
+            }
 		}).mouseover(function(e) {
             if($j(e.target).is('.page_break, .page_break span, .form_preview, .preview_button')){
                 if($j(this).hasClass('field_selected'))
@@ -1341,13 +1365,23 @@ var renderNormalField=function(item, field_options, data){
                 return;
             $j(this).removeClass('field_hover');
             $j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
-        }).dblclick(function(){
+        }).click(function(){
             $j('.form_preview').removeClass('page_selected');
 			$currPage=$j(this);
             $currPage.addClass('page_selected');
-			$currSection=$j(this).find(".section:first");
-            $j('.outline').removeClass('section_selected');
-            $currSection.parent().addClass('section_selected');
+            // If the current section is in another section, switch to the first section in this page
+            if(!$currPage[0].contains($currSection[0])){
+                $currSection=$currPage.find(".section:first");
+                $j('.outline').removeClass('section_selected');
+                $currSection.parent().addClass('section_selected');
+            }
+            // If the currently selected field
+            if($currField && !$currPage[0].contains($currField[0])){
+                var $field=$currField;
+                $field.click();
+                $field.removeClass('field_hover');
+                $field.children(".wrapper_button").removeClass("wrapper_button_hover");
+            }
 		});
         $j('.form_preview').removeClass('page_selected');
         $currPage.addClass('page_selected');
