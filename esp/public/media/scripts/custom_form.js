@@ -519,7 +519,9 @@ var onChangeMainCatSpec=function() {
 var createLabel=function(labeltext, required, help_text) {
     //Returns an HTML-formatted label, with a red * if the question is required
     var str='';
-    str+='<div class="field_label">'+labeltext+':';
+    str+='<div class="field_label">'+labeltext;
+    if(!([':','?','.','!'].includes(labeltext.charAt(labeltext.length - 1))))
+        str+=':';
     if(required) str+='<span class="asterisk">'+'*'+'</span>';
     str+='</div>';
     if(help_text) str+=' <img src="/media/default_images/question_mark.jpg" class="qmark" title="' + help_text + '">'
