@@ -96,7 +96,7 @@ var elemTypes = {
     'instructions': 0
 };
 
-var currElemType, currElemIndex, optionCount=1, formTitle="Form",$prevField, $currField, secCount=1, $currSection, pageCount=1, $currPage;
+var currElemType, currElemIndex, optionCount=1, formTitle="Form",$prevField, $currField, secCount=1, $currSection, pageCount=1, $currPage, disabled_fields=[];
 var perms={};
 
 $j(document).ready(function() {
@@ -624,8 +624,11 @@ var populateFieldsSelector=function(category){
 		var disp_name="";
 		if(category!="Generic" && elem['required'])
 			disp_name=elem['disp_name']+"**";
-		else disp_name=elem['disp_name'];	
-		options_html+="<option value="+index+">"+disp_name+"</option>";
+		else disp_name=elem['disp_name'];
+		options_html+="<option value="+index;
+        if(disabled_fields.includes(index))
+            options_html+=' disabled style="color: lightgrey"';
+        options_html+=">"+disp_name+"</option>";
 	});
 	//Populating options for the Field Selector
 	$j("#elem_selector").html(options_html);
@@ -865,6 +868,8 @@ var onSelectField=function($elem, field_data, ftype=null) {
 	//Select the current field and category in the field and category selectors
 	if(ftype in formElements['Generic']){
 		$j('#cat_selector').val('Generic');
+        // Don't allow changing a field into a page or section (instructions are ok, though)
+        disabled_fields=['page', 'section'];
 		populateFieldsSelector('Generic');
 		$j('#elem_selector').val(ftype);	
 	}
@@ -881,6 +886,12 @@ var onSelectField=function($elem, field_data, ftype=null) {
 		$j('#elem_selector').val(ftype);
 		showCategorySpecificOptions(curr_cat);
 	}
+
+    // Don't allow changing sections or pages to other field types
+    if(['section','page'].includes(ftype)){
+        $j('#cat_selector').prop('disabled', true);;
+        $j('#elem_selector').prop('disabled', true);;
+    }
 	
 	if($wrap.length !=0){
 		$wrap.removeClass('field_hover').addClass('field_selected');
@@ -946,8 +957,11 @@ var deSelectField=function(field) {
 	field.addClass('field_hover');
 	field.children(".wrapper_button").addClass("wrapper_button_hover");
 	$j('#cat_selector').children('option[value=Generic]').prop('selected','selected');
+    disabled_fields=[];
 	onSelectCategory('Generic');
 	onSelectElem('textField');
+    $j('#cat_selector').prop('disabled', false);;
+    $j('#elem_selector').prop('disabled', false);;
 };
 
 var insertField=function(item, $field=null){
