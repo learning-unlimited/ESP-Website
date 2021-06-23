@@ -1287,7 +1287,10 @@ var renderNormalField=function(item, field_options, data){
             $j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
         }).toggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));});
 		$outline.appendTo($currPage);
-		$currPage.sortable();
+		$currPage.sortable({
+            containment: $j(".pages"),
+            connectWith: ".form_preview",
+        });
 		secCount++;
 		$j.data($outline[0],'data',data);
 		return $outline;
@@ -1324,7 +1327,7 @@ var renderNormalField=function(item, field_options, data){
                 return;
             $j(this).next('div.form_preview').removeClass('field_hover');
             $j(this).next('div.form_preview').children(".wrapper_button").removeClass("wrapper_button_hover");
-        }).appendTo($j('div.preview_area'));
+        }).appendTo($j('div.pages'));
 		
 		//Now putting in the page div
 		$currPage=$j('<div class="form_preview"></div>');
@@ -1385,10 +1388,11 @@ var renderNormalField=function(item, field_options, data){
 		});
         $j('.form_preview').removeClass('page_selected');
         $currPage.addClass('page_selected');
-		$currPage.appendTo($j('div.preview_area'));
+		$currPage.appendTo($j('div.pages'));
 		$j.data(($currSection.parent())[0], 'data', {attrs: {}, field_type: 'section', question_text: label_text, help_text: help_text, parent_id:-1});
 		secCount++;
         $j.data($currPage[0], 'data', {'parent_id':-1});
+        $j('div.pages').sortable();
 		return $currPage;
 	}
 	return $new_elem; 
@@ -1532,7 +1536,10 @@ var addElement=function(item, $field=null) {
     }
 	
 	//Making fields draggable
-	$currSection.sortable();
+	$currSection.sortable({
+        containment: $j(".pages"),
+        connectWith: ".section",
+    });
 	return $wrap;	
 };
 
@@ -1564,7 +1571,7 @@ var submit=function() {
 	form['perms']=form_perms;
 	
 	//Constructing the object to be sent to the server
-	$j('div.preview_area').children('div.form_preview').each(function(pidx,pel) {
+	$j('div.pages').children('div.form_preview').each(function(pidx,pel) {
 		page={'sections':[], 'parent_id':$j.data(pel, 'data')['parent_id'], 'seq':page_seq};
 		section_seq=0;
 		$j(pel).children('div.outline').each(function(idx, el) {

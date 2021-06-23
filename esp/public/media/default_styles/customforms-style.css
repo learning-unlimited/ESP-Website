@@ -31,6 +31,7 @@ form {
 .form_preview {
 	position:relative;
     padding: 20px;
+    min-height: 200px;
 }
 
 .field_wrapper {
