@@ -809,7 +809,7 @@ var setRequired=function(item){
 
 var updateField=function() {
 	var curr_field_type=$j.data($currField[0],'data').field_type;
-    var field_type=$j('#elem_selector').val();
+    var field_type=$j('#elem_selector')[0].value;
     var curr_field_id=$j.data($currField[0],'data').parent_id;
 	if(curr_field_type=='section' && field_type=='section'){
         var $field_data = $currField.data('data')
