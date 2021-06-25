@@ -18,11 +18,12 @@
     
     <br/>
     {% if wizard.steps.prev %}
-        <button name="wizard_prev_step" value="{{ wizard.steps.first }}">first step</button>
-        <button name="wizard_prev_step" value="{{ wizard.steps.prev }}">prev step</button>
+        {% if wizard.steps.first != wizard.steps.prev %}
+            <button class="btn primary" name="wizard_goto_step" value="{{ wizard.steps.first }}">First Step</button>
+        {% endif %}
+        <button class="btn primary" name="wizard_goto_step" value="{{ wizard.steps.prev }}">Prev Step</button>
     {% endif %}
-    <br/>
-    <input type="submit" class="btn primary">
+    <input type="submit" class="btn primary"{% if wizard.steps.next %} value="Next Step"{% endif %}>
     </form>
 {% endblock %}
 
