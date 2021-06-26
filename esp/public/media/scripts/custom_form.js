@@ -638,7 +638,7 @@ var clearSpecificOptions=function() {
 		$other_options.empty();
 };
 
-var addSpecificOptions=function(elem, options, limtype) {
+var addSpecificOptions=function(elem, options) {
     //Adds in specific options for some fields
 
 	var limits, frag, $div;
@@ -690,9 +690,6 @@ var addSpecificOptions=function(elem, options, limtype) {
 		frag+='</div>';
 		var $div=$j(frag);
 		$div.appendTo($j('#other_options'));
-		if(limtype!='')
-			$j('#charOrWord').val(limtype);
-		else $j('#charOrWord').val('chars');
 	}
 };
 
@@ -762,11 +759,11 @@ var onSelectElem = function(item) {
         
         //Defining actions for generic elements
         if(item=='textField' || item=='longTextField' || item=='longAns' || item=='reallyLongAns')
-            addSpecificOptions(item, '', '');
+            addSpecificOptions(item, '');
         else if(item=="radio" || item=="dropdown" || item=="multiselect" || item=="checkboxes") 
             generateOptions();
         else if(item=="numeric") 
-            addSpecificOptions(item, '', '');
+            addSpecificOptions(item, '');
         else if(item=='section'){
             $j('#id_instructions').val('Enter a short description about the section');
         }
@@ -916,13 +913,9 @@ var onSelectField=function($elem, field_data, ftype=null) {
         }
 	}
 	else if(ftype=='numeric')
-		addSpecificOptions('numeric', field_data.attrs['limits'], '');
+		addSpecificOptions('numeric', field_data.attrs['limits']);
 	else if($j.inArray(ftype, ['textField', 'longTextField', 'longAns', 'reallyLongAns']) != -1){
-		var key;
-		if('charlimits' in field_data.attrs)
-			addSpecificOptions(ftype, field_data.attrs['charlimits'], 'chars');
-		else
-			addSpecificOptions(ftype, field_data.attrs['wordlimits'], 'words');
+        addSpecificOptions(ftype, field_data.attrs['charlimits']);
 	}
 	else if(ftype=='section'){
 		$j("#id_required").prop('checked','');
@@ -958,7 +951,7 @@ var insertField=function(item, $field=null){
 
 var renderNormalField=function(item, field_options, data){
 	//Rendering code for simple fields (i.e. non-custom fields)
-	var $new_elem, key;
+	var $new_elem;
 	if(item=="textField"){
 		$new_elem=$j('<input/>').attr({
 			type:"text",
@@ -966,10 +959,7 @@ var renderNormalField=function(item, field_options, data){
 		});
         if($j('#textField_correct_answer').val())
             $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + $j('#textField_correct_answer').val() + "</span>"));
-		if($j('#charOrWord').val()=='chars')
-			key='charlimits';
-		else key='wordlimits';
-		data['attrs'][key]=$j('#text_min').val() + ',' + $j('#text_max').val();
+		data['attrs']['charlimits']=$j('#text_min').val() + ',' + $j('#text_max').val();
         data['attrs']['correct_answer']=$j('#textField_correct_answer').val();
 	}
 	else if(item=="longTextField"){
@@ -977,30 +967,21 @@ var renderNormalField=function(item, field_options, data){
 			type:"text",
 			size:"60"
 		});
-		if($j('#charOrWord').val()=='chars')
-			key='charlimits';
-		else key='wordlimits';	
-		data['attrs'][key]=$j('#text_min').val() + ',' + $j('#text_max').val();
+		data['attrs']['charlimits']=$j('#text_min').val() + ',' + $j('#text_max').val();
 	}
 	else if(item=="longAns") {
 		$new_elem=$j('<textarea>').attr({
 			rows:"8",
 			cols:"50"
 		});
-		if($j('#charOrWord').val()=='chars')
-			key='charlimits';
-		else key='wordlimits';	
-		data['attrs'][key]=$j('#text_min').val() + ',' + $j('#text_max').val();
+		data['attrs']['charlimits']=$j('#text_min').val() + ',' + $j('#text_max').val();
 	}
 	else if(item=="reallyLongAns") {
 		$new_elem=$j('<textarea>').attr({
 			rows:"14",
 			cols:"60"
 		});
-		if($j('#charOrWord').val()=='chars')
-			key='charlimits';
-		else key='wordlimits';	
-		data['attrs'][key]=$j('#text_min').val() + ',' + $j('#text_max').val();
+		data['attrs']['charlimits']=$j('#text_min').val() + ',' + $j('#text_max').val();
 	}
 	else if(item=="radio") {
 		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
