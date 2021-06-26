@@ -10,6 +10,11 @@
 
 <div id="program_form">
 
+<h1 class="form_title">{{ form_title }}</h1>
+<h2 class="form_desc">{{ form_description }}</h2>
+<em class="step_count">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</em>
+<em class="req_text">(Fields in blue are required)</em>
+
 {% load render_qsd %}
 {% render_inline_program_qsd prog qsd_name %}
 
@@ -18,8 +23,15 @@ Some of your responses are incorrect!  Please consult our instructions and fill 
 {% endif %}
 
 <form method="post" enctype="multipart/form-data" action="{{ request.path }}" class="form-stacked">
-{% include "customforms/single_form_nonwizard.html" %}
-<div style="text-align: center;"><input type="submit" value="Done!" class="btn btn-primary" /></div>
+{% include "customforms/single_form_fragment.html" %}
+
+{% if wizard.steps.prev %}
+    {% if wizard.steps.first != wizard.steps.prev %}
+        <button class="btn primary" name="wizard_goto_step" value="{{ wizard.steps.first }}">First Step</button>
+    {% endif %}
+    <button class="btn primary" name="wizard_goto_step" value="{{ wizard.steps.prev }}">Prev Step</button>
+{% endif %}
+<input type="submit" class="btn primary"{% if wizard.steps.next %} value="Next Step"{% endif %}>
 
 </form>
 

@@ -315,6 +315,7 @@ class ComboForm(SessionWizardView):
     form_handler = None
     form = None
     file_storage = FormStorage()
+    extra_context = None
 
     def get_context_data(self, form, **kwargs):
         """
@@ -327,6 +328,8 @@ class ComboForm(SessionWizardView):
                         'form_title': self.form.title,
                         'form_description': self.form.description,
             })
+        if self.extra_context is not None:
+            context.update(self.extra_context)
 
         return context
 
@@ -403,8 +406,11 @@ class ComboForm(SessionWizardView):
             #   Check that this value didn't come from a dummy field
             if key.split('_')[0] == 'question' and generic_fields[fields[int(key.split('_')[1])]]['typeMap'] == DummyField:
                 del data[key]
+        # Delete old response(s) if not anonymous (we only want one response per user)
+        if not self.form.anonymous:
+            dynModel.objects.filter(user=self.curr_request.user).delete()
         dynModel.objects.create(**data)
-        return HttpResponseRedirect('/customforms/success/%d/' % self.form.id)
+        return HttpResponseRedirect(kwargs.get('redirect_url', '/customforms/success/%d/' % self.form.id))
 
     def render_to_response(self, context):
         #   Override rendering function to use our context processors.
@@ -564,7 +570,7 @@ class FormHandler:
             initial_data = {}
         linked_initial_data = self._getInitialData(self.form, self.user)
         combined_initial_data = {}
-        for i in range(len(self.handlers)):
+        for i in map(str, range(len(self.handlers))):
             combined_initial_data[i] = {}
             if i in linked_initial_data:
                 combined_initial_data[i].update(linked_initial_data[i])
@@ -572,14 +578,14 @@ class FormHandler:
                 combined_initial_data[i].update(initial_data[i])
         return combined_initial_data
 
-    def get_wizard(self, initial_data=None):
+    def get_wizard(self, initial_data=None, wizard_view=ComboForm):
         combined_initial_data = self.get_initial_data(initial_data)
-        return ComboForm(   form_list = self._getFormList(),
+        return wizard_view( form_list = self._getFormList(),
                             initial_dict = combined_initial_data,
                             form_handler = self,
                             form = self.form)
 
-    def get_wizard_view(self, initial_data=None):
+    def get_wizard_view(self, initial_data=None, wizard_view=ComboForm, **kwargs):
         """
         Calls the as_view() method of ComboForm with the appropriate arguments and returns the response
         """
@@ -588,12 +594,13 @@ class FormHandler:
         combined_initial_data = self.get_initial_data(initial_data)
 
         # Now, return the appropriate response
-        return ComboForm.as_view(
+        return wizard_view.as_view(
                                 self._getFormList(),
                                 initial_dict = combined_initial_data,
                                 curr_request = self.request,
                                 form_handler = self,
-                                form = self.form)(self.request)
+                                form = self.form,
+                                **kwargs)(self.request)
 
     def deleteForm(self):
         """

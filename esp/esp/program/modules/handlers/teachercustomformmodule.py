@@ -38,7 +38,7 @@ from esp.utils.web import render_to_response
 
 from esp.users.models import ESPUser, Record
 from esp.customforms.models import Form
-from esp.customforms.DynamicForm import FormHandler
+from esp.customforms.DynamicForm import FormHandler, ComboForm
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.tagdict.models import Tag
 
@@ -47,6 +47,17 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 from django import forms
 from django.db.models.query import Q
+
+class TeacherCustomComboForm(ComboForm):
+    template_name = "program/modules/customformmodule/custom_form.html"
+    event = "teacher_extra_form_done"
+    program = None
+    
+    def done(self, form_list, **kwargs):
+        # Delete old records, if any exist, and then make a new one
+        Record.objects.filter(user=self.curr_request.user, program=self.program, event=self.event).delete()
+        Record.objects.create(user=self.curr_request.user, program=self.program, event=self.event)
+        return super(TeacherCustomComboForm, self).done(form_list=form_list, redirect_url = '/teach/'+self.program.getUrlBase()+'/teacherreg', **kwargs)
 
 class TeacherCustomFormModule(ProgramModuleObj):
     doc = """Serve a custom form as part of teacher registration."""
@@ -95,44 +106,31 @@ class TeacherCustomFormModule(ProgramModuleObj):
         if custom_form_id:
             cf = Form.objects.get(id=int(custom_form_id))
         else:
-            raise ESPError('Cannot find an appropriate form for the quiz.  Please ask your administrator to create a form and set the teach_extraform_id Tag.', log=False)
-
-        form_wizard = FormHandler(cf, request, request.user).get_wizard()
-        form_wizard.curr_request = request
-
-        if request.method == 'POST':
-            try:
-                form = form_wizard.get_form(0, request.POST, request.FILES)
-                if form.is_valid():
-                    #   Delete previous responses from this user
-                    dmh = DynamicModelHandler(cf)
-                    form_model = dmh.createDynModel()
-                    form_model.objects.filter(user=request.user).delete()
-                    form_wizard.done([form])
-                    bit = Record.objects.create(user=request.user, program=self.program, event=self.event)
-                    return self.goToCore(tl)
-            except:
-                raise ESPError("Error saving form data. Please report this to the program directors.", log=False)
-        else:
-            #   If the user already filled out the form, use their earlier response for the initial values
-            if self.isCompleted():
-                dmh = DynamicModelHandler(cf)
-                form_model = dmh.createDynModel()
-                prev_results = form_model.objects.filter(user=request.user).order_by('-id')
-                if prev_results.exists():
-                    prev_result_data = {}
-                    plain_form = form_wizard.get_form(0)
+            raise ESPError('Cannot find an appropriate form for this module.  Please ask your administrator to create a form and set the teach_extraform_id Tag.', log=False)
+        
+        #   If the user already filled out the form, use their earlier response for the initial values
+        if self.isCompleted():
+            dmh = DynamicModelHandler(cf)
+            form_model = dmh.createDynModel()
+            prev_results = form_model.objects.filter(user=request.user).order_by('-id')
+            prev_result_data = {}
+            if prev_results.exists():
+                form_wizard = FormHandler(cf, request, request.user).get_wizard()
+                for step in range(len(form_wizard.form_list)):
+                    field_dict = {}
+                    plain_form = form_wizard.get_form(step)
                     #   Load previous results, with a hack for multiple choice questions.
                     for field in plain_form.fields:
                         if isinstance(plain_form.fields[field], forms.MultipleChoiceField):
-                            prev_result_data[field] = getattr(prev_results[0], field).split(';')
+                            field_dict[field] = getattr(prev_results[0], field).split(';')
                         else:
-                            prev_result_data[field] = getattr(prev_results[0], field)
-                    form_wizard = FormHandler(cf, request, request.user).get_wizard(initial_data={0: prev_result_data})
-
-            form = form_wizard.get_form(0)
-
-        return render_to_response('program/modules/customformmodule/custom_form.html', request, {'prog':prog, 'form': form, 'qsd_name': 'teach:customform_header'})
+                            field_dict[field] = getattr(prev_results[0], field)
+                    prev_result_data[str(step)] = field_dict
+            return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=TeacherCustomComboForm, initial_data = prev_result_data,
+                               extra_context = {'prog': prog, 'qsd_name': 'teach:customform_header'}, program = prog)
+        else:
+            return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=TeacherCustomComboForm,
+                               extra_context = {'prog': prog, 'qsd_name': 'teach:customform_header'}, program = prog)
 
     def isStep(self):
         custom_form_id = Tag.getProgramTag('teach_extraform_id', self.program)
