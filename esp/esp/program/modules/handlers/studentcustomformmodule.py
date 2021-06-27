@@ -35,18 +35,14 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_student, main_call, meets_grade
 from esp.program.modules.handlers.teachercustomformmodule import TeacherCustomFormModule
 
-from esp.utils.web import render_to_response
-
 from esp.users.models import ESPUser, Record
 from esp.customforms.models import Form
 from esp.customforms.DynamicForm import FormHandler, ComboForm
-from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.tagdict.models import Tag
 
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
-from django import forms
 from django.db.models.query import Q
 
 class StudentCustomComboForm(ComboForm):
@@ -114,10 +110,10 @@ class StudentCustomFormModule(ProgramModuleObj):
         if self.isCompleted():
             prev_result_data = TeacherCustomFormModule.get_prev_data(cf, request)
             return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=StudentCustomComboForm, initial_data = prev_result_data,
-                               extra_context = {'prog': prog, 'qsd_name': 'learn:customform_header'}, program = prog)
+                               extra_context = {'prog': prog, 'qsd_name': 'learn:customform_header', 'module': self.module.link_title}, program = prog)
         else:
             return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=StudentCustomComboForm,
-                               extra_context = {'prog': prog, 'qsd_name': 'learn:customform_header'}, program = prog)
+                               extra_context = {'prog': prog, 'qsd_name': 'learn:customform_header', 'module': self.module.link_title}, program = prog)
 
     def isStep(self):
         custom_form_id = Tag.getProgramTag('learn_extraform_id', self.program)

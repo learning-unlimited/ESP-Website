@@ -34,8 +34,6 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call
 
-from esp.utils.web import render_to_response
-
 from esp.users.models import ESPUser, Record
 from esp.customforms.models import Form
 from esp.customforms.DynamicForm import FormHandler, ComboForm
@@ -132,10 +130,10 @@ class TeacherCustomFormModule(ProgramModuleObj):
         if self.isCompleted():
             prev_result_data = self.get_prev_data(cf, request)
             return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=TeacherCustomComboForm, initial_data = prev_result_data,
-                               extra_context = {'prog': prog, 'qsd_name': 'teach:customform_header'}, program = prog)
+                               extra_context = {'prog': prog, 'qsd_name': 'teach:customform_header', 'module': self.module.link_title}, program = prog)
         else:
             return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=TeacherCustomComboForm,
-                               extra_context = {'prog': prog, 'qsd_name': 'teach:customform_header'}, program = prog)
+                               extra_context = {'prog': prog, 'qsd_name': 'teach:customform_header', 'module': self.module.link_title}, program = prog)
 
     def isStep(self):
         custom_form_id = Tag.getProgramTag('teach_extraform_id', self.program)
