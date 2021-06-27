@@ -99,6 +99,26 @@ class TeacherCustomFormModule(ProgramModuleObj):
         """Return true if user has filled out the teacher custom form."""
         return Record.objects.filter(user=get_current_request().user, program=self.program, event=self.event).exists()
 
+    @staticmethod
+    def get_prev_data(form, request):
+        dmh = DynamicModelHandler(form)
+        form_model = dmh.createDynModel()
+        prev_results = form_model.objects.filter(user=request.user).order_by('-id')
+        prev_result_data = {}
+        if prev_results.exists():
+            form_wizard = FormHandler(form, request, request.user).get_wizard()
+            for step in range(len(form_wizard.form_list)):
+                field_dict = {}
+                plain_form = form_wizard.get_form(step)
+                #   Load previous results, with a hack for multiple choice questions.
+                for field in plain_form.fields:
+                    if isinstance(plain_form.fields[field], forms.MultipleChoiceField):
+                        field_dict[field] = getattr(prev_results[0], field).split(';')
+                    else:
+                        field_dict[field] = getattr(prev_results[0], field)
+                prev_result_data[str(step)] = field_dict
+        return prev_result_data
+
     @main_call
     @needs_teacher
     def extraform(self, request, tl, one, two, module, extra, prog):
@@ -110,22 +130,7 @@ class TeacherCustomFormModule(ProgramModuleObj):
         
         #   If the user already filled out the form, use their earlier response for the initial values
         if self.isCompleted():
-            dmh = DynamicModelHandler(cf)
-            form_model = dmh.createDynModel()
-            prev_results = form_model.objects.filter(user=request.user).order_by('-id')
-            prev_result_data = {}
-            if prev_results.exists():
-                form_wizard = FormHandler(cf, request, request.user).get_wizard()
-                for step in range(len(form_wizard.form_list)):
-                    field_dict = {}
-                    plain_form = form_wizard.get_form(step)
-                    #   Load previous results, with a hack for multiple choice questions.
-                    for field in plain_form.fields:
-                        if isinstance(plain_form.fields[field], forms.MultipleChoiceField):
-                            field_dict[field] = getattr(prev_results[0], field).split(';')
-                        else:
-                            field_dict[field] = getattr(prev_results[0], field)
-                    prev_result_data[str(step)] = field_dict
+            prev_result_data = self.get_prev_data(cf, request)
             return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=TeacherCustomComboForm, initial_data = prev_result_data,
                                extra_context = {'prog': prog, 'qsd_name': 'teach:customform_header'}, program = prog)
         else:
