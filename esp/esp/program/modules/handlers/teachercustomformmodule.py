@@ -50,7 +50,7 @@ class TeacherCustomComboForm(ComboForm):
     template_name = "program/modules/customformmodule/custom_form.html"
     event = "teacher_extra_form_done"
     program = None
-    
+
     def done(self, form_list, **kwargs):
         # Delete old records, if any exist, and then make a new one
         Record.objects.filter(user=self.curr_request.user, program=self.program, event=self.event).delete()
@@ -125,7 +125,7 @@ class TeacherCustomFormModule(ProgramModuleObj):
             cf = Form.objects.get(id=int(custom_form_id))
         else:
             raise ESPError('Cannot find an appropriate form for this module.  Please ask your administrator to create a form and set the teach_extraform_id Tag.', log=False)
-        
+
         #   If the user already filled out the form, use their earlier response for the initial values
         if self.isCompleted():
             prev_result_data = self.get_prev_data(cf, request)

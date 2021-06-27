@@ -49,7 +49,7 @@ class StudentCustomComboForm(ComboForm):
     template_name = "program/modules/customformmodule/custom_form.html"
     event = "student_extra_form_done"
     program = None
-    
+
     def done(self, form_list, **kwargs):
         # Delete old records, if any exist, and then make a new one
         Record.objects.filter(user=self.curr_request.user, program=self.program, event=self.event).delete()
