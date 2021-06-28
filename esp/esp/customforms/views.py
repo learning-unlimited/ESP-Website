@@ -256,6 +256,8 @@ def onModify(request):
 
                             for atype, aval in field['data']['attrs'].items():
                                 curr_field.set_attribute(atype, aval)
+                            curr_field.clean_attributes(field['data']['attrs'].keys())
+
                             curr_keys['fields'].append(curr_field.id)
 
                 del_fields = old_fields.exclude(id__in=curr_keys['fields'])
