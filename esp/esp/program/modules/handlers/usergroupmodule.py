@@ -109,14 +109,22 @@ class UserGroupModule(ProgramModuleObj):
 
         group, created = Group.objects.get_or_create(name = group_name)
 
+        diff1 = users.difference(group.user_set.all()).count()
+        diff2 = group.user_set.all().difference(users).count()
+
         if clean:
             group.user_set.clear()
 
         group.user_set.add(*users)
 
-        message = "%i users have been added to user group %s. User group %s now has %i users." % (users.count(), group.name, group.name, group.user_set.count())
+        message = ""
         if created:
-            message = ("User group %s has been created. " % (group.name)) + message
+            message += "User group '%s' has been created. " % (group.name)
+        if not created and clean:
+            message += "%i users were removed from user group '%s'. " % (diff2, group.name)
+
+        message += "%i new users have been added to user group '%s'. User group '%s' now has %i users." % (diff1, group.name, group.name, group.user_set.count())
+
         return message
 
     class Meta:
