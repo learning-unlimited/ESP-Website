@@ -172,7 +172,8 @@ class SchedulingCheckRunner:
          ('capacity_by_category', 'Total capacity in each block by category'),
          ('classes_by_grade', 'Number of classes in each block by grade'),
          ('capacity_by_grade', 'Total capacity in each block by grade'),
-         ('admins_teaching_per_timeblock', 'Admins teaching per timeslot')
+         ('admins_teaching_per_timeblock', 'Admins teaching per timeslot'),
+         ('multiple_classes_same_resource_same_time', 'Double-booked resources')
 
      ]
 
