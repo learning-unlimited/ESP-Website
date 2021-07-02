@@ -123,7 +123,10 @@ class ProgramTagSettingsForm(BetterForm):
             if tag_info.get('is_setting', False):
                 self.categories.add(tag_info.get('category'))
                 field = tag_info.get('field')
-                if field is not None:
+                if key == 'teacherreg_hide_fields':
+                    from esp.program.modules.forms.teacherreg import TeacherClassRegForm
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field, field) for field in TeacherClassRegForm.declared_fields.keys()])
+                elif field is not None:
                     self.fields[key] = field
                 elif tag_info.get('is_boolean', False):
                     self.fields[key] = forms.BooleanField()
@@ -134,6 +137,8 @@ class ProgramTagSettingsForm(BetterForm):
                 self.fields[key].required = False
                 set_val = Tag.getBooleanTag(key, program = self.program) if tag_info.get('is_boolean', False) else Tag.getProgramTag(key, program = self.program)
                 if set_val != None and set_val != self.fields[key].initial:
+                    if isinstance(self.fields[key], forms.MultipleChoiceField):
+                        set_val = set_val.split(",")
                     self.fields[key].initial = set_val
 
     def save(self):
@@ -143,6 +148,8 @@ class ProgramTagSettingsForm(BetterForm):
             tag_info = all_program_tags[key]
             if tag_info.get('is_setting', False):
                 set_val = self.cleaned_data[key]
+                if isinstance(set_val, list):
+                    set_val = ",".join(set_val)
                 global_val = Tag.getBooleanTag(key, default = tag_info.get('default')) if tag_info.get('is_boolean', False) else Tag.getProgramTag(key, default = tag_info.get('default'))
                 if not set_val in ("", "None", None, global_val):
                     # Set a [new] tag if a value was provided and the value is not the default (or if it is but there is also a global tag set)
