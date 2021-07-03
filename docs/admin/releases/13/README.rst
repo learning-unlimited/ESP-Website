@@ -205,3 +205,17 @@ Dependency changes
 - Upgraded jqGrid (4.3.1 -> 5.5.2)
 - Upgraded django-debug-toolbar (1.5 -> 1.11.1)
 
+Minor bug fixes and new features released in August 2021
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Fixed the scheduler popup for open classes
+- Duplicate program names are now prevented
+- The teacher and student custom form modules now have separate handlers. They no longer show up in registration if custom forms are not setup and assigned via tags.
+- There are now separate records for filling out student and teacher custom forms, allowing for separate searching for users.
+- Added moderator tshirt stats to the dashboard
+- Several fixes and enhancements to the custom form builder
+- Escape program name in LaTeX templates
+- Fixed the rendering of multiple page custom forms for custom form modules
+- Fix attributes when custom form field types are changed
+- Restore multiple classes wih same resource scheduling check
+- Naturally sort classrooms when importing them
+- Prevent importing of some tags when copying an old program
