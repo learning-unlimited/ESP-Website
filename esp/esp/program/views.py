@@ -538,11 +538,13 @@ def newprogram(request):
                 ct = ContentType.objects.get_for_model(old_prog)
                 old_tags = Tag.objects.filter(content_type=ct, object_id=old_prog.id)
                 for old_tag in old_tags:
-                    new_tag, created = Tag.objects.get_or_create(key=old_tag.key, content_type=ct, object_id=new_prog.id)
-                    # Some tags get created during program creation (e.g. sibling discount), and we don't want to override those
-                    if created:
-                        new_tag.value = old_tag.value
-                        new_tag.save()
+                    # Some tags we don't want to import
+                    if old_tag.key not in ['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id', 'student_lottery_run']:
+                        new_tag, created = Tag.objects.get_or_create(key=old_tag.key, content_type=ct, object_id=new_prog.id)
+                        # Some tags get created during program creation (e.g. sibling discount), and we don't want to override those
+                        if created:
+                            new_tag.value = old_tag.value
+                            new_tag.save()
             else:
                 # Create new modules
                 new_prog.getModules()
