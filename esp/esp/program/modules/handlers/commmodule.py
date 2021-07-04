@@ -112,9 +112,9 @@ class CommModule(ProgramModuleObj):
         if '<html>' not in body:
             body = '<html>' + body + '</html>'
 
-        htmlbody = unicode(loader.get_template('email/default_email_html.txt').render(DjangoContext({'msgbdy': body,
+        htmlbody = unicode(loader.get_template('email/default_email_html.txt').render({'msgbdy': body,
                      'user': ActionHandler(firstuser, firstuser),
-                     'program': ActionHandler(self.program, firstuser)})))
+                     'program': ActionHandler(self.program, firstuser)}))
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
                        'program': ActionHandler(self.program, firstuser),
                        'request': ActionHandler(MessageRequest(), firstuser)}
@@ -192,10 +192,10 @@ class CommModule(ProgramModuleObj):
                                                       sender     = fromemail,
                                                       creator    = request.user,
                                                       public = public_view,
-                                                      msgtext = unicode(loader.get_template('email/default_email_html.txt').render(DjangoContext(
+                                                      msgtext = unicode(loader.get_template('email/default_email_html.txt').render(
                                                                    {'msgbdy': body,
                                                                     'user': request.user,
-                                                                    'program': self.program }))),
+                                                                    'program': self.program })),
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )
 
