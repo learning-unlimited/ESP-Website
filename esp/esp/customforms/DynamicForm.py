@@ -155,7 +155,7 @@ class CustomFormHandler():
                         if field['field_type'] in ['dropdown', 'radio']:
                             value_choices = field['attributes']['options'].split('|')
                             target_value = value_choices[int(field['attributes'][attr_name])]
-                        elif field['field_type'] in ['checkboxes']:
+                        elif field['field_type'] in ['checkboxes', 'multiselect']:
                             value_choices = field['attributes']['options'].split('|')
                             target_value = [value_choices[int(index)] for index in field['attributes'][attr_name].split(',')]
                         else:

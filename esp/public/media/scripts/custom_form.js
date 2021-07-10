@@ -645,10 +645,10 @@ var addSpecificOptions=function(elem, options) {
 	if(elem=='numeric'){
 		if(options && options!='')
 			limits=options.split(',');
-		else limits=[0,0];
+		else limits=[0,10];
 		frag='<div class="toolboxText">';
-		frag+='<p>Min <input type="text" id="id_minVal" value="'+limits[0]+'"/>';
-		frag+='&nbsp;&nbsp;Max <input type="text" id="id_maxVal" value="'+limits[1]+'"/>';
+		frag+='<p>Min <input type="number" id="id_minVal" value="'+limits[0]+'"/>';
+		frag+='&nbsp;&nbsp;Max <input type="number" id="id_maxVal" value="'+limits[1]+'"/>';
 		frag+='</p></div>';
 	 	$div=$j(frag);
 		$div.appendTo($j('#other_options'));	
@@ -717,11 +717,29 @@ var addCorrectnessOptions = function(elem) {
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
     }
-    else if (elem == 'textField')
+    else if (['textField', 'longTextField'].includes(elem))
     {
-        frag = '<div id="textField_correctness_options" class="toolboxText">';
+        frag = '<div id="' + elem + '_correctness_options" class="toolboxText">';
         frag += '<p>Correct answer:<br>';
-        frag += '<input type="text" id="textField_correct_answer" value=""/>';
+        frag += '<input type="text" id="' + elem + '_correct_answer" value=""/>';
+        frag += '</p></div>';
+        var $div = $j(frag);
+        $div.appendTo($j('#other_options'));
+    }
+    else if (['longAns', 'reallyLongAns'].includes(elem))
+    {
+        frag = '<div id="' + elem + '_correctness_options" class="toolboxText">';
+        frag += '<p>Correct answer:<br>';
+        frag += '<textarea id="' + elem + '_correct_answer" value=""/>';
+        frag += '</p></div>';
+        var $div = $j(frag);
+        $div.appendTo($j('#other_options'));
+    }
+    else if (elem == 'numeric')
+    {
+        frag = '<div id="numeric_correctness_options" class="toolboxText">';
+        frag += '<p>Correct answer:<br>';
+        frag += '<input type="number" id="numeric_correct_answer" value=""/>';
         frag += '</p></div>';
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
@@ -731,6 +749,15 @@ var addCorrectnessOptions = function(elem) {
         frag = '<div id="checkboxes_correctness_options" class="toolboxText">';
         frag += '<p>Correct answer indices (comma-separated, zero-based):<br>';
         frag += '<input type="text" id="checkboxes_correct_answer" value=""/>';
+        frag += '</p></div>';
+        var $div = $j(frag);
+        $div.appendTo($j('#other_options'));
+    }
+    else if (elem == 'multiselect')
+    {
+        frag = '<div id="multiselect_correctness_options" class="toolboxText">';
+        frag += '<p>Correct answer indices (comma-separated, zero-based):<br>';
+        frag += '<input type="text" id="multiselect_correct_answer" value=""/>';
         frag += '</p></div>';
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
@@ -751,12 +778,6 @@ var onSelectElem = function(item) {
         var currCategory=$j('#cat_selector').val();
         var $option,$wrap_option,i, question_text=formElements[currCategory][item]['ques'], $button=$j('#button_add');
         
-        //  Add validation options
-        if (item in formElements['Generic'])
-        {
-            addCorrectnessOptions(item);
-        }
-        
         //Defining actions for generic elements
         if(item=='textField' || item=='longTextField' || item=='longAns' || item=='reallyLongAns')
             addSpecificOptions(item, '');
@@ -769,6 +790,12 @@ var onSelectElem = function(item) {
         }
         else if(item=='page'){
             $j('#id_instructions').val('Enter a short description about the section');
+        }
+        
+        //  Add validation options
+        if (item in formElements['Generic'])
+        {
+            addCorrectnessOptions(item);
         }
         
         //Set 'Required' to a sensible default
@@ -898,8 +925,6 @@ var onSelectField=function($elem, field_data, ftype=null) {
 	$j("#id_instructions").val(field_data.help_text);
 	
 	//Adding in field-specific options
-    addCorrectnessOptions(ftype);
-    $j('#'+ftype+'_correct_answer').val(field_data.attrs['correct_answer']);
 	if($j.inArray(ftype, ['radio', 'dropdown', 'multiselect', 'checkboxes']) != -1){
         if(field_data.attrs['options']){
             options=field_data.attrs['options'].split("|");
@@ -922,6 +947,8 @@ var onSelectField=function($elem, field_data, ftype=null) {
 	}
 	if($button.val()=='Add to Form')
 		$button.val('Update').html("Update Field").unbind('click').click(updateField);
+    addCorrectnessOptions(ftype);
+    $j('#'+ftype+'_correct_answer').val(field_data.attrs['correct_answer']);
 		
 	//Set 'Required' depending on item
 	setRequired(ftype);	
@@ -967,21 +994,30 @@ var renderNormalField=function(item, field_options, data){
 			type:"text",
 			size:"60"
 		});
+        if($j('#longTextField_correct_answer').val())
+            $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + $j('#longTextField_correct_answer').val() + "</span>"));
 		data['attrs']['charlimits']=$j('#text_min').val() + ',' + $j('#text_max').val();
+        data['attrs']['correct_answer']=$j('#longTextField_correct_answer').val();
 	}
 	else if(item=="longAns") {
 		$new_elem=$j('<textarea>').attr({
 			rows:"8",
 			cols:"50"
 		});
+        if($j('#longAns_correct_answer').val())
+            $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + $j('#longAns_correct_answer').val() + "</span>"));
 		data['attrs']['charlimits']=$j('#text_min').val() + ',' + $j('#text_max').val();
+        data['attrs']['correct_answer']=$j('#longAns_correct_answer').val();
 	}
 	else if(item=="reallyLongAns") {
 		$new_elem=$j('<textarea>').attr({
 			rows:"14",
 			cols:"60"
 		});
+        if($j('#reallyLongAns_correct_answer').val())
+            $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + $j('#reallyLongAns_correct_answer').val() + "</span>"));
 		data['attrs']['charlimits']=$j('#text_min').val() + ',' + $j('#text_max').val();
+        data['attrs']['correct_answer']=$j('#reallyLongAns_correct_answer').val();
 	}
 	else if(item=="radio") {
 		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
@@ -1053,14 +1089,21 @@ var renderNormalField=function(item, field_options, data){
                 if(idx != ($text_inputs.length - 1)) options_string+="|";
 			});
 		}
+        var correct_answers = $j('#multiselect_correct_answer').val().split(",").filter(Boolean).map(Number);
 		$j.each(options_string.split('|'), function(idx, el){
 			$one_option=$j('<option>').attr({
 					value:el
-			});	
-			$one_option.html(el);
+			});
+            if(correct_answers.includes(idx)) {
+                $one_option.html(el + " (correct)");
+                $one_option.css('color', 'blue');
+            } else {
+                $one_option.html(el);
+            }
 			$new_elem.append($one_option);
 		});	
 		data['attrs']['options']=options_string;
+        data['attrs']['correct_answer']=$j('#multiselect_correct_answer').val();
 	}
 	else if(item=="checkboxes"){
 		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
@@ -1088,10 +1131,13 @@ var renderNormalField=function(item, field_options, data){
 	}
 	else if(item=="numeric"){
 		$new_elem=$j('<input/>').attr({
-			type:"text",
+			type:"number",
 			size:"20"
 		});
+        if($j('#numeric_correct_answer').val())
+            $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + $j('#numeric_correct_answer').val() + "</span>"));
 		data['attrs']['limits']=$j('#id_minVal').val() + ',' + $j('#id_maxVal').val();
+        data['attrs']['correct_answer']=$j('#numeric_correct_answer').val();
 	}
 	else if(item=='date'){
 		$new_elem=$j("<div>");
