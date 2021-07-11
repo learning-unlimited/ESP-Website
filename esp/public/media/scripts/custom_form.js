@@ -717,7 +717,7 @@ var addCorrectnessOptions = function(elem) {
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
     }
-    else if (['textField', 'longTextField'].includes(elem))
+    else if (['textField', 'longTextField', 'time'].includes(elem))
     {
         frag = '<div id="' + elem + '_correctness_options" class="toolboxText">';
         frag += '<p>Correct answer:<br>';
@@ -758,6 +758,40 @@ var addCorrectnessOptions = function(elem) {
         frag = '<div id="multiselect_correctness_options" class="toolboxText">';
         frag += '<p>Correct answer indices (comma-separated, zero-based):<br>';
         frag += '<input type="text" id="multiselect_correct_answer" value=""/>';
+        frag += '</p></div>';
+        var $div = $j(frag);
+        $div.appendTo($j('#other_options'));
+    }
+    else if (elem == 'radio_yesno')
+    {
+        frag = '<div id="radio_yesno_correctness_options" class="toolboxText">';
+        frag += '<p>Correct answer:<br>';
+        frag += '<select id="radio_yesno_correct_answer">'
+        frag += '<option value=""></option>'
+        frag += '<option value="Yes">Yes</option>'
+        frag += '<option value="No">No</option>'
+        frag += '</select></p></div>';
+        var $div = $j(frag);
+        $div.appendTo($j('#other_options'));
+    }
+    else if (elem == 'null_boolean')
+    {
+        frag = '<div id="null_boolean_correctness_options" class="toolboxText">';
+        frag += '<p>Correct answer:<br>';
+        frag += '<select id="null_boolean_correct_answer">'
+        frag += '<option value=""></option>'
+        frag += '<option value="Unknown">Unknown</option>'
+        frag += '<option value="No">No</option>'
+        frag += '<option value="Yes">Yes</option>'
+        frag += '</select></p></div>';
+        var $div = $j(frag);
+        $div.appendTo($j('#other_options'));
+    }
+    else if (elem == 'date')
+    {
+        frag = '<div id="' + elem + '_correctness_options" class="toolboxText">';
+        frag += '<p>Correct answer:<br>';
+        frag += '<input type="' + elem + '" id="' + elem + '_correct_answer" value=""/>';
         frag += '</p></div>';
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
@@ -948,7 +982,11 @@ var onSelectField=function($elem, field_data, ftype=null) {
 	if($button.val()=='Add to Form')
 		$button.val('Update').html("Update Field").unbind('click').click(updateField);
     addCorrectnessOptions(ftype);
-    $j('#'+ftype+'_correct_answer').val(field_data.attrs['correct_answer']);
+    if(ftype=='date' && field_data.attrs['correct_answer']) {
+        $j('#'+ftype+'_correct_answer').val(new Date(field_data.attrs['correct_answer']).toISOString().substring(0,10));
+    } else {
+        $j('#'+ftype+'_correct_answer').val(field_data.attrs['correct_answer']);
+    }
 		
 	//Set 'Required' depending on item
 	setRequired(ftype);	
@@ -984,43 +1022,47 @@ var renderNormalField=function(item, field_options, data){
 			type:"text",
 			size:"30"
 		});
-        if($j('#textField_correct_answer').val())
+        if($j('#textField_correct_answer').val()) {
             $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + $j('#textField_correct_answer').val() + "</span>"));
+            data['attrs']['correct_answer']=$j('#textField_correct_answer').val();
+        }
 		data['attrs']['charlimits']=$j('#text_min').val() + ',' + $j('#text_max').val();
-        data['attrs']['correct_answer']=$j('#textField_correct_answer').val();
 	}
 	else if(item=="longTextField"){
 		$new_elem=$j('<input/>').attr({
 			type:"text",
 			size:"60"
 		});
-        if($j('#longTextField_correct_answer').val())
+        if($j('#longTextField_correct_answer').val()) {
             $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + $j('#longTextField_correct_answer').val() + "</span>"));
+            data['attrs']['correct_answer']=$j('#longTextField_correct_answer').val();
+        }
 		data['attrs']['charlimits']=$j('#text_min').val() + ',' + $j('#text_max').val();
-        data['attrs']['correct_answer']=$j('#longTextField_correct_answer').val();
 	}
 	else if(item=="longAns") {
 		$new_elem=$j('<textarea>').attr({
 			rows:"8",
 			cols:"50"
 		});
-        if($j('#longAns_correct_answer').val())
+        if($j('#longAns_correct_answer').val()) {
             $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + $j('#longAns_correct_answer').val() + "</span>"));
+            data['attrs']['correct_answer']=$j('#longAns_correct_answer').val();
+        }
 		data['attrs']['charlimits']=$j('#text_min').val() + ',' + $j('#text_max').val();
-        data['attrs']['correct_answer']=$j('#longAns_correct_answer').val();
 	}
 	else if(item=="reallyLongAns") {
 		$new_elem=$j('<textarea>').attr({
 			rows:"14",
 			cols:"60"
 		});
-        if($j('#reallyLongAns_correct_answer').val())
+        if($j('#reallyLongAns_correct_answer').val()) {
             $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + $j('#reallyLongAns_correct_answer').val() + "</span>"));
+            data['attrs']['correct_answer']=$j('#reallyLongAns_correct_answer').val();
+        }
 		data['attrs']['charlimits']=$j('#text_min').val() + ',' + $j('#text_max').val();
-        data['attrs']['correct_answer']=$j('#reallyLongAns_correct_answer').val();
 	}
 	else if(item=="radio") {
-		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
+		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="", correct_answer=$j('#radio_correct_answer').val();
 		$new_elem=$j("<div>");
 		
 		if(!$j.isEmptyObject(field_options)){
@@ -1041,16 +1083,16 @@ var renderNormalField=function(item, field_options, data){
 						value:el
 				});
                 $one_option = $one_option.add($j("<span> "+el+"</span>"));
-                if(idx == parseInt($j('#radio_correct_answer').val())) $one_option = $one_option.add($j("<span class='correct_answer'> (correct) </span>"));
+                if(idx == parseInt(correct_answer)) $one_option = $one_option.add($j("<span class='correct_answer'> (correct) </span>"));
 				$new_elem.append($j("<p>").append($one_option));
 			}
 		});
 		data['attrs']['options']=options_string;
-        data['attrs']['correct_answer']=$j('#radio_correct_answer').val();
+        if(correct_answer) data['attrs']['correct_answer']=$j('#radio_correct_answer').val();
 	}
 	else if(item=="dropdown") {
 		$new_elem=$j('<select>');
-		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
+		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="", correct_answer=$j('#dropdown_correct_answer').val();
 		if(!$j.isEmptyObject(field_options))
 			options_string=field_options['options'];
 		else{
@@ -1064,7 +1106,7 @@ var renderNormalField=function(item, field_options, data){
 				$one_option=$j('<option>').attr({
 						value:el
 				});
-                if(idx == parseInt($j('#dropdown_correct_answer').val())) {
+                if(idx == parseInt(correct_answer)) {
                     $one_option.html(el + " (correct)");
                     $one_option.css('color', 'blue');
                 } else { 
@@ -1073,7 +1115,7 @@ var renderNormalField=function(item, field_options, data){
 				$new_elem.append($one_option);
 			}
 		});	
-        data['attrs']['correct_answer']=$j('#dropdown_correct_answer').val();
+        if(correct_answer) data['attrs']['correct_answer']=$j('#dropdown_correct_answer').val();
 		data['attrs']['options']=options_string;
 	}
 	else if(item=="multiselect") {
@@ -1103,7 +1145,7 @@ var renderNormalField=function(item, field_options, data){
 			$new_elem.append($one_option);
 		});	
 		data['attrs']['options']=options_string;
-        data['attrs']['correct_answer']=$j('#multiselect_correct_answer').val();
+        if(correct_answers) data['attrs']['correct_answer']=$j('#multiselect_correct_answer').val();
 	}
 	else if(item=="checkboxes"){
 		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
@@ -1127,58 +1169,38 @@ var renderNormalField=function(item, field_options, data){
             $new_elem.append($j("<p>").append($one_option));
 		});
 		data['attrs']['options']=options_string;
-        data['attrs']['correct_answer']=$j('#checkboxes_correct_answer').val();
+        if(correct_answers) data['attrs']['correct_answer']=$j('#checkboxes_correct_answer').val();
 	}
 	else if(item=="numeric"){
 		$new_elem=$j('<input/>').attr({
 			type:"number",
 			size:"20"
 		});
-        if($j('#numeric_correct_answer').val())
+        if($j('#numeric_correct_answer').val()) {
             $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + $j('#numeric_correct_answer').val() + "</span>"));
+            data['attrs']['correct_answer']=$j('#numeric_correct_answer').val();
+        }
 		data['attrs']['limits']=$j('#id_minVal').val() + ',' + $j('#id_maxVal').val();
-        data['attrs']['correct_answer']=$j('#numeric_correct_answer').val();
 	}
 	else if(item=='date'){
-		$new_elem=$j("<div>");
-		var $mm,$dd,$yyyy;
-		$mm=$j('<input/>').attr({
-			type:"text",
-			size:"2",
-			value:"mm"
+		$new_elem=$j('<input/>').attr({
+			type:"date"
 		});
-		$dd=$j('<input/>').attr({
-			type:"text",
-			size:"2",
-			value:"dd"
-		});
-		$yyyy=$j('<input/>').attr({
-			type:"text",
-			size:"4",
-			value:"yyyy"
-		});
-		$new_elem.append($j('<p>').append($mm).append($j('<span> / </span>')).append($dd).append($j('<span> / </span>')).append($yyyy));
+        if($j('#date_correct_answer').val()) {
+            var dat_array = $j('#date_correct_answer').val().split('-');
+            var correct_answer = [dat_array[1], dat_array[2], dat_array[0]].join('/');
+            $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + correct_answer + "</span>"));
+            data['attrs']['correct_answer']=correct_answer;
+        }
 	}
 	else if(item=='time'){
-		$new_elem=$j("<div>");
-		var $hh,$m,$ss,$ampm;
-		$hh=$j('<input/>').attr({
-			type:"text",
-			size:"2",
-			value:"hh"
+		$new_elem=$j('<input/>').attr({
+			type:"text"
 		});
-		$m=$j('<input/>').attr({
-			type:"text",
-			size:"2",
-			value:"mm"
-		});
-		$ss=$j('<input/>').attr({
-			type:"text",
-			size:"2",
-			value:"ss"
-		});
-		$ampm=$j('<select>').append($j('<option value="AM">AM</option>')).append($j('<option value="PM">PM</option>'));
-		$new_elem.append($j('<p>').append($hh).append($j('<span> : </span>')).append($m).append($j('<span> : </span>')).append($ss).append('&nbsp;').append($ampm));
+        if($j('#time_correct_answer').val()) {
+            $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + $j('#time_correct_answer').val() + "</span>"));
+            data['attrs']['correct_answer']=$j('#time_correct_answer').val();
+        }
 	}
 	else if(item=='file'){
 		$new_elem=$j('<input/>').attr({
@@ -1224,20 +1246,26 @@ var renderNormalField=function(item, field_options, data){
 	}
     else if(item == "null_boolean") {
         $new_elem=$j('<select>');
-		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
+		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="", correct_answer=$j('#null_boolean_correct_answer').val();
         options_string = "Unknown|No|Yes";
 		$j.each(options_string.split('|'), function(idx, el){
 			if(el!=''){
-				$one_option=$j('<option>').attr({
+                $one_option=$j('<option>').attr({
 						value:el
-				});	
-				$one_option.html(el);
+				});
+				if(el == correct_answer) {
+                    $one_option.html(el + " (correct)");
+                    $one_option.css('color', 'blue');
+                } else { 
+                    $one_option.html(el);
+                }
 				$new_elem.append($one_option);
 			}
 		});
+        if(correct_answer) data['attrs']['correct_answer']=correct_answer;
     }
     else if(item=="radio_yesno") {
-		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
+		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="", correct_answer=$j('#radio_yesno_correct_answer').val();
 		$new_elem=$j("<div>");
 		
 		options_string = 'Yes|No';
@@ -1247,9 +1275,12 @@ var renderNormalField=function(item, field_options, data){
 						type:"radio",
 						value:el
 				});
-				$new_elem.append($j("<p>").append($one_option).append($j("<span>"+el+"</span>")));
+            $one_option = $one_option.add($j("<span> "+el+"</span>"));
+            if(correct_answer == el) $one_option = $one_option.add($j("<span class='correct_answer'> (correct) </span>"));
+            $new_elem.append($j("<p>").append($one_option));
 			}
 		});
+        if(correct_answer) data['attrs']['correct_answer']=correct_answer;
 		data['attrs']['options']=options_string;
 	}
     else if(item=="instructions") {
