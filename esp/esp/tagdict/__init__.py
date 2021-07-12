@@ -310,35 +310,35 @@ all_global_tags = {
     # For the next five, we populate the widgets as MultipleChoiceFields when initializing the form to avoid import loops
     'teacher_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'Select the field(s) to hide in the teacher profile form',
+        'help_text': 'Select the field(s) to hide in the teacher profile form (only fields that are not required may be hidden)',
         'default': '',
         'category': 'teach',
         'is_setting': True,
     },
     'student_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'Select the field(s) to hide in the student profile form',
+        'help_text': 'Select the field(s) to hide in the student profile form (only fields that are not required may be hidden)',
         'default': '',
         'category': 'learn',
         'is_setting': True,
     },
     'volunteer_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'Select the field(s) to hide in the volunteer profile form',
+        'help_text': 'Select the field(s) to hide in the volunteer profile form (only fields that are not required may be hidden)',
         'default': '',
         'category': 'volunteer',
         'is_setting': True,
     },
     'educator_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'Select the field(s) to hide in the educator profile form',
+        'help_text': 'Select the field(s) to hide in the educator profile form (only fields that are not required may be hidden)',
         'default': '',
         'category': 'teach',
         'is_setting': True,
     },
     'guardian_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'Select the field(s) to hide in the guardian profile form',
+        'help_text': 'Select the field(s) to hide in the guardian profile form (only fields that are not required may be hidden)',
         'default': '',
         'category': 'learn',
         'is_setting': True,
@@ -663,7 +663,7 @@ all_program_tags = {
     # We populate the next widget as a MultipleChoiceField when initializing the form to avoid import loops
     'teacherreg_hide_fields': {
         'is_boolean': False,
-        'help_text': 'Select the field(s) you want to hide from teachers during teacher registration',
+        'help_text': 'Select the field(s) you want to hide from teachers during teacher registration (only fields that are not required may be hidden)',
         'default': None,
         'category': 'teach',
         'is_setting': True,

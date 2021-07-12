@@ -426,19 +426,19 @@ class TagSettingsForm(BetterForm):
                 # Some field widgets need to be setup manually because we can't do it during compilation
                 if key == 'teacher_profile_hide_fields':
                     from esp.users.forms.user_profile import TeacherProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field, field) for field in TeacherProfileForm.declared_fields.keys()])
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in TeacherProfileForm.declared_fields.items() if not field[1].required])
                 elif key == 'student_profile_hide_fields':
                     from esp.users.forms.user_profile import StudentProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field, field) for field in StudentProfileForm.declared_fields.keys()])
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in StudentProfileForm.declared_fields.items() if not field[1].required])
                 elif key == 'volunteer_profile_hide_fields':
                     from esp.users.forms.user_profile import VolunteerProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field, field) for field in VolunteerProfileForm.declared_fields.keys()])
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in VolunteerProfileForm.declared_fields.items() if not field[1].required])
                 elif key == 'educator_profile_hide_fields':
                     from esp.users.forms.user_profile import EducatorProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field, field) for field in EducatorProfileForm.declared_fields.keys()])
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in EducatorProfileForm.declared_fields.items() if not field[1].required])
                 elif key == 'guardian_profile_hide_fields':
                     from esp.users.forms.user_profile import GuardianProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field, field) for field in GuardianProfileForm.declared_fields.keys()])
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in GuardianProfileForm.declared_fields.items() if not field[1].required])
                 elif field is not None:
                     self.fields[key] = field
                 elif tag_info.get('is_boolean', False):

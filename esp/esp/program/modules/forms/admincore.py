@@ -125,7 +125,7 @@ class ProgramTagSettingsForm(BetterForm):
                 field = tag_info.get('field')
                 if key == 'teacherreg_hide_fields':
                     from esp.program.modules.forms.teacherreg import TeacherClassRegForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field, field) for field in TeacherClassRegForm.declared_fields.keys()])
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[1].label if field[1].label else field[0]) for field in TeacherClassRegForm.declared_fields.items() if not field[1].required])
                 elif field is not None:
                     self.fields[key] = field
                 elif tag_info.get('is_boolean', False):
