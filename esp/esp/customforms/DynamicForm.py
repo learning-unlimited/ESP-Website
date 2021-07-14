@@ -22,6 +22,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from esp.middleware import ESPError
 
+from datetime import datetime
+
 class BaseCustomForm(BetterForm):
     """
     Base class for all custom forms.
@@ -158,6 +160,12 @@ class CustomFormHandler():
                         elif field['field_type'] in ['checkboxes', 'multiselect']:
                             value_choices = field['attributes']['options'].split('|')
                             target_value = [value_choices[int(index)] for index in field['attributes'][attr_name].split(',')]
+                        elif field['field_type'] == 'numeric':
+                            target_value = float(field['attributes'][attr_name])
+                        elif field['field_type'] == 'date':
+                            target_value = datetime.strptime(field['attributes'][attr_name], '%Y-%m-%d').date()
+                        elif field['field_type'] == 'time':
+                            target_value = datetime.strptime(field['attributes'][attr_name], '%H:%M').time()
                         else:
                             target_value = field['attributes'][attr_name]
 

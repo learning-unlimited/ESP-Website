@@ -717,7 +717,7 @@ var addCorrectnessOptions = function(elem) {
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
     }
-    else if (['textField', 'longTextField', 'time'].includes(elem))
+    else if (['textField', 'longTextField'].includes(elem))
     {
         frag = '<div id="' + elem + '_correctness_options" class="toolboxText">';
         frag += '<p>Correct answer:<br>';
@@ -792,6 +792,15 @@ var addCorrectnessOptions = function(elem) {
         frag = '<div id="' + elem + '_correctness_options" class="toolboxText">';
         frag += '<p>Correct answer:<br>';
         frag += '<input type="' + elem + '" id="' + elem + '_correct_answer" value=""/>';
+        frag += '</p></div>';
+        var $div = $j(frag);
+        $div.appendTo($j('#other_options'));
+    }
+    else if (elem == 'time')
+    {
+        frag = '<div id="' + elem + '_correctness_options" class="toolboxText">';
+        frag += '<p>Correct answer (HH:MM in 24-hour time):<br>';
+        frag += '<input type="text" id="' + elem + '_correct_answer" value=""/>';
         frag += '</p></div>';
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
@@ -1187,10 +1196,11 @@ var renderNormalField=function(item, field_options, data){
 			type:"date"
 		});
         if($j('#date_correct_answer').val()) {
-            var dat_array = $j('#date_correct_answer').val().split('-');
-            var correct_answer = [dat_array[1], dat_array[2], dat_array[0]].join('/');
+            var dat = $j('#date_correct_answer').val()
+            var dat_split = dat.split('-');
+            var correct_answer = [dat_split[1], dat_split[2], dat_split[0]].join('/');
             $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + correct_answer + "</span>"));
-            data['attrs']['correct_answer']=correct_answer;
+            data['attrs']['correct_answer']=dat;
         }
 	}
 	else if(item=='time'){
