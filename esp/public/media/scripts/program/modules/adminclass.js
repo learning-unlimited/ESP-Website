@@ -68,7 +68,8 @@ function getShortTitle(clsObj) {
 
 function fill_class_popup(clsid, classes_data) {
   var class_info = classes_data.classes[clsid];
-  var status_details = getStatusDetails(class_info.status);
+  // Get the status from our local data in case we've changed it
+  var status_details = getStatusDetails(classes_global[clsid].status);
   var status_string = status_details['text'];
 
   var sections_list = $j('<ul>')
@@ -135,7 +136,7 @@ function show_approve_class_popup(clsid) {
   // Load the class data and fill the popup using it
     json_get('class_admin_info', {'class_id': clsid},
     function(data) {
-	fill_class_popup(clsid, data);
+      fill_class_popup(clsid, data);
     },
     function(jqXHR, status, errorThrown) {
       if (errorThrown == "NOT FOUND") {
@@ -175,10 +176,10 @@ function update_class(clsid, statusId) {
   });
 
   // Update our local data
-  classes[clsid].status = statusId;
+  classes_global[clsid].status = statusId;
 
   // Set the appropriate styling and tag text
-  var el = $j("#clsid-"+clsid+"-row").find("td > span > span");
+  var el = $j("#"+clsid).find("td.classname > span");
   el.removeClass("unapproved").removeClass("approved").removeClass("dashboard_blue").removeClass("dashboard_red");
 
   for(var i = 0; i < status_details['classes'].length; ++i)
@@ -192,8 +193,8 @@ function update_class(clsid, statusId) {
 function fillClasses(data)
 {
     // First pull out the data
-    sections = data.sections;
-    classes = data.classes;
+    var sections = data.sections;
+    var classes = data.classes;
 
     // Clear the current classes list (most likely just "Loading...")
     $j("#classes_anchor").html('');
