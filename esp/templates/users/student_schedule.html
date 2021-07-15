@@ -101,12 +101,13 @@ you arrive.
     {% ifchanged timeslot.2 %}
         <tr style="background-color: #f9f9f9"><th colspan="3" height="3" style="text-align: center;">Block {{ timeslot.2 }}</th></tr>
     {% endifchanged %}
+    <tr>
     {% ifequal timeslot.0.event_type.description "Compulsory" %}
         <td width="25%" valign="middle" align="center" class="compulsory_event_time">{{ timeslot.0.short_description }}</td>
-        <td colspan="2" valign="middle" class="compulsory_event_desc">{{ timeslot.0.description }}</td>
+        <td valign="middle" align="center" class="compulsory_event_desc">{{ timeslot.0.description }}</td>
+        <td width="25%"></td>
     </tr>
     {% else %}
-    <tr>
         <td width="25%" valign="middle" align="center">{{ timeslot.0.short_description }}</td>
         {% if timeslot.1|length_is:0 %}
             <td style="vertical-align: middle !important;" align="center" class="class_desc">
@@ -138,12 +139,11 @@ you arrive.
           <br />Or: {% endcomment %} 
             {% for cls in timeslot.1 %}
                 {% if cls.first_meeting_time %}
-                    <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}" class="remove" data-remove-type="{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}" data-sec-code="{{ cls.section.emailcode }}">[remove]</a>
+                    <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}" class="remove" data-remove-type="{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}" data-sec-code="{{ cls.section.emailcode }}">[remove {{ cls.section.emailcode }}]</a>
                     <br />
                 {% endif %}
-                <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[view other classes]</a>
-                <br />
             {% endfor %}
+            <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[view other classes]</a>
             {% if timeslot.3 %}
                 <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
                 {% if not timeslot.1|length_is:1 %}
