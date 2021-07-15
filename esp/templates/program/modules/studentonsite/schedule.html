@@ -17,6 +17,11 @@ function togglePopup() {
 
   <div class="main">
     <table class="studentschedule">
+      <colgroup>
+       <col span="1" class="time">
+       <col span="1" class="cls">
+       <col span="1" class="edit">
+      </colgroup>
       <tbody>
         <th colspan="3" class="user_info">
             <i>Classes for {{user.first_name}} {{user.last_name}} - ID: {{user.id}}</i>
@@ -32,40 +37,47 @@ function togglePopup() {
             {% endifchanged %}
             {% with timeslot.1.0 as cls %}
             <tr class="schedule_row">
-                <td rowspan="2" class="time">{{ timeslot.0.short_time }}</td>
-                <td class="cls">
+            {% if timeslot.0.event_type.description == "Compulsory" %}
+                <td class="time">{{ timeslot.0.short_time }}</td>
+                <td class="cls">{{ timeslot.0.description }}</td>
+                <td class="edit"></td>
+            </tr>
+            {% else%}
+                <td class="time">{{ timeslot.0.short_time }}</td>
                 {% if cls %}
-                    <!--link to course details-->
-                    <a class="no-dec" title="More Details" href="/learn/{{one}}/{{two}}/onsitedetails/{{ cls.section.id }}"><b>{{ cls.section.title }}{% if not cls.first_meeting_time %} (continued){% else %}&nbsp;<i class="material-icons md-3">list</i></a>{% endif %}</b>
+                    {% if cls.first_meeting_time %}
+                    <td class="cls {% cycle 'cls1' 'cls2' %}" rowspan="{{ timeslot.1.0.section.get_meeting_times|length }}">
+                        <!--link to course details-->
+                        <a class="no-dec" title="More Details" href="/learn/{{one}}/{{two}}/onsitedetails/{{ cls.section.id }}"><b>{{ cls.section.title }}&nbsp;<i class="material-icons md-3">list</i></a></b>
+                        {% if checked_in and not cls.section.initial_rooms.count == 0 %}
+                        <br><a class="no-dec" title="Directions" href="/learn/{{one}}/{{two}}/onsitemap/{{ cls.section.initial_rooms.0.id }}">{{ cls.section.prettyrooms|join:", " }}&nbsp;<i class="material-icons md-3">directions</i></a>
+                        {% endif %}
+                    </td>
+                    {% endif %}
                 {% else %}
-                    No class
+                    <td class="cls">
+                        No class
+                    </td>
                 {% endif %}
-                </td>
-                <td rowspan="2" class="edit">
+                <td class="edit">
                     {% if checked_in %}
                         <!--link to filtered course catalog like the fillslot page-->
-                        <a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog/{{timeslot.0.id}}"><i class="material-icons md-4">{% if cls %}create{% else %}add{% endif %}</i></a>
-                        {% if cls %}
-                            <a class="no-dec" href="/learn/{{one}}/{{two}}/onsiteclearslot/{{timeslot.0.id}}"><i class="material-icons md-4">clear</i></a>
+                        <a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog/{{timeslot.0.id}}" title="{% if cls %}View other classes{% else %}Add a class{% endif %}"><i class="material-icons md-4">{% if cls %}create{% else %}add{% endif %}</i></a>
+                        {% if cls and cls.first_meeting_time %}
+                            <a class="no-dec" href="/learn/{{one}}/{{two}}/onsiteclearslot/{{timeslot.0.id}}" title="Remove {{ cls.section.emailcode }}"><i class="material-icons md-4">clear</i></a>
                         {% endif %}
                     {% else %}
                         <!--otherwise, grey out icon-->
                         <div class="popup" onclick="togglePopup()">
-                            <i class="material-icons md-4 greyed">{% if cls %}create{% else %}add{% endif %}</i>
+                            <i class="material-icons md-4 greyed" title="{% if cls %}View other classes{% else %}Add a class{% endif %}">{% if cls %}create{% else %}add{% endif %}</i>
                             {% if cls %}
-                                <i class="material-icons md-4 greyed">clear</i>
+                                <i class="material-icons md-4 greyed" title="Remove {{ cls.section.emailcode }}">clear</i>
                             {% endif %}
                         </div>
                     {% endif %}
                 </td>
             </tr>
-            <tr class="schedule_row">
-                <td class="location">
-                    {% if checked_in and cls and not cls.section.initial_rooms.count == 0 %}
-                        <a class="no-dec" title="Directions" href="/learn/{{one}}/{{two}}/onsitemap/{{ cls.section.initial_rooms.0.id }}">{{ cls.section.prettyrooms|join:", " }}&nbsp;<i class="material-icons md-3">directions</i></a>
-                    {% endif %}
-                </td>
-            </tr>
+            {% endif %}
             {% endwith %}
         {% endfor %}
       </tbody>
