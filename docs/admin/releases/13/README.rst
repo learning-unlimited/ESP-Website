@@ -219,3 +219,8 @@ Minor bug fixes and new features released in August 2021
 - Restore multiple classes wih same resource scheduling check
 - Naturally sort classrooms when importing them
 - Prevent importing of some tags when copying an old program
+- Added a module that lets you add or remove users from a new or existing user group.
+- Floating resources no longer have duplicate times if there are multiple instances
+- Course materials are now always shown in the catalog
+- A class's status is now updated in the dashboard interface when it is changed via the popup
+- The teacher_profile_hide_fields, student_profile_hide_fields, volunteer_profile_hide_fields, educator_profile_hide_fields, guardian_profile_hide_fields, and teacherreg_hide_fields tags now show the possible valid options in the tag settings interface
