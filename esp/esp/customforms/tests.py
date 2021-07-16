@@ -151,7 +151,7 @@ class CustomFormsTest(TestCase):
             self.assertEqual(target_field['data']['field_type'], stored_field.field_type)
             self.assertEqual(target_field['data']['help_text'], stored_field.help_text)
             self.assertEqual(target_field['data']['seq'], stored_field.seq)
-            self.assertEqual((target_field['data'].get('required', '') == 'checked'), stored_field.required)
+            self.assertEqual((target_field['data']['required']), stored_field.required)
 
         #   - Make sure you can view the form as a student
         self.client.login(username=self.student.username, password='password')
