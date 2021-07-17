@@ -535,17 +535,29 @@ var removeField = function(field) {
 	field.parent().remove();
 };
 
-var addOption=function(option_text) {
+var addOption=function(option_text, field_type, correct=false) {
 	//adds an option in the form toolbox
 	
 	var $option,$wrap_option;
 	$wrap_option=$j('<div></div>').addClass('option_element');
+    // Add radio buttons and checkboxes to indicate correct answers
+    if(['radio', 'dropdown', 'multiselect', 'checkboxes'].includes(field_type)){
+        var correct_answer = $j('<input/>',{type:'checkbox', name: field_type + '_correct_answer', checked: correct, title: "Correct answer?"});
+        if(field_type == 'radio' || field_type == 'dropdown'){
+            correct_answer.click(function() {
+                if(this.checked){
+                    $j('[name=' + field_type + '_correct_answer]').not($j(this)).prop('checked', false);
+                }
+            });
+        }
+        correct_answer.appendTo($wrap_option);
+    }
 	$option=$j('<input/>').attr({
 		type:"text",
 		value:option_text
 	});
 	$option.appendTo($wrap_option);
-	$j('<input/>',{type:'button',value:'+'}).click(function(){addOption('')}).appendTo($wrap_option);
+	$j('<input/>',{type:'button',value:'+'}).click(function(){addOption('', field_type)}).appendTo($wrap_option);
 	$j('<input/>',{type:'button',value:'-'}).click(removeOption).appendTo($wrap_option);
 	$wrap_option.appendTo($j('#multi_options'));
 };
@@ -557,11 +569,11 @@ var removeOption=function() {
     }
 };
 
-var generateOptions=function() {
+var generateOptions=function(field_type) {
     //Generates the options input fields for multi-select form fields
     
     for(i=1;i<=3;i++) {
-        addOption('');
+        addOption('', field_type);
     }
 };  
 
@@ -702,18 +714,14 @@ var addCorrectnessOptions = function(elem) {
     if (elem == 'dropdown')
     {
         frag = '<div id="dropdown_correctness_options" class="toolboxText">';
-        frag += '<p>Correct answer index (zero-based):<br>';
-        frag += '<input type="text" id="dropdown_correct_answer" value=""/>';
-        frag += '</p></div>';
+        frag += '<p>(select checkbox above for correct answer)</p></div>';
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
     }
     else if (elem == 'radio')
     {
         frag = '<div id="radio_correctness_options" class="toolboxText">';
-        frag += '<p>Correct answer index (zero-based):<br>';
-        frag += '<input type="text" id="radio_correct_answer" value=""/>';
-        frag += '</p></div>';
+        frag += '<p>(select checkbox above for correct answer)</p></div>';
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
     }
@@ -747,18 +755,14 @@ var addCorrectnessOptions = function(elem) {
     else if (elem == 'checkboxes')
     {
         frag = '<div id="checkboxes_correctness_options" class="toolboxText">';
-        frag += '<p>Correct answer indices (comma-separated, zero-based):<br>';
-        frag += '<input type="text" id="checkboxes_correct_answer" value=""/>';
-        frag += '</p></div>';
+        frag += '<p>(select checkbox(es) above for correct answer(s))</p></div>';
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
     }
     else if (elem == 'multiselect')
     {
         frag = '<div id="multiselect_correctness_options" class="toolboxText">';
-        frag += '<p>Correct answer indices (comma-separated, zero-based):<br>';
-        frag += '<input type="text" id="multiselect_correct_answer" value=""/>';
-        frag += '</p></div>';
+        frag += '<p>(select checkbox(es) above for correct answer(s))</p></div>';
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
     }
@@ -825,7 +829,7 @@ var onSelectElem = function(item) {
         if(item=='textField' || item=='longTextField' || item=='longAns' || item=='reallyLongAns')
             addSpecificOptions(item, '');
         else if(item=="radio" || item=="dropdown" || item=="multiselect" || item=="checkboxes") 
-            generateOptions();
+            generateOptions(item);
         else if(item=="numeric") 
             addSpecificOptions(item, '');
         else if(item=='section'){
@@ -971,13 +975,17 @@ var onSelectField=function($elem, field_data, ftype=null) {
 	if($j.inArray(ftype, ['radio', 'dropdown', 'multiselect', 'checkboxes']) != -1){
         if(field_data.attrs['options']){
             options=field_data.attrs['options'].split("|");
+            var correct_answers=[];
+            if(field_data.attrs['correct_answer']){
+                correct_answers=correct_answers.concat(field_data.attrs['correct_answer'].split("|").map(Number));
+            }
             $j.each(options, function(idx,el) {
                 if(el!="")
-                    addOption(el);
+                    addOption(el, ftype, correct_answers.includes(idx));
             });
         }
         if($j('#multi_options').children(".option_element").length == 0){
-            addOption('');
+            addOption('', ftype);
         }
 	}
 	else if(ftype=='numeric')
@@ -1071,7 +1079,7 @@ var renderNormalField=function(item, field_options, data){
 		data['attrs']['charlimits']=$j('#text_min').val() + ',' + $j('#text_max').val();
 	}
 	else if(item=="radio") {
-		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="", correct_answer=$j('#radio_correct_answer').val();
+		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="", correct_answer=$j("[name=radio_correct_answer]").index($j("[name=radio_correct_answer]:checked"));
 		$new_elem=$j("<div>");
 		
 		if(!$j.isEmptyObject(field_options)){
@@ -1092,16 +1100,16 @@ var renderNormalField=function(item, field_options, data){
 						value:el
 				});
                 $one_option = $one_option.add($j("<span> "+el+"</span>"));
-                if(idx == parseInt(correct_answer)) $one_option = $one_option.add($j("<span class='correct_answer'> (correct) </span>"));
+                if(idx == correct_answer) $one_option = $one_option.add($j("<span class='correct_answer'> (correct) </span>"));
 				$new_elem.append($j("<p>").append($one_option));
 			}
 		});
 		data['attrs']['options']=options_string;
-        if(correct_answer) data['attrs']['correct_answer']=$j('#radio_correct_answer').val();
+        if(correct_answer!=-1) data['attrs']['correct_answer']=String(correct_answer);
 	}
 	else if(item=="dropdown") {
 		$new_elem=$j('<select>');
-		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="", correct_answer=$j('#dropdown_correct_answer').val();
+		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="", correct_answer=$j("[name=dropdown_correct_answer]").index($j("[name=dropdown_correct_answer]:checked"));
 		if(!$j.isEmptyObject(field_options))
 			options_string=field_options['options'];
 		else{
@@ -1115,7 +1123,7 @@ var renderNormalField=function(item, field_options, data){
 				$one_option=$j('<option>').attr({
 						value:el
 				});
-                if(idx == parseInt(correct_answer)) {
+                if(idx == correct_answer) {
                     $one_option.html(el + " (correct)");
                     $one_option.css('color', 'blue');
                 } else { 
@@ -1124,7 +1132,7 @@ var renderNormalField=function(item, field_options, data){
 				$new_elem.append($one_option);
 			}
 		});	
-        if(correct_answer) data['attrs']['correct_answer']=$j('#dropdown_correct_answer').val();
+        if(correct_answer!=-1) data['attrs']['correct_answer']=String(correct_answer);
 		data['attrs']['options']=options_string;
 	}
 	else if(item=="multiselect") {
@@ -1140,7 +1148,10 @@ var renderNormalField=function(item, field_options, data){
                 if(idx != ($text_inputs.length - 1)) options_string+="|";
 			});
 		}
-        var correct_answers = $j('#multiselect_correct_answer').val().split(",").filter(Boolean).map(Number);
+        // Get the indices of the checked checkboxes
+        var correct_answers = $j("[name=multiselect_correct_answer]:checked").map(function(){
+            return $j("[name=multiselect_correct_answer]").index(this);
+        }).toArray();
 		$j.each(options_string.split('|'), function(idx, el){
 			$one_option=$j('<option>').attr({
 					value:el
@@ -1154,7 +1165,7 @@ var renderNormalField=function(item, field_options, data){
 			$new_elem.append($one_option);
 		});	
 		data['attrs']['options']=options_string;
-        if(correct_answers) data['attrs']['correct_answer']=$j('#multiselect_correct_answer').val();
+        if(correct_answers.length) data['attrs']['correct_answer']=correct_answers.join('|');
 	}
 	else if(item=="checkboxes"){
 		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
@@ -1167,7 +1178,10 @@ var renderNormalField=function(item, field_options, data){
                 if(idx != ($text_inputs.length - 1)) options_string+="|";
 			});
 		}
-        var correct_answers = $j('#checkboxes_correct_answer').val().split(",").filter(Boolean).map(Number);
+        // Get the indices of the checked checkboxes
+        var correct_answers = $j("[name=checkboxes_correct_answer]:checked").map(function(){
+            return $j("[name=checkboxes_correct_answer]").index(this);
+        }).toArray();
 		$j.each(options_string.split('|'), function(idx, el){
 			$one_option=$j('<input>').attr({
 					type:"checkbox",
@@ -1178,7 +1192,7 @@ var renderNormalField=function(item, field_options, data){
             $new_elem.append($j("<p>").append($one_option));
 		});
 		data['attrs']['options']=options_string;
-        if(correct_answers) data['attrs']['correct_answer']=$j('#checkboxes_correct_answer').val();
+        if(correct_answers.length) data['attrs']['correct_answer']=correct_answers.join('|');
 	}
 	else if(item=="numeric"){
 		$new_elem=$j('<input/>').attr({
