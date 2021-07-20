@@ -127,7 +127,7 @@
     </td>
     {% for teacher in section.teachers_list %}
         <td{% if forloop.last %} style="border-bottom: 1px solid #ccc;"{% endif %}>
-            <a href="/manage/userview?username={{ teacher.username }}" target="_blank">{{ teacher.name }}</a>
+            <a href="/manage/userview?username={{ teacher.username }}&program={{ program.id }}" target="_blank">{{ teacher.name }}</a>
         </td>
         <td class="phone"{% if forloop.last %} style="border-bottom: 1px solid #ccc;"{% endif %}> {{ teacher.phone }} </td>
         {% if forloop.first %}
@@ -223,7 +223,7 @@
         {% else %}
         <td class="not-checked-in">
         {% endif %}
-            <a href="/manage/userview?username={{ teacher.username }}" target="_blank">{{ teacher.name }}</a>
+            <a href="/manage/userview?username={{ teacher.username }}&program={{ program.id }}" target="_blank">{{ teacher.name }}</a>
         </td>
         <td class="checkin-column">
             {% if teacher.id not in arrived %}
@@ -262,7 +262,7 @@
             {% else %}
             <td class="not-checked-in"{% if forloop.first %} style="border-top:1px solid #ccc;"{% endif %}>
             {% endif %}
-                <a href="/manage/userview?username={{ teacher.username }}" target="_blank">{{ teacher.name }}</a>
+                <a href="/manage/userview?username={{ teacher.username }}&program={{ program.id }}" target="_blank">{{ teacher.name }}</a>
             </td>
             <td class="checkin-column"{% if forloop.first %} style="border-top:1px solid #ccc;"{% endif %}>
                 {% if teacher.id not in arrived %}

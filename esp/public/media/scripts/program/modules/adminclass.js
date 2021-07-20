@@ -238,7 +238,7 @@ function createTeacherListTd(clsObj) {
             td.append(', ');
         }
         var teacher = json_data.teachers[val];
-        var href = '/manage/userview?username=' + teacher.username;
+        var href = '/manage/userview?username=' + teacher.username + '&program=' + program_id;
         td.append($j('<a/>', {href: href}).text(
             teacher.first_name + ' ' + teacher.last_name));
     });

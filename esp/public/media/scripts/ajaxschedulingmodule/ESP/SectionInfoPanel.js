@@ -106,7 +106,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
     var getTeacherLinks = function(section) {
         var teacher_links_list = []
             $j.each(section.teacher_data, function(index, teacher) {
-                teacher_links_list.push("<a target='_blank' href=/manage/userview?username=" + encodeURIComponent(teacher.username) + ">" + teacher.first_name + " " + teacher.last_name + "</a>");
+                teacher_links_list.push("<a target='_blank' href='/manage/userview?username=" + encodeURIComponent(teacher.username) + "&program=" + prog_id + "'>" + teacher.first_name + " " + teacher.last_name + "</a>");
             });
         var teacher_links = teacher_links_list.join(", ");
         return $j(teacher_links);
@@ -202,7 +202,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
             "<br/><a target='_blank' href='" + baseURL +
             "edit_availability?user=" + moderator.username +
             "'>Edit Availability</a>" + " <a target='_blank' href='/manage/userview?username=" +
-            moderator.username + "'>Userview</a>");
+            moderator.username + "&program=" + prog_id + "'>Userview</a>");
         toolbar.append(links);
         return toolbar;
 
