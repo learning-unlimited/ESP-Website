@@ -224,3 +224,6 @@ Minor bug fixes and new features released in August 2021
 - Course materials are now always shown in the catalog
 - A class's status is now updated in the dashboard interface when it is changed via the popup
 - The teacher_profile_hide_fields, student_profile_hide_fields, volunteer_profile_hide_fields, educator_profile_hide_fields, guardian_profile_hide_fields, and teacherreg_hide_fields tags now show the possible valid options in the tag settings interface
+- Modified the styling of inline student schedules (webapp and student reg mainpage) to clarify when classes are multiple blocks long
+- Fixed (hopefully for the last time) the associated asterisks and styling of required fields in forms
+- Userview links now specify the program of interest so the sidebar links are more relevant
