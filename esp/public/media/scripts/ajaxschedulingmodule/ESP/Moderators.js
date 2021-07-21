@@ -409,7 +409,7 @@ function ModeratorCell(el, moderator, matrix) {
             "</br><a target='_blank' href='" + baseURL +
             "edit_availability?user=" + this.moderator.username +
             "'>Edit Availability</a>" + " <a target='_blank' href='/manage/userview?username=" +
-            this.moderator.username + "'>Userview</a>" + "</td>";
+            this.moderator.username + "&program=" + prog_id + "'>Userview</a>" + "</td>";
     }
 
     this.tooltip = function(){
