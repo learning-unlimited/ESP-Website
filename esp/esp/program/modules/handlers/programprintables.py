@@ -58,6 +58,7 @@ from django.template.loader import render_to_string, get_template
 from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
 
+from datetime import timedelta
 from decimal import Decimal
 import json
 import collections
@@ -1340,28 +1341,56 @@ class ProgramPrintables(ProgramModuleObj):
         """ generate class room rosters"""
         from esp.cal.models import Event
 
-        classes = list(self.program.sections().filter(status=10, parent_class__status=10))
+        classes = self.program.sections().filter(status=10, parent_class__status=10)
 
         context = {}
-        classes.sort()
 
-        rooms = {}
+        rooms_dict = {}
         scheditems = []
 
-        for cls in classes:
-            for room in cls.initial_rooms():
-                for event_group in Event.collapse(list(cls.meeting_times.all())):
-                    update_dict = {'room': room.name,
-                                   'cls': cls,
-                                   'timeblock': event_group}
-                    if room.name in rooms:
-                        rooms[room.name].append(update_dict)
-                    else:
-                        rooms[room.name] = [update_dict]
+        if extra == "all_blocks":
+            blocks = prog.getTimeSlotList()
+            rooms = prog.groupedClassrooms()
+            for block in blocks:
+                for room in rooms:
+                    available_room = False
+                    empty_room = True
+                    if block in room.timeslots:
+                        available_room = True
+                        if available_room:
+                            for cls in classes.filter(meeting_times=block):
+                                if room.name in cls.initial_rooms().values_list('name', flat = True):
+                                    empty_room = False
+                                    update_dict = {'room': room.name,
+                                                   'cls': cls,
+                                                   'timeblock': block}
+                                    if room.name in rooms_dict:
+                                        rooms_dict[room.name].append(update_dict)
+                                    else:
+                                        rooms_dict[room.name] = [update_dict]
+                    if empty_room:
+                        update_dict = {'room': room.name,
+                                       'cls': 'Room Available' if available_room else 'Room Unavailable',
+                                       'timeblock': block}
+                        if room.name in rooms_dict:
+                            rooms_dict[room.name].append(update_dict)
+                        else:
+                            rooms_dict[room.name] = [update_dict]
+        else:
+            for cls in classes:
+                for room in cls.initial_rooms():
+                    for event_group in Event.group_contiguous(list(cls.meeting_times.all())):
+                        update_dict = {'room': room.name,
+                                       'cls': cls,
+                                       'timeblock': Event.collapse(event_group, tol = timedelta(days=1))[0]}
+                        if room.name in rooms_dict:
+                            rooms_dict[room.name].append(update_dict)
+                        else:
+                            rooms_dict[room.name] = [update_dict]
 
-        for room_name in sorted(rooms.keys()):
-            rooms[room_name].sort(key=lambda x: x['timeblock'].start)
-            for val in rooms[room_name]:
+        for room_name in prog.natural_sort(rooms_dict.keys()):
+            rooms_dict[room_name].sort(key=lambda x: x['timeblock'].start)
+            for val in rooms_dict[room_name]:
                 scheditems.append(val)
 
         context['scheditems'] = scheditems
@@ -1369,7 +1398,7 @@ class ProgramPrintables(ProgramModuleObj):
         context['group_name'] = Tag.getTag('full_group_name')
         context['phone_number'] = Tag.getTag('group_phone_number')
 
-        return render_to_response(self.baseDir()+'roomrosters.html', request, context)
+        return render_to_response(self.baseDir()+'roomschedules.html', request, context)
 
     @aux_call
     @needs_admin

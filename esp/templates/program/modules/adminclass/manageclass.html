@@ -198,7 +198,7 @@ Please use the form below to alter {{ class.title }}.  Note that changes made to
     <th>{{ program.getModeratorTitle }}(s)</th>
     <td>
         {% for mod in form.sec.get_moderators %}
-            <a href="/manage/userview?username={{ mod.username|urlencode }}">{{ mod.nonblank_name }}</a> (<a href="mailto:{{ mod.email }}" target="_blank">{{ mod.email }}</a>)<br/>
+            <a href="/manage/userview?username={{ mod.username|urlencode }}&program={{ program.id }}">{{ mod.nonblank_name }}</a> (<a href="mailto:{{ mod.email }}" target="_blank">{{ mod.email }}</a>)<br/>
         {% endfor %}
     </td>
 </tr>
