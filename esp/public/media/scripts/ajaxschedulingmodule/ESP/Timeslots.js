@@ -64,9 +64,7 @@ function Timeslots(timeslots_data, lunch_timeslots){
             var last_timeslot = this.get_by_id(last_timeslot_id);
             next_timeslot = this.get_by_order(last_timeslot.order + 1);
 
-            if (!this.are_timeslots_contiguous([last_timeslot, next_timeslot])){
-                console.log("timeslot " + last_timeslot.id + " and timeslot " +
-                        next_timeslot.id +" are not contiguous");
+            if (next_timeslot === undefined || !this.are_timeslots_contiguous([last_timeslot, next_timeslot])){
                 return null;
             }
             last_timeslot_id = next_timeslot.id;
@@ -86,7 +84,7 @@ function Timeslots(timeslots_data, lunch_timeslots){
         var minutes = end[4] - start[4];
 
         if (minutes > 0){
-            hours = hours + 1;
+            hours = hours + minutes/60;
         }
         return hours;
     };

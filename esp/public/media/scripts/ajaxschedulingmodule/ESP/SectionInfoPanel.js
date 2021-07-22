@@ -140,7 +140,14 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         content_parts['Teachers'] = teacher_links;
         if(has_moderator_module === "True") content_parts[moderator_title + 's'] = getModeratorLinks(section);
         content_parts['Class size max'] = section.class_size_max;
-        content_parts['Length'] = Math.ceil(section.length);
+        var length_str = '';
+        if(Math.floor(section.length) > 0){
+            length_str += Math.floor(section.length);
+            length_str += ' hour';
+            if(Math.floor(section.length) > 1) length_str += 's';
+        }
+        if((section.length % 1) * 60 > 0) length_str += ' ' + ((section.length % 1) * 60) + ' minutes';
+        content_parts['Length'] = length_str;
         content_parts['Grades'] = section.grade_min + "-" + section.grade_max;
         content_parts['Room Request'] = section.requested_room;
         content_parts['Resource Requests'] = resources;
