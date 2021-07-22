@@ -253,7 +253,6 @@ function Matrix(
         
         if(section){
             $j.each(available_timeslots, function(j, timeslot_id) {
-                var timeslot = this.timeslots.get_by_id(timeslot_id);
                 $j.each(this.rooms, function(k, room) {
                     var cell = this.getCell(room.id, timeslot_id);
                     if(cell.el.hasClass("teacher-available-cell")) {
