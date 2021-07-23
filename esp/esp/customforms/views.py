@@ -5,6 +5,7 @@ from django.db import transaction
 from django.shortcuts import redirect, HttpResponse
 from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.db import connection
+from django.core.serializers.json import DjangoJSONEncoder
 
 from esp.customforms.models import *
 from esp.program.models import Program
@@ -381,7 +382,7 @@ def getData(request):
                 return HttpResponse(status=400)
             form = Form.objects.get(pk=form_id)
             fh = FormHandler(form=form, request=request)
-            resp_data = json.dumps(fh.getResponseData(form))
+            resp_data = json.dumps(fh.getResponseData(form), cls=DjangoJSONEncoder)
             return HttpResponse(resp_data)
     return HttpResponse(status=400)
 
