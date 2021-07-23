@@ -160,6 +160,8 @@ class CustomFormHandler():
                         elif field['field_type'] in ['checkboxes', 'multiselect']:
                             value_choices = field['attributes']['options'].split('|')
                             target_value = [value_choices[int(index)] for index in field['attributes']['correct_answer'].split('|')]
+                        elif field['field_type'] == 'null_boolean':
+                            target_value = {'Unknown': None, 'Yes': True, 'No': False}[field['attributes']['correct_answer']]
                         elif field['field_type'] == 'numeric':
                             target_value = float(field['attributes']['correct_answer'])
                         elif field['field_type'] == 'date':

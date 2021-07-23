@@ -772,8 +772,8 @@ var addCorrectnessOptions = function(elem) {
         frag += '<p>Correct answer:<br>';
         frag += '<select id="radio_yesno_correct_answer">'
         frag += '<option value=""></option>'
-        frag += '<option value="Yes">Yes</option>'
-        frag += '<option value="No">No</option>'
+        frag += '<option value="T">Yes</option>'
+        frag += '<option value="F">No</option>'
         frag += '</select></p></div>';
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
@@ -785,8 +785,8 @@ var addCorrectnessOptions = function(elem) {
         frag += '<select id="null_boolean_correct_answer">'
         frag += '<option value=""></option>'
         frag += '<option value="Unknown">Unknown</option>'
-        frag += '<option value="No">No</option>'
         frag += '<option value="Yes">Yes</option>'
+        frag += '<option value="No">No</option>'
         frag += '</select></p></div>';
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
@@ -1271,7 +1271,7 @@ var renderNormalField=function(item, field_options, data){
     else if(item == "null_boolean") {
         $new_elem=$j('<select>');
 		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="", correct_answer=$j('#null_boolean_correct_answer').val();
-        options_string = "Unknown|No|Yes";
+        options_string = "Unknown|Yes|No";
 		$j.each(options_string.split('|'), function(idx, el){
 			if(el!=''){
                 $one_option=$j('<option>').attr({
@@ -1292,6 +1292,7 @@ var renderNormalField=function(item, field_options, data){
 		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="", correct_answer=$j('#radio_yesno_correct_answer').val();
 		$new_elem=$j("<div>");
 		
+        var correct_idx = "TF".indexOf(correct_answer);
 		options_string = 'Yes|No';
 		$j.each(options_string.split('|'), function(idx, el){
 			if(el!=''){
@@ -1300,7 +1301,7 @@ var renderNormalField=function(item, field_options, data){
 						value:el
 				});
             $one_option = $one_option.add($j("<span> "+el+"</span>"));
-            if(correct_answer == el) $one_option = $one_option.add($j("<span class='correct_answer'> (correct) </span>"));
+            if(correct_answer && correct_idx == idx) $one_option = $one_option.add($j("<span class='correct_answer'> (correct) </span>"));
             $new_elem.append($j("<p>").append($one_option));
 			}
 		});
