@@ -329,7 +329,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
             length_str += ' hour';
             if(Math.floor(this.section.length) > 1) length_str += 's';
         }
-        if((this.section.length % 1) * 60 > 0) length_str += ' ' + ((this.section.length % 1) * 60) + ' minutes';
+        if((this.section.length % 1) * 60 > 0) length_str += ' ' + Math.round((this.section.length % 1) * 60) + ' minutes';
         tooltip_parts['Length'] = length_str;
         tooltip_parts['Grades'] = this.section.grade_min + "-" + this.section.grade_max;
         tooltip_parts['Room Request'] = this.section.requested_room;

@@ -146,7 +146,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
             length_str += ' hour';
             if(Math.floor(section.length) > 1) length_str += 's';
         }
-        if((section.length % 1) * 60 > 0) length_str += ' ' + ((section.length % 1) * 60) + ' minutes';
+        if((section.length % 1) * 60 > 0) length_str += ' ' + Math.round((section.length % 1) * 60) + ' minutes';
         content_parts['Length'] = length_str;
         content_parts['Grades'] = section.grade_min + "-" + section.grade_max;
         content_parts['Room Request'] = section.requested_room;
