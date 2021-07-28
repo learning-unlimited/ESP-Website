@@ -304,6 +304,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         this.matrix.sectionInfoPanel.hide();
         this.matrix.sectionInfoPanel.override = override;
         this.matrix.unhighlightTimeslots(this.availableTimeslots);
+        this.unscheduleAsGhost();
     };
 
     /**
