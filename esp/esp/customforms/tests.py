@@ -120,12 +120,12 @@ class CustomFormsTest(TestCase):
                 'parent_id': -1,
                 'sections': [{
                     'fields': [
-                        {'data': {'field_type': 'textField', 'question_text': 'ShortText', 'seq': 0, 'required': 'checked', 'parent_id': -1, 'attrs':{'correct_answer': 'Smart', 'charlimits': '0,100'}, 'help_text': 'Instructions'}},
-                        {'data': {'field_type': 'phone', 'question_text': 'Your phone no.', 'seq': 1, 'required': 'checked', 'parent_id': -1, 'attrs': {}, 'help_text': u''}},
-                        {'data': {'field_type': 'gender', 'question_text': 'Your gender', 'seq': 2, 'required': 'checked', 'parent_id': -1, 'attrs': {}, 'help_text': u''}},
-                        {'data': {'field_type': 'radio', 'question_text': 'Choose an option', 'seq': 3, 'required': 'checked', 'parent_id': -1, 'attrs': {'correct_answer': '1', 'options': 'A|B|C|'}, 'help_text': u''}},
-                        {'data': {'field_type': 'boolean', 'question_text': 'True/false', 'seq': 4, 'required': 'checked', 'parent_id': -1, 'attrs': {}, 'help_text':u''}},
-                        {'data': {'field_type': 'textField', 'question_text': 'NonRequired', 'seq': 5, 'parent_id': -1, 'attrs': {'correct_answer': u'', 'charlimits': ','}, 'help_text': u''}}
+                        {'data': {'field_type': 'textField', 'question_text': 'ShortText', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs':{'correct_answer': 'Smart', 'charlimits': '0,100'}, 'help_text': 'Instructions'}},
+                        {'data': {'field_type': 'phone', 'question_text': 'Your phone no.', 'seq': 1, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': u''}},
+                        {'data': {'field_type': 'gender', 'question_text': 'Your gender', 'seq': 2, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': u''}},
+                        {'data': {'field_type': 'radio', 'question_text': 'Choose an option', 'seq': 3, 'required': True, 'parent_id': -1, 'attrs': {'correct_answer': '1', 'options': 'A|B|C|'}, 'help_text': u''}},
+                        {'data': {'field_type': 'boolean', 'question_text': 'True/false', 'seq': 4, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text':u''}},
+                        {'data': {'field_type': 'textField', 'question_text': 'NonRequired', 'seq': 5, 'required': False, 'parent_id': -1, 'attrs': {'correct_answer': u'', 'charlimits': ','}, 'help_text': u''}}
                     ],
                 'data': {'help_text': u'', 'question_text': u'', 'seq': 0}
                 }],
@@ -151,7 +151,7 @@ class CustomFormsTest(TestCase):
             self.assertEqual(target_field['data']['field_type'], stored_field.field_type)
             self.assertEqual(target_field['data']['help_text'], stored_field.help_text)
             self.assertEqual(target_field['data']['seq'], stored_field.seq)
-            self.assertEqual((target_field['data'].get('required', '') == 'checked'), stored_field.required)
+            self.assertEqual((target_field['data']['required']), stored_field.required)
 
         #   - Make sure you can view the form as a student
         self.client.login(username=self.student.username, password='password')
