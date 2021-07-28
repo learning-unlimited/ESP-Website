@@ -80,7 +80,7 @@ function Timeslots(timeslots_data, lunch_timeslots){
         var start = new Date(...this.timeslots[id_1].start);
         var end = new Date(...this.timeslots[id_2].end);
 
-        return Math.round((end - start)/3600000, 2);
+        return Math.round(((end - start)/3600000) + Number.EPSILON) * 100) / 100;
     };
 
     /**
