@@ -227,3 +227,6 @@ Minor bug fixes and new features released in August 2021
 - Modified the styling of inline student schedules (webapp and student reg mainpage) to clarify when classes are multiple blocks long
 - Fixed (hopefully for the last time) the associated asterisks and styling of required fields in forms
 - Userview links now specify the program of interest so the sidebar links are more relevant
+- Fixed the /manage/mergeaccounts page and added a link to it from /manage/programs
+- Added the correct answer option to more custom form field types
+- Fixed the ajax scheduler to support timeslots of any length
