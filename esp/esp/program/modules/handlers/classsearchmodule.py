@@ -87,17 +87,22 @@ class ClassSearchModule(ProgramModuleObj):
 
         grades = self.program.classregmoduleinfo.getClassGrades()
         grade_filter = SearchFilter(
-            name='grade', title='the grade',
-            inputs=[SelectQInput(options=OrderedDict([(str(grade), {'title': str(grade), 'Q': Q(grade_min__lte=grade) & Q(grade_max__gte=grade)})
+            name='grade', title='grades between X and Y',
+            inputs=[SelectQInput(options=OrderedDict([(str(grade), {'title': str(grade), 'Q': Q(grade_max__gte=grade)})
+                                                      for grade in grades])),
+                    SelectQInput(options=OrderedDict([(str(grade), {'title': str(grade), 'Q': Q(grade_min__lte=grade)})
                                                       for grade in grades]))])
 
+        # ideally this would have two selects, one to pick "greater than"/"less than"/"equal to"
         num_sections = self.program.classregmoduleinfo.allowed_sections_actual
         sections_filter = SearchFilter(
-            name='num_sections', title='[X] section(s)',
+            name='num_sections', title='X section(s)',
             inputs=[SelectQInput(options=OrderedDict([(str(num), {'title': str(num), 'Q': Q(id__in=ClassSubject.objects.annotate(
                                                                                             num_sections=Count("sections")).filter(
                                                                                             num_sections=num).values_list('id', flat=True))})
                                                       for num in num_sections]))])
+
+        #capacity?
 
         status_filter = SearchFilter(
             name='status', title='the status',
