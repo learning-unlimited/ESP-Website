@@ -105,7 +105,35 @@ class ClassSearchModule(ProgramModuleObj):
                                                                                             num_sections__lte=num).values_list('id', flat=True))})
                                                       for num in num_sections]))])
 
-        #capacity?
+        capacities = self.program.classregmoduleinfo.getClassSizes()
+        capacity_inputs = None
+        capacity_title = ""
+        # logic copied from the teacher class registration form
+        if self.program.classregmoduleinfo.use_class_size_max:
+            capacity_title = "capacity (max)"
+            capacity_inputs = [SelectQInput(options=OrderedDict([(str(cap), {'title': str(cap), 'Q': Q(class_size_max__gte=cap)})
+                                                                 for cap in capacities])),
+                               SelectQInput(options=OrderedDict([(str(cap), {'title': str(cap), 'Q': Q(class_size_max__lte=cap)})
+                                                                 for cap in capacities]))]
+        elif Tag.getBooleanTag('use_class_size_optimal'):
+            if self.program.classregmoduleinfo.use_class_size_optimal:
+                capacity_title = "capacity (optimal)"
+                capacity_inputs = [SelectQInput(options=OrderedDict([(str(cap), {'title': str(cap), 'Q': Q(class_size_optimal__gte=cap)})
+                                                                     for cap in capacities])),
+                                   SelectQInput(options=OrderedDict([(str(cap), {'title': str(cap), 'Q': Q(class_size_optimal__lte=cap)})
+                                                                     for cap in capacities]))]
+            elif self.program.classregmoduleinfo.use_optimal_class_size_range:
+                capacity_title = "capacity (optimal range)"
+                capacity_inputs = [SelectQInput(options=OrderedDict([(str(cap), {'title': str(cap), 'Q': Q(optimal_class_size_range__range_max__gte=cap)})
+                                                                     for cap in capacities])),
+                                   SelectQInput(options=OrderedDict([(str(cap), {'title': str(cap), 'Q': Q(optimal_class_size_range__range_min__lte=cap)})
+                                                                     for cap in capacities]))]
+            elif self.program.classregmoduleinfo.use_allowable_class_size_ranges:
+                capacity_title = "capacity (allowable range)"
+                capacity_inputs = [SelectQInput(options=OrderedDict([(str(cap), {'title': str(cap), 'Q': Q(allowable_class_size_ranges__range_max__gte=cap)})
+                                                                     for cap in capacities])),
+                                   SelectQInput(options=OrderedDict([(str(cap), {'title': str(cap), 'Q': Q(allowable_class_size_ranges__range_min__lte=cap)})
+                                                                     for cap in capacities]))]
 
         status_filter = SearchFilter(
             name='status', title='the status',
@@ -186,6 +214,12 @@ class ClassSearchModule(ProgramModuleObj):
                 all_scheduled_filter,
                 some_scheduled_filter,
             ]
+
+        if capacity_inputs:
+            capacity_filter = SearchFilter(
+                name='capacity', title= capacity_title + ' between X and Y',
+                inputs=capacity_inputs)
+            filters.append(capacity_filter)
 
         if Tag.getTag('class_style_choices'):
             style_choices = json.loads(Tag.getTag('class_style_choices'))
