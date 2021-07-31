@@ -275,7 +275,8 @@ function ModeratorDirectory(el, moderators) {
             }.bind(this),
             function(msg) {
                 // If unsuccessful, report the error message
-                this.matrix.messagePanel.addMessage("Error: " + msg)
+                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
+                this.matrix.messagePanel.show();
                 console.log(msg);
             }.bind(this)
         );
@@ -291,7 +292,7 @@ function ModeratorDirectory(el, moderators) {
             section.moderators.push(moderator.id);
             section.moderator_data.push(moderator);
             $j("body").trigger("schedule-changed");
-            this.matrix.messagePanel.addMessage("Success: " + moderator.first_name + " " + moderator.last_name + " was assigned to " + section.emailcode)
+            this.matrix.messagePanel.addMessage("Success: " + moderator.first_name + " " + moderator.last_name + " was assigned to " + section.emailcode, color = "blue")
             // Update cell coloring
             this.matrix.updateCells();
         }
@@ -311,7 +312,7 @@ function ModeratorDirectory(el, moderators) {
             }.bind(this),
             function(msg) {
                 // If unsuccessful, report the error message
-                this.matrix.messagePanel.addMessage("Error: " + msg)
+                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red")
                 console.log(msg);
             }.bind(this)
         );
@@ -327,7 +328,7 @@ function ModeratorDirectory(el, moderators) {
             section.moderators.splice(section.moderators.indexOf(moderator), 1);
             section.moderator_data.splice(section.moderator_data.indexOf(moderator), 1);
             $j("body").trigger("schedule-changed");
-            this.matrix.messagePanel.addMessage("Success: " + moderator.first_name + " " + moderator.last_name + " was unassigned from " + section.emailcode)
+            this.matrix.messagePanel.addMessage("Success: " + moderator.first_name + " " + moderator.last_name + " was unassigned from " + section.emailcode, color = "blue")
             // Update cell coloring
             this.matrix.updateCells();
         }

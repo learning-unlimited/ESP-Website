@@ -402,7 +402,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
 
         // Make sure section not locked
         if (section.schedulingLocked){
-            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.");
+            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", color = "red");
             this.unselectSection();
             return;
         }
@@ -420,7 +420,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                 this.scheduleSectionLocal(section,
                     old_assignment.room_id,
                     old_assignment.timeslots);
-                this.matrix.messagePanel.addMessage("Error: " + msg)
+                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red")
                 console.log(msg);
             }.bind(this)
         );
@@ -510,7 +510,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
     this.unscheduleSection = function(section){
         // Make sure section not locked
         if (section.schedulingLocked){
-            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.");
+            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", color = "red");
             this.unselectSection();
             return;
         }
@@ -527,7 +527,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             // If the server returns an error, put the class back in its original spot
             function(msg){
                 this.scheduleSectionLocal(section, old_room_id, old_schedule_timeslots);
-                this.matrix.messagePanel.addMessage("Error: " + msg);
+                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
                 console.log(msg);
             }.bind(this)
         );
@@ -556,7 +556,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
 
         if(!remote) {
             this.apiClient.set_comment(section.id, comment, locked, function(){}, function(msg){
-                this.matrix.messagePanel.addMessage("Error: " + msg);
+                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
                 console.log(msg);
             }.bind(this));
             this.unselectSection();
