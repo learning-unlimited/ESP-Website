@@ -39,6 +39,8 @@ import traceback
 from operator import __or__ as OR
 from pprint import pprint
 
+from argcache import cache_function
+
 from esp.utils.web import render_to_response
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
@@ -744,20 +746,8 @@ def flushcache(request):
 
     return render_to_response('admin/cache_flush.html', request, context)
 
-@admin_required
-def emails(request):
-    """
-    View that displays information for recent email requests.
-    GET data:
-      'start_date' (optional):  Starting date to filter email requests by.
-                                Should be given in the format "%m/%d/%Y".
-    """
-    context = {}
-    if request.GET and "start_date" in request.GET:
-        start_date = datetime.datetime.strptime(request.GET["start_date"], "%Y-%m-%d")
-    else:
-        start_date = datetime.date.today() - datetime.timedelta(30)
-    context['start_date'] = start_date
+@cache_function
+def get_email_data(start_date):
     requests = MessageRequest.objects.filter(created_at__gte=start_date).order_by('-created_at')
 
     requests_list = []
@@ -775,8 +765,26 @@ def emails(request):
         else:
             req.finished_at = "(Not finished)"
         requests_list.append(req)
+    return requests_list
+get_email_data.depend_on_model(MessageRequest)
+get_email_data.depend_on_model(TextOfEmail)
 
-    context['requests'] = requests_list
+@admin_required
+def emails(request):
+    """
+    View that displays information for recent email requests.
+    GET data:
+      'start_date' (optional):  Starting date to filter email requests by.
+                                Should be given in the format "%m/%d/%Y".
+    """
+    context = {}
+    if request.GET and "start_date" in request.GET:
+        start_date = datetime.datetime.strptime(request.GET["start_date"], "%Y-%m-%d")
+    else:
+        start_date = datetime.date.today() - datetime.timedelta(30)
+    context['start_date'] = start_date
+    
+    context['requests'] = get_email_data(start_date)
 
     return render_to_response('admin/emails.html', request, context)
 
