@@ -142,7 +142,7 @@ class AvailabilityModule(ProgramModuleObj):
         taken_slots = []
         avail_and_teaching = []
         unscheduled_classes = []
-        user_sections = teacher.getTaughtSections(self.program)
+        user_sections = teacher.getTaughtSections(self.program, include_cancelled = False)
         teaching_times = {}
         conflict_found = False
         for section in user_sections:
