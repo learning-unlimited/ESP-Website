@@ -783,7 +783,7 @@ def emails(request):
     else:
         start_date = datetime.date.today() - datetime.timedelta(30)
     context['start_date'] = start_date
-    
+
     context['requests'] = get_email_data(start_date)
 
     return render_to_response('admin/emails.html', request, context)
