@@ -504,7 +504,7 @@ class ThemeController(object):
         if vars is None:
             vars = self.get_current_params()
         if palette is None:
-            palette = self.get_palette()
+            palette = self.get_palette()['custom']
 
         vars_orig = self.find_less_variables(theme_name, flat=True)
         for key in vars.keys():
@@ -538,9 +538,12 @@ class ThemeController(object):
             assert(save_name == save_name_match.group(1))
 
         #   Collect palette
-        palette = []
+        palette = set()
         for match in re.findall(r'palette:(#?\w+?);', data):
-            palette.append(match)
+            if len(match) == 4: # Convert to long form
+                match = '#' + match[1] + match[1] + match[2] + match[2] + match[3] + match[3]
+            palette.add(match)
+        palette = list(palette)
 
         self.set_current_customization(save_name)
 
@@ -562,20 +565,37 @@ class ThemeController(object):
     ##  Palette getter/setter -- palette is a list of strings which each contain
     ##  HTML color codes, e.g. ["#FFFFFF", "#3366CC"]
 
+    ## Returns a dictionary with the theme's base palette and the custom tag-defined palette
     def get_palette(self):
-        palette_base = json.loads(Tag.getTag('current_theme_palette', default='[]'))
+        palette_custom = json.loads(Tag.getTag('current_theme_palette', default='[]'))
 
-        #   Augment with the colors from any global LESS variables
-        palette = set(palette_base)
+        #   Collect colors from any global LESS variables
+        palette_base = set()
         base_vars = self.find_less_variables()
         for varset in base_vars.values():
             for val in varset.values():
                 if isinstance(val, basestring) and val.startswith('#'):
-                    palette.add(val)
+                    if len(val) == 4: # Convert to long form
+                        val = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3]
+                    palette_base.add(val)
+
+        palette_base = list(palette_base)
+        palette_base.sort()
+        
+        return {'base': palette_base, 'custom': palette_custom}
+
+    def set_palette(self, palette):
+        #   Remove global LESS variables from the palette
+        palette = set(palette)
+        base_vars = self.find_less_variables()
+        for varset in base_vars.values():
+            for val in varset.values():
+                if isinstance(val, basestring) and val.startswith('#'):
+                    if len(val) == 4: # Convert to long form
+                        val = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3]
+                    if val in palette:
+                        palette.remove(val)
 
         palette = list(palette)
         palette.sort()
-        return palette
-
-    def set_palette(self, palette):
         Tag.setTag('current_theme_palette', value=json.dumps(palette))

@@ -11,25 +11,37 @@
 {% endblock %}
 
 {% block xtrajs %}
-<script src="/media/theme_editor/spectrum.js" type="text/javascript"></script>
+<script src="https://cdn.jsdelivr.net/npm/spectrum-colorpicker2/dist/spectrum.min.js"></script>
 <script type="text/javascript">
-var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last %},{% endif %} {% endfor %}];
+var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% for color in palette.custom %} "{{color}}"{% if not forloop.last %},{% endif %} {% endfor %}];
 </script>
 <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/css/bootstrap.css" type="text/css" />
-<link href="/media/theme_editor/spectrum.css" rel="stylesheet" />
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/spectrum-colorpicker2/dist/spectrum.min.css">
 <script src="/media/theme_editor/css_auto-reload.js" rel="text/javascript"></script>
 <script type="text/javascript">
   document.styleSheets.reload()
 </script>
 <style>
   form.centered-form div.control-group {
-      margin-left:20%;
+      margin-left:10%;
+      margin-right:10%;
   }
   div.form-actions {
       border-top:None;
   }
   h5 {
   margin-left:3%;
+  }
+  .sp-palette-row {
+      max-width: 132px;
+  }
+  .sp-container button.sp-cancel {
+      background-color: red;
+      color: white;
+      margin-left: 5px;
+  }
+  .sp-palette .sp-thumb-inner {
+      border: 1px solid black;
   }
 </style>
 {% endblock %}
@@ -64,7 +76,7 @@ var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last
 <br />
 <div class="row-fluid">
   <div class="span12">
-    <form class="well form-horizontal centered-form" method="post" action="/themes/customize/">
+    <form class="form-horizontal centered-form" method="post" action="/themes/customize/">
       {% csrf_token %} 
       <div class="accordion">
 
@@ -74,15 +86,21 @@ var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last
 	  <div class="collapse" id="theme_palette">
 
 	    <div class="control-group">
-	      <div id="palette_div">
-		{% for color in palette %}
-		<input type="text" name="palette" class="palette" value="{{color}}" />
-		{% endfor %}
+	      <div id="palette_base_div">
+            <h3>Theme Palette:</h3>
+            {% for color in palette.base %}
+            <input type="text" name="palette" class="palette" value="{{color}}" />
+            {% endfor %}
+          </div>
+          <div id="palette_custom_div">
+            <h3>Custom Palette:</h3>
+            {% for color in palette.custom %}
+            <input type="text" name="palette" class="palette" value="{{color}}" />
+            {% endfor %}
 	      </div>
 	    </div>
 	    <div class="controls">
 	      <button type="button" class="btn btn-default" id="addToPalette">Add Another Color</button>
-	      <button type="button" class="btn btn-default" id="removeFromPalette">Remove Last Color</button>
 	      <button type="submit" class="btn btn-primary" name="apply" value="apply">Update Palette</button> 
 	    </div>
 	  </div>
@@ -152,16 +170,16 @@ var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last
 	      <label class="control-label" for="baseFontSize">Font Size:  </label>
 	      <div class="controls">
 		<select id="baseFontSize" name="baseFontSize">
-		  <option value="{{ baseFontSize }}">Current: {{ baseFontSize }}</option>
-		  <option value="10px">10</option>
-		  <option value="11px">11</option>
-		  <option value="12px">12</option>
-		  <option value="13px">13</option>
-		  <option value="14px">14</option>
-		  <option value="15px">15</option>
-		  <option value="16px">16</option>
-		  <option value="17px">17</option>
-		  <option value="18px">18</option>
+		  <option value="{{ baseFontSize }}" style="font-size: {{ baseFontSize }};">Current: {{ baseFontSize }}</option>
+		  <option value="10px" style="font-size: 10px;">10</option>
+		  <option value="11px" style="font-size: 11px;">11</option>
+		  <option value="12px" style="font-size: 12px;">12</option>
+		  <option value="13px" style="font-size: 13px;">13</option>
+		  <option value="14px" style="font-size: 14px;">14</option>
+		  <option value="15px" style="font-size: 15px;">15</option>
+		  <option value="16px" style="font-size: 16px;">16</option>
+		  <option value="17px" style="font-size: 17px;">17</option>
+		  <option value="18px" style="font-size: 18px;">18</option>
 		</select>
 	      </div>
 	    </div>
@@ -170,9 +188,9 @@ var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last
 	      <label class="control-label" for="sansFontFamily">Font Family:  </label>
 	      <div class="controls">
 		<select id="sansFontFamily" name="sansFontFamily" type="text">
-		  <option value="{{ sansFontFamily }}">Current: {{sansFontFamily}}</option>
+		  <option value="{{ sansFontFamily }}" style="font-family: {{sansFontFamily}};">Current: {{sansFontFamily}}</option>
 		  {% for family_name, family in sans_fonts %}
-		  <option value="{{family}}">{{family_name}}</option>
+		  <option value="{{family}}" style="font-family: {{family}};">{{family_name}}</option>
 		  {% endfor %}
 		</select>
 	      </div>
