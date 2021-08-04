@@ -581,7 +581,7 @@ class ThemeController(object):
 
         palette_base = list(palette_base)
         palette_base.sort()
-        
+
         return {'base': palette_base, 'custom': palette_custom}
 
     def set_palette(self, palette):

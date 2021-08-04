@@ -26,11 +26,14 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
       margin-left:10%;
       margin-right:10%;
   }
+  form.centered-form div.controls {
+      margin-left:20%;
+  }
   div.form-actions {
       border-top:None;
   }
   h5 {
-  margin-left:3%;
+      margin-left:3%;
   }
   .sp-palette-row {
       max-width: 132px;
@@ -101,7 +104,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 	    </div>
 	    <div class="controls">
 	      <button type="button" class="btn btn-default" id="addToPalette">Add Another Color</button>
-	      <button type="submit" class="btn btn-primary" name="apply" value="apply">Update Palette</button> 
+	      <button type="submit" class="btn btn-primary" name="apply" value="apply">Update Custom Palette</button> 
 	    </div>
 	  </div>
 	</div>
