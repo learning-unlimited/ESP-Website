@@ -230,3 +230,8 @@ Minor bug fixes and new features released in August 2021
 - Fixed the /manage/mergeaccounts page and added a link to it from /manage/programs
 - Added the correct answer option to more custom form field types
 - Fixed the ajax scheduler to support timeslots of any length
+- Fixed the display of the selected grade range when editing a class as a teacher
+- Fixed the fruitsalad theme so the tabs in the left nav bar can now have multiple lines of text
+- Added many more filter options to /classsearch (e.g., duration, grade, capacity, number of sections, and optional request fields)
+- The /manage/emails page is now cached
+- Fixed the message panel in the ajax scheduler so it always shows when there is a class or moderator scheduling error
