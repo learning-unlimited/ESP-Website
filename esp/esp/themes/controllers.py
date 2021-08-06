@@ -46,6 +46,7 @@ import textwrap
 import distutils.dir_util
 import json
 import hashlib
+from urllib import quote, unquote
 
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -517,13 +518,13 @@ class ThemeController(object):
         context['save_name'] = save_name
         context['palette'] = palette
 
-        f = open(os.path.join(themes_settings.themes_dir, '%s.less' % save_name), 'w')
+        f = open(os.path.join(themes_settings.themes_dir, '%s.less' % quote(save_name, safe = "")), 'w')
         f.write(render_to_string('themes/custom_vars.less', context))
         f.close()
 
     def load_customizations(self, save_name):
 
-        f = open(os.path.join(themes_settings.themes_dir, '%s.less' % save_name), 'r')
+        f = open(os.path.join(themes_settings.themes_dir, '%s.less' % quote(save_name, safe = "")), 'r')
         data = f.read()
         f.close()
 
@@ -552,14 +553,14 @@ class ThemeController(object):
         return (vars, palette)
 
     def delete_customizations(self, save_name):
-        os.remove(os.path.join(themes_settings.themes_dir, '%s.less' % save_name))
+        os.remove(os.path.join(themes_settings.themes_dir, '%s.less' % quote(save_name, safe = "")))
 
     def get_customization_names(self):
         result = []
         filenames = os.listdir(os.path.join(themes_settings.themes_dir))
         for fn in filenames:
             if fn.endswith('.less'):
-                result.append(fn[:-5])
+                result.append(unquote(fn[:-5]))
         return result
 
     ##  Palette getter/setter -- palette is a list of strings which each contain
