@@ -30,6 +30,10 @@
     <p>
     <b><font color="red">{% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ conflict.username }}">{{ conflict.name }}</a>{% else %}{{ conflict.name }}{% endif %} has a conflicting schedule.</b></font><br />
     </p>
+{% elif unavailableuser %}
+    <p>
+    <b><font color="red">{% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ unavailableuser.username }}">{{ unavailableuser.name }}</a>{% else %}{{ unavailableuser.name }}{% endif %} is not available when this class is scheduled ({{ unavailabletimes|join:", " }}).</b></font><br />
+    </p>
 {% endif %}
 
 {% if error %}
