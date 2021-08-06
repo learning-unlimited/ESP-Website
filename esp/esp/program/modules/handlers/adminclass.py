@@ -45,9 +45,6 @@ from esp.program.modules.forms.management import ClassManageForm, SectionManageF
 
 from django.http import HttpResponseRedirect, HttpResponse
 from esp.middleware import ESPError
-from esp.program.controllers.classreg import ClassCreationController
-from esp.users.models import TeacherInfo
-from esp.program.models import RegistrationProfile
 
 
 """ Module in the middle of a rewrite. -Michael """
