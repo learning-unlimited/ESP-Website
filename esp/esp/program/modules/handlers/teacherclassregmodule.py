@@ -523,33 +523,13 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'class_docs.html', request, context)
 
-    @aux_call
-    @needs_teacher
-    @meets_deadline('/Classes/Coteachers')
-    def coteachers(self, request, tl, one, two, module, extra, prog):
-        if 'clsid' in request.GET:
-            classes = ClassSubject.objects.filter(id = request.GET['clsid'])
-        elif 'clsid' in request.POST:
-            classes = ClassSubject.objects.filter(id = request.POST['clsid'])
-        else:
-            return self.goToCore(tl) # just fails.
-
-        if extra == 'nojs':
-            ajax = False
-        else:
-            ajax = True
-
-        if len(classes) != 1 or not request.user.canEdit(classes[0]):
-            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
-
-        cls = classes[0]
-
+    @staticmethod
+    def coteachers_logic(cls, request, prog, template, ajax, is_admin = False):
         # set txtTeachers and coteachers....
         if not 'coteachers' in request.POST:
             coteachers = cls.get_teachers()
-            coteachers = [ user for user in coteachers
-                           if user.id != request.user.id           ]
-
+            if not is_admin:
+                coteachers = [user for user in coteachers if user.id != request.user.id]
             txtTeachers = ",".join([str(user.id) for user in coteachers ])
 
         else:
@@ -567,34 +547,43 @@ class TeacherClassRegModule(ProgramModuleObj):
         error = False
 
         old_coteachers_set = set(cls.get_teachers())
-        ccc = ClassCreationController(self.program)
+        ccc = ClassCreationController(prog)
 
-        conflictinguser = ''
+        conflictinguser = None
+        unavailableuser = None
+        unavailabletimes = []
 
         if op == 'add':
-
             if len(request.POST['teacher_selected'].strip()) == 0:
                 error = 'Error - Please click on the name when it drops down.'
-
-            elif (request.POST['teacher_selected'] == str(request.user.id)):
+            elif not is_admin and request.POST['teacher_selected'] == str(request.user.id):
                 error = 'Error - You cannot select yourself as a coteacher!'
             elif request.POST['teacher_selected'] in txtTeachers.split(','):
                 error = 'Error - You already added this teacher as a coteacher!'
 
             if error:
-                return render_to_response(self.baseDir()+'coteachers.html', request, {'class':cls,
-                                                                                     'ajax':ajax,
-                                                                                     'txtTeachers': txtTeachers,
-                                                                                     'coteachers':  coteachers,
-                                                                                     'error': error,
-                                                                                     'conflict': []})
+                return render_to_response(template, request, {'class': cls,
+                                                              'ajax': ajax,
+                                                              'txtTeachers': txtTeachers,
+                                                              'coteachers': coteachers,
+                                                              'error': error,
+                                                              'conflict': []})
 
-            # add schedule conflict checking here...
             teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
 
+            availability = teacher.getAvailableTimes(prog)
+            # check that the teacher doesn't have a conflicting schedule
             if cls.conflicts(teacher):
-                conflictinguser = (teacher.first_name+' '+teacher.last_name)
-            else:
+                conflictinguser = teacher
+            # check that the teacher is available for all meeting_times
+            for sec in cls.sections.all():
+                for time in sec.meeting_times.all():
+                    if time not in availability:
+                        unavailabletimes.append(time)
+            if unavailabletimes:
+                unavailableuser = teacher
+            # make them a coteacher
+            if not conflictinguser and not unavailableuser:
                 lastProf = RegistrationProfile.getLastForProgram(teacher, prog)
                 if not lastProf.teacher_info:
                     anyInfo = teacher.getLastProfile().teacher_info
@@ -626,7 +615,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             new_coteachers_set = set(coteachers)
             to_be_deleted = old_coteachers_set - new_coteachers_set
 
-            if request.user in to_be_deleted:
+            if not is_admin and request.user in to_be_deleted:
                 to_be_deleted.remove(request.user)
 
             for teacher in to_be_deleted:
@@ -634,11 +623,103 @@ class TeacherClassRegModule(ProgramModuleObj):
 
             ccc.send_class_mail_to_directors(cls)
 
-        return render_to_response(self.baseDir()+'coteachers.html', request, {'class':cls,
-                                                                             'ajax':ajax,
-                                                                             'txtTeachers': txtTeachers,
-                                                                             'coteachers':  coteachers,
-                                                                             'conflict':    conflictinguser})
+        elif is_admin and op == "addmod":
+            if len(request.POST['moderator_selected'].strip()) == 0:
+                error = 'Error - Please click on the name when it drops down.'
+
+            elif request.POST['moderator_selected'] in request.POST.get('moderators', '').split(','):
+                error = 'Error - You already added this ' + prog.getModeratorTitle().lower() + ' to this section!'
+
+            sections = ClassSection.objects.filter(id = request.POST.get('secid'))
+            if len(sections) != 1:
+                error = 'Error - Please use the form to add a ' + prog.getModeratorTitle().lower() + '.'
+            else:
+                section = sections[0]
+
+            if error:
+                return render_to_response(template, request, {'class': cls,
+                                                              'ajax': ajax,
+                                                              'txtTeachers': txtTeachers,
+                                                              'coteachers': coteachers,
+                                                              'error': error,
+                                                              'conflict': []})
+
+            # add schedule conflict checking here...
+            moderator = ESPUser.objects.get(id = request.POST['moderator_selected'])
+
+            if section.conflicts(moderator):
+                conflictinguser = moderator
+            else:
+                lastProf = RegistrationProfile.getLastForProgram(moderator, prog)
+                if not lastProf.teacher_info:
+                    anyInfo = moderator.getLastProfile().teacher_info
+                    if anyInfo:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(moderator, lastProf,
+                                                                        {'graduation_year': anyInfo.graduation_year,
+                                                                         'affiliation': anyInfo.affiliation,
+                                                                         'major': anyInfo.major,
+                                                                         'shirt_size': anyInfo.shirt_size,
+                                                                         'shirt_type': anyInfo.shirt_type})
+                    else:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(moderator, lastProf, {})
+                lastProf.save()
+                section.moderators.add(moderator)
+                # should we send the moderator or directors an email?
+
+        elif is_admin and op == "delmod":
+            sections = ClassSection.objects.filter(id = request.POST.get('secid'))
+            if len(sections) != 1:
+                error = 'Error - Please use the form to add a ' + prog.getModeratorTitle().lower() + '.'
+            else:
+                section = sections[0]
+            if error:
+                return render_to_response(template, request, {'class': cls,
+                                                              'ajax': ajax,
+                                                              'txtTeachers': txtTeachers,
+                                                              'coteachers': coteachers,
+                                                              'error': error,
+                                                              'conflict': []})
+            ids = request.POST.getlist('delete_moderators')
+            newmoderators = []
+            for moderator in section.get_moderators():
+                if str(moderator.id) not in ids:
+                    newmoderators.append(moderator)
+            new_moderators_set = set(newmoderators)
+            to_be_deleted = set(section.get_moderators()) - new_moderators_set
+            for moderator in to_be_deleted:
+                section.moderators.remove(moderator)
+            # should we send the moderator or directors an email?
+
+        return render_to_response(template, request, {'class': cls,
+                                                      'ajax': ajax,
+                                                      'txtTeachers': txtTeachers,
+                                                      'coteachers': coteachers,
+                                                      'conflict': conflictinguser,
+                                                      'unavailableuser': unavailableuser,
+                                                      'unavailabletimes': unavailabletimes})
+
+    @aux_call
+    @needs_teacher
+    @meets_deadline('/Classes/Coteachers')
+    def coteachers(self, request, tl, one, two, module, extra, prog):
+        if 'clsid' in request.GET:
+            classes = ClassSubject.objects.filter(id = request.GET['clsid'])
+        elif 'clsid' in request.POST:
+            classes = ClassSubject.objects.filter(id = request.POST['clsid'])
+        else:
+            return self.goToCore(tl) # just fails.
+
+        if extra == 'nojs':
+            ajax = False
+        else:
+            ajax = True
+
+        if len(classes) != 1 or not request.user.canEdit(classes[0]):
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+
+        cls = classes[0]
+
+        return self.coteachers_logic(cls, request, prog, self.baseDir()+'coteachers.html', ajax)
 
     @aux_call
     @needs_teacher

@@ -45,9 +45,6 @@ from esp.program.modules.forms.management import ClassManageForm, SectionManageF
 
 from django.http import HttpResponseRedirect, HttpResponse
 from esp.middleware import ESPError
-from esp.program.controllers.classreg import ClassCreationController
-from esp.users.models import TeacherInfo
-from esp.program.models import RegistrationProfile
 
 
 """ Module in the middle of a rewrite. -Michael """
@@ -329,6 +326,7 @@ class AdminClass(ProgramModuleObj):
     @aux_call
     @needs_admin
     def coteachers(self, request, tl, one, two, module, extra, prog):
+        from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
         #   Allow submitting class ID via either GET or POST.
         if 'clsid' in request.GET:
             clsid = request.GET['clsid']
@@ -348,162 +346,7 @@ class AdminClass(ProgramModuleObj):
 
         cls = classes[0]
 
-        # set txtTeachers and coteachers....
-        if not 'coteachers' in request.POST:
-            coteachers = cls.get_teachers()
-            txtTeachers = ",".join([str(user.id) for user in coteachers ])
-
-        else:
-            txtTeachers = request.POST['coteachers']
-            coteachers = txtTeachers.split(',')
-            coteachers = [ x for x in coteachers if x != '' ]
-            coteachers = [ ESPUser.objects.get(id=userid)
-                           for userid in coteachers                ]
-
-        op = ''
-        if 'op' in request.POST:
-            op = request.POST['op']
-
-        error = False
-
-        old_coteachers_set = set(cls.get_teachers())
-        ccc = ClassCreationController(self.program)
-
-        conflictinguser = ''
-
-        if op == 'add':
-
-            if len(request.POST['teacher_selected'].strip()) == 0:
-                error = 'Error - Please click on the name when it drops down.'
-
-            elif request.POST['teacher_selected'] in txtTeachers.split(','):
-                error = 'Error - You already added this teacher as a coteacher!'
-
-            if error:
-                return render_to_response(self.baseDir()+'coteachers.html', request,
-                                          {'class': cls,
-                                           'ajax': ajax,
-                                           'txtTeachers': txtTeachers,
-                                           'coteachers': coteachers,
-                                           'error': error,
-                                           'conflict': []})
-
-            # add schedule conflict checking here...
-            teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
-
-            if cls.conflicts(teacher):
-                conflictinguser = teacher
-            else:
-                lastProf = RegistrationProfile.getLastForProgram(teacher, prog)
-                if not lastProf.teacher_info:
-                    anyInfo = teacher.getLastProfile().teacher_info
-                    if anyInfo:
-                        lastProf.teacher_info = TeacherInfo.addOrUpdate(teacher, lastProf,
-                                                                        {'graduation_year': anyInfo.graduation_year,
-                                                                         'affiliation': anyInfo.affiliation,
-                                                                         'major': anyInfo.major,
-                                                                         'shirt_size': anyInfo.shirt_size,
-                                                                         'shirt_type': anyInfo.shirt_type})
-                    else:
-                        lastProf.teacher_info = TeacherInfo.addOrUpdate(teacher, lastProf, {})
-                lastProf.save()
-                coteachers.append(teacher)
-                txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
-                ccc.associate_teacher_with_class(cls, teacher)
-                ccc.send_class_mail_to_directors(cls)
-
-        elif op == 'del':
-            ids = request.POST.getlist('delete_coteachers')
-            newcoteachers = []
-            for coteacher in coteachers:
-                if str(coteacher.id) not in ids:
-                    newcoteachers.append(coteacher)
-
-            coteachers = newcoteachers
-            txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
-
-            new_coteachers_set = set(coteachers)
-            to_be_deleted = old_coteachers_set - new_coteachers_set
-            for teacher in to_be_deleted:
-                cls.removeTeacher(teacher)
-            ccc.send_class_mail_to_directors(cls)
-
-        elif op == "addmod":
-            if len(request.POST['moderator_selected'].strip()) == 0:
-                error = 'Error - Please click on the name when it drops down.'
-
-            elif request.POST['moderator_selected'] in request.POST.get('moderators', '').split(','):
-                error = 'Error - You already added this ' + prog.getModeratorTitle().lower() + ' to this section!'
-
-            sections = ClassSection.objects.filter(id = request.POST.get('secid'))
-            if len(sections) != 1:
-                error = 'Error - Please use the form to add a ' + prog.getModeratorTitle().lower() + '.'
-            else:
-                section = sections[0]
-
-            if error:
-                return render_to_response(self.baseDir()+'coteachers.html', request,
-                                          {'class': cls,
-                                           'ajax': ajax,
-                                           'txtTeachers': txtTeachers,
-                                           'coteachers': coteachers,
-                                           'error': error,
-                                           'conflict': []})
-
-            # add schedule conflict checking here...
-            moderator = ESPUser.objects.get(id = request.POST['moderator_selected'])
-
-            if section.conflicts(moderator):
-                conflictinguser = moderator
-            else:
-                lastProf = RegistrationProfile.getLastForProgram(moderator, prog)
-                if not lastProf.teacher_info:
-                    anyInfo = moderator.getLastProfile().teacher_info
-                    if anyInfo:
-                        lastProf.teacher_info = TeacherInfo.addOrUpdate(moderator, lastProf,
-                                                                        {'graduation_year': anyInfo.graduation_year,
-                                                                         'affiliation': anyInfo.affiliation,
-                                                                         'major': anyInfo.major,
-                                                                         'shirt_size': anyInfo.shirt_size,
-                                                                         'shirt_type': anyInfo.shirt_type})
-                    else:
-                        lastProf.teacher_info = TeacherInfo.addOrUpdate(moderator, lastProf, {})
-                lastProf.save()
-                section.moderators.add(moderator)
-                # should we send the moderator or directors an email?
-
-        elif op == "delmod":
-            sections = ClassSection.objects.filter(id = request.POST.get('secid'))
-            if len(sections) != 1:
-                error = 'Error - Please use the form to add a ' + prog.getModeratorTitle().lower() + '.'
-            else:
-                section = sections[0]
-            if error:
-                return render_to_response(self.baseDir()+'coteachers.html', request,
-                                          {'class': cls,
-                                           'ajax': ajax,
-                                           'txtTeachers': txtTeachers,
-                                           'coteachers': coteachers,
-                                           'error': error,
-                                           'conflict': []})
-            ids = request.POST.getlist('delete_moderators')
-            newmoderators = []
-            for moderator in section.get_moderators():
-                if str(moderator.id) not in ids:
-                    newmoderators.append(moderator)
-            new_moderators_set = set(newmoderators)
-            to_be_deleted = set(section.get_moderators()) - new_moderators_set
-            for moderator in to_be_deleted:
-                section.moderators.remove(moderator)
-            # should we send the moderator or directors an email?
-
-        return render_to_response(self.baseDir()+'coteachers.html', request,
-                                  {'class': cls,
-                                   'ajax': ajax,
-                                   'txtTeachers': txtTeachers,
-                                   'coteachers': coteachers,
-                                   'conflict': conflictinguser,
-                                   'program': prog})
+        return TeacherClassRegModule.coteachers_logic(cls, request, prog, self.baseDir()+'coteachers.html', ajax, is_admin = True)
 
     @aux_call
     @needs_admin
