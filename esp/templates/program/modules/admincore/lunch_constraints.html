@@ -13,8 +13,6 @@
     <p>Please select the timeslots you would like to be used for lunch.</p>
     <p>You can also use this page to setup lunch scheduling constraints, which will enforce that each student have at least one lunch block per day.</p>
 
-{% include "program/modules/admincore/returnlink.html" %}
-
     <div id="program_form">
     <form action="/manage/{{ program.getUrlBase }}/lunch_constraints/" method="post">
     <table align="center" width="500">
@@ -31,4 +29,7 @@
         <h3 style="font-weight:bold; color:red;">There was an error with saving your settings. Please try again.</h3><br /><br />
     {% endif %}
     </div>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
 {% endblock %}

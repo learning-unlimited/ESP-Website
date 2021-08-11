@@ -1157,7 +1157,7 @@ class ProgramPrintables(ProgramModuleObj):
         if onsite:
             students = [ESPUser.objects.get(id=request.GET['userid'])]
         else:
-            filterObj, found = UserSearchController().create_filter(request, self.program)
+            filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': "Get Student Schedules"})
 
             if not found:
                 return filterObj

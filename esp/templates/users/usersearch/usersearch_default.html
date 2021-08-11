@@ -4,6 +4,8 @@
 
 {% block content %}
 
+<h1>{% if module %}{{ module }}{% else %}Select Users{% endif %}</h1>
+
 <h2>Select a list of users</h2>
 <p>This page requires that you select set of users in your database, with filtering options specific to {{ program.niceName }}.  Choose from three different approaches to select your users:
     <ul>
@@ -16,6 +18,8 @@
 </p>
 
 {% include "users/usersearch/list_selector.html" %}
+
+{% include "program/modules/admincore/returnlink.html" %}
 
 {% endblock %}
 
