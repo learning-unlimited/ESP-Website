@@ -62,7 +62,7 @@ class NewPermissionForm(forms.Form):
     role = forms.ChoiceField(choices = [("Student","Students"),("Teacher","Teachers"),("Volunteer","Volunteers")])
     start_date = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget(), required=False)
     end_date = forms.DateTimeField(label='Closing date/time', initial=None, widget=DateTimeWidget(), required=False)
-    
+
     def __init__(self, *args, **kwargs):
         extra_roles = kwargs.pop('extra_roles', [])
         super(NewPermissionForm, self).__init__(*args, **kwargs)
