@@ -26,9 +26,9 @@
     <p><span style="color: #990000;">{{ message }}</span></p>
 {% endif %}
 
-<p>Access to each program's Web pages (including registration pages) is controlled by a set of deadlines, each of which prescribes when a certain set of activities can be performed.  "Recursive" deadlines can control a range of activities jointly; you may open all registration features using a single recursive deadline (i.e. "Main Student Registration"), or specify several non-recursive deadlines (catalog viewing, surveys, etc.) for finer control.</p>
+<p>Access to each program's Web pages (including registration pages) is controlled by a set of deadlines, each of which prescribes when a certain set of activities can be performed.  "Recursive" deadlines can control a range of activities jointly; you may open all registration features using a single recursive deadline (e.g., "All student deadlines"), or specify several non-recursive deadlines ("Register for classes", "Access to survey", etc.) for finer control.</p>
 
-<p>If you use recursive deadlines, keep in mind that the "inner" (subset) deadlines can only be used to open registration features when the recursive deadline is closed; you cannot close inner deadlines to override an open recursive deadline.  Hence it is wise to make the deadlines non-recursive when controlling individual registration features.</p>
+<p>If you use recursive deadlines, keep in mind that the "implied" deadlines can only be used to open registration features when the recursive deadline is closed; you cannot close implied deadlines to override an open recursive deadline.  Hence it is wise to make the deadlines non-recursive when controlling individual registration features.</p>
 
 <p>Please proceed to edit <a href="#existing">existing deadlines</a> or <a href="#new">create a new deadline</a> if necessary.</p>
 
@@ -65,7 +65,7 @@
             {% endif %}
             <tr style="border-top: 1px solid grey;{% if details.perms|length_is:1 %}border-bottom: 1px solid grey;{% endif %}">
                 <th class="{% if details.is_open %}is_open{% else %}is_closed{% endif %}" rowspan = "{% if details.perms|length_is:0 %}1{% else %}{{ details.perms|length }}{% endif %}">
-                    {{ perm_type|perm_nice_name }}<br>
+                    {{ perm_type|perm_nice_name }}{% if details.recursive %}<br /><span style="color: royalblue;">(recursive)</span>{% endif %}<br>
                     <span class="bituri">{{ perm_type }}</span>
                     <br /><br />
                     {% if details.is_open %}

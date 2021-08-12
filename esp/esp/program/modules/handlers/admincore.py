@@ -358,6 +358,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     idx += 1
                 # Is this permission type implied open? (so it can't be closed with an individual permission)
                 details['implied_open'] = any([getattr(perm, "implied", False) and perm.is_valid() for perm in details['perms']])
+                details['recursive'] = perm_type in Permission.implications.keys()
                 # Sort by validity and start/end dates
                 group_perms[group][perm_type]['perms'].sort(key=lambda perm: (perm.is_valid(), perm.end_date or datetime.max, perm.start_date or datetime.min), reverse=True)
 
