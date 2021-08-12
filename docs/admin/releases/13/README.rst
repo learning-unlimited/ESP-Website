@@ -205,33 +205,43 @@ Dependency changes
 - Upgraded jqGrid (4.3.1 -> 5.5.2)
 - Upgraded django-debug-toolbar (1.5 -> 1.11.1)
 
-Minor bug fixes and new features released in August 2021
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- Fixed the scheduler popup for open classes
+August 2021 Patch
+=================
+
+Custom forms
+~~~~~~~~~~~~
+- Several bug fixes and enhancements to the custom form builder
+- Added the correct answer option to more custom form field types
+- Fixed the rendering of custom forms with multiple pages
+- The teacher and student custom form modules now have separate handlers; they no longer show up in registration if custom forms are not setup and assigned via tags
+- There are now separate records for filling out student and teacher custom forms, allowing for separate searching for users
+
+Minor new features
+~~~~~~~~~~~~~~~~~~
 - Duplicate program names are now prevented
-- The teacher and student custom form modules now have separate handlers. They no longer show up in registration if custom forms are not setup and assigned via tags.
-- There are now separate records for filling out student and teacher custom forms, allowing for separate searching for users.
 - Added moderator tshirt stats to the dashboard
-- Several fixes and enhancements to the custom form builder
-- Escape program name in LaTeX templates
-- Fixed the rendering of multiple page custom forms for custom form modules
-- Fix attributes when custom form field types are changed
-- Restore multiple classes wih same resource scheduling check
+- A class's status is now updated in the dashboard interface when it is changed via the popup
+- Added a module that lets you add or remove users from a new or existing user group
+- The teacher_profile_hide_fields, student_profile_hide_fields, volunteer_profile_hide_fields, educator_profile_hide_fields, guardian_profile_hide_fields, and teacherreg_hide_fields tags now show the possible valid options in the tag settings interface
+- Added many more filter options to /classsearch (e.g., duration, grade, capacity, number of sections, and optional request fields)
+- The /manage/emails page is now cached
+- Modified the styling of inline student schedules (webapp and student reg mainpage) to clarify when classes are multiple blocks long
+- Userview links now specify the program of interest so the sidebar links are more relevant
+- Course materials are now always shown in the catalog, even when a class is full
 - Naturally sort classrooms when importing them
 - Prevent importing of some tags when copying an old program
-- Added a module that lets you add or remove users from a new or existing user group.
+
+Minor bug fixes
+~~~~~~~~~~~~~~~
+- Fixed the scheduler popup for open classes
+- Escape program name in LaTeX templates
+- Fixed the rendering of multiple page custom forms for custom form modules
+- Fixed attributes when custom form field types are changed
+- Restored the "multiple classes wih the same resource" scheduling check
 - Floating resources no longer have duplicate times if there are multiple instances
-- Course materials are now always shown in the catalog
-- A class's status is now updated in the dashboard interface when it is changed via the popup
-- The teacher_profile_hide_fields, student_profile_hide_fields, volunteer_profile_hide_fields, educator_profile_hide_fields, guardian_profile_hide_fields, and teacherreg_hide_fields tags now show the possible valid options in the tag settings interface
-- Modified the styling of inline student schedules (webapp and student reg mainpage) to clarify when classes are multiple blocks long
 - Fixed (hopefully for the last time) the associated asterisks and styling of required fields in forms
-- Userview links now specify the program of interest so the sidebar links are more relevant
 - Fixed the /manage/mergeaccounts page and added a link to it from /manage/programs
-- Added the correct answer option to more custom form field types
 - Fixed the ajax scheduler to support timeslots of any length
 - Fixed the display of the selected grade range when editing a class as a teacher
 - Fixed the fruitsalad theme so the tabs in the left nav bar can now have multiple lines of text
-- Added many more filter options to /classsearch (e.g., duration, grade, capacity, number of sections, and optional request fields)
-- The /manage/emails page is now cached
 - Fixed the message panel in the ajax scheduler so it always shows when there is a class or moderator scheduling error
