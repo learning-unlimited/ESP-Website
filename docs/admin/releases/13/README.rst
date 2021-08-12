@@ -230,6 +230,10 @@ Minor new features
 - Course materials are now always shown in the catalog, even when a class is full
 - Naturally sort classrooms when importing them
 - Prevent importing of some tags when copying an old program
+- When adding a coteacher, check that they are available for the scheduled times of the class (if the class is scheduled)
+- Redesigned the theme palette management
+- The theme font size and family pickers now show previews of the sizes and families
+- Added "Return to main program management page" links to (almost) all management module pages
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
