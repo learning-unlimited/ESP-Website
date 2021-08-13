@@ -85,6 +85,9 @@
                         Implied by {{ perm.implied_by.permission_type }}
                     {% else %}
                         <input class="btn btn-primary" type="Submit" name="submit" value="Save" />
+                        {% if details.perms|length > 1 %}
+                            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}"><button type="button" class="btn btn-danger btn-small">Delete</button></a>
+                        {% endif %}
                     {% endif %}
                 </td>
             </tr>

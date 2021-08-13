@@ -282,6 +282,16 @@ class AdminCore(ProgramModuleObj, CoreModule):
             perms.update(end_date = datetime.now())
             message = 'Deadline closed for %ss: %s.' % (group, Permission.nice_name_lookup(request.GET['perm']))
 
+        elif extra == 'delete' and 'perm_id' in request.GET:
+            #   Delete the specified permission if it exists
+            perms = Permission.objects.filter(id=request.GET['perm_id'])
+            if perms.count() == 1:
+                perm = perms[0]
+                message = 'Deadline deleted for %ss: %s.' % (perm.role, perm.nice_name())
+                perm.delete()
+            else:
+                message = 'Error while deleting permission with ID %s.' % request.GET['perm_id']
+
         #   Check incoming form data
         if request.method == 'POST' and 'submit' in request.POST:
             if request.POST['submit'] == 'Create Deadline':
