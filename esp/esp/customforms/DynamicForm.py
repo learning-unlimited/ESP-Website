@@ -22,6 +22,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from esp.middleware import ESPError
 
+from datetime import datetime
+
 class BaseCustomForm(BetterForm):
     """
     Base class for all custom forms.
@@ -151,15 +153,23 @@ class CustomFormHandler():
 
                     #   Create dynamic validators to check results if the correct answer has
                     #   been specified by the form author
-                    if attr_name == 'correct_answer' and len(field['attributes'][attr_name].strip()) > 0:
+                    if attr_name == 'correct_answer' and len(field['attributes']['correct_answer'].strip()) > 0:
                         if field['field_type'] in ['dropdown', 'radio']:
                             value_choices = field['attributes']['options'].split('|')
-                            target_value = value_choices[int(field['attributes'][attr_name])]
-                        elif field['field_type'] in ['checkboxes']:
+                            target_value = value_choices[int(field['attributes']['correct_answer'])]
+                        elif field['field_type'] in ['checkboxes', 'multiselect']:
                             value_choices = field['attributes']['options'].split('|')
-                            target_value = [value_choices[int(index)] for index in field['attributes'][attr_name].split(',')]
+                            target_value = [value_choices[int(index)] for index in field['attributes']['correct_answer'].split('|')]
+                        elif field['field_type'] == 'null_boolean':
+                            target_value = {'Unknown': None, 'Yes': True, 'No': False}[field['attributes']['correct_answer']]
+                        elif field['field_type'] == 'numeric':
+                            target_value = float(field['attributes']['correct_answer'])
+                        elif field['field_type'] == 'date':
+                            target_value = datetime.strptime(field['attributes']['correct_answer'], '%Y-%m-%d').date()
+                        elif field['field_type'] == 'time':
+                            target_value = datetime.strptime(field['attributes']['correct_answer'], '%H:%M').time()
                         else:
-                            target_value = field['attributes'][attr_name]
+                            target_value = field['attributes']['correct_answer']
 
                         field_attrs['validators'] = [matches_answer(target_value)]
 

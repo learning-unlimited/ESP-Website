@@ -106,7 +106,7 @@ function Scheduler(
 
     // Set up keyboard shortcuts
     $j("body").keydown(function(evt) {
-        console.log(evt);
+        // console.log(evt);
         if(evt.keyCode == 46) { // delete is pressed
             this.sections.unscheduleSection(this.sections.selectedSection);
         } else if(evt.keyCode == 27) { // escape is pressed

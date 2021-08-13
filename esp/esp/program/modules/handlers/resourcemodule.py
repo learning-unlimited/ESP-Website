@@ -393,8 +393,7 @@ class ResourceModule(ProgramModuleObj):
             if import_mode == 'preview':
                 context['prog'] = self.program
                 result = self.program.collapsed_dict(resource_list)
-                key_list = result.keys()
-                key_list.sort()
+                key_list = self.program.natural_sort(result.keys())
                 new_rooms = []
                 for key in key_list:
                     room = result[key]

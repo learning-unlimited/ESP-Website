@@ -24,11 +24,13 @@ def _populate_related(target, related_list, many_to_many):
 
 def _get_simply_related(target):
     """Gets objects related to 'target' through anything but many-to-many."""
-    return _populate_related(target, target._meta.get_all_related_objects(), False)
+    objects = [f for f in target._meta.get_fields() if (f.one_to_many or f.one_to_one) and f.auto_created and not f.concrete]
+    return _populate_related(target, objects, False)
 
 def _get_m2m_related(target):
     """Gets objects related to 'target' through a many-to-many."""
-    return _populate_related(target, target._meta.get_all_related_many_to_many_objects(), True)
+    objects = [f for f in target._meta.get_fields(include_hidden=True) if f.many_to_many and f.auto_created]
+    return _populate_related(target, objects, True)
 
 
 ################################

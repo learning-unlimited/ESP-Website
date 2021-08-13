@@ -69,9 +69,9 @@ class DynamicModelHandler:
         'dropdown': {'typeMap': models.CharField, 'attrs': {'max_length': 200,}, 'args': []},
         'multiselect': {'typeMap': models.TextField, 'attrs': {}, 'args': []},
         'checkboxes': {'typeMap': models.TextField, 'attrs': {}, 'args': []},
-        'numeric': {'typeMap': models.IntegerField, 'attrs': {'null': True, }, 'args': []},
-        'date': {'typeMap': models.CharField, 'attrs': {'max_length': 10, }, 'args': []},
-        'time': {'typeMap': models.CharField, 'attrs': {'max_length': 10, }, 'args': []},
+        'numeric': {'typeMap': models.IntegerField, 'attrs': {'null': True, 'default': None}, 'args': []},
+        'date': {'typeMap': models.DateField, 'attrs': {'max_length': 10, 'null': True}, 'args': []},
+        'time': {'typeMap': models.TimeField, 'attrs': {'max_length': 10, 'null': True}, 'args': []},
         'file': {'typeMap': models.FileField, 'attrs': {'max_length': 200, 'upload_to': get_file_upload_path, }, 'args': []},
         'phone': {'typeMap': models.CharField, 'attrs': {'max_length': 15}, 'args': []},
         'email': {'typeMap': models.CharField, 'attrs': {'max_length': 30,}, 'args':[]},
@@ -79,7 +79,7 @@ class DynamicModelHandler:
         'gender': {'typeMap': models.CharField, 'attrs': {'max_length': 2}, 'args': []},
         'radio_yesno': {'typeMap': models.CharField, 'attrs':{'max_length': 1,}, 'args':[]},
         'boolean': {'typeMap': models.BooleanField, 'attrs':{'default': False}, 'args':[]},
-        'null_boolean': {'typeMap': models.NullBooleanField, 'attrs':{}, 'args':[]},
+        'null_boolean': {'typeMap': models.NullBooleanField, 'attrs':{'default': None}, 'args':[]},
         'instructions': {'typeMap': None},
     }
 

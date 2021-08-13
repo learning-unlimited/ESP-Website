@@ -173,7 +173,8 @@ class SchedulingCheckRunner:
          ('classes_by_grade', 'Number of classes in each block by grade'),
          ('capacity_by_grade', 'Total capacity in each block by grade'),
          ('admins_teaching_per_timeblock', 'Admins teaching per timeslot'),
-         ('mismatched_moderators', 'Moderators with mismatched assignments')
+         ('mismatched_moderators', 'Moderators with mismatched assignments'),
+         ('multiple_classes_same_resource_same_time', 'Double-booked resources')
 
      ]
 

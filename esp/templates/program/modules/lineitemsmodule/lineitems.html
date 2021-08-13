@@ -114,7 +114,5 @@ You can use this page to add, remove, edit, delete, and import line items, which
 <script id="lineitemsscript" src="/media/scripts/program/modules/lineitems.js" data-prog_url="{{ prog.url }}"></script>
 <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 
-<br /><br />
-<button type="button" class="btn btn-primary" onclick="location.href = '/manage/{{ prog.url }}/main';">Main Program Management Page</button>
-<br /><br />
+{% include "program/modules/admincore/returnlink.html" %}
 {% endblock %}

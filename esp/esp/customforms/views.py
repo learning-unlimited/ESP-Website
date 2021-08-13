@@ -3,8 +3,9 @@ import json
 
 from django.db import transaction
 from django.shortcuts import redirect, HttpResponse
-from django.http import Http404,HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.db import connection
+from django.core.serializers.json import DjangoJSONEncoder
 
 from esp.customforms.models import *
 from esp.program.models import Program
@@ -24,7 +25,7 @@ def test_func(user):
 
 @user_passes_test(test_func)
 def landing(request):
-    forms = Form.objects.all().order_by('-date_created')
+    forms = Form.objects.all().order_by('-id')
     if not request.user.isAdministrator():
         forms = forms.filter(created_by=request.user)
     return render_to_response("customforms/landing.html", request, {'form_list': forms})
@@ -32,7 +33,7 @@ def landing(request):
 @user_passes_test(test_func)
 def formBuilder(request):
     prog_list = Program.objects.all()
-    form_list = Form.objects.all().order_by('-date_created')
+    form_list = Form.objects.all().order_by('-id')
     if not request.user.isAdministrator():
         form_list = form_list.filter(created_by=request.user)
     context = {'prog_list': prog_list, 'form_list': form_list, 'only_fkey_models': cf_cache.only_fkey_models.keys()}
@@ -132,14 +133,9 @@ def onSubmit(request):
 
                         # inserting fields
                         for field in section['fields']:
-                            if 'required' in field['data'] and field['data']['required'] == 'checked':
-                                is_required = True
-                            else:
-                                is_required = False
-
                             new_field = Field.objects.create(form=form, section=new_section, field_type=field['data']['field_type'],
                                 seq=int(field['data']['seq']), label=field['data']['question_text'], help_text=field['data']['help_text'],
-                                required=is_required
+                                required=field['data']['required']
                                 )
 
                             fields.append( (new_field.id, new_field.field_type) )
@@ -153,7 +149,7 @@ def onSubmit(request):
 
                 return HttpResponse('OK')
             except Exception as err:
-                return HttpResponse(json.dumps({'message': str(err)}), status=400)
+                return JsonResponse({'message': str(err)}, status=400)
 
 def get_or_create_altered_obj(model, initial_id, **attrs):
     if model.objects.filter(id=initial_id).exists():
@@ -277,7 +273,7 @@ def onModify(request):
 
                 return HttpResponse('OK')
             except Exception as err:
-                return HttpResponse(json.dumps({'message': str(err)}), status=400)
+                return JsonResponse({'message': str(err)}, status=400)
 
 def hasPerm(user, form):
     """
@@ -386,7 +382,7 @@ def getData(request):
                 return HttpResponse(status=400)
             form = Form.objects.get(pk=form_id)
             fh = FormHandler(form=form, request=request)
-            resp_data = json.dumps(fh.getResponseData(form))
+            resp_data = json.dumps(fh.getResponseData(form), cls=DjangoJSONEncoder)
             return HttpResponse(resp_data)
     return HttpResponse(status=400)
 

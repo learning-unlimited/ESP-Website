@@ -404,8 +404,8 @@ class UserSearchController(object):
         else:
             return MessageRequest.SEND_TO_SELF_REAL
 
-    def prepare_context(self, program, target_path=None):
-        context = {}
+    def prepare_context(self, program, target_path=None, add_to_context={}):
+        context = add_to_context
         context['program'] = program
         context['student_search_form'] = StudentSearchForm()
         context['combo_form'] = True
@@ -448,7 +448,7 @@ class UserSearchController(object):
 
         return context
 
-    def create_filter(self, request, program, template=None, target_path=None):
+    def create_filter(self, request, program, template=None, target_path=None, add_to_context={}):
         from esp.program.modules.handlers.listgenmodule import ListGenModule
         """ Function to obtain a list of users, possibly requiring multiple requests.
             Similar to the old get_user_list function.
@@ -468,7 +468,7 @@ class UserSearchController(object):
         if target_path is None:
             target_path = request.path
 
-        return (render_to_response(template, request, self.prepare_context(program, target_path)), False)
+        return (render_to_response(template, request, self.prepare_context(program, target_path, add_to_context = add_to_context)), False)
 
     def selected_list_from_postdata(self, data):
         selected = []

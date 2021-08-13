@@ -323,7 +323,14 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
         tooltip_parts['Teachers'] = this.matrix.sections.getTeachersString(this.section);
         if(has_moderator_module === "True") tooltip_parts[moderator_title + 's'] = this.matrix.sections.getModeratorsString(this.section);
         tooltip_parts['Class size max'] = this.section.class_size_max;
-        tooltip_parts['Length'] = Math.ceil(this.section.length);
+        var length_str = '';
+        if(Math.floor(this.section.length) > 0){
+            length_str += Math.floor(this.section.length);
+            length_str += ' hour';
+            if(Math.floor(this.section.length) > 1) length_str += 's';
+        }
+        if((this.section.length % 1) * 60 > 0) length_str += ' ' + Math.round((this.section.length % 1) * 60) + ' minutes';
+        tooltip_parts['Length'] = length_str;
         tooltip_parts['Grades'] = this.section.grade_min + "-" + this.section.grade_max;
         tooltip_parts['Room Request'] = this.section.requested_room;
         tooltip_parts['Resource Requests'] = this.matrix.sections.getResourceString(this.section);
