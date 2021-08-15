@@ -111,4 +111,8 @@ You submitted a schedule with no available times.  You can't register a class wi
 </form>
 {% endif %}
 
+{% if isAdmin %}
+{% include "program/modules/admincore/returnlink.html" %}
+{% endif %}
+
 {% endblock %}

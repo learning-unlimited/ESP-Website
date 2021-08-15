@@ -2,16 +2,21 @@ import json
 import random
 import re
 
+from collections import OrderedDict
+
 from django.http import HttpResponseRedirect
+from django.db.models import Count
 from django.db.models.query import Q
 
+from esp.program.modules.forms.teacherreg import TeacherClassRegForm
 from esp.program.modules.base import ProgramModuleObj, main_call, needs_admin
 from esp.program.models import RegistrationType
 from esp.program.models.class_ import ClassSubject, STATUS_CHOICES
 from esp.program.models.flags import ClassFlagType
 from esp.resources.models import Resource, ResourceType, ResourceRequest
+from esp.tagdict.models import Tag
 from esp.utils.query_builder import QueryBuilder, SearchFilter
-from esp.utils.query_builder import SelectInput, ConstantInput, TextInput
+from esp.utils.query_builder import SelectInput, SelectQInput, ConstantInput, TextInput
 from esp.utils.query_builder import OptionalInput, DatetimeInput
 from esp.utils.web import render_to_response
 
@@ -73,6 +78,63 @@ class ClassSearchModule(ProgramModuleObj):
                                 options={str(cat.id): cat.category
                                          for cat in categories})])
 
+        durations = self.program.getDurations()
+        duration_filter = SearchFilter(
+            name='duration', title='the duration',
+            inputs=[SelectInput(field_name='duration',
+                                options=OrderedDict([(str(duration[0]), duration[1])
+                                        for duration in durations]))])
+
+        grades = self.program.classregmoduleinfo.getClassGrades()
+        grade_filter = SearchFilter(
+            name='grade', title='grades between X and Y',
+            inputs=[SelectQInput(options=OrderedDict([(str(grade), {'title': str(grade), 'Q': Q(grade_max__gte=grade)})
+                                                      for grade in grades])),
+                    SelectQInput(options=OrderedDict([(str(grade), {'title': str(grade), 'Q': Q(grade_min__lte=grade)})
+                                                      for grade in grades]))])
+
+        num_sections = self.program.classregmoduleinfo.allowed_sections_actual
+        sections_filter = SearchFilter(
+            name='num_sections', title='between X and Y section(s)',
+            inputs=[SelectQInput(options=OrderedDict([(str(num), {'title': str(num), 'Q': Q(id__in=ClassSubject.objects.annotate(
+                                                                                            num_sections=Count("sections")).filter(
+                                                                                            num_sections__gte=num).values_list('id', flat=True))})
+                                                      for num in num_sections])),
+                    SelectQInput(options=OrderedDict([(str(num), {'title': str(num), 'Q': Q(id__in=ClassSubject.objects.annotate(
+                                                                                            num_sections=Count("sections")).filter(
+                                                                                            num_sections__lte=num).values_list('id', flat=True))})
+                                                      for num in num_sections]))])
+
+        capacities = self.program.classregmoduleinfo.getClassSizes()
+        capacity_inputs = None
+        capacity_title = ""
+        # logic copied from the teacher class registration form
+        if self.program.classregmoduleinfo.use_class_size_max:
+            capacity_title = "capacity (max)"
+            capacity_inputs = [SelectQInput(options=OrderedDict([(str(cap), {'title': str(cap), 'Q': Q(class_size_max__gte=cap)})
+                                                                 for cap in capacities])),
+                               SelectQInput(options=OrderedDict([(str(cap), {'title': str(cap), 'Q': Q(class_size_max__lte=cap)})
+                                                                 for cap in capacities]))]
+        elif Tag.getBooleanTag('use_class_size_optimal'):
+            if self.program.classregmoduleinfo.use_class_size_optimal:
+                capacity_title = "capacity (optimal)"
+                capacity_inputs = [SelectQInput(options=OrderedDict([(str(cap), {'title': str(cap), 'Q': Q(class_size_optimal__gte=cap)})
+                                                                     for cap in capacities])),
+                                   SelectQInput(options=OrderedDict([(str(cap), {'title': str(cap), 'Q': Q(class_size_optimal__lte=cap)})
+                                                                     for cap in capacities]))]
+            elif self.program.classregmoduleinfo.use_optimal_class_size_range:
+                capacity_title = "capacity (optimal range)"
+                capacity_inputs = [SelectQInput(options=OrderedDict([(str(cap), {'title': str(cap), 'Q': Q(optimal_class_size_range__range_max__gte=cap)})
+                                                                     for cap in capacities])),
+                                   SelectQInput(options=OrderedDict([(str(cap), {'title': str(cap), 'Q': Q(optimal_class_size_range__range_min__lte=cap)})
+                                                                     for cap in capacities]))]
+            elif self.program.classregmoduleinfo.use_allowable_class_size_ranges:
+                capacity_title = "capacity (allowable range)"
+                capacity_inputs = [SelectQInput(options=OrderedDict([(str(cap), {'title': str(cap), 'Q': Q(allowable_class_size_ranges__range_max__gte=cap)})
+                                                                     for cap in capacities])),
+                                   SelectQInput(options=OrderedDict([(str(cap), {'title': str(cap), 'Q': Q(allowable_class_size_ranges__range_min__lte=cap)})
+                                                                     for cap in capacities]))]
+
         status_filter = SearchFilter(
             name='status', title='the status',
             inputs=[SelectInput(field_name='status', options={
@@ -96,21 +158,81 @@ class ClassSearchModule(ProgramModuleObj):
             inputs=[ConstantInput(Q(sections__meeting_times__isnull=False))],
         )
 
-        return QueryBuilder(
-            base=ClassSubject.objects.filter(parent_program=self.program),
-            english_name="classes",
-            filters=[
+        message_for_directors_filter = SearchFilter(
+            name="message_for_directors", title="a message to the directors",
+            # Get classes with a message to the directors
+            inverted=True,
+            inputs=[ConstantInput(Q(message_for_directors=""))],
+        )
+
+        purchase_request_filter = SearchFilter(
+            name="purchase_request", title="a purchase request",
+            # Get classes with a purchase request
+            inverted=True,
+            inputs=[ConstantInput(Q(purchase_requests__isnull=True) | Q(purchase_requests=""))],
+        )
+
+        room_request_filter = SearchFilter(
+            name="room_request", title="a room request",
+            # Get classes with a room request
+            inverted=True,
+            inputs=[ConstantInput(Q(requested_room__isnull=True) | Q(requested_room=""))],
+        )
+
+        prereq_filter = SearchFilter(
+            name="prereqs", title="prerequisites",
+            # Get classes with specified prerequisites
+            inverted=True,
+            inputs=[ConstantInput(Q(prereqs__isnull=True) | Q(prereqs=""))],
+        )
+
+        hardness_choices = TeacherClassRegForm.hardness_choices
+        if Tag.getTag('teacherreg_difficulty_choices'):
+            hardness_choices = json.loads(Tag.getTag('teacherreg_difficulty_choices'))
+        hardness_filter = SearchFilter(
+            name='hardness_rating', title='the hardness rating',
+            inputs=[SelectInput(field_name='hardness_rating',
+                                options=OrderedDict([(hardness[0], hardness[1]) for hardness in hardness_choices]))])
+
+        filters = [
                 status_filter,
                 category_filter,
+                duration_filter,
+                sections_filter,
+                grade_filter,
                 title_filter,
                 username_filter,
+                message_for_directors_filter,
+                purchase_request_filter,
+                room_request_filter,
+                prereq_filter,
+                hardness_filter,
                 flag_filter,
                 any_flag_filter,
                 resource_filter,
                 any_resource_filter,
                 all_scheduled_filter,
                 some_scheduled_filter,
-            ])
+            ]
+
+        if capacity_inputs:
+            capacity_filter = SearchFilter(
+                name='capacity', title= capacity_title + ' between X and Y',
+                inputs=capacity_inputs)
+            filters.append(capacity_filter)
+
+        if Tag.getTag('class_style_choices'):
+            style_choices = json.loads(Tag.getTag('class_style_choices'))
+            style_filter = SearchFilter(
+                name='class_style', title='the class style',
+                inputs=[SelectInput(field_name='class_style',
+                                    options={style[0]: style[1] for style in style_choices})])
+            filters.append(style_filter)
+
+        return QueryBuilder(
+            base=ClassSubject.objects.filter(parent_program=self.program),
+            english_name="classes",
+            filters=filters)
 
     @main_call
     @needs_admin

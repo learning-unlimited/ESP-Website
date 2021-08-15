@@ -1041,7 +1041,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         durationList = durationDict.items()
 
-        return durationList
+        return sorted(durationList, key=lambda x: x[0])
 
     def getSurveys(self):
         from esp.survey.models import Survey

@@ -43,7 +43,8 @@ var sorttable = {
 
 	addOnClick: function(info,cells) {
 		for (var i=0,ie=cells.length; i<ie; ++i) {
-			if (/\bsorttable_nosort\b/.test(cells[i].className))
+            // Will G: also check that the cell is a TH
+			if ((/\bsorttable_nosort\b/.test(cells[i].className)) || cells[i].nodeName != 'TH')
 				continue;
 			if (!info[i])
 				info[i] = {known:-1,func:null,heads:[]};
@@ -251,6 +252,7 @@ var sorttable = {
 		var i,tb,tbe;
 
 		sorttable.updateArrows(info,col,inverse,!sorted);
+        // Will G: flipped order here to save computational time
 		if (sorted) {
 			sorttable.reverseSort(table);
 			return;
@@ -345,6 +347,7 @@ var sorttable = {
 		return aa - bb;
 	},
 	sort_alpha: function(a,b) {
+        // Will G: added .toLowerCase() for better alphanumeric sorting
 		if (a[0].toLowerCase() == b[0].toLowerCase()) return 0;
 		if (a[0].toLowerCase() < b[0].toLowerCase()) return -1;
 		return 1;
