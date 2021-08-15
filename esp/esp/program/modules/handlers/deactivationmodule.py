@@ -40,6 +40,8 @@ from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_list, get_user_checklist
 from esp.middleware import ESPError
 
+import logging
+
 class DeactivationModule(ProgramModuleObj):
     doc = """Mass deactivate sets of users"""
 
@@ -68,6 +70,8 @@ class DeactivationModule(ProgramModuleObj):
         if not users:
             raise ESPError(), "Your query did not match any users"
 
+        logger = logging.getLogger(__name__)
+        logger.info("Mass deactivated users: %s", ", ".join([str(user.id) for user in users]))
         n_users = users.update(is_active = False)
 
         return render_to_response(self.baseDir()+'finished.html', request, {'n_users': n_users})
