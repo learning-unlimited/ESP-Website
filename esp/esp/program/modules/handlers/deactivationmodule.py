@@ -37,6 +37,7 @@ from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
+from esp.users.views.usersearch import get_user_list, get_user_checklist
 from esp.middleware import ESPError
 
 class DeactivationModule(ProgramModuleObj):
@@ -79,10 +80,22 @@ class DeactivationModule(ProgramModuleObj):
         context['program'] = prog
 
         if request.method == "POST":
-            data = ListGenModule.processPost(request)
-            filterObj = UserSearchController().filter_from_postdata(prog, data)
+            selected = None
+            if request.POST.get('submit_checklist') == 'true':
+                filterObj, found = get_user_list(request, prog.getLists(True))
+                if not found:
+                    return filterObj
+            else:
+                data = ListGenModule.processPost(request)
+                filterObj = usc.filter_from_postdata(prog, data)
+                selected = usc.selected_list_from_postdata(data)
+
+                if data['use_checklist'] == '1':
+                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/deactivate' % prog.getUrlBase(), extra_context = {'module': "Mass Deactivation Portal"})
+                    return response
 
             context['filterid'] = filterObj.id
+            context['selected'] = selected
             context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
             return render_to_response(self.baseDir()+'options.html', request, context)
 

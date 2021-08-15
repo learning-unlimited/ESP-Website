@@ -8,7 +8,7 @@
 <h1>Mass Deactivation Portal</h1>
 
 <h2>Step 2:</h2>
-<p>You have selected {{ num_users }} active users.</p>
+<p>You have selected <b>{{ num_users }}</b> active users{% if selected %} of <strong>{{ selected }}</strong>{% endif %}.</p>
 
 <form action="/manage/{{ program.getUrlBase }}/deactivatefinal?filterid={{ filterid }}" method="post" name="usergroup">
 <h3>Confirm that you would like to deactivate these users and hit the button:</h3>

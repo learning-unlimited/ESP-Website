@@ -253,7 +253,7 @@ class CommModule(ProgramModuleObj):
                 sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
                 if data['use_checklist'] == '1':
-                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/commpanel_old' % prog.getUrlBase())
+                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/commpanel_old' % prog.getUrlBase(), extra_context = {'module': "Communications Portal"})
                     return response
 
                 context['filterid'] = filterObj.id

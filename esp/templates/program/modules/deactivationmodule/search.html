@@ -12,7 +12,9 @@
 
 <p>Select users with the form below.</p>
 
+{% with include_checklist="True" %}
 {% include "users/usersearch/list_selector.html" %}
+{% endwith %}
 
 {% include "program/modules/admincore/returnlink.html" %}
 
