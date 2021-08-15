@@ -91,7 +91,7 @@ Please select a section from the dropdown below.
             </tr>
                 {% for student in section.enrolled_list %}
                     <tr>
-                        <th class="small">{{ forloop.counter }}</th>
+                        <th class="small sorttable_nosort">{{ forloop.counter }}</th>
                         <td>{{ student.first_name }}</td>
                         <td>{{ student.last_name }}</td>
                         <td align="center">{{ student.id }}</td>
@@ -152,7 +152,7 @@ Please select a section from the dropdown below.
             <tbody>
                 {% for student in section.attended_list %}
                     <tr>
-                        <th class="small">{{ forloop.counter }}</th>
+                        <th class="small sorttable_nosort">{{ forloop.counter }}</th>
                         <td>{{ student.first_name }}</td>
                         <td>{{ student.last_name }}</td>
                         <td align="center">{{ student.id }}</td>
