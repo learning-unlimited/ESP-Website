@@ -105,7 +105,7 @@ or select a timeslot from the dropdown below to see attendance stats:
 <div class="dspcont">
 <table class="sortable" width="100%">
 <tr>
-    <th width="5%">#</th>
+    <th width="5%" class="sorttable_nosort">#</th>
     <th width="15%">First Name</th>
     <th width="15%">Last Name</th>
     <th width="15%">Username</th>
@@ -115,7 +115,7 @@ or select a timeslot from the dropdown below to see attendance stats:
 </tr>
 {% for student in checked_in_ts %}
 <tr>
-    <th class="small">{{ forloop.counter }}</th>
+    <th class="small sorttable_nosort">{{ forloop.counter }}</th>
     <td>{{ student.first_name }}</td>
     <td>{{ student.last_name }}</td>
     <td><a href="/manage/userview?username={{ student.username|urlencode }}&program={{ program.id }}">{{ student.username }}</a></td>
@@ -161,7 +161,7 @@ or select a timeslot from the dropdown below to see attendance stats:
 <div class="dspcont">
 <table class="sortable" width="100%">
 <tr>
-    <th width="5%">#</th>
+    <th width="5%" class="sorttable_nosort">#</th>
     <th width="15%">First Name</th>
     <th width="15%">Last Name</th>
     <th width="15%">Username</th>
@@ -172,7 +172,7 @@ or select a timeslot from the dropdown below to see attendance stats:
 </tr>
 {% for student in not_attending %}
 <tr>
-    <th class="small">{{ forloop.counter }}</th>
+    <th class="small sorttable_nosort">{{ forloop.counter }}</th>
     <td>{{ student.first_name }}</td>
     <td>{{ student.last_name }}</td>
     <td><a href="/manage/userview?username={{ student.username|urlencode }}&program={{ program.id }}">{{ student.username }}</a></td>
@@ -219,7 +219,7 @@ or select a timeslot from the dropdown below to see attendance stats:
 <div class="dspcont">
 <table class="sortable" width="100%">
 <tr>
-    <th width="5%">#</th>
+    <th width="5%" class="sorttable_nosort">#</th>
     <th width="10%">First Name</th>
     <th width="10%">Last Name</th>
     <th width="15%">Username</th>
@@ -231,7 +231,7 @@ or select a timeslot from the dropdown below to see attendance stats:
 </tr>
 {% for student in onsite %}
 <tr>
-    <th class="small">{{ forloop.counter }}</th>
+    <th class="small sorttable_nosort">{{ forloop.counter }}</th>
     <td>{{ student.first_name }}</td>
     <td>{{ student.last_name }}</td>
     <td><a href="/manage/userview?username={{ student.username|urlencode }}&program={{ program.id }}">{{ student.username }}</a></td>
@@ -278,7 +278,7 @@ or select a timeslot from the dropdown below to see attendance stats:
 <div class="dspcont">
 <table class="sortable">
 <tr>
-    <th width="5%">#</th>
+    <th width="5%" class="sorttable_nosort">#</th>
     <th width="10%">Email Code</th>
     <th width="30%">Class Title</th>
     <th width="20%">Teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle }}s{% endif %}</th>
@@ -287,7 +287,7 @@ or select a timeslot from the dropdown below to see attendance stats:
 </tr>
 {% for section in no_attendance %}
 <tr>
-    <th class="small">{{ forloop.counter }}</th>
+    <th class="small sorttable_nosort">{{ forloop.counter }}</th>
     <td>{{ section.emailcode }}</td>
     <td>{{ section.title }}</td>
     <td>
