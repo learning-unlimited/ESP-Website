@@ -185,7 +185,7 @@ class BigBoardModule(ProgramModuleObj):
     def popular_classes_wrapper(self, prog):
         # this caches this based on time, so even if the dependencies are updated,
         # we only update the cache every 105 seconds
-        return popular_classes(self, prog)
+        return self.popular_classes(prog)
 
     @cache_function
     def popular_classes(self, prog):
