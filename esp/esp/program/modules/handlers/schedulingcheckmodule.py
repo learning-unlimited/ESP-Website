@@ -492,7 +492,6 @@ class SchedulingCheckRunner:
                     if mod_recs.count() == 0:
                         mod_recs_text = "No selection"
                     else:
-                        count = mod_recs[0].class_categories.count()
                         mod_recs_text = [cat.category for cat in list(mod_recs[0].class_categories.all())]
                     if not mod_recs_text:
                         mod_recs_text.append("No Selection")
