@@ -127,23 +127,77 @@
 
 {% if popular_classes %}
     <div class="popular-classeses">
-      {% for description, classes in popular_classes %}
-        <div class="popular-classes-block">
-          <div class="popular-classes-heading">
-            {{description}}
-          </div>
-          <table class="popular-classes bigboard-description">
-            {% for class in classes %}
-              <tr>
-                <td class="popular-class-num">{{class.points}}</td>
-                <td class="popular-class-title">
-                  {{class.category__symbol}}{{class.id}}: {{class.title}}
-                </td>
-              </tr>
-            {% endfor %}
-          </table>
-        </div>
-      {% endfor %}
+        {% for description, series in popular_classes %}
+        <div class="popular-classes-chart" id="popular-classes-chart-{{ forloop.counter }}"></div>
+        <script type="text/javascript">
+            $j('#popular-classes-chart-{{ forloop.counter }}').highcharts({
+                // mostly grabbed from https://www.highcharts.com/demo/column-stacked
+                chart: {
+                    type: 'column',
+                    zoomType: 'xy',
+                    panning: {
+                        enabled: true,
+                        type: 'xy', // currently mostly broken for the y axis (https://github.com/highcharts/highcharts/issues/16217)
+                                    // but including it here for when it is fixed in highcharts
+                    },
+                    panKey: 'shift'
+                },
+                credits: {
+                    enabled: false
+                },
+                title: {
+                    text: '{{ description }}'
+                },
+                subtitle: {
+                    text: 'Click and drag to zoom in. Hold down shift key to pan.'
+                },
+                xAxis: {
+                    type: 'category',
+                    categories: [{% for ts in timeslots %}'{{ ts.start }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+                    min: 0,
+                    max: {{ timeslots.count|add:"-1" }}
+                },
+                yAxis: {
+                    title: {
+                        text: '# of Students'
+                    },
+                    stackLabels: {
+                        enabled: true,
+                        style: {
+                            fontWeight: 'bold',
+                            color: ( // theme
+                                Highcharts.defaultOptions.title.style &&
+                                Highcharts.defaultOptions.title.style.color
+                            ) || 'gray'
+                        }
+                    }
+                },
+                tooltip: {
+                    headerFormat: '<b>{point.x}</b><br/>',
+                    pointFormat: '{series.name}: {point.y}<br/>Total: {point.stackTotal}'
+                },
+                plotOptions: {
+                    column: {
+                        stacking: 'normal',
+                        dataLabels: {
+                            enabled: true
+                        }
+                    }
+                },
+                legend: {
+                    enabled: false
+                },
+                series: [
+                    {% for ser in series %}
+                    {
+                        name: '{{ ser.name|truncatechars:30 }}',
+                        data: [{% for dat in ser.data %}['{{ dat.0 }}', {{ dat.1 }}],{% endfor %}]
+                    }{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                ]
+            });
+        </script>
+        {% endfor %}
     </div>
 {% endif %}
 
