@@ -234,6 +234,9 @@ Minor new features
 - Redesigned the theme palette management
 - The theme font size and family pickers now show previews of the sizes and families
 - Added "Return to main program management page" links to (almost) all management module pages
+- Added a new module that lets admins deactivate arbitrary sets of users (use caution, this is not easy to undo)
+- Redesigned the deadline management page
+- Added a scheduling check for moderators moderating classes with categories they didn't select
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -249,3 +252,6 @@ Minor bug fixes
 - Fixed the display of the selected grade range when editing a class as a teacher
 - Fixed the fruitsalad theme so the tabs in the left nav bar can now have multiple lines of text
 - Fixed the message panel in the ajax scheduler so it always shows when there is a class or moderator scheduling error
+- Fixed the behavior of sortable tables when they had complex layouts or only a single row of data
+- Fixed cancelled classes being included on the teacher availability form and when deciding whether a coteacher could be added to a class
+- Fixed browser console errors complaining about non-unique ids on the resources management page
