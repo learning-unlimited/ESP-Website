@@ -100,7 +100,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
         else:
             #Student must win the lottery to progress
             #Figure out if lottery is open/closed, if it has already been run, and if student has entered yet
-            lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
+            lottery_perm = Permission.user_has_perm(user, 'Student/PhaseZero', program=prog)
             in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
             lottery_run = Tag.getBooleanTag('student_lottery_run', prog)
             num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
@@ -117,7 +117,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                     #Lottery hasn't opened yet
                     #Show generic deadline error page
                     context['moduleObj'] = self
-                    context['extension'] = ('the deadline Student/Classes/PhaseZero was')
+                    context['extension'] = ('the deadline Student/PhaseZero was')
                     return render_to_response('errors/program/deadline-learn.html', request, context)
                 elif request.method == 'POST':
                     #Lottery is open, student just entered
@@ -150,7 +150,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
         context['one'] = one
         context['two'] = two
         user = request.user
-        lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
+        lottery_perm = Permission.user_has_perm(user, 'Student/PhaseZero', program=prog)
         in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
         lottery_run = Tag.getBooleanTag('student_lottery_run', prog)
         num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
