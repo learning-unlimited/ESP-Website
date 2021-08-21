@@ -20,12 +20,12 @@ function toggle(source) {
 <h1>Manage Volunteers for {{ program.niceName }}</h1>
 
 {% if new_requests %}
-    <h2>Confirm Volunteer Request Import</h2>
+    <h2>Confirm Volunteer Shift Import</h2>
 
     {% load render_qsd %}
     {% inline_program_qsd_block program "volunteer_import_instructions" %}
     <p>
-    You have chosen to import the volunteer requests from {{ past_program.niceName }} to {{ prog.niceName }}.  Please review the table below carefully before clicking "Submit" to complete the import.  In particular, check that each resource type has the appropriate start and end times, descriptions, and number of volunteers.  If any of this data is not correct, please <a href="/manage/{{ prog.getUrlBase }}/volunteering">GO BACK</a>; add the resource types manually or contact <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}">technical support</a> for assistance in automating the process.
+    You have chosen to import the volunteer shifts from {{ past_program.niceName }} to {{ prog.niceName }}.  Please review the table below carefully before clicking "Submit" to complete the import.  In particular, check that each shift has the appropriate start and end times, descriptions, and number of volunteers.  If any of this data is not correct, please <a href="/manage/{{ prog.getUrlBase }}/volunteering">GO BACK</a>; add the volunteer shifts manually or contact <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}">technical support</a> for assistance in automating the process.
     </p>
     {% end_inline_program_qsd_block %}
 
@@ -35,7 +35,7 @@ function toggle(source) {
             <input type="hidden" name="program" value="{{ past_program.id }}" />
             <input type="hidden" name="start_date" value="{{ start_date }}" />
             <table align="center" cellpadding="0" cellspacing="0" width="550">
-                <tr><th colspan="3">Proposed volunteer requests for {{ prog.niceName }}</th></tr>
+                <tr><th colspan="3">Proposed volunteer shifts for {{ prog.niceName }}</th></tr>
                 <tr><td colspan="3"><table cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                     <td width="30%"><b>Time</b></td>
@@ -60,12 +60,12 @@ function toggle(source) {
 
 {% else %}
 
-    <h2>Volunteer Request Import Not Available</h2>
+    <h2>Volunteer Shift Import Not Available</h2>
 
     {% load render_qsd %}
     {% inline_program_qsd_block program "volunteer_import_empty" %}
     <p>
-    You have chosen to import the volunteer requests from {{ past_program.niceName }}, but this program does not have any volunteer requests to import. Please <a href="/manage/{{ prog.getUrlBase }}/volunteering">go back</a> and add volunteer requests manually or select a different program from which to import volunteer requests.
+    You have chosen to import the volunteer shifts from {{ past_program.niceName }}, but this program does not have any volunteer shifts to import. Please <a href="/manage/{{ prog.getUrlBase }}/volunteering">go back</a> and add volunteer shifts manually or select a different program from which to import volunteer shifts.
     </p>
     {% end_inline_program_qsd_block %}
 
