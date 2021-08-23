@@ -242,7 +242,6 @@ Minor bug fixes
 ~~~~~~~~~~~~~~~
 - Fixed the scheduler popup for open classes
 - Escape program name in LaTeX templates
-- Fixed the rendering of multiple page custom forms for custom form modules
 - Fixed attributes when custom form field types are changed
 - Restored the "multiple classes wih the same resource" scheduling check
 - Floating resources no longer have duplicate times if there are multiple instances
