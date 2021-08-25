@@ -237,6 +237,10 @@ Minor new features
 - Added a new module that lets admins deactivate arbitrary sets of users (use caution, this is not easy to undo)
 - Redesigned the deadline management page
 - Added a scheduling check for moderators moderating classes with categories they didn't select
+- Added class popularity graphs to the student big board (replacing the old popularity lists)
+- Removed the TextMessageModule (the module that adds a text box at the bottom of the student registration page for a phone number) because it is no longer needed (we ask for phone numbers and permission to text students in the student profile)
+- Added enrollment and attendance plots to the students hours query on /manage/statistics
+- Added a confirmation page when importing volunteer shifts from a previous program
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
