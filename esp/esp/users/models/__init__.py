@@ -672,7 +672,7 @@ class BaseESPUser(object):
     def getEnrolledClassesAll(self):
         return self.getClasses(None, verbs=['Enrolled'])
 
-    def getSections(self, program=None, verbs=None):
+    def getSections(self, program=None, verbs=None, valid_only=True):
         """ Since enrollment is not the only way to tie a student to a ClassSection,
         here's a slightly more general function for finding who belongs where. """
         from esp.program.models import ClassSection, RegistrationType
@@ -682,13 +682,16 @@ class BaseESPUser(object):
         else:
             rts = RegistrationType.objects.all()
 
+        srs = self.studentregistration_set.filter(relationship__in=rts)
+        if valid_only:
+            srs = srs.filter(StudentRegistration.is_valid_qobject())
+        sections = ClassSection.objects.filter(id__in=srs.values_list('section', flat=True))
         if program:
-            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(StudentRegistration.is_valid_qobject(), relationship__in=rts).values_list('section', flat=True)).filter(parent_class__parent_program=program)
-        else:
-            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(StudentRegistration.is_valid_qobject(), relationship__in=rts).values_list('section', flat=True))
+            sections = sections.filter(parent_class__parent_program=program)
+        return sections
 
-    def getSectionsFromProgram(self, program, verbs=None):
-        return self.getSections(program, verbs=verbs)
+    def getSectionsFromProgram(self, program, verbs=None, valid_only=True):
+        return self.getSections(program, verbs=verbs, valid_only=valid_only)
 
     def getEnrolledSections(self, program=None):
         if program is None:

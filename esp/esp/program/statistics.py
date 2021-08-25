@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 import json
 from collections import OrderedDict
+from numpy import mean
 
 from django.template.loader import render_to_string
 
@@ -273,48 +274,85 @@ def heardabout(form, programs, students, profiles, result_dict={}):
 def hours(form, programs, students, profiles, result_dict={}):
 
     #   Bin students by registered timeslots per program
-    stats_list = []
+    enrolled_list = []
+    attended_list = []
     students_list = []
-    timeslots_list = []
+    timeslots_enrolled_list = []
+    timeslots_attended_list = []
     for program in programs:
         prog_students = 0
-        stats_dict = {}
-        timeslots_dict = {}
+        enrolled_dict = {}
+        attended_dict = {}
+        timeslots_enrolled_dict = {}
+        timeslots_attended_dict = {}
         for student in students:
-            sections = student.getEnrolledSections(program)
+            # calculate number of blocks for which students were enrolled
+            sections_enrolled = student.getEnrolledSections(program)
             timeslots = []
-            for sec in sections:
+            for sec in sections_enrolled:
                 timeslots += sec.meeting_times.all()
             timeslots = set(timeslots)
-            if len(timeslots) not in stats_dict:
-                stats_dict[len(timeslots)] = 0
-            stats_dict[len(timeslots)] += 1
+            if len(timeslots) not in enrolled_dict:
+                enrolled_dict[len(timeslots)] = 0
+            enrolled_dict[len(timeslots)] += 1
             if len(timeslots) > 0:
                 prog_students += 1
             for timeslot in timeslots:
-                if timeslot not in timeslots_dict:
-                    timeslots_dict[timeslot] = 0
-                timeslots_dict[timeslot] += 1
-        timeslots_list.append(timeslots_dict)
-        stats_list.append(stats_dict)
+                if timeslot not in timeslots_enrolled_dict:
+                    timeslots_enrolled_dict[timeslot] = 0
+                timeslots_enrolled_dict[timeslot] += 1
+            # calculate number of blocks students attended
+            # if a student attended two classes during the same block, this will probably double count them
+            # but that seems pretty unlikely
+            sections_attended = student.getSections(program, ['Attended'], valid_only=False)
+            timeslots = []
+            for sec in sections_attended:
+                timeslots += sec.meeting_times.all()
+            timeslots = set(timeslots)
+            if len(timeslots) not in attended_dict:
+                attended_dict[len(timeslots)] = 0
+            attended_dict[len(timeslots)] += 1
+            for timeslot in timeslots:
+                if timeslot not in timeslots_attended_dict:
+                    timeslots_attended_dict[timeslot] = 0
+                timeslots_attended_dict[timeslot] += 1
+        timeslots_enrolled_list.append(timeslots_enrolled_dict)
+        timeslots_attended_list.append(timeslots_attended_dict)
+        enrolled_list.append(enrolled_dict)
+        attended_list.append(attended_dict)
         students_list.append(prog_students)
 
     #   Compile and render
-    stats_flat = []
-    timeslots_flat = []
-    for stats_dict in stats_list:
-        hours = stats_dict.keys()
-        hours.sort(key=lambda x: -x)
+    enrolled_flat = []
+    attended_flat = []
+    timeslots_enrolled_flat = []
+    timeslots_attended_flat = []
+    for enrolled_dict in enrolled_list:
+        hours = enrolled_dict.keys()
+        hours.sort()
         if 0 in hours:
             hours.remove(0)
-        counts = [stats_dict[key] for key in hours]
-        stats_flat.append(zip(hours, counts))
-    for timeslots_dict in timeslots_list:
+        counts = [enrolled_dict[key] for key in hours]
+        enrolled_flat.append(zip(hours, counts))
+    for attended_dict in attended_list:
+        hours = attended_dict.keys()
+        hours.sort()
+        if 0 in hours:
+            hours.remove(0)
+        counts = [attended_dict[key] for key in hours]
+        attended_flat.append(zip(hours, counts))
+    for timeslots_dict in timeslots_enrolled_list:
         slots = timeslots_dict.keys()
         slots.sort()
         counts = [timeslots_dict[key] for key in slots]
-        timeslots_flat.append(zip(slots, counts))
-    result_dict['hours_data'] = zip(programs, stats_flat, timeslots_flat, students_list)
+        timeslots_enrolled_flat.append(zip(slots, counts))
+    for timeslots_dict in timeslots_attended_list:
+        slots = timeslots_dict.keys()
+        slots.sort()
+        counts = [timeslots_dict[key] for key in slots]
+        timeslots_attended_flat.append(zip(slots, counts))
+    program_timeslots = [prog.getTimeSlots() for prog in programs]
+    result_dict['hours_data'] = zip(programs, enrolled_flat, attended_flat, program_timeslots, timeslots_enrolled_flat, timeslots_attended_flat, students_list)
     return render_to_string('program/statistics/hours.html', result_dict)
 
 def student_reg(form, programs, students, profiles, result_dict={}):

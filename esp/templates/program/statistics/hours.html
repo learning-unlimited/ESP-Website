@@ -3,23 +3,121 @@
 <p>The distribution of student class hours are shown below for each program. These are measured in timeslots; if all timeslots are 2 hr long, double these numbers to get the distribution of hours spent in class.  (Most Splash programs are run with 1 hr timeslots, so the timeslots and class hours are equivalent.)</p>
 <ul>
 {% for prog in hours_data %}
-    <li>{{ prog.0 }}: {{ prog.3 }} students matched
-    <ul>
-        <li>Students' number of timeslots of class
-            <ul>
-            {% for pair in prog.1 %}
-            <li>{{ pair.0 }} timeslots: {{ pair.1 }} students</li>
-            {% endfor %}
-            </ul>
-        </li>
-        <li>Number of students taking class during each timeslot
-            <ul>
-            {% for pair in prog.2 %}
-            <li>{{ pair.0 }}: {{ pair.1 }} students</li>
-            {% endfor %}
-            </ul>
-        </li>
-    </ul>
+    <li>
+        {{ prog.0 }}: {{ prog.6 }} students matched
+        {% if prog.6 > 0 %}
+        <div id="class_plot_{{ prog.0.id }}"></div>
+        <script type="text/javascript">
+            Highcharts.chart('class_plot_{{ prog.0.id }}', {
+                chart: {
+                    type: 'column'
+                },
+                title: {
+                    text: 'Enrollment and Attendance by # of Timeblocks'
+                },
+                xAxis: {
+                    min: 0,
+                    title: {
+                        text: '# of timeblocks'
+                    },
+                    labels: {
+                        format: '{text}'
+                    },
+                    categories: [{% for ts in prog.3 %}'{{ forloop.counter }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+                    min: 0,
+                    max: {{ prog.3.count|add:"-1" }},
+                    crosshair: true
+                },
+                yAxis: {
+                    min: 0,
+                    title: {
+                        text: 'Number of students'
+                    }
+                },
+                legend: {
+                    labelFormatter: function() {
+                        var avg = 0, counter = 0,
+                            yData = this.yData, xData = this.xData;
+
+                        yData.forEach(function(y, idx) {
+                            counter+=y;
+                            avg += (y * (xData[idx] + 1));
+                        });
+                        avg /= counter;
+
+                        return this.name + ' (avg. = ' + avg.toFixed(2) + ')';
+                    }
+                },
+                credits: {
+                    enabled: false
+                },
+                tooltip: {
+                    headerFormat: '<b>{point.key} block(s)</b><br/>',
+                    shared: true
+                },
+                plotOptions: {
+                    column: {
+                        pointPadding: 0.05,
+                        borderWidth: 0
+                    }
+                },
+                series: [{
+                    name: 'Enrolled',
+                    data: [{% for pair in prog.1 %}[{{ pair.0|add:"-1" }}, {{ pair.1 }}],{% endfor %}]
+                }, {
+                    name: 'Attended',
+                    data: [{% for pair in prog.2 %}[{{ pair.0|add:"-1" }}, {{ pair.1 }}],{% endfor %}]
+                }]
+            });
+        </script>
+        <div id="timeslot_plot_{{ prog.0.id }}"></div>
+        <script type="text/javascript">
+            var timeslots = [{% for ts in prog.3 %}'{{ ts }}'{% if not forloop.last %},{% endif %}{% endfor %}]
+            Highcharts.chart('timeslot_plot_{{ prog.0.id }}', {
+                chart: {
+                    type: 'column'
+                },
+                title: {
+                    text: 'Enrollment and Attendance by Timeslot'
+                },
+                xAxis: {
+                    labels: {
+                        format: '{text}'
+                    },
+                    categories: timeslots,
+                    min: 0,
+                    max: {{ prog.3.count|add:"-1" }},
+                    crosshair: true
+                },
+                yAxis: {
+                    min: 0,
+                    title: {
+                        text: 'Number of students'
+                    }
+                },
+                credits: {
+                    enabled: false
+                },
+                tooltip: {
+                    headerFormat: '<b>{point.key}</b><br/>',
+                    shared: true
+                },
+                plotOptions: {
+                    column: {
+                        pointPadding: 0.05,
+                        borderWidth: 0
+                    }
+                },
+                series: [{
+                    name: 'Enrolled',
+                    data: [{% for pair in prog.4 %}[timeslots.indexOf('{{ pair.0 }}'), {{ pair.1 }}],{% endfor %}]
+                }, {
+                    name: 'Attended',
+                    data: [{% for pair in prog.5 %}[timeslots.indexOf('{{ pair.0 }}'), {{ pair.1 }}],{% endfor %}]
+                }]
+            });
+        </script>
+        {% endif %}
     </li>
 {% endfor %}
 </ul>
