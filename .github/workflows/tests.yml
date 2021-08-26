@@ -50,7 +50,12 @@ jobs:
       env:
         TRAVIS_JOB: ${{ matrix.travis_job }}
       run: deploy/travis/script
-    - name: Upload Coverage to Codecov
+  codecov:
+    name: Upload Coverage to Codecov
+    needs: build
+    runs-on: ubuntu-20.04
+    steps:
+    - name: 
       uses: codecov/codecov-action@v2
       with:
         fail_ci_if_error: true
