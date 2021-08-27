@@ -205,3 +205,56 @@ Dependency changes
 - Upgraded jqGrid (4.3.1 -> 5.5.2)
 - Upgraded django-debug-toolbar (1.5 -> 1.11.1)
 
+August 2021 Patch
+=================
+
+Custom forms
+~~~~~~~~~~~~
+- Several bug fixes and enhancements to the custom form builder
+- Added the correct answer option to more custom form field types
+- Fixed the rendering of custom forms with multiple pages
+- The teacher and student custom form modules now have separate handlers; they no longer show up in registration if custom forms are not setup and assigned via tags
+- There are now separate records for filling out student and teacher custom forms, allowing for separate searching for users
+
+Minor new features
+~~~~~~~~~~~~~~~~~~
+- Duplicate program names are now prevented
+- Added moderator tshirt stats to the dashboard
+- A class's status is now updated in the dashboard interface when it is changed via the popup
+- Added a module that lets you add or remove users from a new or existing user group
+- The teacher_profile_hide_fields, student_profile_hide_fields, volunteer_profile_hide_fields, educator_profile_hide_fields, guardian_profile_hide_fields, and teacherreg_hide_fields tags now show the possible valid options in the tag settings interface
+- Added many more filter options to /classsearch (e.g., duration, grade, capacity, number of sections, and optional request fields)
+- The /manage/emails page is now cached
+- Modified the styling of inline student schedules (webapp and student reg mainpage) to clarify when classes are multiple blocks long
+- Userview links now specify the program of interest so the sidebar links are more relevant
+- Course materials are now always shown in the catalog, even when a class is full
+- Naturally sort classrooms when importing them
+- Prevent importing of some tags when copying an old program
+- When adding a coteacher, check that they are available for the scheduled times of the class (if the class is scheduled)
+- Redesigned the theme palette management
+- The theme font size and family pickers now show previews of the sizes and families
+- Added "Return to main program management page" links to (almost) all management module pages
+- Added a new module that lets admins deactivate arbitrary sets of users (use caution, this is not easy to undo)
+- Redesigned the deadline management page
+- Added a scheduling check for moderators moderating classes with categories they didn't select
+- Added class popularity graphs to the student big board (replacing the old popularity lists)
+- Removed the TextMessageModule (the module that adds a text box at the bottom of the student registration page for a phone number) because it is no longer needed (we ask for phone numbers and permission to text students in the student profile)
+- Added enrollment and attendance plots to the students hours query on /manage/statistics
+- Added a confirmation page when importing volunteer shifts from a previous program
+
+Minor bug fixes
+~~~~~~~~~~~~~~~
+- Fixed the scheduler popup for open classes
+- Escape program name in LaTeX templates
+- Fixed attributes when custom form field types are changed
+- Restored the "multiple classes with the same resource" scheduling check
+- Floating resources no longer have duplicate times if there are multiple instances
+- Fixed (hopefully for the last time) the associated asterisks and styling of required fields in forms
+- Fixed the /manage/mergeaccounts page and added a link to it from /manage/programs
+- Fixed the ajax scheduler to support timeslots of any length
+- Fixed the display of the selected grade range when editing a class as a teacher
+- Fixed the fruitsalad theme so the tabs in the left nav bar can now have multiple lines of text
+- Fixed the message panel in the ajax scheduler so it always shows when there is a class or moderator scheduling error
+- Fixed the behavior of sortable tables when they had complex layouts or only a single row of data
+- Fixed cancelled classes being included on the teacher availability form and when deciding whether a coteacher could be added to a class
+- Fixed browser console errors complaining about non-unique ids on the resources management page
