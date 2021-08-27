@@ -247,7 +247,7 @@ Minor bug fixes
 - Fixed the scheduler popup for open classes
 - Escape program name in LaTeX templates
 - Fixed attributes when custom form field types are changed
-- Restored the "multiple classes wih the same resource" scheduling check
+- Restored the "multiple classes with the same resource" scheduling check
 - Floating resources no longer have duplicate times if there are multiple instances
 - Fixed (hopefully for the last time) the associated asterisks and styling of required fields in forms
 - Fixed the /manage/mergeaccounts page and added a link to it from /manage/programs
