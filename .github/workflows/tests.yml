@@ -24,7 +24,7 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     strategy:
       matrix:
-        python-version: [2.7, 3.8]
+        python-version: [2.7, 3.7]
         travis_job: ["lint", "test"]
     env:
       DJANGO_SETTINGS_MODULE: esp.settings
