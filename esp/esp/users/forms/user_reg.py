@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django import forms
 from django.db.models.query import Q
 from django.forms.fields import HiddenInput, TextInput

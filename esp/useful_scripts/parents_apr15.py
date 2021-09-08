@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from esp.program.models import *
 from esp.dbmail.models import PlainRedirect
 
@@ -28,7 +30,7 @@ for s in sl:
     outfile.write('"%s","%s","%s","%s","%s"\n' % (id, ln.encode('ascii', 'replace'), fn.encode('ascii', 'replace'), ea.encode('ascii', 'replace'), pe.encode('ascii', 'replace')))
 
 outfile.close()
-print 'Wrote to %s' % outfile
-print 'Created %d list entries' % PlainRedirect.objects.filter(original=list_name).count()
+print('Wrote to %s' % outfile)
+print('Created %d list entries' % PlainRedirect.objects.filter(original=list_name).count())
 
 

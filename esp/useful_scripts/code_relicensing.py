@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
+from __future__ import print_function
 import re
 import os
+from six.moves import range
 
 direction = 'forward'
 #direction = 'backward'
@@ -54,7 +57,7 @@ Learning Unlimited, Inc.
 7 = copy rest of file verbatim
 """
 for fn in filenames:
-    print 'Processing: %s' % fn
+    print('Processing: %s' % fn)
 
     if direction == 'forward':
         curfile = open(fn, 'r')
@@ -69,9 +72,9 @@ for fn in filenames:
             if state == 1:
                 if line.startswith('__author__'):
                     author_dir = line.split('"')
-                    print '  Author on line %d: "%s"' % (i + 1, author_dir[-2])
+                    print('  Author on line %d: "%s"' % (i + 1, author_dir[-2]))
                     if author_dir[-2] == "MIT ESP":
-                        print '  -> Rewriting to: "%s"' % NEW_AUTHOR
+                        print('  -> Rewriting to: "%s"' % NEW_AUTHOR)
                         outfile.write('__author__    = "%s"\n' % NEW_AUTHOR)
                     else:
                         outfile.write(line + '\n')
@@ -83,22 +86,22 @@ for fn in filenames:
                 outfile.write(line + '\n')
                 if line.startswith('__date__'):
                     date_dir = line.split('"')
-                    print '  Date on line %d: "%s"' % (i + 1, date_dir[-2])
+                    print('  Date on line %d: "%s"' % (i + 1, date_dir[-2]))
                     state = 3
                     continue
             elif state == 3:
                 outfile.write(line + '\n')
                 if line.startswith('__rev__'):
                     rev_dir = line.split('"')
-                    print '  Revision on line %d: "%s"' % (i + 1, rev_dir[-2])
+                    print('  Revision on line %d: "%s"' % (i + 1, rev_dir[-2]))
                     state = 4
                     continue
             elif state == 4:
                 if line.startswith('__license__'):
                     license_dir = line.split('"')
-                    print '  License on line %d: "%s"' % (i + 1, license_dir[-2])
+                    print('  License on line %d: "%s"' % (i + 1, license_dir[-2]))
                     if license_dir[-2] == "GPL v.2":
-                        print '  -> Rewriting to: "%s"' % NEW_LICENSE
+                        print('  -> Rewriting to: "%s"' % NEW_LICENSE)
                         outfile.write('__license__   = "%s"\n' % NEW_LICENSE)
                     else:
                         outfile.write(line + '\n')
@@ -108,18 +111,18 @@ for fn in filenames:
                     outfile.write(line + '\n')
             elif state == 5:
                 if line.startswith('__copyright__'):
-                    print '  Copyright start on line %d' % (i + 1)
+                    print('  Copyright start on line %d' % (i + 1))
                     state = 6
                     continue
             elif state == 6:
                 if line.startswith('"""'):
-                    print '  Copyright end on line %d' % (i + 1)
-                    print '  Copyright contents follow'
-                    print copyright_text
+                    print('  Copyright end on line %d' % (i + 1))
+                    print('  Copyright contents follow')
+                    print(copyright_text)
 
                     result = re.search('Copyright \(c\) ([-0-9]+)', copyright_text)
                     if result:
-                        print '  Copyright date search yielded %s' % result.groups()[0]
+                        print('  Copyright date search yielded %s' % result.groups()[0])
 
                         #   Write new copyright notice
                         outfile.write('__copyright__ = """%s"""\n' % (NEW_COPYRIGHT % result.groups()[0]))

@@ -1,5 +1,6 @@
 """A controller for the automatic scheduling assistant."""
 
+from __future__ import absolute_import
 import datetime
 import logging
 from django.core.exceptions import ObjectDoesNotExist
@@ -11,6 +12,8 @@ from esp.program.controllers.autoscheduler import \
     db_interface, constraints, config, manipulator, resource_checker, \
     search
 from esp.program.controllers.autoscheduler.exceptions import SchedulingError
+import six
+from six.moves import zip
 
 logger = logging.getLogger(__name__)
 
@@ -19,29 +22,29 @@ class AutoschedulerController(object):
     def __init__(self, prog, **options):
         self.options = options
         constraint_options = {
-            k.split('_', 1)[1]: v for k, v in options.iteritems()
+            k.split('_', 1)[1]: v for k, v in six.iteritems(options)
             if k.startswith("constraints_")}
         scoring_options = {
-            k.split('_', 1)[1]: v for k, v in options.iteritems()
+            k.split('_', 1)[1]: v for k, v in six.iteritems(options)
             if k.startswith("scorers_")}
         resource_options = {
-            k.split('_', 1)[1]: v for k, v in options.iteritems()
+            k.split('_', 1)[1]: v for k, v in six.iteritems(options)
             if k.startswith("resources_")}
         search_options = {
-            k.split('_', 1)[1]: v for k, v in options.iteritems()
+            k.split('_', 1)[1]: v for k, v in six.iteritems(options)
             if k.startswith("search_")}
-        constraint_names = [k for k, v in constraint_options.iteritems()
+        constraint_names = [k for k, v in six.iteritems(constraint_options)
                             if v]
         resource_criteria = load_all_resource_criteria(prog)
         valid_res_types = \
             ResourceType.objects.filter(program=prog).values_list(
                     "name", flat=True)
         resource_constraints = resource_checker.create_resource_criteria(
-                [{k: spec for k, (spec, wt) in resource_criteria.iteritems()
+                [{k: spec for k, (spec, wt) in six.iteritems(resource_criteria)
                   if resource_options[k] == -1}], valid_res_types)
         resource_scorers = resource_checker.create_resource_criteria(
                 [{k: (spec, resource_options[k])
-                  for k, (spec, wt) in resource_criteria.iteritems()
+                  for k, (spec, wt) in six.iteritems(resource_criteria)
                   if resource_options[k] != -1}], valid_res_types,
                 use_weights=True)
         schedule = db_interface.load_schedule_from_db(
@@ -70,7 +73,7 @@ class AutoschedulerController(object):
         loaded_constraints = db_interface.load_constraints(prog, overrides)
         constraint_options = {
             k: (v, config.CONSTRAINT_DESCRIPTIONS[k])
-            for k, v in loaded_constraints.iteritems()}
+            for k, v in six.iteritems(loaded_constraints)}
         return constraint_options
 
     @staticmethod
@@ -79,7 +82,7 @@ class AutoschedulerController(object):
         scorers = db_interface.load_scorers(prog)
         scorer_options = {
             k: (v, config.SCORER_DESCRIPTIONS[k])
-            for k, v in scorers.iteritems()}
+            for k, v in six.iteritems(scorers)}
         return scorer_options
 
     @staticmethod
@@ -88,7 +91,7 @@ class AutoschedulerController(object):
         criterion is required, mark as -1."""
         resource_criteria = load_all_resource_criteria(prog, use_comments=True)
         resource_options = {k: (wt, spec) for k, (spec, wt)
-                            in resource_criteria.iteritems()}
+                            in six.iteritems(resource_criteria)}
         return resource_options
 
     @staticmethod
@@ -239,7 +242,7 @@ class AutoschedulerController(object):
         info.append(u"<b>Grades: </b>{}-{}".format(
             section.grade_min, section.grade_max))
         resources = ""
-        for restype in section.resource_requests.itervalues():
+        for restype in six.itervalues(section.resource_requests):
             resources += "<li>"
             if restype.value == "":
                 resources += restype.name
@@ -263,7 +266,7 @@ class AutoschedulerController(object):
         info = []
         info.append(u"<b>Capacity:</b> {}".format(roomslot.room.capacity))
         resources = ""
-        for restype in roomslot.room.furnishings.itervalues():
+        for restype in six.itervalues(roomslot.room.furnishings):
             resources += "<li>"
             if restype.value == "":
                 resources += restype.name
@@ -317,7 +320,7 @@ class AutoschedulerController(object):
                     else:
                         sections[section][1] = new_r
         new_history = []
-        for section, (old_r, new_r) in sections.iteritems():
+        for section, (old_r, new_r) in six.iteritems(sections):
             if old_r is None:
                 assert new_r is not None, "Did nothing"
                 new_history.append({
@@ -355,7 +358,7 @@ class AutoschedulerController(object):
     def import_assignments(self, data):
         history, scheduling_hashes = data
         logger.info(scheduling_hashes)
-        for section, scheduling_hash in scheduling_hashes.iteritems():
+        for section, scheduling_hash in six.iteritems(scheduling_hashes):
             initial_state = self.schedule.class_sections[
                 int(section)].initial_state
             logger.info(initial_state)
@@ -376,7 +379,7 @@ def load_all_resource_criteria(prog, use_comments=False):
     of specs."""
     resource_constraints = db_interface.load_resource_constraints(
             prog, specs_only=True, ignore_comments=(not use_comments))
-    overrides = {k: (v, -1) for k, v in resource_constraints.iteritems()}
+    overrides = {k: (v, -1) for k, v in six.iteritems(resource_constraints)}
     resource_criteria = db_interface.load_resource_scoring(
             prog, overrides, specs_only=True,
             ignore_comments=(not use_comments))
@@ -386,7 +389,7 @@ def load_all_resource_criteria(prog, use_comments=False):
             if comment in resource_criteria:
                 resource_criteria[k] = \
                     (resource_criteria[comment][0], resource_criteria[k][1])
-    return {k: v for k, v in resource_criteria.iteritems() if "_comment" not in
+    return {k: v for k, v in six.iteritems(resource_criteria) if "_comment" not in
             k}
 
 

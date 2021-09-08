@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -130,13 +132,13 @@ class TeacherClassRegForm(FormWithRequiredCss):
         prog = crmi.program
 
         section_numbers = crmi.allowed_sections_actual
-        section_numbers = zip(section_numbers, section_numbers)
+        section_numbers = list(zip(section_numbers, section_numbers))
 
         class_sizes = crmi.getClassSizes()
-        class_sizes = zip(class_sizes, class_sizes)
+        class_sizes = list(zip(class_sizes, class_sizes))
 
         class_grades = crmi.getClassGrades()
-        class_grades = zip(class_grades, class_grades)
+        class_grades = list(zip(class_grades, class_grades))
 
         class_ranges = ClassSizeRange.get_ranges_for_program(prog)
         class_ranges = [(range.id, range.range_str()) for range in class_ranges]
@@ -197,7 +199,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # session_count
         if crmi.session_counts:
             session_count_choices = crmi.session_counts_ints
-            session_count_choices = zip(session_count_choices, session_count_choices)
+            session_count_choices = list(zip(session_count_choices, session_count_choices))
             self.fields['session_count'].choices = session_count_choices
         hide_choice_if_useless( self.fields['session_count'] )
 
@@ -220,7 +222,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         custom_helptext_fields = [
             'duration', 'class_size_max', 'class_size_optimal', 'num_sections',
             'requested_room', 'message_for_directors', 'purchase_requests',
-            'class_info', 'grade_max', 'grade_min'] + custom_fields.keys()
+            'class_info', 'grade_max', 'grade_min'] + list(custom_fields.keys())
         for field in custom_helptext_fields:
             tag_data = Tag.getProgramTag('teacherreg_label_%s' % field, prog)
             if tag_data:

@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -148,7 +150,7 @@ class ResourceRequest(models.Model):
     desired_value = models.TextField()
 
     def __unicode__(self):
-        return 'Resource request of %s for %s: %s' % (unicode(self.res_type), self.target.emailcode(), self.desired_value)
+        return 'Resource request of %s for %s: %s' % (six.text_type(self.res_type), self.target.emailcode(), self.desired_value)
 
 class ResourceGroup(models.Model):
     """ A hack to make the database handle resource group ID creation """
@@ -177,12 +179,12 @@ class Resource(models.Model):
 
     def __unicode__(self):
         if self.user is not None:
-            return 'For %s: %s (%s)' % (unicode(self.user), self.name, unicode(self.res_type))
+            return 'For %s: %s (%s)' % (six.text_type(self.user), self.name, six.text_type(self.res_type))
         else:
             if self.num_students != -1:
-                return 'For %d students: %s (%s)' % (self.num_students, self.name, unicode(self.res_type))
+                return 'For %d students: %s (%s)' % (self.num_students, self.name, six.text_type(self.res_type))
             else:
-                return '%s (%s)' % (self.name, unicode(self.res_type))
+                return '%s (%s)' % (self.name, six.text_type(self.res_type))
 
     def save(self, *args, **kwargs):
         if self.res_group is None:
@@ -306,10 +308,10 @@ class Resource(models.Model):
         return (len(self.available_times(program)) > 0)
 
     def available_times_html(self, program=None):
-        return '<br /> '.join([unicode(e) for e in Event.collapse(self.available_times(program))])
+        return '<br /> '.join([six.text_type(e) for e in Event.collapse(self.available_times(program))])
 
     def available_times(self, program=None):
-        event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times(program)))
+        event_list = [x for x in list(self.matching_times(program)) if self.is_available(timeslot=x)]
         return event_list
 
     def matching_times(self, program=None):
@@ -360,7 +362,7 @@ class ResourceAssignment(models.Model):
     assignment_group = models.ForeignKey(AssignmentGroup, null=True, blank=True)
 
     def __unicode__(self):
-        result = u'Resource assignment for %s' % unicode(self.getTargetOrSubject())
+        result = u'Resource assignment for %s' % six.text_type(self.getTargetOrSubject())
         if self.lock_level > 0:
             result += u' (locked)'
         return result

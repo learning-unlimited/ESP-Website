@@ -30,9 +30,12 @@ teaching, so we need to scale down.) This allows scorer weights to be
 determined by relative importance to scheduling a section without accounting
 for this sort of behavior."""
 
+from __future__ import absolute_import
 import logging
 
 import esp.program.controllers.autoscheduler.util as util
+import six
+from six.moves import zip
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +104,7 @@ class CompositeScorer(BaseScorer):
         else:
             self.total_weight = 0.0
             available_scorers = globals()
-            for scorer, weight in scorer_names_and_weights.iteritems():
+            for scorer, weight in six.iteritems(scorer_names_and_weights):
                 if weight is None or weight == 0:
                     continue
                 assert weight >= 0, "Scorer weights should be nonnegative"
@@ -214,9 +217,9 @@ class AdminDistributionScorer(BaseScorer):
         for x, ts in zip(ideal_distribution, schedule.timeslots):
             self.ideal_distribution_dict[ts.id] = x
         self.total_admins = float(sum(
-            [t.is_admin for t in schedule.teachers.itervalues()]))
+            [t.is_admin for t in six.itervalues(schedule.teachers)]))
         self.admins_per_timeslot = {t.id: 0.0 for t in schedule.timeslots}
-        for section in schedule.class_sections.itervalues():
+        for section in six.itervalues(schedule.class_sections):
             for teacher in section.teachers:
                 if teacher.is_admin:
                     for roomslot in section.assigned_roomslots:
@@ -231,7 +234,7 @@ class AdminDistributionScorer(BaseScorer):
         # timeblocks aren't one hour long, but whatever.
         average_duration = 0.0
         average_num_teachers = 0.0
-        for section in schedule.class_sections.itervalues():
+        for section in six.itervalues(schedule.class_sections):
             average_duration += section.duration
             average_num_teachers += len(section.teachers)
         num_sections = len(schedule.class_sections)
@@ -279,11 +282,11 @@ class CategoryBalanceScorer(BaseScorer):
         # classes.
         total_penalty = 0.0
         for category, student_class_hours in \
-                self.student_class_hours_by_category.iteritems():
+                six.iteritems(self.student_class_hours_by_category):
             capacity_per_timeslot = \
                 self.capacity_per_timeslot_by_category[category]
             leeway = 1.0 / len(capacity_per_timeslot)
-            for timeslot, capacity in capacity_per_timeslot.iteritems():
+            for timeslot, capacity in six.iteritems(capacity_per_timeslot):
                 duration = self.timeslot_durations[timeslot]
                 fractional_capacity = \
                     capacity * duration / student_class_hours
@@ -300,14 +303,14 @@ class CategoryBalanceScorer(BaseScorer):
         self.timeslot_durations = {
                 t.id: t.duration for t in schedule.timeslots}
         self.student_class_hours_by_category = {}
-        for sec in schedule.class_sections.itervalues():
+        for sec in six.itervalues(schedule.class_sections):
             self.student_class_hours_by_category[sec.category] = \
                 self.student_class_hours_by_category.get(sec.category, 0.0) \
                 + sec.capacity * sec.duration
         self.capacity_per_timeslot_by_category = {
             c: {t.id: 0.0 for t in schedule.timeslots} for c in
             self.student_class_hours_by_category}
-        for section in schedule.class_sections.itervalues():
+        for section in six.itervalues(schedule.class_sections):
             capacity_per_timeslot = self.capacity_per_timeslot_by_category[
                 section.category]
             for roomslot in section.assigned_roomslots:
@@ -359,13 +362,13 @@ class LunchStudentClassHoursScorer(BaseScorer):
         # want large sections to care more about this..
 
         self.lunch_timeslots = set()
-        for timeslots in schedule.lunch_timeslots.itervalues():
+        for timeslots in six.itervalues(schedule.lunch_timeslots):
             self.lunch_timeslots.update([t.id for t in timeslots])
         self.total_student_class_hours = float(sum(
             [sec.capacity * sec.duration for sec in
-             schedule.class_sections.itervalues()]))
+             six.itervalues(schedule.class_sections)]))
         self.non_lunch_student_class_hours = 0.0
-        for section in schedule.class_sections.itervalues():
+        for section in six.itervalues(schedule.class_sections):
             for roomslot in section.assigned_roomslots:
                 actual_capacity = min(section.capacity, roomslot.room.capacity)
                 if roomslot.timeslot.id not in self.lunch_timeslots:
@@ -410,14 +413,14 @@ class HungryTeacherScorer(BaseScorer):
         """Overwrite internal state to reflect the given schedule."""
         self.total_teachers = float(len(schedule.teachers))
         lunch_timeslots = []
-        for timeslots in schedule.lunch_timeslots.itervalues():
+        for timeslots in six.itervalues(schedule.lunch_timeslots):
             lunch_timeslots += timeslots
         self.lunch_timeslots = schedule.lunch_timeslots
         # Dict of whether the teachers are teaching in each lunch timeslot.
         self.lunch_timeslots_by_teacher = {
             teacher_id: {timeslot.id: False for timeslot in lunch_timeslots}
             for teacher_id in schedule.teachers}
-        for section in schedule.class_sections.itervalues():
+        for section in six.itervalues(schedule.class_sections):
             for teacher in section.teachers:
                 lunch_timeslots_teaching = self.lunch_timeslots_by_teacher[
                     teacher.id]
@@ -430,7 +433,7 @@ class HungryTeacherScorer(BaseScorer):
         # Each section can have impact equal to the number of teachers in it,
         # divided by the total number of teachers.
         num_section_teachers = 0.0
-        for section in schedule.class_sections.itervalues():
+        for section in six.itervalues(schedule.class_sections):
             num_section_teachers += len(section.teachers)
         self.scaling = self.total_teachers / num_section_teachers
 
@@ -463,7 +466,7 @@ class HungryTeacherScorer(BaseScorer):
     def update_teacher_hungriness(self, teacher_id):
         """Update the teacher's membership in self.hungry_teachers."""
         timeslots_teaching = self.lunch_timeslots_by_teacher[teacher_id]
-        for timeslots in self.lunch_timeslots.itervalues():
+        for timeslots in six.itervalues(self.lunch_timeslots):
             if all([timeslots_teaching[t.id] for t in timeslots]):
                 self.hungry_teachers.add(teacher_id)
                 return
@@ -487,7 +490,7 @@ class NumSectionsScorer(BaseScorer):
         # The scaling is trivially 1.
         self.total_sections = float(len(schedule.class_sections))
         self.scheduled_sections = sum(
-            [s.is_scheduled() for s in schedule.class_sections.itervalues()])
+            [s.is_scheduled() for s in six.itervalues(schedule.class_sections)])
 
     @util.timed_func("numsectionsscorer")
     def update_schedule_section(self, section, start_roomslot):
@@ -529,16 +532,16 @@ class NumSubjectsScorer(BaseScorer):
     def update_schedule(self, schedule):
         """Overwrite internal state to reflect the given schedule."""
         subjects = set(
-            [s.parent_class for s in schedule.class_sections.itervalues()])
+            [s.parent_class for s in six.itervalues(schedule.class_sections)])
         self.total_subjects = float(len(subjects))
         self.num_scheduled_sections_by_subject = {s: 0 for s in subjects}
-        for section in schedule.class_sections.itervalues():
+        for section in six.itervalues(schedule.class_sections):
             if section.is_scheduled():
                 self.num_scheduled_sections_by_subject[
                     section.parent_class] += 1
         self.scheduled_subjects = sum(
             [(num_sections > 0) for num_sections in
-                self.num_scheduled_sections_by_subject.itervalues()])
+                six.itervalues(self.num_scheduled_sections_by_subject)])
         self.scaling = self.total_subjects / len(schedule.class_sections)
 
     @util.timed_func("NumSubjectsScorer")
@@ -587,13 +590,13 @@ class NumTeachersScorer(BaseScorer):
         self.total_teachers = float(len(schedule.teachers))
         self.num_scheduled_sections_by_teacher = \
             {t: 0 for t in schedule.teachers}
-        for section in schedule.class_sections.itervalues():
+        for section in six.itervalues(schedule.class_sections):
             if section.is_scheduled():
                 for t in section.teachers:
                     self.num_scheduled_sections_by_teacher[t.id] += 1
         self.scheduled_teachers = sum(
             [(num_sections > 0) for num_sections in
-                self.num_scheduled_sections_by_teacher.itervalues()])
+                six.itervalues(self.num_scheduled_sections_by_teacher)])
         self.scaling = self.total_teachers / len(schedule.class_sections)
 
     @util.timed_func("NumTeachersScorer")
@@ -681,7 +684,7 @@ class ResourceCriteriaScorer(BaseScorer):
             self.total_weight = 1  # Avoid division by 0
         self.num_sections = len(schedule.class_sections)
         self.total_score = 0.0
-        for section in schedule.class_sections.itervalues():
+        for section in six.itervalues(schedule.class_sections):
             if section.is_scheduled():
                 self.total_score += self.process_section(
                     section, section.assigned_roomslots[0].room)
@@ -729,7 +732,7 @@ class ResourceMatchingScorer(BaseScorer):
         # Scaling is just the default 1 because we're just scoring by section.
         self.num_sections = len(schedule.class_sections)
         self.total_score = 0.0
-        for section in schedule.class_sections.itervalues():
+        for section in six.itervalues(schedule.class_sections):
             if section.is_scheduled():
                 self.total_score += self.process_section(
                     section, section.assigned_roomslots[0].room)
@@ -775,7 +778,7 @@ class ResourceValueMatchingScorer(BaseScorer):
         # Return the fraction of satisfied resource requests.
         met_criteria = 0.0
         requested_criteria = 0.0
-        for request in section.resource_requests.itervalues():
+        for request in six.itervalues(section.resource_requests):
             if request.name not in self.requests_to_ignore \
                     and request.value != "":
                 requested_criteria += 1
@@ -795,17 +798,17 @@ class ResourceValueMatchingScorer(BaseScorer):
         self.num_sections = len(schedule.class_sections)
 
         furnishing_values = {}
-        for room in schedule.classrooms.itervalues():
-            for furnishing in room.furnishings.itervalues():
+        for room in six.itervalues(schedule.classrooms):
+            for furnishing in six.itervalues(room.furnishings):
                 if furnishing.name not in furnishing_values:
                     furnishing_values[furnishing.name] = set()
                 furnishing_values[furnishing.name].add(furnishing.value)
         self.requests_to_ignore = set()
-        for name, values in furnishing_values.iteritems():
+        for name, values in six.iteritems(furnishing_values):
             if len(values) == 1:
                 self.requests_to_ignore.add(name)
         self.total_score = 0.0
-        for section in schedule.class_sections.itervalues():
+        for section in six.itervalues(schedule.class_sections):
             if section.is_scheduled():
                 self.total_score += self.process_section(
                     section, section.assigned_roomslots[0].room)
@@ -848,7 +851,7 @@ class RoomConsecutivityScorer(BaseScorer):
                                 avoid_doublecount=False):
         """The boundary-after a roomslit is complete if either there's no
         roomslot after or there's another class scheduled after it."""
-        next_roomslot = roomslot.next()
+        next_roomslot = next(roomslot)
         return next_roomslot is None \
             or (not avoid_doublecount
                 and next_roomslot.assigned_section is not None
@@ -885,7 +888,7 @@ class RoomConsecutivityScorer(BaseScorer):
         # before/after or another room before/after. Boundaries between two
         # sections are not doublecounted.
         self.complete_boundaries = 0.0
-        for section in schedule.class_sections.itervalues():
+        for section in six.itervalues(schedule.class_sections):
             if section.is_scheduled():
                 if self.boundary_complete_before(
                         section.assigned_roomslots[0]):
@@ -975,12 +978,12 @@ class RoomSizeMismatchScorer(BaseScorer):
 
         # Scaling is the default 1 because we're already scoring per section.
         self.max_class_size = max(
-            [s.capacity for s in schedule.class_sections.itervalues()])
+            [s.capacity for s in six.itervalues(schedule.class_sections)])
         self.max_room_size = max(
-            [c.capacity for c in schedule.classrooms.itervalues()])
+            [c.capacity for c in six.itervalues(schedule.classrooms)])
         self.num_sections = float(len(schedule.class_sections))
         self.total_penalty = 0.0
-        for section in schedule.class_sections.itervalues():
+        for section in six.itervalues(schedule.class_sections):
             if section.is_scheduled():
                 room = section.assigned_roomslots[0].room
                 penalty = self.penalty_for_section_and_room(section, room)
@@ -1037,10 +1040,10 @@ class StudentClassHoursScorer(BaseScorer):
         # should be fine for leaving the scaling at 1.
         self.total_student_class_hours = float(sum(
             [sec.capacity * sec.duration for sec in
-             schedule.class_sections.itervalues()]))
+             six.itervalues(schedule.class_sections)]))
         self.scheduled_student_class_hours = sum(
             [self.get_effective_student_class_hours(sec)
-             for sec in schedule.class_sections.itervalues()])
+             for sec in six.itervalues(schedule.class_sections)])
 
     @util.timed_func("StudentClassHoursScorer")
     def update_schedule_section(self, section, start_roomslot):
@@ -1080,15 +1083,15 @@ class TeachersWhoLikeRunningScorer(BaseScorer):
         # Maps from teacher IDs to dicts from timeslot IDs to roomslots.
         self.times_teacher_is_teaching = {
             teacher: {} for teacher in schedule.teachers}
-        for section in schedule.class_sections.itervalues():
+        for section in six.itervalues(schedule.class_sections):
             for teacher in section.teachers:
                 for roomslot in section.assigned_roomslots:
                     self.times_teacher_is_teaching[teacher.id][
                         roomslot.timeslot.id] = roomslot
         self.running_count = 0.0
         for teacher, times_teaching in \
-                self.times_teacher_is_teaching.iteritems():
-            for timeslot_id, roomslot in times_teaching.iteritems():
+                six.iteritems(self.times_teacher_is_teaching):
+            for timeslot_id, roomslot in six.iteritems(times_teaching):
                 timeslot_index = self.timeslot_indices[timeslot_id]
                 timeslot = self.timeslots[timeslot_index]
                 if timeslot_index < len(self.timeslots) - 1:

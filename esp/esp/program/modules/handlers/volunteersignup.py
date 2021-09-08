@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -93,7 +95,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
 
         vrs = prog.getVolunteerRequests()
         time_options = [v.timeslot for v in vrs]
-        time_options_dict = dict(zip(time_options, vrs))
+        time_options_dict = dict(list(zip(time_options, vrs)))
 
         #   Group contiguous blocks
         if not Tag.getBooleanTag('availability_group_timeslots'):

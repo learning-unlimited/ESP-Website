@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -46,7 +48,7 @@ import textwrap
 import distutils.dir_util
 import json
 import hashlib
-from urllib import quote, unquote
+from six.moves.urllib.parse import quote, unquote
 
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -252,7 +254,7 @@ class ThemeController(object):
             variable_data['iconSpritePath'] = '"%s/bootstrap/img/glyphicons-halflings.png"' % settings.CDN_ADDRESS
 
         #   Replace all variable declarations for which we have a value defined
-        for (variable_name, variable_value) in variable_data.iteritems():
+        for (variable_name, variable_value) in six.iteritems(variable_data):
             less_data = re.sub(r'@%s:(\s*)(.*?);' % variable_name, r'@%s: %s;' % (variable_name, variable_value), less_data)
 
         if themes_settings.THEME_DEBUG:
@@ -575,7 +577,7 @@ class ThemeController(object):
         base_vars = self.find_less_variables()
         for varset in base_vars.values():
             for val in varset.values():
-                if isinstance(val, basestring) and val.startswith('#'):
+                if isinstance(val, six.string_types) and val.startswith('#'):
                     if len(val) == 4: # Convert to long form
                         val = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3]
                     palette_base.add(val)
@@ -591,7 +593,7 @@ class ThemeController(object):
         base_vars = self.find_less_variables()
         for varset in base_vars.values():
             for val in varset.values():
-                if isinstance(val, basestring) and val.startswith('#'):
+                if isinstance(val, six.string_types) and val.startswith('#'):
                     if len(val) == 4: # Convert to long form
                         val = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3]
                     if val in palette:

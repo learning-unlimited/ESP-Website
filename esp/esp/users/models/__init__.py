@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+import six
+from six.moves import range
+from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -78,10 +82,10 @@ from esp.utils.expirable_model import ExpirableModel
 from esp.utils.widgets import NullRadioSelect, NullCheckboxSelect
 from esp.utils.query_utils import nest_Q
 
-from urllib import quote
+from six.moves.urllib.parse import quote
 
 try:
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
 except ImportError:
     import pickle
 
@@ -115,7 +119,7 @@ class UserAvailability(models.Model):
         verbose_name_plural = 'User availabilities'
 
     def __unicode__(self):
-        return u'%s available as %s at %s' % (self.user.username, self.role.name, unicode(self.event))
+        return u'%s available as %s at %s' % (self.user.username, self.role.name, six.text_type(self.event))
 
     def save(self, *args, **kwargs):
         #   Assign default role if not set.
@@ -172,7 +176,7 @@ class BaseESPUser(object):
         """ Returns a list<int> of valid grades """
         tag_val = Tag.getTag('student_grade_options')
         if tag_val is None:
-            return range(7, 13)
+            return list(range(7, 13))
         else:
             return json.loads(tag_val)
 
@@ -1267,7 +1271,7 @@ def update_email(**kwargs):
             # make sense for this account type.
             lists = []
             for l in mailman_lists:
-                if l in group_map.values():
+                if l in list(group_map.values()):
                     # A role-based list: only transition them if they are an
                     # appropriate type of account.
                     if any(group_map.get(g) == l for g in groups) or is_admin:
@@ -1458,7 +1462,7 @@ class StudentInfo(models.Model):
         username = "N/A"
         if self.user != None:
             username = self.user.username
-        return u'ESP Student Info (%s) -- %s' % (username, unicode(self.school))
+        return u'ESP Student Info (%s) -- %s' % (username, six.text_type(self.school))
 
     def get_absolute_url(self):
         return self.user.get_absolute_url()
@@ -1851,7 +1855,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     address_state = models.CharField('State',max_length=32,blank=True, null=True)
     address_zip = models.CharField('Zip code',max_length=5,blank=True, null=True)
     address_postal = models.TextField(blank=True,null=True)
-    address_country = models.CharField('Country', max_length=2, choices=sorted(country_names.items(), key = lambda x: x[1]), default='US')
+    address_country = models.CharField('Country', max_length=2, choices=sorted(list(country_names.items()), key = lambda x: x[1]), default='US')
     undeliverable = models.BooleanField(default=False)
 
     class Meta:
@@ -1883,7 +1887,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
              self.address_zip)
 
     def items(self):
-        return self.__dict__.items()
+        return list(self.__dict__.items())
 
     @classmethod
     def ajax_autocomplete(cls, data):
@@ -2351,7 +2355,7 @@ class Record(models.Model):
             return True
 
     def __unicode__(self):
-        return unicode(self.user) + " has completed " + self.event + " for " + unicode(self.program)
+        return six.text_type(self.user) + " has completed " + self.event + " for " + six.text_type(self.program)
 
 #helper method for designing implications
 def flatten(choices):
@@ -2730,7 +2734,7 @@ class GradeChangeRequest(TimeStampedModel):
         super(GradeChangeRequest, self).__init__(*args, **kwargs)
         grade_options = ESPUser.grade_options()
 
-        self._meta.get_field('claimed_grade').choices = zip(grade_options, grade_options)
+        self._meta.get_field('claimed_grade').choices = list(zip(grade_options, grade_options))
 
     def save(self, **kwargs):
         is_new = self.id is None

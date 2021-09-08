@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -44,7 +47,7 @@ import os
 import subprocess
 
 try:
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
 except ImportError:
     import pickle
 
@@ -98,7 +101,7 @@ def midValue(sizeLs0):
 
 @register.filter
 def intrange(min_val, max_val):
-    return range(int(min_val), int(max_val) + 1)
+    return list(range(int(min_val), int(max_val) + 1))
 
 @register.filter
 def field_width(min_val, max_val):
@@ -126,7 +129,7 @@ def unpack_answers(lst):
 @register.filter
 def drop_empty_answers(lst):
     #   Takes a list of answers and drops empty ones. Whitespace-only is empty.
-    return [ ans for ans in lst if (not isinstance(ans.answer, basestring)) or ans.answer.strip() ]
+    return [ ans for ans in lst if (not isinstance(ans.answer, six.string_types)) or ans.answer.strip() ]
 
 @register.filter
 def average(lst):
@@ -275,7 +278,7 @@ def favorite_classes(answer_list, limit=20):
             else:
                 class_dict[ind] = 1
 
-    key_list = class_dict.keys()
+    key_list = list(class_dict.keys())
     key_list.sort(key=lambda x: -class_dict[x])
 
     max_count = min(limit, len(key_list))

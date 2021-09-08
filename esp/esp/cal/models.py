@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -46,7 +49,7 @@ class EventType(models.Model):
     description = models.TextField() # Textual description; not computer-parseable
 
     def __unicode__(self):
-        return unicode(self.description)
+        return six.text_type(self.description)
 
     @cache_function
     def get_from_desc(cls, desc):

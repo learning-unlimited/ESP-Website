@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
+from __future__ import print_function
 from esp.survey.models import *
 
 def get_excitement(question_id, threshold):
@@ -30,12 +32,12 @@ def get_excitement(question_id, threshold):
             if excited_all:
                 num_excited_all += 1
                 num_classes_taken += answers.count()
-    print '%s: %s' % (program.niceName(), question.name)
-    print '    Threshold: %d or higher' % threshold
-    print ' -> Total number of responses: %d (%d answered this question)' % (num_responses, num_answers)
+    print('%s: %s' % (program.niceName(), question.name))
+    print('    Threshold: %d or higher' % threshold)
+    print(' -> Total number of responses: %d (%d answered this question)' % (num_responses, num_answers))
     if num_answers > 0:
-        print ' -> Number of responses above threshold for one or more classes: %d/%d (%.2f%%)' % (num_excited_one, num_answers, float(num_excited_one) / num_answers * 100)
-        print ' -> Number of responses above threshold for all classes rated: %d/%d (%.2f%%); avg %.2f classes/student' % (num_excited_all, num_answers, float(num_excited_all) / num_answers * 100, float(num_classes_taken) / num_excited_all)
+        print(' -> Number of responses above threshold for one or more classes: %d/%d (%.2f%%)' % (num_excited_one, num_answers, float(num_excited_one) / num_answers * 100))
+        print(' -> Number of responses above threshold for all classes rated: %d/%d (%.2f%%); avg %.2f classes/student' % (num_excited_all, num_answers, float(num_excited_all) / num_answers * 100, float(num_classes_taken) / num_excited_all))
 
 """
 Example usage:

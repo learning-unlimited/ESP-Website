@@ -1,5 +1,9 @@
 " Survey models for Educational Studies Program. "
 
+from __future__ import absolute_import
+import six
+from six.moves import map
+from six.moves import zip
 __author__    = "$LastChangedBy$"
 __date__      = "$LastChangedDate$"
 __rev__       = "$LastChangedRevision$"
@@ -45,7 +49,7 @@ from argcache import cache_function
 from collections import OrderedDict
 
 try:
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
 except ImportError:
     import pickle
 
@@ -104,7 +108,7 @@ class Survey(models.Model):
     category = models.CharField(max_length=32) # teach|learn|etc
 
     def __unicode__(self):
-        return '%s (%s) for %s' % (self.name, self.category, unicode(self.program))
+        return '%s (%s) for %s' % (self.name, self.category, six.text_type(self.program))
 
     def num_participants(self):
         #   If there is a program for this survey, select the appropriate number
@@ -134,7 +138,7 @@ class SurveyResponse(models.Model):
         # First, set up attendance dictionary based on the attendance questions
         # If there were no attendance questions, this wasn't a student survey
         attendances = {}
-        keys = filter(lambda x: x.startswith('attendance_'), get_or_post.keys())
+        keys = [x for x in list(get_or_post.keys()) if x.startswith('attendance_')]
         for key in keys:
             try:
                 attendances[ int( key[11:] ) ] = int(get_or_post.getlist(key)[0])
@@ -142,7 +146,7 @@ class SurveyResponse(models.Model):
                 pass
 
         answers = []
-        keys = filter(lambda x: x.startswith('question_'), get_or_post.keys())
+        keys = [x for x in list(get_or_post.keys()) if x.startswith('question_')]
         for key in keys:
             value = get_or_post.getlist(key)
             if len(value) == 1: value = value[0]
@@ -193,7 +197,7 @@ class SurveyResponse(models.Model):
         return answers
 
     def __unicode__(self):
-        return "Survey for %s filled out at %s" % (unicode(self.survey.program),
+        return "Survey for %s filled out at %s" % (six.text_type(self.survey.program),
                                                    self.time_filled)
 
 
@@ -238,8 +242,8 @@ class Question(models.Model):
         " Get the parameters for this question, as a dictionary. "
 
         a, b = self.question_type.param_names, self.param_values
-        params = OrderedDict(zip(map(lambda x: x.replace(' ', '_').lower(), a),
-                          b))
+        params = OrderedDict(list(zip([x.replace(' ', '_').lower() for x in a],
+                          b)))
         min_length = min(len(a), len(b))
         params['list'] = b[min_length:]
 
@@ -349,7 +353,7 @@ class Answer(models.Model):
 
     def _answer_setter(self, value):
         self._answer = value
-        if not isinstance(value, basestring):
+        if not isinstance(value, six.string_types):
             self.value = '+' + pickle.dumps(value)
         else:
             self.value = ':' + value

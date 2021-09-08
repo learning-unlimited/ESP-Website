@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -113,4 +115,4 @@ class Media(models.Model):
         super(Media, self).delete(*args, **kwargs)
 
     def __unicode__(self):
-        return unicode(self.friendly_name)
+        return six.text_type(self.friendly_name)

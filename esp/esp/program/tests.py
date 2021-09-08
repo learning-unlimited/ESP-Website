@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -353,10 +356,10 @@ class ProgramHappenTest(TestCase):
         self.assertEqual( self.prog.niceName(), u'Prubbogrubbam! Winter 3001', u'Program creation failed.' )
         # Options
         self.assertEqual(
-            [unicode(x) for x in
+            [six.text_type(x) for x in
                 [self.prog.grade_min,         self.prog.grade_max,
                  self.prog.director_email,    self.prog.program_size_max] ],
-            [unicode(x) for x in
+            [six.text_type(x) for x in
                 [prog_dict['grade_min'],      prog_dict['grade_max'],
                  prog_dict['director_email'], prog_dict['program_size_max']] ],
             u'Program options not properly set.' )
@@ -443,7 +446,7 @@ class ProgramHappenTest(TestCase):
         self.classsubject = classes[0]
 
         # check the title ise good
-        self.assertEqual( unicode(self.classsubject.title), unicode(class_dict['title']), 'Failed to save title.' )
+        self.assertEqual( six.text_type(self.classsubject.title), six.text_type(class_dict['title']), 'Failed to save title.' )
 
         # check getTaughtClasses
         getTaughtClasses = user_obj.getTaughtClasses()
@@ -764,7 +767,7 @@ class ProgramFrameworkTest(TestCase):
             schedule_full = False
             while not schedule_full:
                 sm = ScheduleMap(student, self.program)
-                empty_slots = filter(lambda x: x not in ignore_ts and len(sm.map[x]) == 0, sm.map.keys())
+                empty_slots = [x for x in list(sm.map.keys()) if x not in ignore_ts and len(sm.map[x]) == 0]
                 if len(empty_slots) == 0:
                     schedule_full = True
                     break
@@ -1308,7 +1311,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
         #   Check stats for correctness
         #   - Some basic stats
-        self.assertEqual(stats['num_enrolled_students'], len(filter(lambda x: len(x.getEnrolledClasses(self.program)) > 0, self.students)))
+        self.assertEqual(stats['num_enrolled_students'], len([x for x in self.students if len(x.getEnrolledClasses(self.program)) > 0]))
         self.assertEqual(stats['num_registrations'], len(StudentRegistration.valid_objects().filter(user__in=self.students, relationship__name='Enrolled')))
         #   - 'Screwed students' list
         for student in self.students:

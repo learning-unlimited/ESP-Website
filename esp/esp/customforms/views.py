@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from copy import deepcopy
 import json
 
@@ -19,6 +20,7 @@ from django.contrib.auth.decorators import user_passes_test
 from esp.users.models import ESPUser
 from esp.middleware import ESPError
 from esp.utils.web import render_to_response
+import six
 
 def test_func(user):
     return user.is_authenticated() and (user.isTeacher() or user.isAdministrator())
@@ -36,7 +38,7 @@ def formBuilder(request):
     form_list = Form.objects.all().order_by('-id')
     if not request.user.isAdministrator():
         form_list = form_list.filter(created_by=request.user)
-    context = {'prog_list': prog_list, 'form_list': form_list, 'only_fkey_models': cf_cache.only_fkey_models.keys()}
+    context = {'prog_list': prog_list, 'form_list': form_list, 'only_fkey_models': list(cf_cache.only_fkey_models.keys())}
     if 'edit' in request.GET and request.GET.get('edit'):
         context['edit'] = request.GET.get('edit')
     return render_to_response('customforms/index.html', request, context)
@@ -46,7 +48,7 @@ def formBuilderData(request):
     if request.is_ajax():
         if request.method == 'GET':
             data = {}
-            data['only_fkey_models'] = cf_cache.only_fkey_models.keys()
+            data['only_fkey_models'] = list(cf_cache.only_fkey_models.keys())
             data['link_fields'] = {}
             for category, category_info in cf_cache.link_fields.items():
                 data['link_fields'][category] = {}
@@ -252,7 +254,7 @@ def onModify(request):
 
                             for atype, aval in field['data']['attrs'].items():
                                 curr_field.set_attribute(atype, aval)
-                            curr_field.clean_attributes(field['data']['attrs'].keys())
+                            curr_field.clean_attributes(list(field['data']['attrs'].keys()))
 
                             curr_keys['fields'].append(curr_field.id)
 
@@ -422,7 +424,7 @@ def get_links(request):
             link_objects = link_model.objects.all().order_by('-id')
             retval = []
             for obj in link_objects:
-                retval.append({'id': obj.id, 'name': unicode(obj)})
+                retval.append({'id': obj.id, 'name': six.text_type(obj)})
 
             return HttpResponse(json.dumps(retval))
     return HttpResponse(status=400)

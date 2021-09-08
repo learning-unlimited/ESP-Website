@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from esp.program.models import ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, meets_deadline, needs_admin, aux_call
 from esp.program.modules.forms.moderate import ModeratorForm
@@ -118,7 +119,7 @@ class TeacherModeratorModule(ProgramModuleObj):
             user_dict = {}
             for user in queryset:
                 user_dict[user.id] = user
-            users = user_dict.values()
+            users = list(user_dict.values())
 
             # Construct combo-box items
             obj_list = [{'name': "%s, %s" % (user.last_name, user.first_name), 'username': user.username, 'id': user.id} for user in users]

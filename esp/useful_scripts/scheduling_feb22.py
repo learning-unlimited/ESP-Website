@@ -3,6 +3,8 @@
 """
 
 #   Run-specific stuff
+from __future__ import absolute_import
+from __future__ import print_function
 prog_id = 11
 filename = '/home/pricem/scheduling/scheduling_%d.txt' % prog_id
 #   End of run-specific stuff
@@ -94,7 +96,7 @@ file.write('\n')
 classes = prog.classes()
 for cls in classes:
     sec = cls.default_section()
-    title_sanitized = cgi.escape(filter(lambda x: x in string.printable, cls.title())).replace('"', '&quot;')
+    title_sanitized = cgi.escape([x for x in cls.title() if x in string.printable]).replace('"', '&quot;')
     file.write('<class id=%d regID="%s" category="%s" name="%s" cap=%d sections=%d duration=%d>\n' % (cls.id, cls.emailcode(), cls.category.category, title_sanitized, sec.max_class_capacity or cls.class_size_max, cls.sections.count(), int(float(sec.duration) + 0.5)))
     for rr in sec.getResourceRequests():
         file.write('  <needs-resource id=%d qty=1 />\n' % rr.res_type.id)
@@ -105,4 +107,4 @@ file.write('\n')
 
 file.close()
 
-print 'Wrote output to %s' % filename
+print('Wrote output to %s' % filename)

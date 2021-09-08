@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, meets_deadline
 from esp.utils.web import render_to_response

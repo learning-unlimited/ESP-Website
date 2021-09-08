@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django.forms.fields import Select
 from django import forms
 from collections import OrderedDict
@@ -31,7 +32,7 @@ class NameWidget(forms.MultiWidget):
         """
 
         if value:
-            return value.values()
+            return list(value.values())
         return [None, None]
 
     def format_output(self, rendered_widgets):
@@ -91,7 +92,7 @@ class AddressWidget(forms.MultiWidget):
 
     def decompress(self, value):
         if value:
-            return value.values()
+            return list(value.values())
         return [None, None, None, None]
 
     def format_output(self, rendered_widgets):

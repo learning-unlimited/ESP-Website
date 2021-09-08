@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -206,7 +208,7 @@ class ClassRegModuleInfo(models.Model):
         if self.allowed_sections:
             return [int(s) for s in self.allowed_sections.split(',') if s.strip()]
         else:
-            return range(1, self.program.getTimeSlots().count()+1)
+            return list(range(1, self.program.getTimeSlots().count()+1))
 
     @property
     def session_counts_ints(self):
@@ -217,7 +219,7 @@ class ClassRegModuleInfo(models.Model):
         min_size = 5
         max_size = 30
         size_step = 1
-        other_sizes = range(40, 210, 10)
+        other_sizes = list(range(40, 210, 10))
 
         if self.class_max_size:
             max_size = self.class_max_size
@@ -231,7 +233,7 @@ class ClassRegModuleInfo(models.Model):
         if self.class_other_sizes and len(self.class_other_sizes) > 0:
             other_sizes = [int(x) for x in self.class_other_sizes.split(',')]
 
-        ret_range = sorted(range(min_size, max_size + 1, size_step) + other_sizes)
+        ret_range = sorted(list(range(min_size, max_size + 1, size_step)) + other_sizes)
 
         return ret_range
 
@@ -242,7 +244,7 @@ class ClassRegModuleInfo(models.Model):
         if self.program.grade_max:
             max_grade = self.program.grade_max
 
-        return range(min_grade, max_grade+1)
+        return list(range(min_grade, max_grade+1))
 
     def getDurations(self):
         return self.program.getDurations()

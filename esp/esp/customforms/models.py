@@ -1,6 +1,8 @@
 from __future__ import with_statement
 
+from __future__ import absolute_import
 import logging
+import six
 logger = logging.getLogger(__name__)
 
 from django.db import models, transaction, connection
@@ -37,7 +39,7 @@ class Section(models.Model):
     seq = models.IntegerField()
 
     def __unicode__(self):
-        return u'Sec. %d: %s' % (self.seq, unicode(self.title))
+        return u'Sec. %d: %s' % (self.seq, six.text_type(self.title))
 
 class Field(models.Model):
     form = models.ForeignKey(Form)

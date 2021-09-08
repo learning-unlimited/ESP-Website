@@ -12,6 +12,8 @@ corresponds to an active user on the website, and all associated user accounts
 are active, we add it to mailman.
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 from script_setup import *
 from esp import mailman
 from esp.users.models import ESPUser
@@ -21,10 +23,10 @@ DRY_RUN = True
 
 def update_membership(base_users, list_name, add=False, dry_run=DRY_RUN):
     current_members = set(mailman.list_contents(list_name))
-    print """Updating list "%s", which currently has %s users.""" % (
-        list_name, len(current_members))
+    print("""Updating list "%s", which currently has %s users.""" % (
+        list_name, len(current_members)))
     if dry_run:
-        print "(This is a dry run.)"
+        print("(This is a dry run.)")
 
     users_to_maybe_remove = ESPUser.objects.filter(is_active=False)
     users_not_to_remove = ESPUser.objects.filter(is_active=True)
@@ -32,39 +34,39 @@ def update_membership(base_users, list_name, add=False, dry_run=DRY_RUN):
         email__in=users_not_to_remove.values('email'))
     members_to_remove = current_members & set(
         users_to_remove.values_list('email', flat=True))
-    print "Removing %s users..." % len(members_to_remove),
+    print("Removing %s users..." % len(members_to_remove), end=' ')
     if not dry_run:
         out, err = mailman.remove_list_member(list_name, members_to_remove)
         if out:
-            print "stdout:"
-            print out
+            print("stdout:")
+            print(out)
         if err:
-            print "sterr:"
-            print err
-    print "removed."
+            print("sterr:")
+            print(err)
+    print("removed.")
 
     if add:
         users_to_maybe_add = base_users.filter(is_active=True)
         users_not_to_add = ESPUser.objects.filter(is_active=False)
         users_to_add = users_to_maybe_add.exclude(
             email__in=users_not_to_add.values('email'))
-        print "Adding %s users..." % len(users_to_add),
+        print("Adding %s users..." % len(users_to_add), end=' ')
         if not dry_run:
             out, err = mailman.add_list_members(list_name, users_to_add)
             if out:
-                print "stdout:"
-                print out
+                print("stdout:")
+                print(out)
             if err:
-                print "sterr:"
-                print err
-        print "added."
+                print("sterr:")
+                print(err)
+        print("added.")
     else:
-        print "User adding disabled."
+        print("User adding disabled.")
 
     new_members = mailman.list_contents(list_name)
-    print """List "%s" now contains %s users.""" % (
-        list_name, len(new_members))
-    print
+    print("""List "%s" now contains %s users.""" % (
+        list_name, len(new_members)))
+    print()
 
 
 def update_lists(add=False, dry_run=DRY_RUN):

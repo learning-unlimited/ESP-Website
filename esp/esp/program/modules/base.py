@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -50,7 +51,7 @@ from argcache import cache_function
 from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.conf import settings
-from urllib import quote
+from six.moves.urllib.parse import quote
 from django.template.loader import get_template
 from django.template import TemplateDoesNotExist
 
@@ -109,7 +110,7 @@ class ProgramModuleObj(models.Model):
         if tl or not hasattr(self, '_main_view'):
             main_views = self.get_views_by_call_tag(['Main Call'])
         if tl:
-            tl_matching_views = filter(lambda x: hasattr(getattr(self, x), 'call_tl') and getattr(self, x).call_tl == tl, main_views)
+            tl_matching_views = [x for x in main_views if hasattr(getattr(self, x), 'call_tl') and getattr(self, x).call_tl == tl]
             if len(tl_matching_views) > 0:
                 return tl_matching_views[0]
         if not hasattr(self, '_main_view'):
@@ -172,9 +173,9 @@ class ProgramModuleObj(models.Model):
     def findCategoryModules(self, include_optional):
         prog = self.program
         module_type = self.module.module_type
-        moduleobjs = filter(lambda mod: mod.module.module_type == module_type, prog.getModules())
+        moduleobjs = [mod for mod in prog.getModules() if mod.module.module_type == module_type]
         if not include_optional:
-            moduleobjs = filter(lambda mod: mod.required == True, moduleobjs)
+            moduleobjs = [mod for mod in moduleobjs if mod.required == True]
         moduleobjs.sort(key=lambda mod: mod.seq)
         return moduleobjs
     #   Program.getModules cache takes care of our dependencies
@@ -255,7 +256,7 @@ class ProgramModuleObj(models.Model):
             user = request.user
 
         if not user or not self.program:
-            raise ESPError(False), "There is no user or program object!"
+            raise ESPError(False)("There is no user or program object!")
 
         if self.module.module_type != 'learn' and self.module.module_type != 'teach':
             return True

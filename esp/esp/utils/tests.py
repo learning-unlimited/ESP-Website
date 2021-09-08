@@ -4,8 +4,11 @@ Test cases for Django-ESP utilities
 
 from __future__ import with_statement
 
+from __future__ import absolute_import
 import datetime
 import doctest
+from six.moves import map
+from six.moves import range
 try:
     import pylibmc as memcache
 except:
@@ -69,7 +72,7 @@ class DependenciesTestCase(unittest.TestCase):
     def tryImport(self, mod):
         try:
             foo = __import__(mod)
-        except Exception, e:
+        except Exception as e:
             logger.info("Error importing required module '%s': %s", mod, e)
             self._failed_import = True
 
@@ -389,7 +392,7 @@ class QueryBuilderTest(DjangoTestCase):
                                       # but just making it the same is easier
                                       # than writing a thing to compare
                                       # correctly.
-                                      for i in set(map(str,range(10)))]})
+                                      for i in set(map(str,list(range(10))))]})
         # Q objects don't have an __eq__, so they don't compare as equal.  But
         # comparing their str()s seems to work reasonably well.
         self.assertEqual(str(select_input.as_q('5')), str(Q(a_db_field='5')))

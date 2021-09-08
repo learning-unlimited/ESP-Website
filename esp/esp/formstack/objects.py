@@ -4,8 +4,11 @@ A somewhat higher-level interface to the Formstack API.
 Employs caching to avoid hitting Formstack's API more than necessary.
 """
 
+from __future__ import absolute_import
 from argcache import cache_function
 from esp.formstack.api import Formstack
+import six
+from six.moves import range
 
 CACHE_TIMEOUT = 3600 # seconds to keep things cached
 
@@ -102,7 +105,7 @@ class FormstackSubmission(object):
         self.formstack = formstack
 
     def __unicode__(self):
-        return unicode(self.id)
+        return six.text_type(self.id)
 
     def __repr__(self):
         return u'<FormstackSubmission: {0}>'.format(self)

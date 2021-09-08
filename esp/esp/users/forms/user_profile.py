@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django import forms
 from esp.users.forms import _states
 from esp.tagdict.models import Tag
@@ -11,6 +12,8 @@ from django.conf import settings
 import json
 from pytz import country_names
 from localflavor.us.forms import USPhoneNumberField
+from six.moves import range
+from six.moves import zip
 
 class DropdownOtherWidget(forms.MultiWidget):
     """
@@ -51,9 +54,9 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     receive_txt_message = forms.TypedChoiceField(coerce=lambda x: x =='True', choices=((True, 'Yes'),(False, 'No')), widget=forms.RadioSelect)
     address_street = StrippedCharField(required=True, length=40, max_length=100)
     address_city = StrippedCharField(required=True, length=20, max_length=50)
-    address_state = forms.ChoiceField(required=True, choices=zip(_states,_states), widget=forms.Select(attrs={'class': 'input-mini'}))
+    address_state = forms.ChoiceField(required=True, choices=list(zip(_states,_states)), widget=forms.Select(attrs={'class': 'input-mini'}))
     address_zip = StrippedCharField(required=True, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
-    address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(country_names.items(), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
+    address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
     address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args, **kwargs):
@@ -90,9 +93,9 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_phone_cell = USPhoneNumberField(required=False)
     emerg_address_street = StrippedCharField(length=40, max_length=100)
     emerg_address_city = StrippedCharField(length=20, max_length=50)
-    emerg_address_state = forms.ChoiceField(choices=zip(_states,_states), widget=forms.Select(attrs={'class': 'input-mini'}))
+    emerg_address_state = forms.ChoiceField(choices=list(zip(_states,_states)), widget=forms.Select(attrs={'class': 'input-mini'}))
     emerg_address_zip = StrippedCharField(length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
-    emerg_address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(country_names.items(), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
+    emerg_address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
     emerg_address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def clean(self):
@@ -170,14 +173,14 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     dob = forms.DateField(widget=SplitDateWidget(min_year=datetime.now().year-20))
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
-    heard_about = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HEARD_ABOUT_ESP_CHOICES, HEARD_ABOUT_ESP_CHOICES)))#forms.CharField(required=False)
+    heard_about = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=list(zip(HEARD_ABOUT_ESP_CHOICES, HEARD_ABOUT_ESP_CHOICES))))#forms.CharField(required=False)
     shirt_size = forms.ChoiceField(choices=[], required=False)
     shirt_type = forms.ChoiceField(choices=[], required=False)
     food_preference = forms.ChoiceField(choices=[], required=False)
 
     medical_needs = forms.CharField(required=False)
 
-    transportation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HOW_TO_GET_TO_PROGRAM, HOW_TO_GET_TO_PROGRAM)))
+    transportation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=list(zip(HOW_TO_GET_TO_PROGRAM, HOW_TO_GET_TO_PROGRAM))))
 
     studentrep_error = True
 
@@ -466,15 +469,15 @@ class MinimalUserInfo(FormUnrestrictedOtherUser):
     e_mail = forms.EmailField()
     address_street = StrippedCharField(length=40, max_length=100)
     address_city = StrippedCharField(length=20, max_length=50)
-    address_state = forms.ChoiceField(choices=zip(_states,_states))
+    address_state = forms.ChoiceField(choices=list(zip(_states,_states)))
     address_zip = StrippedCharField(length=5, max_length=5)
-    address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(country_names.items(), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
+    address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
     address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
-_grad_years = range(datetime.now().year, datetime.now().year + 6)
+_grad_years = list(range(datetime.now().year, datetime.now().year + 6))
 
 class UofCProfileForm(MinimalUserInfo, FormWithTagInitialValues):
-    graduation_year = forms.ChoiceField(choices=zip(_grad_years, _grad_years))
+    graduation_year = forms.ChoiceField(choices=list(zip(_grad_years, _grad_years)))
     major = SizedCharField(length=30, max_length=32, required=False)
 
     def clean_graduation_year(self):

@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from esp.program.models import *
 from esp.survey.models import *
 from esp.datatree.models import *
@@ -7,7 +9,7 @@ def load_survey(program, survey_name, category, input_file):
     # create survey
     survey, created = Survey.objects.get_or_create(name=survey_name, anchor=program.anchor, category=category)
     survey.save()
-    print survey
+    print(survey)
 
     auri = program.anchor.uri
 
@@ -23,8 +25,8 @@ def load_survey(program, survey_name, category, input_file):
         qt = QuestionType.objects.get(id=qlist[3])
         name = qlist[4]
         q, c = Question.objects.get_or_create(survey=survey, name=name, question_type=qt, _param_values=pv, anchor=anchor, seq=seq)
-        print q
-        print q.__dict__
+        print(q)
+        print(q.__dict__)
         q.save()
 
     infile.close()

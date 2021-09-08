@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -59,16 +60,16 @@ class DeactivationModule(ProgramModuleObj):
     @needs_admin
     def deactivatefinal(self, request, tl, one, two, module, extra, prog):
         if request.method != 'POST' or 'filterid' not in request.GET:
-            raise ESPError(), 'Filter has not been properly set'
+            raise ESPError()('Filter has not been properly set')
         elif request.POST.get('confirm', '') == '':
-            raise ESPError(), 'You must confirm that you want to deactivate these users.'
+            raise ESPError()('You must confirm that you want to deactivate these users.')
 
         # get the filter to use and text message to send from the request; this is set in grouptextpanel form
         filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
         users = filterObj.getList(ESPUser)
 
         if not users:
-            raise ESPError(), "Your query did not match any users"
+            raise ESPError()("Your query did not match any users")
 
         logger = logging.getLogger(__name__)
         logger.info("Mass deactivated users: %s", ", ".join([str(user.id) for user in users]))

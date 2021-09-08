@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -372,7 +374,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         except ValueError:
             return HttpResponseBadRequest('JSON data mis-formatted.')
         try:
-            [timeslot_id] = json_data.keys()
+            [timeslot_id] = list(json_data.keys())
         except ValueError:
             return HttpResponseBadRequest('JSON data mis-formatted.')
         if not isinstance(json_data[timeslot_id], dict):

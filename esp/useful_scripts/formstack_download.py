@@ -10,9 +10,12 @@
 # directory and named cacert.pem - see http://curl.haxx.se/ca/cacert.pem
 #
 
+from __future__ import absolute_import
+from __future__ import print_function
 import json
 import pycurl
 import sys
+from six.moves import input
 
 SUBMISSIONS_PER_PAGE = 100
 #  when enumerating form submissions, the maximum number of metadatas
@@ -27,21 +30,21 @@ BATCH_SIZE = 500
 
 
 # Collect Formstack Connection Information
-print "Formstack Data Downloader"
-print "-------------------------"
-print ""
+print("Formstack Data Downloader")
+print("-------------------------")
+print("")
 
-oauth_token = raw_input("Access Token (see bit.ly/uoT3B2): ")
-form_id = raw_input("Form ID (from URL of edit page): ")
-encryption_password = raw_input("Encryption password: ")
-output_format = raw_input("Output format (csv/RTF): ")
+oauth_token = input("Access Token (see bit.ly/uoT3B2): ")
+form_id = input("Form ID (from URL of edit page): ")
+encryption_password = input("Encryption password: ")
+output_format = input("Output format (csv/RTF): ")
 
 if output_format.lower() == "csv":
     output_format = "csv"
-    print "  Selected CSV"
+    print("  Selected CSV")
 else:
     output_format = "rtf"
-    print "  Selected RTF"
+    print("  Selected RTF")
 
 
 # Download List of IDs
@@ -80,9 +83,9 @@ while n <= limit:
     result = res.content()
 
     if http_code != 200:
-        print "HTTP ERROR " + str(http_code)
-        print "  on iteration " + str(n)
-        print result
+        print("HTTP ERROR " + str(http_code))
+        print("  on iteration " + str(n))
+        print(result)
 
     form_data = json.loads(result)
 
@@ -93,7 +96,7 @@ while n <= limit:
         limit = form_data['pages']
         #  true number of pages of data
 
-        print ""
+        print("")
         sys.stdout.write("[ " + str(limit) + " ] ")
 
     sys.stdout.write(" " + str(n))
@@ -136,7 +139,7 @@ while len(ids) > 0:
 
 f.close()
 
-print ""
-print ""
-print "Helper File writen to formstack_download.html"
-print "You must be logged in to Formstack in order to use it"
+print("")
+print("")
+print("Helper File writen to formstack_download.html")
+print("You must be logged in to Formstack in order to use it")

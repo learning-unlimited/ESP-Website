@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -75,7 +77,7 @@ class NameTagModule(ProgramModuleObj):
     def nametag_data(self, users_list1, user_title1, users_list2 = ESPUser.objects.none(), user_title2 = None):
         users = []
         users_list = [ user for user in users_list1 | users_list2]
-        users_list = filter(lambda x: len(x.first_name+x.last_name), users_list)
+        users_list = [x for x in users_list if len(x.first_name+x.last_name)]
         users_list.sort()
 
         for user in users_list:

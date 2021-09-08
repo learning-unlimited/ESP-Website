@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+import six
+from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -231,7 +234,7 @@ class MailingLabels(ProgramModuleObj):
                                   'zip5'    : info.address_zip,
                                   })
 
-                post_string = '&'.join(['%s=%s' % (key, urlencode(value)) for key, value in post_data.iteritems()])
+                post_string = '&'.join(['%s=%s' % (key, urlencode(value)) for key, value in six.iteritems(post_data)])
 
                 c = pycurl.Curl()
 
@@ -280,7 +283,7 @@ class MailingLabels(ProgramModuleObj):
             output = ["'Num','Name','Street','City','State','Zip'"]
         #output.append(','.join(ids_zipped))
         i = 1
-        for key, value in addresses.iteritems():
+        for key, value in six.iteritems(addresses):
             if key != False:
                 if combine:
                     if use_title:

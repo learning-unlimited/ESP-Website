@@ -1,10 +1,14 @@
 
+from __future__ import absolute_import
+from __future__ import print_function
 from collections import defaultdict
 from esp.survey.models import Answer, SurveyResponse, Survey
 from esp.program.models import Program, ClassSubject, ClassSection
 from datetime import datetime, date, time
 
 from django.contrib.contenttypes.models import ContentType
+import six
+from functools import reduce
 
 try:
     from cStringIO import StringIO
@@ -33,13 +37,13 @@ def get_all_data():
                                                             'survey_response__survey',
                                                             ) )
 
-    print 'Got answers'
+    print('Got answers')
     gc.collect() # 'cause the Django query parser system uses gobs of RAM; keep RAM usage down a bit
 
     all_survey_responses = list( SurveyResponse.objects.all().select_related() )
     all_surveys = list( Survey.objects.all().select_related() )
 
-    print 'Got surveys/responses'
+    print('Got surveys/responses')
     gc.collect()
 
     # This one can be an ordinary QuerySet; no funky tricks and small table
@@ -50,12 +54,12 @@ def get_all_data():
     # Don't bother using the cache for this; it doesn't fit.
     all_classes = ClassSubject.objects.catalog(None, force_all=True, use_cache=False)
 
-    print 'Got classes'
+    print('Got classes')
     gc.collect()
 
     all_sections = ClassSection.objects.all()
 
-    print 'Got sections'
+    print('Got sections')
     gc.collect()
 
     content_type_program = ContentType.objects.get_for_model(Program)
@@ -164,7 +168,7 @@ def auto_cell_type(val):
         pass
 
     # Give up; not a type that Excel likes
-    val = unicode(val)
+    val = six.text_type(val)
 
     # Are we something that looks like a boolean?
     if val.upper() in ("TRUE", "FALSE", "T", "F"):

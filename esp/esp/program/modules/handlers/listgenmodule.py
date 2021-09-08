@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -261,7 +263,7 @@ class UserAttributeGetter(object):
 
 
 class ListGenForm(forms.Form):
-    attr_choices = UserAttributeGetter.getFunctions().items()
+    attr_choices = list(UserAttributeGetter.getFunctions().items())
     attr_choices.sort(key=lambda x: x[0])
 
     fields = forms.MultipleChoiceField(choices=[(choice[0], choice[1]['label']) for choice in attr_choices], widget=forms.CheckboxSelectMultiple)

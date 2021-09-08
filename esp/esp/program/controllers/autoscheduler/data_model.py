@@ -4,6 +4,7 @@ Mostly reflects the database on the rest of the website, but having separate
 models should be a bit more robust to changes in website structure and should
 also be more performant.  """
 
+from __future__ import absolute_import
 import bisect
 from functools import total_ordering
 import json
@@ -227,7 +228,7 @@ class AS_Classroom(object):
         This is mostly for testing purposes."""
         for roomslot in self.availability:
             roomslot.index()
-            roomslot.next()
+            next(roomslot)
 
     def flush_roomslot_caches(self):
         """Flush each roomslot's caches for their next_roomslot and index

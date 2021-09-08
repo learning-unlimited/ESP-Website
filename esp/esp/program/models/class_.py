@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -246,7 +249,7 @@ class ClassManager(Manager):
             counter += 1
 
         # All class ID's; used by later query ugliness:
-        class_ids = map(lambda x: x.id, classes)
+        class_ids = [x.id for x in classes]
 
         # Now to get the sections corresponding to these classes...
 
@@ -482,7 +485,7 @@ class ClassSection(models.Model):
     def index(self):
         """ Get index of this section among those belonging to the parent class. """
         pc = self.parent_class
-        pc_sec_ids = map(lambda x: x.id, pc.get_sections())
+        pc_sec_ids = [x.id for x in pc.get_sections()]
         return list(pc_sec_ids).index(self.id) + 1
 
     def delete(self, adminoverride=False):
@@ -541,7 +544,7 @@ class ClassSection(models.Model):
             return []
 
     def emailcode(self):
-        return self.parent_class.emailcode() + u's' + unicode(self.index())
+        return self.parent_class.emailcode() + u's' + six.text_type(self.index())
 
     def already_passed(self):
         start_time = self.start_time()
@@ -795,7 +798,7 @@ class ClassSection(models.Model):
         first_time = ordered_times[0]
         possible_rooms = self.parent_program.getAvailableClassrooms(first_time)
 
-        viable_list = filter(lambda x: room_satisfies_times(x, ordered_times), possible_rooms)
+        viable_list = [x for x in possible_rooms if room_satisfies_times(x, ordered_times)]
 
         return viable_list
 
@@ -1620,14 +1623,14 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def grades(self):
         """ Return an iterable list of the grades for a class. """
-        return range(self.grade_min, self.grade_max + 1)
+        return list(range(self.grade_min, self.grade_max + 1))
 
     def emailcode(self):
         """ Return the emailcode for this class.
 
         The ``emailcode`` is defined as 'first letter of category' + id.
         """
-        return self.category.symbol+unicode(self.id)
+        return self.category.symbol+six.text_type(self.id)
 
     def url(self):
         return "%s/Classes/%s" % (self.parent_program.url, self.emailcode())

@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import print_function
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -129,19 +132,19 @@ class StudentRegSanityController(object):
         Set csvlog=False if you don't want a log of what was done
         Set directory to where you'd like the csvlog filed saved (if csvlog=False, does nothing)"""
         if checks==None:
-            print "You didn't enter a check! Please enter the checks you'd like to run as a list of strings. Run self.sanitize('--help') for more information!"
+            print("You didn't enter a check! Please enter the checks you'd like to run as a list of strings. Run self.sanitize('--help') for more information!")
             return None
         if checks=='--help':
-            print 'Sanitize - a module used to clear up oddities in Student Registrations.'
-            print "Syntax: self.sanitize(['check1', 'check2', 'check3'], fake=False, csvlog=True, directory='" + self.options['directory'] + "')"
-            print ''
-            print '-------------Current Checks----------------'
-            print 'antiwalk-in: Checks for Student Registrations made for walk-in classes. If fake=False, will remove them.'
-            print 'antilunch: Checks for Student Registrations made for lunch. If fake=False, will remove them.'
-            print '-------------Known Bugs-----------------'
-            print "Guys, I'm not course 6 for a reason~shulinye"
+            print('Sanitize - a module used to clear up oddities in Student Registrations.')
+            print("Syntax: self.sanitize(['check1', 'check2', 'check3'], fake=False, csvlog=True, directory='" + self.options['directory'] + "')")
+            print('')
+            print('-------------Current Checks----------------')
+            print('antiwalk-in: Checks for Student Registrations made for walk-in classes. If fake=False, will remove them.')
+            print('antilunch: Checks for Student Registrations made for lunch. If fake=False, will remove them.')
+            print('-------------Known Bugs-----------------')
+            print("Guys, I'm not course 6 for a reason~shulinye")
             return None
-        if isinstance(checks, basestring):
+        if isinstance(checks, six.string_types):
             checks = [checks]
         if csvlog:
             import csv

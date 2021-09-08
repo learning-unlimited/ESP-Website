@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -182,7 +183,7 @@ class TeacherPreviewModule(ProgramModuleObj):
 
     def get_handouts(self):
         sections = get_current_request().user.getTaughtSections(self.program)
-        sections = filter(lambda x: x.isAccepted() and x.meeting_times.count() > 0, sections)
+        sections = [x for x in sections if x.isAccepted() and x.meeting_times.count() > 0]
         if len(sections) > 0:
             return {'teacherschedule': 'Your Class Schedule', 'classroster': 'Class Rosters'}
         else:

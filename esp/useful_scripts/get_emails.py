@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 import datetime
 import numpy as np
 from esp.dbmail.models import TextOfEmail
+from six.moves import map
 msgs = [x['sent'] for x in TextOfEmail.objects.values('sent') if x is not None and x['sent'] is not None]
 to_timestamp = np.vectorize(lambda x: (x - datetime.datetime(1970, 1, 1)).total_seconds())
 #to_timestamp = np.vectorize(lambda x: x.timestamp()) # Python 3

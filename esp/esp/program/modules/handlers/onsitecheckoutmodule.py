@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -98,7 +99,7 @@ class OnSiteCheckoutModule(ProgramModuleObj):
                 Record.objects.create(user=student, event="checked_out", program=prog)
 
                 # Unenroll student from selected classes
-                for sec in ClassSection.objects.filter(id__in=filter(None, request.POST.getlist('unenroll'))).distinct():
+                for sec in ClassSection.objects.filter(id__in=[_f for _f in request.POST.getlist('unenroll') if _f]).distinct():
                     sec.unpreregister_student(student, prereg_verb = "Enrolled")
                 context['checkout_message'] = "Successfully checked out %s (%s)" % (student.name(), student.username)
 

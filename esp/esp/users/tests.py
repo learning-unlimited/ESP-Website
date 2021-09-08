@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import datetime
 
 from django import forms
@@ -16,6 +17,8 @@ from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission, Record
+import six
+from six.moves import map
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -398,7 +401,8 @@ class AccountCreationTest(TestCase):
                                   first_name="first",
                                   last_name="last",
                                   email="tsutton125@gmail.com")
-        except ESPUser.DoesNotExist, ESPUser.MultipleObjectsReturned:
+        except ESPUser.DoesNotExist as xxx_todo_changeme:
+            ESPUser.MultipleObjectsReturned = xxx_todo_changeme
             self.fail("User not created correctly or created multiple times")
 
         if not Tag.getBooleanTag('require_email_validation'):
@@ -658,7 +662,7 @@ class PermissionTestCase(TestCase):
         self.assertTrue(self.user_has_perm('test'))
 
     def testImplications(self):
-        for base, implications in Permission.implications.iteritems():
+        for base, implications in six.iteritems(Permission.implications):
             perm = self.create_role_perm_for_program(base)
             for implication in implications:
                 self.assertTrue(self.user_has_perm_for_program(implication))

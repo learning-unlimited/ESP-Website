@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+from six.moves import filter
+from six.moves import map
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -149,7 +153,7 @@ class ProgramPrintables(ProgramModuleObj):
         sort_name_list = []
         grade_min = prog.grade_min
         grade_max = prog.grade_max
-        grade_options = range(grade_min, grade_max + 1)
+        grade_options = list(range(grade_min, grade_max + 1))
         category_options = prog.class_categories.all().values_list('category', flat=True)
         categories = category_options
 
@@ -227,7 +231,7 @@ class ProgramPrintables(ProgramModuleObj):
             clsids = ','.join(clsids)
             return render_to_response(self.baseDir()+'catalog_order.html',
                                       request,
-                                      {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories })
+                                      {'clsids': clsids, 'classes': classes, 'sorting_options': list(cmp_fn.keys()), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories })
 
         if "only_nonfull" in request.GET:
             classes = [x for x in classes if not x.isFull()]
@@ -241,7 +245,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'catalog_order.html',
                                   request,
-                                  {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories  })
+                                  {'clsids': clsids, 'classes': classes, 'sorting_options': list(cmp_fn.keys()), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories  })
 
 
     @aux_call
@@ -272,7 +276,7 @@ class ProgramPrintables(ProgramModuleObj):
         if '_num_students' in sort_order:
             sort_order.remove('_num_students')
         #   Replace incorrect 'timeblock' sort field with sorting by meeting times start field.
-        for i in xrange(len(sort_order)):
+        for i in range(len(sort_order)):
             if sort_order[i] == 'timeblock':
                 sort_order[i] = 'meeting_times__start'
         classes = classes.order_by(*sort_order)
@@ -324,7 +328,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def classpopularity(self, request, tl, one, two, module, extra, prog):
         classes = ClassSubject.objects.filter(parent_program = prog)
-        priorities = range(1, prog.studentclassregmoduleinfo.priority_limit + 1)
+        priorities = list(range(1, prog.studentclassregmoduleinfo.priority_limit + 1))
 
         # We'll get the SRs and SSIs separately because otherwise we're joining two potentially large tables in a single query,
         # which can result in an absurd number of rows for even moderate programs
@@ -351,7 +355,7 @@ class ProgramPrintables(ProgramModuleObj):
                 by_id[subject.id] = subject
 
         # Sort
-        classes = sorted(by_id.values(), key=lambda s: s.ssi, reverse = True)
+        classes = sorted(list(by_id.values()), key=lambda s: s.ssi, reverse = True)
 
         context = {'classes': classes, 'program': prog, 'priorities': [str(priority) for priority in priorities]}
 
@@ -387,7 +391,7 @@ class ProgramPrintables(ProgramModuleObj):
                     type_dict[flag.flag_type] = [flag]
             cls.flag_list = []
             for type in flag_types:
-                if type in type_dict.keys():
+                if type in list(type_dict.keys()):
                     comms = [flag.comment for flag in type_dict[type] if flag.comment]
                     if len(comms) > 0 and comments:
                         cls.flag_list.append(comms)
@@ -425,7 +429,7 @@ class ProgramPrintables(ProgramModuleObj):
         if 'scheduled' in request.GET:
             classes = [cls for cls in classes if cls.all_meeting_times.count() > 0]
 
-        classes = filter(filt_exp, classes)
+        classes = list(filter(filt_exp, classes))
 
         if split_teachers:
             classes_temp = []
@@ -477,7 +481,7 @@ class ProgramPrintables(ProgramModuleObj):
         if 'scheduled' in request.GET:
             sections = [sec for sec in sections if sec.meeting_times.count() > 0]
 
-        sections = filter(filt_exp, sections)
+        sections = list(filter(filt_exp, sections))
 
         sections.sort(sort_exp)
 
@@ -634,7 +638,7 @@ class ProgramPrintables(ProgramModuleObj):
                                'cls' : classes[0],
                                'res_values': [classes[0].resourcerequest_set.filter(res_type__name=x).values_list('desired_value', flat=True) for x in resource_types]})
 
-        scheditems = filter(filt_exp, scheditems)
+        scheditems = list(filter(filt_exp, scheditems))
         scheditems.sort(sort_exp)
 
         context['res_types'] = resource_types
@@ -731,7 +735,7 @@ class ProgramPrintables(ProgramModuleObj):
     def roomsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'roomlist.html', extra_func = lambda x: {}):
 
         rooms = self.program.groupedClassrooms()
-        rooms = filter(filt_exp, rooms)
+        rooms = list(filter(filt_exp, rooms))
         for s in rooms:
             extra_dict = extra_func(s)
             for key in extra_dict:
@@ -763,7 +767,7 @@ class ProgramPrintables(ProgramModuleObj):
             return filterObj
 
         context = {'module': self, 'program': prog}
-        students = filter(filt_exp, filterObj.getList(ESPUser).distinct())
+        students = list(filter(filt_exp, filterObj.getList(ESPUser).distinct()))
         for s in students:
             extra_dict = extra_func(s)
             for key in extra_dict:
@@ -1388,7 +1392,7 @@ class ProgramPrintables(ProgramModuleObj):
                         else:
                             rooms_dict[room.name] = [update_dict]
 
-        for room_name in prog.natural_sort(rooms_dict.keys()):
+        for room_name in prog.natural_sort(list(rooms_dict.keys())):
             rooms_dict[room_name].sort(key=lambda x: x['timeblock'].start)
             for val in rooms_dict[room_name]:
                 scheditems.append(val)
@@ -1627,7 +1631,7 @@ class ProgramPrintables(ProgramModuleObj):
         if extra == 'teacher':
             teachers = self.program.teachers()
             teachers.sort()
-            map(ESPUser, teachers)
+            list(map(ESPUser, teachers))
 
             scheditems = []
 
@@ -1852,7 +1856,7 @@ class ProgramPrintables(ProgramModuleObj):
             teachers = section.parent_class.get_teachers()
             conflicts = []
             for teacher in teachers:
-                conflicts.extend(filter(lambda x: x not in conflicts and x != section.parent_class, teacher.getTaughtClassesFromProgram(prog)))
+                conflicts.extend([x for x in teacher.getTaughtClassesFromProgram(prog) if x not in conflicts and x != section.parent_class])
             conflicts = sorted(conflicts, key = lambda x: x.id)
 
             write_csv.writerow([section.parent_class.emailcode(), int(round(section.duration))] + \

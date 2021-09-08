@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -105,7 +106,7 @@ class ResourceModuleTest(ProgramFrameworkTest):
         self.assertIn('New Room', self.checkDisplayedClassroomList())   #   checks consistency and presence of new room
 
         #   Check that we can edit a classroom and have it show up
-        matching_rooms = filter(lambda x: x.name == 'New Room', self.program.groupedClassrooms())
+        matching_rooms = [x for x in self.program.groupedClassrooms() if x.name == 'New Room']
         self.assertEqual(len(matching_rooms), 1)
         target_room = matching_rooms[0]
         edit_classroom_data = {
@@ -158,7 +159,7 @@ class ResourceModuleTest(ProgramFrameworkTest):
         self.assertIn('New Resource Type 2', self.checkDisplayedResourceTypeList())
 
         #   Check that we can edit a resource type and have it show up
-        matching_restypes = filter(lambda x: x.name == 'New Resource Type', self.program.getResourceTypes())
+        matching_restypes = [x for x in self.program.getResourceTypes() if x.name == 'New Resource Type']
         self.assertEqual(len(matching_restypes), 1)
         target_restype = matching_restypes[0]
         edit_restype_data = {

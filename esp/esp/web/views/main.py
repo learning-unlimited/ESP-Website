@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -42,9 +43,9 @@ from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.utils.datastructures import MultiValueDict
 from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
-from urllib import quote
+from six.moves.urllib.parse import quote
 
-from Cookie import SimpleCookie
+from six.moves.http_cookies import SimpleCookie
 
 import datetime
 import re

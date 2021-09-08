@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from six.moves import map
+from six.moves import range
+from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -40,6 +44,7 @@ from decimal import Decimal
 import random
 import json
 import logging
+import six
 logger = logging.getLogger(__name__)
 
 from django.conf import settings
@@ -325,7 +330,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def grades(self):
         """ Return an iterable list of the grades for a program. """
-        return range(self.grade_min, self.grade_max + 1)
+        return list(range(self.grade_min, self.grade_max + 1))
 
     @property
     def program_type(self):
@@ -384,7 +389,7 @@ class Program(models.Model, CustomFormsLinkModel):
         def _get_num(self):
             result = query_func(self, QObjects=False)
             result_dict = {}
-            for key, value in result.iteritems():
+            for key, value in six.iteritems(result):
                 if isinstance(value, QuerySet):
                     result_dict[key] = value.count()
                 else:
@@ -504,7 +509,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def students_union(self, QObject = False):
         import operator
-        if len(self.students().values()) == 0:
+        if len(list(self.students().values())) == 0:
             if QObject:
                 return Q(id = -1)
             else:
@@ -518,7 +523,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def teachers_union(self, QObject = False):
         import operator
-        if len(self.teachers().values()) == 0:
+        if len(list(self.teachers().values())) == 0:
             if QObject:
                 return Q(id = -1)
             else:
@@ -531,7 +536,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def volunteers_union(self, QObject = False):
         import operator
-        if len(self.volunteers().values()) == 0:
+        if len(list(self.volunteers().values())) == 0:
             if QObject:
                 return Q(id = -1)
             else:
@@ -621,7 +626,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return True
         caps = self.grade_caps()
         grade = user.getGrade(self, assume_student=True)
-        for grades, cap in caps.iteritems():
+        for grades, cap in six.iteritems(caps):
             if (grade in grades and
                     self._students_in_program_in_grades(grades) >= cap):
                 return False
@@ -639,10 +644,10 @@ class Program(models.Model, CustomFormsLinkModel):
         size_tag = Tag.getProgramTag("program_size_by_grade", self)
         size_dict = {}
         if size_tag:
-            for k, v in json.loads(size_tag).iteritems():
+            for k, v in six.iteritems(json.loads(size_tag)):
                 if '-' in k:
-                    low, high = map(int, k.split('-'))
-                    size_dict[tuple(xrange(low, high + 1))] = v
+                    low, high = list(map(int, k.split('-')))
+                    size_dict[tuple(range(low, high + 1))] = v
                 else:
                     size_dict[(int(k),)] = v
         return size_dict
@@ -774,7 +779,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def getAvailableClassrooms(self, timeslot):
         #   Filters down classrooms to those that are not taken.
-        return filter(lambda x: x.is_available(), self.getClassrooms(timeslot))
+        return [x for x in self.getClassrooms(timeslot) if x.is_available()]
 
     def collapsed_dict(self, resources):
         result = {}
@@ -807,7 +812,7 @@ class Program(models.Model, CustomFormsLinkModel):
         classrooms = self.getClassrooms()
 
         result = self.collapsed_dict(classrooms)
-        key_list = result.keys()
+        key_list = list(result.keys())
         natural_key_list = self.natural_sort(key_list)
         #   Turn this into a list instead of a dictionary.
         ans = [result[key] for key in natural_key_list]
@@ -1006,7 +1011,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def getAvailableResources(self, timeslot, queryset=False):
         #   Filters down the floating resources to those that are not taken.
-        return filter(lambda x: x.is_available(), self.getFloatingResources(timeslot=timeslot, queryset=queryset))
+        return [x for x in self.getFloatingResources(timeslot=timeslot, queryset=queryset) if x.is_available()]
 
     def getDurations(self, round_15=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
@@ -1039,7 +1044,7 @@ class Program(models.Model, CustomFormsLinkModel):
                                         str(rounded_seconds / 3600) + ':' + \
                                         str(int(round((rounded_seconds / 60.0) % 60))).rjust(2,'0')
 
-        durationList = durationDict.items()
+        durationList = list(durationDict.items())
 
         return sorted(durationList, key=lambda x: x[0])
 
@@ -1462,7 +1467,7 @@ class RegistrationProfile(models.Model):
         regProf = None
 
         # check if this is an actual User, not an AnonymousUser
-        if isinstance(user.id, (int, long)):
+        if isinstance(user.id, six.integer_types):
             try:
                 regProf = RegistrationProfile.objects.filter(user__exact=user).select_related().latest('last_ts')
             except RegistrationProfile.DoesNotExist:
@@ -1557,9 +1562,9 @@ class RegistrationProfile(models.Model):
 
     def __unicode__(self):
         if self.program_id == None:
-            return u'<Registration for %s>' % unicode(self.user)
+            return u'<Registration for %s>' % six.text_type(self.user)
         if self.user is not None:
-            return u'<Registration for %s in %s>' % (unicode(self.user), unicode(self.program))
+            return u'<Registration for %s in %s>' % (six.text_type(self.user), six.text_type(self.program))
 
 
     def updateForm(self, form_data, specificInfo = None):
@@ -1842,7 +1847,7 @@ class BooleanExpression(models.Model):
 
     def add_token(self, token_or_value, seq=None, duplicate=True):
         my_stack = self.get_stack()
-        if isinstance(token_or_value, basestring):
+        if isinstance(token_or_value, six.string_types):
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
@@ -1934,7 +1939,7 @@ class ScheduleConstraint(models.Model):
         app_label = 'program'
 
     def __unicode__(self):
-        return u'%s: "%s" requires "%s"' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
+        return u'%s: "%s" requires "%s"' % (self.program.niceName(), six.text_type(self.condition), six.text_type(self.requirement))
 
     def evaluate(self, smap, recursive=True):
         self.schedule_map = smap
@@ -1961,10 +1966,10 @@ class ScheduleConstraint(models.Model):
         try:
             func_str = """def _f(schedule_map):
 %s""" % ('\n'.join('    %s' % l.rstrip() for l in self.on_failure.strip().split('\n')))
-            exec func_str
+            exec(func_str)
             result = _f(self.schedule_map)
             return result
-        except Exception, inst:
+        except Exception as inst:
             #   raise ESPError('Schedule constraint handler error: %s' % inst, log=False)
             pass
         #   If we got nothing from the on_failure function, just provide Nones.

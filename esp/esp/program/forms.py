@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+from six.moves import map
+from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -91,7 +94,7 @@ class ProgramCreationForm(BetterModelForm):
                                                        ])
         # Include additional or new modules that haven't been added to the list
         for x in ProgramModule.objects.filter(choosable=0):
-            if x.id not in sum(self.program_module_question_ids.values(), []): # flatten list of modules
+            if x.id not in sum(list(self.program_module_question_ids.values()), []): # flatten list of modules
                 self.program_module_question_ids['Would you like to include the {} module?'.format(x.admin_title)] = [x.id]
         # Now initialize the form
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
@@ -210,7 +213,7 @@ class StatisticsQueryForm(forms.Form):
         programs = Program.objects.all()
         names_url = list(set([x.program_type for x in programs]))
         names_url.sort()
-        result = zip(names_url, names_url)
+        result = list(zip(names_url, names_url))
         return result
 
     @staticmethod
@@ -219,7 +222,7 @@ class StatisticsQueryForm(forms.Form):
         names_url = [x.url for x in programs]
         names_friendly = [x.name for x in programs]
         result = sorted(zip(names_url, names_friendly), key=lambda pair: pair[0])
-        result = filter(lambda x: len(x[1]) > 0, result)
+        result = [x for x in result if len(x[1]) > 0]
         return result
 
     @staticmethod

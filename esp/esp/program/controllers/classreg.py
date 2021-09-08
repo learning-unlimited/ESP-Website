@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from esp.mailman import add_list_member
 from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
 from esp.middleware import ESPError
@@ -17,6 +18,8 @@ from datetime import timedelta, datetime
 from decimal import Decimal
 import json
 from django.conf import settings
+import six
+from six.moves import range
 
 def get_custom_fields():
     result = OrderedDict()
@@ -93,7 +96,7 @@ class ClassCreationController(object):
 
         if not reg_form.is_valid() or (resource_formset and not
                                        resource_formset.is_valid()):
-            raise ClassCreationValidationError, (reg_form, resource_formset, "Invalid form data.  Please make sure you are using the official registration form, on esp.mit.edu.  If you are, please let us know how you got this error.")
+            raise ClassCreationValidationError(reg_form, resource_formset, "Invalid form data.  Please make sure you are using the official registration form, on esp.mit.edu.  If you are, please let us know how you got this error.")
 
         return reg_form, resource_formset
 
@@ -221,7 +224,7 @@ class ClassCreationController(object):
 
     def generate_director_mail_context(self, cls):
         new_data = cls.__dict__
-        mail_ctxt = dict(new_data.iteritems())
+        mail_ctxt = dict(six.iteritems(new_data))
 
         mail_ctxt['title'] = cls.title
         mail_ctxt['one'] = cls.parent_program.program_type
