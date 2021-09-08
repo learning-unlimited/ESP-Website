@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.travis_job }}
+    name: ${{ matrix.travis_job }} (Python ${{ matrix.python-version }})
     runs-on: ubuntu-20.04
     services:
       postgres:
