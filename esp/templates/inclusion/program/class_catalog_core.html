@@ -95,6 +95,17 @@
     </div>
     </div>
     </div>
+
+    {% with class.numStudentAppQuestions as num_questions %}
+    {% if num_questions %}
+    <div class="class_footer_row">
+    <div class="class_appquestions_list">
+       This class has {{ num_questions }} application question{{ num_questions|pluralize }}.
+    </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+    </div>
     
     {% if class.media_count %}
     <div class="class_footer_row">
@@ -111,17 +122,6 @@
     </div>
     </div>
     {% endif %}
-
-    {% with class.numStudentAppQuestions as num_questions %}
-    {% if num_questions %}
-    <div class="class_footer_row">
-    <div class="class_appquestions_list">
-       This class has {{ num_questions }} application question{{ num_questions|pluralize }}.
-    </div>
-    </div>
-    {% endif %}
-    {% endwith %}
-    </div>
     
 {% if collapse_full %}
 {% if class.isFullOrClosed %}

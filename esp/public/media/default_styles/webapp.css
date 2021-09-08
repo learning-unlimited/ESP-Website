@@ -57,7 +57,7 @@
 .main table {
   background-color: #c8e6dc;
   border-collapse: collapse;
-  table-layout:fixed;
+  table-layout: fixed;
   margin: 0px !important;
   width: calc(100vh * 9 / 16);
 }
@@ -95,27 +95,29 @@
 }
 
 .time {
-  width: 20%;
+  width: 25%;
   font-size: 1.75vh !important;
 }
 
 .cls {
   font-size: 2vh !important;
-  width: 60%;
-  padding-bottom: .25vh !important;
+  width: 50%;
 }
 
-.location {
-  font-size: 2vh !important;
-  padding-top: .25vh !important;
-}
-
-.location i, .cls i {
+.cls i {
   vertical-align: bottom;
 }
 
+.cls1 {
+    border-left: 4px solid black;
+}
+
+.cls2 {
+    border-left: 4px solid #bbbbbb;
+}
+
 .edit, .list {
-  width: 20%;
+  width: 25%;
 }
 
 .schedule_row {

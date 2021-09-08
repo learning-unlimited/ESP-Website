@@ -245,7 +245,7 @@ class Program(models.Model, CustomFormsLinkModel):
     #customforms definitions
     form_link_name='Program'
 
-    url = models.CharField(max_length=80)
+    url = models.CharField(max_length=80, unique=True)
     name = models.CharField(max_length=80)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
@@ -1041,7 +1041,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         durationList = durationDict.items()
 
-        return durationList
+        return sorted(durationList, key=lambda x: x[0])
 
     def getSurveys(self):
         from esp.survey.models import Survey
@@ -1192,6 +1192,8 @@ class Program(models.Model, CustomFormsLinkModel):
 
         teacher_dict = self.teachers()
         teacher_types = {'Approved Teachers': 'class_approved', 'All Teachers': 'class_submitted'}
+        if self.hasModule('TeacherModeratorModule'):
+            teacher_types.update({'Assigned Moderators': 'assigned_moderator'})
         shirt_sizes = [x.strip() for x in Tag.getTag('teacher_shirt_sizes').split(',')]
         for teacher_type in teacher_types.items():
             if teacher_type[1] in teacher_dict:
@@ -1225,6 +1227,8 @@ class Program(models.Model, CustomFormsLinkModel):
     getShirtInfo.depend_on_model('users.TeacherInfo')
     getShirtInfo.depend_on_model('users.StudentInfo')
     getShirtInfo.depend_on_model('program.VolunteerOffer')
+    getShirtInfo.depend_on_model('program.ModeratorRecord')
+    getShirtInfo.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': sec.parent_class.parent_program})
 
     @cache_function
     def incrementGrade(self):

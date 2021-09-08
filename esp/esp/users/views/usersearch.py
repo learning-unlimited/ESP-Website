@@ -226,7 +226,7 @@ def get_user_list(request, listDict2, extra=''):
         nonpublic_lists = list( set(all_lists(show_nonpublic=True)) - set(public_lists) )
         return (render_to_response('users/select_mailman_list.html', request, {'public_lists': public_lists, 'nonpublic_lists': nonpublic_lists}), False) # No, we didn't find it yet...
 
-def get_user_checklist(request, userList, extra='', nextpage=None):
+def get_user_checklist(request, userList, extra='', nextpage=None, extra_context={}):
     """ Generate a checklist of users given an initial list of users to pick from.
         Returns a tuple (userid_query or response, users found?)
         The query that's returned contains the id's of just the users which are checked off. """
@@ -245,7 +245,7 @@ def get_user_checklist(request, userList, extra='', nextpage=None):
 
         return (UsersQ, True)
 
-    context = {}
+    context = extra_context
     context['extra'] = extra
     context['users'] = userList
     if nextpage is None:

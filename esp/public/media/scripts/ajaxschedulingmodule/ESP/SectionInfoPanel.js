@@ -106,7 +106,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
     var getTeacherLinks = function(section) {
         var teacher_links_list = []
             $j.each(section.teacher_data, function(index, teacher) {
-                teacher_links_list.push("<a target='_blank' href=/manage/userview?username=" + encodeURIComponent(teacher.username) + ">" + teacher.first_name + " " + teacher.last_name + "</a>");
+                teacher_links_list.push("<a target='_blank' href='/manage/userview?username=" + encodeURIComponent(teacher.username) + "&program=" + prog_id + "'>" + teacher.first_name + " " + teacher.last_name + "</a>");
             });
         var teacher_links = teacher_links_list.join(", ");
         return $j(teacher_links);
@@ -140,7 +140,14 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         content_parts['Teachers'] = teacher_links;
         if(has_moderator_module === "True") content_parts[moderator_title + 's'] = getModeratorLinks(section);
         content_parts['Class size max'] = section.class_size_max;
-        content_parts['Length'] = Math.ceil(section.length);
+        var length_str = '';
+        if(Math.floor(section.length) > 0){
+            length_str += Math.floor(section.length);
+            length_str += ' hour';
+            if(Math.floor(section.length) > 1) length_str += 's';
+        }
+        if((section.length % 1) * 60 > 0) length_str += ' ' + Math.round((section.length % 1) * 60) + ' minutes';
+        content_parts['Length'] = length_str;
         content_parts['Grades'] = section.grade_min + "-" + section.grade_max;
         content_parts['Room Request'] = section.requested_room;
         content_parts['Resource Requests'] = resources;
@@ -202,7 +209,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
             "<br/><a target='_blank' href='" + baseURL +
             "edit_availability?user=" + moderator.username +
             "'>Edit Availability</a>" + " <a target='_blank' href='/manage/userview?username=" +
-            moderator.username + "'>Userview</a>");
+            moderator.username + "&program=" + prog_id + "'>Userview</a>");
         toolbar.append(links);
         return toolbar;
 

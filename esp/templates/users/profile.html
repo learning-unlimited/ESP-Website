@@ -2,15 +2,22 @@
 
 {% block title %}Profile Editor{% endblock %}
 
-{% block content %}
-
+{% block stylesheets %}
+{{ block.super }}
 <style>
-div.required label:after {
+div.required label.control-label:after {
   content:"*";
   color:red;
 }
-</style>
 
+#id_receive_txt_message {
+  list-style-type: none;
+  margin-left: 0px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
 <div class="row-fluid">
   <div class="span10">
     <h1>Your Profile Information</h1>
@@ -110,7 +117,7 @@ function check_emerg_state() {
   }
 }
 $j(document).ready(function() {
-  $j(".required").each(function() {
+  $j(":required").each(function() {
     $j(this).closest(".control-group").addClass("required");
   });
   

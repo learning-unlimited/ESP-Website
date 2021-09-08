@@ -35,6 +35,16 @@
   line-height: normal;
 }
 
+.popular-classeses {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.popular-classes-chart {
+  width: 50%;
+}
+
 .bigboard-number-block {
   display: inline-block;
   min-width: 250px;

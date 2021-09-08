@@ -4,6 +4,8 @@
 
 {% block content %}
 
+<h1>Communications Portal</h1>
+
 <h2>Email a list of users</h2>
 <p>This page will help you email a set of users in your database, with filtering options specific to {{ program.niceName }}.  Choose from three different approaches to select your users:
     <ul>
@@ -16,6 +18,8 @@
 {% with include_prev_list="True" include_checklist="True" %}
 {% include "users/usersearch/list_selector.html" %}
 {% endwith %}
+
+{% include "program/modules/admincore/returnlink.html" %}
 
 {% endblock %}
 

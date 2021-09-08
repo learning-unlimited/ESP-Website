@@ -32,6 +32,7 @@
 <!--Scheduler-->
 <script type="text/javascript">
   var base_url = "{{ program.getUrlBase }}";
+  var prog_id = "{{ program.id }}";
   var program_base_url = "/json/"+base_url+"/";
   var has_autoscheduler_frontend = "{{ has_autoscheduler_frontend }}";
   var has_moderator_module = "{{ has_moderator_module }}";
@@ -67,8 +68,10 @@
     <td class="no-border">
       <div id="side-panel-wrapper" class="ui-widget">
         <div id="info-panel">
-          <div id="section-info-div" class="component-div ui-widget ui-corner-all ui-helper-hidden"></div>
-          <div id="message-div" class="component-div ui-widget-content ui-corner-all"></div>
+          <div id="section-info-and-message-wrapper">
+            <div id="section-info-div" class="component-div ui-widget ui-corner-all ui-helper-hidden"></div>
+            <div id="message-div" class="component-div ui-widget-content ui-corner-all"></div>
+          </div>
           <div id="separator" class="ui-resizable-handle ui-resizable-s"></div>
         </div>
         <div id="side-panel" class="component-div ui-widget">

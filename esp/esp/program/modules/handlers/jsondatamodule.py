@@ -160,6 +160,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @cached_module_view
     def categories(prog):
         categories = prog.class_categories.all()
+        if prog.open_class_registration:
+            categories = categories.union(ClassCategories.objects.filter(pk=prog.open_class_category.pk))
         if len(categories) == 0:
             categories = ClassCategories.objects.filter(program__isnull=True)
 

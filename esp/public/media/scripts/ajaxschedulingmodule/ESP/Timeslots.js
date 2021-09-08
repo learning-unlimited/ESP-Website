@@ -64,9 +64,7 @@ function Timeslots(timeslots_data, lunch_timeslots){
             var last_timeslot = this.get_by_id(last_timeslot_id);
             next_timeslot = this.get_by_order(last_timeslot.order + 1);
 
-            if (!this.are_timeslots_contiguous([last_timeslot, next_timeslot])){
-                console.log("timeslot " + last_timeslot.id + " and timeslot " +
-                        next_timeslot.id +" are not contiguous");
+            if (next_timeslot === undefined || !this.are_timeslots_contiguous([last_timeslot, next_timeslot])){
                 return null;
             }
             last_timeslot_id = next_timeslot.id;
@@ -79,28 +77,20 @@ function Timeslots(timeslots_data, lunch_timeslots){
      * Get the number of hours spanned by the two timeslots with ids id_1 and id_2
      */
     this.get_hours_spanned = function(id_1, id_2) {
-        var start = this.timeslots[id_1].start;
-        var end = this.timeslots[id_2].end;
+        var start = new Date(...this.timeslots[id_1].start);
+        var end = new Date(...this.timeslots[id_2].end);
 
-        var hours = end[3] - start[3];
-        var minutes = end[4] - start[4];
-
-        if (minutes > 0){
-            hours = hours + 1;
-        }
-        return hours;
+        return Math.round((((end - start)/3600000) + Number.EPSILON) * 100) / 100;
     };
 
     /**
      * Get the number of minutes between the two timeslots with ids id_1 and id_2
      */
     this.get_minutes_between = function(id_1, id_2) {
-        var end = this.timeslots[id_1].end;
-        var start = this.timeslots[id_2].start;
+        var end = new Date(...this.timeslots[id_1].end);
+        var start = new Date(...this.timeslots[id_2].start);
 
-        var hours = start[3] - end[3];
-        var minutes = start[4] - end[4];
-        return hours * 60 + minutes;
+        return (start - end)/60000;
     };
 
     /**

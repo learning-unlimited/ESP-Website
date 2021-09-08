@@ -65,17 +65,9 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
             del self.fields['receive_txt_message']
         if self.user.isTeacher() and not Tag.getBooleanTag('teacher_address_required'):
             self.fields['address_street'].required = False
-            if 'class' in self.fields['address_street'].widget.attrs and self.fields['address_street'].widget.attrs['class']:
-                self.fields['address_street'].widget.attrs['class'] = self.fields['address_street'].widget.attrs['class'].replace('required', '')
             self.fields['address_city'].required = False
-            if 'class' in self.fields['address_city'].widget.attrs and self.fields['address_city'].widget.attrs['class']:
-                self.fields['address_city'].widget.attrs['class'] = self.fields['address_city'].widget.attrs['class'].replace('required', '')
             self.fields['address_state'].required = False
-            if 'class' in self.fields['address_state'].widget.attrs and self.fields['address_state'].widget.attrs['class']:
-                self.fields['address_state'].widget.attrs['class'] = self.fields['address_state'].widget.attrs['class'].replace('required', '')
             self.fields['address_zip'].required = False
-            if 'class' in self.fields['address_zip'].widget.attrs and self.fields['address_zip'].widget.attrs['class']:
-                self.fields['address_zip'].widget.attrs['class'] = self.fields['address_zip'].widget.attrs['class'].replace('required', '')
 
     def clean(self):
         super(UserContactForm, self).clean()

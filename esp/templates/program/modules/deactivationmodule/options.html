@@ -1,0 +1,21 @@
+{% extends "main.html" %}
+
+{% block title %}Mass Deactivation Portal{% endblock %}
+
+{% block content %}
+
+
+<h1>Mass Deactivation Portal</h1>
+
+<h2>Step 2:</h2>
+<p>You have selected <b>{{ num_users }}</b> active users{% if selected %} of <strong>{{ selected }}</strong>{% endif %}.</p>
+
+<form action="/manage/{{ program.getUrlBase }}/deactivatefinal?filterid={{ filterid }}" method="post" name="usergroup">
+<h3>Confirm that you would like to deactivate these users and hit the button:</h3>
+<input type="checkbox" name="confirm"> I confirm I would like to deactivate all of these users.<br><br>
+<input type="submit" value="Deactivate Users" />
+</form>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

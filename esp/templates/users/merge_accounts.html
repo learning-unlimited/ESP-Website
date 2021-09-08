@@ -14,10 +14,10 @@
 <form action="{{ request.path }}" method="post">
 
 <div id="program_form">
-  Please select two accounts to merge:
+  <h3>Please select two accounts to merge:</h3>
   <table width="550">
   {{ form.as_table }}
-  <tr><td colspan="2"><input type="submit" value="Merge!" name="submit" onclick="return confirm('Account merges cannot be undone. Proceed?');" /></td></tr>
+  <tr><td colspan="2"><br><br><input class="btn btn-primary" type="submit" value="Merge!" name="submit" onclick="return confirm('Account merges cannot be undone. Proceed?');" /></td></tr>
   </table>
 </div></form>
 

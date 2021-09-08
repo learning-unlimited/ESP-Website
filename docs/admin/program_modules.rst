@@ -329,13 +329,6 @@ Student Surveys (SurveyModule)
 
 Include this module if you would like to use online surveys.  This module will cause your student survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" student deadline.  Make sure you have created a survey at /manage/[program]/[instance]/surveys. By default, only students that registered for a class ('classreg') are allowed to fill out the survey. This can be modified with the 'survey_student_filter' tag, which is a comma-separated list of groups of students as specified in the prog.students() dictionary (this will be more user-friendly in the future).
 
-Text Message Reminders (TextMessageModule)
-------------------------------------------
-
-With this module, students will be prompted to enter a phone number at which you will send reminders about the program (typically around the closing of registration, or the day before the program).  You can get a list of these numbers using the user list generator.
-
-This module does *NOT* send text messages. For that functionality, see the "Group Text Module" below.
-
 Formstack Application Module
 ----------------------------
 

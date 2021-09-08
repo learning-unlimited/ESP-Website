@@ -307,42 +307,38 @@ all_global_tags = {
         'category': 'teach',
         'is_setting': True,
     },
-    # TODO: For the next five, we probably want to pull the fields from the forms (e.g. TeacherProfileForm.declared_fields.keys())
-    # and then use those values in a MultipleChoiceField, but I see two problems:
-    # 1) How do we handle the conversion of the list of selected values to a comma-separated string (and back)?
-    #    We could maybe check if the field is a MultipleChoiceField, then use getlist on the cleaned_data?
-    # 2) We'll probably run into import loops when we try to import the forms
+    # For the next five, we populate the widgets as MultipleChoiceFields when initializing the form to avoid import loops
     'teacher_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'Comma-separated list of fields to hide in the teacher profile form',
+        'help_text': 'Select the field(s) to hide in the teacher profile form (only fields that are not required may be hidden)',
         'default': '',
         'category': 'teach',
         'is_setting': True,
     },
     'student_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'Comma-separated list of fields to hide in the student profile form',
+        'help_text': 'Select the field(s) to hide in the student profile form (only fields that are not required may be hidden)',
         'default': '',
         'category': 'learn',
         'is_setting': True,
     },
     'volunteer_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'Comma-separated list of fields to hide in the volunteer profile form',
+        'help_text': 'Select the field(s) to hide in the volunteer profile form (only fields that are not required may be hidden)',
         'default': '',
         'category': 'volunteer',
         'is_setting': True,
     },
     'educator_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'Comma-separated list of fields to hide in the educator profile form',
+        'help_text': 'Select the field(s) to hide in the educator profile form (only fields that are not required may be hidden)',
         'default': '',
         'category': 'teach',
         'is_setting': True,
     },
     'guardian_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'Comma-separated list of fields to hide in the guardian profile form',
+        'help_text': 'Select the field(s) to hide in the guardian profile form (only fields that are not required may be hidden)',
         'default': '',
         'category': 'learn',
         'is_setting': True,
@@ -664,9 +660,10 @@ all_program_tags = {
         'category': 'teach',
         'is_setting': True,
     },
+    # We populate the next widget as a MultipleChoiceField when initializing the form to avoid import loops
     'teacherreg_hide_fields': {
         'is_boolean': False,
-        'help_text': 'A comma seperated list of what fields (e.g. \'purchase_requests\') you want to hide from teachers during teacher registration',
+        'help_text': 'Select the field(s) you want to hide from teachers during teacher registration (only fields that are not required may be hidden)',
         'default': None,
         'category': 'teach',
         'is_setting': True,

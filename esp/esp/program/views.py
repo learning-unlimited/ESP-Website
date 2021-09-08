@@ -39,6 +39,8 @@ import traceback
 from operator import __or__ as OR
 from pprint import pprint
 
+from argcache import cache_function
+
 from esp.utils.web import render_to_response
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
@@ -538,11 +540,13 @@ def newprogram(request):
                 ct = ContentType.objects.get_for_model(old_prog)
                 old_tags = Tag.objects.filter(content_type=ct, object_id=old_prog.id)
                 for old_tag in old_tags:
-                    new_tag, created = Tag.objects.get_or_create(key=old_tag.key, content_type=ct, object_id=new_prog.id)
-                    # Some tags get created during program creation (e.g. sibling discount), and we don't want to override those
-                    if created:
-                        new_tag.value = old_tag.value
-                        new_tag.save()
+                    # Some tags we don't want to import
+                    if old_tag.key not in ['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id', 'student_lottery_run']:
+                        new_tag, created = Tag.objects.get_or_create(key=old_tag.key, content_type=ct, object_id=new_prog.id)
+                        # Some tags get created during program creation (e.g. sibling discount), and we don't want to override those
+                        if created:
+                            new_tag.value = old_tag.value
+                            new_tag.save()
             else:
                 # Create new modules
                 new_prog.getModules()
@@ -580,6 +584,8 @@ def newprogram(request):
 
         if form.is_valid():
             temp_prog = form.save(commit=False)
+            if Program.objects.filter(url=temp_prog.url).exists():
+                raise ESPError("A %s program already exists with this name. Please choose a new name or change the name of the old program." % temp_prog.program_type, log=False)
             perms, modules = prepare_program(temp_prog, form.cleaned_data)
             #   Save the form's raw data instead of the form itself, or its clean data.
             #   Unpacking of the data happens at the next step.
@@ -740,20 +746,8 @@ def flushcache(request):
 
     return render_to_response('admin/cache_flush.html', request, context)
 
-@admin_required
-def emails(request):
-    """
-    View that displays information for recent email requests.
-    GET data:
-      'start_date' (optional):  Starting date to filter email requests by.
-                                Should be given in the format "%m/%d/%Y".
-    """
-    context = {}
-    if request.GET and "start_date" in request.GET:
-        start_date = datetime.datetime.strptime(request.GET["start_date"], "%Y-%m-%d")
-    else:
-        start_date = datetime.date.today() - datetime.timedelta(30)
-    context['start_date'] = start_date
+@cache_function
+def get_email_data(start_date):
     requests = MessageRequest.objects.filter(created_at__gte=start_date).order_by('-created_at')
 
     requests_list = []
@@ -771,8 +765,26 @@ def emails(request):
         else:
             req.finished_at = "(Not finished)"
         requests_list.append(req)
+    return requests_list
+get_email_data.depend_on_model(MessageRequest)
+get_email_data.depend_on_model(TextOfEmail)
 
-    context['requests'] = requests_list
+@admin_required
+def emails(request):
+    """
+    View that displays information for recent email requests.
+    GET data:
+      'start_date' (optional):  Starting date to filter email requests by.
+                                Should be given in the format "%m/%d/%Y".
+    """
+    context = {}
+    if request.GET and "start_date" in request.GET:
+        start_date = datetime.datetime.strptime(request.GET["start_date"], "%Y-%m-%d")
+    else:
+        start_date = datetime.date.today() - datetime.timedelta(30)
+    context['start_date'] = start_date
+
+    context['requests'] = get_email_data(start_date)
 
     return render_to_response('admin/emails.html', request, context)
 

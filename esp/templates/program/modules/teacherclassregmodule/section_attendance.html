@@ -91,7 +91,7 @@ Please select a section from the dropdown below.
             </tr>
                 {% for student in section.enrolled_list %}
                     <tr>
-                        <th class="small">{{ forloop.counter }}</th>
+                        <th class="small sorttable_nosort">{{ forloop.counter }}</th>
                         <td>{{ student.first_name }}</td>
                         <td>{{ student.last_name }}</td>
                         <td align="center">{{ student.id }}</td>
@@ -116,9 +116,9 @@ Please select a section from the dropdown below.
             </tbody>
             <tfoot>
                 <tr>
-                    <th colspan="6">TOTAL</th>
-                    <th align="center" name="checkedin_total"></th>
-                    <th align="center" name="attending_total"></th>
+                    <th colspan="6" class="sorttable_nosort">TOTAL</th>
+                    <th align="center" name="checkedin_total" class="sorttable_nosort"></th>
+                    <th align="center" name="attending_total" class="sorttable_nosort"></th>
                 </tr>
             </tfoot>
         </table>
@@ -152,7 +152,7 @@ Please select a section from the dropdown below.
             <tbody>
                 {% for student in section.attended_list %}
                     <tr>
-                        <th class="small">{{ forloop.counter }}</th>
+                        <th class="small sorttable_nosort">{{ forloop.counter }}</th>
                         <td>{{ student.first_name }}</td>
                         <td>{{ student.last_name }}</td>
                         <td align="center">{{ student.id }}</td>
@@ -171,9 +171,9 @@ Please select a section from the dropdown below.
             </tbody>
             <tfoot>
                 <tr>
-                    <th colspan="6">TOTAL</th>
-                    <th align="center" name="checkedin_total"></th>
-                    <th align="center" name="attending_total"></th>
+                    <th colspan="6" class="sorttable_nosort">TOTAL</th>
+                    <th align="center" name="checkedin_total" class="sorttable_nosort"></th>
+                    <th align="center" name="attending_total" class="sorttable_nosort"></th>
                 </tr>
             </tfoot>
         </table>
