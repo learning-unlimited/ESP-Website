@@ -39,15 +39,20 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Prepare for Installing Dependencies
       run: deploy/travis/before_install
+      env:
+        PYTHON_VERSION: ${{ matrix.python-version }}
     - name: Install Dependencies for ${{ matrix.travis_job }}
       env:
         TRAVIS_JOB: ${{ matrix.travis_job }}
+        PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/travis/install
     - name: Prepare for ${{ matrix.travis_job }}
       env:
         TRAVIS_JOB: ${{ matrix.travis_job }}
+        PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/travis/before_script
     - name: Run ${{ matrix.travis_job }}
       env:
         TRAVIS_JOB: ${{ matrix.travis_job }}
+        PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/travis/script

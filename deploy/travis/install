@@ -4,9 +4,17 @@ set -euf -o pipefail
 if [ "$TRAVIS_JOB" = "test" ]; then
     sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres | grep -v ^libpq-dev | grep -v ^.*pip)
     esp/packages_base_manual_install.sh
-    pip2 install -r esp/requirements.txt -q --log pip.log || (tail pip.log && exit 1)
+    if [ "$PYTHON_VERSION" = "2.7" ]; then
+        pip2 install -r esp/requirements.txt -q --log pip.log || (tail pip.log && exit 1)
+    else
+        pip3 install -r esp/requirements.txt -q --log pip.log || (tail pip.log && exit 1)
+    fi
 elif [ "$TRAVIS_JOB" = "lint" ]; then
-    pip2 install flake8
+    if [ "$PYTHON_VERSION" = "2.7" ]; then
+        pip2 install flake8
+    else
+        pip3 install flake8
+    fi
 else
     echo "Unknown TRAVIS_JOB: $TRAVIS_JOB"
     exit 1
