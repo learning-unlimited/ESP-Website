@@ -7,7 +7,7 @@ if [ "$TRAVIS_JOB" = "test" ]; then
     if [ "$PYTHON_VERSION" = "2.7" ]; then
         pip2 install -r esp/requirements.txt -q --log pip.log || (tail pip.log && exit 1)
     else
-        pip3 install -r esp/requirements.txt -q --log pip.log || (tail pip.log && exit 1)
+        pip3 install -r esp/requirements3.txt -q --log pip.log || (tail pip.log && exit 1)
     fi
 elif [ "$TRAVIS_JOB" = "lint" ]; then
     if [ "$PYTHON_VERSION" = "2.7" ]; then
