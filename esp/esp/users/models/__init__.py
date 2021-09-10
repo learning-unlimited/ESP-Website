@@ -2030,14 +2030,14 @@ class PersistentQueryFilter(models.Model):
         dumped_filter = pickle.dumps(q_filter)
 
         # Deal with multiple instances
-        query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
+        query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = hashlib.sha1(dumped_filter.encode('UTF-8')).hexdigest())
         pqfs = PersistentQueryFilter.objects.filter(query_q)
         if pqfs.count() > 0:
             foo = pqfs[0]
         else:
             foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
                                                                    q_filter = dumped_filter,
-                                                                   sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
+                                                                   sha1_hash = hashlib.sha1(dumped_filter.encode('UTF-8')).hexdigest())
         foo.useful_name = description
         foo.save()
         return foo
@@ -2072,7 +2072,7 @@ class PersistentQueryFilter(models.Model):
 
         import hashlib
         dumped_filter = pickle.dumps(q_filter)
-        sha1_hash = hashlib.sha1(dumped_filter).hexdigest()
+        sha1_hash = hashlib.sha1(dumped_filter.encode('UTF-8')).hexdigest()
 
         self.q_filter = dumped_filter
         self.sha1_hash = sha1_hash
@@ -2114,7 +2114,7 @@ class PersistentQueryFilter(models.Model):
         except:
             qobject_string = ''
         try:
-            filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha1(qobject_string).hexdigest())#    pass
+            filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha1(qobject_string.encode('UTF-8')).hexdigest())#    pass
         except:
             filterObj = PersistentQueryFilter.create_from_Q(item_model  = model,
                                                             q_filter    = QObject,
