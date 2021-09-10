@@ -85,6 +85,7 @@ class BigBoardModule(ProgramModuleObj):
             "left_axis_data": left_axis_data,
             "loads": list(zip([1, 5, 15], self.load_averages())),
             "timeslots": prog.getTimeSlots(),
+            "categories": prog.class_categories.all().order_by('category').values_list("symbol", flat = True)
         }
         return render_to_response(self.baseDir()+'bigboard.html',
                                   request, context)
