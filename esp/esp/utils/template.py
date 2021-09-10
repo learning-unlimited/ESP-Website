@@ -47,8 +47,8 @@ import hashlib
 
 DEFAULT_ORIGIN = 'esp.utils.template cached loader'
 
-INVALID_CONTENTS = ''
-INVALID_HASH = hashlib.md5(INVALID_CONTENTS.encode('UTF-8')).hexdigest()
+INVALID_CONTENTS = b''
+INVALID_HASH = hashlib.md5(INVALID_CONTENTS).hexdigest()
 
 class Loader(base.Loader):
     is_usable = True
