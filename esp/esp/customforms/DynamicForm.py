@@ -727,7 +727,7 @@ class FormHandler:
         try:
             from cStringIO import StringIO
         except:
-            from StringIO import StringIO
+            from io import StringIO
 
         response_data = self.getResponseData(self.form)
         wbk = xlwt.Workbook()

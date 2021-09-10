@@ -40,7 +40,7 @@ Learning Unlimited, Inc.
 import datetime
 import xlwt
 import re
-from cStringIO import StringIO
+from io import StringIO
 from django.db import models
 from django.db.models import Q
 from esp.users.models import ESPUser, Record, admin_required

@@ -60,7 +60,7 @@ import os
 import operator
 import zlib
 import base64
-from StringIO import StringIO
+from io import StringIO
 
 class LotteryException(Exception):
     """ Top level exception class for lottery related problems.  """

@@ -95,7 +95,7 @@ from reversion import revisions as reversion
 try:
     from cStringIO import StringIO
 except ImportError:
-    from StringIO import StringIO
+    from io import StringIO
 
 
 @login_required
