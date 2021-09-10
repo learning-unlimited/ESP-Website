@@ -2139,7 +2139,7 @@ class PersistentQueryFilter(models.Model):
         try:
             qobject_string = pickle.dumps(QObject)
         except:
-            qobject_string = ''
+            qobject_string = b''
         try:
             filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha1(qobject_string).hexdigest())#    pass
         except:

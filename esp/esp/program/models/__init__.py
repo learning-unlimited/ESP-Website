@@ -1871,7 +1871,7 @@ class ScheduleMap:
     def __marinade__(self):
         import hashlib
         import pickle
-        return 'ScheduleMap_%s' % hashlib.md5(pickle.dumps(self).encode("UTF-8")).hexdigest()[:8]
+        return 'ScheduleMap_%s' % hashlib.md5(pickle.dumps(self)).hexdigest()[:8]
 
     def __unicode__(self):
         return six.u('%s') % self.map
