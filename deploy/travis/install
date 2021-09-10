@@ -6,8 +6,10 @@ if [ "$TRAVIS_JOB" = "test" ]; then
     esp/packages_base_manual_install.sh
     if [ "$PYTHON_VERSION" = "2.7" ]; then
         pip2 install -r esp/requirements.txt -q --log pip.log || (tail pip.log && exit 1)
+        pip2 install coverage
     else
         pip3 install -r esp/requirements3.txt -q --log pip.log || (tail pip.log && exit 1)
+        pip3 install coverage
     fi
 elif [ "$TRAVIS_JOB" = "lint" ]; then
     if [ "$PYTHON_VERSION" = "2.7" ]; then

@@ -46,6 +46,9 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
   .sp-palette .sp-thumb-inner {
       border: 1px solid black;
   }
+  .control-label {
+    padding-right: 10px;
+  }
 </style>
 {% endblock %}
 {% block title %}Theme Editor{% endblock %}
@@ -54,20 +57,20 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
     <div class="span12">
         <h1>Theme Editor</h1>
         <div class="alert alert-info">
-            <p>New to the theme editor?<a href="#help-modal" data-toggle="modal">Click here</a>.</p>
+            <p>New to the theme editor? <a href="#help-modal" data-toggle="modal">Click here</a>.</p>
         </div>
         <div id="help-modal" class="modal hide fade">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal">x</button>
-                <h3>Welcome to the theme editor! It's easy to get started</h3>
+                <h3>Welcome to the theme editor! It's easy to get started!</h3>
             </div>
             <div class="modal-body">
                 <ol>
-                    <li><strong>Add colors</strong>to your Palette.</li>
-                    <li>Dive into the sections and<strong>customize</strong>at will. Press<strong>Test</strong>often to see your changes in action.</li>
-                    <li>When you're happy with your changes, just enter a name under Theme Properties and press<strong>Save</strong>!</li>
+                    <li><strong>Add colors</strong> to your Palette.</li>
+                    <li>Dive into the sections and <strong>customize</strong> at will. Press <strong>Test</strong> often to see your changes in action.</li>
+                    <li>When you're happy with your changes, just enter a name under Theme Properties and press <strong>Save</strong>!</li>
                 </ol>
-                <p>For even more<strong>color picking power</strong>, we recommend using a full featured colour picker like<a href='http://colorschemedesigner.com' target="_blank">this one</a>to decide your colours, and enter the hex values when adding to your palette.</p>
+                <p>For even more <strong>color picking power</strong>, we recommend using a full featured colour picker like <a href='http://colorschemedesigner.com' target="_blank">this one</a> to decide your colours, and enter the hex values when adding to your palette.</p>
             </div>
             <div class="modal-footer"></div>
         </div>
@@ -112,7 +115,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     </div>
                     <div class="collapse" id="scaffolding">
                         <div class="control-group">
-                            <label class="control-label" for="bodybg">Background :</label>
+                            <label class="control-label" for="bodybg">Background:</label>
                             <div class="controls">
                                 <input type="text" id="bodybg" name="bodyBackground" class="color" value="{{bodyBackground}}"/>
                             </div>
@@ -133,7 +136,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         </div>
 
                         <div class="control-group">
-                            <label class="control-label" for="textColor">Text :</label>
+                            <label class="control-label" for="textColor">Text:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="textColor" name="textColor" value="{{ textColor }}"/>
                             </div>
@@ -147,7 +150,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     </div>
                     <div class="collapse" id="links">
                         <div class="control-group">
-                            <label class="control-label" for="linkColor">Links :</label>
+                            <label class="control-label" for="linkColor">Links:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="linkColor" name="linkColor" value="{{ linkColor }}"/>
                             </div>
@@ -205,28 +208,28 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     </div>
                     <div class="collapse" id="navbar_edit_group">
                         <div class="control-group">
-                            <label class="control-label" for="navbarBackground">Background :</label>
+                            <label class="control-label" for="navbarBackground">Background:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="navbarBackground" name="navbarBackground" value="{{ navbarBackground }}"/>
                             </div>
                         </div>
 
                         <div class="control-group">
-                            <label class="control-label" for="navbarBackgroundHighlight">Highlight :</label>
+                            <label class="control-label" for="navbarBackgroundHighlight">Highlight:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="navbarBackgroundHighlight" name="navbarBackgroundHighlight" value="{{ navbarBackgroundHighlight }}"/>
                             </div>
                         </div>
 
                         <div class="control-group">
-                            <label class="control-label" for="navbarText">Text :</label>
+                            <label class="control-label" for="navbarText">Text:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="navbarText" name="navbarText" value="{{ navbarText }}"/>
                             </div>
                         </div>
 
                         <div class="control-group">
-                            <label class="control-label" for="navbarLinkColor">Links :</label>
+                            <label class="control-label" for="navbarLinkColor">Links:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}"/>
                             </div>
@@ -261,7 +264,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         </div>
 
                         <div class="control-group">
-                            <label class="control-label" for="sidebarBackground">Background :</label>
+                            <label class="control-label" for="sidebarBackground">Background:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="sidebarBackground" name="sidebarBackground" value="{{ sidebarBackground }}"/>
                             </div>
@@ -299,7 +302,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 
                         {% comment %}
                         <div class="control-group">
-                            <label class="control-label" for="navbarLinkColor">Links :</label>
+                            <label class="control-label" for="navbarLinkColor">Links:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}"/>
                             </div>
