@@ -34,8 +34,6 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.qsd.views import qsd
-from django.core.exceptions import PermissionDenied
 from django.contrib.sites.models import Site
 from esp.users.models import ESPUser, Permission
 from django.http import Http404, HttpResponseRedirect, HttpResponse
@@ -43,11 +41,7 @@ from django.utils.datastructures import MultiValueDict
 from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 
-from six.moves.http_cookies import SimpleCookie
-
-import datetime
 import re
-import json
 
 from esp.dbmail.models import MessageRequest
 from esp.web.models import NavBarCategory
@@ -58,20 +52,9 @@ from esp.middleware import ESPError
 from esp.web.forms.contact_form import ContactForm
 from esp.tagdict.models import Tag
 from esp.utils.no_autocookie import disable_csrf_cookie_update
-from esp.utils.query_utils import nest_Q
 
 from django.views.decorators.cache import cache_control
-from django.core.mail import mail_admins
 from django.conf import settings
-
-from django.views.decorators.csrf import csrf_exempt
-
-from pprint import pprint
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 
 @cache_control(max_age=180)
 @disable_csrf_cookie_update

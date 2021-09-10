@@ -13,7 +13,7 @@ from functools import reduce
 try:
     from cStringIO import StringIO
 except:
-    from StringIO import StringIO
+    from io import StringIO
 
 import gc
 import xlwt

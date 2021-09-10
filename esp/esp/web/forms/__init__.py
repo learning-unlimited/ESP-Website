@@ -57,7 +57,7 @@ class ResizeImageField(forms.ImageField):
         file = super(forms.ImageField, self).clean(file, initial)
         if file and self.size is not None:
             from PIL import Image
-            from cStringIO import StringIO
+            from io import StringIO
 
             filename = file.name
 

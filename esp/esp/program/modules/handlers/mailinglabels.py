@@ -246,8 +246,8 @@ class MailingLabels(ProgramModuleObj):
 
 
 
-                import StringIO
-                b = StringIO.StringIO()
+                from io import StringIO
+                b = StringIO()
                 c.setopt(pycurl.WRITEFUNCTION, b.write)
 
                 c.perform()
