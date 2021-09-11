@@ -16,11 +16,11 @@ class Migration(migrations.Migration):
             name='QuasiStaticData',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('url', models.CharField(help_text=b'Full url, without the trailing .html', max_length=256)),
+                ('url', models.CharField(help_text='Full url, without the trailing .html', max_length=256)),
                 ('name', models.SlugField(blank=True)),
                 ('title', models.CharField(max_length=256)),
                 ('content', models.TextField()),
-                ('create_date', models.DateTimeField(default=datetime.datetime.now, verbose_name=b'last edited', editable=False)),
+                ('create_date', models.DateTimeField(default=datetime.datetime.now, verbose_name='last edited', editable=False)),
                 ('disabled', models.BooleanField(default=False)),
                 ('keywords', models.TextField(null=True, blank=True)),
                 ('description', models.TextField(null=True, blank=True)),

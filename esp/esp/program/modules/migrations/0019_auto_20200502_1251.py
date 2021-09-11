@@ -16,6 +16,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='programmoduleobj',
             name='required_label',
-            field=models.CharField(default=b'', max_length=80, blank=True),
+            field=models.CharField(default='', max_length=80, blank=True),
         ),
     ]

@@ -43,15 +43,15 @@ class Migration(migrations.Migration):
             name='BooleanExpression',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('label', models.CharField(help_text=b'Description of the expression', max_length=80)),
+                ('label', models.CharField(help_text='Description of the expression', max_length=80)),
             ],
         ),
         migrations.CreateModel(
             name='BooleanToken',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('text', models.TextField(default=b'', help_text=b'Boolean value, or text needed to compute it', blank=True)),
-                ('seq', models.IntegerField(default=0, help_text=b'Location of this token on the expression stack (larger numbers are higher)')),
+                ('text', models.TextField(default='', help_text='Boolean value, or text needed to compute it', blank=True)),
+                ('seq', models.IntegerField(default=0, help_text='Location of this token on the expression stack (larger numbers are higher)')),
             ],
         ),
         migrations.CreateModel(
@@ -59,7 +59,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('category', models.TextField()),
-                ('symbol', models.CharField(default=b'?', max_length=1)),
+                ('symbol', models.CharField(default='?', max_length=1)),
                 ('seq', models.IntegerField(default=0)),
             ],
             options={
@@ -86,8 +86,8 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(unique=True, max_length=255)),
                 ('show_in_scheduler', models.BooleanField(default=False)),
                 ('show_in_dashboard', models.BooleanField(default=False)),
-                ('seq', models.SmallIntegerField(default=0, help_text=b'Flag types will be ordered by this.  Smaller is earlier; the default is 0.')),
-                ('color', models.CharField(help_text=b'A color for displaying this flag type.  Should be a valid CSS color, for example "red", "#ff0000", or "rgb(255, 0, 0)".  If blank, an arbitrary one will be chosen.', max_length=20, blank=True)),
+                ('seq', models.SmallIntegerField(default=0, help_text='Flag types will be ordered by this.  Smaller is earlier; the default is 0.')),
+                ('color', models.CharField(help_text='A color for displaying this flag type.  Should be a valid CSS color, for example "red", "#ff0000", or "rgb(255, 0, 0)".  If blank, an arbitrary one will be chosen.', max_length=20, blank=True)),
             ],
             options={
                 'ordering': ['seq'],
@@ -100,7 +100,7 @@ class Migration(migrations.Migration):
                 ('is_prereq', models.BooleanField(default=True)),
                 ('enforce', models.BooleanField(default=True)),
                 ('member_ids', models.CommaSeparatedIntegerField(max_length=100, blank=True)),
-                ('operation', models.CharField(max_length=4, choices=[(b'AND', b'All'), (b'OR', b'Any'), (b'XOR', b'Exactly One')])),
+                ('operation', models.CharField(max_length=4, choices=[('AND', 'All'), ('OR', 'Any'), ('XOR', 'Exactly One')])),
             ],
             options={
                 'db_table': 'program_classimplications',
@@ -111,8 +111,8 @@ class Migration(migrations.Migration):
             name='ClassSection',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('status', models.IntegerField(default=0, choices=[(-20, b'cancelled'), (-10, b'rejected'), (0, b'unreviewed'), (5, b'accepted but hidden'), (10, b'accepted')])),
-                ('registration_status', models.IntegerField(default=0, choices=[(0, b'open'), (10, b'closed')])),
+                ('status', models.IntegerField(default=0, choices=[(-20, 'cancelled'), (-10, 'rejected'), (0, 'unreviewed'), (5, 'accepted but hidden'), (10, 'accepted')])),
+                ('registration_status', models.IntegerField(default=0, choices=[(0, 'open'), (10, 'closed')])),
                 ('duration', models.DecimalField(null=True, max_digits=5, decimal_places=2, blank=True)),
                 ('max_class_capacity', models.IntegerField(null=True, blank=True)),
                 ('enrolled_students', models.IntegerField(default=0)),
@@ -152,7 +152,7 @@ class Migration(migrations.Migration):
                 ('session_count', models.IntegerField(default=1)),
                 ('purchase_requests', models.TextField(null=True, blank=True)),
                 ('custom_form_data', esp.utils.fields.JSONField(null=True, blank=True)),
-                ('status', models.IntegerField(default=0, choices=[(-20, b'cancelled'), (-10, b'rejected'), (0, b'unreviewed'), (5, b'accepted but hidden'), (10, b'accepted')])),
+                ('status', models.IntegerField(default=0, choices=[(-20, 'cancelled'), (-10, 'rejected'), (0, 'unreviewed'), (5, 'accepted but hidden'), (10, 'accepted')])),
                 ('duration', models.DecimalField(null=True, max_digits=5, decimal_places=2, blank=True)),
             ],
             options={
@@ -164,10 +164,10 @@ class Migration(migrations.Migration):
             name='FinancialAidRequest',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('reduced_lunch', models.BooleanField(default=False, verbose_name=b'Do you receive free/reduced lunch at school?')),
-                ('household_income', models.CharField(max_length=12, null=True, verbose_name=b'Approximately what is your household income (round to the nearest $10,000)?', blank=True)),
-                ('extra_explaination', models.TextField(null=True, verbose_name=b'Please describe in detail your financial situation this year', blank=True)),
-                ('student_prepare', models.BooleanField(default=False, verbose_name=b'Did anyone besides the student fill out any portions of this form?')),
+                ('reduced_lunch', models.BooleanField(default=False, verbose_name='Do you receive free/reduced lunch at school?')),
+                ('household_income', models.CharField(max_length=12, null=True, verbose_name='Approximately what is your household income (round to the nearest $10,000)?', blank=True)),
+                ('extra_explaination', models.TextField(null=True, verbose_name='Please describe in detail your financial situation this year', blank=True)),
+                ('student_prepare', models.BooleanField(default=False, verbose_name='Did anyone besides the student fill out any portions of this form?')),
                 ('done', models.BooleanField(default=False, editable=False)),
             ],
             options={
@@ -183,8 +183,8 @@ class Migration(migrations.Migration):
                 ('grade_min', models.IntegerField()),
                 ('grade_max', models.IntegerField()),
                 ('director_email', models.EmailField(max_length=75)),
-                ('director_cc_email', models.EmailField(default=b'', help_text=b'If set, automated outgoing mail (except class cancellations) will be sent to this address instead of the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.', max_length=75, blank=True)),
-                ('director_confidential_email', models.EmailField(default=b'', help_text=b'If set, confidential emails such as financial aid applications will be sent to this address instead of the director email.', max_length=75, blank=True)),
+                ('director_cc_email', models.EmailField(default='', help_text='If set, automated outgoing mail (except class cancellations) will be sent to this address instead of the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.', max_length=75, blank=True)),
+                ('director_confidential_email', models.EmailField(default='', help_text='If set, confidential emails such as financial aid applications will be sent to this address instead of the director email.', max_length=75, blank=True)),
                 ('program_size_max', models.IntegerField(null=True)),
                 ('program_allow_waitlist', models.BooleanField(default=False)),
             ],
@@ -198,7 +198,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('title', models.CharField(max_length=512)),
-                ('seq', models.PositiveIntegerField(help_text=b'Lower is earlier', verbose_name=b'Sequence', blank=True)),
+                ('seq', models.PositiveIntegerField(help_text='Lower is earlier', verbose_name='Sequence', blank=True)),
             ],
             options={
                 'ordering': ('seq',),
@@ -229,7 +229,7 @@ class Migration(migrations.Migration):
                 ('emailverifycode', models.TextField(null=True, blank=True)),
                 ('email_verified', models.BooleanField(default=False)),
                 ('most_recent_profile', models.BooleanField(default=False)),
-                ('old_text_reminder', models.NullBooleanField(db_column=b'text_reminder')),
+                ('old_text_reminder', models.NullBooleanField(db_column='text_reminder')),
             ],
             options={
                 'db_table': 'program_registrationprofile',
@@ -283,8 +283,8 @@ class Migration(migrations.Migration):
             name='StudentAppQuestion',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('question', models.TextField(help_text=b'The prompt that your students will see.')),
-                ('directions', models.TextField(help_text=b'Specify any additional notes (such as the length of response you desire) here.', null=True, blank=True)),
+                ('question', models.TextField(help_text='The prompt that your students will see.')),
+                ('directions', models.TextField(help_text='Specify any additional notes (such as the length of response you desire) here.', null=True, blank=True)),
             ],
             options={
                 'db_table': 'program_studentappquestion',
@@ -295,8 +295,8 @@ class Migration(migrations.Migration):
             name='StudentAppResponse',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('response', models.TextField(default=b'')),
-                ('complete', models.BooleanField(default=False, help_text=b'Please check this box when you are finished responding to this question.')),
+                ('response', models.TextField(default='')),
+                ('complete', models.BooleanField(default=False, help_text='Please check this box when you are finished responding to this question.')),
             ],
             options={
                 'db_table': 'program_studentappresponse',
@@ -308,7 +308,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('date', models.DateTimeField(default=datetime.datetime.now, editable=False)),
-                ('score', models.PositiveIntegerField(blank=True, help_text=b'Please rate each student', null=True, choices=[(10, b'Yes'), (5, b'Maybe'), (1, b'No')])),
+                ('score', models.PositiveIntegerField(blank=True, help_text='Please rate each student', null=True, choices=[(10, 'Yes'), (5, 'Maybe'), (1, 'No')])),
                 ('comments', models.TextField()),
                 ('reject', models.BooleanField(default=False, editable=False)),
             ],
@@ -321,16 +321,16 @@ class Migration(migrations.Migration):
             name='StudentRegistration',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('start_date', models.DateTimeField(default=datetime.datetime.now, help_text=b'If blank, has always started.', null=True, blank=True)),
-                ('end_date', models.DateTimeField(default=None, help_text=b'If blank, never ends.', null=True, blank=True)),
+                ('start_date', models.DateTimeField(default=datetime.datetime.now, help_text='If blank, has always started.', null=True, blank=True)),
+                ('end_date', models.DateTimeField(default=None, help_text='If blank, never ends.', null=True, blank=True)),
             ],
         ),
         migrations.CreateModel(
             name='StudentSubjectInterest',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('start_date', models.DateTimeField(default=datetime.datetime.now, help_text=b'If blank, has always started.', null=True, blank=True)),
-                ('end_date', models.DateTimeField(default=None, help_text=b'If blank, never ends.', null=True, blank=True)),
+                ('start_date', models.DateTimeField(default=datetime.datetime.now, help_text='If blank, has always started.', null=True, blank=True)),
+                ('end_date', models.DateTimeField(default=None, help_text='If blank, never ends.', null=True, blank=True)),
             ],
         ),
         migrations.CreateModel(
@@ -339,7 +339,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('bio', models.TextField(null=True, blank=True)),
                 ('slugbio', models.CharField(max_length=50, null=True, blank=True)),
-                ('picture', models.ImageField(height_field=b'picture_height', width_field=b'picture_width', null=True, upload_to=b'uploaded/bio_pictures/%y_%m/', blank=True)),
+                ('picture', models.ImageField(height_field='picture_height', width_field='picture_width', null=True, upload_to='uploaded/bio_pictures/%y_%m/', blank=True)),
                 ('picture_height', models.IntegerField(null=True, blank=True)),
                 ('picture_width', models.IntegerField(null=True, blank=True)),
                 ('last_ts', models.DateTimeField(auto_now=True)),
@@ -357,8 +357,8 @@ class Migration(migrations.Migration):
                 ('email', models.EmailField(max_length=75, null=True, blank=True)),
                 ('name', models.CharField(max_length=80, null=True, blank=True)),
                 ('phone', localflavor.us.models.PhoneNumberField(max_length=20, null=True, blank=True)),
-                ('shirt_size', models.CharField(blank=True, max_length=5, null=True, choices=[(b'14/16', b'14/16 (XS)'), (b'S', b'S'), (b'M', b'M'), (b'L', b'L'), (b'XL', b'XL'), (b'XXL', b'XXL')])),
-                ('shirt_type', models.CharField(blank=True, max_length=20, null=True, choices=[(b'M', b'Plain'), (b'F', b'Fitted (for women)')])),
+                ('shirt_size', models.CharField(blank=True, max_length=5, null=True, choices=[('14/16', '14/16 (XS)'), ('S', 'S'), ('M', 'M'), ('L', 'L'), ('XL', 'XL'), ('XXL', 'XXL')])),
+                ('shirt_type', models.CharField(blank=True, max_length=20, null=True, choices=[('M', 'Plain'), ('F', 'Fitted (for women)')])),
                 ('comments', models.TextField(null=True, blank=True)),
             ],
         ),

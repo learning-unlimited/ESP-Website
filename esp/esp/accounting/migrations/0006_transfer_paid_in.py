@@ -16,6 +16,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='transfer',
             name='paid_in',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, blank=True, to='accounting.Transfer', help_text=b'If this transfer is for a fee that has been paid, references the transfer for the payment transaction.', null=True),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, blank=True, to='accounting.Transfer', help_text='If this transfer is for a fee that has been paid, references the transfer for the payment transaction.', null=True),
         ),
     ]

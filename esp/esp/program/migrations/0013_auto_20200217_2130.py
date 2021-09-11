@@ -51,16 +51,16 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='program',
             name='director_cc_email',
-            field=models.EmailField(default=b'', help_text=b'If set, automated outgoing mail (except class cancellations) will be sent to this address <i>instead of</i> the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.', max_length=75, blank=True),
+            field=models.EmailField(default='', help_text='If set, automated outgoing mail (except class cancellations) will be sent to this address <i>instead of</i> the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.', max_length=75, blank=True),
         ),
         migrations.AlterField(
             model_name='program',
             name='director_confidential_email',
-            field=models.EmailField(default=b'', help_text=b'If set, confidential emails such as financial aid applications will be sent to this address <i>instead of</i> the director email.', max_length=75, blank=True),
+            field=models.EmailField(default='', help_text='If set, confidential emails such as financial aid applications will be sent to this address <i>instead of</i> the director email.', max_length=75, blank=True),
         ),
         migrations.AlterField(
             model_name='volunteeroffer',
             name='shirt_type',
-            field=models.CharField(blank=True, max_length=20, null=True, choices=[(b'M', b'Straight cut'), (b'F', b'Fitted cut')]),
+            field=models.CharField(blank=True, max_length=20, null=True, choices=[('M', 'Straight cut'), ('F', 'Fitted cut')]),
         ),
     ]
