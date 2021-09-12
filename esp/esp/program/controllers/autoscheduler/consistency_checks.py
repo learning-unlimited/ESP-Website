@@ -170,12 +170,12 @@ class ConsistencyChecker:
                             "Roomslot index for room {} was {} instead of {}."
                     ).format(room.name, roomslot.index(), i))
                 if i < len(room.availability) - 1:
-                    if room.availability[i + 1] != next(roomslot):
+                    if room.availability[i + 1] != roomslot.next():
                         raise ConsistencyError(
                             "Roomslot next for room {} was wrong.".format(
                                 room.name))
                 else:
-                    if next(roomslot) is not None:
+                    if roomslot.next() is not None:
                         raise ConsistencyError((
                                 "Last roomslot next for room {} was not None."
                         ).format(room.name))

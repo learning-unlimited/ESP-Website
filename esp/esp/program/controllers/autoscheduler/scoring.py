@@ -851,7 +851,7 @@ class RoomConsecutivityScorer(BaseScorer):
                                 avoid_doublecount=False):
         """The boundary-after a roomslit is complete if either there's no
         roomslot after or there's another class scheduled after it."""
-        next_roomslot = next(roomslot)
+        next_roomslot = roomslot.next()
         return next_roomslot is None \
             or (not avoid_doublecount
                 and next_roomslot.assigned_section is not None
