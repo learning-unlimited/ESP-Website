@@ -42,7 +42,8 @@ class ESPUserTest(TestCase):
             def cycle_key(self):
                 pass
             def flush(self):
-                for i in self.keys():
+                keys = list(self.keys())
+                for i in keys:
                     del self[i]
 
         # Make up a fake request object
