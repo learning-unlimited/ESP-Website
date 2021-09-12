@@ -113,7 +113,7 @@ class ProgramCreationForm(BetterModelForm):
         then calls the superclass's save() method.
         '''
         #   Filter out unwanted characters from program type to form URL
-        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
+        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
         self.instance.url = u'%(type)s/%(instance)s' \
             % {'type': ptype_slug
               ,'instance': self.cleaned_data['term']
