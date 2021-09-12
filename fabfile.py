@@ -350,7 +350,7 @@ def dumpdb(filename="devsite_django.sql"):
          pipes.quote(default_db['USER']), pipes.quote(default_db['PASSWORD']), pipes.quote(env.rbase), pipes.quote(filename)))
 
 def gen_password(length):
-    return "".join([random.choice(string.letters + string.digits) for i in range(length)])
+    return "".join([random.choice(string.ascii_letters + string.digits) for i in range(length)])
 
 @task
 def refresh():
