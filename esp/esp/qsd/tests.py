@@ -138,7 +138,7 @@ class QSDCorrectnessTest(TestCase):
             qsd_rec_new.save()
             response = self.client.get(self.url)
             self.assertEqual(response.status_code, 200)
-            self.assertTrue('Testing 456' in response.content)
+            self.assertTrue('Testing 456' in str(response.content))
 
             #   Delete the new QSD so we can start again.
             qsd_rec_new.delete()
