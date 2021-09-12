@@ -71,7 +71,7 @@ class ThemesTest(TestCase):
 
         #   Get the home page (this is a fresh site) and make sure it has a link to the theme landing.
         response = self.client.get('/')
-        self.assertTrue(len(re.findall(r'<a href="/themes.*?Configure site appearance.*?</a>', response.content, flags=re.DOTALL)) == 1)
+        self.assertTrue(len(re.findall(r'<a href="/themes.*?Configure site appearance.*?</a>', str(response.content), flags=re.DOTALL)) == 1)
 
         #   Go to the themes landing page and theme selector, make sure neither errors out.
         response = self.client.get('/themes/')
