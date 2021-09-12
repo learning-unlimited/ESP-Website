@@ -97,7 +97,7 @@ class ThemeController(object):
 
     def get_theme_names(self):
         return [name for name in os.listdir(THEME_PATH)
-            if os.path.isdir(os.path.join(THEME_PATH, name))]
+            if name != '__pycache__' and os.path.isdir(os.path.join(THEME_PATH, name))]
 
     def get_template_settings(self):
         """
@@ -373,6 +373,8 @@ class ThemeController(object):
 
         result = []
         for filename in os.listdir(dir):
+            if filename == '__pycache__':
+                continue
             full_filename = os.path.join(dir, filename)
             if os.path.isdir(filename):
                 result += self.get_file_summaries(full_filename)
