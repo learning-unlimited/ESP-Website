@@ -7,6 +7,7 @@ from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import SplitDateWidget
 from esp.users.models import K12School, StudentInfo, AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC, AFFILIATION_OTHER, AFFILIATION_NONE
 from datetime import datetime
+from esp.users.models import ESPUser
 from esp.program.models import RegistrationProfile
 from django.conf import settings
 import json
@@ -163,7 +164,6 @@ HOW_TO_GET_TO_PROGRAM = (
 
 class StudentInfoForm(FormUnrestrictedOtherUser):
     """ Extra student-specific information """
-    from esp.users.models import ESPUser
 
     gender = forms.ChoiceField(choices=[('', ''), ('M', 'Male'), ('F', 'Female')], required=False)
     graduation_year = forms.ChoiceField(choices=[('', '')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
