@@ -380,19 +380,20 @@ class QueryBuilderTest(DjangoTestCase):
 
 
     def test_select_input(self):
+        options = {str(i): "option %s" % i for i in range(10)}
         select_input = query_builder.SelectInput(
-            "a_db_field", {str(i): "option %s" % i for i in range(10)})
+            "a_db_field", options)
         self.assertEqual(select_input.spec(),
                          {'reactClass': 'SelectInput',
                           'options': [{'name': i,
                                        'title': 'option %s' % i}
-                                      # do set(map(str, range(10))) to get the
+                                      # use options.keys() to get the
                                       # sort order the same as the dict sort
                                       # order.  It doesn't matter in reality,
                                       # but just making it the same is easier
                                       # than writing a thing to compare
                                       # correctly.
-                                      for i in set(map(str, list(range(10))))]})
+                                      for i in options.keys()]})
         # Q objects don't have an __eq__, so they don't compare as equal.  But
         # comparing their str()s seems to work reasonably well.
         self.assertEqual(str(select_input.as_q('5')), str(Q(a_db_field='5')))
