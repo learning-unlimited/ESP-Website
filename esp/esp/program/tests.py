@@ -655,7 +655,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
 
         #   Filter out unwanted characters from program type to form URL
-        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
+        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
         new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
         new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
         new_prog.save()
@@ -816,7 +816,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
 
         #   Filter out unwanted characters from program type to form URL
-        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
+        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
         new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
         new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
         new_prog.save()
