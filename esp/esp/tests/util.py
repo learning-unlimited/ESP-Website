@@ -18,7 +18,7 @@ class CacheFlushTestCase(TestCase):
             dump_all_caches()
 
             from esp import settings
-            settings.CACHE_PREFIX = ''.join( random.sample( string.letters + string.digits, 16 ) )
+            settings.CACHE_PREFIX = ''.join( random.sample( string.ascii_letters + string.digits, 16 ) )
             from django.conf import settings as django_settings
             django_settings.CACHE_PREFIX = settings.CACHE_PREFIX
 

@@ -75,7 +75,7 @@ class UserRegForm(forms.Form):
         data = self.cleaned_data['username']
 
         import string
-        good_chars = set(string.letters + string.digits)
+        good_chars = set(string.ascii_letters + string.digits)
 
         set_of_data = set(data)
         if not(good_chars & set_of_data == set_of_data):
