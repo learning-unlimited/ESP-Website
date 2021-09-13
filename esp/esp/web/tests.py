@@ -71,8 +71,8 @@ class PageTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Make sure that we've gotten an HTML document, and not a Django error
-        self.assertStringContains(str(response.content), "<html")
-        self.assertNotStringContains(str(response.content), "You're seeing this error because you have <code>DEBUG = True</code>")
+        self.assertStringContains(response.content, "<html")
+        self.assertNotStringContains(response.content, "You're seeing this error because you have <code>DEBUG = True</code>")
 
 class NavbarTest(TestCase):
 
@@ -80,7 +80,7 @@ class NavbarTest(TestCase):
         response = self.client.get(path)
 
         navbaritem_re = re.compile(r'<li class="divsecondarynavlink (?:indent)?">\s+(.*)\s+</li>')
-        re_results = re.findall(navbaritem_re, str(response.content))
+        re_results = re.findall(navbaritem_re, response.content)
         return re_results
 
     def navbars_enabled(self):
