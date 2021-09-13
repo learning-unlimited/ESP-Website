@@ -139,7 +139,7 @@ class ViewUserInfoTest(TestCase):
         # Try searching by ID
         response = c.get("/manage/usersearch", { "userstr": username })
         self.assertEqual(response.status_code, 200)
-        self.assertStringContains(str(response.content), 'Multiple users matched the criteria that you specified')
+        self.assertStringContains(response.content.decode('UTF-8'), 'Multiple users matched the criteria that you specified')
 
 
     def testUserIDSearchOneResult(self):
@@ -148,7 +148,7 @@ class ViewUserInfoTest(TestCase):
 
         # Try searching by ID direct hit
         response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
-        self.assertStringContains(str(response['location']), "/manage/userview?username=adminuser124353")
+        self.assertStringContains(response['location'].decode('UTF-8'), "/manage/userview?username=adminuser124353")
 
 
     def testUserIDSearchMultipleResults(self):
@@ -160,7 +160,7 @@ class ViewUserInfoTest(TestCase):
         # Try searching by ID direct hit
         response = c.get("/manage/usersearch", { "userstr": self.admin.id })
         self.assertEqual(response.status_code, 200)
-        self.assertStringContains(str(response.content), 'Multiple users matched the criteria that you specified')
+        self.assertStringContains(response.content.decode('UTF-8'), 'Multiple users matched the criteria that you specified')
 
 
     def testUserSearchFn(self):
@@ -175,13 +175,13 @@ class ViewUserInfoTest(TestCase):
         # Try searching by username
         response = c.get("/manage/usersearch", { "userstr": str(self.fake_admin.username) })
         self.assertEqual(response.status_code, 302)
-        self.assertStringContains(str(response['location']), "/manage/userview?username=notanadminuser124353")
+        self.assertStringContains(response['location'].decode('UTF-8'), "/manage/userview?username=notanadminuser124353")
 
         # Try some fuzzy searches
         # First name only, unique
         response = c.get("/manage/usersearch", { "userstr": self.unique_name })
         self.assertEqual(response.status_code, 302)
-        self.assertStringContains(str(response['location']), "/manage/userview?username=testuser123543")
+        self.assertStringContains(response['location'].decode('UTF-8'), "/manage/userview?username=testuser123543")
 
         # Full name, unique
 
@@ -189,39 +189,39 @@ class ViewUserInfoTest(TestCase):
 
         # response = c.get("/manage/usersearch", { "userstr": "Admin User" })
         # self.assertEqual(response.status_code, 302)
-        # self.assertStringContains(str(response['location']), "/manage/userview?username=adminuser124353")
+        # self.assertStringContains(response['location'].decode('UTF-8'), "/manage/userview?username=adminuser124353")
 
         # Last name, not unique
         response = c.get("/manage/usersearch", { "userstr": "User" })
         self.assertEqual(response.status_code, 200)
-        self.assertStringContains(str(response.content), self.admin.username)
-        self.assertStringContains(str(response.content), self.fake_admin.username)
-        self.assertStringContains(str(response.content), self.user.username)
-        self.assertStringContains(str(response.content), 'href="/manage/userview?username=adminuser124353"')
+        self.assertStringContains(response.content.decode('UTF-8'), self.admin.username)
+        self.assertStringContains(response.content.decode('UTF-8'), self.fake_admin.username)
+        self.assertStringContains(response.content.decode('UTF-8'), self.user.username)
+        self.assertStringContains(response.content.decode('UTF-8'), 'href="/manage/userview?username=adminuser124353"')
 
         # Partial first name, not unique
         response = c.get("/manage/usersearch", { "userstr": "Adm" })
         self.assertEqual(response.status_code, 200)
-        self.assertStringContains(str(response.content), self.admin.username)
-        self.assertStringContains(str(response.content), self.fake_admin.username)
-        self.assertNotStringContains(str(response.content), self.user.username)
-        self.assertStringContains(str(response.content), 'href="/manage/userview?username=adminuser124353"')
+        self.assertStringContains(response.content.decode('UTF-8'), self.admin.username)
+        self.assertStringContains(response.content.decode('UTF-8'), self.fake_admin.username)
+        self.assertNotStringContains(response.content.decode('UTF-8'), self.user.username)
+        self.assertStringContains(response.content.decode('UTF-8'), 'href="/manage/userview?username=adminuser124353"')
 
         # Partial first name and last name, not unique
         response = c.get("/manage/usersearch", { "userstr": "Adm User" })
         self.assertEqual(response.status_code, 200)
-        self.assertStringContains(str(response.content), self.admin.username)
-        self.assertStringContains(str(response.content), self.fake_admin.username)
-        self.assertNotStringContains(str(response.content), self.user.username)
-        self.assertStringContains(str(response.content), 'href="/manage/userview?username=adminuser124353"')
+        self.assertStringContains(response.content.decode('UTF-8'), self.admin.username)
+        self.assertStringContains(response.content.decode('UTF-8'), self.fake_admin.username)
+        self.assertNotStringContains(response.content.decode('UTF-8'), self.user.username)
+        self.assertStringContains(response.content.decode('UTF-8'), 'href="/manage/userview?username=adminuser124353"')
 
         # Now, make sure we properly do nothing when there're no users to do anything to
         response = c.get("/manage/usersearch", { "userstr": "NotAUser9283490238" })
-        self.assertStringContains(str(response.content), "No user found by that name!")
-        self.assertNotStringContains(str(response.content), self.admin.username)
-        self.assertNotStringContains(str(response.content), self.fake_admin.username)
-        self.assertNotStringContains(str(response.content), self.user.username)
-        self.assertNotStringContains(str(response.content), 'href="/manage/userview?username=adminuser124353"')
+        self.assertStringContains(response.content.decode('UTF-8'), "No user found by that name!")
+        self.assertNotStringContains(response.content.decode('UTF-8'), self.admin.username)
+        self.assertNotStringContains(response.content.decode('UTF-8'), self.fake_admin.username)
+        self.assertNotStringContains(response.content.decode('UTF-8'), self.user.username)
+        self.assertNotStringContains(response.content.decode('UTF-8'), 'href="/manage/userview?username=adminuser124353"')
 
 
     def testUserInfoPage(self):
@@ -235,10 +235,10 @@ class ViewUserInfoTest(TestCase):
         response = c.get("/manage/userview", { 'username': self.user.username })
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['user'].id, self.user.id)
-        self.assert_(self.user.username in response.content)
-        self.assert_(self.user.first_name in response.content)
-        self.assert_(self.user.last_name in response.content)
-        self.assert_(str(self.user.id) in response.content)
+        self.assert_(self.user.username in response.content.decode('UTF-8'))
+        self.assert_(self.user.first_name in response.content.decode('UTF-8'))
+        self.assert_(self.user.last_name in response.content.decode('UTF-8'))
+        self.assert_(str(self.user.id) in response.content.decode('UTF-8'))
 
         # Test to make sure we get an error on an unknown user
         response = c.get("/manage/userview", { 'username': "NotARealUser" })
@@ -1185,7 +1185,7 @@ class ModuleControlTest(ProgramFrameworkTest):
 
         #   Check that the main student reg page displays as usual in the initial state.
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
-        self.assertTrue('Steps for Registration' in response.content)
+        self.assertTrue('Steps for Registration' in response.content.decode('UTF-8'))
 
         #   Set a student module to be required and make sure we are shown it.
         fa_module = ProgramModule.objects.filter(handler='FinancialAidAppModule')[0]
@@ -1197,14 +1197,14 @@ class ModuleControlTest(ProgramFrameworkTest):
         response = self.client.get(
                     '/learn/%s/studentreg' % self.program.getUrlBase(),
                     **{'wsgi.url_scheme': 'https'})
-        self.assertTrue('Financial Aid' in response.content)
+        self.assertTrue('Financial Aid' in response.content.decode('UTF-8'))
 
         #   Remove the module and make sure we are not shown it anymore.
         self.program.program_modules.remove(fa_module)
         self.program.save()
 
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
-        self.assertTrue('Steps for Registration' in response.content)
+        self.assertTrue('Steps for Registration' in response.content.decode('UTF-8'))
 
 class MeetingTimesTest(ProgramFrameworkTest):
     def assertSetEquals(self, a, b):
