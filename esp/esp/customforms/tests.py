@@ -138,7 +138,7 @@ class CustomFormsTest(TestCase):
 
         response = self.client.post("/customforms/submit/", json.dumps(form_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, "OK")
+        self.assertEqual(response.content.decode('UTF-8'), "OK")
 
         #   - Make sure the form and its fields exist and match what was specified
         forms = Form.objects.filter(title='Test Form')
@@ -198,7 +198,7 @@ class CustomFormsTest(TestCase):
         self.client.login(username=self.admin.username, password='password')
         response = self.client.get("/customforms/getData/", {'form_id': form.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
-        response_data = json.loads(response.content)
+        response_data = json.loads(response.content.decode('UTF-8'))
         self.assertTrue('answers' in response_data)
         self.assertEqual(len(response_data['answers']), 1)
         indiv_response = response_data['answers'][0]
