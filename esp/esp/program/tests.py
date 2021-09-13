@@ -148,7 +148,7 @@ class ViewUserInfoTest(TestCase):
 
         # Try searching by ID direct hit
         response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
-        self.assertStringContains(response['location'].decode('UTF-8'), "/manage/userview?username=adminuser124353")
+        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
 
 
     def testUserIDSearchMultipleResults(self):
@@ -175,13 +175,13 @@ class ViewUserInfoTest(TestCase):
         # Try searching by username
         response = c.get("/manage/usersearch", { "userstr": str(self.fake_admin.username) })
         self.assertEqual(response.status_code, 302)
-        self.assertStringContains(response['location'].decode('UTF-8'), "/manage/userview?username=notanadminuser124353")
+        self.assertStringContains(response['location'], "/manage/userview?username=notanadminuser124353")
 
         # Try some fuzzy searches
         # First name only, unique
         response = c.get("/manage/usersearch", { "userstr": self.unique_name })
         self.assertEqual(response.status_code, 302)
-        self.assertStringContains(response['location'].decode('UTF-8'), "/manage/userview?username=testuser123543")
+        self.assertStringContains(response['location'], "/manage/userview?username=testuser123543")
 
         # Full name, unique
 
@@ -189,7 +189,7 @@ class ViewUserInfoTest(TestCase):
 
         # response = c.get("/manage/usersearch", { "userstr": "Admin User" })
         # self.assertEqual(response.status_code, 302)
-        # self.assertStringContains(response['location'].decode('UTF-8'), "/manage/userview?username=adminuser124353")
+        # self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
 
         # Last name, not unique
         response = c.get("/manage/usersearch", { "userstr": "User" })
