@@ -481,7 +481,7 @@ def class_reg(form, programs, teachers, profiles, result_dict={}):
     ]
     result_dict.update({"prog_data": prog_data,
                         "stat_categories": stat_categories,
-                        "stats_per_category": len(stat_names)/len(stat_categories),
+                        "stats_per_category": len(stat_names) // len(stat_categories),
                         "stat_names": [stat_name.split(' ')[1] for stat_name in stat_names],
                         "categories": json.dumps([program.name for program in programs.order_by('id')]),
                         "left_axis_data": left_axis_data,
