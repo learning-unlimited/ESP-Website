@@ -17,22 +17,22 @@ git+https://github.com/learning-unlimited/django-admin-tools.git@esp # Extends D
 
 # Non-Django-specific packages
 docutils==0.12 # Needed for django.contrib.admindocs
-flake8==2.5.0 # Required for linter
+flake8==3.9.2 # Required for linter
 ipython==3.2.1 # Used for shell_plus
 Markdown==2.3.1 # Used in QSD
 numpy==1.16.6 # Used mainly in the lottery and class change controller
-pillow==6.2.2 # Required for ImageField, which we use in teacher bios
+pillow==8.3.2 # Required for ImageField, which we use in teacher bios
 psycopg2==2.8.6 # Talks to postgres
 pycurl==7.19.5.1 # Used only in mailing labels and a formstack script which I think is outdated
 py3dns # Used for validating email addresses; imports as "DNS", not "pydns"
-Pygments==2.0.2 # django-extensions dependency
+Pygments==2.10.0 # django-extensions dependency
 pyinotify # Makes dev servers auto-reload
 pylibmc==1.5.0 # Talks to memcached
 pytz==2015.4 # Required for timezone support
 raven # Required for Sentry error reporting
 selenium==2.44.0 # Runs selenium tests which probably don't work anymore
 shortuuid==0.4.2 # django-extensions dependency
-stripe==1.19.1 # Required for credit card processing
+stripe==2.60.0 # Required for credit card processing
 twilio==6.63.2 # Required for text messaging support
 werkzeug # Required for runserver_plus (alternative to runserver provided by django-extensions)
 xlwt==1.3.0 # Does form and survey exporting
