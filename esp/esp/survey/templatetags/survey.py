@@ -95,7 +95,7 @@ def _render_responses_for_section_helper(sec, survey, tl = None):
 def midValue(sizeLs0):
     sizeLst = int(sizeLs0)
     if sizeLst%2 == 1:
-        return ((sizeLst + 1) / 2 )
+        return ((sizeLst + 1) // 2 )
     else:
         return -1
 
@@ -105,7 +105,7 @@ def intrange(min_val, max_val):
 
 @register.filter
 def field_width(min_val, max_val):
-    return '%d%%' % (70 / (int(max_val) - int(min_val) + 1))
+    return '%d%%' % (70 // (int(max_val) - int(min_val) + 1))
 
 @register.filter
 def substitute(input_str, item):

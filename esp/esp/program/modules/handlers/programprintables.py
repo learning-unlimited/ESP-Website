@@ -1461,7 +1461,7 @@ class ProgramPrintables(ProgramModuleObj):
             for item in context['name_groups'][i]:
                 student_tuples.append((line_num, color, item))
         num_students = len(student_tuples)
-        num_pages = (num_students - 1) / num_per_page + 1
+        num_pages = (num_students - 1) // num_per_page + 1
         pages = [[] for i in range(num_pages)]
         #   Deal the list out into pages of [num_per_page] stacks
         for i in range(num_students):
