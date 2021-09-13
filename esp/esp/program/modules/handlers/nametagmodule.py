@@ -214,7 +214,7 @@ class NameTagModule(ProgramModuleObj):
                 user_backs[j-1] = users[j]
 
         users_and_backs = []
-        for j in range(len(users)/6):
+        for j in range(len(users) // 6):
             users_and_backs.append([users[j*6:(j+1)*6], user_backs[j*6:(j+1)*6]])
 
         context['barcodes'] = True if 'barcodes' in request.POST else False
