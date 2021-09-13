@@ -95,7 +95,7 @@ class LunchConstraintGenerator(object):
             expression.add_token(operator_text)
         #   If there are more than 2 tokens in the list, divide the list in half and work recursively
         else:
-            midpoint = len(tokens) / 2
+            midpoint = len(tokens) // 2
             first_half = tokens[:midpoint]
             second_half = tokens[midpoint:]
             self.apply_binary_op_to_list(expression, operator_text, identity_value, first_half)
