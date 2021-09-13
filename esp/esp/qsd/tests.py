@@ -131,14 +131,14 @@ class QSDCorrectnessTest(TestCase):
             #   Check that page now exists and has proper content
             response = self.client.get(self.url)
             self.assertEqual(response.status_code, 200)
-            self.assertTrue('Testing 123' in response.content)
+            self.assertTrue('Testing 123' in response.content.decode('UTF-8'))
 
             #   Edit QSD and check that page content has updated
             qsd_rec_new.content = "Testing 456"
             qsd_rec_new.save()
             response = self.client.get(self.url)
             self.assertEqual(response.status_code, 200)
-            self.assertTrue('Testing 456' in response.content)
+            self.assertTrue('Testing 456' in response.content.decode('UTF-8'))
 
             #   Delete the new QSD so we can start again.
             qsd_rec_new.delete()
