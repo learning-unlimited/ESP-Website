@@ -62,6 +62,7 @@ from django.template.loader import render_to_string, get_template
 from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
 
+from functools import cmp_to_key
 from datetime import timedelta
 from decimal import Decimal
 import json
@@ -114,13 +115,8 @@ class ProgramPrintables(ProgramModuleObj):
         for lineitem in lineitems:
             lineitem.has_financial_aid = lineitem.user.hasFinancialAid(prog)
 
-        def sort_fn(a,b):
-            if a.user.last_name.lower() > b.user.last_name.lower():
-                return 1
-            return -1
-
         lineitems_list = list(lineitems)
-        lineitems_list.sort(sort_fn)
+        lineitems_list.sort(key=lambda li: li.user.last_name.lower())
 
         context = { 'lineitems': lineitems_list,
                     'hide_paid': request.GET.get('hide_paid') == 'True',
@@ -239,7 +235,7 @@ class ProgramPrintables(ProgramModuleObj):
         sort_list_reversed = sort_list
         sort_list_reversed.reverse()
         for sort_fn in sort_list_reversed:
-            classes.sort(sort_fn)
+            classes.sort(key=cmp_to_key(sort_fn))
 
         clsids = ','.join([str(cls.id) for cls in classes])
 
@@ -440,7 +436,7 @@ class ProgramPrintables(ProgramModuleObj):
                     classes_temp.append(cls_split)
             classes = classes_temp
 
-        classes.sort(sort_exp)
+        classes.sort(key=cmp_to_key(sort_exp))
 
         context = {'classes': classes, 'program': self.program}
 
@@ -483,7 +479,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         sections = list(filter(filt_exp, sections))
 
-        sections.sort(sort_exp)
+        sections.sort(key=cmp_to_key(sort_exp))
 
         context = {'sections': sections, 'program': self.program}
 
@@ -639,7 +635,7 @@ class ProgramPrintables(ProgramModuleObj):
                                'res_values': [classes[0].resourcerequest_set.filter(res_type__name=x).values_list('desired_value', flat=True) for x in resource_types]})
 
         scheditems = list(filter(filt_exp, scheditems))
-        scheditems.sort(sort_exp)
+        scheditems.sort(key=cmp_to_key(sort_exp))
 
         context['res_types'] = resource_types
         context['scheditems'] = scheditems
@@ -740,7 +736,7 @@ class ProgramPrintables(ProgramModuleObj):
             extra_dict = extra_func(s)
             for key in extra_dict:
                 setattr(s, key, extra_dict[key])
-        rooms.sort(sort_exp)
+        rooms.sort(key=cmp_to_key(sort_exp))
 
         context = {'rooms': rooms, 'program': self.program}
 
@@ -772,7 +768,7 @@ class ProgramPrintables(ProgramModuleObj):
             extra_dict = extra_func(s)
             for key in extra_dict:
                 setattr(s, key, extra_dict[key])
-        students.sort(sort_exp)
+        students.sort(key=cmp_to_key(sort_exp))
         context['students'] = students
 
         return render_to_response(self.baseDir()+template_file, request, context)
@@ -1652,7 +1648,7 @@ class ProgramPrintables(ProgramModuleObj):
             classes = [cls for cls in self.program.classes()
                        if cls.isAccepted()                   ]
 
-            classes.sort(ClassSubject.idcmp)
+            classes.sort(key=cmp_to_key(ClassSubject.idcmp))
 
             for cls in classes:
                 for teacher in cls.get_teachers():
