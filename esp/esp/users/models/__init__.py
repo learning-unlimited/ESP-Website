@@ -84,6 +84,7 @@ from esp.utils.expirable_model import ExpirableModel
 from esp.utils.widgets import NullRadioSelect, NullCheckboxSelect
 from esp.utils.query_utils import nest_Q
 from esp.program.class_status import ClassStatus
+from esp.utils import cmp
 
 from six.moves.urllib.parse import quote
 
