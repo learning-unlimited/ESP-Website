@@ -1359,7 +1359,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
     def testMultipleLunchConstraint(self):
         # First generate 3 lunch timeslots
-        lunch_timeslots = random.sample(self.timeslots, 3)
+        lunch_timeslots = random.sample(list(self.timeslots), 3)
         lcg = LunchConstraintGenerator(self.program, lunch_timeslots)
         lcg.generate_all_constraints()
 

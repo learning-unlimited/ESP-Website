@@ -48,6 +48,7 @@ import textwrap
 import distutils.dir_util
 import json
 import hashlib
+import copy
 from six.moves.urllib.parse import quote, unquote
 
 from django.conf import settings
@@ -512,7 +513,8 @@ class ThemeController(object):
             palette = self.get_palette()['custom']
 
         vars_orig = self.find_less_variables(theme_name, flat=True)
-        for key in vars.keys():
+        keys = copy.copy(vars.keys())
+        for key in keys:
             if key not in vars_orig:
                 del vars[key]
 

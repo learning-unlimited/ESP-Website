@@ -87,12 +87,12 @@ class SurveyTest(ProgramFrameworkTest):
         #   Check the general survey
         response = self.client.get('/learn/%s/survey?general' % self.program.url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('Question1', response.content)
+        self.assertIn('Question1', response.content.decode('UTF-8'))
         #   Check the section-specific survey
         response = self.client.get('/learn/%s/survey?sec=%s' % (self.program.url, sec.id))
         self.assertEqual(response.status_code, 200)
-        self.assertIn('Question2', response.content)
-        self.assertIn('Question3', response.content)
+        self.assertIn('Question2', response.content.decode('UTF-8'))
+        self.assertIn('Question3', response.content.decode('UTF-8'))
 
         #   Fill out the survey with some arbitrary answers
         sec_timeslot = sec.get_meeting_times()[0]
@@ -106,7 +106,7 @@ class SurveyTest(ProgramFrameworkTest):
         #   Submit the survey
         response = self.client.post('/learn/%s/survey?general' % self.program.url, form_settings, follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('have been saved', response.content)
+        self.assertIn('have been saved', response.content.decode('UTF-8'))
 
         #   Check that we have a SurveyRecord with the right answers associated with it
         self.assertEqual(SurveyResponse.objects.filter(survey=survey).count(), 1)
@@ -128,7 +128,7 @@ class SurveyTest(ProgramFrameworkTest):
 
         #   Check that we get an error if we try to visit the survey again
         response = self.client.get('/learn/%s/survey?general' % self.program.url)
-        self.assertIn('already completed the', response.content)
+        self.assertIn('already completed the', response.content.decode('UTF-8'))
 
         # student logs out, teacher logs in
         self.client.logout()
