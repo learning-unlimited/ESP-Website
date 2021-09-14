@@ -268,11 +268,11 @@ class ClassManager(Manager):
 
         for c in classes:
             c._teachers = list(c.teachers.all())
-            c._teachers.sort(cmp=lambda t1, t2: cmp(t1.last_name, t2.last_name))
+            c._teachers.sort(key=lambda t: t.last_name)
             c._sections = sections_by_parent_id[c.id]
             for s in c._sections:
                 s.parent_class = c
-            c._sections.sort(cmp=lambda s1, s2: cmp(s1.id, s2.id))
+            c._sections.sort(key=lambda s:s.id)
             c.parent_program = p # So that if we set attributes on one instance of the program,
                                  # they show up for all instances.
 
@@ -365,7 +365,7 @@ class ClassSection(models.Model):
 
         for s in sections:
             s._events = list(s.meeting_times.all())
-            s._events.sort(cmp=lambda e1, e2: cmp(e1.start, e2.start))
+            s._events.sort(key=lambda e:e.start)
 
         return sections
 
