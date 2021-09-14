@@ -93,14 +93,14 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Try editing the class
         response = self.client.get('%smakeaclass' % self.program.get_teach_url())
-        self.assertTrue("check_grade_range" in response.content)
+        self.assertTrue("check_grade_range" in response.content.decode('UTF-8'))
 
         # Add a tag that specifically removes this functionality
         Tag.setTag('grade_range_popup', self.program, 'False')
 
         # Try editing the class
         response = self.client.get('%smakeaclass' % self.program.get_teach_url())
-        self.assertTrue(not "check_grade_range" in response.content)
+        self.assertTrue(not "check_grade_range" in response.content.decode('UTF-8'))
 
     def apply_coteacher_op(self, dict):
         return self.client.post('%scoteachers' % self.program.get_teach_url(), dict)
@@ -116,45 +116,45 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Error on adding self
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.teacher.id, 'coteachers': ",".join([str(coteacher.id) for coteacher in cur_coteachers])})
-        self.assertTrue("Error" in response.content)
+        self.assertTrue("Error" in response.content.decode('UTF-8'))
 
         # Error on no teacher selected
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': '', 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertTrue("Error" in response.content)
+        self.assertTrue("Error" in response.content.decode('UTF-8'))
 
         # Add free_teacher1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertTrue(self.has_coteacher(self.free_teacher1, response.content))
+        self.assertTrue(self.has_coteacher(self.free_teacher1, response.content.decode('UTF-8')))
         cur_coteachers.append(self.free_teacher1.id)
 
         # Error on adding the same coteacher again
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertTrue("Error" in response.content)
+        self.assertTrue("Error" in response.content.decode('UTF-8'))
 
         # Add free_teacher2
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher2.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertTrue(self.has_coteacher(self.free_teacher2, response.content))
+        self.assertTrue(self.has_coteacher(self.free_teacher2, response.content.decode('UTF-8')))
         cur_coteachers.append(self.free_teacher2.id)
 
         # Delete free_teacher 1
         response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertTrue(not self.has_coteacher(self.free_teacher1, response.content))
+        self.assertTrue(not self.has_coteacher(self.free_teacher1, response.content.decode('UTF-8')))
         cur_coteachers.remove(self.free_teacher1.id)
 
         # Add free_teacher 1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertTrue(self.has_coteacher(self.free_teacher1, response.content))
+        self.assertTrue(self.has_coteacher(self.free_teacher1, response.content.decode('UTF-8')))
         cur_coteachers.append(self.free_teacher1.id)
 
         # Delete both free_teacher1 and free_teacher2
         response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': [self.free_teacher1.id, self.free_teacher2.id], 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertTrue(not self.has_coteacher(self.free_teacher1, response.content) and not self.has_coteacher(self.free_teacher2, response.content))
+        self.assertTrue(not self.has_coteacher(self.free_teacher1, response.content.decode('UTF-8')) and not self.has_coteacher(self.free_teacher2, response.content.decode('UTF-8')))
         cur_coteachers.remove(self.free_teacher1.id)
         cur_coteachers.remove(self.free_teacher2.id)
 
         # Add free_teacher 1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertTrue(self.has_coteacher(self.free_teacher1, response.content))
+        self.assertTrue(self.has_coteacher(self.free_teacher1, response.content.decode('UTF-8')))
         cur_coteachers.append(self.free_teacher1.id)
 
         # Save the coteachers

@@ -58,4 +58,4 @@ class CancelClassTest(ProgramFrameworkTest):
 
         # Check that classes show up in the cancelled classes printable
         r = self.client.get("/manage/"+self.program.url+"/classesbytime?cancelled")
-        self.assertTrue(self.cls.emailcode() in r.content)
+        self.assertTrue(self.cls.emailcode() in r.content.decode('UTF-8'))

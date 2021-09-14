@@ -65,7 +65,7 @@ class ResourceModuleTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
 
         #   Search for matching items in the response and ensure they are consistent
-        results = re.findall(regexp, response.content)
+        results = re.findall(regexp, response.content.decode('UTF-8'))
         displayed_names = set([x[index] for x in results])
 
         return displayed_names
