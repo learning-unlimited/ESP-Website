@@ -174,6 +174,18 @@ class ArchiveClass(models.Model):
         if test != 0:
             return test
         return 0
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+    def __gt__(self, other):
+        return self.__cmp__(other) > 0
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
+    def __le__(self, other):
+        return self.__cmp__(other) <= 0
+    def __ge__(self, other):
+        return self.__cmp__(other) >= 0
+    def __ne__(self, other):
+        return self.__cmp__(other) != 0
 
     def heading(self):
         if len(self.date) > 1:
