@@ -139,7 +139,8 @@ class Event(models.Model):
     def collapse(eventList, tol=timedelta(minutes=1)):
         """ this method will return a list of new collapsed events """
         from copy import copy
-        sortedList = sorted(copy(eventList))
+        sortedList = copy(eventList)
+        sortedList.sort(key=lambda e: e.start)
 
         for i in range(1, len(sortedList)):
             if (sortedList[i-1].end+tol) >= sortedList[i].start:
@@ -164,7 +165,8 @@ class Event(models.Model):
     def group_contiguous(event_list, tol = 20):
         """ Takes a list of events and returns a list of lists where each sublist is a contiguous group. """
         from copy import copy
-        sorted_list = sorted(copy(event_list))
+        sorted_list = copy(event_list)
+        sorted_list.sort(key=lambda e: e.start)
 
         grouped_list = []
         current_group = []

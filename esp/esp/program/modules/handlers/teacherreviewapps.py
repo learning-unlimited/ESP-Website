@@ -108,7 +108,7 @@ class TeacherReviewApps(ProgramModuleObj):
                         student.app_completed = True
 
         students = list(students)
-        students.sort(lambda x, y: cmp(x.added_class, y.added_class))
+        students.sort(key=lambda s: s.added_class)
 
         if 'prev' in request.GET:
             prev_id = int(request.GET.get('prev'))

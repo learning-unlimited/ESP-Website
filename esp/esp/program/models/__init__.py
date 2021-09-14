@@ -1079,7 +1079,7 @@ class Program(models.Model, CustomFormsLinkModel):
             modules =  [ base.ProgramModuleObj.getFromProgModule(self, module, old_prog)
                  for module in self.program_modules.all()]
 
-        modules.sort(key=lambda mod: (not mod.required, mod.seq))
+        modules.sort(key=lambda m: m.seq)
         return modules
     getModules_cached.depend_on_row('program.Program', lambda prog: {'self': prog})
     getModules_cached.depend_on_model('program.ProgramModule')
