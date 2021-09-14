@@ -87,7 +87,7 @@ def qsd(request, url):
     # Fetch the QSD object
     try:
         qsd_rec = QuasiStaticData.objects.get_by_url(base_url)
-        if qsd_rec == None:
+        if qsd_rec is None:
             raise QuasiStaticData.DoesNotExist
         if qsd_rec.disabled:
             raise QuasiStaticData.DoesNotExist

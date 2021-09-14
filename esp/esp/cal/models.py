@@ -140,7 +140,7 @@ class Event(models.Model):
                 sortedList[i]   = Event(start=sortedList[i-1].start, end=sortedList[i].end)
                 sortedList[i-1] = None
 
-        newList = [ x for x in sortedList if x != None ]
+        newList = [ x for x in sortedList if x is not None ]
 
         return newList
 

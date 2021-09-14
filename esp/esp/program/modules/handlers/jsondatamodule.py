@@ -262,7 +262,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def sections(extra, prog):
         if extra == 'catalog':
             catalog = True
-        elif extra == None:
+        elif extra is None:
             catalog = False
         else:
             raise Http404
@@ -443,7 +443,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def class_subjects(extra, prog):
         if extra == 'catalog':
             catalog = True
-        elif extra == None:
+        elif extra is None:
             catalog = False
         else:
             raise Http404
@@ -568,14 +568,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         if 'return_key' in request.GET:
             return_key = request.GET['return_key']
         if 'section_id' in request.GET:
-            if return_key == None: return_key = 'sections'
+            if return_key is None: return_key = 'sections'
             section_id = int(request.GET['section_id'])
             if return_key == 'sections':
                 section = ClassSection.objects.get(pk=section_id)
             else:
                 matching_classes = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
-            if return_key == None: return_key = 'classes'
+            if return_key is None: return_key = 'classes'
             class_id = int(request.GET['class_id'])
             matching_classes = ClassSubject.objects.filter(id=class_id)
         else:
@@ -630,14 +630,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             return_key = request.GET['return_key']
 
         if 'section_id' in request.GET:
-            if return_key == None: return_key = 'sections'
+            if return_key is None: return_key = 'sections'
             section_id = int(request.GET['section_id'])
             if return_key == 'sections':
                 section = ClassSection.objects.get(pk=section_id)
             else:
                 target_qs = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
-            if return_key == None: return_key = 'classes'
+            if return_key is None: return_key = 'classes'
             class_id = int(request.GET['class_id'])
             target_qs = ClassSubject.objects.filter(id=class_id)
         else:
@@ -679,14 +679,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             return_key = request.GET['return_key']
 
         if 'section_id' in request.GET:
-            if return_key == None: return_key = 'sections'
+            if return_key is None: return_key = 'sections'
             section_id = int(request.GET['section_id'])
             if return_key == 'sections':
                 section = ClassSection.objects.get(pk=section_id)
             else:
                 matching_classes = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
-            if return_key == None: return_key = 'classes'
+            if return_key is None: return_key = 'classes'
             class_id = int(request.GET['class_id'])
             matching_classes = ClassSubject.objects.filter(id=class_id)
         else:

@@ -62,7 +62,7 @@ class ResourceTypeForm(forms.Form):
         self.fields['name'].initial = res_type.name
         self.fields['description'].initial = res_type.description
         self.fields['priority'].initial = res_type.priority_default
-        self.fields['is_global'].initial = (res_type.program == None)
+        self.fields['is_global'].initial = (res_type.program is None)
         self.fields['only_one'].initial = res_type.only_one
         self.fields['hidden'].initial = res_type.hidden
         self.fields['id'].initial = res_type.id

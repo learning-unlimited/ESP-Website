@@ -1479,7 +1479,7 @@ class RegistrationProfile(models.Model):
             except RegistrationProfile.DoesNotExist:
                 pass
 
-        if regProf != None:
+        if regProf is not None:
             return regProf
 
         regProf = RegistrationProfile()
@@ -1567,7 +1567,7 @@ class RegistrationProfile(models.Model):
     getLastForProgram = staticmethod(getLastForProgram)
 
     def __unicode__(self):
-        if self.program_id == None:
+        if self.program_id is None:
             return u'<Registration for %s>' % six.text_type(self.user)
         if self.user is not None:
             return u'<Registration for %s in %s>' % (six.text_type(self.user), six.text_type(self.program))
