@@ -298,6 +298,18 @@ class BaseESPUser(object):
         if lastname == 0:
            return cmp(self.first_name.upper(), other.first_name.upper())
         return lastname
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+    def __gt__(self, other):
+        return self.__cmp__(other) > 0
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
+    def __le__(self, other):
+        return self.__cmp__(other) <= 0
+    def __ge__(self, other):
+        return self.__cmp__(other) >= 0
+    def __ne__(self, other):
+        return self.__cmp__(other) != 0
 
     def getLastProfile(self):
         # caching is handled in RegistrationProfile.getLastProfile
@@ -2282,6 +2294,18 @@ class DBList(object):
     def __cmp__(self, other):
         """ We are going to order by the size of our lists. """
         return cmp(self.count(), other.count())
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+    def __gt__(self, other):
+        return self.__cmp__(other) > 0
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
+    def __le__(self, other):
+        return self.__cmp__(other) <= 0
+    def __ge__(self, other):
+        return self.__cmp__(other) >= 0
+    def __ne__(self, other):
+        return self.__cmp__(other) != 0
 
     def __unicode__(self):
         return self.key
