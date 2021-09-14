@@ -333,9 +333,9 @@ def build_workbook_data():
 
                 for ans in resp:
                     ans_dict[ans.question_id] = auto_cell_type(ans.answer)
-                    ans_dict[-1] = ans._class.emailcode() if ans._class != None else ans_dict[-1]
-                    ans_dict[-2] = ans._section.title() if ans._section != None else ans_dict[-2]
-                    ans_dict[-3] = ", ".join("%s %s" % (x.first_name, x.last_name) for x in ans._class._teachers) if ans._class != None else ans_dict[-3]
+                    ans_dict[-1] = ans._class.emailcode() if ans._class is not None else ans_dict[-1]
+                    ans_dict[-2] = ans._section.title() if ans._section is not None else ans_dict[-2]
+                    ans_dict[-3] = ", ".join("%s %s" % (x.first_name, x.last_name) for x in ans._class._teachers) if ans._class is not None else ans_dict[-3]
 
                 this_answers = [ans_dict[q] for q in this_question_ids]
 

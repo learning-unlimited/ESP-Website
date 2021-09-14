@@ -452,7 +452,7 @@ class TagSettingsForm(BetterForm):
                 self.fields[key].initial = tag_info.get('default')
                 self.fields[key].required = False
                 set_val = Tag.getBooleanTag(key) if tag_info.get('is_boolean', False) else Tag.getTag(key)
-                if set_val != None and set_val != self.fields[key].initial:
+                if set_val is not None and set_val != self.fields[key].initial:
                     if isinstance(self.fields[key], forms.MultipleChoiceField):
                         set_val = set_val.split(",")
                     self.fields[key].initial = set_val

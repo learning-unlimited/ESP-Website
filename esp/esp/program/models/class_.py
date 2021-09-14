@@ -190,7 +190,7 @@ class ClassManager(Manager):
 
         classes = classes.select_related('category')
 
-        if program != None:
+        if program is not None:
             classes = classes.filter(parent_program = program)
 
         if ts is not None:
@@ -417,7 +417,7 @@ class ClassSection(models.Model):
 
     def _get_room_capacity(self, rooms = None):
         # rooms should be a queryset
-        if rooms == None:
+        if rooms is None:
             rooms = self.classrooms()
 
         # Take the summed classroom capacity for each timeblock, then take the minimum of those sums
@@ -443,7 +443,7 @@ class ClassSection(models.Model):
                 ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
 
         #hacky fix for classes with no max size
-        if ans == None or ans == 0:
+        if ans is None or ans == 0:
             # New class size capacity condition set for Splash 2010.  In code
             # because it seems like a fairly reasonable metric.
             if self.parent_class.allowable_class_size_ranges.all() and len(rooms) != 0:
@@ -1267,7 +1267,7 @@ class ClassSection(models.Model):
 
     def getRegistrations(self, user = None):
         """Gets all StudentRegistrations for this section and a particular user. If no user given, gets all StudentRegistrations for this section"""
-        if user == None:
+        if user is None:
             return StudentRegistration.valid_objects().filter(section=self).order_by('start_date')
         else:
             return StudentRegistration.valid_objects().filter(section=self, user=user).order_by('start_date')
@@ -1316,7 +1316,7 @@ class ClassSection(models.Model):
             remove_list_member(list_name, user.email)
 
     def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False, webapp=False):
-        if prereg_verb == None:
+        if prereg_verb is None:
             scrmi = self.parent_program.studentclassregmoduleinfo
             if scrmi and scrmi.use_priority:
                 prereg_verb = 'Priority/%d' % priority
@@ -1505,7 +1505,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                 if not hasattr(s, "_events"):
                     did_search = False
                     break
-                if timeslot in s._events or timeslot == None:
+                if timeslot in s._events or timeslot is None:
                     return s
 
             if did_search: # If we did successfully search all sections, but found none in this timeslot
@@ -1722,7 +1722,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     get_capacity_factor = staticmethod(get_capacity_factor)
 
     def is_nearly_full(self, capacity_factor = None):
-        if capacity_factor == None:
+        if capacity_factor is None:
             capacity_factor = ClassSubject.get_capacity_factor()
         return len([x for x in self.get_sections() if x.num_students() > capacity_factor*x.capacity]) > 0
 
@@ -1935,7 +1935,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 
     def getRegistrations(self, user=None):
         """Gets all non-expired StudentRegistrations associated with this class. If user is given, will also filter to that particular user only."""
-        if user == None:
+        if user is None:
             return StudentRegistration.valid_objects().filter(section__in=self.sections.all()).order_by('start_date')
         else:
             return StudentRegistration.valid_objects().filter(section__in=self.sections.all(), user=user).order_by('start_date')

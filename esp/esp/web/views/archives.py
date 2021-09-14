@@ -68,7 +68,7 @@ def compute_range(postvars, num_records):
         results_start = int(postvars['results_start'])
     if 'results_end' in postvars:
         results_end = int(postvars['results_end'])
-    if (num_records > default_num_records) and results_end == None:
+    if (num_records > default_num_records) and results_end is None:
         if postvars.get('max_num_results') == "Show all":
             results_end = num_records
         elif postvars.get('max_num_results'):
@@ -116,7 +116,7 @@ def archive_classes(request, category, options, sortorder = None):
     context['options'] = options
 
     #    Take filtering criteria both from form and from URL
-    if category != None and options != None:
+    if category is not None and options is not None:
         url_criterion = ArchiveFilter(category = category, options = options)
         criteria_list = [url_criterion]
     else:

@@ -82,7 +82,7 @@ class Tag(models.Model):
                            key)
 
         try:
-            if target != None:
+            if target is not None:
                 ct = ContentType.objects.get_for_model(target)
                 return cls.objects.get(key=key, content_type=ct, object_id=target.id).value
             else:
@@ -170,7 +170,7 @@ class Tag(models.Model):
         that the tag has been set (or not).
         """
 
-        if target != None:
+        if target is not None:
             ct = ContentType.objects.get_for_model(target)
             tag, created = cls.objects.get_or_create(key=key, content_type=ct, object_id=target.id)
         else:
@@ -193,7 +193,7 @@ class Tag(models.Model):
         """
         tag_counter = 0
 
-        if target != None:
+        if target is not None:
             ct = ContentType.objects.get_for_model(target)
             items = cls.objects.filter(key=key, content_type=ct, object_id=target.id)
         else:

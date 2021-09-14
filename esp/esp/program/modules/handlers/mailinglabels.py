@@ -161,7 +161,7 @@ class MailingLabels(ProgramModuleObj):
 
             infos = [user.getLastProfile().contact_user for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
 
-            infos_filtered = [ info for info in infos if (info != None and info.undeliverable != True) ]
+            infos_filtered = [ info for info in infos if (info is not None and info.undeliverable != True) ]
 
         output = MailingLabels.gen_addresses(infos, combine)
 
@@ -186,7 +186,7 @@ class MailingLabels(ProgramModuleObj):
         addresses = {}
         ids_zipped = []
 
-        infos = [i for i in infos if i != None]
+        infos = [i for i in infos if i is not None]
 
         if len(infos) > 0 and infos[0].k12school_set.all().count() > 0:
             use_title = True
@@ -194,7 +194,7 @@ class MailingLabels(ProgramModuleObj):
             use_title = False
 
         for info in infos:
-            if info == None:
+            if info is None:
                 continue
 
             schools = info.k12school_set.all()
@@ -212,7 +212,7 @@ class MailingLabels(ProgramModuleObj):
             else:
                 name = '%s %s' % (info.first_name.strip(), info.last_name.strip())
 
-            if info.address_postal != None:
+            if info.address_postal is not None:
                 key = info.address_postal
             else:
 

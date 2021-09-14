@@ -709,14 +709,14 @@ class LotteryAssignmentController(object):
         You might want to crosscheck this file before accepting it."""
         import csv
 
-        if directory == None:
+        if directory is None:
             directory = self.options['directory']
 
-        if stats == None:
+        if stats is None:
             stats = self.compute_stats(display=False) #Calculate stats if I didn't get any
 
         studentlist = stats['students_by_screwedness']
-        if n != None: studentlist = studentlist[:n]
+        if n is not None: studentlist = studentlist[:n]
         tday = datetime.today().strftime('%Y-%m-%d')
 
         fullfilename = directory + '/screwed_csv_' + tday + '.csv'
