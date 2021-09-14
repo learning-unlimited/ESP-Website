@@ -97,7 +97,7 @@ class Event(models.Model):
         return u'%d hr %d min' % (hours, minutes)
 
     def __unicode__(self):
-        return self.start.strftime('%a %b %d: ').decode('utf-8') + self.short_time()
+        return self.start.strftime('%a %b %d: ') + self.short_time()
 
     def short_time(self):
         day_list = [u'Mon', u'Tue', u'Wed', u'Thu', u'Fri', u'Sat', u'Sun']
@@ -110,10 +110,10 @@ class Event(models.Model):
         if self.end.minute != 0:
             end_minutes = u':%02d' % self.end.minute
         if (self.start.hour < 12) != (self.end.hour < 12):
-            start_ampm = self.start.strftime(' %p').decode('utf-8')
+            start_ampm = self.start.strftime(' %p')
 
         return u'%d%s%s to %d%s %s' % ( (self.start.hour % 12) or 12, start_minutes, start_ampm,
-            (self.end.hour % 12) or 12, end_minutes, self.end.strftime('%p').decode('utf-8') )
+            (self.end.hour % 12) or 12, end_minutes, self.end.strftime('%p') )
 
     @staticmethod
     def total_length(event_list):
@@ -181,27 +181,27 @@ class Event(models.Model):
         return grouped_list
 
     def pretty_time(self, include_date = False): # if include_date is True, display the date as well (e.g., display "Sun, July 10" instead of just "Sun")
-        s = self.start.strftime('%a').decode('utf-8')
-        s2 = self.end.strftime('%a').decode('utf-8')
+        s = self.start.strftime('%a')
+        s2 = self.end.strftime('%a')
         # The two days of the week are different
         if include_date:
-            s += self.start.strftime(', %b %d,').decode('utf-8')
-            s2 += self.end.strftime(', %b %d,').decode('utf-8')
+            s += self.start.strftime(', %b %d,')
+            s2 += self.end.strftime(', %b %d,')
         if s != s2:
-            return s + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8') + u'--' \
-               + s2 + u' ' + self.end.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
+            return s + u' ' + self.start.strftime('%I:%M%p').lower().strip('0') + u'--' \
+               + s2 + u' ' + self.end.strftime('%I:%M%p').lower().strip('0')
         else:
-            return s + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8') + u'--' \
-               + self.end.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
+            return s + u' ' + self.start.strftime('%I:%M%p').lower().strip('0') + u'--' \
+               + self.end.strftime('%I:%M%p').lower().strip('0')
 
     def pretty_time_with_date(self):
         return self.pretty_time(include_date = True)
 
     def pretty_date(self):
-        return self.start.strftime('%A, %B %d').decode('utf-8')
+        return self.start.strftime('%A, %B %d')
 
     def pretty_start_time(self):
-        return self.start.strftime('%a').decode('utf-8') + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
+        return self.start.strftime('%a') + u' ' + self.start.strftime('%I:%M%p').lower().strip('0')
 
     def parent_program(self):
         return self.program
