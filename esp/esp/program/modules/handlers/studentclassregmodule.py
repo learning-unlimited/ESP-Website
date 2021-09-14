@@ -96,7 +96,7 @@ def json_encode(obj):
         return { 'id': obj.id,
                  'status': obj.status,
                  'duration': obj.duration,
-                 'get_meeting_times': sorted(list(obj.get_meeting_times()), cmp=lambda e1, e2: cmp(e1.start, e2.start)),
+                 'get_meeting_times': sorted(list(obj.get_meeting_times()), key=lambda e: e.start),
                  'num_students': obj.num_students(),
                  'capacity': obj.capacity
                  }

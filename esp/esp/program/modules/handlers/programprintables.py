@@ -52,6 +52,7 @@ from esp.tagdict.models import Tag
 from esp.cal.models import Event
 from esp.middleware import ESPError
 from esp.utils.query_utils import nest_Q
+from esp.utils import cmp
 from esp.program.models import VolunteerOffer
 from esp.survey.views import _encode_ascii
 
