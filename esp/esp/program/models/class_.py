@@ -64,6 +64,7 @@ from django_extensions.db.fields.json import JSONField
 from esp.db.fields import AjaxForeignKey
 from esp.utils.property import PropertyDict
 from esp.utils.query_utils import nest_Q
+from esp.utils import cmp
 from esp.tagdict.models import Tag
 from esp.mailman import add_list_member, remove_list_member
 
