@@ -389,7 +389,7 @@ class IndividualAccountingController(ProgramAccountingController):
                 result.append([li_name, 0, transfer.amount_dec, transfer.option_id])
                 result_index = len(result) - 1
             else:
-                result_index = map(lambda x: (x[0], x[2], x[3]), result).index((li_name, transfer.amount_dec, transfer.option_id))
+                result_index = list(map(lambda x: (x[0], x[2], x[3]), result)).index((li_name, transfer.amount_dec, transfer.option_id))
             result[result_index][1] += 1
         return result
 
