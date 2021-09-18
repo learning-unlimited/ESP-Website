@@ -1,6 +1,8 @@
 
 from __future__ import absolute_import
 from __future__ import division
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 import six
 from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -45,12 +47,12 @@ from argcache import cache_function
 from esp.utils import cmp
 
 # Create your models here.
-
+@python_2_unicode_compatible
 class EventType(models.Model):
     """ A list of possible event types, ie. Program, Social Activity, etc. """
     description = models.TextField() # Textual description; not computer-parseable
 
-    def __unicode__(self):
+    def __str__(self):
         return six.text_type(self.description)
 
     @cache_function
@@ -68,6 +70,7 @@ class EventType(models.Model):
             'training': cls.get_from_desc('Teacher Training'),
         }
 
+@python_2_unicode_compatible
 class Event(models.Model):
     """ A unit calendar entry.
 
@@ -104,7 +107,7 @@ class Event(models.Model):
         minutes = int(dur.seconds // 60) - hours * 60
         return six.u('%d hr %d min') % (hours, minutes)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.start.strftime('%a %b %d: ') + self.short_time()
 
     def short_time(self):

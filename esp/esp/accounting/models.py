@@ -1,5 +1,7 @@
 
 from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -47,6 +49,7 @@ from django.db.models import Sum
 
 from decimal import Decimal
 
+@python_2_unicode_compatible
 class LineItemType(models.Model):
     text = models.TextField(help_text='A description of this line item.')
     amount_dec = models.DecimalField(default=0, max_digits=9, decimal_places=2, help_text='The cost of this line item.')
@@ -107,7 +110,7 @@ class LineItemType(models.Model):
                 max_cost = self.amount_dec
             return (min_cost, max_cost)
 
-    def __unicode__(self):
+    def __str__(self):
         if self.amount_dec:
             return six.u('%s for %s ($%s)') % (self.text, self.program, self.amount_dec)
         else:
@@ -116,6 +119,7 @@ class LineItemType(models.Model):
     class Meta:
         ordering = ('-program_id',)
 
+@python_2_unicode_compatible
 class LineItemOptions(models.Model):
     lineitem_type = models.ForeignKey(LineItemType)
     description = models.TextField(help_text='You can include the cost as part of the description, which is helpful if the cost differs from the line item type.')
@@ -138,9 +142,10 @@ class LineItemOptions(models.Model):
         else:
             return float(self.amount_dec)
 
-    def __unicode__(self):
-        return six.u('%s ($%s)') % (self.description, self.amount_dec)
+    def __str__(self):
+        return '%s ($%s)' % (self.description, self.amount_dec)
 
+@python_2_unicode_compatible
 class FinancialAidGrant(models.Model):
     request = AjaxForeignKey(FinancialAidRequest)
     amount_max_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='Enter a number here to grant a dollar value of financial aid.  The grant will cover this amount or the full cost, whichever is less.')
@@ -178,19 +183,20 @@ class FinancialAidGrant(models.Model):
         self.save()
         return transfer
 
-    def __unicode__(self):
+    def __str__(self):
         if self.percent and self.amount_max_dec:
-            return six.u('Grant %s (max $%s, %d%% discount) at %s') % (self.user, self.amount_max_dec, self.percent, self.program)
+            return 'Grant %s (max $%s, %d%% discount) at %s' % (self.user, self.amount_max_dec, self.percent, self.program)
         elif self.percent:
-            return six.u('Grant %s (%d%% discount) at %s') % (self.user, self.percent, self.program)
+            return 'Grant %s (%d%% discount) at %s' % (self.user, self.percent, self.program)
         elif self.amount_max_dec:
-            return six.u('Grant %s (max $%s) at %s') % (self.user, self.amount_max_dec, self.program)
+            return 'Grant %s (max $%s) at %s' % (self.user, self.amount_max_dec, self.program)
         else:
-            return six.u('Grant %s (no aid specified) at %s') % (self.user, self.program)
+            return 'Grant %s (no aid specified) at %s' % (self.user, self.program)
 
     class Meta:
         unique_together = ('request',)
 
+@python_2_unicode_compatible
 class Account(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
@@ -247,12 +253,13 @@ class Account(models.Model):
 
         return (transfers_out_context, transfers_in_context)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     class Meta:
         unique_together = ('name',)
 
+@python_2_unicode_compatible
 class Transfer(models.Model):
     source = models.ForeignKey(
         Account, blank=True, null=True, related_name='transfer_source',
@@ -280,9 +287,10 @@ class Transfer(models.Model):
         return float(self.amount_dec)
     amount = property(get_amount, set_amount)
 
-    def __unicode__(self):
-        return six.u('Transfer $%s from %s to %s') % (self.amount_dec, self.source, self.destination)
+    def __str__(self):
+        return 'Transfer $%s from %s to %s' % (self.amount_dec, self.source, self.destination)
 
+@python_2_unicode_compatible
 class CybersourcePostback(models.Model):
     """ Logs every Cybersource postback to enable debugging and automated
         reconciliation."""
@@ -291,8 +299,8 @@ class CybersourcePostback(models.Model):
     transfer = models.ForeignKey(Transfer, blank=True, null=True,
                                  on_delete=models.SET_NULL)
 
-    def __unicode__(self):
-        return six.u('%d') % self.id
+    def __str__(self):
+        return '%d' % self.id
 
 def install():
     """Set up the default accounts."""

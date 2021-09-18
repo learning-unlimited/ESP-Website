@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 from six.moves import map
 import six
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -96,6 +98,7 @@ def qsd_edit_id(val):
     """ A short hex string summarizing the QSD's URL. """
     return hashlib.sha1(val.encode("UTF-8")).hexdigest()[:8]
 
+@python_2_unicode_compatible
 class QuasiStaticData(models.Model):
     """ A Markdown-encoded web page """
 
@@ -143,7 +146,7 @@ class QuasiStaticData(models.Model):
         self.create_date = datetime.now()
 
 
-    def __unicode__(self):
+    def __str__(self):
         return self.url
 
     @cache_function

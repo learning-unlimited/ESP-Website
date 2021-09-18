@@ -1,5 +1,7 @@
 
 from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -40,7 +42,7 @@ from esp.db.fields import AjaxForeignKey
 import datetime
 
 # Create your models here.
-
+@python_2_unicode_compatible
 class AnnouncementLink(models.Model):
     title = models.CharField(max_length=256)
     category = models.CharField(max_length=32) # Plaintext
@@ -50,7 +52,7 @@ class AnnouncementLink(models.Model):
     section = models.CharField(max_length=32, blank=True, null=True, help_text="e.g. 'teach' or 'learn' or blank")
     href = models.URLField(help_text="The URL the link should point to.")
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s (links to %s)" % (self.title, self.href)
 
     def get_absolute_url(self):
@@ -66,6 +68,7 @@ class AnnouncementLink(models.Model):
     def html(self):
         return '<p><a href="%s">%s</a></p>' % (self.href, self.title)
 
+@python_2_unicode_compatible
 class Entry(models.Model):
     """ A Markdown-encoded miniblog entry """
     title = models.CharField(max_length=256) # Plaintext; shouldn't contain HTML, for security reasons, though HTML will probably be passed through intact
@@ -85,7 +88,7 @@ class Entry(models.Model):
     priority = models.IntegerField(blank=True, null=True) # Message priority (role of this field not yet well-defined -- aseering 8-10-2006)
     section = models.CharField(max_length=32, blank=True, null=True, help_text="e.g. 'teach' or 'learn' or blank")
 
-    def __unicode__(self):
+    def __str__(self):
         if self.slug:
             return "%s" % (self.slug,)
         else:
@@ -101,6 +104,7 @@ class Entry(models.Model):
         verbose_name_plural = 'Entries'
         ordering = ['-timestamp']
 
+@python_2_unicode_compatible
 class Comment(models.Model):
 
     author = AjaxForeignKey(ESPUser)
@@ -113,7 +117,7 @@ class Comment(models.Model):
 
     content = models.TextField(help_text="HTML not allowed.")
 
-    def __unicode__(self):
+    def __str__(self):
         return 'Comment for %s by %s on %s' % (self.entry, self.author,
                                                self.post_ts.date())
 

@@ -2,6 +2,8 @@
 
 from __future__ import absolute_import
 from __future__ import division
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 import six
 from six.moves import map
 from six.moves import zip
@@ -98,7 +100,7 @@ class ListField(object):
         data = self.separator.join(map(str, value))
         setattr(instance, self.field_name, data)
 
-
+@python_2_unicode_compatible
 class Survey(models.Model):
     """ A single survey. """
     name = models.CharField(max_length=255)
@@ -109,7 +111,7 @@ class Survey(models.Model):
     survey_choices = [("learn", "learn"), ("teach", "teach")]
     category = models.CharField(max_length = 10, choices = survey_choices)
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s (%s) for %s' % (self.name, self.category, six.text_type(self.program))
 
     def num_participants(self):
@@ -128,6 +130,7 @@ class Survey(models.Model):
         else:
             return 0
 
+@python_2_unicode_compatible
 class SurveyResponse(models.Model):
     """ A single survey taken by a person. """
     time_filled = models.DateTimeField(default=datetime.datetime.now)
@@ -198,11 +201,11 @@ class SurveyResponse(models.Model):
 
         return answers
 
-    def __unicode__(self):
+    def __str__(self):
         return "Survey for %s filled out at %s" % (six.text_type(self.survey.program),
                                                    self.time_filled)
 
-
+@python_2_unicode_compatible
 class QuestionType(models.Model):
     """ A type of question.
     Examples:
@@ -223,13 +226,13 @@ class QuestionType(models.Model):
     def template_file(self):
         return 'survey/questions/%s.html' % self.name.replace(' ', '_').lower()
 
-    def __unicode__(self):
+    def __str__(self):
         if len(self.param_names) > 0:
             return '%s: includes %s' % (self.name, self._param_names.replace('|', ', '))
         else:
             return '%s' % (self.name)
 
-
+@python_2_unicode_compatible
 class Question(models.Model):
     survey = models.ForeignKey(Survey, related_name="questions")
     name = models.CharField(max_length=255)
@@ -251,7 +254,7 @@ class Question(models.Model):
 
         return params
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s, %d: "%s" (%s)' % (self.survey.name, self.seq, self.name, self.question_type.name)
 
     def get_value(self, data_dict):
@@ -320,6 +323,7 @@ class Question(models.Model):
     class Meta:
         ordering = ['seq']
 
+@python_2_unicode_compatible
 class Answer(models.Model):
     """ An answer for a single question for a single survey response. """
 
@@ -362,5 +366,5 @@ class Answer(models.Model):
 
     answer = property(_answer_getter, _answer_setter)
 
-    def __unicode__(self):
+    def __str__(self):
         return "Answer for question #%d: %s" % (self.question.id, self.value)

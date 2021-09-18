@@ -84,7 +84,7 @@ class StudentRegSanityController(object):
 
         for sr in srs:
             if not fake:
-                if csvlog: csvwriter.writerow([w.title().encode('ascii', 'ignore'), ', '.join(sec.friendly_times()), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__unicode__().encode('ascii', 'ignore')])
+                if csvlog: csvwriter.writerow([w.title().encode('ascii', 'ignore'), ', '.join(sec.friendly_times()), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__str__().encode('ascii', 'ignore')])
                 sr.expire()
         logger.debug(report)
         if closeatend: csvfile.close()
@@ -114,7 +114,7 @@ class StudentRegSanityController(object):
             report.append((l, srs.count()))
             if not fake:
                 for sr in srs:
-                    if csvlog: csvwriter.writerow([l.title().encode('ascii', 'ignore'), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__unicode__().encode('ascii', 'ignore')])
+                    if csvlog: csvwriter.writerow([l.title().encode('ascii', 'ignore'), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__str__().encode('ascii', 'ignore')])
                     sr.expire()
         logger.debug(report)
         if closeatend: csvfile.close()

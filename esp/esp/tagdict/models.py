@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 import logging
 import six
 logger = logging.getLogger(__name__)
@@ -15,6 +17,7 @@ from esp.tagdict import all_global_tags, all_program_tags
 # documentation, as described at
 # http://www.djangoproject.com/documentation/models/generic_relations/
 
+@python_2_unicode_compatible
 class Tag(models.Model):
     """A tag on an item."""
     key = models.SlugField(db_index=True)
@@ -35,7 +38,7 @@ class Tag(models.Model):
         # Django can't currently do this, so it's enforced by custom SQL.
         # TODO:  Write this custom SQL for backends other than PostgreSQL.
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s: %s (%s)" % (self.key, self.value, self.target)
 
     EMPTY_TAG = " "
