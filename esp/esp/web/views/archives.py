@@ -1,5 +1,7 @@
 
 from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 from six.moves import map
 import six
 from six.moves import range
@@ -50,6 +52,7 @@ from datetime import datetime
 #    -    options: the particular filter for that data
 #        (eg. 2004, Splash, ComputerScience)
 
+@python_2_unicode_compatible
 class ArchiveFilter(object):
     category = ""
     options = ""
@@ -57,7 +60,7 @@ class ArchiveFilter(object):
         self.category = six.text_type(category)
         self.options  = six.text_type(options)
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s, %s' % (self.category, self.options)
 
 def compute_range(postvars, num_records):

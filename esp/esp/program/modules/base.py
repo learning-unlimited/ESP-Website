@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -66,6 +68,7 @@ class CoreModule(object):
     """
     pass
 
+@python_2_unicode_compatible
 class ProgramModuleObj(models.Model):
     program  = models.ForeignKey(Program)
     module   = models.ForeignKey(ProgramModule)
@@ -78,7 +81,7 @@ class ProgramModuleObj(models.Model):
             return self.doc
         return self.module.link_title
 
-    def __unicode__(self):
+    def __str__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
 
     def get_views_by_call_tag(self, tags):

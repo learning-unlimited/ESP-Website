@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+#from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 from six.moves import map
 from six.moves import range
 from functools import reduce
@@ -75,6 +77,7 @@ from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
 
 # Create your models here.
+@python_2_unicode_compatible
 class ProgramModule(models.Model):
     """ Program Modules for a Program """
 
@@ -136,10 +139,10 @@ class ProgramModule(models.Model):
             self.msg = msg
             super(ProgramModule.CannotGetClassException, self).__init__(msg)
 
-    def __unicode__(self):
-        return u'{}'.format(self.admin_title)
+    def __str__(self):
+        return '{}'.format(self.admin_title)
 
-
+@python_2_unicode_compatible
 class ArchiveClass(models.Model):
     """ Old classes throughout the years """
     program = models.CharField(max_length=256)
@@ -160,7 +163,7 @@ class ArchiveClass(models.Model):
         db_table = 'program_archiveclass'
         verbose_name_plural = 'archive classes'
 
-    #def __unicode__(self):
+    #def __str__(self):
     #    return '"%s" taught by "%s"' % (self.title, self.teacher)
 
     def __cmp__(self, other):
@@ -201,7 +204,7 @@ class ArchiveClass(models.Model):
     def content(self):
         return self.description
 
-    def __unicode__(self):
+    def __str__(self):
         from django.template import loader
         t = loader.get_template('program/archive_class.html')
         return t.render({'class': self})
@@ -256,7 +259,7 @@ def _get_type_url(type):
 
     return _really_get_type_url
 
-
+@python_2_unicode_compatible
 class Program(models.Model, CustomFormsLinkModel):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     #customforms definitions
@@ -331,7 +334,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         return retVal
 
-    def __unicode__(self):
+    def __str__(self):
         return self.niceName()
 
     def niceName(self):
@@ -1321,7 +1324,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
 Program.setup_user_filters()
 
-
+@python_2_unicode_compatible
 class SplashInfo(models.Model):
     """ A model that can be used to track additional student preferences specific to
         a program.  Stanford has used this for lunch selection and a sibling discount.
@@ -1341,8 +1344,8 @@ class SplashInfo(models.Model):
         app_label = 'program'
         db_table = 'program_splashinfo'
 
-    def __unicode__(self):
-        return u'Lunch/sibling info for %s at %s' % (self.student, self.program)
+    def __str__(self):
+        return 'Lunch/sibling info for %s at %s' % (self.student, self.program)
 
     @staticmethod
     def hasForUser(user, program=None):
@@ -1422,7 +1425,7 @@ class SplashInfo(models.Model):
 
         super(SplashInfo, self).save()
 
-
+@python_2_unicode_compatible
 class RegistrationProfile(models.Model):
     """ A student registration form """
     user = AjaxForeignKey(ESPUser)
@@ -1566,11 +1569,11 @@ class RegistrationProfile(models.Model):
     getLastForProgram.depend_on_row('program.RegistrationProfile', lambda rp: {'user': rp.user})
     getLastForProgram = staticmethod(getLastForProgram)
 
-    def __unicode__(self):
+    def __str__(self):
         if self.program_id is None:
-            return u'<Registration for %s>' % six.text_type(self.user)
+            return '<Registration for %s>' % six.text_type(self.user)
         if self.user is not None:
-            return u'<Registration for %s in %s>' % (six.text_type(self.user), six.text_type(self.program))
+            return '<Registration for %s in %s>' % (six.text_type(self.user), six.text_type(self.program))
 
 
     def updateForm(self, form_data, specificInfo = None):
@@ -1645,7 +1648,7 @@ class TeacherBio(models.Model):
             lastBio = bios[0]
         return lastBio
 
-
+@python_2_unicode_compatible
 class FinancialAidRequest(models.Model):
     """
     Student financial Aid Request
@@ -1674,12 +1677,12 @@ class FinancialAidRequest(models.Model):
         db_table = 'program_financialaidrequest'
         unique_together = ('program', 'user')
 
-    def __unicode__(self):
+    def __str__(self):
         """ Represent this as a string. """
         if self.reduced_lunch:
-            reducedlunch = u"(Free Lunch)"
+            reducedlunch = "(Free Lunch)"
         else:
-            reducedlunch = u''
+            reducedlunch = ''
 
         explanation = self.extra_explaination
         if explanation is None:
@@ -1741,6 +1744,7 @@ def get_subclass_instance(cls, obj):
     #   If you couldn't find any, return the original object.
     return obj
 
+@python_2_unicode_compatible
 class BooleanToken(models.Model):
     """ A true/false value or Boolean operation.
         Meant to be extended to more meaningful Boolean functions operating on
@@ -1764,8 +1768,8 @@ class BooleanToken(models.Model):
     #   Renamed to expr to avoid conflicting with Django SQL evaluator "expression"
     expr = property(get_expr)
 
-    def __unicode__(self):
-        return u'[%d] %s' % (self.seq, self.text)
+    def __str__(self):
+        return '[%d] %s' % (self.seq, self.text)
 
     @cache_function
     def subclass_instance(self):
@@ -1819,7 +1823,7 @@ class BooleanToken(models.Model):
         else:
             return False
 
-
+@python_2_unicode_compatible
 class BooleanExpression(models.Model):
     """ A combination of BooleanTokens that can be manipulated and evaluated.
         Arbitrary arguments can be supplied to the evaluate function in order
@@ -1831,8 +1835,8 @@ class BooleanExpression(models.Model):
 
     label = models.CharField(max_length=80, help_text='Description of the expression')
 
-    def __unicode__(self):
-        return u'(%d tokens) %s' % (len(self.get_stack()), self.label)
+    def __str__(self):
+        return '(%d tokens) %s' % (len(self.get_stack()), self.label)
 
     def subclass_instance(self):
         return get_subclass_instance(BooleanExpression, self)
@@ -1880,7 +1884,7 @@ class BooleanExpression(models.Model):
         (value, post_stack) = BooleanToken.evaluate(stack, *args, **kwargs)
         return value
 
-
+@python_2_unicode_compatible
 class ScheduleMap:
     """ The schedule map is a dictionary mapping Event IDs to lists of class sections.
         It can be generated and cached for a user, then modified
@@ -1917,9 +1921,10 @@ class ScheduleMap:
         import pickle
         return 'ScheduleMap_%s' % hashlib.md5(pickle.dumps(self)).hexdigest()[:8]
 
-    def __unicode__(self):
-        return u'%s' % self.map
+    def __str__(self):
+        return '%s' % self.map
 
+@python_2_unicode_compatible
 class ScheduleConstraint(models.Model):
     """ A scheduling constraint that can be tested:
         IF [condition] THEN [requirement]
@@ -1944,8 +1949,8 @@ class ScheduleConstraint(models.Model):
     class Meta:
         app_label = 'program'
 
-    def __unicode__(self):
-        return u'%s: "%s" requires "%s"' % (self.program.niceName(), six.text_type(self.condition), six.text_type(self.requirement))
+    def __str__(self):
+        return '%s: "%s" requires "%s"' % (self.program.niceName(), six.text_type(self.condition), six.text_type(self.requirement))
 
     def evaluate(self, smap, recursive=True):
         self.schedule_map = smap
@@ -2056,7 +2061,7 @@ class ScheduleTestSectionList(ScheduleTestTimeblock):
 
         return cls.objects.filter( reduce(operator.or_, q_list) )
 
-
+@python_2_unicode_compatible
 class VolunteerRequest(models.Model):
     program = models.ForeignKey(Program)
     timeslot = models.ForeignKey('cal.Event')
@@ -2071,9 +2076,10 @@ class VolunteerRequest(models.Model):
     def get_offers(self):
         return self.volunteeroffer_set.all()
 
-    def __unicode__(self):
-        return u'%s (%s)' % (self.timeslot.description, self.timeslot.short_time())
+    def __str__(self):
+        return '%s (%s)' % (self.timeslot.description, self.timeslot.short_time())
 
+@python_2_unicode_compatible
 class VolunteerOffer(models.Model):
     request = models.ForeignKey(VolunteerRequest)
     confirmed = models.BooleanField(default=False)
@@ -2094,8 +2100,8 @@ class VolunteerOffer(models.Model):
     class Meta:
         app_label = 'program'
 
-    def __unicode__(self):
-        return u'%s (%s, %s) for %s' % (self.name, self.email, self.phone, self.request)
+    def __str__(self):
+        return '%s (%s, %s) for %s' % (self.name, self.email, self.phone, self.request)
 
 
 """ This class provides the information that was provided by the DataTree
@@ -2112,6 +2118,7 @@ class VolunteerOffer(models.Model):
     Note: These models fit better in class_.py but cause validation errors
     due to Django's import scheme if they are placed there.
 """
+@python_2_unicode_compatible
 class RegistrationType(models.Model):
     #   The 'key' (not really the primary key since we may want duplicate names)
     name = models.CharField(max_length=32)
@@ -2154,14 +2161,15 @@ class RegistrationType(models.Model):
     get_map.depend_on_model('program.RegistrationType')
     get_map = staticmethod(get_map)
 
-    def __unicode__(self):
-        if self.displayName is not None and self.displayName != u"":
+    def __str__(self):
+        if self.displayName is not None and self.displayName != "":
             return self.displayName
         else:
             return self.name
 
+@python_2_unicode_compatible
 class PhaseZeroRecord(models.Model):
-    def __unicode__(self):
+    def __str__(self):
         return str(self.id)
 
     user = models.ManyToManyField(ESPUser)
@@ -2173,8 +2181,9 @@ class PhaseZeroRecord(models.Model):
         return ', '.join([user.username for user in self.user.all()])
     display_user.short_description = 'Username(s)'
 
+@python_2_unicode_compatible
 class ModeratorRecord(models.Model):
-    def __unicode__(self):
+    def __str__(self):
         return str(self.id)
 
     user = AjaxForeignKey(ESPUser)
@@ -2187,6 +2196,7 @@ class ModeratorRecord(models.Model):
     class Meta:
         app_label = 'program'
 
+@python_2_unicode_compatible
 class StudentRegistration(ExpirableModel):
     """
     Model relating a student with a class section (interest, priority,
@@ -2199,9 +2209,10 @@ class StudentRegistration(ExpirableModel):
     class Meta:
         app_label = 'program'
 
-    def __unicode__(self):
-        return u'%s %s in %s' % (self.user, self.relationship, self.section)
+    def __str__(self):
+        return '%s %s in %s' % (self.user, self.relationship, self.section)
 
+@python_2_unicode_compatible
 class StudentSubjectInterest(ExpirableModel):
     """
     Model indicating a student interest in a class section.
@@ -2212,8 +2223,8 @@ class StudentSubjectInterest(ExpirableModel):
     class Meta:
         app_label = 'program'
 
-    def __unicode__(self):
-        return u'%s interest in %s' % (self.user, self.subject)
+    def __str__(self):
+        return '%s interest in %s' % (self.user, self.subject)
 
 
 # Hooked up in program.modules.signals and formstack.signals

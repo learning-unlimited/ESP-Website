@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 import six
 from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -113,7 +115,7 @@ REGISTRATION_CHOICES = (
             )
 
 
-
+@python_2_unicode_compatible
 class ClassSizeRange(models.Model):
     range_min = models.IntegerField(null=False)
     range_max = models.IntegerField(null=False)
@@ -136,8 +138,8 @@ class ClassSizeRange(models.Model):
     def range_str(self):
         return u"%d-%d" %(self.range_min, self.range_max)
 
-    def __unicode__(self):
-        return u"Class Size Range: " + self.range_str()
+    def __str__(self):
+        return "Class Size Range: " + self.range_str()
 
     class Meta:
         app_label='program'
@@ -300,6 +302,7 @@ class ClassManager(Manager):
         count = classes.count()
         return classes[random.randint(0, count - 1)]
 
+@python_2_unicode_compatible
 class ClassSection(models.Model):
     """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
     parallel sections for a course being taught more than once at Splash or Spark. """
@@ -480,8 +483,8 @@ class ClassSection(models.Model):
     def title(self):
         return self.parent_class.title
 
-    def __unicode__(self):
-        return u'%s: %s' % (self.emailcode(), self.title())
+    def __str__(self):
+        return '%s: %s' % (self.emailcode(), self.title())
 
     def index(self):
         """ Get index of this section among those belonging to the parent class. """
@@ -1384,6 +1387,7 @@ class ClassSection(models.Model):
         app_label = 'program'
         ordering = ['id']
 
+@python_2_unicode_compatible
 class ClassSubject(models.Model, CustomFormsLinkModel):
     """ An ESP course.  The course includes one or more ClassSections. """
 
@@ -1655,9 +1659,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         return QuasiStaticData.objects.filter(url__startswith='learn/' + self.url() + '/index').exists()
 
-    def __unicode__(self):
+    def __str__(self):
         if self.title != u"":
-            return u"%s: %s" % (self.id, self.title)
+            return "%s: %s" % (self.id, self.title)
         else:
             return u"%s: (none)" % self.id
 
@@ -2048,7 +2052,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         db_table = 'program_class'
         app_label = 'program'
 
-
+@python_2_unicode_compatible
 class ClassCategories(models.Model):
     """ A list of all possible categories for an ESP class
 
@@ -2064,8 +2068,8 @@ class ClassCategories(models.Model):
         app_label = 'program'
         db_table = 'program_classcategories'
 
-    def __unicode__(self):
-        return u'%s (%s)' % (self.category, self.symbol)
+    def __str__(self):
+        return '%s (%s)' % (self.category, self.symbol)
 
 
 @cache_function

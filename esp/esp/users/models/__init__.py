@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 import six
 from six.moves import range
 from six.moves import zip
@@ -108,6 +110,7 @@ def admin_required(func):
         return func(request, *args, **kwargs)
     return wrapped
 
+@python_2_unicode_compatible
 class UserAvailability(models.Model):
     user = AjaxForeignKey('ESPUser')
     event = models.ForeignKey(Event)
@@ -119,8 +122,8 @@ class UserAvailability(models.Model):
         db_table = 'users_useravailability'
         verbose_name_plural = 'User availabilities'
 
-    def __unicode__(self):
-        return u'%s available as %s at %s' % (self.user.username, self.role.name, six.text_type(self.event))
+    def __str__(self):
+        return '%s available as %s at %s' % (self.user.username, self.role.name, six.text_type(self.event))
 
     def save(self, *args, **kwargs):
         #   Assign default role if not set.
@@ -1318,7 +1321,7 @@ def update_email(**kwargs):
             for l in lists:
                 mailman.remove_list_member(l, old_email)
 
-
+@python_2_unicode_compatible
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
@@ -1471,11 +1474,11 @@ class StudentInfo(models.Model):
 
     getSchool.short_description = "School"
 
-    def __unicode__(self):
+    def __str__(self):
         username = "N/A"
         if self.user is not None:
             username = self.user.username
-        return u'ESP Student Info (%s) -- %s' % (username, six.text_type(self.school))
+        return 'ESP Student Info (%s) -- %s' % (username, six.text_type(self.school))
 
     def get_absolute_url(self):
         return self.user.get_absolute_url()
@@ -1486,6 +1489,7 @@ AFFILIATION_POSTDOC = 'Postdoc'
 AFFILIATION_OTHER = 'Other'
 AFFILIATION_NONE = 'None'
 
+@python_2_unicode_compatible
 class TeacherInfo(models.Model, CustomFormsLinkModel):
     """ ESP Teacher-specific contact information """
 
@@ -1587,11 +1591,11 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         teacherInfo.save()
         return teacherInfo
 
-    def __unicode__(self):
+    def __str__(self):
         username = ""
         if self.user is not None:
             username = self.user.username
-        return u'ESP Teacher Info (%s)' % username
+        return 'ESP Teacher Info (%s)' % username
 
     def get_absolute_url(self):
         return self.user.get_absolute_url()
@@ -1599,7 +1603,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     class Meta:
         app_label = 'users'
 
-
+@python_2_unicode_compatible
 class GuardianInfo(models.Model):
     """ ES Guardian-specific contact information """
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
@@ -1651,15 +1655,16 @@ class GuardianInfo(models.Model):
         guardianInfo.save()
         return guardianInfo
 
-    def __unicode__(self):
+    def __str__(self):
         username = ""
         if self.user is not None:
             username = self.user.username
-        return u'ESP Guardian Info (%s)' % username
+        return 'ESP Guardian Info (%s)' % username
 
     def get_absolute_url(self):
         return self.user.get_absolute_url()
 
+@python_2_unicode_compatible
 class EducatorInfo(models.Model):
     """ ESP Educator-specific contact information """
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
@@ -1728,15 +1733,16 @@ class EducatorInfo(models.Model):
             return None
     getSchool.short_description = "School"
 
-    def __unicode__(self):
+    def __str__(self):
         username = ""
         if self.user is not None:
             username = self.user.username
-        return u'ESP Educator Info (%s)' % username
+        return 'ESP Educator Info (%s)' % username
 
     def get_absolute_url(self):
         return self.user.get_absolute_url()
 
+@python_2_unicode_compatible
 class ZipCode(models.Model):
     """ Zip Code information """
     zip_code = models.CharField(max_length=5)
@@ -1800,13 +1806,13 @@ class ZipCode(models.Model):
         newsearch.save()
         return winners
 
-    def __unicode__(self):
-        return u'%s (%s, %s)' % (self.zip_code,
+    def __str__(self):
+        return '%s (%s, %s)' % (self.zip_code,
                                 self.longitude,
                                 self.latitude)
 
 
-
+@python_2_unicode_compatible
 class ZipCodeSearches(models.Model):
     zip_code = models.ForeignKey(ZipCode)
     distance = models.DecimalField(max_digits = 15, decimal_places = 3)
@@ -1817,10 +1823,11 @@ class ZipCodeSearches(models.Model):
         db_table = 'users_zipcodesearches'
         verbose_name_plural = 'Zip code searches'
 
-    def __unicode__(self):
-        return u'%s Zip Codes that are less than %s miles from %s' % \
+    def __str__(self):
+        return '%s Zip Codes that are less than %s miles from %s' % \
                (len(self.zipcodes.split(',')), self.distance, self.zip_code)
 
+@python_2_unicode_compatible
 class ContactInfo(models.Model, CustomFormsLinkModel):
     """ ESP-specific contact information for (possibly) a specific user """
 
@@ -1956,7 +1963,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         super(ContactInfo, self).save(*args, **kwargs)
 
 
-    def __unicode__(self):
+    def __str__(self):
         username = ""
         last_name, first_name = '', ''
         if self.user is not None:
@@ -1976,6 +1983,7 @@ class K12SchoolManager(models.Manager):
     def most(self):
         return self.exclude(name='Other').order_by('name')
 
+@python_2_unicode_compatible
 class K12School(models.Model):
     """
     All the schools that we know about.
@@ -2006,12 +2014,12 @@ class K12School(models.Model):
             value['ajax_str'] = '%s' % (value['name'])
         return values
 
-    def __unicode__(self):
+    def __str__(self):
         if self.contact_id:
-            return u'%s in %s, %s' % (self.name, self.contact.address_city,
+            return '%s in %s, %s' % (self.name, self.contact.address_city,
                                        self.contact.address_state)
         else:
-            return u'%s' % self.name
+            return '%s' % self.name
 
     @classmethod
     def choicelist(cls, other_help_text=''):
@@ -2022,7 +2030,7 @@ class K12School(models.Model):
         lst.append( (o.id, o.name + other_help_text) )
         return lst
 
-
+@python_2_unicode_compatible
 class PersistentQueryFilter(models.Model):
     """ This class stores generic query filters persistently in the database, for retrieval (by ID, presumably) and
         to pass the query along to multiple pages and retrival (et al). """
@@ -2136,10 +2144,10 @@ class PersistentQueryFilter(models.Model):
 
         return filterObj
 
-    def __unicode__(self):
+    def __str__(self):
         return str(self.useful_name) + " (" + str(self.id) + ")"
 
-
+@python_2_unicode_compatible
 class PasswordRecoveryTicket(models.Model):
     """ A ticket for changing your password. """
     RECOVER_KEY_LEN = 30
@@ -2153,7 +2161,7 @@ class PasswordRecoveryTicket(models.Model):
     class Meta:
         app_label = 'users'
 
-    def __unicode__(self):
+    def __str__(self):
         return "Ticket for %s (expires %s): %s" % (self.user, self.expire, self.recover_key)
 
     @staticmethod
@@ -2225,6 +2233,7 @@ class PasswordRecoveryTicket(models.Model):
         """ Cancel all tickets belong to user. """
         PasswordRecoveryTicket.objects.filter(user=user).delete()
 
+@python_2_unicode_compatible
 class DBList(object):
     """ Useful abstraction for the list of users.
         Not meant for anything but users_get_list...
@@ -2281,9 +2290,10 @@ class DBList(object):
     def __ne__(self, other):
         return self.__cmp__(other) != 0
 
-    def __unicode__(self):
+    def __str__(self):
         return self.key
 
+@python_2_unicode_compatible
 class Record(models.Model):
     #To make these better to work with in the admin panel, and to have a
     #well defined set of possibilities, we'll use a set of choices
@@ -2379,7 +2389,7 @@ class Record(models.Model):
             )
             return True
 
-    def __unicode__(self):
+    def __str__(self):
         return six.text_type(self.user) + " has completed " + self.event + " for " + six.text_type(self.program)
 
 #helper method for designing implications
@@ -2390,6 +2400,7 @@ def flatten(choices):
         else: l=l+flatten(x[1])
     return l
 
+@python_2_unicode_compatible
 class Permission(ExpirableModel):
 
     #a permission can be assigned to a user, or a role
@@ -2613,7 +2624,7 @@ class Permission(ExpirableModel):
     def recursive(self):
         return bool(self.implications.get(self.permission_type, None))
 
-    def __unicode__(self):
+    def __str__(self):
         #TODO
         if self.user is not None:
             user = self.user.username
@@ -2737,6 +2748,7 @@ def install():
 #   but esp.dbmail.models imports ESPUser.
 from esp.dbmail.models import send_mail
 
+@python_2_unicode_compatible
 class GradeChangeRequest(TimeStampedModel):
     """
         A grade change request is issued by a student when it is felt
@@ -2831,7 +2843,7 @@ class GradeChangeRequest(TimeStampedModel):
         (self._meta.app_label, self._meta.model_name), args=(self.id,))
 
 
-    def __unicode__(self):
+    def __str__(self):
         return  "%s requests a grade change to %s" % (self.requesting_student, self.claimed_grade) + (" (Approved)" if self.approved else "")
 
 # We can't import these earlier because of circular stuff...

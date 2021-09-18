@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -42,6 +44,7 @@ from argcache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import Program
 
+@python_2_unicode_compatible
 class ClassFlagType(models.Model):
     name = models.CharField(max_length=255, unique=True)
     show_in_scheduler = models.BooleanField(default=False)
@@ -53,7 +56,7 @@ class ClassFlagType(models.Model):
         app_label='program'
         ordering=['seq']
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     def getColor(self):
@@ -84,6 +87,7 @@ class ClassFlagType(models.Model):
     get_flag_types.depend_on_m2m('program.Program', 'flag_types', lambda prog, flag_type: {'program': prog})
     get_flag_types = classmethod(get_flag_types)
 
+@python_2_unicode_compatible
 class ClassFlag(models.Model):
     subject = AjaxForeignKey('ClassSubject', related_name='flags')
     flag_type = models.ForeignKey(ClassFlagType)
@@ -100,7 +104,7 @@ class ClassFlag(models.Model):
         ordering=['flag_type']
 
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s flag on %s: %s" % (self.flag_type, self.subject.emailcode(), self.subject.title)
 
     def save(self, *args, **kwargs):

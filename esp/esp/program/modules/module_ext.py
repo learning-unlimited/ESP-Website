@@ -1,5 +1,7 @@
 
 from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -54,7 +56,7 @@ from esp.users.models import ESPUser
 # when the corresponding program modules get added to a program (see
 # esp.program.models.maybe_create_module_ext), but that's about it.
 # TODO(benkraft): rename this to "program settings" or something.
-
+@python_2_unicode_compatible
 class DBReceipt(models.Model):
     """ Per-program Receipt templates """
     #   Allow multiple receipts per program.  Which one is used depends on the action.
@@ -62,9 +64,10 @@ class DBReceipt(models.Model):
     program = models.ForeignKey(Program)
     receipt = models.TextField()
 
-    def __unicode__(self):
+    def __str__(self):
         return 'Registration (%s) receipt for %s' % (self.action, self.program)
 
+@python_2_unicode_compatible
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
@@ -142,9 +145,10 @@ class StudentClassRegModuleInfo(models.Model):
 
         return verb_list
 
-    def __unicode__(self):
+    def __str__(self):
         return 'Student Class Reg Ext. for %s' % str(self.module)
 
+@python_2_unicode_compatible
 class ClassRegModuleInfo(models.Model):
     program = models.OneToOneField(Program)
 
@@ -249,7 +253,7 @@ class ClassRegModuleInfo(models.Model):
     def getDurations(self):
         return self.program.getDurations()
 
-    def __unicode__(self):
+    def __str__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
 
 class AJAXChangeLogEntry(models.Model):
