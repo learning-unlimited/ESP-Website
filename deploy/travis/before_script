@@ -7,6 +7,7 @@ if [ "$TRAVIS_JOB" = "test" ]; then
     ln -f -s `pwd`/esp/public/media/default_styles esp/public/media/styles
     # the postgres service in Github Actions sets up the database for us
     if [ "$GITHUB_ACTIONS" != true ]; then
+        psql -c "DROP DATABASE IF EXISTS test_test_django;" -U postgres
         psql -c "DROP DATABASE IF EXISTS test_django;" -U postgres
         psql -c "DROP ROLE IF EXISTS testuser;" -U postgres
         psql -c "CREATE ROLE testuser PASSWORD 'testpassword' LOGIN CREATEDB;" -U postgres
