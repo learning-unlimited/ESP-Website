@@ -102,7 +102,7 @@ class JSONDataModuleTest(ProgramFrameworkTest):
         ## Statistics in the "grades" section of the dashboard
         ## Note: Depends on add_user_profiles() always creating 10th graders
         ## and all classes being open to all grades in the program
-        expected_response = {"data": [], "id": "grades"}
+        expected_response = {"id": "grades", "data": []}
         for g in range(self.program.grade_min, self.program.grade_max + 1):
             expected_response["data"].append({"grade": g,
                                               "num_subjects": 10,
