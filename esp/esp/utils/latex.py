@@ -198,7 +198,7 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
         raise ESPError("Postprocessing failed; try downloading as PDF.")
 
     out_file = file_base + '.' + type
-    if type is 'png' and not os.path.isfile(out_file):
+    if type == 'png' and not os.path.isfile(out_file):
         # If the schedule is multiple pages (such as a schedule if the program
         # is using barcode check-in), ImageMagick will generate files of the
         # form file_base-n.png.  In this case, we will just return the first
