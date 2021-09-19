@@ -23,7 +23,7 @@ def force_str(x):
     '\\xc3\\x85ngstrom'
 
     """
-    if isinstance(x, str):
+    if isinstance(x, str) or isinstance(x, six.text_type):
         return x
     return six.text_type(x).encode('utf8')
 

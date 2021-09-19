@@ -2097,7 +2097,7 @@ class RegistrationType(models.Model):
     def get_map(include=None, category=None):
         #   If 'include' is specified, make sure we have keys named in that list
         if include:
-            if not isinstance(category, str):
+            if not isinstance(category, str) and not isinstance(category, six.text_type):
                 raise ESPError('Need to supply category to RegistrationType.get_map() when passing include arguments', log=True)
             for name in include:
                 type, created = RegistrationType.objects.get_or_create(name=name, category=category)
