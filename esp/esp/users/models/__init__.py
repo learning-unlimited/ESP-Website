@@ -924,7 +924,7 @@ class BaseESPUser(object):
         """
         def _new_method(user):
             return user.is_user_type(user_class)
-        _new_method.__name__    = 'is%s' % str(user_class)
+        _new_method.__name__    = str('is%s' % str(user_class))
         _new_method.__doc__     = "Returns ``True`` if the user is a %s and False otherwise." % user_class
         return _new_method
 
