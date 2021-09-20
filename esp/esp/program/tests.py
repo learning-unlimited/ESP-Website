@@ -634,8 +634,6 @@ class ProgramFrameworkTest(TestCase):
                 'teacher_reg_end':   '3001-01-01 00:00:00',
                 'student_reg_start': '2000-01-01 00:00:00',
                 'student_reg_end':   '3001-01-01 00:00:00',
-                'publish_start':     '2000-01-01 00:00:00',
-                'publish_end':       '3001-01-01 00:00:00',
                 'base_cost':         '666',
             }
 
@@ -796,8 +794,6 @@ class ProgramFrameworkTest(TestCase):
                 'teacher_reg_end':   '2000-01-01 00:00:00',
                 'student_reg_start': '1111-01-01 00:00:00',
                 'student_reg_end':   '2000-01-01 00:00:00',
-                'publish_start':     '1111-01-01 00:00:00',
-                'publish_end':       '2000-01-01 00:00:00',
                 'base_cost':         '666',
                 'finaid_cost':       '37',
             }
