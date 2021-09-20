@@ -60,8 +60,10 @@ from django.db.models import Min
 from django.db import transaction
 from django.core.mail import mail_admins
 from django.core.cache import cache
+from django.core.serializers.json import DjangoJSONEncoder
 from django.core.urlresolvers import reverse
 from django.forms.models import model_to_dict
+from django.http.request import QueryDict, MultiValueDict
 from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
 from django.http import HttpResponse
@@ -84,7 +86,6 @@ from esp.tagdict.models import Tag
 from django.conf import settings
 
 import re
-import pickle
 import operator
 import json
 import datetime
@@ -507,8 +508,11 @@ def newprogram(request):
     if 'checked' in request.GET:
         # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
         # Don't bother trying to fix the form; just re-set the anchor when we're done.
-        context = pickle.loads(request.session['context_str'])
-        pcf = ProgramCreationForm(context['prog_form_raw'])
+        context = eval(request.session['context_str'])
+        # convert the program form data back to a QueryDict
+        qdict = QueryDict('', mutable=True)
+        qdict.update(MultiValueDict(context['prog_form_raw']))
+        pcf = ProgramCreationForm(qdict)
         if pcf.is_valid():
 
             new_prog = pcf.save(commit = True)
@@ -594,8 +598,9 @@ def newprogram(request):
             #   Save the form's raw data instead of the form itself, or its clean data.
             #   Unpacking of the data happens at the next step.
 
-            context_pickled = pickle.dumps({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost'], 'sibling_discount': form.cleaned_data['sibling_discount']})
-            request.session['context_str'] = context_pickled
+            # Get string representation of the data (repr() can't handle QueryDicts, so convert to a normal dict)
+            context_str = repr({'prog_form_raw': dict(form.data), 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost'], 'sibling_discount': form.cleaned_data['sibling_discount']})
+            request.session['context_str'] = context_str
 
             return render_to_response('program/newprogram_review.html', request, {'prog': temp_prog, 'perms':perms, 'modules': modules})
 

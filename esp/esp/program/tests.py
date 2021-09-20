@@ -1,5 +1,6 @@
 
 from __future__ import absolute_import
+from __future__ import unicode_literals
 import six
 from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -285,11 +286,11 @@ class ProgramHappenTest(TestCase):
     """
 
     def loginAdmin(self):
-        self.assertEqual( self.client.login(username='ubbadmubbin', password='pubbasswubbord'), True, u'Oops, login failed!' )
+        self.assertEqual( self.client.login(username='ubbadmubbin', password='pubbasswubbord'), True, 'Oops, login failed!' )
     def loginTeacher(self):
-        self.assertEqual( self.client.login(username='tubbeachubber', password='pubbasswubbord'), True, u'Oops, login failed!' )
+        self.assertEqual( self.client.login(username='tubbeachubber', password='pubbasswubbord'), True, 'Oops, login failed!' )
     def loginStudent(self):
-        self.assertEqual( self.client.login(username='stubbudubbent', password='pubbasswubbord'), True, u'Oops, login failed!' )
+        self.assertEqual( self.client.login(username='stubbudubbent', password='pubbasswubbord'), True, 'Oops, login failed!' )
 
     def setUp(self):
         #create Groups for userroles
@@ -341,8 +342,6 @@ class ProgramHappenTest(TestCase):
                 'teacher_reg_end':   '3001-01-01 00:00:00',
                 'student_reg_start': '2000-01-01 00:00:00',
                 'student_reg_end':   '3001-01-01 00:00:00',
-                'publish_start':     '2000-01-01 00:00:00',
-                'publish_end':       '3001-01-01 00:00:00',
                 'base_cost':         '666',
             }
         self.client.post('/manage/newprogram', prog_dict)
@@ -353,7 +352,7 @@ class ProgramHappenTest(TestCase):
         # Now test correctness...
         self.prog = Program.by_prog_inst('Prubbogrubbam', prog_dict['term'])
         # Name
-        self.assertEqual( self.prog.niceName(), u'Prubbogrubbam! Winter 3001', u'Program creation failed.' )
+        self.assertEqual( self.prog.niceName(), 'Prubbogrubbam! Winter 3001', 'Program creation failed.' )
         # Options
         self.assertEqual(
             [six.text_type(x) for x in
@@ -362,7 +361,7 @@ class ProgramHappenTest(TestCase):
             [six.text_type(x) for x in
                 [prog_dict['grade_min'],      prog_dict['grade_max'],
                  prog_dict['director_email'], prog_dict['program_size_max']] ],
-            u'Program options not properly set.' )
+            'Program options not properly set.' )
         # Program Cost
         self.assertEqual(
             Decimal(LineItemType.objects.get(required=True, program=self.prog).amount),
@@ -598,22 +597,22 @@ class ProgramFrameworkTest(TestCase):
         self.students = []
         self.admins = []
         for i in range(settings['num_students']):
-            name = u'student%04d' % i
-            new_student, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
+            name = 'student%04d' % i
+            new_student, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+'@learningu.org')
             new_student.set_password('password')
             new_student.save()
             new_student.makeRole("Student")
             self.students.append(new_student)
         for i in range(settings['num_teachers']):
-            name = u'teacher%04d' % i
-            new_teacher, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
+            name = 'teacher%04d' % i
+            new_teacher, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+'@learningu.org')
             new_teacher.set_password('password')
             new_teacher.save()
             new_teacher.makeRole("Teacher")
             self.teachers.append(new_teacher)
         for i in range(settings['num_admins']):
-            name = u'admin%04d' % i
-            new_admin, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
+            name = 'admin%04d' % i
+            new_admin, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+'@learningu.org')
             new_admin.set_password('password')
             new_admin.save()
             new_admin.makeRole("Administrator")
@@ -737,7 +736,7 @@ class ProgramFrameworkTest(TestCase):
             teacher_teacherinfo = TeacherInfo(user=teacher)
             teacher_teacherinfo.save()
             digit = teacher.id % 10
-            phone = (u'%d' % digit) * 10
+            phone = ('%d' % digit) * 10
             teacher_contactinfo = ContactInfo(
                 user=teacher,
                 first_name=teacher.first_name,
