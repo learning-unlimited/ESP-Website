@@ -171,8 +171,6 @@ ProgramCreationForm.base_fields['teacher_reg_start'].line_group = 2
 ProgramCreationForm.base_fields['teacher_reg_end'].line_group = 2
 ProgramCreationForm.base_fields['student_reg_start'].line_group = 3
 ProgramCreationForm.base_fields['student_reg_end'].line_group = 3
-ProgramCreationForm.base_fields['publish_start'].line_group = 1
-ProgramCreationForm.base_fields['publish_end'].line_group = 1
 
 ProgramCreationForm.base_fields['base_cost'].line_group = 4
 ProgramCreationForm.base_fields['sibling_discount'].line_group = 4
