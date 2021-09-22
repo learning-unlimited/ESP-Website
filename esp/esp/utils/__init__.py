@@ -52,5 +52,22 @@ def cmp(x, y):
     the outcome. The return value is negative if x < y, zero if x == y
     and strictly positive if x > y.
     """
-
+    if isinstance(x, dict) and isinstance(y, dict):
+        return dict_cmp(x, y)
     return (x > y) - (x < y)
+
+# copied from https://stackoverflow.com/questions/25675408/use-python-2-dict-comparison-in-python-3
+def smallest_diff_key(x, y):
+    """return the smallest key xdiff in x such that x[xdiff] != y[ydiff]"""
+    diff_keys = [k for k in x if x.get(k) != y.get(k)]
+    return min(diff_keys)
+
+def dict_cmp(x, y):
+    """compare two dictionaries as in Python 2"""
+    if len(x) != len(y):
+        return cmp(len(x), len(y))
+    xdiff = smallest_diff_key(x, y)
+    ydiff = smallest_diff_key(y, x)
+    if xdiff != ydiff:
+        return cmp(xdiff, ydiff)
+    return cmp(x[xdiff], y[ydiff])
