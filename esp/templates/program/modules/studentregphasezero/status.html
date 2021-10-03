@@ -111,7 +111,9 @@ td {
         <!--<b>Specify Role Name for Winners: </b>--><input type="hidden" name="rolename" value="{{role}}"></br></br>
         <input type="checkbox" name="perms" checked>  Open all student registration deadlines for lottery winners.</br></br>
         <input type="checkbox" name="confirm">  I confirm that I would like to run the default student lottery algorithm.</br></br>
-        <input {% if lottery_run or not grade_caps %}disabled {% endif %}{% if lottery_run %} title="Lottery has already been run" {% endif %}type="submit" style="float:none" value="Run Default Student Lottery Algorithm" />
+        <input {% if lottery_run or not grade_caps or invalid_grades %}disabled {% endif %}{% if lottery_run %}title="Lottery has already been run" 
+        {% elif invalid_grades %}title="Lottery can not be run with students with invalid grades" 
+        {% elif not grade_caps %}title="The grade cap tag must be set to run the lottery" {% endif %}type="submit" style="float:none" value="Run Default Student Lottery Algorithm" />
     </form>
 </div>
 
@@ -128,9 +130,24 @@ td {
         <input type="checkbox" name="groups">  I would also like to accept any students in the same lottery groups.</br></br>
         <input type="checkbox" name="perms" checked>  Open all student registration deadlines for lottery winners.</br></br>
         <input type="checkbox" name="confirm">  I confirm that I would like to use the above list of students for a manual student lottery.</br></br>
-        <input {% if lottery_run %}disabled title="Lottery has already been run" {% endif %}type="submit" style="float:none" value="Run Manual Student Lottery" />
+        <input {% if lottery_run or invalid_grades %}disabled {% endif %}{% if lottery_run %}title="Lottery has already been run" 
+        {% elif invalid_grades %}title="Lottery can not be run with students with invalid grades" {% endif %}type="submit" style="float:none" value="Run Manual Student Lottery" />
     </form>
 </div>
+
+{% if lottery_run %}
+<button class="dsphead">
+    <b><u>Undo the Student Lottery:</u></b>
+</button>
+<div class="dspcont">
+    This will UNDO the student lottery, which will delete the winners group and remove any permissions that were created for the group. This can NOT be undone.<br/><br/>
+    <form action="#" method="POST">
+        <input type="hidden" name="mode" value="undo">
+        <input type="checkbox" name="confirm">  I confirm that I would like to UNDO the student lottery.</br></br>
+        <input type="submit" style="float:none" value="Undo the Student Lottery" />
+    </form>
+</div>
+{% endif %}
 
 </center>
 
