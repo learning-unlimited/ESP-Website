@@ -7,19 +7,22 @@ from django.db import migrations
 def set_my_defaults(apps, schema_editor):
     ProgramModule = apps.get_model('program', 'ProgramModule')
     for pm in ProgramModule.objects.all():
-        mod = __import__("esp.program.modules.handlers.%s" % (pm.handler.lower()), (), (), [pm.handler])
-        props = getattr(mod, pm.handler).module_properties()
-        if type(props) is list:
-            if len(props) > 1:
-                props = [x for x in props if x['admin_title'] == pm.admin_title]
-                if len(props) != 1:
-                    raise NameError('Found {} modules with name `{}`. Instead found {}'.format(len(props), pm.admin_title, ','.join([x['admin_title'] for x in getattr(mod, pm.handler).module_properties()])))
+        try:
+            mod = __import__("esp.program.modules.handlers.%s" % (pm.handler.lower()), (), (), [pm.handler])
+            props = getattr(mod, pm.handler).module_properties()
+            if type(props) is list:
+                if len(props) > 1:
+                    props = [x for x in props if x['admin_title'] == pm.admin_title]
+                    if len(props) != 1:
+                        raise NameError('Found {} modules with name `{}`. Instead found {}'.format(len(props), pm.admin_title, ','.join([x['admin_title'] for x in getattr(mod, pm.handler).module_properties()])))
+                    else:
+                        props = props[0]
                 else:
-                    props = props[0]
-            else:
-                props = props[0] # IndexError here means there were no properties found, which is... bad
-        pm.choosable = props['choosable']
-        pm.save()
+                    props = props[0] # IndexError here means there were no properties found, which is... bad
+            pm.choosable = props['choosable']
+            pm.save()
+        except:
+            print("No handler for module %s" % (pm))
 
 def reverse_func(apps, schema_editor):
     pass  #

@@ -66,4 +66,10 @@ fi
 echo "Creating Virtualenv in $VENVDIR"
 
 sudo pip2 install "virtualenv>=1.10"
-sudo -u www-data virtualenv "$VENVDIR"
+
+# Check if this is a vagrant development server
+if id "vagrant" >/dev/null 2>&1; then
+    virtualenv "$VENVDIR"
+else
+    sudo -u www-data virtualenv "$VENVDIR"
+fi
