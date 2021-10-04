@@ -52,7 +52,7 @@ from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserA
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.db.models.query import Q
-from django.db.models import Min, Max
+from django.db.models import Min
 from django.db import transaction
 from django.core.mail import mail_admins
 from django.core.cache import cache
