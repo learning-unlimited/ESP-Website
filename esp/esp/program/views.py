@@ -754,14 +754,14 @@ def get_email_data(start_date):
     for req in requests:
         toes = TextOfEmail.objects.filter(created_at=req.created_at,
                                           subject = req.subject,
-                                          send_from = req.sender).order_by('-sent')
+                                          send_from = req.sender)
         if req.processed:
             req.num_rec = toes.count()
         else:
             req.num_rec = CommModule.approx_num_of_recipients(req.recipients, req.get_sendto_fn())
-        req.num_sent = sum(toe.sent is not None for toe in toes)
+        req.num_sent = toes.filter(sent__isnull=False).count()
         if req.num_rec == req.num_sent:
-            req.finished_at = toes[0].sent
+            req.finished_at = toes.order_by('-sent').first().sent
         else:
             req.finished_at = "(Not finished)"
         requests_list.append(req)
