@@ -174,7 +174,15 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         # Run lottery if requested
         if request.POST:
             if Tag.getBooleanTag('student_lottery_run', prog):
-                context['error'] = "You've already run the student lottery!"
+                if request.POST.get('mode') == 'undo':
+                    if "confirm" in request.POST:
+                        Group.objects.filter(name=role).delete()
+                        Tag.unSetTag('student_lottery_run', prog)
+                        context['lottery_messages'] = ["The student lottery has been undone."]
+                    else:
+                        context['error'] = "You did not confirm that you would like to undo the lottery."
+                else:
+                    context['error'] = "You've already run the student lottery!"
             else:
                 if "confirm" in request.POST:
                     role = request.POST['rolename']
