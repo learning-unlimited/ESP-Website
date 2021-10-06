@@ -568,12 +568,13 @@ class BaseESPUser(object):
     def getAvailableTimes(self, program, ignore_classes=False, ignore_moderation=False):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
-        from esp.cal.models import Event
+        from esp.cal.models import Event, EventType
 
         #   Detect whether the program has the availability module, and assume
         #   the user is always available if it isn't there.
         if program.hasModule('AvailabilityModule'):
-            valid_events = Event.objects.filter(useravailability__user=self, program=program).order_by('start')
+            et = EventType.get_from_desc('Class Time Block')
+            valid_events = Event.objects.filter(useravailability__user=self, program=program, event_type=et).order_by('start')
         else:
             valid_events = program.getTimeSlots()
 
