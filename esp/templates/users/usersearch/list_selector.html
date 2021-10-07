@@ -4,6 +4,18 @@ $j(document).ready(function() {
 });
 </script>
 
+<h3>Commonly used searches:</h3>
+<div id="common_searches">
+    <ul>
+        <li><a href="./commpanel?recipient_type=Student&base_list=all_Student&grade_min={{ program.grade_min }}&grade_max={{ program.grade_max }}">All students within the age range of the program</a></li>
+        <li><a href="./commpanel?recipient_type=Student&base_list=enrolled">All students enrolled in at least one class</a></li>
+        <li><a href="./commpanel?recipient_type=Teacher&base_list=all_Teacher&gradyear_min={% now 'Y' %}">All teachers who have not graduated</a></li>
+        <li><a href="./commpanel?recipient_type=Teacher&base_list=class_approved">All teachers teaching at least one approved class</a></li>
+        <li><a href="./commpanel?recipient_type=Volunteer&base_list=all_Volunteer">All volunteers in the database</a></li>
+        <li><a href="./commpanel?recipient_type=Volunteer&base_list=volunteer_all">All volunteers signed up for this program</a></li>
+    </ul>
+</div>
+
 <div id="list_descriptions" class="commpanel_hidden">
 {% for kv in lists.items %}{% for item in kv.1 %}
 <div id="list_description_{{ item.name }}">{{ item.description }}</div>
@@ -35,16 +47,16 @@ $j(document).ready(function() {
                 {% if include_prev_list %}
                 <div class="sendto_fn_select Student">
                     <div>
-                        <input type="checkbox" name="student_sendto_self" value="1" checked="checked" />
-                        <label for="student_sendto_self">Email the students</label>
+                        <input type="checkbox" id="student_sendto_self_basic" name="student_sendto_self" value="1" checked="checked" />
+                        <label for="student_sendto_self_basic">Email the students</label>
                     </div>
                     <div>
-                        <input type="checkbox" name="student_sendto_guardian" value="1" />
-                        <label for="student_sendto_guardian">Email the students' guardians</label>
+                        <input type="checkbox" id="student_sendto_guardian_basic" name="student_sendto_guardian" value="1" />
+                        <label for="student_sendto_guardian_basic">Email the students' guardians</label>
                     </div>
                     <div>
-                        <input type="checkbox" name="student_sendto_emergency" value="1" />
-                        <label for="student_sendto_emergency">Email the students' emergency contacts</label>
+                        <input type="checkbox" id="student_sendto_emergency_basic" name="student_sendto_emergency" value="1" />
+                        <label for="student_sendto_emergency_basic">Email the students' emergency contacts</label>
                     </div>
                 </div>
                 {% endif %}
@@ -108,16 +120,16 @@ $j(document).ready(function() {
             </select>
             <div class="sendto_fn_select Student">
                 <div>
-                    <input type="checkbox" name="student_sendto_self" value="1" checked="checked" />
-                    <label for="student_sendto_self">Email the students</label>
+                    <input type="checkbox" id="student_sendto_self_combo" name="student_sendto_self" value="1" checked="checked" />
+                    <label for="student_sendto_self_combo">Email the students</label>
                 </div>
                 <div>
-                    <input type="checkbox" name="student_sendto_guardian" value="1" />
-                    <label for="student_sendto_guardian">Email the students' guardians</label>
+                    <input type="checkbox" id="student_sendto_guardian_combo" name="student_sendto_guardian" value="1" />
+                    <label for="student_sendto_guardian_combo">Email the students' guardians</label>
                 </div>
                 <div>
-                    <input type="checkbox" name="student_sendto_emergency" value="1" />
-                    <label for="student_sendto_emergency">Email the students' emergency contacts</label>
+                    <input type="checkbox" id="student_sendto_emergency_combo" name="student_sendto_emergency" value="1" />
+                    <label for="student_sendto_emergency_combo">Email the students' emergency contacts</label>
                 </div>
             </div>
             <p>&nbsp;</p>
