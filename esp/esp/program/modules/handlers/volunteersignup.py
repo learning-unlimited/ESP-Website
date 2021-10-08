@@ -69,8 +69,8 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
     @staticmethod
     def signupForm(request, tl, one, two, prog, volunteer, isAdmin=False):
         context = {}
-	context['one'] = one
-	context['two'] = two
+        context['one'] = one
+        context['two'] = two
 
         if request.method == 'POST':
             form = VolunteerOfferForm(request.POST, program=prog)
