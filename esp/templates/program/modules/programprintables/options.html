@@ -65,7 +65,7 @@ Please select from options below.
     <a href="./studentschedules/png/?recipient_type=Student&base_list=enrolled">PNG (1 schedule max)</a>
 </li>
 <li><a href="./flatstudentschedules?recipient_type=Student&base_list=enrolled" title="Student Schedules">Flat Student Schedules</a> (by students)</li>
-<li><a href="./teacherschedules?recipient_type=Teacher&base_list=approved" title="Teacher Schedules">Teacher Schedules</a> (by teachers)</li>
+<li><a href="./teacherschedules?recipient_type=Teacher&base_list=class_approved" title="Teacher Schedules">Teacher Schedules</a> (by teachers)</li>
 {% if program|hasModule:"TeacherModeratorModule" %}
     <li><a href="./teachermoderatorschedules?combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo" title="Teacher and Moderator Schedules">Combined Teacher and {{ program.getModeratorTitle }} Schedules</a> (by teachers)</li>
     <li><a href="./moderatorschedules?recipient_type=Teacher&base_list=assigned_moderator" title="Moderator Schedules">{{ program.getModeratorTitle }} Schedules</a> (by teachers)</li>
@@ -87,17 +87,17 @@ Please select from options below.
 {% if program|hasModule:"TeacherModeratorModule" %}
     <li>Class Rosters</li>
     <ul>
-        <li><a href="./classrosters?recipient_type=Teacher&base_list=approved" title="Class Rosters">By teachers</a></li>
+        <li><a href="./classrosters?recipient_type=Teacher&base_list=class_approved" title="Class Rosters">By teachers</a></li>
         <li><a href="./classrostersbymoderator?recipient_type=Teacher&base_list=assigned_moderator" title="Class Rosters">By {{ program.getModeratorTitle|lower }}s</a></li>
     </ul>
     <li>Attendance Sheets</li>
     <ul>
-        <li><a href="./classrosters/attendance?recipient_type=Teacher&base_list=approved" title="Attendance Sheets">By teachers</a></li>
+        <li><a href="./classrosters/attendance?recipient_type=Teacher&base_list=class_approved" title="Attendance Sheets">By teachers</a></li>
         <li><a href="./classrostersbymoderator/attendance?recipient_type=Teacher&base_list=assigned_moderator" title="Attendance Sheets">By {{ program.getModeratorTitle|lower }}s</a></li>
     </ul>
 {% else %}
-    <li><a href="./classrosters?recipient_type=Teacher&base_list=approved" title="Class Rosters">Class Rosters</a> (by teachers)</li>
-    <li><a href="./classrosters/attendance?recipient_type=Teacher&base_list=approved" title="Attendance Sheets">Attendance Sheets</a> (by teachers)</li>
+    <li><a href="./classrosters?recipient_type=Teacher&base_list=class_approved" title="Class Rosters">Class Rosters</a> (by teachers)</li>
+    <li><a href="./classrosters/attendance?recipient_type=Teacher&base_list=class_approved" title="Attendance Sheets">Attendance Sheets</a> (by teachers)</li>
 {% endif %}
 <li><a href="./classchecklists" title="Class Checlists">Class Checklists</a> (all confirmed students)</li>
 <li><a href="./studentchecklist?recipient_type=Student&base_list=enrolled" title="Student Checklist">Student Checklist</a> (by students)</li>
@@ -117,8 +117,8 @@ Please select from options below.
 
 <h3>Teacher Lists</h3>
 <ul>
-<li><a href="./teachersbyname?recipient_type=Teacher&base_list=approved" title="Teacher List">Teacher List</a> (can be sorted by name, class, or start time) (<a href="./teachersbyname/csv?recipient_type=Teacher&base_list=approved">CSV</a>)
-<ul><li><a href="./teachersbyname/secondday?recipient_type=Teacher&base_list=approved">Teachers for second day of classes only</a> (<a href="./teachersbyname/seconddaycsv?recipient_type=Teacher&base_list=approved">CSV</a>)</li></ul></li>
+<li><a href="./teachersbyname?recipient_type=Teacher&base_list=class_approved" title="Teacher List">Teacher List</a> (can be sorted by name, class, or start time) (<a href="./teachersbyname/csv?recipient_type=Teacher&base_list=class_approved">CSV</a>)
+<ul><li><a href="./teachersbyname/secondday?recipient_type=Teacher&base_list=class_approved">Teachers for second day of classes only</a> (<a href="./teachersbyname/seconddaycsv?recipient_type=Teacher&base_list=class_approved">CSV</a>)</li></ul></li>
 </ul>
 {% if program|hasModule:"TeacherModeratorModule" %}
     <ul>
