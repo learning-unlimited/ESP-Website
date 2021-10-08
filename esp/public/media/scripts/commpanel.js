@@ -112,7 +112,8 @@ function populate_get()
     var items = location.search.substr(1).split("&").filter(Boolean);
     for (var index = 0; index < items.length; index++) {
         var key_val = items[index].split("=");
-        $j("[name=" + key_val[0] + "]").val(key_val[1].split(",")).change();
+        $j("[name=" + key_val[0] + "]").val(key_val[1].split(","));
+        if(key_val[0] == "recipient_type") recipient_type_change(clear = false);
     }
 }
 
@@ -122,15 +123,21 @@ function clear_filters()
     var $form = $j("#filter_accordion");
     var form_fields = $form.find(':input');
     form_fields.each(function(i, form_field) {
-        switch (form_field.type) {
-            case 'checkbox':
-                form_field.checked = false;
-                break;
-            case 'radio':
-                form_field.checked = false;
-                break;
-            default:
-                $j(form_field).val('');
+        if(form_field.name == "grade_min"){
+            $j(form_field).val(program_grade_min);
+        } else if(form_field.name == "grade_max"){
+            $j(form_field).val(program_grade_max);
+        } else{
+            switch (form_field.type) {
+                case 'checkbox':
+                    form_field.checked = false;
+                    break;
+                case 'radio':
+                    form_field.checked = false;
+                    break;
+                default:
+                    $j(form_field).val('');
+            }
         }
     });
     $j("#filter_accordion").accordion("option", "active", false);
@@ -166,7 +173,7 @@ function initialize()
     });
 
     //  Handle changes in the recipient type
-    recipient_type_change = function () {
+    recipient_type_change = function (clear = true) {
         var rb_selected = $j("select[name=recipient_type]").val();
         $j("#recipient_type_name").html("Which set of " + rb_selected + " would you like to contact?");
         $j("#recipient_list_select").children("div").addClass("commpanel_hidden");
@@ -174,7 +181,7 @@ function initialize()
         $j("#recipient_list_options_" + rb_selected).removeClass("commpanel_hidden");
         $j(".sendto_fn_select").addClass("commpanel_hidden");
         $j("." + rb_selected + ".sendto_fn_select").removeClass("commpanel_hidden");
-        clear_filters();
+        if(clear) clear_filters();
         prepare_accordion(rb_selected);
     }
     $j("select[name=recipient_type]").change(recipient_type_change);
