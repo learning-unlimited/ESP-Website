@@ -568,10 +568,12 @@ class ProgramPrintables(ProgramModuleObj):
     def teachersbyFOO(self, request, tl, one, two, module, extra, prog,
                       sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True,
                       template_file = 'teacherlist.html', extra_func = lambda x: {},
-                      teaching = True, moderating = False):
+                      teaching = True, moderating = False, display_name = 'Teacher List'):
         from esp.users.models import ContactInfo
 
-        filterObj, found = UserSearchController().create_filter(request, self.program)
+        if extra and 'secondday' in extra:
+            display_name = display_name + ' (second day only)'
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': display_name})
         if not found:
             return filterObj
 
@@ -666,13 +668,13 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def teachermoderatorlist(self, request, tl, one, two, module, extra, prog):
         """ default list of teachers; function left in for compatibility """
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=True, moderating=True)
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=True, moderating=True, display_name = 'Teacher and Moderator List')
 
     @aux_call
     @needs_admin
     def moderatorlist(self, request, tl, one, two, module, extra, prog):
         """ default list of teachers; function left in for compatibility """
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=False, moderating=True)
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=False, moderating=True, display_name = 'Moderator List')
 
     @staticmethod
     def cmpsorttime(one,other):
@@ -689,17 +691,17 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def teachersbytime(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = True, moderating = False)
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = True, moderating = False, display_name = 'Teacher List by Time')
 
     @aux_call
     @needs_admin
     def teachermoderatorsbytime(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = True, moderating = True)
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = True, moderating = True, display_name = 'Teacher and Moderator List by Time')
 
     @aux_call
     @needs_admin
     def moderatorsbytime(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = False, moderating = True)
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = False, moderating = True, display_name = 'Moderator List by Time')
 
     @staticmethod
     def cmpsortname(one, other):
@@ -715,17 +717,17 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def teachersbyname(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = True, moderating = False)
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = True, moderating = False, display_name = 'Teacher List by Name')
 
     @aux_call
     @needs_admin
     def teachermoderatorsbyname(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = True, moderating = True)
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = True, moderating = True, display_name = 'Teacher and Moderator List by Name')
 
     @aux_call
     @needs_admin
     def moderatorsbyname(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = False, moderating = True)
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = False, moderating = True, display_name = 'Moderator List by Name')
 
     @needs_admin
     def roomsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'roomlist.html', extra_func = lambda x: {}):
@@ -757,8 +759,8 @@ class ProgramPrintables(ProgramModuleObj):
 
 
     @needs_admin
-    def studentsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'studentlist.html', extra_func = lambda x: {}):
-        filterObj, found = UserSearchController().create_filter(request, self.program)
+    def studentsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'studentlist.html', extra_func = lambda x: {}, display_name = 'Student List'):
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': display_name})
         if not found:
             return filterObj
 
@@ -777,7 +779,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def studentsbyname(self, request, tl, one, two, module, extra, prog):
         """ default function to get student list for program """
-        return self.studentsbyFOO(request, tl, one, two, module, extra, prog)
+        return self.studentsbyFOO(request, tl, one, two, module, extra, prog, display_name = 'Student List by Name')
 
     @aux_call
     @needs_admin
@@ -798,12 +800,12 @@ class ProgramPrintables(ProgramModuleObj):
 
                 return {}
 
-        return self.studentsbyFOO(request, tl, one, two, module, extra, prog, template_file = 'studentlist_emerg.html', extra_func = emergency_stuff)
+        return self.studentsbyFOO(request, tl, one, two, module, extra, prog, template_file = 'studentlist_emerg.html', extra_func = emergency_stuff, display_name = 'Student Emergency Contact List')
 
     @aux_call
     @needs_admin
     def students_lineitem(self, request, tl, one, two, module, extra, prog):
-        from esp.accounting.models import Transfer
+        from esp.accounting.models import Transfer, LineItemType
         #   Determine line item
         student_ids = []
         if 'id' in request.GET:
@@ -812,18 +814,19 @@ class ProgramPrintables(ProgramModuleObj):
         else:
             lit_id = request.session['li_type_id']
 
+        lit = LineItemType.objects.get(id = lit_id)
         line_items = Transfer.objects.filter(line_item__id=lit_id)
         for l in line_items:
             student_ids.append(l.user_id)
 
-        return self.studentsbyFOO(request, tl, one, two, module, extra, prog, filt_exp = lambda x: x.id in student_ids)
+        return self.studentsbyFOO(request, tl, one, two, module, extra, prog, filt_exp = lambda x: x.id in student_ids, display_name = 'Student List for %s' % (lit.text))
 
     @aux_call
     @needs_admin
     def teachermoderatorschedules(self, request, tl, one, two, module, extra, prog):
         """ generate teacher/moderator schedules """
 
-        filterObj, found = UserSearchController().create_filter(request, self.program)
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Teacher and Moderator Schedules'})
         if not found:
             return filterObj
 
@@ -862,7 +865,7 @@ class ProgramPrintables(ProgramModuleObj):
     def teacherschedules(self, request, tl, one, two, module, extra, prog):
         """ generate teacher schedules """
 
-        filterObj, found = UserSearchController().create_filter(request, self.program)
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Teacher Schedules'})
         if not found:
             return filterObj
 
@@ -896,7 +899,7 @@ class ProgramPrintables(ProgramModuleObj):
     def moderatorschedules(self, request, tl, one, two, module, extra, prog):
         """ generate moderator schedules """
 
-        filterObj, found = UserSearchController().create_filter(request, self.program)
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Moderator Schedules'})
         if not found:
             return filterObj
 
@@ -930,7 +933,7 @@ class ProgramPrintables(ProgramModuleObj):
     def volunteerschedules(self, request, tl, one, two, module, extra, prog):
         """ generate volunteer schedules """
 
-        filterObj, found = UserSearchController().create_filter(request, self.program)
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Volunteer Schedules'})
         if not found:
             return filterObj
 
@@ -1131,7 +1134,7 @@ class ProgramPrintables(ProgramModuleObj):
         if onsite:
             students = [ESPUser.objects.get(id=request.GET['userid'])]
         else:
-            filterObj, found = UserSearchController().create_filter(request, self.program)
+            filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Student Financial Spreadsheet'})
 
             if not found:
                 return filterObj
@@ -1157,7 +1160,7 @@ class ProgramPrintables(ProgramModuleObj):
         if onsite:
             students = [ESPUser.objects.get(id=request.GET['userid'])]
         else:
-            filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': "Get Student Schedules"})
+            filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': "Student Schedules"})
 
             if not found:
                 return filterObj
@@ -1305,7 +1308,7 @@ class ProgramPrintables(ProgramModuleObj):
     def flatstudentschedules(self, request, tl, one, two, module, extra, prog):
         """ generate student schedules """
 
-        filterObj, found = UserSearchController().create_filter(request, self.program)
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Flat Student Schedules'})
         if not found:
             return filterObj
 
@@ -1403,7 +1406,7 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def student_tickets(self, request, tl, one, two, module, extra, prog):
-        filterObj, found = UserSearchController().create_filter(request, self.program)
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Meal Tickets'})
         if not found:
             return filterObj
 
@@ -1473,7 +1476,7 @@ class ProgramPrintables(ProgramModuleObj):
         """ generate class rosters """
 
 
-        filterObj, found = UserSearchController().create_filter(request, self.program)
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Class Rosters'})
         if not found:
             return filterObj
 
@@ -1506,7 +1509,7 @@ class ProgramPrintables(ProgramModuleObj):
         """ generate class rosters by moderator"""
 
 
-        filterObj, found = UserSearchController().create_filter(request, self.program)
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Class Rosters by Moderator'})
         if not found:
             return filterObj
 
@@ -1547,7 +1550,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def studentchecklist(self, request, tl, one, two, module, extra, prog):
         context = {'module': self}
-        filterObj, found = UserSearchController().create_filter(request, self.program)
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Student Checklist'})
         if not found:
             return filterObj
 
