@@ -4,6 +4,7 @@ $j(document).ready(function() {
 });
 </script>
 
+{% if include_common %}
 <h3>Commonly used searches:</h3>
 <div id="common_searches">
     <ul>
@@ -15,6 +16,7 @@ $j(document).ready(function() {
         <li><a href="?recipient_type=Volunteer&base_list=volunteer_all">All volunteers signed up for this program</a></li>
     </ul>
 </div>
+{% endif %}
 
 <div id="list_descriptions" class="commpanel_hidden">
 {% for kv in lists.items %}{% for item in kv.1 %}

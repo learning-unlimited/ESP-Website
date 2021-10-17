@@ -93,7 +93,9 @@ To have good quality IDs:<br />
 <div id="aul_wrapper" hidden>
 <label for="aul"><strong>Arbitrary User List:</strong></label>
 <br />
+{% with include_common="True" %}
 {% include "users/usersearch/list_selector.html" %}
+{% endwith %}
 <br />
 <br />
 </div>
@@ -165,7 +167,12 @@ $j('input:radio[name="type"]').change( function(e){
         $old_this = $j(this);
     }
 });
+$j(function() {
+    var items = location.search.substr(1).split("&").filter(Boolean);
+    if(items.length > 0){
+        $j("#aul").trigger("click");
+    }
+});
 </script>
-
 
 {% endblock %}

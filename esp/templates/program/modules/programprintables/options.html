@@ -108,7 +108,7 @@ Please select from options below.
 <li>Students who have ordered/reserved line items:
     <ul>
     {% for li_type in li_types %}
-        <li><a href="./students_lineitem?id={{ li_type.id }}">{{ li_type.text }}</a></li>
+        <li><a href="./students_lineitem?id={{ li_type.id }}&recipient_type=Student&base_list=all_Student">{{ li_type.text }}</a></li>
     {% endfor %}
     </ul>
 </li>
