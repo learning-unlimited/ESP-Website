@@ -7,11 +7,22 @@
 Changelog
 =========
 
+User search modules
+~~~~~~~~~~~~~~~~~~~
+- The default minimum and maximum grade filters are now set to the minimum and maximum grades of the program (to prevent erroneous emails to very old students)
+- There is now a list of commonly used searches to simplify the user selection process
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
-
+- Classes are now colored by category in the popularity graphs on the student big board
+- Tweaked the tooltip of the popularity graphs on the student big board
+- Changed the default font families for the default theme customizations ("Default" and "Rupaa")
+- Fixed the styling of the survey responses pdf
+- Added an undo button to the student lottery management page
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
+- Fixed many bugs in the theme editor, including when loading and saving customizations
+- Fixed a bug where a teacher's availability could include times for which they signed up for training, etc (this may fix instances where teachers were able to register more hours of classes than they should have been able to)
+- Fixed the performance of /manage/emails for sites that sent emails to lots of recipients (this was previously so bad that it could cause the entire server to crash)
 
