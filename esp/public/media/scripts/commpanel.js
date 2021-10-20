@@ -112,8 +112,23 @@ function populate_get()
     var items = location.search.substr(1).split("&").filter(Boolean);
     for (var index = 0; index < items.length; index++) {
         var key_val = items[index].split("=");
-        $j("[name=" + key_val[0] + "]").val(key_val[1].split(","));
-        if(key_val[0] == "recipient_type") recipient_type_change(clear = false);
+        var field = $j("[name=" + key_val[0] + "]");
+        if(field.length >= 1){
+            switch (field[0].type) {
+                case 'checkbox':
+                    // don't need a value for a checkbox, just check it
+                    field[0].checked = true;
+                    break;
+                default:
+                    if(key_val.length == 2){
+                        field.val(key_val[1].split(","));
+                        if(key_val[0] == "recipient_type") recipient_type_change(clear = false);
+                    } else {
+                        // skip it and keep going if a value wasn't specified
+                        break;
+                    }
+            }
+        }
     }
 }
 

@@ -4,17 +4,19 @@ $j(document).ready(function() {
 });
 </script>
 
+{% if include_common %}
 <h3>Commonly used searches:</h3>
 <div id="common_searches">
     <ul>
-        <li><a href="./commpanel?recipient_type=Student&base_list=all_Student&grade_min={{ program.grade_min }}&grade_max={{ program.grade_max }}">All students within the age range of the program</a></li>
-        <li><a href="./commpanel?recipient_type=Student&base_list=enrolled">All students enrolled in at least one class</a></li>
-        <li><a href="./commpanel?recipient_type=Teacher&base_list=all_Teacher&gradyear_min={% now 'Y' %}">All teachers who have not graduated</a></li>
-        <li><a href="./commpanel?recipient_type=Teacher&base_list=class_approved">All teachers teaching at least one approved class</a></li>
-        <li><a href="./commpanel?recipient_type=Volunteer&base_list=all_Volunteer">All volunteers in the database</a></li>
-        <li><a href="./commpanel?recipient_type=Volunteer&base_list=volunteer_all">All volunteers signed up for this program</a></li>
+        <li><a href="?recipient_type=Student&base_list=all_Student&grade_min={{ program.grade_min }}&grade_max={{ program.grade_max }}">All students within the age range of the program</a></li>
+        <li><a href="?recipient_type=Student&base_list=enrolled">All students enrolled in at least one class</a></li>
+        <li><a href="?recipient_type=Teacher&base_list=all_Teacher&gradyear_min={% now 'Y' %}">All teachers who have not graduated</a></li>
+        <li><a href="?recipient_type=Teacher&base_list=class_approved">All teachers teaching at least one approved class</a></li>
+        <li><a href="?recipient_type=Volunteer&base_list=all_Volunteer">All volunteers in the database</a></li>
+        <li><a href="?recipient_type=Volunteer&base_list=volunteer_all">All volunteers signed up for this program</a></li>
     </ul>
 </div>
+{% endif %}
 
 <div id="list_descriptions" class="commpanel_hidden">
 {% for kv in lists.items %}{% for item in kv.1 %}
