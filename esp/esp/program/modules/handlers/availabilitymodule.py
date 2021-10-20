@@ -231,6 +231,8 @@ class AvailabilityModule(ProgramModuleObj):
         context['conflict_found'] = conflict_found
         context['teacher_user'] = teacher
         context['isAdmin'] = isAdmin
+        context['one'] = one
+        context['two'] = two
 
         if isAdmin:
             form = TeacherSearchForm(initial={'target_user': teacher.id})
