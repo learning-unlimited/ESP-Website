@@ -619,6 +619,8 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
             #   Give administrators additional information
             if user.isAdministrator(program=program):
                 request.show_perm_info = True
+                request.one = program.program_type
+                request.two = program.program_instance
                 if getattr(request, 'perm_names', None) is not None:
                     request.perm_names.append(perm_name)
                 else:
