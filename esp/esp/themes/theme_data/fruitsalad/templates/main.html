@@ -213,7 +213,7 @@ var currentPrograms = [
           {% if request.mod_required %}
           <div class="alert alert-danger">
               <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-              This page is required for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
+              This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
           </div>
           {% endif %}
           {% if request.show_perm_info %}
