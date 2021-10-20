@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -71,7 +74,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
             # Get grade caps
             grade_caps_str = prog.grade_caps()
             if grade_caps_str:
-                grade_caps = {int(key[0]): value for key, value in grade_caps_str.iteritems()}
+                grade_caps = {int(key[0]): value for key, value in six.iteritems(grade_caps_str)}
                 ###############################################################################
                 # The default lottery algorithm is run, with randomization and processing in order.
                 # If any one in the group doesn't get in (due to cap size), no one in that group gets in.
@@ -94,7 +97,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                 messages.append("<i>program_size_by_grade</i> <a href='/manage/" + prog.getUrlBase() + "/tags'>tag</a> is not set. Lottery not run.")
 
         elif post.get('mode') == 'manual':
-            usernames = filter(None, re.split(r'[;,\s]\s*', post.get('usernames')))
+            usernames = [_f for _f in re.split(r'[;,\s]\s*', post.get('usernames')) if _f]
 
             # check that all usernames are valid
             for username in usernames:
@@ -143,7 +146,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         context['role'] = role
         q_phasezero = Q(phasezerorecord__program=self.program)
         entrants = ESPUser.objects.filter(q_phasezero).distinct()
-        context['grade_caps'] = sorted(prog.grade_caps().iteritems())
+        context['grade_caps'] = sorted(six.iteritems(prog.grade_caps()))
 
         recs = PhaseZeroRecord.objects.filter(program=prog).order_by('time')
         timess = [("number of lottery students", [(rec.user.count(), rec.time) for rec in recs], True)]
@@ -151,7 +154,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         context["left_axis_data"] = [{"axis_name": "#", "series_data": timess_data}]
         context["first_hour"] = start
 
-        grades = range(prog.grade_min, prog.grade_max + 1)
+        grades = list(range(prog.grade_min, prog.grade_max + 1))
         stats = {}
         invalid_grades = set()
 

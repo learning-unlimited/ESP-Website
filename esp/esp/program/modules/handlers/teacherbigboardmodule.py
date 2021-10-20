@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import datetime
 import subprocess
 
@@ -12,6 +13,8 @@ from esp.users.models import Record
 from esp.utils.decorators import cached_module_view
 from esp.utils.web import render_to_response
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
+import six
+from six.moves import zip
 
 def get_filter(prog, approved = False, scheduled = False, teachers = None):
     filt = Q(parent_program=prog)
@@ -133,7 +136,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
             "first_hour": start,
             "left_axis_data": left_axis_data,
             "right_axis_data": right_axis_data,
-            "loads": zip([1, 5, 15], self.load_averages()),
+            "loads": list(zip([1, 5, 15], self.load_averages())),
         }
         return render_to_response('program/modules/bigboardmodule/bigboard.html',
                                   request, context)
@@ -198,7 +201,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
         ).exclude(category__category__iexact="Lunch"
         ).exclude(teachers=None
         ).distinct().values_list('teachers').annotate(Min('timestamp')))
-        return sorted(teacher_times.itervalues())
+        return sorted(six.itervalues(teacher_times))
 
     @cache_function_for(105)
     def get_hours(prog, approved = False, scheduled = False, teachers = None):

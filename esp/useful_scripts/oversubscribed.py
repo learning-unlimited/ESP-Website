@@ -1,6 +1,7 @@
 #Exports as csv file with how oversubscribed a class is.
 # %run filename to run
 
+from __future__ import absolute_import
 from esp.program.models import Program
 import csv
 

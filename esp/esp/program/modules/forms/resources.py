@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django import forms
 from django.utils.safestring import mark_safe
 from django.db.models import IntegerField, Case, When, Count
@@ -10,6 +11,7 @@ from esp.cal.models import EventType, Event
 from esp.program.models import Program
 from esp.utils.widgets import DateTimeWidget, DateWidget
 from esp.tagdict.models import Tag
+from six.moves import range
 
 class TimeslotForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
@@ -60,7 +62,7 @@ class ResourceTypeForm(forms.Form):
         self.fields['name'].initial = res_type.name
         self.fields['description'].initial = res_type.description
         self.fields['priority'].initial = res_type.priority_default
-        self.fields['is_global'].initial = (res_type.program == None)
+        self.fields['is_global'].initial = (res_type.program is None)
         self.fields['only_one'].initial = res_type.only_one
         self.fields['hidden'].initial = res_type.hidden
         self.fields['id'].initial = res_type.id
@@ -82,8 +84,8 @@ class ResourceTypeForm(forms.Form):
             res_type.hidden = False
         if self.cleaned_data['priority']:
             res_type.priority_default = self.cleaned_data['priority']
-        if choices and filter(None, choices):
-            res_type.choices = filter(None, choices)
+        if choices and [_f for _f in choices if _f]:
+            res_type.choices = [_f for _f in choices if _f]
         else:
             """ This is already set by default when making a new resource type,
                 but if you remove all of the choices from a pre-existing resource type

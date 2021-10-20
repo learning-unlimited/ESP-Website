@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django.test import TestCase
 from django.contrib.auth.models import User
 from esp.tagdict import all_global_tags, all_program_tags

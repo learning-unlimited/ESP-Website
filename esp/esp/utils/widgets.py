@@ -2,6 +2,7 @@
 #   Modified to not force unicode
 #   - Michael P
 
+from __future__ import absolute_import
 from django import forms
 from django.conf import settings
 from django.forms import widgets
@@ -13,6 +14,9 @@ import datetime
 import time
 import json
 import logging
+import six
+from six.moves import range
+from six.moves import zip
 logger = logging.getLogger(__name__)
 
 class DateTimeWidget(forms.widgets.DateTimeInput):
@@ -77,7 +81,7 @@ class ClassAttrMergingSelect(forms.Select):
         #   Merge 'class' attributes - this is the difference from Django's default implementation
         if extra_attrs:
             if 'class' in attrs and 'class' in extra_attrs \
-                    and (isinstance(extra_attrs['class'], str) or isinstance(extra_attrs['class'], unicode)):
+                    and (isinstance(extra_attrs['class'], str) or isinstance(extra_attrs['class'], six.text_type)):
                 attrs['class'] += ' ' + extra_attrs['class']
                 del extra_attrs['class']
             attrs.update(extra_attrs)
@@ -95,14 +99,14 @@ class SplitDateWidget(forms.MultiWidget):
         if max_year is None:
             max_year = datetime.now().year - 10
 
-        year_choices = range(min_year,
-                             max_year+1)
+        year_choices = list(range(min_year,
+                             max_year+1))
         year_choices.reverse()
         month_choices = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
         day_choices   = ['%02d' % x for x in range(1, 32)]
-        choices = {'year' : [('',' ')] + zip(year_choices, year_choices),
-                   'month': [('',' ')] + zip(range(1, 13), month_choices),
-                   'day'  : [('',' ')] + zip(range(1, 32), day_choices)
+        choices = {'year' : [('',' ')] + list(zip(year_choices, year_choices)),
+                   'month': [('',' ')] + list(zip(list(range(1, 13)), month_choices)),
+                   'day'  : [('',' ')] + list(zip(list(range(1, 32)), day_choices))
                    }
 
         year_widget = ClassAttrMergingSelect(choices=choices['year'], attrs={'class': 'input-small'})
@@ -162,7 +166,7 @@ class NullCheckboxSelect(forms.CheckboxInput):
             return False
         value = data.get(name)
         values =  {'on': True, 'true': True, 'false': False}
-        if isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, str) or isinstance(value, six.text_type):
             value = values.get(value.lower(), value)
         logger.info('NullCheckboxSelect converted %s to %s', data.get(name), value)
         return value

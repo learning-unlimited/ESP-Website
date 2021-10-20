@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -225,7 +226,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
             user_dict = {}
             for user in queryset:
                 user_dict[user.id] = user
-            users = user_dict.values()
+            users = list(user_dict.values())
 
             # Construct combo-box items
             obj_list = [{'username': user.username, 'id': user.id, 'grade': user.getGrade(prog)} for user in users]

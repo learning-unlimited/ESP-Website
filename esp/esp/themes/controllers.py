@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -46,7 +48,8 @@ import textwrap
 import distutils.dir_util
 import json
 import hashlib
-from urllib import quote, unquote
+import copy
+from six.moves.urllib.parse import quote, unquote
 
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -95,7 +98,7 @@ class ThemeController(object):
 
     def get_theme_names(self):
         return [name for name in os.listdir(THEME_PATH)
-            if os.path.isdir(os.path.join(THEME_PATH, name))]
+            if name != '__pycache__' and os.path.isdir(os.path.join(THEME_PATH, name))]
 
     def get_template_settings(self):
         """
@@ -252,7 +255,7 @@ class ThemeController(object):
             variable_data['iconSpritePath'] = '"%s/bootstrap/img/glyphicons-halflings.png"' % settings.CDN_ADDRESS
 
         #   Replace all variable declarations for which we have a value defined
-        for (variable_name, variable_value) in variable_data.iteritems():
+        for (variable_name, variable_value) in six.iteritems(variable_data):
             less_data = re.sub(r'@%s:(\s*)(.*?);' % variable_name, r'@%s: %s;' % (variable_name, variable_value), less_data)
 
         if themes_settings.THEME_DEBUG:
@@ -265,7 +268,10 @@ class ThemeController(object):
 
         #   Compile to CSS
         lessc_args = ['lessc', '--include-path="%s"' % less_search_path, '-']
-        lessc_process = subprocess.Popen(' '.join(lessc_args), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        try:
+            lessc_process = subprocess.Popen(' '.join(lessc_args), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, text=True) # Python 3
+        except:
+            lessc_process = subprocess.Popen(' '.join(lessc_args), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True) # Python 2
         css_data = lessc_process.communicate(less_data)[0]
 
         if lessc_process.returncode != 0:
@@ -371,6 +377,8 @@ class ThemeController(object):
 
         result = []
         for filename in os.listdir(dir):
+            if filename == '__pycache__':
+                continue
             full_filename = os.path.join(dir, filename)
             if os.path.isdir(filename):
                 result += self.get_file_summaries(full_filename)
@@ -402,7 +410,7 @@ class ThemeController(object):
                 if hash_src != hash_dest:
                     differences.append({
                         'filename': rel_filename_dest,
-                        'filename_hash': hashlib.sha1(rel_filename_dest).hexdigest(),
+                        'filename_hash': hashlib.sha1(rel_filename_dest.encode('UTF-8')).hexdigest(),
                         'source_size': filesize_src,
                         'dest_size': filesize_dest,
                     })
@@ -508,7 +516,8 @@ class ThemeController(object):
             palette = self.get_palette()['custom']
 
         vars_orig = self.find_less_variables(theme_name, flat=True)
-        for key in vars.keys():
+        keys = copy.copy(list(vars.keys()))
+        for key in keys:
             if key not in vars_orig:
                 del vars[key]
 
@@ -580,7 +589,7 @@ class ThemeController(object):
         base_vars = self.find_less_variables()
         for varset in base_vars.values():
             for val in varset.values():
-                if isinstance(val, basestring) and val.startswith('#'):
+                if isinstance(val, six.string_types) and val.startswith('#'):
                     if len(val) == 4: # Convert to long form
                         val = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3]
                     palette_base.add(val)
@@ -596,7 +605,7 @@ class ThemeController(object):
         base_vars = self.find_less_variables()
         for varset in base_vars.values():
             for val in varset.values():
-                if isinstance(val, basestring) and val.startswith('#'):
+                if isinstance(val, six.string_types) and val.startswith('#'):
                     if len(val) == 4: # Convert to long form
                         val = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3]
                     if val in palette:

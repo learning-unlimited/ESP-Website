@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ClassSubject
 from esp.users.models import ESPUser
@@ -52,9 +53,9 @@ class CancelClassTest(ProgramFrameworkTest):
                     studentEmail = m
                     break
 
-        self.assertTrue(directorEmail != None and cancelMsg in directorEmail.body)
-        self.assertTrue(studentEmail != None and cancelMsg in studentEmail.body)
+        self.assertTrue(directorEmail is not None and cancelMsg in directorEmail.body)
+        self.assertTrue(studentEmail is not None and cancelMsg in studentEmail.body)
 
         # Check that classes show up in the cancelled classes printable
         r = self.client.get("/manage/"+self.program.url+"/classesbytime?cancelled")
-        self.assertTrue(self.cls.emailcode() in r.content)
+        self.assertTrue(self.cls.emailcode() in r.content.decode('UTF-8'))

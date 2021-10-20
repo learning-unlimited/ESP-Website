@@ -6,6 +6,7 @@
 # and prints the email address of these users to the screen.
 
 from __future__ import print_function
+from __future__ import absolute_import
 from script_setup import *
 
 from esp.program.models import FinancialAidRequest

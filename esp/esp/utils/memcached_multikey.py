@@ -1,5 +1,6 @@
 "Memcached cache backend"
 
+from __future__ import absolute_import
 import logging
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,7 @@ from esp.utils import ascii
 import hashlib
 
 try:
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
 except:
     import pickle
 
@@ -35,7 +36,7 @@ class CacheClass(BaseCache):
         if len(rawkey) <= real_max_length:
             return rawkey
         else: # We have an oversized key; hash it
-            hashkey = HASH_PREFIX + hashlib.md5(key).hexdigest()
+            hashkey = HASH_PREFIX + hashlib.md5(key.encode('UTF-8')).hexdigest()
             return hashkey + '_' + rawkey[ :  real_max_length - len(hashkey) - 1 ]
 
     def _failfast_test(self, key, value):
@@ -68,7 +69,7 @@ class CacheClass(BaseCache):
     @try_multi(8)
     def get_many(self, keys, version=None):
         keys_dict = dict((self.make_key(key, version), key) for key in keys)
-        wrapped_ans = self._wrapped_cache.get_many(keys_dict.keys(), version=version)
+        wrapped_ans = self._wrapped_cache.get_many(list(keys_dict.keys()), version=version)
         ans = {}
         for k,v in wrapped_ans.items():
             ans[keys_dict[k]] = v

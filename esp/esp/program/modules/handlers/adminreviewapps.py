@@ -1,5 +1,6 @@
 
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -90,7 +91,7 @@ class AdminReviewApps(ProgramModuleObj):
         for key in students_dict:
             students += students_dict[key]
 
-        students = filter(lambda x: x.studentapplication_set.filter(program=self.program).count() > 0, students)
+        students = [x for x in students if x.studentapplication_set.filter(program=self.program).count() > 0]
 
         for student in students:
             student.added_class = student.studentregistration_set.filter(section__parent_class=cls)[0].start_date

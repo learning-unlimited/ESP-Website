@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+import six
+from six.moves import map
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -102,7 +105,7 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
             # URL-encode some data since cookies don't like funny characters. They
             # make the chocolate chips nervous.
             # : see public/media/scripts/content/user_data.js
-            import urllib
+            import six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
             encoding = request.encoding
             if encoding is None:
                 encoding = settings.DEFAULT_CHARSET
@@ -111,19 +114,19 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
 
             new_values = {'cur_username': user.username,
                           'cur_userid': user.id,
-                          'cur_email': urllib.quote(user.email.encode(encoding)),
-                          'cur_first_name': urllib.quote(user.first_name.encode(encoding)),
-                          'cur_last_name': urllib.quote(user.last_name.encode(encoding)),
+                          'cur_email': six.moves.urllib.parse.quote(user.email.encode(encoding)),
+                          'cur_first_name': six.moves.urllib.parse.quote(user.first_name.encode(encoding)),
+                          'cur_last_name': six.moves.urllib.parse.quote(user.last_name.encode(encoding)),
                           'cur_other_user': getattr(user, 'other_user', False) and '1' or '0',
-                          'cur_retTitle': urllib.quote(ret_title.encode(encoding)),
+                          'cur_retTitle': six.moves.urllib.parse.quote(ret_title.encode(encoding)),
                           'cur_admin': user.isAdministrator() and '1' or '0',
                           'cur_qsd_bits': has_qsd_bits and '1' or '0',
                           'cur_yog': user.getYOG(),
                           'cur_grade': user.getGrade(),
-                          'cur_roles': urllib.quote(",".join(user.getUserTypes())),
+                          'cur_roles': six.moves.urllib.parse.quote(",".join(user.getUserTypes())),
                           }
 
-            for key, value in new_values.iteritems():
+            for key, value in six.iteritems(new_values):
                 if request.COOKIES.get(key, "") != str(value if value else ""):
                     response.set_cookie(key, value, max_age=max_age, expires=expires,
                                         domain=settings.SESSION_COOKIE_DOMAIN,
@@ -138,7 +141,7 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
                                          'cur_yog', 'cur_grade',
                                          'cur_qsd_bits') if request.COOKIES.get(x, False)]
 
-            map(response.delete_cookie, cookies_to_delete)
+            list(map(response.delete_cookie, cookies_to_delete))
             modified_cookies = (len(cookies_to_delete) > 0)
 
         request.session.accessed = request.session.modified  ## Django only uses this for determining whether it refreshed the session cookie (and so needs to vary on cache), and its behavior is buggy; this works around it. -- aseering 11/1/2010

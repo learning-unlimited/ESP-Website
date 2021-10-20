@@ -8,6 +8,8 @@ UNIQUENESS CRITERIA: (full name, date of birth)
 FILTERING: Only student-only accounts with valid names and DOBs are considered for merging.
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 from esp.users.models import *
 from esp.users.models.forwarder import *
 from esp.program.models import *
@@ -60,7 +62,7 @@ def get_duplicate_users():
             user_groups[key] = []
         user_groups[key].append(user)
 
-    print 'Of %d users there were %d students, %d of which had no DOB marked.' % (users.count(), num_students, non_dob_users)
+    print('Of %d users there were %d students, %d of which had no DOB marked.' % (users.count(), num_students, non_dob_users))
     return user_groups
 
 def merge_group(group):
@@ -68,7 +70,7 @@ def merge_group(group):
     group.sort(key=lambda x: -x.id)
     for acct in group[1:]:
         UserForwarder.forward(acct, group[0])
-    print 'Merged accounts: %s <- [%s]' % (group[0].username, ', '.join(x.username for x in group[1:]))
+    print('Merged accounts: %s <- [%s]' % (group[0].username, ', '.join(x.username for x in group[1:])))
 
 ug = get_duplicate_users()
 group_dict = {}
@@ -82,8 +84,8 @@ size_dict = {}
 for key in group_dict:
     size_dict[key] = len(group_dict[key])
 
-print 'Distribution of duplicate account numbers'
-print size_dict
+print('Distribution of duplicate account numbers')
+print(size_dict)
 
 """
 Example usage

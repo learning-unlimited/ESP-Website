@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -59,7 +61,7 @@ def get_from_id(id, module, strtype = 'object', error = True):
 def render_to_response(template, request, context, content_type=None, use_request_context=True):
     from esp.web.views.navBar import makeNavBar
 
-    if isinstance(template, (basestring,)):
+    if isinstance(template, (six.string_types,)):
         template = [ template ]
 
     section = request.path.split('/')[1]

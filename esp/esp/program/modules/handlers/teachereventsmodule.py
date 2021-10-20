@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -136,7 +137,7 @@ class TeacherEventsModule(ProgramModuleObj):
             if form.is_valid():
                 data = form.cleaned_data
                 # Remove old bits
-                UserAvailability.objects.filter(user=request.user, event__event_type__in=self.event_types().values()).delete()
+                UserAvailability.objects.filter(user=request.user, event__event_type__in=list(self.event_types().values())).delete()
                 # Register for interview
                 if data['interview']:
                     ua, created = UserAvailability.objects.get_or_create( user=request.user, event=data['interview'], role=self.availability_role())
@@ -208,7 +209,7 @@ class TeacherEventsModule(ProgramModuleObj):
         return render_to_response( self.baseDir()+'teacher_events.html', request, context )
 
     def isStep(self):
-        return Event.objects.filter(program=self.program, event_type__in=self.event_types().values()).exists()
+        return Event.objects.filter(program=self.program, event_type__in=list(self.event_types().values())).exists()
 
     class Meta:
         proxy = True

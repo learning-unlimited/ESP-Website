@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -103,7 +104,7 @@ class OnSiteAttendance(ProgramModuleObj):
                     student.missed_class = enrolled_srs.get(student, None)
                 #Students attending classes during this timeslot on the specified day that they were enrolled in because they are attending it (and were not enrolled in beforehand)
                 onsite_srs = {sr.user: sr.section for sr in StudentRegistration.valid_objects(when).filter(section__meeting_times=timeslot, relationship__name="OnSite/AttendedClass").select_related('user')}
-                onsite = onsite_srs.keys()
+                onsite = list(onsite_srs.keys())
                 for student in onsite:
                     student.enrolled = True
                     student.attended_class = onsite_srs.get(student, None)

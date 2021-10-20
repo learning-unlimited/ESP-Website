@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -369,7 +371,7 @@ class OnSiteClassList(ProgramModuleObj):
             options = request.GET.copy()
 
             #   Display options-selection page if this page is requested with no GET variables
-            if len(options.keys()) == 0:
+            if len(list(options.keys())) == 0:
                 return render_to_response(self.baseDir() + 'classlist_options.html', request, {'prog': prog})
 
         context = {}
@@ -455,7 +457,7 @@ class OnSiteClassList(ProgramModuleObj):
         printers = [ x.name for x in Printer.objects.all() ]
 
         return render_to_response(self.baseDir()+'allclasslist.html', request,
-            {'classes': classes, 'prog': self.program, 'one': one, 'two': two, 'categories': categories.values(), 'printers': printers})
+            {'classes': classes, 'prog': self.program, 'one': one, 'two': two, 'categories': list(categories.values()), 'printers': printers})
 
     def makeLink(self):
         calls = [("classchange_grid","Grid-based Class Changes Interface"), ("classList","Scrolling Class List"), (self.get_main_view(),self.module.link_title)]

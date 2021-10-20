@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from six.moves import map
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -186,7 +188,7 @@ class AvailabilityModule(ProgramModuleObj):
                 teacher.addAvailableTime(self.program, timeslot)
 
             #   Add in resources for the checked available times.
-            timeslot_ids = map(int, post_vars.getlist('timeslots'))
+            timeslot_ids = list(map(int, post_vars.getlist('timeslots')))
             timeslots = Event.objects.filter(id__in=timeslot_ids).order_by('start')
             missing_tsids = set(timeslot_ids) - set(x.id for x in timeslots)
             if missing_tsids:

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django.http import HttpResponse
 from esp.program.models import Program, ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
@@ -14,6 +15,9 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 import json
 import re
+import six
+from six.moves import map
+from six.moves import range
 
 
 class SchedulingCheckModule(ProgramModuleObj):
@@ -67,7 +71,7 @@ class JSONFormatter:
     def format_list(self, l, heading="", help_text=""): # needs verify
         output = {}
         output["help_text"] = help_text
-        output["headings"] = map(str, heading) # no headings
+        output["headings"] = list(map(str, heading)) # no headings
 
         # might be redundant, but it makes sure things aren't in a weird format
         output["body"] = [self._table_row([row]) for row in l]
@@ -89,7 +93,7 @@ class JSONFormatter:
     def _format_list_table(self, d, headings, help_text=""): #needs verify
         output = {}
         output["help_text"] = help_text
-        output["headings"] = map(str, headings)
+        output["headings"] = list(map(str, headings))
         output["body"] = [self._table_row([row[h] for h in headings]) for row in d]
         return output
 
@@ -97,8 +101,8 @@ class JSONFormatter:
         headings = [""] + headings[:]
         output = {}
         output["help_text"] = help_text
-        output["headings"] = map(str, headings)
-        output["body"] = [self._table_row([key] + [row[h] for h in headings if h]) for key, row in sorted(d.iteritems())]
+        output["headings"] = list(map(str, headings))
+        output["body"] = [self._table_row([key] + [row[h] for h in headings if h]) for key, row in sorted(six.iteritems(d))]
         return output
 
 class SchedulingCheckRunner:
@@ -343,7 +347,7 @@ class SchedulingCheckRunner:
                      if open_class_cat.id not in [c.category.id for c in classes]:
                          #converts the list of class section objects to a single string
                          str1 = ', '
-                         classes = str1.join([unicode(c) for c in classes])
+                         classes = str1.join([six.text_type(c) for c in classes])
                          bads.append({
                              'Username': t,
                              'Teacher Name': t.name(),
@@ -577,9 +581,9 @@ class SchedulingCheckRunner:
      def no_overlap_classes(self):
          '''Gets a list of classes from the tag no_overlap_classes, and checks that they don't overlap.  The tag should contain a dict of {'comment': [list,of,class,ids]}.'''
          classes = json.loads(Tag.getProgramTag('no_overlap_classes',program=self.p))
-         classes_lookup = {x.id: x for x in ClassSubject.objects.filter(id__in=sum(classes.values(),[]))}
+         classes_lookup = {x.id: x for x in ClassSubject.objects.filter(id__in=sum(list(classes.values()),[]))}
          bad_classes = []
-         for key, l in classes.iteritems():
+         for key, l in six.iteritems(classes):
              eventtuples = list(Event.objects.filter(meeting_times__parent_class__in=l).values_list('description', 'meeting_times', 'meeting_times__parent_class'))
              overlaps = {}
              for event, sec, cls in eventtuples:
@@ -618,7 +622,7 @@ class SchedulingCheckRunner:
          HEADINGS = ["Class Section", "Unfulfilled Request", "Current Room"]
          mismatches = []
 
-         for type_regex, matching_rooms in DEFAULT_CONFIG.iteritems():
+         for type_regex, matching_rooms in six.iteritems(DEFAULT_CONFIG):
              resource_requests = ResourceRequest.objects.filter(
                  res_type__program=self.p, desired_value__iregex=type_regex)
 

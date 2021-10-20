@@ -1,5 +1,8 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from esp.accounting.controllers import ProgramAccountingController
 from esp.program.models import Program
+from six.moves import input
 
 
 def get_donation_total(prog_name):
@@ -13,6 +16,6 @@ def get_donation_total(prog_name):
     return total
 
 if __name__ == '__main__':
-    name = raw_input("Enter program URL (e.g. 'Splash/2020_Fall' without quotes): ")
-    print('Your total is ${0:.2f}.'.format(get_donation_total(name.strip())))
+    name = input("Enter program URL (e.g. 'Splash/2020_Fall' without quotes): ")
+    print(('Your total is ${0:.2f}.'.format(get_donation_total(name.strip()))))
 

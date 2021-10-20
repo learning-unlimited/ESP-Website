@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -61,6 +66,7 @@ from django_extensions.db.fields.json import JSONField
 from esp.db.fields import AjaxForeignKey
 from esp.utils.property import PropertyDict
 from esp.utils.query_utils import nest_Q
+from esp.utils import cmp
 from esp.tagdict.models import Tag
 from esp.mailman import add_list_member, remove_list_member
 
@@ -109,7 +115,7 @@ REGISTRATION_CHOICES = (
             )
 
 
-
+@python_2_unicode_compatible
 class ClassSizeRange(models.Model):
     range_min = models.IntegerField(null=False)
     range_max = models.IntegerField(null=False)
@@ -132,8 +138,8 @@ class ClassSizeRange(models.Model):
     def range_str(self):
         return u"%d-%d" %(self.range_min, self.range_max)
 
-    def __unicode__(self):
-        return u"Class Size Range: " + self.range_str()
+    def __str__(self):
+        return "Class Size Range: " + self.range_str()
 
     class Meta:
         app_label='program'
@@ -186,7 +192,7 @@ class ClassManager(Manager):
 
         classes = classes.select_related('category')
 
-        if program != None:
+        if program is not None:
             classes = classes.filter(parent_program = program)
 
         if ts is not None:
@@ -246,7 +252,7 @@ class ClassManager(Manager):
             counter += 1
 
         # All class ID's; used by later query ugliness:
-        class_ids = map(lambda x: x.id, classes)
+        class_ids = [x.id for x in classes]
 
         # Now to get the sections corresponding to these classes...
 
@@ -265,11 +271,11 @@ class ClassManager(Manager):
 
         for c in classes:
             c._teachers = list(c.teachers.all())
-            c._teachers.sort(cmp=lambda t1, t2: cmp(t1.last_name, t2.last_name))
+            c._teachers.sort(key=lambda t: t.last_name)
             c._sections = sections_by_parent_id[c.id]
             for s in c._sections:
                 s.parent_class = c
-            c._sections.sort(cmp=lambda s1, s2: cmp(s1.id, s2.id))
+            c._sections.sort(key=lambda s:s.id)
             c.parent_program = p # So that if we set attributes on one instance of the program,
                                  # they show up for all instances.
 
@@ -296,6 +302,7 @@ class ClassManager(Manager):
         count = classes.count()
         return classes[random.randint(0, count - 1)]
 
+@python_2_unicode_compatible
 class ClassSection(models.Model):
     """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
     parallel sections for a course being taught more than once at Splash or Spark. """
@@ -362,7 +369,7 @@ class ClassSection(models.Model):
 
         for s in sections:
             s._events = list(s.meeting_times.all())
-            s._events.sort(cmp=lambda e1, e2: cmp(e1.start, e2.start))
+            s._events.sort(key=lambda e:e.start)
 
         return sections
 
@@ -413,7 +420,7 @@ class ClassSection(models.Model):
 
     def _get_room_capacity(self, rooms = None):
         # rooms should be a queryset
-        if rooms == None:
+        if rooms is None:
             rooms = self.classrooms()
 
         # Take the summed classroom capacity for each timeblock, then take the minimum of those sums
@@ -439,7 +446,7 @@ class ClassSection(models.Model):
                 ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
 
         #hacky fix for classes with no max size
-        if ans == None or ans == 0:
+        if ans is None or ans == 0:
             # New class size capacity condition set for Splash 2010.  In code
             # because it seems like a fairly reasonable metric.
             if self.parent_class.allowable_class_size_ranges.all() and len(rooms) != 0:
@@ -476,13 +483,13 @@ class ClassSection(models.Model):
     def title(self):
         return self.parent_class.title
 
-    def __unicode__(self):
-        return u'%s: %s' % (self.emailcode(), self.title())
+    def __str__(self):
+        return '%s: %s' % (self.emailcode(), self.title())
 
     def index(self):
         """ Get index of this section among those belonging to the parent class. """
         pc = self.parent_class
-        pc_sec_ids = map(lambda x: x.id, pc.get_sections())
+        pc_sec_ids = [x.id for x in pc.get_sections()]
         return list(pc_sec_ids).index(self.id) + 1
 
     def delete(self, adminoverride=False):
@@ -541,7 +548,7 @@ class ClassSection(models.Model):
             return []
 
     def emailcode(self):
-        return self.parent_class.emailcode() + u's' + unicode(self.index())
+        return self.parent_class.emailcode() + u's' + six.text_type(self.index())
 
     def already_passed(self):
         start_time = self.start_time()
@@ -795,7 +802,7 @@ class ClassSection(models.Model):
         first_time = ordered_times[0]
         possible_rooms = self.parent_program.getAvailableClassrooms(first_time)
 
-        viable_list = filter(lambda x: room_satisfies_times(x, ordered_times), possible_rooms)
+        viable_list = [x for x in possible_rooms if room_satisfies_times(x, ordered_times)]
 
         return viable_list
 
@@ -1137,6 +1144,18 @@ class ClassSection(models.Model):
                 return cmpresult
 
         return cmp(self.title(), other.title())
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+    def __gt__(self, other):
+        return self.__cmp__(other) > 0
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
+    def __le__(self, other):
+        return self.__cmp__(other) <= 0
+    def __ge__(self, other):
+        return self.__cmp__(other) >= 0
+    def __ne__(self, other):
+        return self.__cmp__(other) != 0
 
 
     def firstBlockEvent(self):
@@ -1251,7 +1270,7 @@ class ClassSection(models.Model):
 
     def getRegistrations(self, user = None):
         """Gets all StudentRegistrations for this section and a particular user. If no user given, gets all StudentRegistrations for this section"""
-        if user == None:
+        if user is None:
             return StudentRegistration.valid_objects().filter(section=self).order_by('start_date')
         else:
             return StudentRegistration.valid_objects().filter(section=self, user=user).order_by('start_date')
@@ -1300,7 +1319,7 @@ class ClassSection(models.Model):
             remove_list_member(list_name, user.email)
 
     def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False, webapp=False):
-        if prereg_verb == None:
+        if prereg_verb is None:
             scrmi = self.parent_program.studentclassregmoduleinfo
             if scrmi and scrmi.use_priority:
                 prereg_verb = 'Priority/%d' % priority
@@ -1368,6 +1387,7 @@ class ClassSection(models.Model):
         app_label = 'program'
         ordering = ['id']
 
+@python_2_unicode_compatible
 class ClassSubject(models.Model, CustomFormsLinkModel):
     """ An ESP course.  The course includes one or more ClassSections. """
 
@@ -1489,7 +1509,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                 if not hasattr(s, "_events"):
                     did_search = False
                     break
-                if timeslot in s._events or timeslot == None:
+                if timeslot in s._events or timeslot is None:
                     return s
 
             if did_search: # If we did successfully search all sections, but found none in this timeslot
@@ -1620,14 +1640,14 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def grades(self):
         """ Return an iterable list of the grades for a class. """
-        return range(self.grade_min, self.grade_max + 1)
+        return list(range(self.grade_min, self.grade_max + 1))
 
     def emailcode(self):
         """ Return the emailcode for this class.
 
         The ``emailcode`` is defined as 'first letter of category' + id.
         """
-        return self.category.symbol+unicode(self.id)
+        return self.category.symbol+six.text_type(self.id)
 
     def url(self):
         return "%s/Classes/%s" % (self.parent_program.url, self.emailcode())
@@ -1639,9 +1659,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         return QuasiStaticData.objects.filter(url__startswith='learn/' + self.url() + '/index').exists()
 
-    def __unicode__(self):
+    def __str__(self):
         if self.title != u"":
-            return u"%s: %s" % (self.id, self.title)
+            return "%s: %s" % (self.id, self.title)
         else:
             return u"%s: (none)" % self.id
 
@@ -1706,7 +1726,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     get_capacity_factor = staticmethod(get_capacity_factor)
 
     def is_nearly_full(self, capacity_factor = None):
-        if capacity_factor == None:
+        if capacity_factor is None:
             capacity_factor = ClassSubject.get_capacity_factor()
         return len([x for x in self.get_sections() if x.num_students() > capacity_factor*x.capacity]) > 0
 
@@ -1919,7 +1939,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 
     def getRegistrations(self, user=None):
         """Gets all non-expired StudentRegistrations associated with this class. If user is given, will also filter to that particular user only."""
-        if user == None:
+        if user is None:
             return StudentRegistration.valid_objects().filter(section__in=self.sections.all()).order_by('start_date')
         else:
             return StudentRegistration.valid_objects().filter(section__in=self.sections.all(), user=user).order_by('start_date')
@@ -2032,7 +2052,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         db_table = 'program_class'
         app_label = 'program'
 
-
+@python_2_unicode_compatible
 class ClassCategories(models.Model):
     """ A list of all possible categories for an ESP class
 
@@ -2048,8 +2068,8 @@ class ClassCategories(models.Model):
         app_label = 'program'
         db_table = 'program_classcategories'
 
-    def __unicode__(self):
-        return u'%s (%s)' % (self.category, self.symbol)
+    def __str__(self):
+        return '%s (%s)' % (self.category, self.symbol)
 
 
 @cache_function

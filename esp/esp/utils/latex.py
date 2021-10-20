@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -141,7 +142,7 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
         return texcode
 
     # write to the LaTeX file
-    with open(file_base+TEX_EXT, 'w') as texfile:
+    with open(file_base+TEX_EXT, 'wb') as texfile:
         texfile.write(texcode.encode('utf-8'))
 
     # All command calls will use the same values for the cwd, stdout, and
@@ -152,7 +153,7 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
     retcode = call(['pdflatex'] + LATEX_OPTIONS + ['%s.tex' % file_base])
 
     try:
-        with open('%s.log' % file_base) as f:
+        with open('%s.log' % file_base, 'rb') as f:
             tex_log = f.read()
     except Exception as e:
         # In this case, there's not much to do except error -- pdflatex will
@@ -177,7 +178,7 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
                        'file.  Here are '
                        'the last 1000 characters of the log: %s'
                        % (retcode, tex_log[-1000:]))
-    elif 'No pages of output' in tex_log:
+    elif 'No pages of output'.encode('UTF-8') in tex_log:
         # One common problem (which LaTeX doesn't treat as an error) is
         # selecting no students, which results in no output (thus a nonexistent
         # file, and an error converting or reading it later).  We'll just exit
@@ -196,7 +197,7 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
         raise ESPError("Postprocessing failed; try downloading as PDF.")
 
     out_file = file_base + '.' + type
-    if type is 'png' and not os.path.isfile(out_file):
+    if type == 'png' and not os.path.isfile(out_file):
         # If the schedule is multiple pages (such as a schedule if the program
         # is using barcode check-in), ImageMagick will generate files of the
         # form file_base-n.png.  In this case, we will just return the first
@@ -210,14 +211,14 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
         # handle above.  But we'll at least return a specific error.
         raise ESPError('No output file %s found; try looking at the log '
                        'file.' % out_file)
-    with open(out_file) as f:
+    with open(out_file, 'rb') as f:
         return f.read()
 
 
 def get_rand_file_base():
-    rand = hashlib.md5(str(random())).hexdigest()
+    rand = hashlib.md5(str(random()).encode('UTF-8')).hexdigest()
 
     while os.path.exists(os.path.join(TEX_TEMP, rand+TEX_EXT)):
-        rand = hashlib.md5(str(random())).hexdigest()
+        rand = hashlib.md5(str(random()).encode('UTF-8')).hexdigest()
 
     return rand

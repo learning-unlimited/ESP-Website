@@ -1,11 +1,14 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from esp.program.models import *
 from esp.datatree.models import *
 from esp.users.models import *
 
 import string
+from six.moves import range
 
 def ascii_sanitize(s):
-    return filter(lambda x: x in string.printable, s)
+    return [x for x in s if x in string.printable]
 
 def dateonly(d):
     return d.strftime('%Y-%m-%d')
@@ -41,7 +44,7 @@ for i in range(len(student_list)):
     for sec in student.getEnrolledSections(splash):
         if sec in appropriate_sections:
             prof = student.getLastProfile()
-            print 'Found %s in %s' % (student, sec)
+            print('Found %s in %s' % (student, sec))
             #   First, last, student email,
             if prof.contact_user:
                 cu = prof.contact_user

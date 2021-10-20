@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+from six.moves import map
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -217,7 +220,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         return self.reg_is_open_methods[reg_type](self)
 
     def any_reg_is_open(self):
-        return any(map(self.reg_is_open, self.reg_is_open_methods.keys()))
+        return any(map(self.reg_is_open, list(self.reg_is_open_methods.keys())))
 
     def clslist(self, user):
         return user.getTaughtClasses(program = self.program, include_rejected = True)
@@ -258,7 +261,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         not_found = []
         if request.POST and 'submitted' in request.POST:
             # split with delimiters comma, semicolon, and space followed by any amount of extra whitespace
-            misc_students = filter(None, re.split(r'[;,\s]\s*', request.POST.get('misc_students')))
+            misc_students = [_f for _f in re.split(r'[;,\s]\s*', request.POST.get('misc_students')) if _f]
             for code in misc_students:
                 try:
                     student = ESPUser.objects.get(id=code)
@@ -851,7 +854,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                         return HttpResponseRedirect('/manage/%s/main' % self.program.getUrlBase())
                 return self.goToCore(tl)
 
-            except ClassCreationValidationError, e:
+            except ClassCreationValidationError as e:
                 reg_form = e.reg_form
                 resource_formset = e.resource_formset
 
@@ -1050,7 +1053,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             user_dict = {}
             for user in queryset:
                 user_dict[user.id] = user
-            users = user_dict.values()
+            users = list(user_dict.values())
 
             # Construct combo-box items
             obj_list = [{'name': "%s, %s" % (user.last_name, user.first_name), 'username': user.username, 'id': user.id} for user in users]

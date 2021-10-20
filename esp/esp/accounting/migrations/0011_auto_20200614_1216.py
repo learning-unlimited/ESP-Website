@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
+from __future__ import absolute_import
 from django.db import migrations, models
 
 
@@ -12,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='lineitemoptions',
             name='is_custom',
-            field=models.BooleanField(default=False, help_text=b'Should the student be allowed to specify a custom amount for this option?'),
+            field=models.BooleanField(default=False, help_text='Should the student be allowed to specify a custom amount for this option?'),
         ),
     ]

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django import forms
 from django.forms import widgets
 from django.core.validators import RegexValidator
@@ -5,6 +6,7 @@ from decimal import Decimal
 import datetime
 
 from esp.users.forms import _states
+from six.moves import zip
 
 # Lists of all tags used anywhere in the codebase
 # Populated by hand, so don't be too surprised if something is missing
@@ -398,7 +400,7 @@ all_global_tags = {
         'default': None,
         'category': 'manage',
         'is_setting': True,
-        'field': forms.ChoiceField(required=True, choices=zip(_states,_states))
+        'field': forms.ChoiceField(required=True, choices=list(zip(_states,_states)))
     },
     'teacher_address_required': {
         'is_boolean': True,

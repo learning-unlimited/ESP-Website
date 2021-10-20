@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+from six.moves import range
+from six.moves import zip
+from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -258,7 +262,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def sections(extra, prog):
         if extra == 'catalog':
             catalog = True
-        elif extra == None:
+        elif extra is None:
             catalog = False
         else:
             raise Http404
@@ -439,7 +443,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def class_subjects(extra, prog):
         if extra == 'catalog':
             catalog = True
-        elif extra == None:
+        elif extra is None:
             catalog = False
         else:
             raise Http404
@@ -521,7 +525,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             sections_merged = []
             for item, item_legacy in zip(sections, sections_legacy):
                 assert item['id'] == item_legacy['id']
-                item_merged = dict(item_legacy.items() + item.items())
+                item_merged = dict(list(item_legacy.items()) + list(item.items()))
                 sections_merged.append(item_merged)
             return {'sections': sections_merged}
 
@@ -564,14 +568,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         if 'return_key' in request.GET:
             return_key = request.GET['return_key']
         if 'section_id' in request.GET:
-            if return_key == None: return_key = 'sections'
+            if return_key is None: return_key = 'sections'
             section_id = int(request.GET['section_id'])
             if return_key == 'sections':
                 section = ClassSection.objects.get(pk=section_id)
             else:
                 matching_classes = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
-            if return_key == None: return_key = 'classes'
+            if return_key is None: return_key = 'classes'
             class_id = int(request.GET['class_id'])
             matching_classes = ClassSubject.objects.filter(id=class_id)
         else:
@@ -626,14 +630,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             return_key = request.GET['return_key']
 
         if 'section_id' in request.GET:
-            if return_key == None: return_key = 'sections'
+            if return_key is None: return_key = 'sections'
             section_id = int(request.GET['section_id'])
             if return_key == 'sections':
                 section = ClassSection.objects.get(pk=section_id)
             else:
                 target_qs = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
-            if return_key == None: return_key = 'classes'
+            if return_key is None: return_key = 'classes'
             class_id = int(request.GET['class_id'])
             target_qs = ClassSubject.objects.filter(id=class_id)
         else:
@@ -675,14 +679,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             return_key = request.GET['return_key']
 
         if 'section_id' in request.GET:
-            if return_key == None: return_key = 'sections'
+            if return_key is None: return_key = 'sections'
             section_id = int(request.GET['section_id'])
             if return_key == 'sections':
                 section = ClassSection.objects.get(pk=section_id)
             else:
                 matching_classes = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
-            if return_key == None: return_key = 'classes'
+            if return_key is None: return_key = 'classes'
             class_id = int(request.GET['class_id'])
             matching_classes = ClassSubject.objects.filter(id=class_id)
         else:
@@ -819,7 +823,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             if annotated_categories[i]['num_class_hours'] is None:
                 annotated_categories[i]['num_class_hours'] = 0
             annotated_categories[i]['num_class_hours'] = float(annotated_categories[i]['num_class_hours'])
-        return filter(lambda x: x['id'] in program_categories, annotated_categories)
+        return [x for x in annotated_categories if x['id'] in program_categories]
     cat_nums.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     cat_nums.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     cat_nums = staticmethod(cat_nums)

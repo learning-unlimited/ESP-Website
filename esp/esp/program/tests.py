@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+from __future__ import unicode_literals
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -135,7 +139,7 @@ class ViewUserInfoTest(TestCase):
         # Try searching by ID
         response = c.get("/manage/usersearch", { "userstr": username })
         self.assertEqual(response.status_code, 200)
-        self.assertStringContains(response.content, 'Multiple users matched the criteria that you specified')
+        self.assertStringContains(response.content.decode('UTF-8'), 'Multiple users matched the criteria that you specified')
 
 
     def testUserIDSearchOneResult(self):
@@ -156,7 +160,7 @@ class ViewUserInfoTest(TestCase):
         # Try searching by ID direct hit
         response = c.get("/manage/usersearch", { "userstr": self.admin.id })
         self.assertEqual(response.status_code, 200)
-        self.assertStringContains(response.content, 'Multiple users matched the criteria that you specified')
+        self.assertStringContains(response.content.decode('UTF-8'), 'Multiple users matched the criteria that you specified')
 
 
     def testUserSearchFn(self):
@@ -190,34 +194,34 @@ class ViewUserInfoTest(TestCase):
         # Last name, not unique
         response = c.get("/manage/usersearch", { "userstr": "User" })
         self.assertEqual(response.status_code, 200)
-        self.assertStringContains(response.content, self.admin.username)
-        self.assertStringContains(response.content, self.fake_admin.username)
-        self.assertStringContains(response.content, self.user.username)
-        self.assertStringContains(response.content, 'href="/manage/userview?username=adminuser124353"')
+        self.assertStringContains(response.content.decode('UTF-8'), self.admin.username)
+        self.assertStringContains(response.content.decode('UTF-8'), self.fake_admin.username)
+        self.assertStringContains(response.content.decode('UTF-8'), self.user.username)
+        self.assertStringContains(response.content.decode('UTF-8'), 'href="/manage/userview?username=adminuser124353"')
 
         # Partial first name, not unique
         response = c.get("/manage/usersearch", { "userstr": "Adm" })
         self.assertEqual(response.status_code, 200)
-        self.assertStringContains(response.content, self.admin.username)
-        self.assertStringContains(response.content, self.fake_admin.username)
-        self.assertNotStringContains(response.content, self.user.username)
-        self.assertStringContains(response.content, 'href="/manage/userview?username=adminuser124353"')
+        self.assertStringContains(response.content.decode('UTF-8'), self.admin.username)
+        self.assertStringContains(response.content.decode('UTF-8'), self.fake_admin.username)
+        self.assertNotStringContains(response.content.decode('UTF-8'), self.user.username)
+        self.assertStringContains(response.content.decode('UTF-8'), 'href="/manage/userview?username=adminuser124353"')
 
         # Partial first name and last name, not unique
         response = c.get("/manage/usersearch", { "userstr": "Adm User" })
         self.assertEqual(response.status_code, 200)
-        self.assertStringContains(response.content, self.admin.username)
-        self.assertStringContains(response.content, self.fake_admin.username)
-        self.assertNotStringContains(response.content, self.user.username)
-        self.assertStringContains(response.content, 'href="/manage/userview?username=adminuser124353"')
+        self.assertStringContains(response.content.decode('UTF-8'), self.admin.username)
+        self.assertStringContains(response.content.decode('UTF-8'), self.fake_admin.username)
+        self.assertNotStringContains(response.content.decode('UTF-8'), self.user.username)
+        self.assertStringContains(response.content.decode('UTF-8'), 'href="/manage/userview?username=adminuser124353"')
 
         # Now, make sure we properly do nothing when there're no users to do anything to
         response = c.get("/manage/usersearch", { "userstr": "NotAUser9283490238" })
-        self.assertStringContains(response.content, "No user found by that name!")
-        self.assertNotStringContains(response.content, self.admin.username)
-        self.assertNotStringContains(response.content, self.fake_admin.username)
-        self.assertNotStringContains(response.content, self.user.username)
-        self.assertNotStringContains(response.content, 'href="/manage/userview?username=adminuser124353"')
+        self.assertStringContains(response.content.decode('UTF-8'), "No user found by that name!")
+        self.assertNotStringContains(response.content.decode('UTF-8'), self.admin.username)
+        self.assertNotStringContains(response.content.decode('UTF-8'), self.fake_admin.username)
+        self.assertNotStringContains(response.content.decode('UTF-8'), self.user.username)
+        self.assertNotStringContains(response.content.decode('UTF-8'), 'href="/manage/userview?username=adminuser124353"')
 
 
     def testUserInfoPage(self):
@@ -231,10 +235,10 @@ class ViewUserInfoTest(TestCase):
         response = c.get("/manage/userview", { 'username': self.user.username })
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['user'].id, self.user.id)
-        self.assert_(self.user.username in response.content)
-        self.assert_(self.user.first_name in response.content)
-        self.assert_(self.user.last_name in response.content)
-        self.assert_(str(self.user.id) in response.content)
+        self.assert_(self.user.username in response.content.decode('UTF-8'))
+        self.assert_(self.user.first_name in response.content.decode('UTF-8'))
+        self.assert_(self.user.last_name in response.content.decode('UTF-8'))
+        self.assert_(str(self.user.id) in response.content.decode('UTF-8'))
 
         # Test to make sure we get an error on an unknown user
         response = c.get("/manage/userview", { 'username': "NotARealUser" })
@@ -255,7 +259,7 @@ class ViewUserInfoTest(TestCase):
 class ProfileTest(TestCase):
 
     def setUp(self):
-        self.salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
+        self.salt = hashlib.sha1(str(random.random()).encode('UTF-8')).hexdigest()[:5]
 
     def testAcctCreate(self):
         self.u=ESPUser.objects.create_user(
@@ -282,11 +286,11 @@ class ProgramHappenTest(TestCase):
     """
 
     def loginAdmin(self):
-        self.assertEqual( self.client.login(username='ubbadmubbin', password='pubbasswubbord'), True, u'Oops, login failed!' )
+        self.assertEqual( self.client.login(username='ubbadmubbin', password='pubbasswubbord'), True, 'Oops, login failed!' )
     def loginTeacher(self):
-        self.assertEqual( self.client.login(username='tubbeachubber', password='pubbasswubbord'), True, u'Oops, login failed!' )
+        self.assertEqual( self.client.login(username='tubbeachubber', password='pubbasswubbord'), True, 'Oops, login failed!' )
     def loginStudent(self):
-        self.assertEqual( self.client.login(username='stubbudubbent', password='pubbasswubbord'), True, u'Oops, login failed!' )
+        self.assertEqual( self.client.login(username='stubbudubbent', password='pubbasswubbord'), True, 'Oops, login failed!' )
 
     def setUp(self):
         #create Groups for userroles
@@ -338,8 +342,6 @@ class ProgramHappenTest(TestCase):
                 'teacher_reg_end':   '3001-01-01 00:00:00',
                 'student_reg_start': '2000-01-01 00:00:00',
                 'student_reg_end':   '3001-01-01 00:00:00',
-                'publish_start':     '2000-01-01 00:00:00',
-                'publish_end':       '3001-01-01 00:00:00',
                 'base_cost':         '666',
             }
         self.client.post('/manage/newprogram', prog_dict)
@@ -350,16 +352,16 @@ class ProgramHappenTest(TestCase):
         # Now test correctness...
         self.prog = Program.by_prog_inst('Prubbogrubbam', prog_dict['term'])
         # Name
-        self.assertEqual( self.prog.niceName(), u'Prubbogrubbam! Winter 3001', u'Program creation failed.' )
+        self.assertEqual( self.prog.niceName(), 'Prubbogrubbam! Winter 3001', 'Program creation failed.' )
         # Options
         self.assertEqual(
-            [unicode(x) for x in
+            [six.text_type(x) for x in
                 [self.prog.grade_min,         self.prog.grade_max,
                  self.prog.director_email,    self.prog.program_size_max] ],
-            [unicode(x) for x in
+            [six.text_type(x) for x in
                 [prog_dict['grade_min'],      prog_dict['grade_max'],
                  prog_dict['director_email'], prog_dict['program_size_max']] ],
-            u'Program options not properly set.' )
+            'Program options not properly set.' )
         # Program Cost
         self.assertEqual(
             Decimal(LineItemType.objects.get(required=True, program=self.prog).amount),
@@ -443,7 +445,7 @@ class ProgramHappenTest(TestCase):
         self.classsubject = classes[0]
 
         # check the title ise good
-        self.assertEqual( unicode(self.classsubject.title), unicode(class_dict['title']), 'Failed to save title.' )
+        self.assertEqual( six.text_type(self.classsubject.title), six.text_type(class_dict['title']), 'Failed to save title.' )
 
         # check getTaughtClasses
         getTaughtClasses = user_obj.getTaughtClasses()
@@ -595,22 +597,22 @@ class ProgramFrameworkTest(TestCase):
         self.students = []
         self.admins = []
         for i in range(settings['num_students']):
-            name = u'student%04d' % i
-            new_student, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
+            name = 'student%04d' % i
+            new_student, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+'@learningu.org')
             new_student.set_password('password')
             new_student.save()
             new_student.makeRole("Student")
             self.students.append(new_student)
         for i in range(settings['num_teachers']):
-            name = u'teacher%04d' % i
-            new_teacher, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
+            name = 'teacher%04d' % i
+            new_teacher, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+'@learningu.org')
             new_teacher.set_password('password')
             new_teacher.save()
             new_teacher.makeRole("Teacher")
             self.teachers.append(new_teacher)
         for i in range(settings['num_admins']):
-            name = u'admin%04d' % i
-            new_admin, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
+            name = 'admin%04d' % i
+            new_admin, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+'@learningu.org')
             new_admin.set_password('password')
             new_admin.save()
             new_admin.makeRole("Administrator")
@@ -632,8 +634,6 @@ class ProgramFrameworkTest(TestCase):
                 'teacher_reg_end':   '3001-01-01 00:00:00',
                 'student_reg_start': '2000-01-01 00:00:00',
                 'student_reg_end':   '3001-01-01 00:00:00',
-                'publish_start':     '2000-01-01 00:00:00',
-                'publish_end':       '3001-01-01 00:00:00',
                 'base_cost':         '666',
             }
 
@@ -652,7 +652,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
 
         #   Filter out unwanted characters from program type to form URL
-        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
+        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
         new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
         new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
         new_prog.save()
@@ -734,7 +734,7 @@ class ProgramFrameworkTest(TestCase):
             teacher_teacherinfo = TeacherInfo(user=teacher)
             teacher_teacherinfo.save()
             digit = teacher.id % 10
-            phone = (u'%d' % digit) * 10
+            phone = ('%d' % digit) * 10
             teacher_contactinfo = ContactInfo(
                 user=teacher,
                 first_name=teacher.first_name,
@@ -764,7 +764,7 @@ class ProgramFrameworkTest(TestCase):
             schedule_full = False
             while not schedule_full:
                 sm = ScheduleMap(student, self.program)
-                empty_slots = filter(lambda x: x not in ignore_ts and len(sm.map[x]) == 0, sm.map.keys())
+                empty_slots = [x for x in list(sm.map.keys()) if x not in ignore_ts and len(sm.map[x]) == 0]
                 if len(empty_slots) == 0:
                     schedule_full = True
                     break
@@ -794,8 +794,6 @@ class ProgramFrameworkTest(TestCase):
                 'teacher_reg_end':   '2000-01-01 00:00:00',
                 'student_reg_start': '1111-01-01 00:00:00',
                 'student_reg_end':   '2000-01-01 00:00:00',
-                'publish_start':     '1111-01-01 00:00:00',
-                'publish_end':       '2000-01-01 00:00:00',
                 'base_cost':         '666',
                 'finaid_cost':       '37',
             }
@@ -813,7 +811,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
 
         #   Filter out unwanted characters from program type to form URL
-        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
+        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
         new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
         new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
         new_prog.save()
@@ -1164,7 +1162,7 @@ class ModuleControlTest(ProgramFrameworkTest):
 
         #   Check that the main student reg page displays as usual in the initial state.
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
-        self.assertTrue('Steps for Registration' in response.content)
+        self.assertTrue('Steps for Registration' in response.content.decode('UTF-8'))
 
         #   Set a student module to be required and make sure we are shown it.
         fa_module = ProgramModule.objects.filter(handler='FinancialAidAppModule')[0]
@@ -1176,14 +1174,14 @@ class ModuleControlTest(ProgramFrameworkTest):
         response = self.client.get(
                     '/learn/%s/studentreg' % self.program.getUrlBase(),
                     **{'wsgi.url_scheme': 'https'})
-        self.assertTrue('Financial Aid' in response.content)
+        self.assertTrue('Financial Aid' in response.content.decode('UTF-8'))
 
         #   Remove the module and make sure we are not shown it anymore.
         self.program.program_modules.remove(fa_module)
         self.program.save()
 
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
-        self.assertTrue('Steps for Registration' in response.content)
+        self.assertTrue('Steps for Registration' in response.content.decode('UTF-8'))
 
 class MeetingTimesTest(ProgramFrameworkTest):
     def assertSetEquals(self, a, b):
@@ -1308,11 +1306,11 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
         #   Check stats for correctness
         #   - Some basic stats
-        self.assertEqual(stats['num_enrolled_students'], len(filter(lambda x: len(x.getEnrolledClasses(self.program)) > 0, self.students)))
+        self.assertEqual(stats['num_enrolled_students'], len([x for x in self.students if len(x.getEnrolledClasses(self.program)) > 0]))
         self.assertEqual(stats['num_registrations'], len(StudentRegistration.valid_objects().filter(user__in=self.students, relationship__name='Enrolled')))
         #   - 'Screwed students' list
         for student in self.students:
-            stats_entry = filter(lambda x: x[1] == student.id, stats['students_by_screwedness'])[0]
+            stats_entry = list(filter(lambda x: x[1] == student.id, stats['students_by_screwedness']))[0]
 
             #   Compute 'screwedness' score for this student
             sections_interested = student.getSections(self.program, verbs=['Interested'])
@@ -1356,7 +1354,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
     def testMultipleLunchConstraint(self):
         # First generate 3 lunch timeslots
-        lunch_timeslots = random.sample(self.timeslots, 3)
+        lunch_timeslots = random.sample(list(self.timeslots), 3)
         lcg = LunchConstraintGenerator(self.program, lunch_timeslots)
         lcg.generate_all_constraints()
 

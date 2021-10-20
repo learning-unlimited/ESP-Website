@@ -1,5 +1,6 @@
 
 
+from __future__ import absolute_import
 from django import forms
 from esp.users.models import ESPUser, PasswordRecoveryTicket
 from django.utils.html import conditional_escape, mark_safe
@@ -28,7 +29,7 @@ class PasswordResetForm(forms.Form):
         try:
             user = ESPUser.objects.get(username=self.cleaned_data['username'])
         except ESPUser.DoesNotExist:
-            raise forms.ValidationError, "User '%s' does not exist." % self.cleaned_data['username']
+            raise forms.ValidationError("User '%s' does not exist." % self.cleaned_data['username'])
 
         return self.cleaned_data['username'].strip()
 

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -88,9 +89,9 @@ class StudentRegTest(ProgramFrameworkTest):
 
         #   Get the receipt and check that the class appears on it with title and time
         response = self.client.get('/learn/%s/confirmreg' % self.program.getUrlBase())
-        self.assertTrue(sec.title() in response.content)
+        self.assertTrue(sec.title() in response.content.decode('UTF-8'))
         for ts in sec.meeting_times.all():
-            self.assertTrue(ts.short_description in response.content)
+            self.assertTrue(ts.short_description in response.content.decode('UTF-8'))
 
     def test_catalog(self):
 
@@ -99,7 +100,7 @@ class StudentRegTest(ProgramFrameworkTest):
             for cls in self.program.classes():
                 #   Find the portion of the catalog corresponding to this class
                 pattern = r"""<div id="class_%d" class=".*?show_class">.*?</div>\s*?</div>\s*?</div>""" % cls.id
-                cls_fragment = re.search(pattern, response.content, re.DOTALL).group(0)
+                cls_fragment = re.search(pattern, response.content.decode('UTF-8'), re.DOTALL).group(0)
 
                 pat2 = r"""<div.*?class="class_title">(?P<title>.*?)</div>.*?<div class="class_content">(?P<description>.*?)</div>.*?<strong>Enrollment</strong>(?P<enrollment>.*?)</div>"""
                 cls_info = re.search(pat2, cls_fragment, re.DOTALL).groupdict(0)
@@ -280,7 +281,7 @@ class StudentRegTest(ProgramFrameworkTest):
 
         #   Check that selecting an option for a "multiple choice" extra item works
         lit3 = LineItemType.objects.get(program=self.program, text='Food')
-        lio = filter(lambda x: x[2] == 'Large', lit3.options)[0]
+        lio = list(filter(lambda x: x[2] == 'Large', lit3.options))[0]
         response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '0', 'multi%d-option' % lit3.id: str(lio[0])})
         self.assertEqual(response.status_code, 302)
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])

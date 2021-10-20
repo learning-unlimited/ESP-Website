@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import sys
 import os
 import fcntl
@@ -20,7 +21,7 @@ sys.path.insert(0, project)
 if os.environ.get('VIRTUAL_ENV') is None:
     root = os.path.dirname(project)
     activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
-    execfile(activate_this, dict(__file__=activate_this))
+    exec(compile(open(activate_this).read(), activate_this, 'exec'), dict(__file__=activate_this))
 
 import django
 django.setup()

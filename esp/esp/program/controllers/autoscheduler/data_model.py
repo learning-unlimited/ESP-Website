@@ -4,6 +4,7 @@ Mostly reflects the database on the rest of the website, but having separate
 models should be a bit more robust to changes in website structure and should
 also be more performant.  """
 
+from __future__ import absolute_import
 import bisect
 from functools import total_ordering
 import json

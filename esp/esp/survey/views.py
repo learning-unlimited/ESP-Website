@@ -1,5 +1,7 @@
 " A view to show surveys. "
 
+from __future__ import absolute_import
+import six
 __author__    = "$LastChangedBy$"
 __date__      = "$LastChangedDate$"
 __rev__       = "$LastChangedRevision$"
@@ -38,7 +40,7 @@ Learning Unlimited, Inc.
 import datetime
 import xlwt
 import re
-from cStringIO import StringIO
+from io import StringIO
 from django.db import models
 from django.db.models import Q
 from esp.users.models import ESPUser, Record, admin_required
@@ -303,7 +305,7 @@ def delist(x):
         return x
 
 def _encode_ascii(cell_label):
-    if isinstance(cell_label, basestring):
+    if isinstance(cell_label, six.string_types):
         return str(cell_label.encode('ascii', 'xmlcharrefreplace'))
     else:
         return cell_label
@@ -430,7 +432,7 @@ def survey_review_single(request, tl, program, instance, template = 'survey/revi
     user = request.user
 
     survey_response = None
-    ints = request.GET.items()
+    ints = list(request.GET.items())
     if len(ints) == 1:
         srs = SurveyResponse.objects.filter(id=ints[0][0])
         if len(srs) == 1:

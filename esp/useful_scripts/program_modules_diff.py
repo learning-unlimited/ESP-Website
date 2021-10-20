@@ -1,9 +1,11 @@
 """Script to check which programs have modified their ProgramModules."""
 
+from __future__ import absolute_import
+from __future__ import print_function
 from script_setup import *
 from esp.program.models import ProgramModule
 
-print
+print()
 for module in ProgramModule.objects.all():
     try:
         default_propss = module.getPythonClass().module_properties_autopopulated()
@@ -17,6 +19,6 @@ for module in ProgramModule.objects.all():
                 default_props['required'] = False
             for key in ['admin_title', 'link_title', 'seq', 'required']:
                 if getattr(module, key) != default_props.get(key):
-                    print "\t%s.%s" % (module.handler, key)
-                    print "\t\tdefault %s" % default_props.get(key)
-                    print "\t\tactual  %s" % getattr(module, key)
+                    print("\t%s.%s" % (module.handler, key))
+                    print("\t\tdefault %s" % default_props.get(key))
+                    print("\t\tactual  %s" % getattr(module, key))

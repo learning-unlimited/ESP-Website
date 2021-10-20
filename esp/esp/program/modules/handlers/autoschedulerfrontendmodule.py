@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import json
 
 from esp.program.modules.base import \
@@ -81,7 +82,7 @@ class AutoschedulerFrontendModule(ProgramModuleObj):
         try:
             schedulerObj = AutoschedulerController(prog, **options)
             schedulerObj.compute_assignments()
-        except (SchedulingError, ValueError), e:
+        except (SchedulingError, ValueError) as e:
             return {'response': [{'error_msg': str(e)}]}
 
         info = schedulerObj.get_scheduling_info()
@@ -103,7 +104,7 @@ class AutoschedulerFrontendModule(ProgramModuleObj):
             schedulerObj = AutoschedulerController(prog, **options)
             schedulerObj.import_assignments(data)
             schedulerObj.save_assignments()
-        except SchedulingError, e:
+        except SchedulingError as e:
             return {'response': [{'error_msg': str(e)}]}
         return {'response': [{'success': 'yes'}]}
 

@@ -1,5 +1,8 @@
 """ ESP Custom Filters for template """
 
+from __future__ import absolute_import
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -35,14 +38,13 @@ Learning Unlimited, Inc.
 """
 
 from django import template
-from django.utils.encoding import force_unicode
 register = template.Library()
 
 @register.filter
 def texescape(value):
     """ This will escape a string according to the rules of LaTeX """
 
-    value = unicode(value).strip()
+    value = six.text_type(value).strip()
 
 
 

@@ -1,5 +1,9 @@
 from __future__ import with_statement
 
+from __future__ import absolute_import
+from __future__ import print_function
+from six.moves import range
+from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -56,7 +60,7 @@ import os
 import operator
 import zlib
 import base64
-from StringIO import StringIO
+from io import StringIO
 
 class LotteryException(Exception):
     """ Top level exception class for lottery related problems.  """
@@ -705,14 +709,14 @@ class LotteryAssignmentController(object):
         You might want to crosscheck this file before accepting it."""
         import csv
 
-        if directory == None:
+        if directory is None:
             directory = self.options['directory']
 
-        if stats == None:
+        if stats is None:
             stats = self.compute_stats(display=False) #Calculate stats if I didn't get any
 
         studentlist = stats['students_by_screwedness']
-        if n != None: studentlist = studentlist[:n]
+        if n is not None: studentlist = studentlist[:n]
         tday = datetime.today().strftime('%Y-%m-%d')
 
         fullfilename = directory + '/screwed_csv_' + tday + '.csv'

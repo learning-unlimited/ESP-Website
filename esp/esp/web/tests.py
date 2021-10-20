@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -70,8 +71,8 @@ class PageTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Make sure that we've gotten an HTML document, and not a Django error
-        self.assertStringContains(response.content, "<html")
-        self.assertNotStringContains(response.content, "You're seeing this error because you have <code>DEBUG = True</code>")
+        self.assertStringContains(response.content.decode('UTF-8'), "<html")
+        self.assertNotStringContains(response.content.decode('UTF-8'), "You're seeing this error because you have <code>DEBUG = True</code>")
 
 class NavbarTest(TestCase):
 
@@ -79,7 +80,7 @@ class NavbarTest(TestCase):
         response = self.client.get(path)
 
         navbaritem_re = re.compile(r'<li class="divsecondarynavlink (?:indent)?">\s+(.*)\s+</li>')
-        re_results = re.findall(navbaritem_re, response.content)
+        re_results = re.findall(navbaritem_re, response.content.decode('UTF-8'))
         return re_results
 
     def navbars_enabled(self):
@@ -137,14 +138,14 @@ class NoVaryOnCookieTest(ProgramFrameworkTest):
 
         self.assertEqual(res.status_code, 200)
         self.assertTrue('Vary' not in res or 'Cookie' not in res['Vary'])
-        logged_out_content = res.content
+        logged_out_content = res.content.decode('UTF-8')
 
         c.login(username=self.admins[0], password='password')
         res = c.get(self.url + "index.html")
 
         self.assertEqual(res.status_code, 200)
         self.assertTrue('Vary' not in res or 'Cookie' not in res['Vary'])
-        logged_in_content = res.content
+        logged_in_content = res.content.decode('UTF-8')
 
         self.assertEqual("\n".join(difflib.context_diff(logged_out_content.split("\n"), logged_in_content.split("\n"))), "")
 
@@ -154,14 +155,14 @@ class NoVaryOnCookieTest(ProgramFrameworkTest):
 
         self.assertEqual(res.status_code, 200)
         self.assertTrue('Vary' not in res or 'Cookie' not in res['Vary'])
-        logged_out_content = res.content
+        logged_out_content = res.content.decode('UTF-8')
 
         c.login(username=self.admins[0], password='password')
         res = c.get(self.url + "catalog")
 
         self.assertEqual(res.status_code, 200)
         self.assertTrue('Vary' not in res or 'Cookie' not in res['Vary'])
-        logged_in_content = res.content
+        logged_in_content = res.content.decode('UTF-8')
 
         self.assertEqual("\n".join(difflib.context_diff(logged_out_content.split("\n"), logged_in_content.split("\n"))), "")
 

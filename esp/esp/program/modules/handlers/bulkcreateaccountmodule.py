@@ -1,9 +1,14 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.utils.web import render_to_response
 from esp.middleware import ESPError
 from esp.users.models import ESPUser
 from django.contrib.auth.models import Group
 import random
+import six
+from six.moves import map
+from six.moves import range
 
 class BulkCreateAccountModule(ProgramModuleObj):
     doc = """Create a bulk set of accounts (e.g. for outreach)."""
@@ -112,7 +117,7 @@ def create_users_for_schools(program, groups, schools):
        password (which will start with the prefix).
     """
     ret = {}
-    for school, number in schools.iteritems():
+    for school, number in six.iteritems(schools):
         pw = school + str(random.randrange(1000000))
         create_users_for_program(program, school + '{}', pw, groups, number)
         ret[school] = pw
@@ -159,9 +164,9 @@ def create_users_for_program(program, username_format, password_format, groups, 
     """
     if not isinstance(groups, (list, tuple)):
         groups = [groups]
-    groups = map(get_group, groups)
+    groups = list(map(get_group, groups))
     ret = []
-    for i in xrange(1, number + 1):
+    for i in range(1, number + 1):
         username = username_format.format(i)
         password = password_format.format(i)
         ret.append(create_user_with_profile(username, password, program, groups))
@@ -171,17 +176,17 @@ def create_users_for_program(program, username_format, password_format, groups, 
 def get_group(group):
     if isinstance(group, Group):
         return group
-    elif isinstance(group, basestring):
+    elif isinstance(group, six.string_types):
         try:
             return Group.objects.get(name=group)
         except Group.DoesNotExist:
             return None
     else:
-        raise ESPError('{} is not a Group or Group name'.format(unicode(group)))
+        raise ESPError('{} is not a Group or Group name'.format(six.text_type(group)))
 
 
 def create_user_with_profile(username, password, program, groups):
-    print "creating", username
+    print("creating", username)
     user = ESPUser.objects.create_user(username=username, password=password)
     user.groups.add(*groups)
     return {

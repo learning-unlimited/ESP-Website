@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+import six
+from six.moves import map
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -204,7 +208,7 @@ class ResourceModule(ProgramModuleObj):
                             choice = ''
                         furnishings.append({'furnishing': furnishing, 'choice': choice})
                 #   Filter out duplicates
-                furnishings = list(map(dict, frozenset(frozenset(i.items()) for i in furnishings)))
+                furnishings = list(map(dict, frozenset(frozenset(list(i.items())) for i in furnishings)))
                 if form.is_valid():
                     controller.add_or_edit_classroom(form, furnishings)
                 else:
@@ -393,7 +397,7 @@ class ResourceModule(ProgramModuleObj):
             if import_mode == 'preview':
                 context['prog'] = self.program
                 result = self.program.collapsed_dict(resource_list)
-                key_list = self.program.natural_sort(result.keys())
+                key_list = self.program.natural_sort(list(result.keys()))
                 new_rooms = []
                 for key in key_list:
                     room = result[key]
@@ -579,7 +583,7 @@ class ResourceModule(ProgramModuleObj):
             if import_mode == 'preview':
                 context['prog'] = self.program
                 result = self.program.collapsed_dict(new_equipment_list)
-                context['new_equipment'] = [result[key] for key in sorted(result.iterkeys())]
+                context['new_equipment'] = [result[key] for key in sorted(six.iterkeys(result))]
                 response = render_to_response(self.baseDir()+'equipment_import.html', request, context)
             else:
                 extra = 'equipment'

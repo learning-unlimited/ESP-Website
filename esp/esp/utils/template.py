@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -46,7 +47,7 @@ import hashlib
 
 DEFAULT_ORIGIN = 'esp.utils.template cached loader'
 
-INVALID_CONTENTS = ''
+INVALID_CONTENTS = b''
 INVALID_HASH = hashlib.md5(INVALID_CONTENTS).hexdigest()
 
 class Loader(base.Loader):

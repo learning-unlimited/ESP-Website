@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -115,7 +117,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         response = self.get_response('studentschedules', 'students', 'enrolled')
 
         #   Check that the output is an actual PDF file
-        print(response['Content-Type'])
+        print((response['Content-Type']))
         self.assertTrue(response['Content-Type'].startswith('application/pdf'))
 
     def test_all_classes_spreadsheet_loads(self):

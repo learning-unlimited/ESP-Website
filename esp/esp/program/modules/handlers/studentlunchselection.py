@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -59,7 +61,7 @@ class StudentLunchSelectionForm(forms.Form):
         #   Set choices for timeslot field
         #   [(None, '')] +
         events_all = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
-        events_filtered = filter(lambda x: x.start.day == self.day.day, events_all)
+        events_filtered = [x for x in events_all if x.start.day == self.day.day]
         self.fields['timeslot'].choices = [(ts.id, ts.short_description) for ts in events_filtered] + [(-1, 'No lunch period')]
 
     def load_data(self):

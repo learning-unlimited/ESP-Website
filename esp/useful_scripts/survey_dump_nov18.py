@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from esp.program.models import *
 from esp.survey.models import *
 from esp.datatree.models import *
@@ -8,7 +10,7 @@ auri = splash.anchor.uri
 aulen = len(auri)
 
 def save_survey(survey, filename):
-    print survey
+    print(survey)
 
     outfile = open(filename, 'w')
 

@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+from six.moves import map
+from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -91,7 +94,7 @@ class ProgramCreationForm(BetterModelForm):
                                                        ])
         # Include additional or new modules that haven't been added to the list
         for x in ProgramModule.objects.filter(choosable=0):
-            if x.id not in sum(self.program_module_question_ids.values(), []): # flatten list of modules
+            if x.id not in sum(list(self.program_module_question_ids.values()), []): # flatten list of modules
                 self.program_module_question_ids['Would you like to include the {} module?'.format(x.admin_title)] = [x.id]
         # Now initialize the form
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
@@ -110,7 +113,7 @@ class ProgramCreationForm(BetterModelForm):
         then calls the superclass's save() method.
         '''
         #   Filter out unwanted characters from program type to form URL
-        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
+        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
         self.instance.url = u'%(type)s/%(instance)s' \
             % {'type': ptype_slug
               ,'instance': self.cleaned_data['term']
@@ -163,8 +166,6 @@ ProgramCreationForm.base_fields['teacher_reg_start'].line_group = 2
 ProgramCreationForm.base_fields['teacher_reg_end'].line_group = 2
 ProgramCreationForm.base_fields['student_reg_start'].line_group = 3
 ProgramCreationForm.base_fields['student_reg_end'].line_group = 3
-ProgramCreationForm.base_fields['publish_start'].line_group = 1
-ProgramCreationForm.base_fields['publish_end'].line_group = 1
 
 ProgramCreationForm.base_fields['base_cost'].line_group = 4
 ProgramCreationForm.base_fields['sibling_discount'].line_group = 4
@@ -210,7 +211,7 @@ class StatisticsQueryForm(forms.Form):
         programs = Program.objects.all()
         names_url = list(set([x.program_type for x in programs]))
         names_url.sort()
-        result = zip(names_url, names_url)
+        result = list(zip(names_url, names_url))
         return result
 
     @staticmethod
@@ -219,7 +220,7 @@ class StatisticsQueryForm(forms.Form):
         names_url = [x.url for x in programs]
         names_friendly = [x.name for x in programs]
         result = sorted(zip(names_url, names_friendly), key=lambda pair: pair[0])
-        result = filter(lambda x: len(x[1]) > 0, result)
+        result = [x for x in result if len(x[1]) > 0]
         return result
 
     @staticmethod
@@ -449,7 +450,7 @@ class TagSettingsForm(BetterForm):
                 self.fields[key].initial = tag_info.get('default')
                 self.fields[key].required = False
                 set_val = Tag.getBooleanTag(key) if tag_info.get('is_boolean', False) else Tag.getTag(key)
-                if set_val != None and set_val != self.fields[key].initial:
+                if set_val is not None and set_val != self.fields[key].initial:
                     if isinstance(self.fields[key], forms.MultipleChoiceField):
                         set_val = set_val.split(",")
                     self.fields[key].initial = set_val
