@@ -668,13 +668,13 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def teachermoderatorlist(self, request, tl, one, two, module, extra, prog):
         """ default list of teachers; function left in for compatibility """
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=True, moderating=True, display_name = 'Teacher and Moderator List')
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=True, moderating=True, display_name = 'Teacher and %s List' % (prog.getModeratorTitle()))
 
     @aux_call
     @needs_admin
     def moderatorlist(self, request, tl, one, two, module, extra, prog):
         """ default list of teachers; function left in for compatibility """
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=False, moderating=True, display_name = 'Moderator List')
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=False, moderating=True, display_name = '%s List' % (prog.getModeratorTitle()))
 
     @staticmethod
     def cmpsorttime(one,other):
@@ -696,12 +696,12 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def teachermoderatorsbytime(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = True, moderating = True, display_name = 'Teacher and Moderator List by Time')
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = True, moderating = True, display_name = 'Teacher and %s List by Time' % (prog.getModeratorTitle()))
 
     @aux_call
     @needs_admin
     def moderatorsbytime(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = False, moderating = True, display_name = 'Moderator List by Time')
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = False, moderating = True, display_name = '%s List by Time' % (prog.getModeratorTitle()))
 
     @staticmethod
     def cmpsortname(one, other):
@@ -722,12 +722,12 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def teachermoderatorsbyname(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = True, moderating = True, display_name = 'Teacher and Moderator List by Name')
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = True, moderating = True, display_name = 'Teacher and %s List by Name' % (prog.getModeratorTitle()))
 
     @aux_call
     @needs_admin
     def moderatorsbyname(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = False, moderating = True, display_name = 'Moderator List by Name')
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = False, moderating = True, display_name = '%s List by Name' % (prog.getModeratorTitle()))
 
     @needs_admin
     def roomsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'roomlist.html', extra_func = lambda x: {}):
@@ -826,7 +826,7 @@ class ProgramPrintables(ProgramModuleObj):
     def teachermoderatorschedules(self, request, tl, one, two, module, extra, prog):
         """ generate teacher/moderator schedules """
 
-        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Teacher and Moderator Schedules'})
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Teacher and %s Schedules' % (prog.getModeratorTitle())})
         if not found:
             return filterObj
 
@@ -899,7 +899,7 @@ class ProgramPrintables(ProgramModuleObj):
     def moderatorschedules(self, request, tl, one, two, module, extra, prog):
         """ generate moderator schedules """
 
-        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Moderator Schedules'})
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': '%s Schedules' % (prog.getModeratorTitle())})
         if not found:
             return filterObj
 
@@ -1509,7 +1509,7 @@ class ProgramPrintables(ProgramModuleObj):
         """ generate class rosters by moderator"""
 
 
-        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Class Rosters by Moderator'})
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Class Rosters by %s' % (prog.getModeratorTitle())})
         if not found:
             return filterObj
 
