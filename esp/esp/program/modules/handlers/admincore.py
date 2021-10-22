@@ -260,8 +260,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
         #   Define a formset for editing multiple perms simultaneously.
         EditPermissionFormset = formset_factory(EditPermissionForm)
 
-        #   Define a status message
-        message = ''
+        #   Define good and bad status messages
+        message_good = ''
+        message_bad = ''
 
         #   Handle 'open' / 'close' actions
         if extra == 'open' and 'group' in request.GET and 'perm' in request.GET:
@@ -273,24 +274,24 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 perms[0].unexpire()
             else:
                 Permission.objects.create(role = group, permission_type = request.GET['perm'], start_date = datetime.now(), program = prog)
-            message = 'Deadline opened for %ss: %s.' % (group, Permission.nice_name_lookup(request.GET['perm']))
+            message_good = 'Deadline opened for %ss: %s.' % (group, Permission.nice_name_lookup(request.GET['perm']))
 
         elif extra == 'close' and 'group' in request.GET and 'perm' in request.GET:
             #   If there are open permission(s) for this type, close them all
             group = Group.objects.get(id = request.GET['group'])
             perms = Permission.valid_objects().filter(permission_type = request.GET['perm'], program = prog, role = group)
             perms.update(end_date = datetime.now())
-            message = 'Deadline closed for %ss: %s.' % (group, Permission.nice_name_lookup(request.GET['perm']))
+            message_good = 'Deadline closed for %ss: %s.' % (group, Permission.nice_name_lookup(request.GET['perm']))
 
         elif extra == 'delete' and 'perm_id' in request.GET:
             #   Delete the specified permission if it exists
             perms = Permission.objects.filter(id=request.GET['perm_id'])
             if perms.count() == 1:
                 perm = perms[0]
-                message = 'Deadline deleted for %ss: %s.' % (perm.role, perm.nice_name())
+                message_good = 'Deadline deleted for %ss: %s.' % (perm.role, perm.nice_name())
                 perm.delete()
             else:
-                message = 'Error while deleting permission with ID %s.' % request.GET['perm_id']
+                message_bad = 'Error while deleting permission with ID %s.' % request.GET['perm_id']
 
         #   Check incoming form data
         if request.method == 'POST' and 'submit' in request.POST:
@@ -300,9 +301,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     perm = Permission.objects.create(user=None, permission_type=create_form.cleaned_data['permission_type'],
                                                      role=Group.objects.get(name=create_form.cleaned_data['role']),program=prog,
                                                      start_date = create_form.cleaned_data['start_date'], end_date = create_form.cleaned_data['end_date'])
-                    message = 'Deadline created for %ss: %s.' % (create_form.cleaned_data['role'], perm.nice_name())
+                    message_good = 'Deadline created for %ss: %s.' % (create_form.cleaned_data['role'], perm.nice_name())
                 else:
-                    message = 'Error(s) while creating permission: %s' % create_form.errors
+                    message_bad = 'Error(s) while creating permission: %s' % create_form.errors
             elif request.POST['submit'] == 'Save':
                 edit_formset = EditPermissionFormset(request.POST.copy(), prefix='edit')
                 if edit_formset.is_valid():
@@ -316,9 +317,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
                             perm.end_date = form.cleaned_data['end_date']
                             perm.save()
                     if num_forms > 0:
-                        message = 'Changes saved.'
+                        message_good = 'Changes saved.'
                 else:
-                    message = 'Error(s) while saving permission(s): %s' % edit_formset.errors
+                    message_bad = 'Error(s) while saving permission(s): %s' % edit_formset.errors
 
         #   find all the existing permissions with this program
         #   Only consider global permissions -- those that apply to all users
@@ -372,7 +373,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 # Sort by validity and start/end dates
                 group_perms[group][perm_type]['perms'].sort(key=lambda perm: (perm.is_valid(), perm.end_date or datetime.max, perm.start_date or datetime.min), reverse=True)
 
-        context['message'] = message
+        context['message_good'] = message_good
+        context['message_bad'] = message_bad
         context['manage_form'] = formset.management_form
         context['group_perms'] = group_perms
         context['perms'] = perms

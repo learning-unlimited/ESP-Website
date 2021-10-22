@@ -22,8 +22,11 @@
 <div id="userbitforms">
 <p><h1>Deadline Management</h1></p>
 
-{% if message %}
-    <p><span style="color: #990000;">{{ message }}</span></p>
+{% if message_good %}
+    <p><span style="color: green;"><b>{{ message_good }}</b></span></p>
+{% endif %}
+{% if message_bad %}
+    <p><span style="color: red;"><b>{{ message_bad }}</b></span></p>
 {% endif %}
 
 <p>Access to each program's Web pages (including registration pages) is controlled by a set of deadlines, each of which prescribes when a certain set of activities can be performed.  "Recursive" deadlines can control a range of activities jointly; you may open all registration features using a single recursive deadline (e.g., "All student deadlines"), or specify several non-recursive deadlines ("Register for classes", "Access to survey", etc.) for finer control.</p>
