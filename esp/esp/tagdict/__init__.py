@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from django import forms
 from django.forms import widgets
 from django.core.validators import RegexValidator
@@ -1026,13 +1027,13 @@ all_program_tags = {
 
 # Dictionary of categories that tags fall into (for grouping on the tag settings page)
 # Each key is the string in the tuples above, each value is the human-readable string that will be shown in the template/form
-tag_categories = {
-    'teach': 'Teacher Registration Settings',
-    'class': 'Class Registration Settings',
-    'moderate': 'Moderator Settings',
-    'learn': 'Student Registration Settings',
-    'manage': 'General Management Settings',
-    'onsite': 'Onsite Settings',
-    'volunteer': 'Volunteer Registration Settings',
-    'theme': 'Theme Settings',
-}
+tag_categories = OrderedDict([
+    ('theme', 'Theme Settings'),
+    ('manage', 'General Management Settings'),
+    ('teach', 'Teacher Registration Settings'),
+    ('class', 'Class Registration Settings'),
+    ('moderate', 'Moderator Settings'),
+    ('learn', 'Student Registration Settings'),
+    ('volunteer', 'Volunteer Registration Settings'),
+    ('onsite', 'Onsite Settings')
+])
