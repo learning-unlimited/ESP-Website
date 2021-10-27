@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
 """
 
 from esp.utils.web import render_to_response
-from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap, no_auth, needs_admin
 from esp.users.models import Record, ESPUser, Permission
 from esp.program.models import PhaseZeroRecord
