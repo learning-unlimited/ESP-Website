@@ -225,16 +225,17 @@ def registration_redirect(request):
     ctxt = {}
     userrole = {}
     regperm = None
-    if user.isStudent():
-        userrole['name'] = 'Student'
-        userrole['base'] = 'learn'
-        userrole['reg'] = 'studentreg'
-        regperm = 'Student/Classes'
-    elif user.isTeacher():
+    if user.isTeacher():
         userrole['name'] = 'Teacher'
         userrole['base'] = 'teach'
         userrole['reg'] = 'teacherreg'
         regperm = 'Teacher/Classes'
+    elif user.isStudent():
+        userrole['name'] = 'Student'
+        userrole['base'] = 'learn'
+        userrole['reg'] = 'studentreg'
+        regperm = 'Student/Classes'
+
     ctxt['userrole'] = userrole
 
     if regperm:
