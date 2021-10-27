@@ -238,7 +238,12 @@ def registration_redirect(request):
     ctxt['userrole'] = userrole
 
     if regperm:
-        progs = list(Permission.program_by_perm(user,regperm))
+        if not user.isStudent():
+            progs = list(Permission.program_by_perm(user,regperm))
+        else:
+            user_grade = user.getGrade()
+            progs = list(Permission.program_by_perm(user,regperm).filter(grade_min__lte=user_grade).filter(grade_max__gte=user_grade))
+            
     else:
         progs = []
 
