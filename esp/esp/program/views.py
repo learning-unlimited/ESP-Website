@@ -382,9 +382,9 @@ def userview(request):
     if program:
         profile = RegistrationProfile.getLastForProgram(user, program)
         if user.isStudent():
-            learn_modules = program.getModules(request.user, 'learn')
+            learn_modules = program.getModules(user, 'learn')
         if user.isTeacher():
-            teach_modules = program.getModules(request.user, 'teach')
+            teach_modules = program.getModules(user, 'teach')
     else:
         profile = user.getLastProfile()
 

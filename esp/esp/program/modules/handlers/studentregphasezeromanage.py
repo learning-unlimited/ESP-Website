@@ -49,9 +49,6 @@ import copy, datetime, json, re
 class StudentRegPhaseZeroManage(ProgramModuleObj):
     doc = """Track registration for the student lottery and/or run the student lottery."""
 
-    def isCompleted(self):
-        return get_current_request().user.can_skip_phase_zero(self.program)
-
     @classmethod
     def module_properties(cls):
         return {

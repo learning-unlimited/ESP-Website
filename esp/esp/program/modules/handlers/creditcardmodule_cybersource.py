@@ -58,7 +58,11 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
 
     def isCompleted(self):
         """ Whether the user has paid for this program or its parent program. """
-        return IndividualAccountingController(self.program, get_current_request().user).has_paid()
+        if self.user:
+            user = self.user
+        else:
+            user = get_current_request().user
+        return IndividualAccountingController(self.program, user).has_paid()
     have_paid = isCompleted
 
     def students(self, QObject = False):

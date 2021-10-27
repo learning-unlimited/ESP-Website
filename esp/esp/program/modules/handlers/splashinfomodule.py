@@ -93,7 +93,11 @@ class SplashInfoModule(ProgramModuleObj):
 
 
     def isCompleted(self):
-        return SplashInfo.hasForUser(get_current_request().user, self.program)
+        if self.user:
+            user = self.user
+        else:
+            user = get_current_request().user
+        return SplashInfo.hasForUser(user, self.program)
 
     def isStep(self):
         return True

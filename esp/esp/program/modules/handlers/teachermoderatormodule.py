@@ -21,7 +21,11 @@ class TeacherModeratorModule(ProgramModuleObj):
         }
 
     def isCompleted(self):
-        return ModeratorRecord.objects.filter(user=get_current_request().user, program=self.program).exists()
+        if self.user:
+            user = self.user
+        else:
+            user = get_current_request().user
+        return ModeratorRecord.objects.filter(user=user, program=self.program).exists()
 
     @main_call
     @needs_teacher

@@ -100,7 +100,11 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     def noclasses(self):
         """ Returns true of there are no classes in this program """
-        return not self.clslist(get_current_request().user).exists()
+        if self.user:
+            user = self.user
+        else:
+            user = get_current_request().user
+        return not self.clslist(user).exists()
 
     def isCompleted(self):
         return not self.noclasses()

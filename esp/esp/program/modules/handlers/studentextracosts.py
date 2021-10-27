@@ -120,7 +120,11 @@ class StudentExtraCosts(ProgramModuleObj):
         return student_lists
 
     def isCompleted(self):
-        return Record.objects.filter(user=get_current_request().user, program=self.program, event=self.event).exists()
+        if self.user:
+            user = self.user
+        else:
+            user = get_current_request().user
+        return Record.objects.filter(user=user, program=self.program, event=self.event).exists()
 
     @main_call
     @needs_student

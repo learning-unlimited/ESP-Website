@@ -55,7 +55,11 @@ class StudentRegConfirm(ProgramModuleObj):
         return HttpResponseRedirect("confirmreg")
 
     def isCompleted(self):
-        return self.program.isConfirmed(get_current_request().user)
+        if self.user:
+            user = self.user
+        else:
+            user = get_current_request().user
+        return self.program.isConfirmed(user)
 
     def hideNotRequired(self):
         return True
