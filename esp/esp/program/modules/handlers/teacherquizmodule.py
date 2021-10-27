@@ -98,7 +98,7 @@ class TeacherQuizModule(ProgramModuleObj):
     # Per-user info
     def isCompleted(self):
         """Return true if user has filled out the teacher quiz."""
-        if self.user:
+        if hasattr(self, 'user'):
             user = self.user
         else:
             user = get_current_request().user

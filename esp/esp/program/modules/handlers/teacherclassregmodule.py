@@ -100,7 +100,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     def noclasses(self):
         """ Returns true of there are no classes in this program """
-        if self.user:
+        if hasattr(self, 'user'):
             user = self.user
         else:
             user = get_current_request().user

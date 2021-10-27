@@ -94,7 +94,7 @@ class StudentCustomFormModule(ProgramModuleObj):
 
     def isCompleted(self):
         """Return true if user has filled out the student custom form."""
-        if self.user:
+        if hasattr(self, 'user'):
             user = self.user
         else:
             user = get_current_request().user

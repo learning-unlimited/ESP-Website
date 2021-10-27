@@ -82,7 +82,7 @@ class FinancialAidAppModule(ProgramModuleObj):
                 'studentfinaid_approved': """Students who have been granted financial aid"""}
 
     def isCompleted(self):
-        if self.user:
+        if hasattr(self, 'user'):
             user = self.user
         else:
             user = get_current_request().user

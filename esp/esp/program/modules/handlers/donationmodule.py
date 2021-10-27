@@ -125,7 +125,7 @@ class DonationModule(ProgramModuleObj):
 
     def isCompleted(self):
         """Whether the user made a decision about donating to LU."""
-        if self.user:
+        if hasattr(self, 'user'):
             user = self.user
         else:
             user = get_current_request().user

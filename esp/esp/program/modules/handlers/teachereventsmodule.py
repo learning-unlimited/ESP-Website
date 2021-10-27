@@ -123,7 +123,7 @@ class TeacherEventsModule(ProgramModuleObj):
         If there are teacher training timeslots, requires signing up for them.
         If there are teacher interview timeslots, requires those too.
         """
-        if self.user:
+        if hasattr(self, 'user'):
             user = self.user
         else:
             user = get_current_request().user

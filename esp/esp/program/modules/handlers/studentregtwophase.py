@@ -68,7 +68,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
                 'twophase_priority_students': "Students who have marked choices in the two-phase lottery"}
 
     def isCompleted(self):
-        if self.user:
+        if hasattr(self, 'user'):
             user = self.user
         else:
             user = get_current_request().user

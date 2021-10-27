@@ -65,7 +65,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
         return {'phasezero': """Students who have entered the Student Lottery"""}
 
     def isCompleted(self):
-        if self.user:
+        if hasattr(self, 'user'):
             user = self.user
         else:
             user = get_current_request().user
