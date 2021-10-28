@@ -1023,6 +1023,21 @@ all_program_tags = {
         'category': 'moderate',
         'is_setting': True,
     },
+    # For the next two, we populate the widgets as MultipleChoiceFields when initializing the form to avoid import loops
+    'student_reg_records': {
+        'is_boolean': False,
+        'help_text': 'Additional records that must be completed for student registration (e.g., if a form must be submitted via email).',
+        'default': '',
+        'category': 'learn',
+        'is_setting': True,
+    },
+    'teacher_reg_records': {
+        'is_boolean': False,
+        'help_text': 'Additional records that must be completed for teacher registration (e.g., if a form must be submitted via email).',
+        'default': '',
+        'category': 'teach',
+        'is_setting': True,
+    },
 }
 
 # Dictionary of categories that tags fall into (for grouping on the tag settings page)
