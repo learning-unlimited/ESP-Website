@@ -274,11 +274,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         for module in modules:
             # If completed all required modules so far...
             if context['completedAll']:
-                if module.isCompleted():
-                    module.fillProgressBar = True
-                else:
-                    if module.required:
-                        context['completedAll'] = False
+                if not module.isCompleted() and module.required:
+                    context['completedAll'] = False
 
             context = module.prepare(context)
 
