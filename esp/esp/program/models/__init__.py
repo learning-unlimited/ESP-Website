@@ -1065,12 +1065,6 @@ class Program(models.Model, CustomFormsLinkModel):
         """ Gets a list of modules for this program. """
         from esp.program.modules import base
 
-        def cmpModules(mod1, mod2):
-            """ comparator function for two modules """
-            try:
-                return cmp(mod1.seq, mod2.seq)
-            except AttributeError:
-                return 0
         if tl:
             modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
                  for module in self.program_modules.filter(module_type = tl)]
