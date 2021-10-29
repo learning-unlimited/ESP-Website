@@ -35,6 +35,8 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, CoreModule, main_call, aux_call
 from esp.utils.web import render_to_response
 from esp.miniblog.models import Entry
+from esp.tagdict.models import Tag
+from esp.users.models import Record
 
 class TeacherRegCore(ProgramModuleObj, CoreModule):
     doc = """Serves the main teacher registration page."""
@@ -64,7 +66,16 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
 
             context = module.prepare(context)
 
+        tag_data = Tag.getProgramTag('teacher_reg_records', prog)
+        records = []
+        if tag_data:
+            event_dict = dict(Record.EVENT_CHOICES)
+            for event in [x.strip().lower() for x in tag_data.split(',')]:
+                records.append({'event': event, 'full_event': event_dict[event], 'isCompleted': Record.user_completed(event = event, user = request.user, program = prog)})
+            records.sort(key=lambda rec: not rec['isCompleted'])
+
         context['modules'] = modules
+        context['records'] = records
         context['options'] = prog.classregmoduleinfo
         context['one'] = one
         context['two'] = two

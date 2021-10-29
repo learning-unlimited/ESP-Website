@@ -36,6 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_student, meets_dead
 from esp.program.modules import module_ext
 from esp.program.models  import Program
 from esp.program.controllers.confirmation import ConfirmationEmailController
+from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, Record
 from esp.utils.models import Printer
@@ -279,10 +280,18 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
             context = module.prepare(context)
 
+        tag_data = Tag.getProgramTag('student_reg_records', prog)
+        records = []
+        if tag_data:
+            event_dict = dict(Record.EVENT_CHOICES)
+            for event in [x.strip().lower() for x in tag_data.split(',')]:
+                records.append({'event': event, 'full_event': event_dict[event], 'isCompleted': Record.user_completed(event = event, user = request.user, program = prog)})
+            records.sort(key=lambda rec: not rec['isCompleted'])
+
         context['canRegToFullProgram'] = request.user.canRegToFullProgram(prog)
 
-
         context['modules'] = modules
+        context['records'] = records
         context['one'] = one
         context['two'] = two
         context['coremodule'] = self
