@@ -184,7 +184,11 @@ class StudentClassRegModule(ProgramModuleObj):
                 'enrolled': """Students who are enrolled in at least one class"""}
 
     def isCompleted(self):
-        return (len(get_current_request().user.getSectionsFromProgram(self.program)[:1]) > 0)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return (len(user.getSectionsFromProgram(self.program)[:1]) > 0)
 
     def deadline_met(self, extension=None):
         #   Allow default extension to be overridden if necessary

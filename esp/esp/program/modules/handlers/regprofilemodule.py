@@ -118,7 +118,11 @@ class RegProfileModule(ProgramModuleObj):
         return response
 
     def isCompleted(self):
-        regProf = RegistrationProfile.getLastForProgram(get_current_request().user, self.program, self.module.module_type)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        regProf = RegistrationProfile.getLastForProgram(user, self.program, self.module.module_type)
         return regProf.id is not None
 
     class Meta:

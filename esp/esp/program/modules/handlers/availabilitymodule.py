@@ -76,7 +76,10 @@ class AvailabilityModule(ProgramModuleObj):
     def isCompleted(self, user = None):
         """ Make sure that they have indicated sufficient availability for all classes they have signed up to teach. """
         if user is None:
-            user = get_current_request().user
+            if hasattr(self, 'user'):
+                user = self.user
+            else:
+                user = get_current_request().user
         available_slots = user.getAvailableTimes(self.program, ignore_classes=True, ignore_moderation=True)
 
         #   Check number of timeslots against Tag-specified minimum

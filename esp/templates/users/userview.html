@@ -89,6 +89,22 @@
                         <a class="sidelink" onclick="$j(this).parent().submit();return false;" href="">Unenroll from all classes</a>
                     </form>
                 </div>
+                <table class="table-condensed modules">
+                {% for module in learn_modules %}
+                    {% if module.isStep %}
+                    <tr>
+                        <td>
+                            {% if module.isCompleted %}
+                                <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                            {% else %}
+                                <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                            {% endif %}
+                            {{ module.module.link_title }}
+                        </td>
+                    </tr>
+                    {% endif %}
+                {% endfor %}
+                </table>
             {% else %}
                 (Student has no profile for this program)
             {% endif %}
@@ -114,6 +130,22 @@
                         <a id="getmoderatorschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/moderatorschedule?user={{user.id}}" target="_new">Print {{program.getModeratorTitle|lower}} schedule locally</a>
                     </div>
                 {% endif %}
+                <table class="table-condensed modules">
+                {% for module in teach_modules %}
+                    {% if module.isStep %}
+                    <tr>
+                        <td>
+                            {% if module.isCompleted %}
+                                <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                            {% else %}
+                                <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                            {% endif %}
+                            {{ module.module.link_title }}
+                        </td>
+                    </tr>
+                    {% endif %}
+                {% endfor %}
+                </table>
             {% else %}
                 (Teacher has no profile for this program)
             {% endif %}
