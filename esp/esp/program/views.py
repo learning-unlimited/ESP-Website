@@ -379,12 +379,16 @@ def userview(request):
 
     learn_modules = []
     teach_modules = []
+    learn_records = []
+    teach_records = []
     if program:
         profile = RegistrationProfile.getLastForProgram(user, program)
         if user.isStudent():
             learn_modules = program.getModules(user, 'learn')
+            learn_records = StudentRegCore.get_reg_records(user, program, 'learn')
         if user.isTeacher():
             teach_modules = program.getModules(user, 'teach')
+            teach_records = StudentRegCore.get_reg_records(user, program, 'teach')
     else:
         profile = user.getLastProfile()
 
@@ -416,6 +420,8 @@ def userview(request):
         'program': program,
         'learn_modules': learn_modules,
         'teach_modules': teach_modules,
+        'learn_records': learn_records,
+        'teach_records': teach_records,
         'profile': profile,
         'volunteer': VolunteerOffer.objects.filter(request__program = program, user = user).exists(),
         'avail_set': UserAvailability.objects.filter(event__program = program, user = user).exists(),

@@ -260,6 +260,20 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     printer_names.depend_on_model('utils.Printer')
     printer_names = staticmethod(printer_names) # stolen from program.models.getLastProfile, not sure if this is actually the right way to do this?
 
+    @staticmethod
+    def get_reg_records(user, prog, tl):
+        records = []
+        if tl == 'learn':
+            tag_data = Tag.getProgramTag('student_reg_records', prog)
+        else:
+            tag_data = Tag.getProgramTag('teacher_reg_records', prog)
+        if tag_data:
+            event_dict = dict(Record.EVENT_CHOICES)
+            for event in [x.strip().lower() for x in tag_data.split(',')]:
+                records.append({'event': event, 'full_event': event_dict[event], 'isCompleted': Record.user_completed(event = event, user = user, program = prog)})
+            records.sort(key=lambda rec: not rec['isCompleted'])
+        return records
+
     @main_call
     @needs_student
     @meets_grade
@@ -280,13 +294,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
             context = module.prepare(context)
 
-        tag_data = Tag.getProgramTag('student_reg_records', prog)
-        records = []
-        if tag_data:
-            event_dict = dict(Record.EVENT_CHOICES)
-            for event in [x.strip().lower() for x in tag_data.split(',')]:
-                records.append({'event': event, 'full_event': event_dict[event], 'isCompleted': Record.user_completed(event = event, user = request.user, program = prog)})
-            records.sort(key=lambda rec: not rec['isCompleted'])
+        records = self.get_reg_records(user, prog, 'learn')
 
         context['canRegToFullProgram'] = request.user.canRegToFullProgram(prog)
 
