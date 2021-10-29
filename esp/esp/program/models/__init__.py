@@ -1088,6 +1088,7 @@ class Program(models.Model, CustomFormsLinkModel):
         if user:
             for module in modules:
                 module.setUser(user)
+            modules.sort(key=lambda mod: not mod.isCompleted())
         #   Populate the view attributes so they can be cached
         for module in modules:
             module.get_all_views()
