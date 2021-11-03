@@ -67,7 +67,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
 
             context = module.prepare(context)
 
-        records = StudentRegCore.get_reg_records(user, prog, 'teach')
+        records = StudentRegCore.get_reg_records(request.user, prog, 'teach')
 
         context['modules'] = modules
         context['records'] = records

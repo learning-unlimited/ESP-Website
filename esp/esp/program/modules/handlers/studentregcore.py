@@ -294,7 +294,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
             context = module.prepare(context)
 
-        records = self.get_reg_records(user, prog, 'learn')
+        records = self.get_reg_records(request.user, prog, 'learn')
 
         context['canRegToFullProgram'] = request.user.canRegToFullProgram(prog)
 
