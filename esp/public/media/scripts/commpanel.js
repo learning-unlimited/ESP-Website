@@ -138,9 +138,9 @@ function clear_filters()
     var $form = $j("#filter_accordion");
     var form_fields = $form.find(':input');
     form_fields.each(function(i, form_field) {
-        if(form_field.name == "grade_min"){
+        if(form_field.name == "grade_min" && $j("select[name=recipient_type]").val() == "Student"){
             $j(form_field).val(program_grade_min);
-        } else if(form_field.name == "grade_max"){
+        } else if(form_field.name == "grade_max" && $j("select[name=recipient_type]").val() == "Student"){
             $j(form_field).val(program_grade_max);
         } else{
             switch (form_field.type) {
