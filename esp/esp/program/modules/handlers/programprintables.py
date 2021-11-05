@@ -1558,6 +1558,10 @@ class ProgramPrintables(ProgramModuleObj):
         students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
         students.sort()
 
+        records = []
+        tag_data = Tag.getProgramTag('student_reg_records', prog)
+        if tag_data:
+            records = [event for event in [x.strip().lower() for x in tag_data.split(',')] if event not in ['paid', 'attended', 'med', 'liab']]
         studentList = []
         for student in students:
             finaid_status = 'None'
@@ -1577,8 +1581,10 @@ class ProgramPrintables(ProgramModuleObj):
                                 'finaid': finaid_status,
                                 'checked_in': Record.user_completed(student, "attended",self.program),
                                 'med': Record.user_completed(student, "med", self.program),
-                                'liab': Record.user_completed(student, "liab", self.program)})
+                                'liab': Record.user_completed(student, "liab", self.program),
+                                'other': [Record.user_completed(student, rec, self.program) for rec in records]})
 
+        context['other_records'] = records
         context['students'] = students
         context['studentList'] = studentList
         return render_to_response(self.baseDir()+'studentchecklist.html', request, context)
