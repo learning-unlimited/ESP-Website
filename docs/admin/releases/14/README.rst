@@ -11,6 +11,7 @@ User search modules
 ~~~~~~~~~~~~~~~~~~~
 - The default minimum and maximum grade filters are now set to the minimum and maximum grades of the program (to prevent erroneous emails to very old students)
 - There is now a list of commonly used searches to simplify the user selection process
+- Printables that use the user search controller now have default settings
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
@@ -19,10 +20,19 @@ Minor new features
 - Changed the default font families for the default theme customizations ("Default" and "Rupaa")
 - Fixed the styling of the survey responses pdf
 - Added an undo button to the student lottery management page
+- Rounded the hours stats on the dashboard
+- Split teacher registration tags into "Teacher Registration Settings", "Moderator Settings", and "Class Registration Settings"
+- Added a warning banner to the top of all required modules (this banner and the deadline banner are also now included in all themes)
+- Student and teacher registration status is now shown on the userview page
+- Fixed the list of programs that are shown after updating your profile (filtered by grade for students, now shown for volunteers)
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
 - Fixed many bugs in the theme editor, including when loading and saving customizations
 - Fixed a bug where a teacher's availability could include times for which they signed up for training, etc (this may fix instances where teachers were able to register more hours of classes than they should have been able to)
 - Fixed the performance of /manage/emails for sites that sent emails to lots of recipients (this was previously so bad that it could cause the entire server to crash)
+- Fixed the bottom of the phase zero confirmation page being cut off
+- Fixed the link in the admin deadline banner for several pages
+- Fixed the email address for some users on the userview page
+- Fixed the color of messages on the deadline management page
 
