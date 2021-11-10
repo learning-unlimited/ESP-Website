@@ -36,7 +36,10 @@ div.required label.control-label:after {
 <div class="row-fluid">
   <div class="span10">
       {% if form.errors %}
-      <h4 style="color:red">Please fix the following error{{ form.errors|pluralize }} in the form.</h4>
+            <div class="alert alert-danger">
+                <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                    Please fix the following error{{ form.errors|pluralize }} in the form.
+            </div>
       <ul>
 	{% for error in form.errors.items %}
 	{% ifequal error.0 '__all__' %}

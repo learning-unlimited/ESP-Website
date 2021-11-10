@@ -23,10 +23,16 @@
     </form>
     <br /><br />
     {% if POST and saved %}
-        <h3 style="font-weight:bold;">Settings successfully saved.</h3><br /><br />
+            <div class="alert alert-success">
+            <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                Settings successfully saved.
+            </div>
     {% endif %}
     {% if POST and not saved %}
-        <h3 style="font-weight:bold; color:red;">There was an error with saving your settings. Please try again.</h3><br /><br />
+        <div class="alert alert-danger">
+            <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                There was an error with saving your settings. Please try again.
+        </div><br />
     {% endif %}
     </div>
 

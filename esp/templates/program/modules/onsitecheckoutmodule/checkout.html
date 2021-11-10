@@ -113,8 +113,17 @@ $j(function() {
 
 {% if student %}
 <br />
-{% if checkout_message %}
-<h3 style="color:red;">{{ checkout_message }}</h3>
+{% if checkout_message_warning %}
+    <div class="alert alert-warning">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {{ checkout_message_warning }}
+    </div>
+{% endif %}
+{% if checkout_message_success %}
+    <div class="alert alert-success">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {{ checkout_message_success }}
+    </div>
 {% endif %}
 <div id="return_options">
     <h2>

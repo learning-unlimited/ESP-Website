@@ -4,7 +4,10 @@
 
 {% block content %}
 
-<h1><font color='red'>{{ extramsg }}</font></h1>
+<div class="alert alert-danger">
+    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        {{ extramsg }}
+</div>
 
 {% for entry in entries %}
 <h1>{{ entry.title }}</h1>
