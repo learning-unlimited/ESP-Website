@@ -36,8 +36,6 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_dead
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.utils.web import render_to_response
 from esp.miniblog.models import Entry
-from esp.tagdict.models import Tag
-from esp.users.models import Record
 
 class TeacherRegCore(ProgramModuleObj, CoreModule):
     doc = """Serves the main teacher registration page."""

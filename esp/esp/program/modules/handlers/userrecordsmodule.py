@@ -40,8 +40,6 @@ from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_checklist, get_user_list
 from esp.middleware import ESPError
 
-from django.contrib.auth.models import Group
-
 class UserRecordsModule(ProgramModuleObj):
     doc = """Set arbitrary records for an arbitrary list of users"""
 
@@ -61,7 +59,6 @@ class UserRecordsModule(ProgramModuleObj):
         if request.method != 'POST' or 'filterid' not in request.GET:
             raise ESPError(), 'User filter has not been properly set'
 
-        # get the filter to use and text message to send from the request; this is set in grouptextpanel form
         filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
         users = filterObj.getList(ESPUser)
         try:
@@ -74,7 +71,7 @@ class UserRecordsModule(ProgramModuleObj):
 
         records = request.POST.getlist('records')
         Record.objects.bulk_create([Record(event=rec, program = prog, user=user) for rec in records for user in users])
-        
+
         context = {'num_users': users.count(), 'records': records}
 
         return render_to_response(self.baseDir()+'finished.html', request, context)
@@ -94,7 +91,7 @@ class UserRecordsModule(ProgramModuleObj):
                 filterObj, found = get_user_list(request, self.program.getLists(True))
                 selected = usc.selected_list_from_postdata(data)
             else:
-                filterObj = UserSearchController().filter_from_postdata(prog, data)            
+                filterObj = UserSearchController().filter_from_postdata(prog, data)
 
             if data.get('use_checklist') == '1':
                 (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/userrecords' % prog.getUrlBase(), extra_context = {'module': "User Records Portal"})
