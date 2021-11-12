@@ -106,7 +106,7 @@ class UserSearchController(object):
                 Q_include &= Q(studentregistration__section__parent_class__id__in=clsid,
                                studentregistration__relationship__name__in=student_verbs) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
 
-            if 'class_times' in criteria:
+            if criteria.get('class_times', '').strip():
                 class_times = criteria['class_times']
                 if 'regtypes' in criteria:
                     student_verbs = criteria['regtypes']
@@ -116,23 +116,23 @@ class UserSearchController(object):
                              & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
                 self.updated = True
 
-            if 'teaching_times' in criteria:
+            if criteria.get('teaching_times', '').strip():
                 teaching_times = criteria['teaching_times']
                 Q_include &= Q(classsubject__sections__meeting_times__id__in=teaching_times)
                 self.updated = True
 
-            if 'teacher_events' in criteria:
+            if criteria.get('teacher_events', '').strip():
                 teacher_events = criteria['teacher_events']
                 Q_include &= Q(useravailability__event__id__in=teacher_events)
                 self.updated = True
 
-            if 'groups_include' in criteria:
+            if criteria.get('groups_include', '').strip():
                 groups_include = criteria['groups_include']
                 #Can't just filter by group because we are already filtering by group with user_type above. - willgearty, 2016-11-23
                 Q_include &= Q(registrationprofile__user__groups__id__in=groups_include)
                 self.updated = True
 
-            if 'groups_exclude' in criteria:
+            if criteria.get('groups_exclude', '').strip():
                 groups_exclude = criteria['groups_exclude']
                 #Can't just filter by group because we are already filtering by group with user_type above. - willgearty, 2016-11-23
                 Q_exclude |= Q(registrationprofile__user__groups__id__in=groups_exclude)
