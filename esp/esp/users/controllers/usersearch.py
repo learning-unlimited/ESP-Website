@@ -106,7 +106,7 @@ class UserSearchController(object):
                 Q_include &= Q(studentregistration__section__parent_class__id__in=clsid,
                                studentregistration__relationship__name__in=student_verbs) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
 
-            if 'class_times' in criteria:
+            if criteria.get('class_times', '').strip():
                 class_times = criteria['class_times']
                 if 'regtypes' in criteria:
                     student_verbs = criteria['regtypes']
@@ -116,23 +116,23 @@ class UserSearchController(object):
                              & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
                 self.updated = True
 
-            if 'teaching_times' in criteria:
+            if criteria.get('teaching_times', '').strip():
                 teaching_times = criteria['teaching_times']
                 Q_include &= Q(classsubject__sections__meeting_times__id__in=teaching_times)
                 self.updated = True
 
-            if 'teacher_events' in criteria:
+            if criteria.get('teacher_events', '').strip():
                 teacher_events = criteria['teacher_events']
                 Q_include &= Q(useravailability__event__id__in=teacher_events)
                 self.updated = True
 
-            if 'groups_include' in criteria:
+            if criteria.get('groups_include', '').strip():
                 groups_include = criteria['groups_include']
                 #Can't just filter by group because we are already filtering by group with user_type above. - willgearty, 2016-11-23
                 Q_include &= Q(registrationprofile__user__groups__id__in=groups_include)
                 self.updated = True
 
-            if 'groups_exclude' in criteria:
+            if criteria.get('groups_exclude', '').strip():
                 groups_exclude = criteria['groups_exclude']
                 #Can't just filter by group because we are already filtering by group with user_type above. - willgearty, 2016-11-23
                 Q_exclude |= Q(registrationprofile__user__groups__id__in=groups_exclude)
@@ -176,19 +176,19 @@ class UserSearchController(object):
                     Q_include &= Q(registrationprofile__contact_user__address_state__in = state_codes, registrationprofile__most_recent_profile=True)
                 self.updated = True
 
-            if 'grade_min' in criteria:
+            if criteria.get('grade_min', '').strip():
                 yog = ESPUser.YOGFromGrade(criteria['grade_min'])
                 if yog != 0:
                     Q_include &= Q(registrationprofile__student_info__graduation_year__lte = yog, registrationprofile__most_recent_profile=True)
                     self.updated = True
 
-            if 'grade_max' in criteria:
+            if criteria.get('grade_max', '').strip():
                 yog = ESPUser.YOGFromGrade(criteria['grade_max'])
                 if yog != 0:
                     Q_include &= Q(registrationprofile__student_info__graduation_year__gte = yog, registrationprofile__most_recent_profile=True)
                     self.updated = True
 
-            if 'school' in criteria:
+            if criteria.get('school', '').strip():
                 school = criteria['school']
                 if school:
                     Q_include &= (Q(studentinfo__school__icontains=school) | Q(studentinfo__k12school__name__icontains=school))
@@ -208,11 +208,11 @@ class UserSearchController(object):
                 except:
                     raise ESPError('Please enter a 4-digit integer for graduation year limits.', log=False)
                 possible_gradyears = filter(lambda x: x <= gradyear_max, possible_gradyears)
-            if criteria.get('gradyear_min', None) or criteria.get('gradyear_max', None):
+            if criteria.get('gradyear_min', '').strip() or criteria.get('gradyear_max', '').strip():
                 Q_include &= Q(registrationprofile__teacher_info__graduation_year__in = map(str, possible_gradyears), registrationprofile__most_recent_profile=True)
                 self.updated = True
 
-            if 'hours_min' in criteria or 'hours_max' in criteria:
+            if criteria.get('hours_min', '').strip() or criteria.get('hours_max', '').strip():
                 current_Q = Q_base & (Q_include & ~Q_exclude)
                 user_hours = {user.id: (sum([section.meeting_times.count() for section in user.getEnrolledSections(program)])) for user in ESPUser.objects.filter(current_Q)}
                 exclude_user_list = []
@@ -231,7 +231,7 @@ class UserSearchController(object):
                 Q_exclude |= Q(id__in=exclude_user_list)
                 self.updated = True
 
-            if 'target_user' in criteria:
+            if criteria.get('target_user', '').strip():
                 student_id = criteria['target_user']
                 if student_id == "invalid":
                     raise ESPError('Please select a valid student whose teachers to email.', log=False)
