@@ -128,7 +128,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         self.request = request
 
         if prog.user_can_join(request.user):
-            raise ESPError("You can't subscribe to the waitlist of a program that isn't full yet!  Please click 'Back' and refresh the page to see the button to confirm your registration.", log=False)
+            return self.goToCore(tl)
 
         waitlist = Record.objects.filter(event="waitlist",
                                          user=request.user,
