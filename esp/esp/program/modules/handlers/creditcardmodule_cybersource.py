@@ -115,6 +115,9 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
 
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 
+    def isStep(self):
+        return settings.CYBERSOURCE_CONFIG['post_url'] and settings.CYBERSOURCE_CONFIG['merchant_id']
+
     class Meta:
         proxy = True
         app_label = 'modules'

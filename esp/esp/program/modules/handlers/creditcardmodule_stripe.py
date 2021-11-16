@@ -330,6 +330,13 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         context['can_confirm'] = self.deadline_met('/Confirm')
         return render_to_response(self.baseDir() + 'success.html', request, context)
 
+    def isStep(self):
+        try:
+            self.check_setup()
+        except ESPError:
+            return False
+        return True
+
     class Meta:
         proxy = True
         app_label = 'modules'
