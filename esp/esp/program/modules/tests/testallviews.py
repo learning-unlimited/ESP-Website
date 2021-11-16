@@ -147,53 +147,49 @@ class AllViewsTest(ProgramFrameworkTest):
             for module in modules:
                 views = module.get_all_views()
                 for view in views:
+                    # In case the user has been unregistered, reregister them
                     self.program.classes()[0].get_sections()[0].preregister_student(self.adminUser)
-                    # Some views are expecting an "extra" argument; some are expecting "GET" variables; some are expecting "POST" variables
-                    try:
-                        print("GET")
+                    # Try a whole bunch of different requests (because different views have different expectations)
+                    # Skip to the next view if this view ever properly serves a page (or redirects to another page)
+                    try: # Various GET arguments
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '?cls=' + cls_id + '&clsid=' + cls_id + '&name=Admin&username=admin')
                         if response.status_code in [200, 302]:
                             continue
                     except Exception, e:
                         print(e)
-                    try:
-                        print("Extra Class")
+                    try: # Use a class ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + cls_id + '?student=' + self.adminUser.id)
                         if response.status_code in [200, 302]:
                             continue
                     except Exception, e:
                         print(e)
-                    try:
-                        print("Extra Section")
+                    try: # Use a section ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + sec_id)
                         if response.status_code in [200, 302]:
                             continue
                     except Exception, e:
                         print(e)
-                    try:
-                        print("Extra Event")
+                    try: # Use an event ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + event_id)
                         if response.status_code in [200, 302]:
                             continue
                     except Exception, e:
                         print(e)
-                    try:
-                        print("POST1")
+                    try: # Various POST data
+                        # Mostly used for registering for classes, so unregister for the class in advance
                         self.program.classes()[0].get_sections()[0].unpreregister_student(self.adminUser)
                         response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'class_id': cls_id,  'section_id': sec_id, 'json_data': '{}'})
                         if response.status_code in [200, 302]:
                             continue
                     except Exception, e:
                         print(e)
-                    try:
-                        print("POST2")
+                    try: # Student lottery POST data
                         response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'json_data': '{"interested": [1, 5, 3, 9], "not_interested": [4, 6, 10]}'})
                         if response.status_code in [200, 302]:
                             continue
                     except Exception, e:
                         print(e)
-                    try:
-                        print("POST3")
+                    try: # Different student lottery POST data
                         response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'json_data': '{"' + event_id + '": {}}'})
                         if response.status_code in [200, 302]:
                             continue
