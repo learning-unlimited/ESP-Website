@@ -591,9 +591,13 @@ class ProgramPrintables(ProgramModuleObj):
             allclasses = prog.sections().filter(status=10, parent_class__status=10, meeting_times__isnull=False)
             first_timeblock_dict = allclasses.aggregate(Min('meeting_times__start'))
 
-
         scheditems = []
         resource_types = prog.getResourceTypes().values_list('name', flat=True)
+
+        records = []
+        tag_data = Tag.getProgramTag('teacher_reg_records', prog)
+        if tag_data:
+            records = [x.strip().lower() for x in tag_data.split(',')]
 
         for teacher in teachers:
             # get list of valid classes
@@ -633,6 +637,7 @@ class ProgramPrintables(ProgramModuleObj):
                                'user': teacher,
                                'phone_day': phone_day,
                                'phone_cell': phone_cell,
+                               'recs': [Record.user_completed(teacher, rec, self.program) for rec in records],
                                'cls' : classes[0],
                                'res_values': [classes[0].resourcerequest_set.filter(res_type__name=x).values_list('desired_value', flat=True) for x in resource_types]})
 
@@ -640,6 +645,7 @@ class ProgramPrintables(ProgramModuleObj):
         scheditems.sort(sort_exp)
 
         context['res_types'] = resource_types
+        context['records'] = records
         context['scheditems'] = scheditems
 
         if extra and 'csv' in extra:
@@ -1558,6 +1564,10 @@ class ProgramPrintables(ProgramModuleObj):
         students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
         students.sort()
 
+        records = []
+        tag_data = Tag.getProgramTag('student_reg_records', prog)
+        if tag_data:
+            records = [event for event in [x.strip().lower() for x in tag_data.split(',')] if event not in ['paid', 'attended', 'med', 'liab']]
         studentList = []
         for student in students:
             finaid_status = 'None'
@@ -1577,8 +1587,10 @@ class ProgramPrintables(ProgramModuleObj):
                                 'finaid': finaid_status,
                                 'checked_in': Record.user_completed(student, "attended",self.program),
                                 'med': Record.user_completed(student, "med", self.program),
-                                'liab': Record.user_completed(student, "liab", self.program)})
+                                'liab': Record.user_completed(student, "liab", self.program),
+                                'other': [Record.user_completed(student, rec, self.program) for rec in records]})
 
+        context['other_records'] = records
         context['students'] = students
         context['studentList'] = studentList
         return render_to_response(self.baseDir()+'studentchecklist.html', request, context)
