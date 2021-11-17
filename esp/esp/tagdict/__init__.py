@@ -422,6 +422,20 @@ all_global_tags = {
         'category': 'manage',
         'is_setting': True,
     },
+    'teacher_home_page': {
+        'is_boolean': False,
+        'help_text': 'The page to which teachers get redirected after logging in (can be a relative or absolute page)',
+        'default': "/teach/index.html",
+        'category': 'teach',
+        'is_setting': True,
+    },
+    'student_home_page': {
+        'is_boolean': False,
+        'help_text': 'The page to which students get redirected after logging in (can be a relative or absolute page)',
+        'default': "/learn/index.html",
+        'category': 'learn',
+        'is_setting': True,
+    },
     'default_restypes': {
         'is_boolean': False,
         'help_text': 'A JSON list of the resource types (by name) to create when making a new program',
