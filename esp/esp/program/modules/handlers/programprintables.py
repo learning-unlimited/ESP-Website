@@ -1166,7 +1166,16 @@ class ProgramPrintables(ProgramModuleObj):
         if onsite:
             students = [ESPUser.objects.get(id=request.GET['userid'])]
         else:
-            filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': "Student Schedules"})
+            if extra:
+                file_type = extra.strip()
+            elif 'img_format' in request.GET:
+                file_type = request.GET['img_format']
+            else:
+                if onsite:
+                    file_type = 'png'
+                else:
+                    file_type = 'pdf'
+            filterObj, found = UserSearchController().create_filter(request, self.program, target_path = request.get_full_path(), add_to_context = {'module': "Student Schedules (" + file_type + ")"})
 
             if not found:
                 return filterObj
@@ -1306,7 +1315,12 @@ class ProgramPrintables(ProgramModuleObj):
         basedir = 'program/modules/programprintables/'
         if file_type == 'html':
             return render_to_response(basedir+'studentschedule.html', request, context)
-        else:  # elif format == 'pdf':
+        elif file_type == 'pdf':
+            response = HttpResponse(content_type='application/pdf')
+            response['Content-Disposition'] = 'attachment; filename="studentschedules.pdf"'
+            response.write(render_to_latex(basedir+'studentschedule.tex', context, file_type))
+            return response
+        else:
             return render_to_latex(basedir+'studentschedule.tex', context, file_type)
 
     @aux_call
