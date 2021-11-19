@@ -1313,10 +1313,13 @@ class ProgramPrintables(ProgramModuleObj):
         if file_type == 'html':
             return render_to_response(basedir+'studentschedule.html', request, context)
         elif file_type == 'pdf':
-            response = HttpResponse(content_type='application/pdf')
-            response['Content-Disposition'] = 'attachment; filename="studentschedules.pdf"'
-            response.write(render_to_latex(basedir+'studentschedule.tex', context, file_type))
-            return response
+            if len(students) > 1:
+                response = HttpResponse(content_type='application/pdf')
+                response['Content-Disposition'] = 'attachment; filename="studentschedules.pdf"'
+                response.write(render_to_latex(basedir+'studentschedule.tex', context, 'pdf'))
+                return response
+            else:
+                return render_to_latex(basedir+'studentschedule.tex', context, 'pdf')
         else:
             return render_to_latex(basedir+'studentschedule.tex', context, file_type)
 
