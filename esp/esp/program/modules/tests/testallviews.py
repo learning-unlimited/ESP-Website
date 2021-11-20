@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from django.conf import settings
 
+from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.models import Form
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ProgramModule
@@ -132,6 +133,18 @@ class AllViewsTest(ProgramFrameworkTest):
             'post_url': 'https://apitest.cybersource.com/pts/v2/payments',
             'merchant_id': 'test',
         }
+
+    def tearDown(self):
+        # clean up custom form
+        for form in Form.objects.all():
+            dmh = DynamicModelHandler(form)
+            dmh.purgeDynModel()
+        Tag.unSetTag(key='learn_extraform_id', target=self.program)
+        Tag.unSetTag(key='teach_extraform_id', target=self.program)
+        Tag.unSetTag(key='quiz_form_id', target=self.program)
+
+        # clean up surveys
+        Survey.objects.all().delete()
 
     def testAllViews(self):
         # Check all views of all modules
