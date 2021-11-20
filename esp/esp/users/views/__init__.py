@@ -30,11 +30,32 @@ def HttpMetaRedirect(location='/'):
     """ % (location, location)
     return response
 
+mask_locations = ['/', '/myesp/signout', '/myesp/signout/', '/admin/logout/']
+def mask_redirect(user, next):
+    # We're getting redirected to somewhere undesirable.
+    # Let's try to do something smarter.
+    admin_home_url = Tag.getTag('admin_home_page')
+    teacher_home_url = Tag.getTag('teacher_home_page')
+    student_home_url = Tag.getTag('student_home_page')
+    if user.isAdmin() and admin_home_url:
+        return HttpMetaRedirect(admin_home_url)
+    elif user.isTeacher() and teacher_home_url:
+        return HttpMetaRedirect(teacher_home_url)
+    elif user.isStudent() and student_home_url:
+        return HttpMetaRedirect(student_home_url)
+    else:
+        return HttpMetaRedirect('/')
 
 def login_checked(request, *args, **kwargs):
     if request.user.is_authenticated():
+        next = request.GET.get('next', '')
+        if next in mask_locations:
+            reply = mask_redirect(request.user, next)
+        elif next:
+            reply = HttpMetaRedirect(next)
+        else:
+            reply = HttpMetaRedirect('/')
         #   Set response cookies in case of repeat login
-        reply = HttpMetaRedirect('/')
         reply._new_user = request.user
         reply.no_set_cookies = False
         return reply
@@ -71,21 +92,13 @@ def login_checked(request, *args, **kwargs):
                     context['next_title'] = 'the home page'
                 return render_to_response('users/login_duplicate_warning.html', request, context)
 
-    mask_locations = ['/', '/myesp/signout', '/myesp/signout/', '/admin/logout/']
-    if reply.get('Location', '') in mask_locations:
-        # We're getting redirected to somewhere undesirable.
-        # Let's try to do something smarter.
-        admin_home_url = Tag.getTag('admin_home_page')
-        if request.user.isAdmin() and admin_home_url:
-            reply = HttpMetaRedirect(admin_home_url)
-        elif request.user.isTeacher():
-            reply = HttpMetaRedirect("/teach/index.html")
-        else:
-            reply = HttpMetaRedirect("/learn/index.html")
+    next = reply.get('Location', '')
+    if next in mask_locations:
+        reply = mask_redirect(request.user, next)
     elif reply.status_code == 302:
         #   Even if the redirect was going to a reasonable place, we need to
         #   turn it into a 200 META redirect in order to set the cookies properly.
-        reply = HttpMetaRedirect(reply.get('Location', ''))
+        reply = HttpMetaRedirect(next)
 
     #   Stick the user in the response in order to set cookies if necessary
     reply._new_user = request.user
