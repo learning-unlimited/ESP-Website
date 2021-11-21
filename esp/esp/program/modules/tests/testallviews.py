@@ -36,6 +36,7 @@ from django.conf import settings
 
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.models import Form
+from esp.middleware import ESPError
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ProgramModule
 from esp.program.modules.base import ProgramModuleObj
@@ -149,19 +150,19 @@ class AllViewsTest(ProgramFrameworkTest):
     def testAllViews(self):
         # Check all views of all modules
         failed_modules = []
-        cls = self.program.classes()[0]
-        cls_id = str(cls.id)
-        sec = cls.get_sections()[0]
-        sec_id = str(sec.id)
-        event = self.program.getTimeSlots()[0]
-        event_id = str(event.id)
         for tl in ['learn', 'teach', 'admin', 'volunteer']:
             modules = self.program.getModules(tl = tl)
             for module in modules:
                 views = module.get_all_views()
                 for view in views:
+                    cls = self.program.classes()[0]
+                    cls_id = str(cls.id)
+                    sec = cls.get_sections()[0]
+                    sec_id = str(sec.id)
+                    event = self.program.getTimeSlots()[0]
+                    event_id = str(event.id)
                     # In case the user has been unregistered, reregister them
-                    self.program.classes()[0].get_sections()[0].preregister_student(self.adminUser)
+                    sec.preregister_student(self.adminUser)
                     # Try a whole bunch of different requests (because different views have different expectations)
                     # Skip to the next view if this view ever properly serves a page (or redirects to another page)
                     try: # Various GET arguments
@@ -171,7 +172,7 @@ class AllViewsTest(ProgramFrameworkTest):
                     except Exception, e:
                         print(e)
                     try: # Use a class ID as the extra argument
-                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + cls_id + '?student=' + self.adminUser.id)
+                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + cls_id)
                         if str(response.status_code)[:1] in ['2', '3']:
                             continue
                     except Exception, e:
@@ -190,7 +191,7 @@ class AllViewsTest(ProgramFrameworkTest):
                         print(e)
                     try: # Various POST data
                         # Mostly used for registering for classes, so unregister for the class in advance
-                        self.program.classes()[0].get_sections()[0].unpreregister_student(self.adminUser)
+                        sec.unpreregister_student(self.adminUser)
                         response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'class_id': cls_id,  'section_id': sec_id, 'json_data': '{}'})
                         if str(response.status_code)[:1] in ['2', '3']:
                             continue
