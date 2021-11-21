@@ -166,25 +166,25 @@ class AllViewsTest(ProgramFrameworkTest):
                     # Skip to the next view if this view ever properly serves a page (or redirects to another page)
                     try: # Various GET arguments
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '?cls=' + cls_id + '&clsid=' + cls_id + '&name=Admin&username=admin')
-                        if response.status_code in [200, 302]:
+                        if str(response.status_code)[:1] in ['2', '3']:
                             continue
                     except Exception, e:
                         print(e)
                     try: # Use a class ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + cls_id + '?student=' + self.adminUser.id)
-                        if response.status_code in [200, 302]:
+                        if str(response.status_code)[:1] in ['2', '3']:
                             continue
                     except Exception, e:
                         print(e)
                     try: # Use a section ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + sec_id)
-                        if response.status_code in [200, 302]:
+                        if str(response.status_code)[:1] in ['2', '3']:
                             continue
                     except Exception, e:
                         print(e)
                     try: # Use an event ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + event_id)
-                        if response.status_code in [200, 302]:
+                        if str(response.status_code)[:1] in ['2', '3']:
                             continue
                     except Exception, e:
                         print(e)
@@ -192,19 +192,19 @@ class AllViewsTest(ProgramFrameworkTest):
                         # Mostly used for registering for classes, so unregister for the class in advance
                         self.program.classes()[0].get_sections()[0].unpreregister_student(self.adminUser)
                         response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'class_id': cls_id,  'section_id': sec_id, 'json_data': '{}'})
-                        if response.status_code in [200, 302]:
+                        if str(response.status_code)[:1] in ['2', '3']:
                             continue
                     except Exception, e:
                         print(e)
                     try: # Student lottery POST data
                         response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'json_data': '{"interested": [1, 5, 3, 9], "not_interested": [4, 6, 10]}'})
-                        if response.status_code in [200, 302]:
+                        if str(response.status_code)[:1] in ['2', '3']:
                             continue
                     except Exception, e:
                         print(e)
                     try: # Different student lottery POST data
                         response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'json_data': '{"' + event_id + '": {}}'})
-                        if response.status_code in [200, 302]:
+                        if str(response.status_code)[:1] in ['2', '3']:
                             continue
                     except Exception, e:
                         print(e)
