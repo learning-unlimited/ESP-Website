@@ -12,6 +12,13 @@ User search modules
 - The default minimum and maximum grade filters are now set to the minimum and maximum grades of the program (to prevent erroneous emails to very old students)
 - There is now a list of commonly used searches to simplify the user selection process
 - Printables that use the user search controller now have default settings
+- Improved the performance of searching for users (hotfixed to Stable Release 13)
+
+Program records
+~~~~~~~~~~~~~~~
+- Records can now be bulk set for an arbitrary user list with the new User Records Module
+- A set of records can be set as required for student or teacher registration using tags ("student_reg_records" and "teacher_reg_records")
+- These records are shown on the student/teacher registration mainpage, the userview page, the student checklist printable, and the teacher list printable
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
@@ -35,4 +42,5 @@ Minor bug fixes
 - Fixed the link in the admin deadline banner for several pages
 - Fixed the email address for some users on the userview page
 - Fixed the color of messages on the deadline management page
-
+- Fixed bugs related to the registration progress bar interface
+- Fixed the order of modules on the student and teacher registration mainpages
