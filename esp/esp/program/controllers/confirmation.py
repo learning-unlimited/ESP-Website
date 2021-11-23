@@ -37,7 +37,7 @@ from esp.program.models import Program, ClassSection, ClassSubject
 from esp.users.models import ESPUser, Record
 from esp.program.modules.module_ext import DBReceipt
 
-from django.template import Template, Context
+from django.template import Template
 from django.template.loader import select_template
 from esp.dbmail.models import send_mail
 
@@ -55,7 +55,7 @@ class ConfirmationEmailController(object):
             except:
                 receipt_template = select_template(['program/confemails/%s_confemail.txt' %(program.id),'program/confirm_email.txt'])
             send_mail("Thank you for registering for %s!" %(program.niceName()), \
-                      receipt_template.render(Context({'user': user, 'program': program}, autoescape=False)), \
+                      receipt_template.render({'user': user, 'program': program}), \
                       (ESPUser.email_sendto_address(program.director_email, program.niceName() + " Directors")), \
                       [user.email], True)
 

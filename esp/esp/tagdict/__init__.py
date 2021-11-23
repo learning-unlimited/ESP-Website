@@ -422,6 +422,20 @@ all_global_tags = {
         'category': 'manage',
         'is_setting': True,
     },
+    'teacher_home_page': {
+        'is_boolean': False,
+        'help_text': 'The page to which teachers get redirected after logging in (can be a relative or absolute page)',
+        'default': "/teach/index.html",
+        'category': 'teach',
+        'is_setting': True,
+    },
+    'student_home_page': {
+        'is_boolean': False,
+        'help_text': 'The page to which students get redirected after logging in (can be a relative or absolute page)',
+        'default': "/learn/index.html",
+        'category': 'learn',
+        'is_setting': True,
+    },
     'default_restypes': {
         'is_boolean': False,
         'help_text': 'A JSON list of the resource types (by name) to create when making a new program',
@@ -1021,6 +1035,21 @@ all_program_tags = {
         'help_text': 'The name used to refer to a section moderator throughout the website.',
         'default': 'Moderator',
         'category': 'moderate',
+        'is_setting': True,
+    },
+    # For the next two, we populate the widgets as MultipleChoiceFields when initializing the form to avoid import loops
+    'student_reg_records': {
+        'is_boolean': False,
+        'help_text': 'Additional records that must be completed for student registration (e.g., if a form must be submitted via email).',
+        'default': '',
+        'category': 'learn',
+        'is_setting': True,
+    },
+    'teacher_reg_records': {
+        'is_boolean': False,
+        'help_text': 'Additional records that must be completed for teacher registration (e.g., if a form must be submitted via email).',
+        'default': '',
+        'category': 'teach',
         'is_setting': True,
     },
 }

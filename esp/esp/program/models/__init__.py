@@ -1065,12 +1065,6 @@ class Program(models.Model, CustomFormsLinkModel):
         """ Gets a list of modules for this program. """
         from esp.program.modules import base
 
-        def cmpModules(mod1, mod2):
-            """ comparator function for two modules """
-            try:
-                return cmp(mod1.seq, mod2.seq)
-            except AttributeError:
-                return 0
         if tl:
             modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
                  for module in self.program_modules.filter(module_type = tl)]
@@ -1078,7 +1072,7 @@ class Program(models.Model, CustomFormsLinkModel):
             modules =  [ base.ProgramModuleObj.getFromProgModule(self, module, old_prog)
                  for module in self.program_modules.all()]
 
-        modules.sort(cmpModules)
+        modules.sort(key=lambda mod: (not mod.required, mod.seq))
         return modules
     getModules_cached.depend_on_row('program.Program', lambda prog: {'self': prog})
     getModules_cached.depend_on_model('program.ProgramModule')
@@ -1094,6 +1088,7 @@ class Program(models.Model, CustomFormsLinkModel):
         if user:
             for module in modules:
                 module.setUser(user)
+            modules.sort(key=lambda mod: not mod.isCompleted())
         #   Populate the view attributes so they can be cached
         for module in modules:
             module.get_all_views()

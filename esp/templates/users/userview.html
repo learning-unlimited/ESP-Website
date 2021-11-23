@@ -105,6 +105,22 @@
                     {% endif %}
                 {% endfor %}
                 </table>
+                {% if learn_records %}
+                    <table class="table-condensed modules">
+                    {% for record in learn_records %}
+                        <tr>
+                            <td>
+                                {% if record.isCompleted %}
+                                    <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                                {% else %}
+                                    <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                                {% endif %}
+                                {{ record.full_event }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </table>
+                {% endif %}
             {% else %}
                 (Student has no profile for this program)
             {% endif %}
@@ -146,6 +162,22 @@
                     {% endif %}
                 {% endfor %}
                 </table>
+                {% if teach_records %}
+                    <table class="table-condensed modules">
+                    {% for record in teach_records %}
+                        <tr>
+                            <td>
+                                {% if record.isCompleted %}
+                                    <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                                {% else %}
+                                    <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                                {% endif %}
+                                {{ record.full_event }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </table>
+                {% endif %}
             {% else %}
                 (Teacher has no profile for this program)
             {% endif %}
