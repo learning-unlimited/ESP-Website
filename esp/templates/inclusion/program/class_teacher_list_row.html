@@ -1,5 +1,7 @@
 {# expects program, class, can_req_cancel, survey_results, crmi (ClassRegModuleInfo), user #}
 
+{% load users %}
+
 <tr{% if not cls.isReviewed %} style="color: gray"{% endif %}{% if cls.isRejected or cls.isCancelled %} style="color: red"{% endif %}>
   <td class="clsleft classname bordertop2" colspan="3">
   {% block cls_title %}
@@ -109,7 +111,7 @@ Popup div for class cancellation request
 {% if crmi.allow_coteach %}
 <tr>
   <td class="clsleft"><b>Coteachers (<a href="mailto:{{ cls.emailcode }}-teachers@{{ email_host_sender }}">email</a>): </b></td>
-  <td class="clsmiddle" colspan="5">{% for t in cls.get_teachers %}{% ifnotequal t user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>
+  <td class="clsmiddle" colspan="5">{% for t in cls.teachers.all|remove_from_qs:user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
   <td class="clsright">
   {% block cls_row_4_buttons %}
     <form method="post" action="/teach/{{program.getUrlBase}}/coteachers">

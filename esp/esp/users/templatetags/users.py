@@ -17,3 +17,8 @@ def getGradeForProg(user, prog_id):
 def perm_nice_name(perm):
     """Return the nice name of the permission type."""
     return Permission.nice_name_lookup(perm)
+
+@register.filter
+def remove_from_qs(queryset, user):
+    """Remove a given user from a Queryset of users."""
+    return queryset.exclude(id=user.id)
