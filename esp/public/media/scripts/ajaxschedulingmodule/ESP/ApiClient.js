@@ -1,6 +1,6 @@
 function ApiClient() {
     /**
-     * Fetch the change log from the server
+     * Fetch the change log from the server using ajax calls to the python views
      *
      * @param last_fetched_index: The previous index we retrieved from the server
      * @param callback: If successful, this function will be called. Takes one param

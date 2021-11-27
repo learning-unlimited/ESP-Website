@@ -1,11 +1,12 @@
 /**
- * Stores the section data and provides helper methods for accessing and scheduling
- * sections.
+ * Stores the section data and the UI state including the selected section, filter, and search term.
+ * Provides helper methods for accessing and scheduling sections.
+ * Has a pointer to the Matrix when bindMatrix is called.
  *
  * @params sections_data: The raw section data
  * @params section_details_data: The AJAX section detail data
  * @params teacher_data: The raw teacher data for populating the sections
- * @params scheduleAssignments: The scheule assignments
+ * @params scheduleAssignments: The schedule assignments
  * @params apiClient: The object that can communicate with the server
  */
 function Sections(sections_data, section_details_data, categories_data, teacher_data, moderator_data, scheduleAssignments, apiClient) {
@@ -346,7 +347,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                 }.bind(this));
                 availabilities.push(teacher_availabilities);
             }.bind(this));
-            availableTimeslots = helpersIntersection(availabilities, true);
+            availableTimeslots = _.intersection(...availabilities); // From the lodash library
         }
         return [availableTimeslots, already_teaching];
     };

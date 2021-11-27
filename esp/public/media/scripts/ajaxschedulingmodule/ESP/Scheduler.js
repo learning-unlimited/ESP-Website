@@ -1,5 +1,7 @@
 /**
  * The object that initializes and renders all the pieces of the scheduler
+ * Has Timeslots, Sections, MessagePanel, SectionInfoPanel, SectionCommentDialog,
+ * Matrix, Directory, and ChangelogFetcher (and possibly ModeratorDirectory)
  *
  * @param data: The data fetched from the server
  * @param directoryEl: The jquery element that will become the directory
@@ -17,10 +19,9 @@ function Scheduler(
     messageEl,
     sectionInfoEl,
     sectionDialogEl,
-    last_applied_index,
     update_interval
 ) {
-    // Set up all the data and objects
+    // Set up all the data, objects, handlers, and keyboard shortcuts
 
     // Populate data with resources
     $j.each(data.rooms, function(index, room) {
@@ -100,8 +101,7 @@ function Scheduler(
 
     this.changelogFetcher = new ChangelogFetcher(
         this.matrix,
-        new ApiClient(),
-        last_applied_index
+        new ApiClient()
     );
 
     // Set up keyboard shortcuts
