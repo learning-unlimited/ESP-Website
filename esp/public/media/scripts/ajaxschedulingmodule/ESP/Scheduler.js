@@ -76,7 +76,14 @@ function Scheduler(
     }
 
     this.messagePanel = new MessagePanel(messageEl,
-                                         "Welcome to the Ajax Scheduler!");
+                                         "Welcome to the Ajax Scheduler!<br><br>" +
+                                         "Delete: unschedule the selected section<br>" +
+                                         "Escape: unselect the selected section" + (has_moderator_module === "True" ? "/moderator": "") + "<br>" +
+                                         "F1: open the 'Classes' tab<br>" +
+                                         "F2: open the 'Room Filters' tab<br>" +
+                                         "F3: open the 'Checks' tab<br>" +
+                                         (has_moderator_module === "True" ? "F4: open the 'Moderators' tab<br>": "") +
+                                         "/: Search for a class");
     this.sectionCommentDialog = new SectionCommentDialog(sectionDialogEl, this.sections);
     this.sectionInfoPanel = new SectionInfoPanel(sectionInfoEl,
                                                  this.sections,
@@ -107,28 +114,28 @@ function Scheduler(
     // Set up keyboard shortcuts
     $j("body").keydown(function(evt) {
         // console.log(evt);
-        if(evt.keyCode == 46) { // delete is pressed
+        if(evt.keyCode == 46) { // delete is pressed: unschedule the selected section
             this.sections.unscheduleSection(this.sections.selectedSection);
-        } else if(evt.keyCode == 27) { // escape is pressed
+        } else if(evt.keyCode == 27) { // escape is pressed: unselect the currently selected section and/or moderator
             this.sections.unselectSection()
             if(has_moderator_module === "True") this.moderatorDirectory.unselectModerator()
-        } else if(evt.keyCode == 112) { // F1 is pressed
+        } else if(evt.keyCode == 112) { // F1 is pressed: open the first tab (class directory)
             evt.preventDefault();
             $j("#side-panel").tabs({active: 0});
-        } else if(evt.keyCode == 113) { // F2 is pressed
+        } else if(evt.keyCode == 113) { // F2 is pressed: open the second tab (room filters)
             evt.preventDefault();
             $j("#side-panel").tabs({active: 1});
-        } else if(evt.keyCode == 114) { // F3 is pressed
+        } else if(evt.keyCode == 114) { // F3 is pressed: open the third tab (scheduling checks)
             evt.preventDefault();
             $j("#side-panel").tabs({active: 2});
-        } else if(evt.keyCode == 115) { // F4 is pressed
+        } else if(evt.keyCode == 115) { // F4 is pressed: open the fourth tab (moderator directory)
             evt.preventDefault();
             $j("#side-panel").tabs({active: 3});
         }
     }.bind(this));
 
     $j('body').keyup(function(evt) {
-        if(evt.keyCode == 191) { // '/' is pressed
+        if(evt.keyCode == 191) { // '/' is pressed: open the class directory and focus on the search box
             $j("#side-panel").tabs({active: 0});
             $j("#class-search-text").focus();
         }
