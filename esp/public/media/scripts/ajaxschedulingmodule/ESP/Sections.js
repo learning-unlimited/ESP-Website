@@ -241,6 +241,13 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             case "availability":
                 returned_sections.sort((a, b) => this.getAvailableTimeslots(a)[0].length - this.getAvailableTimeslots(b)[0].length);
                 break;
+            case "hosedness": // proportion of total availability that teachers are already teaching
+               returned_sections.sort(function(a, b) {
+                   var a_times = this.getAvailableTimeslots(a);
+                   var b_times = this.getAvailableTimeslots(b);
+                   return a_times[1].length/(a_times[0].length + a_times[1].length) - b_times[1].length/(b_times[0].length + b_times[1].length);
+               }.bind(this));
+               break;
         }
         // reverse if descending selected
         if(this.sortObject.type === "des") returned_sections.reverse()
