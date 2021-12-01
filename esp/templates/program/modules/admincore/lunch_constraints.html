@@ -9,9 +9,21 @@
 
 {% block content %}
     <h1>{{program.niceName}} Lunch Constraints</h1>
-    <br />
     <p>Please select the timeslots you would like to be used for lunch.</p>
     <p>You can also use this page to setup lunch scheduling constraints, which will enforce that each student have at least one lunch block per day.</p>
+
+    {% if POST and saved %}
+        <div class="alert alert-success">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            Settings successfully saved.
+        </div>
+    {% endif %}
+    {% if POST and not saved %}
+        <div class="alert alert-danger">
+            <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                There was an error with saving your settings. Please try again.
+        </div><br />
+    {% endif %}
 
     <div id="program_form">
     <form action="/manage/{{ program.getUrlBase }}/lunch_constraints/" method="post">
@@ -21,19 +33,6 @@
     <tr><td colspan="2" align="center"><input type="submit" value="Submit" class="btn btn-primary" /></td></tr>
     </table>
     </form>
-    <br /><br />
-    {% if POST and saved %}
-            <div class="alert alert-success">
-            <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-                Settings successfully saved.
-            </div>
-    {% endif %}
-    {% if POST and not saved %}
-        <div class="alert alert-danger">
-            <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-                There was an error with saving your settings. Please try again.
-        </div><br />
-    {% endif %}
     </div>
 
 {% include "program/modules/admincore/returnlink.html" %}
