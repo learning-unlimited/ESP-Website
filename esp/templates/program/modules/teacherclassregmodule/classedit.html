@@ -57,7 +57,10 @@
 
 {% if form.errors %}
 <p align="center">
-<font color="red" size="+1">Please fix the errors in the form below.</font>
+<div class="alert alert-danger">
+    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        Please fix the errors in the form below.
+</div>
 </p>
 {% endif %}
 
