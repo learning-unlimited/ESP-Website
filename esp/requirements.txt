@@ -10,7 +10,6 @@ django-form-utils==1.0.3 # Provides BetterForm (used in customforms) and BetterM
 django-formtools==2.1 # Used once in customforms
 django-localflavor==1.1 # Provides address and phone number fields
 django-reversion==1.10.0 # Handles versioning, currently for QSD and TemplateOverrides
-django-selenium==0.9.8 # Runs selenium tests which probably don't work anymore
 django-sendgrid-v5==0.9.0 # Provides support for using SendGrid as the EmailBackend
 django-vanilla-views==1.0.4 # Provides simpler generic views, currently used only for grade change requests
 git+https://github.com/learning-unlimited/django-admin-tools.git@esp # Extends Django Admin
@@ -31,7 +30,7 @@ pyinotify # Makes dev servers auto-reload
 pylibmc==1.5.0 # Talks to memcached
 pytz==2015.4 # Required for timezone support
 raven # Required for Sentry error reporting
-selenium==2.44.0 # Runs selenium tests which probably don't work anymore
+selenium<4 # Runs selenium tests (version 4 dropped Python 2.7 support)
 shortuuid==0.4.2 # django-extensions dependency
 stripe==1.19.1 # Required for credit card processing
 twilio==3.6.5 # Required for text messaging support
