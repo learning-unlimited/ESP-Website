@@ -74,7 +74,7 @@ td, th {
             {% if not forloop.first %}
                 </ul>
             {% endif %}
-            <li><a href="#class{{ sec.parent_class.id }}">Responses for {{ sec.parent_class.emailcode }}: {{ sec.title }}</a></li>
+            <li><a href="#class{{ sec.parent_class.id }}">Responses for {{ sec.parent_class.emailcode }}: <div class="tex2jax_ignore">{{ sec.title }}</div></a></li>
             <ul style="list-style-type:circle;">
         {% endifchanged %}
         <li><a href="#class{{ sec.parent_class.id }}-{{ sec.index }}">Responses for Section {{ sec.index }}</a></li>
@@ -99,7 +99,7 @@ td, th {
             </table></br></br>
             {% endif %}
             <table class="fullwidth bordered">
-            <tr><th><h2><a name="class{{ c.class.parent_class.id }}"></a>Responses for {{ sec.parent_class.emailcode }}: {{ sec.title }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2></th></tr>
+            <tr><th><h2><a name="class{{ c.class.parent_class.id }}"></a>Responses for {{ sec.parent_class.emailcode }}: <div class="tex2jax_ignore">{{ sec.title }}</div><span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2></th></tr>
             {% endifchanged %}
             <tr style="border-top: 1px dashed black;"><th><h3><a name="class{{ sec.parent_class.id }}-{{ sec.index }}"></a>Responses for Section {{ sec.index }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h3></th></tr>
             {% render_responses_for_section sec s tl %}
@@ -115,7 +115,7 @@ td, th {
         </table></br></br>
         {% endif %}
         <table class="fullwidth bordered">
-        <tr><th><h2><a name="class{{ sec.parent_class.id }}"></a>Responses for {{ sec.parent_class.emailcode }}: {{ sec.title }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2></th></tr>
+        <tr><th><h2><a name="class{{ sec.parent_class.id }}"></a>Responses for {{ sec.parent_class.emailcode }}: <div class="tex2jax_ignore">{{ sec.title }}</div><span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2></th></tr>
         {% endifchanged %}
         <tr style="border-top: 1px dashed black;"><th><h3><a name="class{{ sec.parent_class.id }}-{{ sec.index }}"></a>Responses for Section {{ sec.index }}<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h3></th></tr>
         {% render_responses_for_section sec survey tl %}
