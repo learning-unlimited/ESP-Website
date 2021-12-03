@@ -36,14 +36,12 @@ from esp.middleware.esperrormiddleware import AjaxErrorMiddleware
 from esp.program.models.class_ import ClassSection
 from esp.program.tests import ProgramFrameworkTest
 
-from django_selenium.testcases import SeleniumTestCase
 import random
 import json
 import logging
 logger = logging.getLogger(__name__)
 
-# TODO(gkanwar): Remove non-selenium tests from this TestCase
-class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
+class AjaxStudentRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
 
@@ -54,7 +52,6 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
             'num_rooms': 6,
             } )
         ProgramFrameworkTest.setUp(self, *args, **kwargs)
-        SeleniumTestCase.setUp(self)
 
         self.add_student_profiles()
         self.schedule_randomly()
@@ -100,7 +97,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
             error_msg = response_dict['error']
 
         self.assertTrue(error_received)
-        self.assertTrue(error_msg == error_str, 'Unexpected Ajax error: "%s", expected "%s"' % (error_msg, error_str))
+        self.assertTrue(str(error_msg) == error_str, 'Unexpected Ajax error: "%s", expected "%s"' % (error_msg, error_str))
 
     def test_ajax_schedule(self):
         program = self.program
@@ -185,10 +182,4 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
         #   Clear other timeslot and check that the schedule is empty
         response = self.client.get('/learn/%s/ajax_clearslot/%d' % (program.getUrlBase(), sec2.meeting_times.all()[0].id), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_empty_schedule(response)
-
-    def test_lottery(self):
-        # TODO(gkanwar): Make this test actually do something, or remove it
-        program = self.program
-
-        self.webdriver.get('/learn/%s/lotterystudentreg' % program.getUrlBase())
 
