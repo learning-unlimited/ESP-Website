@@ -289,8 +289,6 @@ DEFAULT_REDIRECT = '/myesp/redirect'
 USE_MAILMAN = False
 MAILMAN_PATH = '/usr/lib/mailman/bin/'
 
-SELENIUM_PATH = os.path.join(os.path.dirname(__file__), '../../../dependencies/selenium-server-standalone-2.9.0/selenium-server-standalone-2.9.0.jar')
-
 AUTHENTICATION_BACKENDS = (
     'esp.utils.auth_backend.ESPAuthBackend',
     )
