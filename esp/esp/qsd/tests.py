@@ -40,6 +40,8 @@ from esp.users.models import ESPUser
 
 from django.template import Template, Context
 
+from esp.qsd.seltests import TestQsdCachePurging # Run Selenium tests with regular tests
+
 class QSDCorrectnessTest(TestCase):
     """ Tests to ensure that QSD-related caches are cleared appropriately. """
 
