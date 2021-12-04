@@ -58,7 +58,6 @@ class TestQsdCachePurging(StaticLiveServerTestCase):
         for x in range(0, len(elem.text)):
             elem.send_keys(Keys.DELETE)
         elem.send_keys(self.TEST_STRING)
-        #elem.send_keys(Keys.TAB)
         elem = self.selenium.find_element_by_class_name("btn-success")
         elem.click()
         WebDriverWait(self.selenium, 10).until(noActiveAjaxJQuery)
@@ -102,6 +101,7 @@ class TestQsdCachePurging(StaticLiveServerTestCase):
             self.selenium.get('%s%s' % (self.live_server_url, "/"))
             try_normal_login(self.selenium, self.live_server_url, self.admin_user.username, self.PASSWORD_STRING)
             self.selenium.get('%s%s' % (self.live_server_url, page))
+            self.assertTrue(self.selenium.find_element_by_class_name("qsd_header").is_displayed(), "Admin should be able to see the QSD header on " + page)
             self.editQSD()
 
             self.selenium.delete_all_cookies()
@@ -112,7 +112,7 @@ class TestQsdCachePurging(StaticLiveServerTestCase):
             self.selenium.get('%s%s' % (self.live_server_url, "/"))
             try_normal_login(self.selenium, self.live_server_url, self.qsd_user.username, self.PASSWORD_STRING)
             self.selenium.get('%s%s' % (self.live_server_url, page))
-            self.assertFalse(self.selenium.find_element_by_class_name("qsd_header").is_displayed(), "Non-admin shouldn't be able to see the QSD header")
+            self.assertFalse(self.selenium.find_element_by_class_name("qsd_header").is_displayed(), "Non-admin shouldn't be able to see the QSD header on " + page)
 
             self.selenium.delete_all_cookies()
             self.selenium.get('%s%s' % (self.live_server_url, page))
