@@ -207,3 +207,8 @@ button.sidetoolbar {
 .ft_c {
     height: unset !important; /* allows us to hide rows properly */
 }
+
+#message-div strong {
+    font-family: Courier New;
+    font-size: large;
+}

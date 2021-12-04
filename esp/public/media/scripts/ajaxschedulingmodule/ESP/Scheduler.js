@@ -79,14 +79,14 @@ function Scheduler(
         }
 
         this.messagePanel = new MessagePanel(messageEl,
-                                             "Welcome to the Ajax Scheduler!<br><br>" +
-                                             "Delete: unschedule the selected section<br>" +
-                                             "Escape: unselect the selected section" + (has_moderator_module === "True" ? "/moderator": "") + "<br>" +
-                                             "F1: open the 'Classes' tab<br>" +
-                                             "F2: open the 'Room Filters' tab<br>" +
-                                             "F3: open the 'Checks' tab<br>" +
-                                             (has_moderator_module === "True" ? "F4: open the 'Moderators' tab<br>": "") +
-                                             "/: Search for a class");
+                                             "<i>Welcome to the Ajax Scheduler!</i><br><br>" +
+                                             "<strong>Delete</strong>: unschedule the selected section<br>" +
+                                             "<strong>Escape</strong>: unselect the selected section" + (has_moderator_module === "True" ? "/moderator": "") + "<br>" +
+                                             "<strong>F1</strong>: open the 'Classes' tab<br>" +
+                                             "<strong>F2</strong>: open the 'Room Filters' tab<br>" +
+                                             "<strong>F3</strong>: open the 'Checks' tab<br>" +
+                                             (has_moderator_module === "True" ? "<strong>F4</strong>: open the 'Moderators' tab<br>": "") +
+                                             "<strong>/</strong>: Search for a class");
         this.sectionCommentDialog = new SectionCommentDialog(sectionDialogEl, this.sections);
         this.sectionInfoPanel = new SectionInfoPanel(sectionInfoEl,
                                                      this.sections,
