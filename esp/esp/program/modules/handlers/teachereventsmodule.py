@@ -123,7 +123,11 @@ class TeacherEventsModule(ProgramModuleObj):
         If there are teacher training timeslots, requires signing up for them.
         If there are teacher interview timeslots, requires those too.
         """
-        entries = self.entriesByTeacher(get_current_request().user)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        entries = self.entriesByTeacher(user)
         return (self.getTimes('interview').count() == 0 or entries['interview'].count() > 0) and (self.getTimes('training').count() == 0 or entries['training'].count() > 0)
 
     # Views

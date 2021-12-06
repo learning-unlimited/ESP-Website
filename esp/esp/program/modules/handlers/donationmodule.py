@@ -125,7 +125,11 @@ class DonationModule(ProgramModuleObj):
 
     def isCompleted(self):
         """Whether the user made a decision about donating to LU."""
-        return Record.objects.filter(user=get_current_request().user, program=self.program, event=self.event).exists()
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return Record.objects.filter(user=user, program=self.program, event=self.event).exists()
 
     def students(self, QObject = False):
         QObj = Q(transfer__line_item=self.line_item_type())

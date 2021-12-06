@@ -29,6 +29,7 @@ body { font-family: georgia; }
 }
 </style>
 </head>
+{% load users %}
 <body>
 <div class="title" style="text-align: center;">
 <span>Student Checklist for {{program.niceName}}</span>
@@ -42,6 +43,9 @@ body { font-family: georgia; }
    <th>Amount Due</th>
    <th>Medical Form?</th>
    <th>Liability Form?</th>
+   {% for rec in other_records %}
+   <th>{{ rec|getRecordDescription }}?</th>
+   {% endfor %}
    <th>Aid Status</th>
    <th>Name</th>
    <th>Email</th>
@@ -56,6 +60,9 @@ body { font-family: georgia; }
    <td>${{ student.amount_due|floatformat:2 }}</td>
    <td><div class="box">{% if student.med %}X{% endif %}</div></td>
    <td><div class="box">{% if student.liab %}X{% endif %}</div></td>
+   {% for rec in student.other %}
+   <td><div class="box">{% if rec %}X{% endif %}</div></td>
+   {% endfor %}
    <td>{{ student.finaid }}</td>
    <td>{{ student.user.name }}</td>
    <td>{{ student.user.email}}</td>
