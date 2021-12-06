@@ -32,6 +32,10 @@ Minor new features
 - Added a warning banner to the top of all required modules (this banner and the deadline banner are also now included in all themes)
 - Student and teacher registration status is now shown on the userview page
 - Fixed the list of programs that are shown after updating your profile (filtered by grade for students, now shown for volunteers)
+- Admins can now set custom landing pages for students and teachers with the "student_home_page" and "teacher_home_page" tags, respectively
+- Teachers no longer show up as their own coteachers on the teacher registration mainpage
+- The student schedules pdf is now downloaded as a file instead of opening in the browser
+- Various error and success messages are now shown as banners to increase visibility
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -44,3 +48,5 @@ Minor bug fixes
 - Fixed the color of messages on the deadline management page
 - Fixed bugs related to the registration progress bar interface
 - Fixed the order of modules on the student and teacher registration mainpages
+- Fixed the login redirect behavior when a user is already logged in
+- LaTeX in class titles is no longer rendered on the survey results page to prevent errors
