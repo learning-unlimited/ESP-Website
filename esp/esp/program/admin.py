@@ -54,6 +54,8 @@ from esp.accounting.models import FinancialAidGrant
 
 from esp.utils.admin_user_search import default_user_search
 
+from esp.users.admin import ExpiredListFilter
+
 class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler')
     search_fields = ['link_title', 'admin_title', 'handler']
@@ -232,7 +234,7 @@ class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date',)
     actions = [ expire_student_registrations, renew_student_registrations ]
     search_fields = default_user_search() + ['id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
-    list_filter = ['section__parent_class__parent_program', 'relationship']
+    list_filter = ['section__parent_class__parent_program', 'relationship', ExpiredListFilter]
     date_hierarchy = 'start_date'
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 
