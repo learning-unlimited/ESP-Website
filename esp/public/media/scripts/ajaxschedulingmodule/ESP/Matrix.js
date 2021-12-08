@@ -1,12 +1,13 @@
 /**
- * The grid of cells that displays the schedule.
+ * The grid of cells (Cells) that displays the schedule.
+ * Has pointers to Sections, Timeslots, and the rooms data
  *
  * @param timeslots: A Timeslots object corresponding to times available for classes
  * @param rooms: The rooms that are available for scheduling. Keys are ids values are room data.
  * @param sections: A list of all sections for the program
  * @param el: The element to morph into the matrix
  * @param messsagePanel: The panel that can display messages and errors
- * @param secionInfoPanel: The panel that displays section info
+ * @param sectionInfoPanel: The panel that displays section info
  * @param moderatorDirectory: The interface for moderator scheduling
  */
 function Matrix(

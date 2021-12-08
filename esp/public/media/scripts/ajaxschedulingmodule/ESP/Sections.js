@@ -1,11 +1,12 @@
 /**
- * Stores the section data and provides helper methods for accessing and scheduling
- * sections.
+ * Stores the section data and the UI state including the selected section, filter, and search term.
+ * Provides helper methods for accessing and scheduling sections.
+ * Has a pointer to the Matrix when bindMatrix is called.
  *
  * @params sections_data: The raw section data
  * @params section_details_data: The AJAX section detail data
  * @params teacher_data: The raw teacher data for populating the sections
- * @params scheduleAssignments: The scheule assignments
+ * @params scheduleAssignments: The schedule assignments
  * @params apiClient: The object that can communicate with the server
  */
 function Sections(sections_data, section_details_data, categories_data, teacher_data, moderator_data, scheduleAssignments, apiClient) {
@@ -240,6 +241,13 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             case "availability":
                 returned_sections.sort((a, b) => this.getAvailableTimeslots(a)[0].length - this.getAvailableTimeslots(b)[0].length);
                 break;
+            case "hosedness": // proportion of total availability that teachers are already teaching
+               returned_sections.sort(function(a, b) {
+                   var a_times = this.getAvailableTimeslots(a);
+                   var b_times = this.getAvailableTimeslots(b);
+                   return a_times[1].length/(a_times[0].length + a_times[1].length) - b_times[1].length/(b_times[0].length + b_times[1].length);
+               }.bind(this));
+               break;
         }
         // reverse if descending selected
         if(this.sortObject.type === "des") returned_sections.reverse()
@@ -346,7 +354,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                 }.bind(this));
                 availabilities.push(teacher_availabilities);
             }.bind(this));
-            availableTimeslots = helpersIntersection(availabilities, true);
+            availableTimeslots = _.intersection(...availabilities); // From the lodash library
         }
         return [availableTimeslots, already_teaching];
     };
@@ -542,32 +550,42 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
      * @param remote: true if this setComment request comes from the server and not local user
      */
     this.setComment = function(section, comment, locked, remote){
+        updateCells = function() {
+            var assignment = this.scheduleAssignments[section.id];
+            if(assignment.room_id) {
+                $j.each(assignment.timeslots, function(index, timeslot) {
+                    this.matrix.getCell(assignment.room_id, timeslot).update();
+                }.bind(this));
+            }
+        }.bind(this);
+
         if(section.schedulingComment == comment && section.schedulingLocked == locked) {
             return;
         }
 
-        // go ahead and set section to new status
-        // unlike other cases, we don't revert this update if the API call fails
-        // this is because the comment/locked is a front-end helper
-        //   if API call fails, user will still get message, and this way user
-        //   can anyway continue scheduling this section
+        var old_comment = section.schedulingComment;
+        var old_locked = section.schedulingLocked;
+
         section.schedulingComment = comment;
         section.schedulingLocked = locked;
 
         if(!remote) {
-            this.apiClient.set_comment(section.id, comment, locked, function(){}, function(msg){
+            this.apiClient.set_comment(section.id, comment, locked, function(){
+                // if successful, update the appearance of the cells
+                updateCells();
+                this.unselectSection();
+            }.bind(this), function(msg){
+                // if unsuccessful, revert the comment locked status and show an error
+                section.schedulingComment = old_comment;
+                section.schedulingLocked = old_locked;
                 this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
                 console.log(msg);
+                this.unselectSection();
             }.bind(this));
+        } else {
+            // if this is from the changelog, just update the appearance of the cells
+            updateCells();
             this.unselectSection();
-        }
-
-        // update cells in case we switched the locked flag
-        var assignment = this.scheduleAssignments[section.id];
-        if(assignment.room_id) {
-            $j.each(assignment.timeslots, function(index, timeslot) {
-                this.matrix.getCell(assignment.room_id, timeslot).update();
-            }.bind(this));
         }
     }
 

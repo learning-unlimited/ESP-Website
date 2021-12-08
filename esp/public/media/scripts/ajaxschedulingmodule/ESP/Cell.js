@@ -1,5 +1,6 @@
 /**
  * This is a cell that can have class sections assigned to it.
+ * Used in the matrix and the directory.
  *
  * @param el: The jquery element that this cell should be rendered on.
  * @param section: The section that should be rendered on this cell (may be null).
@@ -30,6 +31,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
     this.disabled = false;
 
     this.section = null;
+    // Ghost sections are created when you are scheduling a class and hover over a cell
     this.ghostSection = false;
     this.selected = false;
 
@@ -369,7 +371,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
     };
 
     /**
-     * Add a section as a ghost.
+     * Add a section as a ghost (when scheduling a section and hovering over a cell).
      *
      * @param section: The section to display.
      */

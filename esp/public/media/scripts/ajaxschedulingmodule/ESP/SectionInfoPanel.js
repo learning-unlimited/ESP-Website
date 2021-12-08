@@ -63,6 +63,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         } else if (section.schedulingComment) {
             commentText = 'Edit Comment';
         }
+        // Add a button that shows the sectionCommentDialog
         var commentButton = $j("<button class='sidetoolbar'>" + commentText + "</button>");
         commentButton
             .button()
