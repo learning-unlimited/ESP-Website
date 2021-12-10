@@ -37,7 +37,7 @@ Teacher Events include (for now) <a href="#training">teacher training</a> and <a
     <tr><th colspan="5"><a name="interview"></a>Teacher Interviews</th></tr>
     <tr><th style="width:25%">Description</th><th style="width:18%">Start</th><th style="width:7%">End</th><th style="width:45%">Teachers</th><th style="width:5%">Delete</th></tr>
     {% with interview_times as timeslots %}
-        {% include "program/modules/teachereventsmodule/event_row.html" %}
+        {% include "program/modules/teachereventsmanagemodule/event_row.html" %}
     {% endwith %}
 </table>
 <br><br>
@@ -45,7 +45,7 @@ Teacher Events include (for now) <a href="#training">teacher training</a> and <a
     <tr><th colspan="5"><a name="training"></a>Teacher Training</th></tr>
     <tr><th style="width:25%">Description</th><th style="width:18%">Start</th><th style="width:7%">End</th><th style="width:45%">Teachers</th><th style="width:5%">Delete</th></tr>
     {% with training_times as timeslots %}
-        {% include "program/modules/teachereventsmodule/event_row.html" %}
+        {% include "program/modules/teachereventsmanagemodule/event_row.html" %}
     {% endwith %}
 </table>
 </div>

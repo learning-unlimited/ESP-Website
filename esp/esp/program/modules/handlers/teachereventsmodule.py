@@ -68,38 +68,13 @@ class TeacherEventsModule(ProgramModuleObj):
     # General Info functions
     @classmethod
     def module_properties(cls):
-        return [ {
+        return {
             "module_type": "teach",
             'required': False,
             'admin_title': 'Teacher Training and Interview Signups',
             'link_title': 'Sign up for Teacher Training and Interviews',
             'seq': 5,
             'choosable': 0,
-        }, {
-            "module_type": "manage",
-            'required': False,
-            'admin_title': 'Manage Teacher Training and Interviews',
-            'link_title': 'Teacher Training and Interviews',
-            'choosable': 0,
-        } ]
-
-    def teachers(self, QObject = False):
-        """ Returns lists of teachers who've signed up for interviews and for teacher training. """
-        if QObject is True:
-            return {
-                'interview': Q(useravailability__event__event_type=self.event_types()['interview'], useravailability__event__program=self.program),
-                'training': Q(useravailability__event__event_type=self.event_types()['training'], useravailability__event__program=self.program)
-            }
-        else:
-            return {
-                'interview': ESPUser.objects.filter( useravailability__event__event_type=self.event_types()['interview'], useravailability__event__program=self.program ).distinct(),
-                'training': ESPUser.objects.filter( useravailability__event__event_type=self.event_types()['training'], useravailability__event__program=self.program ).distinct()
-            }
-
-    def teacherDesc(self):
-        return {
-            'interview': """Teachers who have signed up for an interview""",
-            'training':  """Teachers who have signed up for teacher training""",
         }
 
     # Helper functions
@@ -113,13 +88,10 @@ class TeacherEventsModule(ProgramModuleObj):
             'training': UserAvailability.objects.filter( event__event_type=self.event_types()['training'], user=user, event__program=self.program ),
         }
 
-    def entriesBySlot(self, event):
-        return UserAvailability.objects.filter(event=event)
-
     # Per-user info
     def isCompleted(self):
         """
-        Return true iff user has signed up for everything possible.
+        Return true if user has signed up for everything possible.
         If there are teacher training timeslots, requires signing up for them.
         If there are teacher interview timeslots, requires those too.
         """
@@ -166,50 +138,6 @@ class TeacherEventsModule(ProgramModuleObj):
                 data['training'] = entries['training'][0].event.id
             form = TeacherEventSignupForm(self, initial=data)
         return render_to_response( self.baseDir()+'event_signup.html', request, {'prog':prog, 'form': form} )
-
-    @main_call
-    @needs_admin
-    def teacher_events(self, request, tl, one, two, module, extra, prog):
-        context = {}
-
-        if request.method == 'POST':
-            data = request.POST
-
-            if data['command'] == 'delete':
-                #   delete timeslot
-                ts = Event.objects.get(id=data['id'])
-                ts.delete()
-
-            elif data['command'] == 'add':
-                #   add/edit timeslot
-                form = TimeslotForm(data)
-                if form.is_valid():
-                    new_timeslot = Event()
-
-                    # decide type
-                    type = "training"
-
-                    if data.get('submit') == "Add Interview":
-                        type = "interview"
-
-                    form.save_timeslot(self.program, new_timeslot, type)
-                else:
-                    context['timeslot_form'] = form
-
-        if 'timeslot_form' not in context:
-            context['timeslot_form'] = TimeslotForm()
-
-        interview_times = self.getTimes('interview')
-        training_times = self.getTimes('training')
-
-        for ts in list( interview_times ) + list( training_times ):
-            ts.teachers = self.entriesBySlot( ts )
-
-        context['prog'] = prog
-        context['interview_times'] = interview_times
-        context['training_times'] = training_times
-
-        return render_to_response( self.baseDir()+'teacher_events.html', request, context )
 
     def isStep(self):
         return Event.objects.filter(program=self.program, event_type__in=self.event_types().values()).exists()
