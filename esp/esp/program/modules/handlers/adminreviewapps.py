@@ -230,6 +230,8 @@ Student schedule for %s:
 
         return schedule
 
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

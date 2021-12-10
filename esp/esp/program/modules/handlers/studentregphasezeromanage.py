@@ -213,6 +213,9 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         context['invalid_grades'] = invalid_grades
         return render_to_response('program/modules/studentregphasezero/status.html', request, context)
 
+    def isStep(self):
+        return True
+
     class Meta:
         proxy = True
         app_label = 'modules'

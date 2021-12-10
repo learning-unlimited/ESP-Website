@@ -131,7 +131,7 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
         return render_to_response(self.baseDir()+'lineitems.html', request, context)
 
     def isStep(self):
-        return True
+        return self.program.hasModule("StudentExtraCosts")
 
     class Meta:
         proxy = True

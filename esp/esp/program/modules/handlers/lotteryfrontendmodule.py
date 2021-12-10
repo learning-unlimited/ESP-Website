@@ -87,6 +87,9 @@ class LotteryFrontendModule(ProgramModuleObj):
         lotteryObj.save_assignments()
         return {'response': [{'success': 'yes'}]};
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'

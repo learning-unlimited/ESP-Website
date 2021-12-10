@@ -167,6 +167,9 @@ class AdmissionsDashboard(ProgramModuleObj):
 
             return {'success': 1, 'updated': updated}
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'
