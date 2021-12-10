@@ -85,6 +85,9 @@ class CreditCardViewer(ProgramModuleObj):
     _payment_table_row_cached.__func__.depend_on_model('accounting.Account')
     _payment_table_row_cached.__func__.depend_on_model('accounting.Transfer')
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'

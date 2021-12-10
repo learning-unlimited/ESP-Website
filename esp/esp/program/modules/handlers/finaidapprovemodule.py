@@ -52,6 +52,9 @@ class FinAidApproveModule(ProgramModuleObj):
             "choosable": 0,
             }
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'

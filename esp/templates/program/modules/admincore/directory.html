@@ -17,6 +17,9 @@
 function initialize()
 {
     $j("div.module_link_large").button();
+    $j("#completed_steps").click(function() {
+        $j(".iscompleted").toggle();
+    });
 }
 
 $j(document).ready(initialize);
@@ -42,6 +45,66 @@ $j(document).ready(initialize);
 {% inline_program_qsd_block program "manage:main_top" %}
 Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="http://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
 {% end_inline_program_qsd_block %}
+
+<div class="row-fluid">
+    <div class="span10 offset1">
+        <table class="table table-condensed" align="center" width="400">
+            <tr class="well"><th width="85%">Steps to Setup This Program</th><th>Done?</th></tr>
+            {% for module in modules %}
+            {% if module.isStep and not module.isCompleted %}
+            <tr>
+                <td>{% if module.useTemplate %}
+                    <a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
+                        {{ module.module.link_title }} 
+                        </a> <i>(below)</i>
+                    {% else %}
+                        {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
+                    {% endif %}
+                    {% if module.required_label %}<i>{{ module.required_label }}</i>{% else %}
+                        {% if not module.required %}{% if not module.hideNotRequired %} <i>(not required)</i> {% endif %}{% endif %}
+                    {% endif %}
+                </td>
+                <td>{% if not module.useTemplate %}
+                    <a href="{{ module.get_full_path }}">
+                    {% else %}
+                    <a href="#module-{{ module.id }}">
+                    {% endif %}
+                    <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                    </a>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            <tr class="well" id="completed_steps"><th colspan="2">Completed Steps (click to expand)</th></tr>
+            {% for module in modules %}
+            {% if module.isStep and module.isCompleted %}
+            <tr class="iscompleted" hidden>
+                <td>{% if module.useTemplate %}
+                    <a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
+                        {{ module.module.link_title }} 
+                        </a> <i>(below)</i>
+                    {% else %}
+                        {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
+                    {% endif %}
+                    {% if module.required_label %}<i>{{ module.required_label }}</i>{% else %}
+                        {% if not module.required %}{% if not module.hideNotRequired %} <i>(not required)</i> {% endif %}{% endif %}
+                    {% endif %}
+                </td>
+                <td>{% if not module.useTemplate %}
+                    <a href="{{ module.get_full_path }}">
+                    {% else %}
+                    <a href="#module-{{ module.id }}">
+                    {% endif %}
+                    <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                    </a>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </table>
+
+    </div>
+</div>
 
 <div class="module_group" id="module_group_1">
     <div class="module_group_header">
@@ -167,14 +230,12 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
 <tr>
  <td width="50%">
 <ul>
-{% for module in modules %}
-{% if module.isStep %}
+{% for module in modules_alph %}
     {% if not module.isAdminPortalFeatured %}
       {% if not module.useTemplate %}
         <li>{% autoescape off %}{{ module.makeLink }}{% endautoescape %}</li>
       {% endif %}
     {% endif %}
-{% endif %}
 {% endfor %}
 </ul>
 </td>

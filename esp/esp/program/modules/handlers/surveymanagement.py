@@ -197,6 +197,9 @@ class SurveyManagement(ProgramModuleObj):
 
     survey = surveys
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'

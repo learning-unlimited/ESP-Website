@@ -309,7 +309,8 @@ class ProgramModuleObj(models.Model):
         return self.module.handler in ['AdminCore', 'AdminMorph', 'AdminMaterials',
                                        'ListGenModule', 'ResourceModule', 'CommModule',
                                        'VolunteerManage', 'ClassFlagModule', 'ProgramPrintables',
-                                       'AJAXSchedulingModule', 'NameTagModule', 'TeacherEventsModule']
+                                       'AJAXSchedulingModule', 'NameTagModule', 'TeacherEventsModule',
+                                       'SurveyManagement']
     def isOnSiteFeatured(self):
         """Don't display in the long list of additional modules if it's already featured
         in the main portion of the admin portal"""

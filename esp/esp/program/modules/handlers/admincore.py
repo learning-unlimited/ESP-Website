@@ -86,7 +86,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context = {}
         modules = self.program.getModules(request.user, 'manage')
 
-        context['modules'] = sorted(modules, key = lambda pmo: pmo.module.link_title)
+        context['modules'] = modules
+        context['modules_alph'] = sorted(modules, key = lambda pmo: pmo.module.link_title)
         context['one'] = one
         context['two'] = two
 
@@ -386,7 +387,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
     deadlines = deadline_management
 
     def isStep(self):
-        return True
+        return False
 
     class Meta:
         proxy = True

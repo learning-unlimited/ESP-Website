@@ -40,6 +40,9 @@ class SchedulingCheckModule(ProgramModuleObj):
               context = {'check_list': s.all_diagnostics, 'unreviewed': "unreviewed" in request.GET}
               return render_to_response(self.baseDir()+'output.html', request, context)
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'

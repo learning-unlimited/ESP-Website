@@ -384,6 +384,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         return num_affected_sections
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'

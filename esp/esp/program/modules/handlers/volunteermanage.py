@@ -207,6 +207,8 @@ class VolunteerManage(ProgramModuleObj):
         vs = VolunteerSignup
         return vs.signupForm(request, tl, one, two, prog, volunteer, isAdmin=True)
 
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

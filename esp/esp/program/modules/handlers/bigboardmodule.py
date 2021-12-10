@@ -360,3 +360,6 @@ class BigBoardModule(ProgramModuleObj):
             return [float(x.strip(',')) for x in uptime.strip().split()[-3:]]
         except:
             return []
+
+    def isStep(self):
+        return False
