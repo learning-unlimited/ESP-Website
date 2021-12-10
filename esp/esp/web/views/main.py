@@ -141,7 +141,7 @@ def contact(request, section='esp'):
     """
     This view should take an email and post to those people.
     """
-    from django.core.mail import send_mail
+    from esp.dbmail.models import send_mail
 
     if 'success' in request.GET:
         return render_to_response('contact_success.html', request, {})
@@ -153,31 +153,40 @@ def contact(request, section='esp'):
         ok_to_send = True
 
         if form.is_valid():
+            anonymous = form.cleaned_data['anonymous']
 
             to_email = []
+            bcc = []
             usernames = []
-            logged_in_as = request.user.username if hasattr(request, 'user') and request.user.is_authenticated() else "(not authenticated)"
+            logged_in_as = ""
             user_agent_str = request.META.get('HTTP_USER_AGENT', "(not specified)")
 
             email = form.cleaned_data['sender']
-            usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
+            if not anonymous:
+                logged_in_as = request.user.username if hasattr(request, 'user') and request.user.is_authenticated() else "(not authenticated)"
+                usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
 
-            if usernames and not form.cleaned_data['decline_password_recovery']:
-                m = 'password|account|log( ?)in'
-                if re.search(m, form.cleaned_data['message'].lower()) or re.search(m, form.cleaned_data['subject'].lower()):
-                    # Ask if they want a password recovery before sending.
-                    ok_to_send = False
-                    # If they submit again, don't ask a second time.
-                    form.data = MultiValueDict(form.data)
-                    form.data['decline_password_recovery'] = True
+                if usernames and not form.cleaned_data['decline_password_recovery']:
+                    m = 'password|account|log( ?)in'
+                    if re.search(m, form.cleaned_data['message'].lower()) or re.search(m, form.cleaned_data['subject'].lower()):
+                        # Ask if they want a password recovery before sending.
+                        ok_to_send = False
+                        # If they submit again, don't ask a second time.
+                        form.data = MultiValueDict(form.data)
+                        form.data['decline_password_recovery'] = True
 
-            if form.cleaned_data['cc_myself']:
-                to_email.append(email)
+                if len(form.cleaned_data['name'].strip()) > 0:
+                    email = ESPUser.email_sendto_address(email, form.cleaned_data['name'])
+
+                if form.cleaned_data['cc_myself']:
+                    to_email.append(email)
+            else:
+                if form.cleaned_data['cc_myself']:
+                    bcc.append(email)
+
+                email = settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()]
 
             to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
-
-            if len(form.cleaned_data['name'].strip()) > 0:
-                email = ESPUser.email_sendto_address(email, form.cleaned_data['name'])
 
             if ok_to_send:
                 t = loader.get_template('email/comment')
@@ -187,13 +196,14 @@ def contact(request, section='esp'):
                     'domain': domain,
                     'usernames': usernames,
                     'logged_in_as': logged_in_as,
-                    'user_agent_str': user_agent_str
+                    'user_agent_str': user_agent_str,
+                    'anonymous': anonymous
                 }
                 msgtext = t.render(Context(context))
 
                 send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
                     msgtext,
-                    email, to_email, fail_silently = True)
+                    email, to_email, fail_silently = True, bcc = bcc)
 
                 return HttpResponseRedirect(request.path + '?success')
 
