@@ -49,11 +49,19 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
 <div class="row-fluid">
     <div class="span10 offset1">
         <table class="table table-condensed" align="center" width="400">
-            <tr class="well"><th width="85%">Steps to Setup This Program</th><th>Done?</th></tr>
+            <tr class="well"><th width="85%">Steps to Set Up This Program</th><th>Done?</th></tr>
             {% for module in modules %}
             {% if module.isStep and not module.isCompleted %}
             <tr>
                 <td>{{ module.makeSetupLink }}</td>
+                <td><i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i></td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            {% for step in extra_steps %}
+            {% if not step.3 %}
+            <tr>
+                <td><a href="{{ step.2 }}" title="{{ step.2 }}">{{ step.1 }}</a></td>
                 <td><i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i></td>
             </tr>
             {% endif %}
@@ -63,6 +71,14 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
             {% if module.isStep and module.isCompleted %}
             <tr class="iscompleted" hidden>
                 <td>{{ module.makeSetupLink }}</td>
+                <td><i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i></td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            {% for step in extra_steps %}
+            {% if step.3 %}
+            <tr>
+                <td><a href="{{ step.2 }}" title="{{ step.2 }}">{{ step.1 }}</a></td>
                 <td><i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i></td>
             </tr>
             {% endif %}

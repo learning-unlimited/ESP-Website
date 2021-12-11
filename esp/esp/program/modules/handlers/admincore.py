@@ -43,6 +43,7 @@ from django.http import HttpResponseRedirect
 from esp.accounting.controllers import ProgramAccountingController
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call, aux_call
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.tagdict.models import Tag
 from esp.users.models import Permission
 from esp.utils.web import render_to_response
 from esp.utils.widgets import DateTimeWidget
@@ -85,8 +86,15 @@ class AdminCore(ProgramModuleObj, CoreModule):
     def main(self, request, tl, one, two, module, extra, prog):
         context = {}
         modules = self.program.getModules(request.user, 'manage')
+        possible_steps = [
+                          ('TeacherQuizModule', "Set up the teacher logistics quiz", "/customforms/", Tag.getProgramTag('quiz_form_id', self.program)),
+                          ('TeacherCustomFormModule', "Set up the teacher custom form", "/customforms/", Tag.getProgramTag('teach_extraform_id', self.program)),
+                          ('StudentCustomFormModule', "Set up the student custom form", "/customforms/", Tag.getProgramTag('learn_extraform_id', self.program)),
+                         ] # (handler, setup title, setup path, isCompleted)
+        extra_steps = [step for step in possible_steps if prog.hasModule(step[0])]
 
         context['modules'] = modules
+        context['extra_steps'] = extra_steps
         context['modules_alph'] = sorted(modules, key = lambda pmo: pmo.module.link_title)
         context['one'] = one
         context['two'] = two
