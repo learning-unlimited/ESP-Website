@@ -53,25 +53,8 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
             {% for module in modules %}
             {% if module.isStep and not module.isCompleted %}
             <tr>
-                <td>{% if module.useTemplate %}
-                    <a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
-                        {{ module.module.link_title }} 
-                        </a> <i>(below)</i>
-                    {% else %}
-                        {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
-                    {% endif %}
-                    {% if module.required_label %}<i>{{ module.required_label }}</i>{% else %}
-                        {% if not module.required %}{% if not module.hideNotRequired %} <i>(not required)</i> {% endif %}{% endif %}
-                    {% endif %}
-                </td>
-                <td>{% if not module.useTemplate %}
-                    <a href="{{ module.get_full_path }}">
-                    {% else %}
-                    <a href="#module-{{ module.id }}">
-                    {% endif %}
-                    <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
-                    </a>
-                </td>
+                <td>{{ module.makeSetupLink }}</td>
+                <td><i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i></td>
             </tr>
             {% endif %}
             {% endfor %}
@@ -79,25 +62,8 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
             {% for module in modules %}
             {% if module.isStep and module.isCompleted %}
             <tr class="iscompleted" hidden>
-                <td>{% if module.useTemplate %}
-                    <a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
-                        {{ module.module.link_title }} 
-                        </a> <i>(below)</i>
-                    {% else %}
-                        {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
-                    {% endif %}
-                    {% if module.required_label %}<i>{{ module.required_label }}</i>{% else %}
-                        {% if not module.required %}{% if not module.hideNotRequired %} <i>(not required)</i> {% endif %}{% endif %}
-                    {% endif %}
-                </td>
-                <td>{% if not module.useTemplate %}
-                    <a href="{{ module.get_full_path }}">
-                    {% else %}
-                    <a href="#module-{{ module.id }}">
-                    {% endif %}
-                    <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
-                    </a>
-                </td>
+                <td>{{ module.makeSetupLink }}</td>
+                <td><i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i></td>
             </tr>
             {% endif %}
             {% endfor %}
