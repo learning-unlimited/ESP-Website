@@ -61,6 +61,7 @@ class ResourceModule(ProgramModuleObj):
     doc = """ Manage the resources used by a program.  This includes classrooms and LCD equipment.
     Also use this module to set up the time blocks for classes.
     """
+
     @classmethod
     def module_properties(cls):
         return {
@@ -751,6 +752,14 @@ class ResourceModule(ProgramModuleObj):
             return HttpResponseBadRequest('')
         ResourceAssignment.objects.filter(assignment_group = results[0].assignment_group).delete()
         return HttpResponse('')
+
+    def isStep(self):
+        return True
+
+    setup_title = "Set up timeslots, resources, and classrooms"
+
+    def isCompleted(self):
+        return self.program.getTimeSlots().exists() and self.program.getResourceTypes().exists() and self.program.getClassrooms().exists()
 
     class Meta:
         proxy = True

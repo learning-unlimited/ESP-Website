@@ -104,9 +104,6 @@ class TeacherEventsManageModule(ProgramModuleObj):
     def entriesBySlot(self, event):
         return UserAvailability.objects.filter(event=event)
 
-    def isCompleted(self):
-        return Event.objects.filter(program=self.program, event_type__in=self.event_types().values()).exists()
-
     @main_call
     @needs_admin
     def teacher_events(self, request, tl, one, two, module, extra, prog):
@@ -153,6 +150,11 @@ class TeacherEventsManageModule(ProgramModuleObj):
 
     def isStep(self):
         return True
+
+    setup_title = "Set up events for teachers to attend before the program"
+
+    def isCompleted(self):
+        return Event.objects.filter(program=self.program, event_type__in=self.event_types().values()).exists()
 
     class Meta:
         proxy = True

@@ -133,6 +133,11 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
     def isStep(self):
         return self.program.hasModule("StudentExtraCosts")
 
+    setup_title = "Set up custom items for purchase"
+
+    def isCompleted(self):
+        return self.program.lineitemtype_set.exclude(text__in=exclude_line_items).exists()
+
     class Meta:
         proxy = True
         app_label = 'modules'
