@@ -17,9 +17,13 @@
 function initialize()
 {
     $j("div.module_link_large").button();
-    $j("#completed_steps").click(function() {
-        $j(".iscompleted").toggle();
-    });
+    if($j(".iscompleted").length > 0) {
+        $j("#completed_steps").click(function() {
+            $j(".iscompleted").toggle();
+        });
+    } else {
+        $j("#completed_steps").hide()
+    }
 }
 
 $j(document).ready(initialize);
@@ -66,6 +70,14 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
             </tr>
             {% endif %}
             {% endfor %}
+            {% for step in extra_steps_optional %}
+            {% if not step.3 %}
+            <tr>
+                <td><a href="{{ step.2 }}" title="{{ step.2 }}">{{ step.1 }}</a> (optional)</td>
+                <td><i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i></td>
+            </tr>
+            {% endif %}
+            {% endfor %}
             <tr class="well" id="completed_steps"><th colspan="2">Completed Steps (click to expand)</th></tr>
             {% for module in modules %}
             {% if module.isStep and module.isCompleted %}
@@ -77,8 +89,16 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
             {% endfor %}
             {% for step in extra_steps %}
             {% if step.3 %}
-            <tr>
+            <tr class="iscompleted" hidden>
                 <td><a href="{{ step.2 }}" title="{{ step.2 }}">{{ step.1 }}</a></td>
+                <td><i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i></td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            {% for step in extra_steps_optional %}
+            {% if step.3 %}
+            <tr class="iscompleted" hidden>
+                <td><a href="{{ step.2 }}" title="{{ step.2 }}">{{ step.1 }}</a> (optional)</td>
                 <td><i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i></td>
             </tr>
             {% endif %}

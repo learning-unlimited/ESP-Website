@@ -41,6 +41,7 @@ from django.forms.models import model_to_dict
 from django.http import HttpResponseRedirect
 
 from esp.accounting.controllers import ProgramAccountingController
+from esp.cal.models import Event
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call, aux_call
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.tagdict.models import Tag
@@ -86,15 +87,23 @@ class AdminCore(ProgramModuleObj, CoreModule):
     def main(self, request, tl, one, two, module, extra, prog):
         context = {}
         modules = self.program.getModules(request.user, 'manage')
-        possible_steps = [
+        required_steps = [
                           ('TeacherQuizModule', "Set up the teacher logistics quiz", "/customforms/", Tag.getProgramTag('quiz_form_id', self.program)),
                           ('TeacherCustomFormModule', "Set up the teacher custom form", "/customforms/", Tag.getProgramTag('teach_extraform_id', self.program)),
                           ('StudentCustomFormModule', "Set up the student custom form", "/customforms/", Tag.getProgramTag('learn_extraform_id', self.program)),
                          ] # (handler, setup title, setup path, isCompleted)
-        extra_steps = [step for step in possible_steps if prog.hasModule(step[0])]
+        extra_steps = [step for step in required_steps if prog.hasModule(step[0])]
+        optional_steps = [
+                          ('StudentSurveyModule', "Set up the student post-program survey", '/manage/' + self.program.url + '/surveys', self.program.getSurveys().filter(category = "learn").exists()),
+                          ('TeacherSurveyModule', "Set up the teacher post-program survey", '/manage/' + self.program.url + '/surveys', self.program.getSurveys().filter(category = "teach").exists()),
+                          ('StudentLunchSelection', "Set up multiple lunch periods", '/manage/' + self.program.url + '/lunch_constraints', Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').exists()),
+                          ('VolunteerSignup', "Set up volunteer signup", '/manage/' + self.program.url + '/volunteering', self.program.getVolunteerRequests().exists()),
+                         ] # (handler, setup title, setup path, isCompleted)
+        extra_steps_optional = [step for step in optional_steps if prog.hasModule(step[0])]
 
         context['modules'] = modules
         context['extra_steps'] = extra_steps
+        context['extra_steps_optional'] = extra_steps_optional
         context['modules_alph'] = sorted(modules, key = lambda pmo: pmo.module.link_title)
         context['one'] = one
         context['two'] = two
