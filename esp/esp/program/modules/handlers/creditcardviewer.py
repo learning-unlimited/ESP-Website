@@ -91,7 +91,7 @@ class CreditCardViewer(ProgramModuleObj):
     setup_title = "Set up the 'stripe settings' tag for credit card payments"
     setup_path = "tags/learn"
 
-    def isComplete(self):
+    def isCompleted(self):
         return self.program.getModule('CreditCardModule_Stripe').check_setup()
 
     class Meta:
