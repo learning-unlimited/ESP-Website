@@ -68,7 +68,7 @@ class ResourceModule(ProgramModuleObj):
             "admin_title": "Resource Management",
             "link_title": "Manage Times and Rooms",
             "module_type": "manage",
-            "seq": 10,
+            "seq": -99999,
             "choosable": 1,
             }
 
