@@ -91,12 +91,12 @@ class AdminCore(ProgramModuleObj, CoreModule):
                           ('TeacherQuizModule', "Set up the teacher logistics quiz", "/customforms/", Tag.getProgramTag('quiz_form_id', self.program)),
                           ('TeacherCustomFormModule', "Set up the teacher custom form", "/customforms/", Tag.getProgramTag('teach_extraform_id', self.program)),
                           ('StudentCustomFormModule', "Set up the student custom form", "/customforms/", Tag.getProgramTag('learn_extraform_id', self.program)),
+                          ('StudentLunchSelection', "Set up multiple lunch periods", '/manage/' + self.program.url + '/lunch_constraints', Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').exists()),
                          ] # (handler, setup title, setup path, isCompleted)
         extra_steps = [step for step in required_steps if prog.hasModule(step[0])]
         optional_steps = [
                           ('StudentSurveyModule', "Set up the student post-program survey", '/manage/' + self.program.url + '/surveys', self.program.getSurveys().filter(category = "learn").exists()),
                           ('TeacherSurveyModule', "Set up the teacher post-program survey", '/manage/' + self.program.url + '/surveys', self.program.getSurveys().filter(category = "teach").exists()),
-                          ('StudentLunchSelection', "Set up multiple lunch periods", '/manage/' + self.program.url + '/lunch_constraints', Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').exists()),
                           ('VolunteerSignup', "Set up volunteer signup", '/manage/' + self.program.url + '/volunteering', self.program.getVolunteerRequests().exists()),
                          ] # (handler, setup title, setup path, isCompleted)
         extra_steps_optional = [step for step in optional_steps if prog.hasModule(step[0])]

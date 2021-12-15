@@ -65,7 +65,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
             {% for step in extra_steps %}
             {% if not step.3 %}
             <tr>
-                <td><a href="{{ step.2 }}" title="{{ step.2 }}">{{ step.1 }}</a></td>
+                <td><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a></td>
                 <td><i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i></td>
             </tr>
             {% endif %}
@@ -73,7 +73,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
             {% for step in extra_steps_optional %}
             {% if not step.3 %}
             <tr>
-                <td><a href="{{ step.2 }}" title="{{ step.2 }}">{{ step.1 }}</a> (optional)</td>
+                <td><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a> (optional)</td>
                 <td><i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i></td>
             </tr>
             {% endif %}
@@ -90,7 +90,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
             {% for step in extra_steps %}
             {% if step.3 %}
             <tr class="iscompleted" hidden>
-                <td><a href="{{ step.2 }}" title="{{ step.2 }}">{{ step.1 }}</a></td>
+                <td><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a></td>
                 <td><i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i></td>
             </tr>
             {% endif %}
@@ -98,7 +98,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
             {% for step in extra_steps_optional %}
             {% if step.3 %}
             <tr class="iscompleted" hidden>
-                <td><a href="{{ step.2 }}" title="{{ step.2 }}">{{ step.1 }}</a> (optional)</td>
+                <td><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a> (optional)</td>
                 <td><i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i></td>
             </tr>
             {% endif %}
