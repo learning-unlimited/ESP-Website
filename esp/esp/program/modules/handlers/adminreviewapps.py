@@ -192,9 +192,6 @@ class AdminReviewApps(ProgramModuleObj):
         context['classes_to_review'] = self.program.classes()
         return context
 
-    def isStep(self):
-        return True
-
     def get_msg_vars(self, user, key):
         if key == 'schedule_app':
             return AdminReviewApps.getSchedule(self.program, user)
