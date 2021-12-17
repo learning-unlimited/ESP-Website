@@ -288,6 +288,22 @@ class ProgramModuleObj(models.Model):
 
         return mark_safe(link)
 
+    def get_setup_title(self):
+        if hasattr(self, 'setup_title') and self.setup_title is not None and str(self.setup_title).strip() != '':
+            return self.setup_title
+        return self.module.link_title
+
+    def get_setup_path(self):
+        if hasattr(self, 'setup_path') and self.setup_path is not None and str(self.setup_path).strip() != '':
+            path = self.setup_path
+        else:
+            path = self.get_main_view('manage')
+        return '/manage/' + self.program.url + '/' + path
+
+    def makeSetupLink(self):
+        title = self.get_setup_title()
+        link = self.get_setup_path()
+        return mark_safe(u'<a href="%s" title="%s">%s</a>' % (link, title, title))
 
     def makeButtonLink(self):
         if not self.module.module_type == 'manage':
@@ -309,7 +325,8 @@ class ProgramModuleObj(models.Model):
         return self.module.handler in ['AdminCore', 'AdminMorph', 'AdminMaterials',
                                        'ListGenModule', 'ResourceModule', 'CommModule',
                                        'VolunteerManage', 'ClassFlagModule', 'ProgramPrintables',
-                                       'AJAXSchedulingModule', 'NameTagModule', 'TeacherEventsModule']
+                                       'AJAXSchedulingModule', 'NameTagModule', 'TeacherEventsModule',
+                                       'SurveyManagement']
     def isOnSiteFeatured(self):
         """Don't display in the long list of additional modules if it's already featured
         in the main portion of the admin portal"""

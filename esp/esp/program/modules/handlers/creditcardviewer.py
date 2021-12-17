@@ -85,6 +85,15 @@ class CreditCardViewer(ProgramModuleObj):
     _payment_table_row_cached.__func__.depend_on_model('accounting.Account')
     _payment_table_row_cached.__func__.depend_on_model('accounting.Transfer')
 
+    def isStep(self):
+        return self.program.hasModule('CreditCardModule_Stripe')
+
+    setup_title = "Set up the 'stripe settings' tag for credit card payments"
+    setup_path = "tags/learn"
+
+    def isCompleted(self):
+        return self.program.getModule('CreditCardModule_Stripe').check_setup()
+
     class Meta:
         proxy = True
         app_label = 'modules'

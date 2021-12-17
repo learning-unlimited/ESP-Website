@@ -1968,6 +1968,9 @@ class ProgramPrintables(ProgramModuleObj):
         response['Content-Disposition'] = 'attachment; filename=csv_schedule.csv'
         return response
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'

@@ -131,7 +131,12 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
         return render_to_response(self.baseDir()+'lineitems.html', request, context)
 
     def isStep(self):
-        return True
+        return self.program.hasModule("StudentExtraCosts")
+
+    setup_title = "Set up custom items for purchase"
+
+    def isCompleted(self):
+        return self.program.lineitemtype_set.exclude(text__in=exclude_line_items).exists()
 
     class Meta:
         proxy = True

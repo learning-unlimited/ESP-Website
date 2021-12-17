@@ -98,6 +98,8 @@ class AdminMorph(ProgramModuleObj):
 
         return HttpResponseRedirect('/')
 
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

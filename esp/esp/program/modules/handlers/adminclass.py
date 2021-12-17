@@ -444,6 +444,9 @@ class AdminClass(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'classavailability.html', request, context)
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'

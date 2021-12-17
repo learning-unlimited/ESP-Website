@@ -282,3 +282,6 @@ class ClassSearchModule(ProgramModuleObj):
             context['regtypes'] = sorted(RegistrationType.objects.all(), key=lambda a: str(a))
         return render_to_response(self.baseDir()+'class_search.html',
                                   request, context)
+
+    def isStep(self):
+        return False

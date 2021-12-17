@@ -59,9 +59,6 @@ class SurveyManagement(ProgramModuleObj):
             'choosable': 1,
             }
 
-    def isStep(self):
-        return False
-
     @needs_admin
     def survey_manage(self, request, tl, one, two, module, extra, prog):
         context = {'program': prog}
@@ -196,6 +193,9 @@ class SurveyManagement(ProgramModuleObj):
             return top_classes(request, tl, one, two)
 
     survey = surveys
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

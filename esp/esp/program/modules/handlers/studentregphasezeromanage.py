@@ -213,6 +213,15 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         context['invalid_grades'] = invalid_grades
         return render_to_response('program/modules/studentregphasezero/status.html', request, context)
 
+    def isStep(self):
+        return True
+
+    setup_title = "Set up the 'program size by grade' tag for the student lottery"
+    setup_path = "tags/learn"
+
+    def isCompleted(self):
+        return Tag.getProgramTag("program_size_by_grade", self.program) is not None
+
     class Meta:
         proxy = True
         app_label = 'modules'

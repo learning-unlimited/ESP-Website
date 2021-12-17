@@ -183,6 +183,9 @@ class GroupTextModule(ProgramModuleObj):
 
         return "\n".join(send_log)
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'

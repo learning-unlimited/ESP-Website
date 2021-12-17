@@ -103,8 +103,8 @@ class AdminMaterials(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'listmaterials.html', request, context)
 
-
-
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

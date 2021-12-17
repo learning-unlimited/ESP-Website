@@ -309,6 +309,9 @@ class CommModule(ProgramModuleObj):
                                                'body': body,
                                                'public_view': public_view})
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'

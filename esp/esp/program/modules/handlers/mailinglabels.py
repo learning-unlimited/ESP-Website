@@ -298,8 +298,8 @@ class MailingLabels(ProgramModuleObj):
 
         return output
 
-
-
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

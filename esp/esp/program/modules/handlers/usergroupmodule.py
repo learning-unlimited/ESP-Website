@@ -127,6 +127,9 @@ class UserGroupModule(ProgramModuleObj):
 
         return message
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'

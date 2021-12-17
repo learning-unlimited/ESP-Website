@@ -450,6 +450,9 @@ class ListGenModule(ProgramModuleObj):
 
         return self.generateList(request, tl, one, two, module, extra, prog, filterObj=filterObj)
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'
