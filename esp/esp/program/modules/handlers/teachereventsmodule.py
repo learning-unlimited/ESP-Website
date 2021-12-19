@@ -80,7 +80,7 @@ class TeacherEventsModule(ProgramModuleObj):
         else:
             return {
                 name: ESPUser.objects.filter(q_obj).distinct()
-                for name, q_obj in q_objs
+                for name, q_obj in q_objs.items()
             }
 
     def teacherDesc(self):
