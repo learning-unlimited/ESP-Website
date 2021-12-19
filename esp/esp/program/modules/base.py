@@ -112,7 +112,7 @@ class ProgramModuleObj(models.Model):
         if not hasattr(self, '_main_view'):
             main_views = self._get_views_by_call_tag(['Main Call'])
             if len(main_views) > 1:
-                raise ESPError("Modules may not have multiple main calls.")
+                raise ESPError("Module %s has multiple main calls." % self.module.handler)
             elif main_views:
                 self._main_view = main_views[0]
             else:

@@ -76,7 +76,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
 
         return render_to_response(self.baseDir()+'schedule.html', request, context)
 
-    @main_call
+    @aux_call
     @needs_student
     @meets_grade
     @meets_deadline('/Webapp')

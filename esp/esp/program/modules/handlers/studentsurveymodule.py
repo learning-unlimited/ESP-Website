@@ -76,8 +76,6 @@ class StudentSurveyModule(ProgramModuleObj):
     def survey(self, request, tl, one, two, module, extra, prog):
         return survey_view(request, tl, one, two)
 
-    surveys = survey
-
     class Meta:
         proxy = True
         app_label = 'modules'
