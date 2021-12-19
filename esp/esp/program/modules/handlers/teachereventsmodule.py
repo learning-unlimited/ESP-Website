@@ -37,6 +37,7 @@ from esp.program.modules.forms.teacherreg import TeacherEventSignupForm
 from esp.program.modules import module_ext
 from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
+from django.db.models.query import Q
 from esp.dbmail.models import send_mail
 from esp.miniblog.models import Entry
 from esp.cal.models import Event, EventType
@@ -51,14 +52,6 @@ class TeacherEventsModule(ProgramModuleObj):
     # Initialization
     def __init__(self, *args, **kwargs):
         super(TeacherEventsModule, self).__init__(*args, **kwargs)
-
-    def event_types(self):
-        et_interview = EventType.get_from_desc('Teacher Interview')
-        et_training = EventType.get_from_desc('Teacher Training')
-        return {
-            'interview': et_interview,
-            'training': et_training,
-        }
 
     def availability_role(self):
         return Group.objects.get(name='Teacher')
@@ -75,15 +68,37 @@ class TeacherEventsModule(ProgramModuleObj):
             'choosable': 0,
         }
 
+    def teachers(self, QObject = False):
+        """ Returns lists of teachers who've signed up for interviews and for teacher training. """
+        q_objs = {
+            name: Q(useravailability__event__event_type=obj,
+                    useravailability__event__program=self.program)
+            for name, obj in EventType.teacher_event_types().items()
+        }
+        if QObject:
+            return q_objs
+        else:
+            return {
+                name: ESPUser.objects.filter(q_obj).distinct()
+                for name, q_obj in q_objs
+            }
+
+    def teacherDesc(self):
+        return {
+            'interview': """Teachers who have signed up for an interview""",
+            'training':  """Teachers who have signed up for teacher training""",
+        }
+
     # Helper functions
     def getTimes(self, type):
         """ Get events of the program's teacher interview/training slots. """
-        return Event.objects.filter( program=self.program, event_type=self.event_types()[type] ).order_by('start')
+        return Event.objects.filter( program=self.program, event_type=EventType.teacher_event_types()[type] ).order_by('start')
 
     def entriesByTeacher(self, user):
         return {
-            'interview': UserAvailability.objects.filter( event__event_type=self.event_types()['interview'], user=user, event__program=self.program ),
-            'training': UserAvailability.objects.filter( event__event_type=self.event_types()['training'], user=user, event__program=self.program ),
+            name: UserAvailability.objects.filter(
+                event__event_type=obj, user=user, event__program=self.program)
+            for name, obj in EventType.teacher_event_types().items()
         }
 
     # Per-user info
@@ -110,7 +125,8 @@ class TeacherEventsModule(ProgramModuleObj):
             if form.is_valid():
                 data = form.cleaned_data
                 # Remove old bits
-                UserAvailability.objects.filter(user=request.user, event__event_type__in=self.event_types().values()).delete()
+                event_types = EventType.teacher_event_types().values()
+                UserAvailability.objects.filter(user=request.user, event__event_type__in=event_types).delete()
                 # Register for interview
                 if data['interview']:
                     ua, created = UserAvailability.objects.get_or_create( user=request.user, event=data['interview'], role=self.availability_role())
@@ -138,7 +154,7 @@ class TeacherEventsModule(ProgramModuleObj):
         return render_to_response( self.baseDir()+'event_signup.html', request, {'prog':prog, 'form': form} )
 
     def isStep(self):
-        return Event.objects.filter(program=self.program, event_type__in=self.event_types().values()).exists()
+        return Event.objects.filter(program=self.program, event_type__in=EventType.teacher_event_types().values()).exists()
 
     class Meta:
         proxy = True

@@ -58,7 +58,7 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from argcache import cache_function, cache_function_for, wildcard
-from esp.cal.models import Event
+from esp.cal.models import Event, EventType
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
 from esp.dbmail.models import send_mail
@@ -958,6 +958,12 @@ class Program(models.Model, CustomFormsLinkModel):
                 return u'%s - %s' % (d1.strftime('%b. %d, %Y').decode('utf-8'), d2.strftime('%b. %d, %Y').decode('utf-8'))
         else:
             return None
+
+    def get_teacher_event_times(self, event_type):
+        """event_type should be 'interview' or 'training'"""
+        event_type_obj = EventType.teacher_event_types()[event_type]
+        return Event.objects.filter(
+            program=self, event_type=event_type_obj).order_by('start')
 
     @cache_function
     def getResourceTypes(self, include_classroom=False, include_global=None, include_hidden=True):
