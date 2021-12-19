@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web import render_to_response
 from esp.cal.models import Event, EventType
-from esp.users.models import ESPUser, UserAvailability
+from esp.users.models import UserAvailability
 from esp.program.modules.forms.teacherevents import TimeslotForm
 from django.contrib.auth.models import Group
 
