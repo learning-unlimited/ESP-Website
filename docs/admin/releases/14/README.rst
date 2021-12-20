@@ -20,6 +20,13 @@ Program records
 - A set of records can be set as required for student or teacher registration using tags ("student_reg_records" and "teacher_reg_records")
 - These records are shown on the student/teacher registration mainpage, the userview page, the student checklist printable, and the teacher list printable
 
+AJAX Scheduler
+~~~~~~~~~~~~~~
+- Shortcuts are now documented
+- Switched the default availability setting for moderators
+- Classes can now be sorted by teacher "hosedness"
+- If a server error is encountered while saving a scheduling comment, the comment is now reverted
+
 Minor new features
 ~~~~~~~~~~~~~~~~~~
 - Classes are now colored by category in the popularity graphs on the student big board
@@ -36,6 +43,9 @@ Minor new features
 - Teachers no longer show up as their own coteachers on the teacher registration mainpage
 - The student schedules pdf is now downloaded as a file instead of opening in the browser
 - Various error and success messages are now shown as banners to increase visibility
+- Added an anonymous option to the contact form
+- Added an admin checkbox interface for the steps that are required for ensuring a program is completely setup
+- Added a filter for expired vs unexpired permissions and student registrations in the admin panel
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
