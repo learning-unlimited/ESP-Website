@@ -77,6 +77,8 @@ class AccountingModule(ProgramModuleObj):
                 { 'transfer': t, 'type': iac.classify_transfer(t) }
                 for t in iac.get_transfers().select_related('line_item')
             ]
+            sort_order = {"Cost (required)": 0, "Cost (optional)": 1, "Sibling discount": 2, "Financial aid": 3, "Payment": 4}
+            classified_transfers.sort(key=lambda t: sort_order[t['type']])
             context.update({
                 'transfers': classified_transfers,
                 'identifier': iac.get_identifier(),

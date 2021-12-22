@@ -10,7 +10,7 @@ class LineItemForm(forms.ModelForm):
     text = forms.CharField(label = 'Name', widget = forms.TextInput(attrs={'placeholder': '(name)'}), validators=[RegexValidator(regex = '^(' + '|'.join(exclude_line_items) + ')$', message = 'That line item name is reserved for internal operations. Please choose another name.', inverse_match = True)])
     class Meta:
         model = LineItemType
-        fields = ('text', 'amount_dec', 'required', 'max_quantity')
+        fields = ('text', 'amount_dec', 'required', 'max_quantity', 'for_finaid')
         labels = {
             'amount_dec': 'Cost',
         }

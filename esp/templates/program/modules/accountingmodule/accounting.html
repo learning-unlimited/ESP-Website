@@ -45,18 +45,24 @@ table {
 </form>
 </div>
 {% if target_user %}
-<h3>Transfers</h3>
+{% for transfer in transfers %}
+{% ifchanged transfer.type %}
+{% if not forloop.first %}
+</table>
+{% endif %}
+<h3>{{ transfer.type }}</h3>
 <table class="table">
-    <tr><th>Type</th><th>Line Item</th><th>Amount</th></tr>
-    {% for transfer in transfers %}
+    <tr><th>Line Item</th><th>Amount</th>{% if transfer.type|first in 'C' %}<th>Covered by<br>Financial Aid?</th>{% endif %}</tr>
+{% endifchanged %}
     <tr>
-        <td>{{ transfer.type }}</td>
         <td>{{ transfer.transfer.line_item }}</td>
         <td>${{ transfer.transfer.amount|floatformat:"-2" }}</td>
+        {% if transfer.type|first in 'C' %}
+        <td>{% if transfer.transfer.line_item.for_finaid %}&#10003;{% endif %}</td>
+        {% endif %}
     </tr>
-    {% endfor %}
+{% endfor %}
 </table>
-<p><code>{{ identifier }}</code></p>
 <h3>Financial Aid Grant</h3>
 {% if grant %}
 <table class="table">
@@ -91,6 +97,7 @@ No grant
     <tr><td><em>Paid</em></td><td><em>${{ paid|floatformat:"-2" }}</em></td></tr>
     <tr><td><strong>Owed</strong></td><td><strong>${{ due|floatformat:"-2" }}</strong></td></tr>
 </table>
+<p><code>{{ identifier }}</code></p>
 {% endif %}
 {% include "program/modules/admincore/returnlink.html" %}
 {% endblock %}
