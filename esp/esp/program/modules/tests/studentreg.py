@@ -248,7 +248,7 @@ class StudentRegTest(ProgramFrameworkTest):
         pac.clear_all_data()
         pac.setup_accounts()
         pac.setup_lineitemtypes(program_cost, [('Item1', 10, 1), ('Item2', 5, 10)], [('Food', [('Small', 3), ('Large', 7)])])
-        LineItemType.objects.filter(text='Food', program=program).update(for_finaid=True) # Food should be covered by financial aid
+        LineItemType.objects.filter(text='Food', program=self.program).update(for_finaid=True) # Food should be covered by financial aid
 
         #   Choose a random student and check that the extracosts page loads
         student = random.choice(self.students)
@@ -294,7 +294,7 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertEqual(iac.amount_due(), 0)
 
         #   Check that financial aid only covers items marked as "for_finaid"
-        LineItemType.objects.filter(text='Food', program=program).update(for_finaid=False)
+        LineItemType.objects.filter(text='Food', program=self.program).update(for_finaid=False)
         self.assertEqual(iac.amount_due(), 7)
 
         fg.delete()
