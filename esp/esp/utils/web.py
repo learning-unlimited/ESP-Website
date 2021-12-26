@@ -149,4 +149,3 @@ def zip_download(files = [], zipname = 'files'):
     response = HttpResponse(file_like.getvalue(), content_type='application/zip')
     response['Content-Disposition']='attachment; filename=%s.zip' % zipname
     return response
-    
