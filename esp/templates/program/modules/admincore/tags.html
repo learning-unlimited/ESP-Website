@@ -65,6 +65,8 @@
         <br/>
         <span> {{ field.help_text }} </span>
       {% endif %}
+      <br/>
+      <span style="font-style:italic;">Default: </span>{% if field.field.default != None %}<span>{{ field.field.default }}</span>{% endif %}
       {% for error in field.errors %}
       <br/>
        <span class='form_error'> {{ error }} </span>
