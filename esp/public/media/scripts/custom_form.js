@@ -1,3 +1,30 @@
+// Taken from jquery-migrate since toggle() was removed in jQuery 1.9
+$j.fn.clicktoggle = function( fn, fn2 ) {
+	// Save reference to arguments for access in closure
+	var args = arguments,
+		guid = fn.guid || $j.guid++,
+		i = 0,
+		toggler = function( event ) {
+			// Figure out which function to execute
+			var lastToggle = ( $j._data( this, "lastToggle" + fn.guid ) || 0 ) % i;
+			$j._data( this, "lastToggle" + fn.guid, lastToggle + 1 );
+
+			// Make sure that clicks stop
+			event.preventDefault();
+
+			// and execute the function
+			return args[ lastToggle ].apply( this, arguments ) || false;
+		};
+
+	// link all the functions, so any of them can unbind this click handler
+	toggler.guid = guid;
+	while ( i < args.length ) {
+		args[ i++ ].guid = guid;
+	}
+
+	return this.click( toggler );
+};
+
 //Defining the master 'list' for form elements
 var formElements={
     'Generic':{
@@ -139,7 +166,7 @@ $j(document).ready(function() {
             return;
         $j(this).removeClass('field_hover');
         $j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
-    }).toggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));});
+    }).clicktoggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));});
     $j('#section_0').parent().data('data', {attrs: {}, field_type: 'section', question_text: 'Section', help_text: 'Enter a short description about the section', parent_id:-1});
 	$j('.wrapper_button').click(function(e){removeField($j(this)); e.stopPropagation();});
     
@@ -1337,7 +1364,7 @@ var renderNormalField=function(item, field_options, data){
                 return;
             $j(this).removeClass('field_hover');
             $j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
-        }).toggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));});
+        }).clicktoggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));});
 		$outline.appendTo($currPage);
 		$currPage.sortable({
             containment: $j(".pages"),
@@ -1373,7 +1400,7 @@ var renderNormalField=function(item, field_options, data){
                 return;
             $j(this).removeClass('field_hover');
             $j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
-        }).toggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));});
+        }).clicktoggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));});
 		$outline.appendTo($currPage);
 		$j('<input/>',{type:'button',value:'X'}).click(function(e){removeField($j(this)); e.stopPropagation();}).addClass("wrapper_button preview_button").appendTo($currPage);
 		$currPage.mouseover(function(e) {
@@ -1473,7 +1500,7 @@ var addElement=function(item, $field=null) {
 			return;
         $j(this).removeClass('field_hover');
 		$j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
-	}).toggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));}),
+	}).clicktoggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));}),
 	label_text=$j.trim($j('#id_question').val()),
 	help_text=(item=='instructions') ? '' : $j.trim($j('#id_instructions').val()),
 	html_name=item+"_"+elemTypes[item], html_id="id_"+item+"_"+elemTypes[item],
