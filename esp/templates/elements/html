@@ -20,7 +20,7 @@
 
     <link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
     {% block jquery_ui_stylesheet_version %}
-    <link href="https://ajax.googleapis.com/ajax/libs/jqueryui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+    <link href="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
     {% endblock jquery_ui_stylesheet_version %}
     {% endblock %}
 
@@ -39,7 +39,7 @@
     <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
     {% endblock %}
     {% block jquery_ui_version %}
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/{{ settings.JQUERY_UI_VERSION }}/jquery-ui.js"></script>
+    <script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/jquery-ui.js"></script>
     <script type="text/javascript" src="/media/scripts/jquery-ui.timepicker.js"></script>
     <script type="text/javascript" src="/media/scripts/datepicker-duration.js"></script>
     {% endblock %}
