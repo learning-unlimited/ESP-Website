@@ -444,7 +444,7 @@ class OnSiteClassList(ProgramModuleObj):
 
         #   This view still uses classes, not sections.  The templates show information
         #   for each section of each class.
-        classes = [(i.num_students()/(i.class_size_max + 1), i) for i in self.program.classes()]
+        classes = [(i.num_students()/(i.class_size_max + 1), i) for i in self.program.classes() if i.class_size_max]
         classes.sort()
         classes = [i[1] for i in classes]
 
