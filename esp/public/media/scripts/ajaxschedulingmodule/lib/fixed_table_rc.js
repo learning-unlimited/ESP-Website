@@ -193,7 +193,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 				.css({width: lc.ft_wrapper.width()- 17});
 			
 			//events (scroll and resize)
-			lc.ft_wrapper.scroll(function () {
+			lc.ft_wrapper.on("scroll", function () {
 				if (cfg.fixedCols > 0) { 
 					lc.ft_c.css('top', ($(this).scrollTop()*-1));
 				}
