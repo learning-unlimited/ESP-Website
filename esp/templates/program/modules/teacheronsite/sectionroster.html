@@ -21,7 +21,7 @@ function toggleCheck(element) {
     if (!checkbox.disabled) {
         element.innerHTML = checkbox.checked ? "check_box_outline_blank" : "check_box";
         checkbox.checked = !checkbox.checked;
-        $j(checkbox).change();
+        $j(checkbox).trigger("change");
     }
 }
 {% endif %}
