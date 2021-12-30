@@ -77,7 +77,7 @@ def qsd(request, url):
         page_name_base = page_name
     base_url = '/'.join(url_parts[:-1] + [page_name_base])
 
-    # Detect edit authorizations
+    # Detect read authorizations
     have_read = True
     if url_parts[0] == 'manage' and not request.user.isAdministrator():
         have_read = False
