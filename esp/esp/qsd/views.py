@@ -79,6 +79,8 @@ def qsd(request, url):
 
     # Detect edit authorizations
     have_read = True
+    if url_parts[0] == 'manage' and not request.user.isAdministrator():
+        have_read = False
 
     if not have_read and action == 'read':
         raise Http403, "You do not have permission to access this page."
@@ -122,8 +124,6 @@ def qsd(request, url):
 
     # Detect the standard read verb
     if action == 'read':
-        if not have_read:
-            raise Http403, 'You do not have permission to read this page.'
 
         # Render response
         response = render_to_response('qsd/qsd.html', request, {
