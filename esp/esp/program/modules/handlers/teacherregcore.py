@@ -60,7 +60,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
 
         context['completedAll'] = True
         for module in modules:
-            if not module.isCompleted() and module.required:
+            if not module.isCompleted() and module.isRequired():
                 context['completedAll'] = False
 
             context = module.prepare(context)
