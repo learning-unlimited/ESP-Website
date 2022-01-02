@@ -68,6 +68,7 @@ from esp.program.models import Program, TeacherBio, RegistrationType, ClassSecti
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.program.modules.handlers.commmodule import CommModule
 from esp.middleware import ESPError
@@ -185,7 +186,7 @@ def lsr_submit(request, program = None):
 
     if len(errors) == 0:
         for s_id in (already_flagged_secids - classes_flagged):
-            sections_by_id[s_id].unpreregister_student(request.user, prereg_verb=reg_priority.name)
+            sections_by_id[s_id].unpreregister_student(request.user, prereg_verbs=[reg_priority.name])
         for s_id in classes_flagged - already_flagged_secids:
             if not sections_by_id[s_id].preregister_student(request.user, prereg_verb=reg_priority.name, overridefull=True):
                 errors.append({"text": "Unable to add flagged class", "cls_sections": [s_id], "emailcode": sections_by_id[s_id].emailcode(), "block": None, "flagged": True})
@@ -200,7 +201,7 @@ def lsr_submit(request, program = None):
         sections_by_id[int(s.id)] = s
 
     for s_id in (already_interested_secids - classes_interest):
-        sections_by_id[s_id].unpreregister_student(request.user, prereg_verb=reg_interested.name)
+        sections_by_id[s_id].unpreregister_student(request.user, prereg_verbs=[reg_interested.name])
     for s_id in classes_interest - already_interested_secids:
         if not sections_by_id[s_id].preregister_student(request.user, prereg_verb=reg_interested.name, overridefull=True):
             errors.append({"text": "Unable to add interested class", "cls_sections": [s_id], "emailcode": sections_by_id[s_id].emailcode(), "block": None, "flagged": False})
@@ -445,8 +446,9 @@ def unenroll_student(request):
     else:
         user = users[0]
         sections = user.getSections(program = request.POST['program'])
+        verbs = RTC.getVisibleRegistrationTypeNames(request.POST['program'])
         for sec in sections:
-            sec.unpreregister_student(user)
+            sec.unpreregister_student(user, verbs)
         return HttpResponseRedirect('/manage/userview?username=%s' % user.username)
 
 @admin_required
