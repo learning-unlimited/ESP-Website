@@ -18,9 +18,9 @@ table {
 {% endblock %}
 
 {% block content %}
-<h2>Accounting{% if target_user %} for {{ target_user.name }} ({{ target_user.username }} / {{ target_user.id }}){% endif %} for {{ program.niceName }}</h2>
+<h2>Accounting{% if target_user %} for {{ target_user.name }} ({{ target_user.username }} / {{ target_user.id }}){% endif %}{% if prog_results|length_is:"1" %} for {{ prog_results.0.program.niceName }}{% endif %}</h2>
 <div id="program_form">
-<form id="accountingsearchform" name="accountingsearchform" method="POST" action="/manage/{{ program.getUrlBase }}/accounting">
+<form id="accountingsearchform" name="accountingsearchform" method="POST">
 <table>
     <col width="85%">
     <col width="15%">
@@ -45,59 +45,99 @@ table {
 </form>
 </div>
 {% if target_user %}
-{% for transfer in transfers %}
-{% ifchanged transfer.type %}
-{% if not forloop.first %}
-</table>
+{% for result in prog_results %}
+{% if prog_results|length > 1 %}
+<h2>{{ result.program.niceName }}</h2>
 {% endif %}
-<h3>{{ transfer.type }}</h3>
 <table class="table">
-    <tr><th>Line Item</th><th>Amount</th>{% if transfer.type|first in 'C' %}<th>Covered by<br>Financial Aid?</th>{% endif %}</tr>
-{% endifchanged %}
+<tr>
+    <th>Type</th>
+    <th>Line Item</th>
+    <th>Covered by<br>Financial Aid?</th>
+    <th width="10%">Amount</th></tr>
+{% for transfer in result.transfers %}
     <tr>
+        <td>{{ transfer.type }}</td>
         <td>{{ transfer.transfer.line_item }}</td>
-        <td>${{ transfer.transfer.amount|floatformat:"-2" }}</td>
-        {% if transfer.type|first in 'C' %}
         <td>{% if transfer.transfer.line_item.for_finaid %}&#10003;{% endif %}</td>
-        {% endif %}
+        <td style="text-align:right;">{% if transfer.type == "Payment" %}-{% endif %}${{ transfer.transfer.amount|floatformat:"2" }}</td>
     </tr>
 {% endfor %}
 </table>
-<h3>Financial Aid Grant</h3>
+{% with result.grant as grant %}
 {% if grant %}
+<h3>Financial Aid Grant</h3>
 <table class="table">
-    <tr><th>Amount</th>
-        <td>
+    <tr>
+        <td width="70%" style="border-top: none;"></td>
+        <th style="text-align:right;">Amount</th>
+        <td style="text-align:right;">
             {% if grant.amount_max_dec %}
-            ${{ grant.amount_max_dec|floatformat:"-2" }}
+            ${{ grant.amount_max_dec|floatformat:"2" }}
             {% else %}
             (none)
             {% endif %}
         </td>
     </tr>
-    <tr><th>Percent</th>
-        <td>
+    <tr>
+        <td style="border-top: none;"></td>
+        <th style="text-align:right;">Percent</th>
+        <td style="text-align:right;">
             {% if grant.percent %}
-            {{ grant.percent|floatformat:"-2" }}%
+            {{ grant.percent|floatformat:"2" }}%
             {% else %}
             (none)
             {% endif %}
         </td>
+    </tr>
+    <tr>
+        <td style="border-top: none;"></td>
+        <th style="text-align:right;">Total</th>
+        <td style="text-align:right;">${{ result.finaid|floatformat:"2" }}</td>
     </tr>
 </table>
-{% else %}
-No grant
 {% endif %}
+{% endwith %}
 <h3>Summary</h3>
 <table class="table">
-    <tr><th>Category</th><th>Amount</th></tr>
-    <tr><td>Requested</td><td>${{ requested|floatformat:"-2" }}</td></tr>
-    <tr><td>Financial Aid</td><td>${{ finaid|floatformat:"-2" }}</td></tr>
-    <tr><td>Sibling Discount</td><td>${{ siblingdiscount|floatformat:"-2" }}</td></tr>
-    <tr><td><em>Paid</em></td><td><em>${{ paid|floatformat:"-2" }}</em></td></tr>
-    <tr><td><strong>Owed</strong></td><td><strong>${{ due|floatformat:"-2" }}</strong></td></tr>
+    <tr>
+        <td width="70%" style="border-top: none;"></td>
+        <th style="text-align:right;">Category</th>
+        <th style="text-align:right;">Amount</th>
+    </tr>
+    <tr>
+        <td style="border-top: none;"></td>
+        <td style="text-align:right;">Total Owed</td>
+        <td style="text-align:right;">${{ result.requested|floatformat:"2" }}</td>
+    </tr>
+    {% if result.finaid > 0 %}
+    <tr>
+        <td style="border-top: none;"></td>
+        <td style="text-align:right;">Financial Aid</td>
+        <td style="text-align:right;">${{ result.finaid|floatformat:"2" }}</td>
+    </tr>
+    {% endif %}
+    {% if result.siblingdiscount > 0 %}
+    <tr>
+        <td style="border-top: none;"></td>
+        <td style="text-align:right;">Sibling Discount</td>
+        <td style="text-align:right;">${{ result.siblingdiscount|floatformat:"2" }}</td>
+    </tr>
+    {% endif %}
+    <tr>
+        <td style="border-top: none;"></td>
+        <td style="text-align:right;"><em>Total Paid</em></td>
+        <td style="text-align:right;"><em>${{ result.paid|floatformat:"2" }}</em></td>
+    </tr>
+    <tr>
+        <td style="border-top: none;"></td>
+        <td style="text-align:right;"><strong>Balance</strong></td>
+        <td style="text-align:right;"><strong>${{ result.due|floatformat:"2" }}</strong></td>
+    </tr>
 </table>
-<p><code>{{ identifier }}</code></p>
+<p><code>{{ result.identifier }}</code></p>
+{% if not forloop.last %}<hr>{% endif %}
+{% endfor %}
 {% endif %}
 {% include "program/modules/admincore/returnlink.html" %}
 {% endblock %}
