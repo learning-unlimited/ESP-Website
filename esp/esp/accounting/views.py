@@ -99,5 +99,4 @@ def user_accounting(user, progs = []):
             result['due'] = iac.amount_due()
         results.append(result)
     return results
-    
 

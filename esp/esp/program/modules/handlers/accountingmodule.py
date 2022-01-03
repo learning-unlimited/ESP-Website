@@ -36,6 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.utils.web import render_to_response
 from esp.accounting.views import user_accounting
+from esp.users.models import ESPUser
 
 class AccountingModule(ProgramModuleObj):
     doc = """Lists accounting information for the program for a single user."""
