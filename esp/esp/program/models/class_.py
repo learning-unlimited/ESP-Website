@@ -249,10 +249,7 @@ class ClassManager(Manager):
         class_ids = map(lambda x: x.id, classes)
 
         # Now to get the sections corresponding to these classes...
-
         sections = ClassSection.objects.filter(parent_class__in=class_ids)
-
-        sections = ClassSection.prefetch_catalog_data(sections.distinct())
 
         sections_by_parent_id = defaultdict(list)
         for s in sections:
