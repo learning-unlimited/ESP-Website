@@ -1067,7 +1067,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         if key == 'full_classes':
             return user.getFullClasses_pretty(self.program)
 
-        return 'No classes.'
+        return u''
 
     class Meta:
         proxy = True
