@@ -47,6 +47,9 @@
     <a id="morphlink" class="sidelink" href="/myesp/morph?morph_user={{user.id}}">Morph into this user</a>
     <a class="sidelink" href="/admin/users/espuser/{{user.id}}/">View on admin panel</a>
     <a class="sidelink" href="/admin/program/registrationprofile/?user__id={{user.id}}">View registration profiles</a>
+    {% if "Student" in user.getUserTypes %}
+        <a id="biolink" class="sidelink" href="/accounting/user?target_user={{user.id}}">View accounting info</a>
+    {% endif %}
     {% if "Teacher" in user.getUserTypes %}
         <a id="biolink" class="sidelink" href="/teach/teachers/{{user.username}}/bio.html">Go to teacher bio</a>
     {% endif %}
