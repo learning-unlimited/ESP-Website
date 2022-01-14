@@ -27,6 +27,11 @@ AJAX Scheduler
 - Classes can now be sorted by teacher "hosedness"
 - If a server error is encountered while saving a scheduling comment, the comment is now reverted
 
+Accounting
+~~~~~~~~~~
+- Line items can now be marked as covered by financial aid (or not, e.g., t-shirts). When financial aid is granted, it will only be granted in an amount that covers only the line items that are marked as covered by financial aid.
+- Added a new page to see all of the accounting for a user across all programs (/accounting/user)
+
 Minor new features
 ~~~~~~~~~~~~~~~~~~
 - Classes are now colored by category in the popularity graphs on the student big board
@@ -46,6 +51,7 @@ Minor new features
 - Added an anonymous option to the contact form
 - Added an admin checkbox interface for the steps that are required for ensuring a program is completely setup
 - Added a filter for expired vs unexpired permissions and student registrations in the admin panel
+- Added buttons to the custom form response interface to bulk download files
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -57,6 +63,6 @@ Minor bug fixes
 - Fixed the email address for some users on the userview page
 - Fixed the color of messages on the deadline management page
 - Fixed bugs related to the registration progress bar interface
-- Fixed the order of modules on the student and teacher registration mainpages
+- Fixed the order of modules on the student and teacher registration mainpages (sorting order is now required -> seq -> isCompleted)
 - Fixed the login redirect behavior when a user is already logged in
 - LaTeX in class titles is no longer rendered on the survey results page to prevent errors
