@@ -153,7 +153,7 @@ class AllViewsTest(ProgramFrameworkTest):
         for tl in ['learn', 'teach', 'admin', 'volunteer']:
             modules = self.program.getModules(tl = tl)
             for module in modules:
-                views = module.get_all_views()
+                views = module.views
                 for view in views:
                     cls = self.program.classes()[0]
                     cls_id = str(cls.id)
