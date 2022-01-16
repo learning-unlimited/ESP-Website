@@ -302,10 +302,10 @@ class ProgramModuleObj(models.Model):
     def makeButtonLink(self):
         if not self.module.module_type == 'manage':
             link = u'<a href="%s"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">%s</div></button></a>' % \
-                (self.get_full_path(tl=self.module.module_type), self.module.link_title)
+                (self.get_full_path(), self.module.link_title)
         else:
             link = u'<a href="%s" onmouseover="updateDocs(\'<p>%s</p>\');"></a><button type="button" class="module_link_large btn btn-default btn-lg"> <div class="module_link_main">%s%s</div></button></a>' % \
-               (self.get_full_path('manage'), self.docs().replace("'", "\\'").replace('\n','<br />\\n').replace('\r', ''), self.module.link_title, self.module.handler)
+               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n','<br />\\n').replace('\r', ''), self.module.link_title, self.module.handler)
 
         return mark_safe(link)
 
