@@ -1329,10 +1329,7 @@ function populate_full()
         if (!data.sections[sec_id])
             console.log("Could not find section " + sec_id);
         else {
-            if (full)
-            {
-                data.sections[sec_id].full = true;
-            }
+            data.sections[sec_id].full = full;
         }
     }
 }
