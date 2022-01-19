@@ -115,7 +115,7 @@ function Scheduler(
         );
 
         // Set up keyboard shortcuts
-        $j("body").keydown(function(evt) {
+        $j("body").on("keydown", function(evt) {
             // console.log(evt);
             if(evt.keyCode == 46) { // delete is pressed: unschedule the selected section
                 this.sections.unscheduleSection(this.sections.selectedSection);
@@ -137,10 +137,10 @@ function Scheduler(
             }
         }.bind(this));
 
-        $j('body').keyup(function(evt) {
+        $j('body').on("keyup", function(evt) {
             if(evt.keyCode == 191) { // '/' is pressed: open the class directory and focus on the search box
                 $j("#side-panel").tabs({active: 0});
-                $j("#class-search-text").focus();
+                $j("#class-search-text").trigger("focus");
             }
         });
 

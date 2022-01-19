@@ -50,7 +50,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
             var unscheduleButton = $j("<button class='sidetoolbar'>Unschedule Section</button>");
             unscheduleButton
                 .button()
-                .click(function(evt) {
+                .on("click", function(evt) {
                     this.sections.unscheduleSection(section);
                 }.bind(this)
             );
@@ -67,7 +67,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         var commentButton = $j("<button class='sidetoolbar'>" + commentText + "</button>");
         commentButton
             .button()
-            .click(function(evt) {
+            .on("click", function(evt) {
                 this.sectionCommentDialog.show(section);
             }.bind(this)
         );
@@ -75,7 +75,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
 
         var overrideCheckbox = $j("<input id='schedule-override' type='checkbox'></input>");
         overrideCheckbox.prop('checked', this.override)
-            .change(function(box) {
+            .on("change", function(box) {
                 var override = $j(box.target).prop("checked");
                 // Reload the section to update the availability
                 this.sections.unselectSection(override);
@@ -195,7 +195,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
 
         var overrideCheckbox = $j("<input id='schedule-override' type='checkbox'></input>");
         overrideCheckbox.prop('checked', this.override)
-            .change(function(box) {
+            .on("change", function(box) {
                 var override = $j(box.target).prop("checked");
                 // Reload the moderator to update the availability
                 this.sections.matrix.moderatorDirectory.unselectModerator(override);

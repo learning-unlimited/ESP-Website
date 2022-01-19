@@ -54,7 +54,7 @@ function Matrix(
     }.bind(this);
 
     $j.each(this.filter, function(filterName, filterObject) {
-        filterObject.el.change(function() {
+        filterObject.el.on("change", function() {
             filterObject.val = filterObject.el.val().trim();
             if(filterObject.type==="number") {
                 filterObject.val = parseInt(filterObject.val);
@@ -128,7 +128,7 @@ function Matrix(
     };
     
     this.scheduling_check = "";
-    $j('input[type=radio][name=scheduling-checks]').change(function() {
+    $j('input[type=radio][name=scheduling-checks]').on("change", function() {
         this.scheduling_check = event.target.value;
         this.updateCells();
     }.bind(this));
