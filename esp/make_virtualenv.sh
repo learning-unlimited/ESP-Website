@@ -71,5 +71,5 @@ sudo pip2 install "virtualenv>=1.10"
 if id "vagrant" >/dev/null 2>&1; then
     virtualenv "$VENVDIR"
 else
-    sudo -u www-data virtualenv "$VENVDIR"
+    virtualenv "$VENVDIR"
 fi
