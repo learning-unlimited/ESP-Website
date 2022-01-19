@@ -7,7 +7,7 @@
 set -ef -o pipefail
 
 # Parameters
-GIT_REPO="git://github.com/learning-unlimited/ESP-Website.git"
+GIT_REPO="git@github.com/learning-unlimited/ESP-Website.git"
 APACHE_CONF_FILE="/etc/apache2/sites-available/esp_sites.conf"
 APACHE_REDIRECT_CONF_FILE="/etc/apache2/sites-available/esp_sites/https_redirect.conf"
 AUTH_USER_FILE="/lu/auth/dav_auth"
