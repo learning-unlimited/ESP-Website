@@ -40,6 +40,7 @@ from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.users.models    import ESPUser, Record
 from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
 from esp.middleware.esperrormiddleware import ESPError
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 
 class OnSiteCheckoutModule(ProgramModuleObj):
     doc = """Check students out (temporarily or indefinitely) from a program."""
@@ -98,8 +99,9 @@ class OnSiteCheckoutModule(ProgramModuleObj):
                 Record.objects.create(user=student, event="checked_out", program=prog)
 
                 # Unenroll student from selected classes
+                verbs = RTC.getVisibleRegistrationTypeNames(prog)
                 for sec in ClassSection.objects.filter(id__in=filter(None, request.POST.getlist('unenroll'))).distinct():
-                    sec.unpreregister_student(student, prereg_verb = "Enrolled")
+                    sec.unpreregister_student(student, verbs)
                 context['checkout_message_success'] = "Successfully checked out %s (%s)" % (student.name(), student.username)
 
             context.update(StudentClassRegModule.prepare_static(student, prog))

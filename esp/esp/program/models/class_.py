@@ -1264,17 +1264,17 @@ class ClassSection(models.Model):
         else:
             return [v.relationship for v in qs.filter(relationship__name__in=allowed_verbs).distinct()]
 
-    def unpreregister_student(self, user, prereg_verb = None):
-        #   New behavior: prereg_verb should be a string matching the name of
-        #   RegistrationType to match (if you want to use it)
+    def unpreregister_student(self, user, prereg_verbs = []):
+        #   New behavior: prereg_verbs should be a list of strings matching the names of
+        #   RegistrationTypes to match (if you want to use it)
 
         from esp.program.models.app_ import StudentAppQuestion
 
         now = datetime.datetime.now()
 
         #   Stop all active or pending registrations
-        if prereg_verb:
-            qs = StudentRegistration.valid_objects(now).filter(relationship__name=prereg_verb, section=self, user=user)
+        if prereg_verbs:
+            qs = StudentRegistration.valid_objects(now).filter(relationship__name__in=prereg_verbs, section=self, user=user)
             qs.update(end_date=now)
         else:
             qs = StudentRegistration.valid_objects(now).filter(section=self, user=user)
@@ -1950,11 +1950,11 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         if best_section:
             best_section.preregister_student(user, overridefull, automatic)
 
-    def unpreregister_student(self, user):
+    def unpreregister_student(self, user, prereg_verbs = []):
         """ Find the student's registration for the class and expire it.
         Also update the cache on each of the sections.  """
         for s in self.sections.all():
-            s.unpreregister_student(user)
+            s.unpreregister_student(user, prereg_verbs)
 
     def getArchiveClass(self):
         result = ArchiveClass.objects.filter(original_id=self.id)
