@@ -39,8 +39,8 @@ Please select from the option below to continue.
     <div style="display: inline-block;" class="button_wrapper">
         {% if program|hasModule:"OnsiteClassSchedule" %}<a href="/onsite/{{ program.getUrlBase }}/schedule_students"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">Scheduling and Class Changes</div></button></a>{% endif %}
         {% if program|hasModule:"OnSiteClassList" %}<a href="/onsite/{{ program.getUrlBase }}/classchange_grid"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">Grid-Based Class Changes</div></button></a>{% endif %}
-        {% if program|hasModule:"OnSiteClassList" %}<a href="/onsite/{{ program.getUrlBase }}/classlist"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">Scrolling Class List</div></button></a>{% endif %}
-        {% if program|hasModule:"OnSiteClassList" %}<a href="/onsite/{{ program.getUrlBase }}/allclasslist"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">List of Open Classes</div></button></a>{% endif %}
+        {% if program|hasModule:"OnSiteClassList" %}<a href="/onsite/{{ program.getUrlBase }}/classList"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">Scrolling Class List</div></button></a>{% endif %}
+        {% if program|hasModule:"OnSiteClassList" %}<a href="/onsite/{{ program.getUrlBase }}/allClassList"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">List of Open Classes</div></button></a>{% endif %}
     </div>
 </div>
 <div class="module_group" id="module_group_2">

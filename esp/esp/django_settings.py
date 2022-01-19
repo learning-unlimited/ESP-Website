@@ -309,10 +309,10 @@ CONTACTFORM_EMAIL_ADDRESSES = {}
 #   It can be overridden by setting CDN_ADDRESS in local_settings.py.
 CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
 
-JQUERY_VERSION = '1.12.4'
-JQUERY_HASH = 'sha512-jGsMH83oKe9asCpkOVkBnUrDDTp8wl+adkB2D+//JtlxO4SrLoJdhbOysIFQJloQFD+C4Fl1rMsQZF76JjV0eQ=='
+JQUERY_VERSION = '3.6.0'
+JQUERY_HASH = 'sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=='
 
-JQUERY_UI_VERSION = '1.12.1'
+JQUERY_UI_VERSION = '1.13.0'
 
 # allow configuration of additional Javascript to be placed on website
 # configuration should include <script></script> tags

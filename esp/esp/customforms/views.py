@@ -18,7 +18,7 @@ from django.contrib.auth.decorators import user_passes_test
 
 from esp.users.models import ESPUser
 from esp.middleware import ESPError
-from esp.utils.web import render_to_response
+from esp.utils.web import render_to_response, zip_download
 
 def test_func(user):
     return user.is_authenticated() and (user.isTeacher() or user.isAdministrator())
@@ -384,6 +384,24 @@ def getData(request):
             fh = FormHandler(form=form, request=request)
             resp_data = json.dumps(fh.getResponseData(form), cls=DjangoJSONEncoder)
             return HttpResponse(resp_data)
+    return HttpResponse(status=400)
+
+@user_passes_test(test_func)
+def bulkDownloadFiles(request):
+    """
+    Returns a download of a zip file containing all of the file responses to a single custom form field
+    """
+    if request.method == 'GET':
+        try:
+            form_id = int(request.GET['form_id'])
+            question_name = request.GET['question_name']
+        except (ValueError, KeyError):
+            return HttpResponse(status=400)
+        form = Form.objects.get(pk=form_id)
+        dmh = DMH(form=form)
+        dyn = dmh.createDynModel()
+        filenames = [resp[question_name] for resp in dyn.objects.all().values()]
+        return zip_download(filenames, 'surveyfiles')
     return HttpResponse(status=400)
 
 @user_passes_test(test_func)

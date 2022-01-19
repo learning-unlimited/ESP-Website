@@ -36,6 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_student, meets_dead
 from esp.program.modules import module_ext
 from esp.program.models  import Program
 from esp.program.controllers.confirmation import ConfirmationEmailController
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, Record
@@ -239,10 +240,11 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         #   If the appropriate flag is set, remove the student from their classes.
         scrmi = prog.studentclassregmoduleinfo
+        verbs = RTC.getVisibleRegistrationTypeNames(prog)
         if scrmi.cancel_button_dereg:
             sections = request.user.getSections()
             for sec in sections:
-                sec.unpreregister_student(request.user)
+                sec.unpreregister_student(request.user, verbs)
 
         #   If a cancel receipt template is there, use it.  Otherwise, return to the main studentreg page.
         try:

@@ -154,16 +154,16 @@ function handle_settings_change(event)
 
 function setup_settings()
 {
-    $j("#hide_full_control").unbind("change");
-    $j("#override_control").unbind("change");
-    $j("#grade_limits_control").unbind("change");
-    $j("#show_class_titles").unbind("change");
-    $j("#show_class_teachers").unbind("change");
-    $j("#show_class_rooms").unbind("change");
-    $j("#show_closed_reg").unbind("change");
-    $j("#hide_past_time_blocks").unbind("change");
-    $j("#hide_conflicting").unbind("change");
-    $j("#sort_control").unbind("change");
+    $j("#hide_full_control").off("change");
+    $j("#override_control").off("change");
+    $j("#grade_limits_control").off("change");
+    $j("#show_class_titles").off("change");
+    $j("#show_class_teachers").off("change");
+    $j("#show_class_rooms").off("change");
+    $j("#show_closed_reg").off("change");
+    $j("#hide_past_time_blocks").off("change");
+    $j("#hide_conflicting").off("change");
+    $j("#sort_control").off("change");
 
 
     //  Apply settings
@@ -178,16 +178,16 @@ function setup_settings()
     settings.hide_conflicting = $j("#hide_conflicting").prop("checked");
     settings.sort_setting = $j("#sort_control").val();
 
-    $j("#hide_full_control").change(handle_settings_change);
-    $j("#override_control").change(handle_settings_change);
-    $j("#grade_limits_control").change(handle_settings_change);
-    $j("#show_class_titles").change(handle_settings_change);
-    $j("#show_class_teachers").change(handle_settings_change);
-    $j("#show_class_rooms").change(handle_settings_change);
-    $j("#show_closed_reg").change(handle_settings_change);
-    $j("#hide_past_time_blocks").change(handle_settings_change);
-    $j("#hide_conflicting").change(handle_settings_change);
-    $j("#sort_control").change(handle_settings_change);
+    $j("#hide_full_control").on("change", handle_settings_change);
+    $j("#override_control").on("change", handle_settings_change);
+    $j("#grade_limits_control").on("change", handle_settings_change);
+    $j("#show_class_titles").on("change", handle_settings_change);
+    $j("#show_class_teachers").on("change", handle_settings_change);
+    $j("#show_class_rooms").on("change", handle_settings_change);
+    $j("#show_closed_reg").on("change", handle_settings_change);
+    $j("#hide_past_time_blocks").on("change", handle_settings_change);
+    $j("#hide_conflicting").on("change", handle_settings_change);
+    $j("#sort_control").on("change", handle_settings_change);
 }
 
 function hide_sidebar()
@@ -204,8 +204,8 @@ function show_sidebar()
 
 function setup_sidebar()
 {
-    $j("#hide_sidebar").click(hide_sidebar);
-    $j("#show_sidebar").click(show_sidebar);
+    $j("#hide_sidebar").on("click", hide_sidebar);
+    $j("#show_sidebar").on("click", show_sidebar);
 }
 
 function update_search_filter()
@@ -242,7 +242,7 @@ function handle_search(event)
 function setup_search()
 {
     settings.search_term = $j("#class_search").val();
-    $j("#class_search").keyup(handle_search);
+    $j("#class_search").on("keyup", handle_search);
 }
 
 /*  Event handlers  */
@@ -291,7 +291,7 @@ function add_message(msg, cls)
 function disable_checkboxes()
 {
     $j(".classchange_checkbox").attr("disabled", "disabled");
-    $j(".classchange_checkbox").unbind("change");
+    $j(".classchange_checkbox").off("change");
 }
 
 function update_checkboxes()
@@ -299,9 +299,9 @@ function update_checkboxes()
     $j(".section_highlight").removeClass("section_highlight");
     $j(".section_conflict").removeClass("section_conflict");
     $j(".student_enrolled").removeClass("student_enrolled");
-    $j(".classchange_checkbox").removeAttr("checked");
-    $j(".classchange_checkbox").removeAttr("disabled");
-    $j(".classchange_checkbox").unbind("change");
+    $j(".classchange_checkbox").prop("checked", false);
+    $j(".classchange_checkbox").prop("disabled", false);
+    $j(".classchange_checkbox").off("change");
     data.conflicts = {};
     
     //  Gray out checkboxes for full classes.  Checkboxes for non-full classes trigger
@@ -312,7 +312,7 @@ function update_checkboxes()
         {
             var section = data.sections[data.timeslots[ts_id].sections[i]];
             var studentcheckbox = $j("#classchange_" + section.id + "_" + state.student_id + "_" + ts_id);
-            studentcheckbox.hover(check_conflicts, clear_conflicts);
+            studentcheckbox.on("mouseenter", check_conflicts).on("mouseleave", clear_conflicts);
             //  Disable the checkbox if the class is full, unless we are overriding that
             if ((section.full) && (!(settings.override_full)))
             {
@@ -328,7 +328,7 @@ function update_checkboxes()
             }
             else 
             {
-                studentcheckbox.change(handle_checkbox);
+                studentcheckbox.on("change", handle_checkbox);
             }
         }
     }
@@ -373,9 +373,9 @@ function update_checkboxes()
             sched_td.replaceWith(section_td_old);
             var studentcheckbox = $j("#classchange_" + section.id + "_" + state.student_id + "_" + section.timeslots[j]);
             studentcheckbox.prop("checked", "checked");
-            studentcheckbox.removeAttr("disabled");
-            studentcheckbox.unbind("change");
-            studentcheckbox.change(handle_checkbox);
+            studentcheckbox.prop("disabled", false);
+            studentcheckbox.off("change");
+            studentcheckbox.on("change", handle_checkbox);
         }
     }
     
@@ -442,12 +442,12 @@ function set_current_student(student_id)
         });
 
         render_classchange_table(student_id);
-        $j("#status_switch").removeAttr("disabled");
-        $j("#schedule_print").removeAttr("disabled");
-        $j("#status_switch").unbind("click");
-        $j("#schedule_print").unbind("click");
-        $j("#status_switch").click(function () {set_current_student(null);});
-        $j("#schedule_print").click(function () {print_schedule();});
+        $j("#status_switch").prop("disabled", false);
+        $j("#schedule_print").prop("disabled", false);
+        $j("#status_switch").off("click");
+        $j("#schedule_print").off("click");
+        $j("#status_switch").on("click", function () {set_current_student(null);});
+        $j("#schedule_print").on("click", function () {print_schedule();});
     }
     else
     {
@@ -695,7 +695,7 @@ function handle_checkbox(event)
             add_student(target_info[2], target_info[1], size_override);
         else
         {
-            $j("#" + event.target.id).removeAttr("checked");
+            $j("#" + event.target.id).prop("checked", false);
         }
     }
     else
@@ -1114,7 +1114,7 @@ function render_category_options()
             new_checkbox.prop("checked", "checked");
         }
 
-        new_checkbox.change(function (event) {
+        new_checkbox.on("change", function (event) {
             var target_id = extract_category_id(event.target.id);
             settings.categories_to_display[target_id] = !settings.categories_to_display[target_id];
             render_table(state.display_mode, state.student_id);
@@ -1131,7 +1131,7 @@ function render_category_options()
     add_category_checkbox(open_class_category);
 
     //initialize select all/none
-    $j('.category_selector').click(toggle_categories);
+    $j('.category_selector').on("click", toggle_categories);
 }
 
 /*  This function populates the linked data structures once all components have arrived.
@@ -1329,10 +1329,7 @@ function populate_full()
         if (!data.sections[sec_id])
             console.log("Could not find section " + sec_id);
         else {
-            if (full)
-            {
-                data.sections[sec_id].full = true;
-            }
+            data.sections[sec_id].full = full;
         }
     }
 }
@@ -1409,11 +1406,11 @@ function refresh_counts() {
     fetch_all(true);
 }
 
-$j(document).scroll(function(){
+$j(document).on("scroll", function(){
     $j("#student_selector_area").css("left", window.scrollX);
 });
 
-$j(document).scroll(function () {
+$j(document).on("scroll", function () {
     // make timeslots stick to the top
     $j(".timeslot_top").each(function () {
         var scroll_top = window.scrollY;
