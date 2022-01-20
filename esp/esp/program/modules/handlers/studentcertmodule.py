@@ -31,7 +31,6 @@ Learning Unlimited, Inc.
 
 from esp.program.modules.base import ProgramModuleObj, main_call, needs_student, meets_cap
 from esp.program.modules.handlers.programprintables import ProgramPrintables
-from esp.middleware import ESPError
 from esp.utils.latex  import render_to_latex
 
 from datetime import datetime
@@ -56,7 +55,7 @@ class StudentCertModule(ProgramModuleObj):
     @meets_cap
     def certificate(self, request, tl, one, two, module, extra, prog):
         if not self.isStep():
-            raise ESPError('Please return after the program has ended to get your completion certificate')
+            return self.goToCore(tl)
 
         user = request.user
 
