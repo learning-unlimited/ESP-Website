@@ -52,6 +52,8 @@ Minor new features
 - Added an admin checkbox interface for the steps that are required for ensuring a program is completely setup
 - Added a filter for expired vs unexpired permissions and student registrations in the admin panel
 - Added buttons to the custom form response interface to bulk download files
+- Added the default values to the help text in the tag settings UI
+- When students are unenrolled from classes, their lottery preferences are no longer expired
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -66,3 +68,15 @@ Minor bug fixes
 - Fixed the order of modules on the student and teacher registration mainpages (sorting order is now required -> seq -> isCompleted)
 - Fixed the login redirect behavior when a user is already logged in
 - LaTeX in class titles is no longer rendered on the survey results page to prevent errors
+- Fixed a bug that duplicated (or triplicated) help text in one of the buttons for the QSD editor
+- Fixed a bug that prevented the "full" status of classes from updating on the grid-based class changes page
+- Fixed a bug that previously allowed non-admins to access 'manage' QSD pages
+- Fixed text wrapping in the webapp
+
+Development changes
+===================
+
+Dependency changes
+~~~~~~~~~~~~~~~~~~
+- Upgraded jQuery (1.12.4 -> 3.6.0)
+- Upgraded jQuery UI (1.12.1 -> 1.13.0)
