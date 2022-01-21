@@ -29,6 +29,7 @@
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/google/palette.js@8418158452401c15d276d9632b88933aa581718f/palette.js"></script>
 <script type="text/javascript" src="/media/scripts/lodash.compat.min.js"></script>
+<script type="text/javascript" src="/media/scripts/print.min.js"></script>
 
 <!--Scheduler-->
 <script type="text/javascript">
@@ -38,6 +39,7 @@
   var has_autoscheduler_frontend = "{{ has_autoscheduler_frontend }}";
   var has_moderator_module = "{{ has_moderator_module }}";
   var moderator_title = "{{ program.getModeratorTitle }}";
+  var jqueryui_version = "{{ settings.JQUERY_UI_VERSION }}";
 </script>
 
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
