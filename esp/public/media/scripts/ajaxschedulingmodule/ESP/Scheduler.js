@@ -115,7 +115,7 @@ function Scheduler(
         );
 
         // Set up keyboard shortcuts
-        $j("body").keydown(function(evt) {
+        $j("body").on("keydown", function(evt) {
             // console.log(evt);
             if(evt.keyCode == 46) { // delete is pressed: unschedule the selected section
                 this.sections.unscheduleSection(this.sections.selectedSection);
@@ -137,10 +137,10 @@ function Scheduler(
             }
         }.bind(this));
 
-        $j('body').keyup(function(evt) {
+        $j('body').on("keyup", function(evt) {
             if(evt.keyCode == 191) { // '/' is pressed: open the class directory and focus on the search box
                 $j("#side-panel").tabs({active: 0});
-                $j("#class-search-text").focus();
+                $j("#class-search-text").trigger("focus");
             }
         });
 
@@ -197,6 +197,17 @@ function Scheduler(
                 this.sections.scheduleAsGhost(cell.room_id, cell.timeslot_id);
             }
         }.bind(this));
+
+        $j("body").on("click", "#print_button", function(evt, ui) {
+            printJS({
+                printable: "matrix-div",
+                type: 'html',
+                css: ["/media/default_styles/scheduling.css", "/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.css", "https://ajax.aspnetcdn.com/ajax/jquery.ui/" + jqueryui_version + "/themes/base/jquery-ui.css"],
+                targetStyles: ['*'],
+                maxWidth: 5000,
+                ignoreElements: ['print_button']
+            });
+        });
     };
 
     this.init();

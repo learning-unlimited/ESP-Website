@@ -23,7 +23,7 @@ json_data = {};
   $j(document).ready(setup_sort_control);
 
   // Start the AJAX request to get the class data and display it
-  json_fetch(["sections", "class_subjects"], fillClasses, json_data, function() { alert("Error loading class data"); });
+  json_fetch(["class_subjects"], fillClasses, json_data, function() { alert("Error loading class data"); });
 
 /* ]]> */
 </script>

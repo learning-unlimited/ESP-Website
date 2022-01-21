@@ -12,10 +12,10 @@ function ApiClient() {
         $j.getJSON(
             'ajax_change_log',
             { 'last_fetched_index': last_fetched_index })
-            .success(function(ajax_data, status) {
+            .done(function(ajax_data, status) {
                 callback(ajax_data);
             })
-            .error(function(ajax_data, status) {
+            .fail(function(ajax_data, status) {
                 errorReporter("An error occurred fetching the changelog.");
             });
     }
@@ -38,9 +38,9 @@ function ApiClient() {
         if(locked) {
             params['locked'] = 'yes';
         }
-        $j.post('ajax_set_comment', params).success(function() {
+        $j.post('ajax_set_comment', params).done(function() {
             callback();
-        }).error(function() {
+        }).fail(function() {
             errorReporter('An error occurred setting comment.');
         });
     };
@@ -139,7 +139,7 @@ function ApiClient() {
      */
     this.send_request = function(fnc, req, callback, errorReporter){
         $j.post(fnc, req, "json")
-            .success(function(ajax_data, status) {
+            .done(function(ajax_data, status) {
                 if (ajax_data.ret){
                     console.log("success");
                     callback();
@@ -149,7 +149,7 @@ function ApiClient() {
                     errorReporter(ajax_data.msg);
                 }
             })
-            .error(function(ajax_data, status) {
+            .fail(function(ajax_data, status) {
                 console.log("error");
                 errorReporter("An error occurred while attempting the requested change.");
             });

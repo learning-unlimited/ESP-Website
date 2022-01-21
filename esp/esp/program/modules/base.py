@@ -172,7 +172,7 @@ class ProgramModuleObj(models.Model):
         """Includes only required modules"""
         prog = self.program
         module_type = self.module.module_type
-        moduleobjs = filter(lambda mod: mod.module.module_type == module_type and mod.required, prog.getModules())
+        moduleobjs = filter(lambda mod: mod.module.module_type == module_type and mod.isRequired() == True, prog.getModules())
         moduleobjs.sort(key=lambda mod: mod.seq)
         return moduleobjs
     #   Program.getModules cache takes care of our dependencies
@@ -329,6 +329,9 @@ class ProgramModuleObj(models.Model):
                                        'OnSiteAttendance', 'OnsitePaidItemsModule']
     def isCompleted(self):
         return False
+
+    def isRequired(self):
+        return self.required
 
     def prepare(self, context):
         return context
@@ -616,7 +619,7 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
         user = request.user
         program = request.program
         canView = user.updateOnsite(request)
-        request.mod_required = moduleObj.required
+        request.mod_required = moduleObj.isRequired()
         request.tl = tl
         if not canView:
             canView = Permission.user_has_perm(user,

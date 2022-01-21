@@ -38,6 +38,7 @@ from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_d
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType, RegistrationProfile, ScheduleMap
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.resources.models        import ResourceRequest
 from esp.tagdict.models          import Tag
 from esp.utils.web               import render_to_response
@@ -260,6 +261,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         enrolled = RegistrationType.objects.get_or_create(name='Enrolled', category = "student")[0]
         onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
         not_found = []
+        verbs = RTC.getVisibleRegistrationTypeNames(prog)
         if request.POST and 'submitted' in request.POST:
             # split with delimiters comma, semicolon, and space followed by any amount of extra whitespace
             misc_students = filter(None, re.split(r'[;,\s]\s*', request.POST.get('misc_students')))
@@ -285,7 +287,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                             for ts in [ts.id for ts in section.get_meeting_times()]:
                                 if ts in sm.map and len(sm.map[ts]) > 0:
                                     for sm_sec in sm.map[ts]:
-                                        sm_sec.unpreregister_student(student)
+                                        sm_sec.unpreregister_student(student, verbs)
                         if 'enroll' in request.POST:
                             for rt in [enrolled, onsite]:
                                 srs = StudentRegistration.objects.filter(user = student, section = section, relationship = rt)
@@ -334,6 +336,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         attended = RegistrationType.objects.get_or_create(name = 'Attended', category = "student")[0]
         enrolled = RegistrationType.objects.get_or_create(name='Enrolled', category = "student")[0]
         onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
+        verbs = RTC.getVisibleRegistrationTypeNames(prog)
         if 'student' in request.POST and 'secid' in request.POST:
             students = ESPUser.objects.filter(username=request.POST['student'])
             if not students.exists():
@@ -370,7 +373,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                                 for ts in [ts.id for ts in section.get_meeting_times()]:
                                     if ts in sm.map and len(sm.map[ts]) > 0:
                                         for sm_sec in sm.map[ts]:
-                                            sm_sec.unpreregister_student(student)
+                                            sm_sec.unpreregister_student(student, verbs)
                             if request.POST.get('enroll', 'true').lower() == 'true':
                                 for rt in [enrolled, onsite]:
                                     srs = StudentRegistration.objects.filter(user = student, section = section, relationship = rt)

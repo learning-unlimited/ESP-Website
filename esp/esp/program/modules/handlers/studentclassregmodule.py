@@ -51,6 +51,7 @@ from django.core.cache import cache
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call, meets_cap, no_auth
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, StudentRegistration, StudentSubjectInterest
 from esp.utils.web import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
@@ -91,7 +92,7 @@ def json_encode(obj):
         return { 'id': obj.id,
                  'status': obj.status,
                  'duration': obj.duration,
-                 'get_meeting_times': obj._events,
+                 'get_meeting_times': sorted(list(obj.get_meeting_times()), cmp=lambda e1, e2: cmp(e1.start, e2.start)),
                  'num_students': obj.num_students(),
                  'capacity': obj.capacity
                  }
@@ -616,7 +617,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @staticmethod
     def clearslot_logic(request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return True if there are no errors """
-
+        verbs = RTC.getVisibleRegistrationTypeNames(prog)
         #   Get the sections that the student is registered for in the specified timeslot.
         oldclasses = request.user.getSections(prog).filter(meeting_times=extra)
         #   Narrow this down to one class if we're using the priority system.
@@ -628,7 +629,7 @@ class StudentClassRegModule(ProgramModuleObj):
             if result and not hasattr(request.user, "onsite_local"):
                 return result
             else:
-                sec.unpreregister_student(request.user)
+                sec.unpreregister_student(request.user, verbs)
         #   Return the ID of classes that were removed.
         return oldclasses.values_list('id', flat=True)
 
