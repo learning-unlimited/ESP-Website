@@ -26,6 +26,7 @@ AJAX Scheduler
 - Switched the default availability setting for moderators
 - Classes can now be sorted by teacher "hosedness"
 - If a server error is encountered while saving a scheduling comment, the comment is now reverted
+- Added a button to print the scheduling matrix
 
 Accounting
 ~~~~~~~~~~
@@ -54,6 +55,8 @@ Minor new features
 - Added buttons to the custom form response interface to bulk download files
 - Added the default values to the help text in the tag settings UI
 - When students are unenrolled from classes, their lottery preferences are no longer expired
+- Users without a profile are now prompted to fill one out upon logging in
+- Added an option to the grid-based class changes interface to check-in (or not check-in) students when changing their schedules
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -72,6 +75,7 @@ Minor bug fixes
 - Fixed a bug that prevented the "full" status of classes from updating on the grid-based class changes page
 - Fixed a bug that previously allowed non-admins to access 'manage' QSD pages
 - Fixed text wrapping in the webapp
+- Fixed the caching of the catalog and dashboard when scheduling classes and running the class lottery
 
 Development changes
 ===================
