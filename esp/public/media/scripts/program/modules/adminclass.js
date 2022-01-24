@@ -3,9 +3,10 @@ var classes_global = {};
 var sections_global = {};
 
 function deleteClass() {
-    if (confirm('Are you sure you would like to delete this class? \n Since you are an admin, you can delete this class with students. \n Deleting is hard to undo, so consider instead marking it unreviewed or rejected.')) {
-       return true;
-    }
+    //if (confirm('Are you sure you would like to delete this class? \n Since you are an admin, you can delete this class with students. \n Deleting is hard to undo, so consider instead marking it unreviewed or rejected.')) {
+    //   return true;
+    //}
+	alert("You should \"delete\" a class by marking it as rejected. If you think you need to actually delete the class, and you have talked to webmins and understand the consequences (e.g. permanent loss of data about the class, possibly breaking some databases), then the only way to do so is on the admin panel. DO NOT fully delete a class unless you understand the consequences.");
     return false;
 }
 function assignRoom(clsid){
