@@ -33,46 +33,61 @@ Accounting
 - Line items can now be marked as covered by financial aid (or not, e.g., t-shirts). When financial aid is granted, it will only be granted in an amount that covers only the line items that are marked as covered by financial aid.
 - Added a new page to see all of the accounting for a user across all programs (/accounting/user)
 
-Minor new features
-~~~~~~~~~~~~~~~~~~
+Student and teacher registration changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Teachers no longer show up as their own coteachers on the teacher registration mainpage
+- When students are unenrolled from classes, their lottery preferences are no longer expired
+- Fixed bugs related to the registration progress bar interface
+- Fixed a bug where a teacher's availability could include times for which they signed up for training, etc (this may fix instances where teachers were able to register more hours of classes than they should have been able to)
+- Fixed the order of modules on the student and teacher registration mainpages (sorting order is now required -> seq -> isCompleted)
+- Added a warning banner to the top of all required modules (this banner and the deadline banner are also now included in all themes)
+- Fixed the bottom of the phase zero confirmation page being cut off
+
+Program management changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Added an admin checkbox interface for the steps that are required for ensuring a program is completely setup
+- Rounded the hours stats on the dashboard
+- Added the default values to the help text in the tag settings UI
+- Fixed the performance of /manage/emails for sites that sent emails to lots of recipients (this was previously so bad that it could cause the entire server to crash)
+- Added an undo button to the student lottery management page
+- Split teacher registration tags into "Teacher Registration Settings", "Moderator Settings", and "Class Registration Settings"
+- Admins can now set custom landing pages for students and teachers with the "student_home_page" and "teacher_home_page" tags, respectively
+- Added buttons to the custom form response interface to bulk download files
 - Classes are now colored by category in the popularity graphs on the student big board
 - Tweaked the tooltip of the popularity graphs on the student big board
-- Changed the default font families for the default theme customizations ("Default" and "Rupaa")
-- Fixed the styling of the survey responses pdf
-- Added an undo button to the student lottery management page
-- Rounded the hours stats on the dashboard
-- Split teacher registration tags into "Teacher Registration Settings", "Moderator Settings", and "Class Registration Settings"
-- Added a warning banner to the top of all required modules (this banner and the deadline banner are also now included in all themes)
 - Student and teacher registration status is now shown on the userview page
-- Fixed the list of programs that are shown after updating your profile (filtered by grade for students, now shown for volunteers)
-- Admins can now set custom landing pages for students and teachers with the "student_home_page" and "teacher_home_page" tags, respectively
-- Teachers no longer show up as their own coteachers on the teacher registration mainpage
+- Fixed the color of messages on the deadline management page
+
+Onsite changes
+~~~~~~~~~~~~~~
+- Added an option to the grid-based class changes interface to check-in (or not check-in) students when changing their schedules
+- Fixed a bug that prevented the "full" status of classes from updating on the grid-based class changes page
+
+Printables changes
+~~~~~~~~~~~~~~~~~~
 - The student schedules pdf is now downloaded as a file instead of opening in the browser
+
+Theme changes
+~~~~~~~~~~~~~
+- Changed the default font families for the default theme customizations ("Default" and "Rupaa")
+- Fixed many bugs in the theme editor, including when loading and saving customizations
+
+Minor new features
+~~~~~~~~~~~~~~~~~~
+- Fixed the styling of the survey responses pdf
+- Fixed the list of programs that are shown after updating your profile (filtered by grade for students, now shown for volunteers)
 - Various error and success messages are now shown as banners to increase visibility
 - Added an anonymous option to the contact form
-- Added an admin checkbox interface for the steps that are required for ensuring a program is completely setup
 - Added a filter for expired vs unexpired permissions and student registrations in the admin panel
-- Added buttons to the custom form response interface to bulk download files
-- Added the default values to the help text in the tag settings UI
-- When students are unenrolled from classes, their lottery preferences are no longer expired
 - Users without a profile are now prompted to fill one out upon logging in
-- Added an option to the grid-based class changes interface to check-in (or not check-in) students when changing their schedules
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
-- Fixed many bugs in the theme editor, including when loading and saving customizations
-- Fixed a bug where a teacher's availability could include times for which they signed up for training, etc (this may fix instances where teachers were able to register more hours of classes than they should have been able to)
-- Fixed the performance of /manage/emails for sites that sent emails to lots of recipients (this was previously so bad that it could cause the entire server to crash)
-- Fixed the bottom of the phase zero confirmation page being cut off
 - Fixed the link in the admin deadline banner for several pages
 - Fixed the email address for some users on the userview page
-- Fixed the color of messages on the deadline management page
-- Fixed bugs related to the registration progress bar interface
-- Fixed the order of modules on the student and teacher registration mainpages (sorting order is now required -> seq -> isCompleted)
 - Fixed the login redirect behavior when a user is already logged in
 - LaTeX in class titles is no longer rendered on the survey results page to prevent errors
 - Fixed a bug that duplicated (or triplicated) help text in one of the buttons for the QSD editor
-- Fixed a bug that prevented the "full" status of classes from updating on the grid-based class changes page
 - Fixed a bug that previously allowed non-admins to access 'manage' QSD pages
 - Fixed text wrapping in the webapp
 - Fixed the caching of the catalog and dashboard when scheduling classes and running the class lottery
