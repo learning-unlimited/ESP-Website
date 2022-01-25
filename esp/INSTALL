@@ -38,8 +38,6 @@ a) Libraries obtained from the Internet
 If you use Ubuntu, a list of required system packages can be found in
 `packages_base.txt` in this directory; you can install them all at once with
 "./update_deps.sh".
-Note that if you use this approach, you still must download
-selenium-server-standalone separately.
 
 Packages useful for a production server are listed in a separate file.
 To install those, use "apt-get install -y $(< packages_prod.txt)".
@@ -61,7 +59,6 @@ zlib            System                  zlib1g-dev
 python          System  2.5             python
 setuptools      Python                  python-setuptools
 virtualenv      Python                  python-virtualenv
-selenium-server-standalone	System	http://selenium.googlecode.com/files/selenium-server-standalone-2.9.0.jar
 Node.js         System                  nodejs
 LESS            JS                      node-less
 
