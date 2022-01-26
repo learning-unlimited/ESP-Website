@@ -29,7 +29,7 @@ If you would like to talk to an administrator or teacher about the content of a 
 
 {% block additionalcontent %}
 \clearpage
-\noindent {\bf \underline{% templatetag openbrace %}{{ prog.niceName }} courses taken by {{ user.first_name }} {{ user.last_name }}}} \\
+\noindent {\bf \underline{% templatetag openbrace %}{{ prog.niceName|texescape }} courses taken by {{ user.first_name }} {{ user.last_name }}}} \\
 \hspace{0.5in}
 {{ descriptions }}
 {% endblock %}
