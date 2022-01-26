@@ -4,7 +4,7 @@
 {% block maincontent %}
 {{ block.super }}
 
-\noindent {\bf {\underline {\Large Certificate of Completion \hspace{2.5in} \normalsize {{ prog.niceName }} {{ date_range }} }}} \\
+\noindent {\bf {\underline {\Large Certificate of Completion \hspace{2.5in} \normalsize {{ prog.niceName|texescape }} {{ date_range }} }}} \\
 
 \vspace{0.3in}
 
@@ -21,7 +21,7 @@ Our program is not accredited to issue credit for any class, however, we leave i
 You may view the teachers' course descriptions on the attached pages.
 If you would like to talk to an administrator or teacher about the content of a particular course, please email us at {\tt {{ settings.DEFAULT_EMAIL_ADDRESSES.default|texescape }}}. \\
 
-\hspace{3in}\begin{minipage}{4in}{{ prog.niceName }} Directors \\
+\hspace{3in}\begin{minipage}{4in}{{ prog.niceName|texescape }} Directors \\
 {{ settings.INSTITUTION_NAME|texescape }} {{ settings.ORGANIZATION_SHORT_NAME|texescape }} \end{minipage}
 
 {% endautoescape %}
