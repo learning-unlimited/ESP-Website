@@ -35,8 +35,16 @@ function fillStats(data)
     // Fill in the volunteer num data
     fillData("#stats_volunteers", vitals.volunteernum)
 
+    if (has_moderator_module === "True") {
+        // Fill in the moderator num data
+        fillData("#stats_moderators", vitals.moderatornum)
+    }
+
     // Fill in the classes num data
     fillData("#stats_classes", vitals.classnum)
+
+    // Fill in the flags num data
+    fillData("#stats_flags", vitals.flagsnum)
 
     // Fill in the categories table
     $categories = $j("#stats_categories > .module_group_body");
@@ -86,33 +94,38 @@ function fillStats(data)
 
     // Fill in the t-shirts table
     $tshirts = $j("#stats_tshirts > .module_group_body");
-    html_string = "<table><tr><th colspan='"+(shirtnum.sizes.length+1)+"'>Teacher T-Shirts</th></tr>";
-    // Sizes header
-    html_string = html_string.concat("<tr><td></td>");
-    for (var i = 0; i < shirtnum.sizes.length; i++)
+    html_string = ""
+    for (var group of shirtnum.data)
     {
-	html_string = html_string.concat("<th class='smaller'>"+shirtnum.sizes[i]+"</th>");
+        var shirtsizes = group.shirt_sizes;
+        html_string = html_string.concat("<table><tr><th colspan='"+(shirtsizes.length+1)+"'>"+group.name+" T-Shirts</th></tr>");
+        // Sizes header
+        html_string = html_string.concat("<tr><td></td>");
+        for (var i = 0; i < shirtsizes.length; i++)
+        {
+            html_string = html_string.concat("<th class='smaller'>"+shirtsizes[i]+"</th>");
+        }
+        html_string = html_string.concat("</tr>");
+        // Types
+        var curDist = group.distribution;
+        for (var i = 0; i < curDist.length; i++)
+        {
+            //  console.log(curDist);
+            html_string = html_string.concat("<tr><th class='smaller'>"+curDist[i].type+"</th>");
+            for (var j = 0; j < curDist[i].counts.length; j++)
+            {
+                html_string = html_string.concat("<td>"+curDist[i].counts[j]+"</td>");
+            }
+            html_string = html_string.concat("</tr>");
+        }
+        html_string = html_string.concat("</table><br>");
     }
-    html_string = html_string.concat("</tr>");
-    // Types
-    for (var i = 0; i < shirtnum.data.teachers.length; i++)
-    {
-	var curDist = shirtnum.data.teachers[i];
-	//  console.log(curDist);
-	html_string = html_string.concat("<tr><th class='smaller'>"+curDist.type+"</th>");
-	for (var j = 0; j < curDist.distribution.length; j++)
-	{
-	    html_string = html_string.concat("<td>"+curDist.distribution[j]+"</td>");
-	}
-	html_string = html_string.concat("</tr>");
-    }
-    html_string = html_string.concat("</table>");
     $tshirts.html(html_string);
     
     //  Fill in the lunch/sibling discount table
-    $splashinfo = $j("#stats_splashinfo > .module_group_body");
     if (splashinfo)
     {
+        var $splashinfo = $j("#stats_splashinfo > .module_group_body");
         $splashinfo.html("<p><ul>    \
             <li>Saturday Lunch    \
                 <ul id=\"splashinfo_lunchsat_list\">    \
@@ -139,8 +152,6 @@ function fillStats(data)
             }
         }
     }
-    else
-        $splashinfo.html("SplashInfo module is not enabled -- no statistics");
     
     //  Fill in the accounting table
     $accounting = $j("#stats_accounting > .module_group_body");

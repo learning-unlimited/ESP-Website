@@ -41,7 +41,7 @@ class LIOInline(admin.TabularInline):
     model = LineItemOptions
 
 class LITAdmin(admin.ModelAdmin):
-    list_display = ['text', 'amount_dec', 'program', 'required', 'num_options', 'max_quantity']
+    list_display = ['text', 'amount_dec', 'program', 'required', 'for_finaid', 'num_options', 'max_quantity']
     search_fields = ['text', 'amount_dec', 'program__url', 'program__name']
     list_filter = ['program']
     inlines = [LIOInline,]
@@ -75,6 +75,7 @@ def finalize_finaid_grants(modeladmin, request, queryset):
         grant.finalize()
 class FinancialAidGrantAdmin(admin.ModelAdmin):
     list_display = ['id', 'request', 'user', 'program', 'finalized', 'amount_max_dec', 'percent']
+    readonly_fields=('finalized',)
     list_filter = ['request__program']
     search_fields = default_user_search('request__user')
     actions = [ finalize_finaid_grants, ]

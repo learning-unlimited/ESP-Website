@@ -83,7 +83,9 @@ class LotteryAssignmentController(object):
         'stats_display': (False, False),
         'directory': (os.getenv("HOME"), False),
         'use_student_apps': (False, 'Whether to use student application ranks'),
-        'fill_low_priorities': (False, 'Whether to push students who have interested classes marked but no priority, to priority')
+        'fill_low_priorities': (False, 'Whether to push students who have interested classes marked but no priority, to priority'),
+        'max_timeslots': (0, 'The maximum number of timeslots for which a student should be enrolled (0 means no limit)'),
+        'max_sections': (0, 'The maximum number of sections in which a student should be enrolled (0 means no limit)')
     }
 
     def __init__(self, program, **kwargs):
@@ -391,13 +393,21 @@ class LotteryAssignmentController(object):
         if self.options['use_student_apps']:
             possible_students *= (self.ranks[:, si] == rank)
 
+        #   Filter students by who has fewer than the max number of timeslot enrollments
+        if self.options['max_sections']:
+            possible_students *= (numpy.sum(self.student_sections, axis=1) < self.options['max_sections'])
+
+        #   Filter students by who has fewer than the max number of timeslot enrollments
+        if self.options['max_timeslots']:
+            possible_students *= (numpy.sum(self.student_schedules, axis=1) < self.options['max_timeslots'])
+
         #   Filter students by who has all of the section's timeslots available
         for i in range(timeslots.shape[0]):
-            possible_students *= (True - self.student_schedules[:, timeslots[i]])
+            possible_students *= ~(self.student_schedules[:, timeslots[i]])
 
         #   Filter students by who is not already registered for a different section of the class
         for sec_index in numpy.nonzero(self.section_overlap[:, si])[0]:
-            possible_students *= (True - self.student_sections[:, sec_index])
+            possible_students *= ~(self.student_sections[:, sec_index])
 
         #   Filter students by lunch constraint - if class overlaps with lunch period, student must have 1 additional free spot
         #   NOTE: Currently only works with 2 lunch periods per day
@@ -407,7 +417,7 @@ class LotteryAssignmentController(object):
                 for j in range(self.lunch_timeslots.shape[1]):
                     timeslot_index = self.timeslot_indices[self.lunch_timeslots[lunch_day, j]]
                     if timeslot_index != timeslots[i]:
-                        possible_students *= (True - self.student_schedules[:, timeslot_index])
+                        possible_students *= ~(self.student_schedules[:, timeslot_index])
 
         candidate_students = numpy.nonzero(possible_students)[0]
         if candidate_students.shape[0] <= num_spaces:
@@ -467,7 +477,7 @@ class LotteryAssignmentController(object):
                 #   Assign priority students to all sections in random order, grouped by duration
                 #   so that longer sections aren't disadvantaged by scheduling conflicts
                 #   Re-randomize for each priority level so that some sections don't keep getting screwed
-                sections_by_length = [numpy.nonzero(numpy.sum(self.section_schedules, axis=1) == i)[0] for i in range(self.num_timeslots, 0, -1)]
+                sections_by_length = [numpy.nonzero(numpy.sum(self.section_schedules, axis=1) == j)[0] for j in range(self.num_timeslots, 0, -1)]
                 for a in sections_by_length:
                     numpy.random.shuffle(a)
                     for section_index in a:
@@ -732,7 +742,10 @@ class LotteryAssignmentController(object):
 
         relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
         self.now = datetime.now()   # The time that all the registrations start at, in case all lottery registrations need to be manually reverted later
-        StudentRegistration.objects.bulk_create([StudentRegistration(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship, start_date=self.now) for i in range(student_ids.shape[0])])
+        srs = StudentRegistration.objects.bulk_create([StudentRegistration(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship, start_date=self.now) for i in range(student_ids.shape[0])])
+        # Trigger any relevant caches
+        for sr in srs:
+            sr.save()
         if self.options['stats_display']:
             logger.info("StudentRegistration enrollments all created to start at %s", self.now)
             logger.info('Created %d registrations', student_ids.shape[0])

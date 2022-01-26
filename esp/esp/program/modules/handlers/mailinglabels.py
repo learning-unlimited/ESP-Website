@@ -46,7 +46,7 @@ import operator
 
 
 class MailingLabels(ProgramModuleObj):
-    """ This allows one to generate Mailing Labels for both schools and users. You have the option of either creating a file which can be sent to MIT mailing services or actually create printable files.
+    doc = """This allows one to generate Mailing Labels for both schools and users. You have the option of either creating a file which can be sent to MIT mailing services or actually create printable files.
     """
 
     @classmethod
@@ -55,7 +55,8 @@ class MailingLabels(ProgramModuleObj):
             "admin_title": "Mailing Label Generation",
             "link_title": "Generate Mailing Labels",
             "module_type": "manage",
-            "seq": 100
+            "seq": 100,
+            "choosable": 1,
             }
 
     @aux_call
@@ -297,8 +298,8 @@ class MailingLabels(ProgramModuleObj):
 
         return output
 
-
-
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

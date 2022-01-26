@@ -72,6 +72,10 @@ def myesp_passwd(request):
                                                     'Success': False})
 
 @login_required
+def myesp_accountmanage(request):
+    return render_to_response('users/account_manage.html', request, {})
+
+@login_required
 def myesp_switchback(request):
     user = request.user
     user.updateOnsite(request)
@@ -170,15 +174,15 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             if new_data['address_postal'] == '':
                 new_data['address_postal'] = False
 
-            regProf.contact_user = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_user, '', curUser)
-            regProf.contact_emergency = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_emergency, 'emerg_')
+            regProf.contact_user = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_user, '')
 
             if new_data.get('dietary_restrictions'):
                 regProf.dietary_restrictions = new_data['dietary_restrictions']
 
             if role == 'student':
                 regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, new_data)
-                regProf.contact_guardian = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_guardian, 'guard_')
+                regProf.contact_guardian = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_guardian, 'guard_')
+                regProf.contact_emergency = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_emergency, 'emerg_')
             elif role == 'teacher':
                 regProf.teacher_info = TeacherInfo.addOrUpdate(curUser, regProf, new_data)
             elif role == 'guardian':
@@ -187,9 +191,9 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                 regProf.educator_info = EducatorInfo.addOrUpdate(curUser, regProf, new_data)
             regProf.save()
 
-            curUser.first_name = new_data['first_name']
-            curUser.last_name  = new_data['last_name']
-            curUser.email     = new_data['e_mail']
+            curUser.first_name = new_data.get('first_name')
+            curUser.last_name  = new_data.get('last_name')
+            curUser.email     = new_data.get('e_mail')
             curUser.save()
             if responseuponCompletion == True:
                 return registration_redirect(request)
@@ -203,7 +207,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             except:
                 pass
             form = FormClass(curUser, replacement_data)
-            if not Tag.getTag('allow_change_grade_level'):
+            if not Tag.getBooleanTag('allow_change_grade_level'):
                 if prog_input is None:
                     regProf = RegistrationProfile.getLastProfile(curUser)
                 else:
@@ -211,11 +215,11 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                 if regProf.id is None:
                     regProf = RegistrationProfile.getLastProfile(curUser)
                 if regProf.student_info:
-                    if regProf.student_info.dob:
+                    if regProf.student_info.dob and 'dob' in form.fields:
                         form.data['dob'] = regProf.student_info.dob
                         form.fields['dob'].widget.attrs['disabled'] = "true"
                         form.fields['dob'].required = False
-                    if regProf.student_info.graduation_year:
+                    if regProf.student_info.graduation_year and 'graduation_year' in form.fields:
                         form.data['graduation_year'] = regProf.student_info.graduation_year
                         form.fields['graduation_year'].widget.attrs['disabled'] = "true"
                         form.fields['graduation_year'].required = False
@@ -250,6 +254,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
     context['request'] = request
     context['form'] = form
+    context['require_student_phonenum'] = Tag.getBooleanTag('require_student_phonenum')
     return render_to_response('users/profile.html', request, context)
 
 @login_required
@@ -261,10 +266,7 @@ def myesp_onsite(request):
     progs = Permission.program_by_perm(user,"Onsite")
 
     # Order them decreasing by id
-    # - Currently reverse the list in Python, otherwise fbap's cache is ignored
-    # TODO: Fix this
-    progs = list(progs)
-    progs.reverse()
+    progs = list(progs.order_by("-id"))
 
     if len(progs) == 1:
         return HttpResponseRedirect('/onsite/%s/main' % progs[0].getUrlBase())

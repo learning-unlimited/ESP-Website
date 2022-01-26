@@ -1,51 +1,74 @@
 function showColor() {
     $j('.color').each(function(i){
-	$j(this).spectrum({
-	    showInput: true,
-	    showPalette: true,
-	    showInitial: true,
-	    showButtons: false,
-	    preferredFormat: "name",
-	    palette: [palette_list],
-	    showPaletteOnly: true
-	});
-    })
-	}
+        $j(this).spectrum({
+            type: "color",
+            showInput: true,
+            showInitial: true,
+            showButtons: false,
+            preferredFormat: "hex",
+            palette: [palette_list],
+            showPaletteOnly: true
+        });
+    });
+}
 
-function showPalette() {
-    $j('.palette').each(function(i){
-	$j(this).spectrum({
-	    showInput: true,
-	    showPalette: true,
-	    showInitial: true,
-	    showButtons: false,
-	    preferredFormat: "name",
-	    palette: [palette_list]
-	});
-    })
-	}
+function showBasePalette() {
+    $j('#palette_base_div .palette').each(function(i){
+        $j(this).spectrum({
+            type: "color",
+            showInput: true,
+            allowEmpty: false,
+            showPalette: false,
+            showInitial: true,
+            showButtons: true,
+            preferredFormat: "hex",
+            disabled: true
+        });
+    });
+}
+
+function showCustomPalette() {
+    $j('#palette_custom_div .palette').each(function(i){
+        $j(this).spectrum({
+            type: "color",
+            showInput: true,
+            allowEmpty: false,
+            showPalette: false,
+            showInitial: true,
+            showButtons: true,
+            preferredFormat: "hex",
+            cancelText: "Remove",
+        });
+    });
+    var $active;
+    $j("#palette_custom_div .sp-replacer").click(function(e) {
+        $active = $j(e.target).closest(".sp-replacer").prev();
+    });
+    $j(".sp-container button.sp-cancel").click(function(e) {
+        $active.spectrum("destroy");
+        $active.remove();
+    });
+}
 
 $j(document).ready(function(){
     showColor();
-    showPalette();
+    showBasePalette();
+    showCustomPalette();
     $j('#addToPalette').click(function(){
-	var newColor = $j('<input>');
-	newColor.addClass('palette');
-	newColor.attr({
-	    name: 'palette',
-	    type: 'text',
-	    value: 'black'
-	});
-	$j('#palette_div').append(newColor);
-	showPalette()
+        var newColor = $j('<input>');
+        newColor.addClass('palette');
+        newColor.attr({
+            name: 'palette',
+            type: 'text',
+            value: 'black'
+        });
+        $j('#palette_custom_div').append(newColor);
+        $j('#palette_custom_div').append(" ");
+        showCustomPalette();
     });
 
-    $j('#removeFromPalette').click(function(){
-	$j('#palette_div div.sp-replacer.sp-light:last').remove();
-	$j('#palette_div input:last').remove()
-    });    
     $j('[rel=popover]').each(function(){
-	$j(this).popover({placement:'left', animation:false});
+        $j(this).popover({placement:'left', animation:false});
     });
     
     //  Show optional variable selector if there are optional variables available

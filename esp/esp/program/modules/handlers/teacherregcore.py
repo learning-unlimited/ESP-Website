@@ -33,17 +33,21 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, CoreModule, main_call, aux_call
+from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.utils.web import render_to_response
 from esp.miniblog.models import Entry
 
 class TeacherRegCore(ProgramModuleObj, CoreModule):
+    doc = """Serves the main teacher registration page."""
+
     @classmethod
     def module_properties(cls):
         return {
             "admin_title": "Core Teacher Registration",
             "link_title": "Teacher Registration",
             "module_type": "teach",
-            "seq": -9999
+            "seq": -9999,
+            "choosable": 1,
             }
 
     @main_call
@@ -56,12 +60,15 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
 
         context['completedAll'] = True
         for module in modules:
-            if not module.isCompleted() and module.required:
+            if not module.isCompleted() and module.isRequired():
                 context['completedAll'] = False
 
             context = module.prepare(context)
 
+        records = StudentRegCore.get_reg_records(request.user, prog, 'teach')
+
         context['modules'] = modules
+        context['records'] = records
         context['options'] = prog.classregmoduleinfo
         context['one'] = one
         context['two'] = two

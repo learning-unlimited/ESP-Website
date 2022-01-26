@@ -21,7 +21,7 @@ def render_class_core(cls):
 
     # Allow tag configuration of whether class descriptions get collapsed
     # when the class is full (default: yes)
-    collapse_full = Tag.getBooleanTag('collapse_full_classes', prog, True)
+    collapse_full = Tag.getBooleanTag('collapse_full_classes', prog)
 
     return {'class': cls,
             'collapse_full': collapse_full,
@@ -58,6 +58,25 @@ render_class.cached_function.get_or_create_token(('cls',))
 render_class.cached_function.depend_on_row('program.StudentRegistration', lambda reg: {'user': reg.user})
 render_class.cached_function.get_or_create_token(('user',))
 
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog_webapp.html')
+def render_class_webapp(cls, prog, user=None, filter=False, timeslot=None, checked_in=False):
+    """Render the entire class for the webapp, including user-specific parts.
+
+    Calls render_class_core for non-user-specific parts.
+    """
+    context = _render_class_helper(cls,  user, filter, timeslot, webapp = True, prereg_suffix = 'onsiteaddclass')
+    context['checked_in'] = checked_in
+    return context
+render_class_webapp.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
+render_class_webapp.cached_function.get_or_create_token(('cls',))
+# We need to depend on not only the user's StudentRegistrations for this
+# section, but in fact on their StudentRegistrations for all sections, because
+# of things like lunch constraints -- a change made in another block could
+# affect whether you can add a class in this one.  So we depend on all SRs for
+# this user.  This only applies to tags that can depend on a user.
+render_class_webapp.cached_function.depend_on_row('program.StudentRegistration', lambda reg: {'user': reg.user})
+render_class_webapp.cached_function.get_or_create_token(('user',))
+render_class_webapp.cached_function.depend_on_row('users.Record', lambda record: {'prog': record.program}, lambda record: record.event == 'attended')
 
 @cache_function
 def render_class_direct(cls):
@@ -69,7 +88,7 @@ def render_class_direct(cls):
 render_class_direct.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 
 
-def _render_class_helper(cls, user=None, filter=False, timeslot=None):
+def _render_class_helper(cls, user=None, filter=False, timeslot=None, webapp = False, prereg_suffix = 'addclass'):
     """Computes the context for render_class and render_class_direct."""
     scrmi = cls.parent_program.studentclassregmoduleinfo
     crmi = cls.parent_program.classregmoduleinfo
@@ -83,16 +102,21 @@ def _render_class_helper(cls, user=None, filter=False, timeslot=None):
             cls.category == cls.parent_program.open_class_category):
         prereg_url = None
     else:
-        prereg_url = cls.parent_program.get_learn_url() + 'addclass'
+        prereg_url = cls.parent_program.get_learn_url() + prereg_suffix
 
     if user and prereg_url and timeslot:
-        errormsg = cls.cannotAdd(user, which_section=section)
+        errormsg = cls.cannotAdd(user, which_section=section, webapp = webapp)
     else:
         errormsg = None
 
     show_class = (not filter) or (not errormsg)
 
+    # Allow tag configuration of whether class descriptions get collapsed
+    # when the class is full (default: yes)
+    collapse_full = Tag.getBooleanTag('collapse_full_classes', cls.parent_program)
+
     return {'class':      cls,
+            'collapse_full': collapse_full,
             'section':    section,
             'user':       user,
             'prereg_url': prereg_url,

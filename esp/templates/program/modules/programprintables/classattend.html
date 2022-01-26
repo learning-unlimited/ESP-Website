@@ -1,4 +1,5 @@
-{% for sec in item.cls.sections.all %} 
+{% load users %}
+
 <div style="page-break-after: always;">&nbsp;</div>
 <div class="classroster">
   <div class="classtitle">Attendance for <br />
@@ -19,7 +20,7 @@
   </tr>
   </table>
   <br />
-  <div class="teachername"><span>Teacher:  {{ item.teacher.name }}</span></div>
+  <div class="teachername"><span>{% if bymoderator %}{{ program.getModeratorTitle }}{% else %}Teacher{% endif %}:  {{ item.teacher.name }}</span></div>
   <br />
   <div class="teachername">Class Email: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-class@{{ EMAIL_HOST_SENDER }}</tt><br />
 Students Email: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-students@{{ EMAIL_HOST_SENDER }}</tt>
@@ -43,7 +44,7 @@ Students Email: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-students@{{ EMAIL_HOST_SEN
       <td>{{ student.id }}</td>
       <td>{{ student.name }}</td>
       <td>
-          {{ student.getGrade }}</td>
+          {{ student|getGradeForProg:program.id }}</td>
     </tr>
     {% endfor %}
     <tr>
@@ -86,4 +87,3 @@ Students Email: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-students@{{ EMAIL_HOST_SEN
 </div>
 
 <br />
-{% endfor %}

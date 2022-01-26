@@ -2,7 +2,20 @@ from django.forms.fields import Select
 from django import forms
 from collections import OrderedDict
 from localflavor.us.forms import USStateField, USStateSelect
+from django.utils.html import conditional_escape
 
+class CustomFileWidget(forms.ClearableFileInput):
+    """
+    Custom widget for the 'File' field to fix the URL.
+    """
+    def get_template_substitution_values(self, value):
+        """
+        Return value-related substitutions.
+        """
+        return {
+            'initial': conditional_escape(value.url.split("/")[-1]),
+            'initial_url': conditional_escape("/" + value.url.split("/public/")[1])
+        }
 
 class NameWidget(forms.MultiWidget):
     """

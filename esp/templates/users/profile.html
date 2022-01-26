@@ -2,21 +2,28 @@
 
 {% block title %}Profile Editor{% endblock %}
 
-{% block content %}
-
+{% block stylesheets %}
+{{ block.super }}
 <style>
-div.required label:after {
+div.required label.control-label:after {
   content:"*";
   color:red;
 }
-</style>
 
+#id_receive_txt_message {
+  list-style-type: none;
+  margin-left: 0px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
 <div class="row-fluid">
-  <div class="span10 offset1">
+  <div class="span10">
     <h1>Your Profile Information</h1>
   </div>
   <div class="row-fluid">
-    <div class="span12 offset1">
+    <div class="span12">
       {% load render_qsd %}
       {% inline_qsd_block "account_creation_basic_info" %}
 <p>First, please tell us a bit about yourself!  The fields with red asterisks are required.  After you have filled out everything, click the "update" button at the bottom of the page to continue.</p>
@@ -27,9 +34,12 @@ div.required label:after {
   </div>
 </div>
 <div class="row-fluid">
-  <div class="span10 offset1">
+  <div class="span10">
       {% if form.errors %}
-      <h4 style="color:red">Please fix the following error{{ form.errors|pluralize }} in the form.</h4>
+            <div class="alert alert-danger">
+                <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                    Please fix the following error{{ form.errors|pluralize }} in the form.
+            </div>
       <ul>
 	{% for error in form.errors.items %}
 	{% ifequal error.0 '__all__' %}
@@ -55,7 +65,6 @@ div.required label:after {
             {% include "users/profiles/studentinfo.html" %}
             {% include "users/profiles/guardiancontact.html" %}
             {% include "users/profiles/emergencycontact.html" %}
-            {% include "users/profiles/gradechangerequestinfo.html" %}
         {% else %}
 
         {% ifequal profiletype "educator" %}
@@ -72,7 +81,7 @@ div.required label:after {
             {% include "users/profiles/usercontact.html" %}
         {% else %}
 
-        {% include "../templates/themes/bs_form.html" %}
+        {% include "themes/bs_form.html" %}
 
         {% endifequal %}
         {% endifequal %}
@@ -88,9 +97,41 @@ div.required label:after {
 </div>
 
 <script>
+function check_state() {
+  if ($j("#id_address_state").val() == "International") {
+    $j("#id_address_country").removeClass("hidden");
+    if ($j("#id_address_country").val() == "US") {
+      $j("#id_address_country").val("");
+    }
+  } else {
+    $j("#id_address_country").addClass("hidden");
+    $j("#id_address_country").val("US");
+  }
+}
+function check_emerg_state() {
+  if ($j("#id_emerg_address_state").val() == "International") {
+    $j("#id_emerg_address_country").removeClass("hidden");
+    if ($j("#id_emerg_address_country").val() == "US") {
+      $j("#id_emerg_address_country").val("");
+    }
+  } else {
+    $j("#id_emerg_address_country").addClass("hidden");
+    $j("#id_emerg_address_country").val("US");
+  }
+}
 $j(document).ready(function() {
-  $j(".required").each(function() {
+  $j(":required").each(function() {
     $j(this).closest(".control-group").addClass("required");
+  });
+  
+  check_state();
+  check_emerg_state();
+  
+  $j("#id_address_state").change(function() {
+    check_state();
+  });
+  $j("#id_emerg_address_state").change(function() {
+    check_emerg_state();
   });
 });
 </script>

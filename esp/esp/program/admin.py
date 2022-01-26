@@ -43,7 +43,7 @@ from esp.program.models import VolunteerRequest, VolunteerOffer
 
 from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 
-from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest, PhaseZeroRecord
+from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest, PhaseZeroRecord, ModeratorRecord
 
 from esp.program.models import ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
@@ -53,6 +53,8 @@ from esp.program.models import ClassFlag, ClassFlagType
 from esp.accounting.models import FinancialAidGrant
 
 from esp.utils.admin_user_search import default_user_search
+
+from esp.users.admin import ExpiredListFilter
 
 class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler')
@@ -103,6 +105,29 @@ class FinancialAidRequestAdmin(admin.ModelAdmin):
     search_fields = default_user_search() + ['id', 'program__url']
     list_filter = ['program']
     inlines = [FinancialAidGrantInline,]
+    actions = ['approve', ]
+
+    def save_related(self, request, form, formsets, change):
+        form.save_m2m()
+        obj = form.instance
+        # get the financial aid grant formset
+        formset = formsets[0]
+        # if we want to delete or change an existing grant, just save like normal
+        if formset[0].cleaned_data.get('DELETE') or obj.approved:
+            self.save_formset(request, form, formset, change=change)
+        else:
+            # if we want to add a grant, use approve() instead
+            instance = formset.save(commit=False)[0]
+            obj.approve(instance.amount_max_dec, instance.percent)
+            formset.save_m2m()
+            self.message_user(request, "Request successfully approved.")
+
+    def approve(self, request, queryset):
+        num_approved = len([req for req in queryset if not req.approved])
+        for req in queryset:
+            req.approve()
+        self.message_user(request, "%s request(s) successfully approved." % num_approved)
+    approve.short_description = "Approve selected financial aid requests for 100%%"
 admin_site.register(FinancialAidRequest, FinancialAidRequestAdmin)
 
 class Admin_SplashInfo(admin.ModelAdmin):
@@ -192,7 +217,7 @@ admin_site.register(VolunteerOffer, VolunteerOfferAdmin)
 ## class_.py
 
 class Admin_RegistrationType(admin.ModelAdmin):
-    list_display = ('name', 'category', )
+    list_display = ('name', 'category', 'displayName', 'description', )
 admin_site.register(RegistrationType, Admin_RegistrationType)
 
 def expire_student_registrations(modeladmin, request, queryset):
@@ -209,7 +234,7 @@ class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date',)
     actions = [ expire_student_registrations, renew_student_registrations ]
     search_fields = default_user_search() + ['id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
-    list_filter = ['section__parent_class__parent_program', 'relationship']
+    list_filter = ['section__parent_class__parent_program', 'relationship', ExpiredListFilter]
     date_hierarchy = 'start_date'
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 
@@ -339,3 +364,9 @@ class PhaseZeroRecordAdmin(admin.ModelAdmin):
     search_fields = ['user__username']
     list_filter = ['program']
 admin_site.register(PhaseZeroRecord, PhaseZeroRecordAdmin)
+
+class ModeratorRecordAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'program', 'will_moderate', 'num_slots')
+    search_fields = ['user__username']
+    list_filter = ['program', 'will_moderate']
+admin_site.register(ModeratorRecord, ModeratorRecordAdmin)

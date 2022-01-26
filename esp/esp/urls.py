@@ -38,6 +38,7 @@ from esp.admin import admin_site, autodiscover
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from django.views.generic import TemplateView
 from django.views.generic.base import RedirectView
 from filebrowser.sites import site as filebrowser_site
 
@@ -74,11 +75,11 @@ urlpatterns = static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + st
 
 # Admin stuff
 urlpatterns += [
+    url(r'^admin_tools/', include('admin_tools.urls')),
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^admin/ajax_qsd/?$', esp.qsd.views.ajax_qsd),
     url(r'^admin/ajax_qsd_preview/?$', esp.qsd.views.ajax_qsd_preview),
     url(r'^admin/ajax_autocomplete/?', esp.db.views.ajax_autocomplete),
-    url(r'^grappelli/', include('grappelli.urls')),
     url(r'^admin/filebrowser/', include(filebrowser_site.urls)),
     url(r'^admin/', include(admin_site.urls)),
     url(r'^accounts/login/$', esp.users.views.login_checked),
@@ -117,6 +118,11 @@ urlpatterns += [
     url(r'^(?P<tl>teach|learn)/teachers/', include('esp.web.urls')),
 ]
 
+# Specific .html pages that have defaults
+urlpatterns += [
+    url(r'^faq', TemplateView.as_view(template_name='faq.html'), name='FAQ'),
+]
+
 urlpatterns += [
     url(r'^(?P<url>.*)\.html$', esp.qsd.views.qsd),
 ]
@@ -137,6 +143,8 @@ urlpatterns += [
     url(r'^archives/([-A-Za-z0-9_ ]+)/?$', main.archives),
     url(r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.archives),
     url(r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.archives),
+
+    url(r'^email/([0-9]+)/?$', main.public_email),
 ]
 
 urlpatterns += [

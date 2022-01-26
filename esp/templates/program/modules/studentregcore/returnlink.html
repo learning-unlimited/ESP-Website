@@ -1,0 +1,9 @@
+</br></br><p>
+{% if prog %}
+<a class="btn btn-primary" href="/learn/{{ prog.getUrlBase }}/studentreg">Return to the main student registration page</a>
+{% else %}
+{% if program %}
+<a class="btn btn-primary" href="/learn/{{ program.getUrlBase }}/studentreg">Return to the main student registration page</a>
+{% endif %}
+{% endif %}
+</p>

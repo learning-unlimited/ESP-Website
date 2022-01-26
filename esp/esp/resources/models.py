@@ -116,7 +116,7 @@ class ResourceType(models.Model):
 
         if program:
             base_q = Q(program=program)
-            if Tag.getBooleanTag('allow_global_restypes', default = False):
+            if Tag.getBooleanTag('allow_global_restypes'):
                 base_q = base_q | Q(program__isnull=True)
         else:
             base_q = Q(program__isnull=True)
@@ -207,9 +207,22 @@ class Resource(models.Model):
     __sub__ = distance
 
 
-    def identical_resources(self):
+    def identical_resources(self, prog = None):
         res_list = Resource.objects.filter(name=self.name)
+        if prog:
+            res_list = res_list.filter(event__program=prog)
         return res_list
+
+    def identical_id(self, prog=None):
+        res_list = self.identical_resources(prog=prog)
+        return min(res_list.values_list("id", flat = True))
+
+    def duplicates(self):
+        res_list = Resource.objects.filter(name=self.name, event = self.event)
+        return res_list
+
+    def number_duplicates(self):
+        return self.duplicates().count()
 
     def satisfies_requests(self, req_class):
         #   Returns a list of 2 items.  The first element is boolean and the second element is a list of the unsatisfied requests.
@@ -240,16 +253,19 @@ class Resource(models.Model):
     def associated_resources(self):
         return self.grouped_resources().exclude(id=self.id).exclude(res_type__name='Classroom')
 
-    def assign_to_section(self, section, check_constraint=True, override=False):
+    def assign_to_section(self, section, check_constraint=True, override=False, group=None):
         if override:
             self.clear_assignments()
         if self.is_available():
             new_ra = ResourceAssignment()
             new_ra.resource = self
             new_ra.target = section
+            if group is not None:
+                new_ra.assignment_group = group
             new_ra.save()
         else:
             raise ESPError('Attempted to assign class section %d to conflicted resource; and constraint check was on.' % section.id, log=True)
+        return new_ra
 
     assign_to_class = assign_to_section
 
@@ -325,6 +341,12 @@ class Resource(models.Model):
             collision = ResourceAssignment.objects.filter(resource=self)
             return (collision.count() > 0)
 
+class AssignmentGroup(models.Model):
+    """ A hack to make the database handle assignment group ID creation """
+
+    def __unicode__(self):
+        return 'Assignment group %d' % (self.id,)
+
 class ResourceAssignment(models.Model):
     """ The binding of a resource to the class that it belongs to. """
 
@@ -334,12 +356,21 @@ class ResourceAssignment(models.Model):
     target = models.ForeignKey('program.ClassSection', null=True)
     target_subj = models.ForeignKey('program.ClassSubject', null=True)
     lock_level = models.IntegerField(default=0)
+    returned = models.BooleanField(default=False) # Only really relevant for floating resources
+    assignment_group = models.ForeignKey(AssignmentGroup, null=True, blank=True)
 
     def __unicode__(self):
         result = u'Resource assignment for %s' % unicode(self.getTargetOrSubject())
         if self.lock_level > 0:
             result += u' (locked)'
         return result
+
+    def save(self, *args, **kwargs):
+        if self.assignment_group is None:
+            #   Make a new group for this
+            new_group = AssignmentGroup.objects.create()
+            self.assignment_group = new_group
+        super(ResourceAssignment, self).save(*args, **kwargs)
 
     def getTargetOrSubject(self):
         """ Returns the most finely specified target. (target if it's set, target_subj otherwise) """
@@ -349,6 +380,11 @@ class ResourceAssignment(models.Model):
 
     def resources(self):
         return Resource.objects.filter(res_group=self.resource.res_group)
+
+    def grouped_assignments(self):
+        if self.assignment_group is None:
+            return ResourceAssignment.objects.filter(id=self.id)
+        return ResourceAssignment.objects.filter(assignment_group=self.assignment_group)
 
 
 def install():

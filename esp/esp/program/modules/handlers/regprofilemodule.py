@@ -41,20 +41,24 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 # reg profile module
 class RegProfileModule(ProgramModuleObj):
+    doc = """Serves the profile editor during student and/or teacher registration."""
+
     @classmethod
     def module_properties(cls):
         return [ {
             "admin_title": "Student Profile Editor",
             "link_title": "Update Your Profile",
             "module_type": "learn",
-            "seq": 1,
-            "required": True
+            "seq": 0,
+            "required": True,
+            "choosable": 1
         }, {
             "admin_title": "Teacher Profile Editor",
             "link_title": "Update Your Profile",
             "module_type": "teach",
-            "seq": 1,
-            "required": True
+            "seq": 0,
+            "required": True,
+            "choosable": 1,
         } ]
 
     def students(self, QObject = False):
@@ -114,7 +118,11 @@ class RegProfileModule(ProgramModuleObj):
         return response
 
     def isCompleted(self):
-        regProf = RegistrationProfile.getLastForProgram(get_current_request().user, self.program, self.module.module_type)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        regProf = RegistrationProfile.getLastForProgram(user, self.program, self.module.module_type)
         return regProf.id is not None
 
     class Meta:

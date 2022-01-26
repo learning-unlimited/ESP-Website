@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 """
 import json
 from django.http      import HttpResponse
-from esp.users.views  import search_for_user
 from esp.program.models import SplashInfo
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
@@ -47,13 +46,16 @@ from django.db.models.query   import Q
 from django.template.loader import select_template
 
 class OnsitePrintSchedules(ProgramModuleObj):
+    doc = """Automatically print student schedules at onsite registration."""
+
     @classmethod
     def module_properties(cls):
         return {
             "admin_title": "Automatically Print Schedules for Onsite Reg",
             "link_title": "Automatically Print Schedules",
             "module_type": "onsite",
-            "seq": 10000
+            "seq": 10000,
+            "choosable": 1,
             }
 
     @main_call

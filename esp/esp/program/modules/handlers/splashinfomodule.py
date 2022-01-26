@@ -45,13 +45,16 @@ from esp.users.models import ESPUser
 from django.db.models.query import Q
 
 class SplashInfoModule(ProgramModuleObj):
+    doc = """Serves a form during student registration that asks for lunch preferences and if a student has a sibling(s)."""
+
     @classmethod
     def module_properties(cls):
       return {
           "link_title": "Lunch Preferences & Sibling Discount",
           "module_type": "learn",
           "seq": 20,
-          "required": True
+          "required": True,
+          "choosable": 2,
           }
 
     def students(self, QObject=False):
@@ -90,21 +93,20 @@ class SplashInfoModule(ProgramModuleObj):
 
 
     def isCompleted(self):
-        return SplashInfo.hasForUser(get_current_request().user, self.program)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return SplashInfo.hasForUser(user, self.program)
 
     def isStep(self):
         return True
 
     def prepare(self, context={}):
         context['splashinfo'] = SplashInfo.getForUser(get_current_request().user, self.program)
-
-        if not Tag.getBooleanTag('splashinfo_siblingdiscount', default=True):
-            context['splashinfo'].include_siblingdiscount = False
-        else:
-            context['splashinfo'].include_siblingdiscount = True
-
-        context['splashinfo'].include_lunchsat = Tag.getBooleanTag('splashinfo_lunchsat', default=True)
-        context['splashinfo'].include_lunchsun = Tag.getBooleanTag('splashinfo_lunchsun', default=True)
+        context['splashinfo'].include_siblingdiscount = Tag.getBooleanTag('splashinfo_siblingdiscount', program=self.program)
+        context['splashinfo'].include_lunchsat = Tag.getBooleanTag('splashinfo_lunchsat', program=self.program)
+        context['splashinfo'].include_lunchsun = Tag.getBooleanTag('splashinfo_lunchsun', program=self.program)
 
         return context
 

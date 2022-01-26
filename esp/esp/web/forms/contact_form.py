@@ -41,7 +41,7 @@ from django.conf import settings
 person_type = (
     ('Student', 'K-12 Student'),
     ('Parent',  'Parent/Guardian'),
-    ('Teacher', 'Teacher for ESP'),
+    ('Teacher', 'Teacher for ' + settings.ORGANIZATION_SHORT_NAME),
     ('K-12 Educator', 'K-12 Educator'),
     ('Other',   'Other'),
     )
@@ -56,11 +56,14 @@ hear_about = (
     )
 
 class ContactForm(forms.Form):
-    sender  = forms.EmailField(label=_("Your Email"), required = True,
+    anonymous = forms.BooleanField(label=_("Anonymous"), required = False,
+                                   help_text=_("(By checking this, we will make your submission anonymous by removing all identifying information from your submission.)") )
+
+    sender  = forms.EmailField(label=_("Your Email"), required = False,
                                help_text=_("(e.g.: john.doe@domain.xyz)"))
 
-    cc_myself = forms.BooleanField(label=_("Copy me"), required = False,
-                                   help_text=_("(By checking this, we will send you a carbon-copy (cc) of this email.)") )
+    cc_myself = forms.BooleanField(label=_("Copy me"), required = False, initial = True,
+                                   help_text=_("(By checking this, we will send a carbon-copy (cc) of this email to the address listed above. If you checked the 'Anonymous' box, we will send a blind carbon-copy (bcc) of this email.)") )
 
     name      = forms.CharField(max_length=100, label="Your Name", required=False)
 

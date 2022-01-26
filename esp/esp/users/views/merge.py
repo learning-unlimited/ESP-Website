@@ -9,8 +9,8 @@ def merge_accounts(request):
     if request.method == 'POST':
         form = UserMergeForm(request.POST)
         if form.is_valid():
-            new_user, old_user = form.cleaned_data['absorber'], form.cleaned_data['absorbee']
-            merge_users(new_user, old_user)
+            new_user, old_user, forward, deactivate = form.cleaned_data['absorber'], form.cleaned_data['absorbee'], form.cleaned_data['forward'], form.cleaned_data['deactivate']
+            merge_users(new_user, old_user, forward=forward, deactivate = deactivate)
             return render_to_response('users/merge_success.html', request, {'new_user': new_user, 'old_user': old_user})
     else:
         form = UserMergeForm()

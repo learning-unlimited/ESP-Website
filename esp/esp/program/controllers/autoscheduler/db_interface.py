@@ -493,8 +493,7 @@ def load_constraints(program, constraints_overrides=None):
         constraints_overrides = {}
 
     tag_value = Tag.getProgramTag(config.CONSTRAINT_TAG,
-                                  program=program,
-                                  default="{}")
+                                  program=program)
 
     try:
         tag_overrides = json.loads(tag_value)
@@ -516,8 +515,7 @@ def load_scorers(program, scorer_overrides=None):
         scorer_overrides = {}
 
     tag_value = Tag.getProgramTag(config.SCORER_TAG,
-                                  program=program,
-                                  default="{}")
+                                  program=program)
 
     try:
         tag_overrides = json.loads(tag_value)
@@ -537,8 +535,7 @@ def load_resource_constraints(
         specification_overrides = {}
 
     tag_value = Tag.getProgramTag(config.RESOURCE_CONSTRAINTS_TAG,
-                                  program=program,
-                                  default="{}")
+                                  program=program)
     try:
         tag_overrides = json.loads(tag_value)
         if ignore_comments:
@@ -572,8 +569,7 @@ def load_resource_scoring(
         specification_overrides = {}
 
     tag_value = Tag.getProgramTag(config.RESOURCE_SCORING_TAG,
-                                  program=program,
-                                  default="{}")
+                                  program=program)
     try:
         tag_overrides = json.loads(tag_value)
         if ignore_comments:

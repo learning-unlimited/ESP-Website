@@ -41,13 +41,16 @@ from esp.utils.models import Printer, PrintRequest
 from datetime         import datetime, timedelta
 
 class OnsiteClassSchedule(ProgramModuleObj):
+    doc = """Get and/or print a student's schedule for the program."""
+
     @classmethod
     def module_properties(cls):
         return {
             "admin_title": "Onsite Scheduling for Students",
             "link_title": "Scheduling and Class Changes",
             "module_type": "onsite",
-            "seq": 30
+            "seq": 30,
+            "choosable": 1,
             }
 
     @aux_call
@@ -84,7 +87,7 @@ class OnsiteClassSchedule(ProgramModuleObj):
         """ Redirect to student registration, having morphed into the desired
         student. """
 
-        user, found = search_for_user(request, ESPUser.getAllOfType('Student', False), add_to_context = {'tl': 'onsite'})
+        user, found = search_for_user(request, ESPUser.getAllOfType('Student', False), add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
         if not found:
             return user
 

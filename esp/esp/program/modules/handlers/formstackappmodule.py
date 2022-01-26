@@ -44,9 +44,8 @@ from esp.application.models import FormstackStudentProgramApp
 from urllib import urlencode
 
 class FormstackAppModule(ProgramModuleObj):
-    """
+    doc = """
     Student application module for Junction.
-
     Not to be confused with StudentJunctionAppModule, the app questions module.
     """
 
@@ -58,6 +57,7 @@ class FormstackAppModule(ProgramModuleObj):
             "module_type": "learn",
             "seq": 10,
             "required": True,
+            "choosable": 2,
             }]
 
     def students(self, QObject = False):
@@ -103,7 +103,7 @@ class FormstackAppModule(ProgramModuleObj):
     def finaidapp(self, request, tl, one, two, module, extra, prog):
         fsas = prog.formstackappsettings
         if not fsas.finaid_form():
-            return # no finaid form
+            return self.goToCore(tl) # no finaid form
         app = FormstackStudentProgramApp.objects.filter(user=request.user, program=prog)
         if not (app or request.user.isAdmin(prog)): # student has not applied for the program
             return # XXX: more useful error here

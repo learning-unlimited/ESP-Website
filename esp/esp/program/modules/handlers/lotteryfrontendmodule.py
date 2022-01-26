@@ -6,9 +6,9 @@ from esp.program.controllers.lottery import LotteryAssignmentController, Lottery
 from esp.utils.web import render_to_response
 from esp.users.models import ESPUser
 from esp.utils.decorators import json_response
-import numpy
 
 class LotteryFrontendModule(ProgramModuleObj):
+    doc = """Run the class lottery and assign students to classes."""
 
     @classmethod
     def module_properties(cls):
@@ -16,7 +16,8 @@ class LotteryFrontendModule(ProgramModuleObj):
             "admin_title": "Lottery Frontend",
             "link_title": "Run the Lottery Assignment Thing",
             "module_type": "manage",
-            "seq": 10
+            "seq": 10,
+            "choosable": 0,
             }
 
     @main_call
@@ -85,6 +86,9 @@ class LotteryFrontendModule(ProgramModuleObj):
         lotteryObj.import_assignments(request.POST['lottery_data'])
         lotteryObj.save_assignments()
         return {'response': [{'success': 'yes'}]};
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

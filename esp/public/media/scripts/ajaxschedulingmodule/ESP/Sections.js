@@ -1,15 +1,18 @@
 /**
- * Stores the section data and provides helper methods for accessing and scheduling
- * sections.
+ * Stores the section data and the UI state including the selected section, filter, and search term.
+ * Provides helper methods for accessing and scheduling sections.
+ * Has a pointer to the Matrix when bindMatrix is called.
  *
  * @params sections_data: The raw section data
  * @params section_details_data: The AJAX section detail data
  * @params teacher_data: The raw teacher data for populating the sections
- * @params scheduleAssignments: The scheule assignments
+ * @params scheduleAssignments: The schedule assignments
  * @params apiClient: The object that can communicate with the server
  */
-function Sections(sections_data, section_details_data, teacher_data, scheduleAssignments, apiClient) {
+function Sections(sections_data, section_details_data, categories_data, teacher_data, moderator_data, scheduleAssignments, apiClient) {
     this.sections_data = sections_data;
+    this.categories_data = categories_data;
+    this.teacher_data = teacher_data;
     this.scheduleAssignments = scheduleAssignments;
     this.apiClient = apiClient;
 
@@ -28,6 +31,9 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         gradeMax: {active: false, el: $j("input#section-filter-grade-max"), type: "number"},
         classTeacher: {active: false, el: $j("input#section-filter-teacher-text"), type: "string"},
         classHideUnapproved: {active: false, el: $j("input#section-filter-unapproved"), type: "boolean"},
+        classHasAdmin: {active: false, el: $j("input#section-filter-admin"), type: "boolean"},
+        classFlags: {active: false, el: $j("input#section-filter-flags-text"), type: "string"},
+        classResources: {active: false, el: $j("input#section-filter-resources-text"), type: "string"},
     };
     this.filter.classLengthMin.valid = function(a) {
         return Math.ceil(a.length) >= this.filter.classLengthMin.val;
@@ -56,17 +62,32 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         }.bind(this));
         return result;
     }.bind(this);
+    this.filter.classHasAdmin.valid = function(a) {
+        var result = false;
+        $j.each(a.teacher_data, function(index, teacher) {
+            if(teacher.is_admin) {
+                result = true;
+            }
+        }.bind(this));
+        return result;
+    }.bind(this);
     this.filter.classHideUnapproved.valid = function(a) {
         return a.status > 0;
     }.bind(this);
+    this.filter.classFlags.valid = function(a) {
+        return a.flags.toLowerCase().search(this.filter.classFlags.val)>-1;
+    }.bind(this);
+    this.filter.classResources.valid = function(a) {
+        return this.getResourceString(a).toLowerCase().search(this.filter.classResources.val)>-1;
+    }.bind(this);
 
     $j.each(this.filter, function(filterName, filterObject) {
-        filterObject.el.change(function() {
+        filterObject.el.on("change", function() {
             filterObject.val = filterObject.el.val().trim();
             if(filterObject.type==="number") {
                 filterObject.val = parseInt(filterObject.val);
             } else if(filterObject.type==="string") {
-                filterObject.val = filterObject.val.replace(" ", "").toLowerCase()
+                filterObject.val = filterObject.val.toLowerCase()
             } else if(filterObject.type==="boolean") {
                 filterObject.val = filterObject.el.prop('checked');
             }
@@ -93,6 +114,16 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         $j("body").trigger("schedule-changed");
     }.bind(this));
 
+    // Set up sort
+    this.sortObject = {field: "id", type: "asc"}
+    $j("#class-sort-field, [name='class-sort-type']").on("change", function(evt) {
+        if(evt.currentTarget.id === "class-sort-field") {
+            this.sortObject.field = evt.currentTarget.value;
+        } else {
+            this.sortObject.type = evt.currentTarget.value;
+        }
+        $j("body").trigger("schedule-changed");
+    }.bind(this));
 
     /**
      * Populate the sections data with teacher and section-detail info
@@ -102,6 +133,11 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
             section.teacher_data = []
             $j.each(section.teachers, function(index, teacher_id) {
                 section.teacher_data.push(teacher_data[teacher_id]);
+            });
+
+            section.moderator_data = []
+            $j.each(section.moderators, function(index, moderator_id) {
+                section.moderator_data.push(moderator_data[moderator_id]);
             });
 
             sectionDetails = section_details_data[section_id];
@@ -140,7 +176,7 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
      */
     this.isScheduled = function(section) {
         return this.scheduleAssignments[section.id] &&
-            this.scheduleAssignments[section.id].room_name;
+            this.scheduleAssignments[section.id].room_id;
     };
 
     /**
@@ -150,8 +186,8 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
     this.filtered_sections = function(allowScheduled){
         var returned_sections = [];
         $j.each(this.sections_data, function(section_id, section) {
-            if (!this.scheduleAssignments[section.id]) {
-                // filter out rejected sections
+            if (section.status < 0) {
+                // filter out rejected and cancelled sections
                 return;
             }
             if (this.isScheduled(section) && !allowScheduled) {
@@ -188,7 +224,35 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
                 returned_sections.push(section);
             }
         }.bind(this));
+        // sort sections based on selected field
+        switch(this.sortObject.field) {
+            case "id":
+                returned_sections.sort((a, b) => a.id - b.id);
+                break;
+            case "category":
+                returned_sections.sort((a, b) => a.category.localeCompare(b.category));
+                break;
+            case "length":
+                returned_sections.sort((a, b) => a.length - b.length);
+                break;
+            case "capacity":
+                returned_sections.sort((a, b) => a.class_size_max - b.class_size_max);
+                break;
+            case "availability":
+                returned_sections.sort((a, b) => this.getAvailableTimeslots(a)[0].length - this.getAvailableTimeslots(b)[0].length);
+                break;
+            case "hosedness": // proportion of total availability that teachers are already teaching
+               returned_sections.sort(function(a, b) {
+                   var a_times = this.getAvailableTimeslots(a);
+                   var b_times = this.getAvailableTimeslots(b);
+                   return a_times[1].length/(a_times[0].length + a_times[1].length) - b_times[1].length/(b_times[0].length + b_times[1].length);
+               }.bind(this));
+               break;
+        }
+        // reverse if descending selected
+        if(this.sortObject.type === "des") returned_sections.reverse()
         return returned_sections;
+        
     };
 
     /**
@@ -198,6 +262,9 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
      * @param section: The section to select
      */
     this.selectSection = function(section) {
+        if(has_moderator_module === "True" && this.matrix.moderatorDirectory.selectedModerator) {
+            this.matrix.moderatorDirectory.unselectModerator();
+        }
         if(this.selectedSection) {
             if(this.selectedSection === section) {
                 this.unselectSection();
@@ -208,9 +275,9 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         }
 
         var assignment = this.scheduleAssignments[section.id];
-        if(assignment.room_name) {
+        if(assignment.room_id) {
             $j.each(assignment.timeslots, function(index, timeslot) {
-                var cell = this.matrix.getCell(assignment.room_name, timeslot);
+                var cell = this.matrix.getCell(assignment.room_id, timeslot);
                 cell.select();
             }.bind(this));
         } else {
@@ -220,22 +287,21 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         this.matrix.sectionInfoPanel.displaySection(section);
         this.availableTimeslots = this.getAvailableTimeslots(section);
         this.matrix.highlightTimeslots(this.availableTimeslots, section);
-
-
     };
 
     /**
      * Unselect the cells associated with the currently selected section, hide the section info
      * panel, and unhighlight the available cells to place the section.
+     * @param override: What should the availability override status be?
      */
-    this.unselectSection = function() {
+    this.unselectSection = function(override = false) {
         if(!this.selectedSection) {
             return;
         }
         var assignment = this.scheduleAssignments[this.selectedSection.id];
-        if(assignment.room_name) {
+        if(assignment.room_id) {
             $j.each(assignment.timeslots, function(index, timeslot) {
-                var cell = this.matrix.getCell(assignment.room_name, timeslot);
+                var cell = this.matrix.getCell(assignment.room_id, timeslot);
                 cell.unselect();
             }.bind(this));
         } else {
@@ -244,8 +310,9 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
 
         this.selectedSection = null;
         this.matrix.sectionInfoPanel.hide();
+        this.matrix.sectionInfoPanel.override = override;
         this.matrix.unhighlightTimeslots(this.availableTimeslots);
-
+        this.unscheduleAsGhost();
     };
 
     /**
@@ -260,28 +327,35 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
      * @param section: The section to check availability.
      */
     this.getAvailableTimeslots = function(section) {
-        var availabilities = [];
+        var availableTimeslots = [];
         var already_teaching = [];
-        $j.each(section.teacher_data, function(index, teacher) {
-            var teacher_availabilities = teacher.availability.slice();
-            teacher_availabilities = teacher_availabilities.filter(function(val) {
-                return this.matrix.timeslots.get_by_id(val);
+        if(this.matrix.sectionInfoPanel.override){
+            $j.each(this.matrix.timeslots.timeslots, function(index, timeslot) {
+                availableTimeslots.push(timeslot.id);
             }.bind(this));
-            $j.each(teacher.sections, function(index, section_id) {
-                var assignment = this.scheduleAssignments[section_id];
-                if(assignment && section_id != section.id) {
-                    $j.each(assignment.timeslots, function(index, timeslot_id) {
-                        var availability_index = teacher_availabilities.indexOf(timeslot_id);
-                        if(availability_index >= 0) {
-                            teacher_availabilities.splice(availability_index, 1);
-                            already_teaching.push(timeslot_id);
-                        }
-                    }.bind(this));
-                }
+        } else {
+            var availabilities = []
+            $j.each(section.teacher_data, function(index, teacher) {
+                var teacher_availabilities = teacher.availability.slice();
+                teacher_availabilities = teacher_availabilities.filter(function(val) {
+                    return this.matrix.timeslots.get_by_id(val);
+                }.bind(this));
+                $j.each(teacher.sections, function(index, section_id) {
+                    var assignment = this.scheduleAssignments[section_id];
+                    if(assignment && section_id != section.id) {
+                        $j.each(assignment.timeslots, function(index, timeslot_id) {
+                            var availability_index = teacher_availabilities.indexOf(timeslot_id);
+                            if(availability_index >= 0) {
+                                teacher_availabilities.splice(availability_index, 1);
+                                already_teaching.push(timeslot_id);
+                            }
+                        }.bind(this));
+                    }
+                }.bind(this));
+                availabilities.push(teacher_availabilities);
             }.bind(this));
-            availabilities.push(teacher_availabilities);
-        }.bind(this));
-        var availableTimeslots = helpersIntersection(availabilities, true);
+            availableTimeslots = _.intersection(...availabilities); // From the lodash library
+        }
         return [availableTimeslots, already_teaching];
     };
 
@@ -305,49 +379,61 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
             resource_names.push("<li>" + resource_array[0].name + ": " + resource_array[1] + "</li>");
         });
         return "<ul>" + resource_names.join(" ") + "</ul>";
+    };
 
+    this.getModeratorsString = function(section) {
+        var moderator_list = []
+            $j.each(section.moderator_data, function(index, moderator) {
+                moderator_list.push(moderator.first_name + " " + moderator.last_name);
+            });
+        var moderators = moderator_list.join(", ");
+        return moderators;
     };
 
     /**
      * Schedule a section of a class.
      *
      * @param section: The section to schedule
-     * @param room_name: The name of the room to schedule it in
+     * @param room_id: The name of the room to schedule it in
      * @param first_timeslot_id: The ID of the first timeslot to schedule the section in
      */
-    this.scheduleSection = function(section, room_name, first_timeslot_id){
+    this.scheduleSection = function(section, room_id, first_timeslot_id){
         var old_assignment = this.scheduleAssignments[section.id];
         var schedule_timeslots = this.matrix.timeslots.
             get_timeslots_to_schedule_section(section, first_timeslot_id);
+        var override = this.matrix.sectionInfoPanel.override;
 
         // Make sure the assignment is valid
-        if (!this.matrix.validateAssignment(section, room_name, schedule_timeslots).valid){
+        if (!this.matrix.validateAssignment(section, room_id, schedule_timeslots).valid){
             return;
         }
 
         // Make sure section not locked
         if (section.schedulingLocked){
-            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.");
+            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", color = "red");
             this.unselectSection();
             return;
         }
 
         // Optimistically schedule the section locally before hearing back from the server
-        this.scheduleSectionLocal(section, room_name, schedule_timeslots);
+        this.scheduleSectionLocal(section, room_id, schedule_timeslots);
         this.apiClient.schedule_section(
             section.id,
             schedule_timeslots,
-            room_name,
+            room_id,
+            override,
             function() {},
             // If there's an error, reschedule the section in its old location
             function(msg) {
                 this.scheduleSectionLocal(section,
-                    old_assignment.room_name,
+                    old_assignment.room_id,
                     old_assignment.timeslots);
-                this.matrix.messagePanel.addMessage("Error: " + msg)
+                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red")
                 console.log(msg);
             }.bind(this)
         );
+        // Reset the availability override
+        this.matrix.sectionInfoPanel.override = false;
     }
 
 
@@ -355,15 +441,15 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
      * Make the local changes associated with scheduling a class and update the display
      *
      * @param section: The section to schedule
-     * @param room_name: The name of the room to schedule it in
+     * @param room_id: The name of the room to schedule it in
      * @param schedule_timeslots: The IDs of the timeslots to schedule the section in
      */
-    this.scheduleSectionLocal = function(section, room_name, schedule_timeslots){
+    this.scheduleSectionLocal = function(section, room_id, schedule_timeslots){
         var old_assignment = this.scheduleAssignments[section.id];
 
         // Check to see if we need to make any changes
         if(
-            old_assignment.room_name == room_name &&
+            old_assignment.room_id == room_id &&
             JSON.stringify(old_assignment.timeslots)==JSON.stringify(schedule_timeslots)
             ){
             return;
@@ -372,44 +458,46 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         // Unschedule from old place
         for (timeslot_index in old_assignment.timeslots) {
             var timeslot_id = old_assignment.timeslots[timeslot_index];
-            var cell = this.matrix.getCell(old_assignment.room_name, timeslot_id);
+            var cell = this.matrix.getCell(old_assignment.room_id, timeslot_id);
             cell.removeSection();
         }
         if(this.selectedSection === section) {
             this.unselectSection();
         }
 
-
         // Add section to cells
         for(timeslot_index in schedule_timeslots){
             var timeslot_id = schedule_timeslots[timeslot_index];
-            this.matrix.getCell(room_name, timeslot_id).addSection(section);
+            this.matrix.getCell(room_id, timeslot_id).addSection(section);
         }
 
         // Update the array that keeps track of the assignments
         this.scheduleAssignments[section.id] = {
-            room_name: room_name,
+            room_id: room_id,
             timeslots: schedule_timeslots,
             id: section.id
         };
 
         // Trigger the event that tells the directory to update itself.
         $j("body").trigger("schedule-changed");
+
+        // Update cell coloring
+        this.matrix.updateCells();
     }
 
     /**
      * Make the selected section appear as a "ghost" on the schedule.
      *
-     * @param room_name: The room that the class would go in
+     * @param room_id: The room that the class would go in
      * @param first_timeslot_id: The id of the first timeslot the class would go in
      */
-    this.scheduleAsGhost = function(room_name, first_timeslot_id) {
+    this.scheduleAsGhost = function(room_id, first_timeslot_id) {
         var schedule_timeslots = this.matrix.timeslots.
             get_timeslots_to_schedule_section(this.selectedSection, first_timeslot_id);
+        this.ghostScheduleAssignment = {'room_id': room_id, 'timeslots': schedule_timeslots};
         $j.each(schedule_timeslots, function(index, timeslot_id) {
-            this.matrix.getCell(room_name, timeslot_id).addGhostSection(this.selectedSection);
+            this.matrix.getCell(room_id, timeslot_id).addGhostSection(this.selectedSection);
         }.bind(this));
-        this.ghostScheduleAssignment = {'room_name': room_name, 'timeslots': schedule_timeslots};
     };
 
     /**
@@ -417,7 +505,7 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
      */
     this.unscheduleAsGhost = function() {
         $j.each(this.ghostScheduleAssignment.timeslots, function(index, timeslot_id) {
-            this.matrix.getCell(this.ghostScheduleAssignment.room_name, timeslot_id).removeGhostSection();
+            this.matrix.getCell(this.ghostScheduleAssignment.room_id, timeslot_id).removeGhostSection();
         }.bind(this));
         this.ghostScheduleAssignment = {};
     };
@@ -430,13 +518,13 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
     this.unscheduleSection = function(section){
         // Make sure section not locked
         if (section.schedulingLocked){
-            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.");
+            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", color = "red");
             this.unselectSection();
             return;
         }
 
         var old_assignment = this.scheduleAssignments[section.id];
-        var old_room_name = old_assignment.room_name;
+        var old_room_id = old_assignment.room_id;
         var old_schedule_timeslots = old_assignment.timeslots;
 
         // Optimistically make local changes to unschedule the class
@@ -446,8 +534,8 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
             function(){},
             // If the server returns an error, put the class back in its original spot
             function(msg){
-                this.scheduleSectionLocal(section, old_room_name, old_schedule_timeslots);
-                this.matrix.messagePanel.addMessage("Error: " + msg);
+                this.scheduleSectionLocal(section, old_room_id, old_schedule_timeslots);
+                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
                 console.log(msg);
             }.bind(this)
         );
@@ -462,32 +550,42 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
      * @param remote: true if this setComment request comes from the server and not local user
      */
     this.setComment = function(section, comment, locked, remote){
+        updateCells = function() {
+            var assignment = this.scheduleAssignments[section.id];
+            if(assignment.room_id) {
+                $j.each(assignment.timeslots, function(index, timeslot) {
+                    this.matrix.getCell(assignment.room_id, timeslot).update();
+                }.bind(this));
+            }
+        }.bind(this);
+
         if(section.schedulingComment == comment && section.schedulingLocked == locked) {
             return;
         }
 
-        // go ahead and set section to new status
-        // unlike other cases, we don't revert this update if the API call fails
-        // this is because the comment/locked is a front-end helper
-        //   if API call fails, user will still get message, and this way user
-        //   can anyway continue scheduling this section
+        var old_comment = section.schedulingComment;
+        var old_locked = section.schedulingLocked;
+
         section.schedulingComment = comment;
         section.schedulingLocked = locked;
 
         if(!remote) {
-            this.apiClient.set_comment(section.id, comment, locked, function(){}, function(msg){
-                this.matrix.messagePanel.addMessage("Error: " + msg);
+            this.apiClient.set_comment(section.id, comment, locked, function(){
+                // if successful, update the appearance of the cells
+                updateCells();
+                this.unselectSection();
+            }.bind(this), function(msg){
+                // if unsuccessful, revert the comment locked status and show an error
+                section.schedulingComment = old_comment;
+                section.schedulingLocked = old_locked;
+                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
                 console.log(msg);
+                this.unselectSection();
             }.bind(this));
+        } else {
+            // if this is from the changelog, just update the appearance of the cells
+            updateCells();
             this.unselectSection();
-        }
-
-        // update cells in case we switched the locked flag
-        var assignment = this.scheduleAssignments[section.id];
-        if(assignment.room_name) {
-            $j.each(assignment.timeslots, function(index, timeslot) {
-                this.matrix.getCell(assignment.room_name, timeslot).update();
-            }.bind(this));
         }
     }
 

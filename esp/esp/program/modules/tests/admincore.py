@@ -7,10 +7,10 @@ from esp.program.models import RegistrationType, StudentRegistration, Registrati
 class RegistrationTypeManagementTest(ProgramFrameworkTest):
     def setUp(self):
         modules = []
-        modules.append(ProgramModule.objects.get(handler='TeacherClassRegModule').id)
-        modules.append(ProgramModule.objects.get(handler='StudentClassRegModule').id)
-        modules.append(ProgramModule.objects.get(handler='StudentRegCore').id)
-        modules.append(ProgramModule.objects.get(handler='AdminCore').id)
+        modules.append(ProgramModule.objects.get(handler='TeacherClassRegModule'))
+        modules.append(ProgramModule.objects.get(handler='StudentClassRegModule'))
+        modules.append(ProgramModule.objects.get(handler='StudentRegCore'))
+        modules.append(ProgramModule.objects.get(handler='AdminCore'))
 
         super(RegistrationTypeManagementTest, self).setUp(modules=modules)
         self.schedule_randomly()
@@ -25,6 +25,10 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         self.adminUser, created = ESPUser.objects.get_or_create(username='admin')
         self.adminUser.set_password('password')
         self.adminUser.makeAdmin()
+
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.force_show_required_modules = False
+        scrmi.save()
 
 
     def testAdminInterface(self):

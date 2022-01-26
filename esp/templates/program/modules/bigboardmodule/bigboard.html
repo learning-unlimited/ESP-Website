@@ -16,112 +16,174 @@
   <script type="text/javascript" src="//code.highcharts.com/highcharts-more.js"></script>
   <script type="text/javascript" src="//code.highcharts.com/modules/no-data-to-display.js"></script>
   <script type="text/javascript" src="//code.highcharts.com/modules/solid-gauge.js"></script>
+  <script type="text/javascript">
+    // Fix for vertical panning from https://github.com/highcharts/highcharts/issues/16217
+    (function(H) {
+      var fireEvent = H.fireEvent,
+        pick = H.pick,
+        isNumber = H.isNumber,
+        objectEach = H.objectEach,
+        css = H.css;
+
+      H.Chart.prototype.pan = function(e, panning) {
+        var chart = this,
+          hoverPoints = chart.hoverPoints,
+          panningOptions = (typeof panning === 'object' ?
+            panning : {
+              enabled: panning,
+              type: 'x'
+            }),
+          chartOptions = chart.options.chart,
+          hasMapNavigation = chart.options.mapNavigation &&
+          chart.options.mapNavigation.enabled;
+        if (chartOptions && chartOptions.panning) {
+          chartOptions.panning = panningOptions;
+        }
+        var type = panningOptions.type;
+        var doRedraw;
+        fireEvent(this, 'pan', {
+          originalEvent: e
+        }, function() {
+          // remove active points for shared tooltip
+          if (hoverPoints) {
+            hoverPoints.forEach(function(point) {
+              point.setState();
+            });
+          }
+          var axes = chart.xAxis;
+          if (type === 'xy') {
+            axes = axes.concat(chart.yAxis);
+          } else if (type === 'y') {
+            axes = chart.yAxis;
+          }
+          var nextMousePos = {};
+          axes.forEach(function(axis) {
+            if (!axis.options.panningEnabled || axis.options.isInternal) {
+              return;
+            }
+            var horiz = axis.horiz,
+              mousePos = e[horiz ? 'chartX' : 'chartY'],
+              mouseDown = horiz ? 'mouseDownX' : 'mouseDownY',
+              startPos = chart[mouseDown],
+              halfPointRange = axis.minPointOffset || 0,
+              pointRangeDirection = (axis.reversed && !chart.inverted) ||
+              (!axis.reversed && chart.inverted) ?
+              -1 :
+              1,
+              extremes = axis.getExtremes(),
+              panMin = axis.toValue(startPos - mousePos, true) +
+              halfPointRange * pointRangeDirection,
+              panMax = axis.toValue(startPos + axis.len - mousePos, true) -
+              ((halfPointRange * pointRangeDirection) ||
+                (axis.isXAxis && axis.pointRangePadding) ||
+                0),
+              flipped = panMax < panMin,
+              hasVerticalPanning = axis.hasVerticalPanning();
+            var newMin = flipped ? panMax : panMin,
+              newMax = flipped ? panMin : panMax,
+              panningState = axis.panningState,
+              spill;
+            // General calculations of panning state.
+            // This is related to using vertical panning. (#11315).
+            if (hasVerticalPanning &&
+              !axis.isXAxis && (!panningState || panningState.isDirty)) {
+              axis.series.forEach(function(series) {
+                var processedData = series.getProcessedData(true),
+                  dataExtremes = series.getExtremes(processedData.yData,
+                    true);
+                if (!panningState) {
+                  panningState = {
+                    startMin: Number.MAX_VALUE,
+                    startMax: -Number.MAX_VALUE
+                  };
+                }
+                if (isNumber(dataExtremes.dataMin) &&
+                  isNumber(dataExtremes.dataMax)) {
+                  panningState.startMin = Math.min(pick(series.options.threshold, Infinity), dataExtremes.dataMin, panningState.startMin);
+                  panningState.startMax = Math.max(pick(series.options.threshold, -Infinity), dataExtremes.dataMax, panningState.startMax);
+                }
+              });
+            }
+            var paddedMin = Math.min(pick(panningState && panningState.startMin,
+                extremes.dataMin),
+              halfPointRange ?
+              extremes.min :
+              axis.toValue(axis.toPixels(extremes.min) -
+                axis.minPixelPadding));
+
+            var paddedMax = Math.max(
+              panningState && panningState.startMax,
+              extremes.dataMax,
+              halfPointRange ? extremes.max : axis.toValue(axis.toPixels(extremes.max) + axis.minPixelPadding)
+            );
+            axis.panningState = panningState;
+            // It is not necessary to calculate extremes on ordinal axis,
+            // because they are already calculated, so we don't want to
+            // override them.
+            if (!axis.isOrdinal) {
+              // If the new range spills over, either to the min or max,
+              // adjust the new range.
+              spill = paddedMin - newMin;
+
+              if (spill > 0) {
+                newMax += spill;
+                newMin = paddedMin;
+              }
+              spill = newMax - paddedMax;
+              if (spill > 0) {
+                newMax = paddedMax;
+                newMin -= spill;
+              }
+
+              //console.log(paddedMax)
+              // Set new extremes if they are actually new
+              if (
+                axis.series.length &&
+                newMin !== extremes.min &&
+                newMax !== extremes.max &&
+                newMin >= paddedMin &&
+                newMax <= paddedMax
+              ) {
+
+                axis.setExtremes(newMin, newMax, false, false, {
+                  trigger: 'pan'
+                });
+                if (!chart.resetZoomButton &&
+                  !hasMapNavigation &&
+                  // Show reset zoom button only when both newMin and
+                  // newMax values are between padded axis range.
+                  newMin !== paddedMin &&
+                  newMax !== paddedMax &&
+                  type.match('y')) {
+                  chart.showResetZoom();
+                  axis.displayBtn = false;
+                }
+                doRedraw = true;
+              }
+              // set new reference for next run:
+              nextMousePos[mouseDown] = mousePos;
+            }
+          });
+          objectEach(nextMousePos, function(pos, down) {
+            chart[down] = pos;
+          });
+          if (doRedraw) {
+            chart.redraw(false);
+          }
+          css(chart.container, {
+            cursor: 'move'
+          });
+        });
+      };
+    })(Highcharts)
+  </script>
 {% endblock xtrajs %}
 
 
 {% block body %}
 
 {% if left_axis_data or right_axis_data %}
-  <div class="bigboard-graph">
-    <div id="highcharts-placeholder"></div>
-    <script type="text/javascript">
-    var left_axes = 0;
-    {% if left_axis_data %}
-      left_axes = {{ left_axis_data|length }}
-    {% endif %}
-    var chart = Highcharts.chart('highcharts-placeholder', {
-      credits: {
-          enabled: false
-      },
-      legend: {
-        align: "left",
-        x: 40,
-        floating: true,
-        layout: "vertical",
-        verticalAlign: "top",
-        //backgroundColor: '#FFFFFF'
-      },
-      plotOptions: {
-        line: {
-          marker: {enabled: false},
-        },
-      },
-      title: {
-        text: null,
-      },
-      tooltip: {
-        shared: true,
-      },
-      xAxis: {
-        type: 'datetime',
-        minRange: 24 * 60 * 60 * 1000, // one day
-      },
-      yAxis: [
-        {% for axis in left_axis_data %}
-        {
-          title: {text: '{{ axis.axis_name}}'},
-          min: 0,
-          maxPadding: 0.01,
-          endOnTick: false,
-        },
-        {% endfor %}
-        {% for axis in right_axis_data %}
-        {
-          title: {text: '{{ axis.axis_name}}'},
-          min: 0,
-          maxPadding: 0.01,
-          endOnTick: false,
-          opposite: true,
-        },
-        {% endfor %}
-      ],
-      series: [
-        {% for axis in left_axis_data %}
-          {% for series in axis.series_data %}
-          {
-            type: 'line',
-            yAxis: {{ forloop.parentloop.counter0 }},
-            name: '{{series.description}}',
-            pointInterval: 60 * 60 * 1000, // one hour
-            pointStart: Date.UTC(
-                {{first_hour.year}}, {{first_hour.month}} - 1,
-                {{first_hour.day}}, {{first_hour.hour}}),
-            data: {{series.data}},
-          },
-          {% empty %}
-          {
-            type: 'line',
-            yAxis: {{ forloop.counter0 }},
-            name: 'No data',
-            data: []
-          },
-          {% endfor %}
-        {% endfor %}
-        {% for axis in right_axis_data %}
-          {% for series in axis.series_data %}
-          {
-            type: 'line',
-            yAxis: {{ forloop.parentloop.counter0 }} + left_axes,
-            name: '{{series.description}}',
-            pointInterval: 60 * 60 * 1000, // one hour
-            pointStart: Date.UTC(
-                {{first_hour.year}}, {{first_hour.month}} - 1,
-                {{first_hour.day}}, {{first_hour.hour}}),
-            data: {{series.data}},
-          },
-          {% empty %}
-          {
-            type: 'line',
-            yAxis: {{ forloop.counter0 }},
-            name: 'No data',
-            data: []
-          },
-          {% endfor %}
-        {% endfor %}
-      ],
-    });
-    </script>
-  </div>
+  {% include "program/modules/bigboardmodule/bigboard_graph.html" %}
   {% if type == "Teacher" %}
   <script type="text/javascript">
     function showSeries(btn, filter) {
@@ -226,24 +288,82 @@
 
 {% if popular_classes %}
     <div class="popular-classeses">
-      {% for description, classes in popular_classes %}
-        <div class="popular-classes-block">
-          <div class="popular-classes-heading">
-            {{description}}
-          </div>
-          <table class="popular-classes bigboard-description">
-            {% for class in classes %}
-              <tr>
-                <td class="popular-class-num">{{class.points}}</td>
-                <td class="popular-class-title">
-                  {{class.category__symbol}}{{class.id}}: {{class.title}}
-                </td>
-              </tr>
-            {% endfor %}
-          </table>
-        </div>
-      {% endfor %}
+        {% for description, series in popular_classes %}
+        <div class="popular-classes-chart" id="popular-classes-chart-{{ forloop.counter }}"></div>
+        <script type="text/javascript">
+            var categories = [{% for cat in categories %}'{{ cat }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+            var colors = ["#7cb5ec", "#434348", "#90ed7d", "#f7a35c", "#8085e9", "#f15c80", "#e4d354", "#2b908f", "#f45b5b", "#91e8e1"];
+            $j('#popular-classes-chart-{{ forloop.counter }}').highcharts({
+                // mostly grabbed from https://www.highcharts.com/demo/column-stacked
+                chart: {
+                    type: 'column',
+                    zoomType: 'xy',
+                    panning: {
+                        enabled: true,
+                        type: 'xy', // see fix above
+                    },
+                    panKey: 'shift'
+                },
+                credits: {
+                    enabled: false
+                },
+                title: {
+                    text: '{{ description }}'
+                },
+                subtitle: {
+                    text: 'Click and drag to zoom in. Hold down shift key to pan.'
+                },
+                xAxis: {
+                    type: 'category',
+                    categories: [{% for ts in timeslots %}'{{ ts.start }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+                    min: 0,
+                    max: {{ timeslots.count|add:"-1" }}
+                },
+                yAxis: {
+                    title: {
+                        text: '# of Students'
+                    },
+                    stackLabels: {
+                        enabled: true,
+                        style: {
+                            fontWeight: 'bold',
+                            color: ( // theme
+                                Highcharts.defaultOptions.title.style &&
+                                Highcharts.defaultOptions.title.style.color
+                            ) || 'gray'
+                        }
+                    }
+                },
+                tooltip: {
+                    headerFormat: '<b>{point.x}</b><br/>',
+                    pointFormat: '{series.name}: <b>{point.y}</b>'
+                },
+                plotOptions: {
+                    column: {
+                        stacking: 'normal',
+                        dataLabels: {
+                            enabled: true
+                        }
+                    }
+                },
+                legend: {
+                    enabled: false
+                },
+                series: [
+                    {% for ser in series %}
+                    {
+                        name: '{{ ser.name|truncatechars:30 }}',
+                        data: [{% for dat in ser.data %}['{{ dat.0 }}', {{ dat.1 }}],{% endfor %}],
+                        color: colors[categories.indexOf('{{ ser.name|make_list|first }}') % 10]
+                    }{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                ]
+            });
+        </script>
+        {% endfor %}
     </div>
 {% endif %}
+
+{% include "program/modules/admincore/returnlink.html" %}
 
 {% endblock %}

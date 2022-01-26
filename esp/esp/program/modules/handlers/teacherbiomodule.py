@@ -40,14 +40,16 @@ from django.db.models.query   import Q
 
 # reg profile module
 class TeacherBioModule(ProgramModuleObj):
-    """ Module for teacher to edit their biography for each program. """
+    doc = """Module for teacher to edit their biography for each program."""
+
     @classmethod
     def module_properties(cls):
         return {
             "admin_title": "Teacher Biography Editor",
             "link_title": "Update your teacher biography",
             "module_type": "teach",
-            "seq": -111
+            "seq": -111,
+            "choosable": 1,
             }
 
     def teachers(self, QObject = False):
@@ -75,7 +77,11 @@ class TeacherBioModule(ProgramModuleObj):
     def isCompleted(self):
         #   TeacherBio.getLastForProgram() returns a new bio if one already exists.
         #   So, mark this step completed if there is an existing (i.e. non-empty) bio.
-        lastBio = TeacherBio.getLastForProgram(get_current_request().user, self.program)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        lastBio = TeacherBio.getLastForProgram(user, self.program)
         return ((lastBio.id is not None) and lastBio.bio and lastBio.slugbio)
 
     class Meta:

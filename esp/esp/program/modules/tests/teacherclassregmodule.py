@@ -91,20 +91,10 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Try editing the class
         response = self.client.get('%smakeaclass' % self.program.get_teach_url())
-        self.assertTrue("grade_range_popup" in response.content)
+        self.assertTrue("check_grade_range" in response.content)
 
         # Add a tag that specifically removes this functionality
         Tag.setTag('grade_range_popup', self.program, 'False')
-
-        # Try editing the class
-        response = self.client.get('%smakeaclass' % self.program.get_teach_url())
-        self.assertTrue(not "grade_range_popup" in response.content)
-
-        # Change the grade range of the program and reset the tag
-        self.program.grade_min = 7
-        self.program.grade_max = 8
-        self.program.save()
-        Tag.setTag('grade_range_popup', self.program, 'True')
 
         # Try editing the class
         response = self.client.get('%smakeaclass' % self.program.get_teach_url())

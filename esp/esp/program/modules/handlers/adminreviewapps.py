@@ -46,6 +46,8 @@ from django.db.models.query import Q
 __all__ = ['AdminReviewApps']
 
 class AdminReviewApps(ProgramModuleObj):
+    doc = """View student applications and select students to be admitted for the program."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -53,6 +55,7 @@ class AdminReviewApps(ProgramModuleObj):
             "link_title": "Application Review for Admin",
             "module_type": "manage",
             "seq": 1000,
+            "choosable": 0,
             }
 
     def students(self, QObject=False):
@@ -182,15 +185,12 @@ class AdminReviewApps(ProgramModuleObj):
             assert False, student.studentapplication_set.all()[0].__dict__
             raise ESPError('Error: Student did not apply. Student is automatically rejected.', log=False)
 
-        return render_to_response(self.baseDir()+'app_popup.html', request, {'class': cls, 'student': student})
+        return render_to_response(self.baseDir()+'app_popup.html', request, {'class': cls, 'student': student, 'program': prog})
 
     def prepare(self, context):
         """ Sets the 'classes' template variable to contain the list of classes that the current user is teaching """
         context['classes_to_review'] = self.program.classes()
         return context
-
-    def isStep(self):
-        return True
 
     def get_msg_vars(self, user, key):
         if key == 'schedule_app':
@@ -227,6 +227,8 @@ Student schedule for %s:
 
         return schedule
 
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

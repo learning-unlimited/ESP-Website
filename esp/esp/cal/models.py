@@ -56,6 +56,13 @@ class EventType(models.Model):
     get_from_desc.depend_on_model('cal.EventType')
     get_from_desc = classmethod(get_from_desc)
 
+    @classmethod
+    def teacher_event_types(cls):
+        return {
+            'interview': cls.get_from_desc('Teacher Interview'),
+            'training': cls.get_from_desc('Teacher Training'),
+        }
+
 class Event(models.Model):
     """ A unit calendar entry.
 
@@ -77,6 +84,14 @@ class Event(models.Model):
         dur = self.end - self.start
         hrs = round(dur.total_seconds() / 3600.0, 2)
         return timedelta(hours = hrs)
+
+    def start_w_buffer(self, buffer = timedelta(minutes=15)):
+        #Adds a buffer to the start time
+        return self.start - buffer
+
+    def end_w_buffer(self, buffer = timedelta(minutes=15)):
+        #Adds a buffer to the start time
+        return self.end + buffer
 
     def duration_str(self):
         dur = self.end - self.start
@@ -133,9 +148,9 @@ class Event(models.Model):
         return newList
 
     @staticmethod
-    def contiguous(event1, event2):
-        """ Returns true if the second argument is less than 20 minutes apart from the first one. """
-        tol = timedelta(minutes=20)
+    def contiguous(event1, event2, tol = 20):
+        """ Returns true if the second argument is less than <tol> minutes apart from the first one. """
+        tol = timedelta(minutes=tol)
 
         if (event2.start - event1.end) < tol:
             return True
@@ -143,7 +158,7 @@ class Event(models.Model):
             return False
 
     @staticmethod
-    def group_contiguous(event_list):
+    def group_contiguous(event_list, tol = 20):
         """ Takes a list of events and returns a list of lists where each sublist is a contiguous group. """
         from copy import copy
         sorted_list = copy(event_list)
@@ -155,7 +170,7 @@ class Event(models.Model):
 
         for event in sorted_list:
 
-            if last_event is None or Event.contiguous(last_event, event):
+            if last_event is None or Event.contiguous(last_event, event, tol):
                 current_group.append(event)
             else:
                 grouped_list.append(copy(current_group))
@@ -181,6 +196,9 @@ class Event(models.Model):
         else:
             return s + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8') + u'--' \
                + self.end.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
+
+    def pretty_time_with_date(self):
+        return self.pretty_time(include_date = True)
 
     def pretty_date(self):
         return self.start.strftime('%A, %B %d').decode('utf-8')
