@@ -1352,19 +1352,21 @@ class SplashInfo(models.Model):
             return n
 
     def execute_sibling_discount(self):
+        from esp.accounting.controllers import IndividualAccountingController
+        from esp.accounting.models import Transfer
+        iac = IndividualAccountingController(self.program, self.student)
+        line_item_type = iac.default_siblingdiscount_lineitemtype()
+        source_account = iac.default_finaid_account()
+        dest_account = iac.default_source_account()
         if self.siblingdiscount:
-            from esp.accounting.controllers import IndividualAccountingController
-            from esp.accounting.models import Transfer
-            iac = IndividualAccountingController(self.program, self.student)
-            source_account = iac.default_finaid_account()
-            dest_account = iac.default_source_account()
-            line_item_type = iac.default_siblingdiscount_lineitemtype()
-            transfer, created = Transfer.objects.get_or_create(source=source_account, destination=dest_account, user=self.student, line_item=line_item_type, amount_dec=Decimal('20.00'))
+            transfer, created = Transfer.objects.get_or_create(source=source_account, destination=dest_account, user=self.student, line_item=line_item_type, amount_dec=self.program.sibling_discount)
             return transfer
+        else:
+            Transfer.objects.filter(source=source_account, destination=dest_account, user=self.student, line_item=line_item_type).delete()
 
     def save(self):
-        self.execute_sibling_discount()
         super(SplashInfo, self).save()
+        self.execute_sibling_discount()
 
 
 class RegistrationProfile(models.Model):

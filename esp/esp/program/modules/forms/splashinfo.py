@@ -39,7 +39,7 @@ class SiblingDiscountForm(forms.Form):
     discount_choices = [(False, 'I am the first in my household enrolling in Splash (+ $40)'),
                         (True, 'I have a sibling already enrolled in Splash  (+ $20).')]
 
-    siblingdiscount = forms.ChoiceField(choices=discount_choices, widget=forms.RadioSelect)
+    siblingdiscount = forms.TypedChoiceField(choices=discount_choices, coerce=lambda x: x == 'True', widget=forms.RadioSelect)
     siblingname = forms.CharField(max_length=128, required=False)
 
     def clean(self):
@@ -48,6 +48,8 @@ class SiblingDiscountForm(forms.Form):
         siblingname = cleaned_data.get("siblingname")
         if siblingdiscount and not siblingname:
             self.add_error('siblingname', "You didn't provide the name of your sibling.")
+        elif not siblingdiscount:
+            self.cleaned_data['siblingname'] = ""
 
     def load(self, splashinfo):
         self.initial['siblingdiscount'] = splashinfo.siblingdiscount

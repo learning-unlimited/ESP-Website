@@ -100,6 +100,8 @@ class StudentExtraCosts(ProgramModuleObj):
                 (option_id, option_amount, option_description, has_custom_amt) = option
                 key = 'extracosts_%d_%d' % (line_item_type.id, option_id)
                 student_desc[key] = """Students who have opted for '%s' for '%s' ($%s)""" % (option_description, line_item_type.text, option_amount or line_item_type.amount_dec)
+        if self.program.sibling_discount:
+            student_desc['sibling_discount'] = """Students who have opted for a sibling discount"""
 
         return student_desc
 
@@ -124,6 +126,12 @@ class StudentExtraCosts(ProgramModuleObj):
                     student_lists[key] = students & filter_qobject
                 else:
                     student_lists[key] = students.filter(filter_qobject).distinct()
+        if self.program.sibling_discount:
+            sibling_line_item = pac.default_siblingdiscount_lineitemtype()
+            if QObject:
+                student_lists['sibling_discount'] = pac.all_students_Q(lineitemtype_id=sibling_line_item.id)
+            else:
+                student_lists['sibling_discount'] = pac.all_students(lineitemtype_id=sibling_line_item.id).distinct()
 
         return student_lists
 
@@ -231,12 +239,10 @@ class StudentExtraCosts(ProgramModuleObj):
 
                     elif isinstance(form, SiblingDiscountForm):
                         form.save(spi)
-                        print("hello")
                 else:
                     #   Preserve selected quantity for any items that we don't have a valid form for
                     preserve_items[lineitem_type.text] = form
                     forms_all_valid = False
-                    ##### We also need to preserve form errors!!!
 
             #   Merge previous and new preferences (update only if the form was valid)
             new_prefs = []
