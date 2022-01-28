@@ -1317,8 +1317,8 @@ class SplashInfo(models.Model):
     student = AjaxForeignKey(ESPUser)
     #   Program field may be empty for backwards compatibility with Stanford data
     program = AjaxForeignKey(Program, null=True)
-    lunchsat = models.CharField(max_length=32, blank=True, null=True)
-    lunchsun = models.CharField(max_length=32, blank=True, null=True)
+    lunchsat = models.CharField(max_length=32, blank=True, null=True) # No longer used, kept for backwards compatibility
+    lunchsun = models.CharField(max_length=32, blank=True, null=True) # No longer used, kept for backwards compatibility
     siblingdiscount = models.NullBooleanField(default=False, blank=True)
     siblingname = models.CharField(max_length=64, blank=True, null=True)
     submitted = models.NullBooleanField(default=False, blank=True)
@@ -1351,25 +1351,6 @@ class SplashInfo(models.Model):
             n.save()
             return n
 
-    def pretty_version(self, attr_name):
-        #   Look up choices
-        tag_data = Tag.getProgramTag('splashinfo_choices', self.program)
-
-        #   Check for matching item in list of choices
-        if tag_data:
-            tag_struct = json.loads(tag_data)
-            for item in tag_struct[attr_name]:
-                if item[0] == getattr(self, attr_name):
-                    return item[1].decode('utf-8')
-
-        return u'N/A'
-
-    def pretty_satlunch(self):
-        return self.pretty_version('lunchsat')
-
-    def pretty_sunlunch(self):
-        return self.pretty_version('lunchsun')
-
     def execute_sibling_discount(self):
         if self.siblingdiscount:
             from esp.accounting.controllers import IndividualAccountingController
@@ -1382,30 +1363,7 @@ class SplashInfo(models.Model):
             return transfer
 
     def save(self):
-        from esp.accounting.controllers import IndividualAccountingController
-
-        #   We have two things to put in: "Saturday Lunch" and "Sunday Lunch".
-        #   If they are not there, they will be created.  These names are hard coded.
-        from esp.accounting.models import LineItemType
-        LineItemType.objects.get_or_create(program=self.program, text='Saturday Lunch')
-        LineItemType.objects.get_or_create(program=self.program, text='Sunday Lunch')
-
-        #   Figure out how much everything costs
-        cost_info = json.loads(Tag.getProgramTag('splashinfo_costs', self.program))
-
-        #   Save accounting information
-        iac = IndividualAccountingController(self.program, self.student)
-
-        if not self.lunchsat or self.lunchsat == 'no':
-            iac.set_preference('Saturday Lunch', 0)
-        elif 'lunchsat' in cost_info:
-            iac.set_preference('Saturday Lunch', 1, cost_info['lunchsat'][self.lunchsat])
-
-        if not self.lunchsun or self.lunchsun == 'no':
-            iac.set_preference('Sunday Lunch', 0)
-        elif 'lunchsun' in cost_info:
-            iac.set_preference('Sunday Lunch', 1, cost_info['lunchsun'][self.lunchsun])
-
+        self.execute_sibling_discount()
         super(SplashInfo, self).save()
 
 

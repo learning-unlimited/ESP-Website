@@ -33,85 +33,30 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
-from esp.middleware import ESPError
-from esp.tagdict.models import Tag
-import json
 
-"""
-The SplashInfoForm is customizable for different lunch options.
-The choices should be provided in a Tag, splashinfo_choices, which is in
-JSON format.  Example:
-    key = 'splashinfo_choices'
-    value = '{
-        "lunchsat": [["no", "No thanks; I will bring my own lunch"],
-                  ["chicken", "Yes, Chicken"],
-                  ["steak", "Yes, Steak"],
-                  ["spicy_thai", "Yes, Spicy Thai"],
-                  ["veggie", "Yes, Vegetarian"]],
-        "lunchsun": [["no", "No thanks; I will bring my own lunch"],
-                  ["cheese", "Yes, Cheese Pizza"],
-                  ["pepperoni", "Yes, Pepperoni Pizza"]],
-    }'
-
-The interface (including directions, whether to exclude or rename days,
-and costs) should be controlled by overriding the template:
-    program/modules/splashinfomodule/splashinfo.html
-"""
-
-class SplashInfoForm(forms.Form):
+class SiblingDiscountForm(forms.Form):
     #   The default choices are somewhat unappetizing...
-    default_choices = [['no', 'No'], ['yes', 'Yes']]
     discount_choices = [(False, 'I am the first in my household enrolling in Splash (+ $40)'),
                         (True, 'I have a sibling already enrolled in Splash  (+ $20).')]
 
-    lunchsat = forms.ChoiceField(choices=default_choices)
-    lunchsun = forms.ChoiceField(choices=default_choices)
     siblingdiscount = forms.ChoiceField(choices=discount_choices, widget=forms.RadioSelect)
     siblingname = forms.CharField(max_length=128, required=False)
 
-    def __init__(self, *args, **kwargs):
-        #   Extract a program if one was provided
-        if 'program' in kwargs:
-            program = kwargs['program']
-            del kwargs['program']
-        else:
-            program = None
-
-        #   Run default init function
-        super(SplashInfoForm, self).__init__(*args, **kwargs)
-
-        #   Set choices from Tag data (try to get program-specific choices if they exist)
-        tag_data = Tag.getProgramTag('splashinfo_choices', program)
-        if tag_data:
-            tag_struct = json.loads(tag_data)
-            self.fields['lunchsat'].choices = tag_struct['lunchsat']
-            self.fields['lunchsun'].choices = tag_struct['lunchsun']
-
-        if not Tag.getBooleanTag('splashinfo_siblingdiscount', program=program):
-            del self.fields['siblingdiscount']
-            del self.fields['siblingname']
-
-        if not Tag.getBooleanTag('splashinfo_lunchsat', program=program):
-            del self.fields['lunchsat']
-
-        if not Tag.getBooleanTag('splashinfo_lunchsun', program=program):
-            del self.fields['lunchsun']
+    def clean(self):
+        cleaned_data = super(SiblingDiscountForm, self).clean()
+        siblingdiscount = cleaned_data.get("siblingdiscount")
+        siblingname = cleaned_data.get("siblingname")
+        if siblingdiscount and not siblingname:
+            self.add_error('siblingname', "You didn't provide the name of your sibling.")
 
     def load(self, splashinfo):
-        self.initial['lunchsat'] = splashinfo.lunchsat
-        self.initial['lunchsun'] = splashinfo.lunchsun
         self.initial['siblingdiscount'] = splashinfo.siblingdiscount
         self.initial['siblingname'] = splashinfo.siblingname
 
     def save(self, splashinfo):
-        if 'lunchsat' in self.cleaned_data:
-            splashinfo.lunchsat = self.cleaned_data['lunchsat']
-        if 'lunchsun' in self.cleaned_data:
-            splashinfo.lunchsun = self.cleaned_data['lunchsun']
         if 'siblingdiscount' in self.cleaned_data:
-            splashinfo.siblingdiscount = (self.cleaned_data['siblingdiscount'] == "True")
+            splashinfo.siblingdiscount = self.cleaned_data['siblingdiscount']
         if 'siblingname' in self.cleaned_data:
             splashinfo.siblingname = self.cleaned_data['siblingname']
         splashinfo.submitted = True
         splashinfo.save()
-

@@ -85,8 +85,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         return self.apply_settings().get(name, default)
 
     def line_item_type(self):
-        pac = ProgramAccountingController(self.program)
-        (donate_type, created) = pac.get_lineitemtypes().get_or_create(program=self.program, text=self.get_setting('donation_text'))
+        (donate_type, created) = LineItemType.objects.get_or_create(program=self.program, text=self.get_setting('donation_text'))
         return donate_type
 
     def isCompleted(self):

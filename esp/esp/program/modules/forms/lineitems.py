@@ -4,7 +4,7 @@ from django.core.validators import RegexValidator
 from esp.accounting.models import LineItemType, LineItemOptions
 from esp.program.models import Program
 
-exclude_line_items = ["Sibling discount", "Program admission", "Financial aid grant", "Student payment", "Donation to Learning Unlimited", "Saturday Lunch", "Sunday Lunch"]
+exclude_line_items = ["Sibling discount", "Program admission", "Financial aid grant", "Student payment", "Donation to Learning Unlimited"]
 
 class LineItemForm(forms.ModelForm):
     text = forms.CharField(label = 'Name', widget = forms.TextInput(attrs={'placeholder': '(name)'}), validators=[RegexValidator(regex = '^(' + '|'.join(exclude_line_items) + ')$', message = 'That line item name is reserved for internal operations. Please choose another name.', inverse_match = True)])
