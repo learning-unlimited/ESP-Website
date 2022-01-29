@@ -169,7 +169,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         sibling_type = iac.default_siblingdiscount_lineitemtype()
         grant_type = iac.default_finaid_lineitemtype()
         offer_donation = self.settings['offer_donation']
-        donate_type = iac.get_lineitemtypes().get(text=self.settings['donation_text']) if offer_donation else None
+        donate_type = LineItemType.objects.get(program=self.program, text=self.settings['donation_text']) if offer_donation else None
         context['itemizedcosts'] = iac.get_transfers().exclude(line_item__in=filter(None, [payment_type, sibling_type, grant_type, donate_type])).order_by('-line_item__required')
         context['itemizedcosttotal'] = iac.amount_due()
         #   This amount should be formatted as an integer in order to be
