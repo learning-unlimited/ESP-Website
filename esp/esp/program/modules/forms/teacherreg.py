@@ -42,6 +42,7 @@ from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 import re
 from esp.program.models import ClassCategories, ClassSubject, ClassSection, ClassSizeRange
 from esp.program.modules.module_ext import ClassRegModuleInfo
+from esp.users.models import UserAvailability
 from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from django.conf import settings
@@ -346,11 +347,11 @@ class TeacherEventSignupForm(FormWithRequiredCss):
 
     def _slot_is_taken(self, event):
         """ Determine whether an interview slot is taken. """
-        return self.module.entriesBySlot(event).count() > 0
+        return UserAvailability.entriesBySlot(event).count() > 0
 
     def _slot_is_mine(self, event):
         """ Determine whether an interview slot is taken by you. """
-        return self.module.entriesBySlot(event).filter(user=self.user).count() > 0
+        return UserAvailability.entriesBySlot(event).filter(user=self.user).count() > 0
 
     def _slot_too_late(self, event):
         """ Determine whether it is too late to register for a time slot. """

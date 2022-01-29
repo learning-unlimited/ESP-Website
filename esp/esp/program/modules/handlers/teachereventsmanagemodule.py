@@ -34,9 +34,8 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web import render_to_response
-from django.db.models.query import Q
 from esp.cal.models import Event, EventType
-from esp.users.models import ESPUser, UserAvailability
+from esp.users.models import UserAvailability
 from esp.program.modules.forms.teacherevents import TimeslotForm
 from django.contrib.auth.models import Group
 
@@ -46,14 +45,6 @@ class TeacherEventsManageModule(ProgramModuleObj):
     # Initialization
     def __init__(self, *args, **kwargs):
         super(TeacherEventsManageModule, self).__init__(*args, **kwargs)
-
-    def event_types(self):
-        et_interview = EventType.get_from_desc('Teacher Interview')
-        et_training = EventType.get_from_desc('Teacher Training')
-        return {
-            'interview': et_interview,
-            'training': et_training,
-        }
 
     def availability_role(self):
         return Group.objects.get(name='Teacher')
@@ -69,33 +60,6 @@ class TeacherEventsManageModule(ProgramModuleObj):
             'seq': 5,
             'choosable': 0,
         }
-
-    def teachers(self, QObject = False):
-        """ Returns lists of teachers who've signed up for interviews and for teacher training. """
-        if QObject is True:
-            return {
-                'interview': Q(useravailability__event__event_type=self.event_types()['interview'], useravailability__event__program=self.program),
-                'training': Q(useravailability__event__event_type=self.event_types()['training'], useravailability__event__program=self.program)
-            }
-        else:
-            return {
-                'interview': ESPUser.objects.filter( useravailability__event__event_type=self.event_types()['interview'], useravailability__event__program=self.program ).distinct(),
-                'training': ESPUser.objects.filter( useravailability__event__event_type=self.event_types()['training'], useravailability__event__program=self.program ).distinct()
-            }
-
-    def teacherDesc(self):
-        return {
-            'interview': """Teachers who have signed up for an interview""",
-            'training':  """Teachers who have signed up for teacher training""",
-        }
-
-    # Helper functions
-    def getTimes(self, type):
-        """ Get events of the program's teacher interview/training slots. """
-        return Event.objects.filter( program=self.program, event_type=self.event_types()[type] ).order_by('start')
-
-    def entriesBySlot(self, event):
-        return UserAvailability.objects.filter(event=event)
 
     @main_call
     @needs_admin
@@ -129,11 +93,11 @@ class TeacherEventsManageModule(ProgramModuleObj):
         if 'timeslot_form' not in context:
             context['timeslot_form'] = TimeslotForm()
 
-        interview_times = self.getTimes('interview')
-        training_times = self.getTimes('training')
+        interview_times = self.program.get_teacher_event_times('interview')
+        training_times = self.program.get_teacher_event_times('training')
 
         for ts in list( interview_times ) + list( training_times ):
-            ts.teachers = self.entriesBySlot( ts )
+            ts.teachers = UserAvailability.entriesBySlot( ts )
 
         context['prog'] = prog
         context['interview_times'] = interview_times
@@ -147,7 +111,7 @@ class TeacherEventsManageModule(ProgramModuleObj):
     setup_title = "Set up events for teachers to attend before the program"
 
     def isCompleted(self):
-        return Event.objects.filter(program=self.program, event_type__in=self.event_types().values()).exists()
+        return Event.objects.filter(program=self.program, event_type__in=EventType.teacher_event_types().values()).exists()
 
     class Meta:
         proxy = True

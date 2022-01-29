@@ -17,6 +17,6 @@ $j('ul.nav li a[href="'+window.location.pathname+'"]').parent().addClass('active
 $j('ul.nav li a[href="'+window.location.pathname+'/"]').parent().addClass('active');
 
 $j('.navbar-manage-contractible').hide();
-$j('.navbar-manage-expander').click(function () {
+$j('.navbar-manage-expander').on("click", function () {
   $j('.navbar-manage-contractible').toggle();
 });

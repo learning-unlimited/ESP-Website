@@ -54,7 +54,7 @@ function Matrix(
     }.bind(this);
 
     $j.each(this.filter, function(filterName, filterObject) {
-        filterObject.el.change(function() {
+        filterObject.el.on("change", function() {
             filterObject.val = filterObject.el.val().trim();
             if(filterObject.type==="number") {
                 filterObject.val = parseInt(filterObject.val);
@@ -128,7 +128,7 @@ function Matrix(
     };
     
     this.scheduling_check = "";
-    $j('input[type=radio][name=scheduling-checks]').change(function() {
+    $j('input[type=radio][name=scheduling-checks]').on("change", function() {
         this.scheduling_check = event.target.value;
         this.updateCells();
     }.bind(this));
@@ -467,7 +467,7 @@ function Matrix(
 
         //Time headers
         var header_row = $j("<tr/>").appendTo($j("<thead/>").appendTo(table));
-        header_row.append($j("<th/>"));
+        header_row.append($j("<th/>").append($j("<button id = 'print_button'>Print Matrix</button>")));
         $j.each(this.timeslots.timeslots_sorted, function(index, timeslot){
             var timeslotHeader = $j("<th>" + timeslot.label + "</th>");
             this.timeslotHeaders[timeslot.id] = timeslotHeader;

@@ -697,7 +697,7 @@ class ClassChangeController(object):
         relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
 
         for (student_ind,section_ind) in removals:
-            self.sections[section_ind].unpreregister_student(self.students[student_ind], prereg_verb = "Enrolled")
+            self.sections[section_ind].unpreregister_student(self.students[student_ind], prereg_verbs = ["Enrolled"])
             self.changed[student_ind] = True
         for (student_ind,section_ind) in assignments:
             self.sections[section_ind].preregister_student(self.students[student_ind], overridefull=False, prereg_verb = "Enrolled", fast_force_create=False)

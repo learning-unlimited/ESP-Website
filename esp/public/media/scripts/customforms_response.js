@@ -67,32 +67,43 @@ function file_link_formatter(cellvalue, options, rowObject)
 
 var createGrid=function(form_data){
     $j("#jqGrid").jqGrid({
-	datatype: "local",
-	height: 250,
-	colNames: $j.map(form_data['questions'], function(val, index) {
-	    return val[1];
-	}),
-	colModel: $j.map(form_data['questions'], function(val, index) {
-	    var result = {name: val[0], index: val[0]};
-        //  Substitute in custom formatter defined above in order to link to uploaded files.
-        if (val[2] == "file")
-        {
-            result['formatter'] = file_link_formatter;
-        }
-        return result;
-	}),
-	caption: "Form responses",
-	rowNum: 10,
-	pager: "#jqGridPager"
+        datatype: "local",
+        height: 250,
+        colNames: $j.map(form_data['questions'], function(val, index) {
+            return val[1];
+        }),
+        colModel: $j.map(form_data['questions'], function(val, index) {
+            var result = {name: val[0], index: val[0]};
+            //  Substitute in custom formatter defined above in order to link to uploaded files.
+            if (val[2] == "file")
+            {
+                result['formatter'] = file_link_formatter;
+                result['classes'] = "file_column"
+            }
+            return result;
+        }),
+        caption: "Form responses",
+        rowNum: 10,
+        pager: "#jqGridPager"
     });
     $j("#jqGrid").jqGrid('navGrid', '#jqGridPager',
 			{view: true, edit: false, add: false, del: false},
 			{}, {}, {}, 
 			{multipleSearch: true, closeOnEscape: true},
-		        {closeOnEscape: true});
+		        {closeOnEscape: true}
+    );
+    $j.each(form_data['questions'], function(index, val) {
+        //  Substitute in custom formatter defined above in order to link to uploaded files.
+        if (val[2] == "file") {
+            $j("#jqGrid_" + val[0] + " div").prepend("<a title='Bulk Download All Files' href='/customforms/bulkdownloadfiles?form_id="+$j('#form_id').val()+"&question_name="+val[0]+"'><span class='ui-icon  ui-icon-circle-arrow-s'></span></a> ");
+            $j("#jqGrid_" + val[0] + " div a").click(function(e) {
+                e.stopPropagation();
+            });
+        }
+    });
     $j.each(form_data['answers'], function(index, val) {
-	delete val.id;
-	$j("#jqGrid").jqGrid('addRowData', index+1, val);
+        delete val.id;
+        $j("#jqGrid").jqGrid('addRowData', index+1, val);
     });
 };
 

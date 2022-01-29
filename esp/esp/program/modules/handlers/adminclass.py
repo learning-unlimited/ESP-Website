@@ -45,7 +45,7 @@ from esp.program.modules.forms.management import ClassManageForm, SectionManageF
 
 from django.http import HttpResponseRedirect, HttpResponse
 from esp.middleware import ESPError
-
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 
 """ Module in the middle of a rewrite. -Michael """
 
@@ -242,6 +242,7 @@ class AdminClass(ProgramModuleObj):
                 valid = (valid and sf.is_valid())
 
             if valid:
+                verbs = RTC.getVisibleRegistrationTypeNames(prog)
                 # Leave a loophole:  You can set a class to "Unreviewed" (ie., status = 0),
                 # then cancel it, and it won't kick all the students out
                 cls_alter = ClassSubject.objects.get(id=cls_form.cleaned_data['clsid'])
@@ -261,7 +262,7 @@ class AdminClass(ProgramModuleObj):
                     # Kick all the students out of a class if it was rejected
                     if int(sec_alter.status) < 0 and int(orig_sec_status) > 0:
                         for student in sec_alter.students():
-                            sec_alter.unpreregister_student(student)
+                            sec_alter.unpreregister_student(student, verbs)
 
                 #   Save class info after section info so that cls_form.save_data()
                 #   can override section information if it's supposed to.

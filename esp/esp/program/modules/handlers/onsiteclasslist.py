@@ -57,6 +57,7 @@ from esp.utils.models import Printer, PrintRequest
 from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 
 class OnSiteClassList(ProgramModuleObj):
     doc = """Display lists of classes for onsite registration purposes."""
@@ -252,7 +253,7 @@ class OnSiteClassList(ProgramModuleObj):
             desired_sections = None
 
         #   Check in student if not currently checked in, since if they're using this view they must be onsite
-        if not prog.isCheckedIn(user):
+        if not prog.isCheckedIn(user) and request.GET.get('check_in') == 'true':
             rec = Record(user=user, program=prog, event='attended')
             rec.save()
 
@@ -270,9 +271,10 @@ class OnSiteClassList(ProgramModuleObj):
                     failed_add_sections.append(sec.id)
 
             if len(failed_add_sections) == 0:
+                verbs = RTC.getVisibleRegistrationTypeNames(prog)
                 #   Remove sections the student wants out of
                 for sec in sections_to_remove:
-                    sec.unpreregister_student(user)
+                    sec.unpreregister_student(user, verbs)
                     result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
 
                 #   Remove sections that conflict with those the student wants into
@@ -284,7 +286,7 @@ class OnSiteClassList(ProgramModuleObj):
                         #   We found something we need to remove
                         for sm_sec in sm.map[ts]:
                             if sm_sec.id not in sections_to_add:
-                                sm_sec.unpreregister_student(user)
+                                sm_sec.unpreregister_student(user, verbs)
                                 result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sm_sec.emailcode(), sm_sec.title(), sm_sec.id))
                             else:
                                 existing_sections.append(sm_sec)
@@ -343,6 +345,7 @@ class OnSiteClassList(ProgramModuleObj):
         context['timeslots'] = prog.getTimeSlots()
         context['printers'] = Printer.objects.all().values_list('name', flat=True)
         context['initial_student'] = request.GET.get('student_id', '')
+        context['check_in_default'] = datetime.today().date() in prog.dates()
 
         open_class_category = prog.open_class_category
         open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id','symbol','category'] ] )
@@ -444,7 +447,7 @@ class OnSiteClassList(ProgramModuleObj):
 
         #   This view still uses classes, not sections.  The templates show information
         #   for each section of each class.
-        classes = [(i.num_students()/(i.class_size_max + 1), i) for i in self.program.classes()]
+        classes = [(i.num_students()/(i.class_size_max + 1), i) for i in self.program.classes() if i.class_size_max]
         classes.sort()
         classes = [i[1] for i in classes]
 

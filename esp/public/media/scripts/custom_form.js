@@ -1,3 +1,30 @@
+// Taken from jquery-migrate since toggle() was removed in jQuery 1.9
+$j.fn.clicktoggle = function( fn, fn2 ) {
+	// Save reference to arguments for access in closure
+	var args = arguments,
+		guid = fn.guid || $j.guid++,
+		i = 0,
+		toggler = function( event ) {
+			// Figure out which function to execute
+			var lastToggle = ( $j._data( this, "lastToggle" + fn.guid ) || 0 ) % i;
+			$j._data( this, "lastToggle" + fn.guid, lastToggle + 1 );
+
+			// Make sure that clicks stop
+			event.preventDefault();
+
+			// and execute the function
+			return args[ lastToggle ].apply( this, arguments ) || false;
+		};
+
+	// link all the functions, so any of them can unbind this click handler
+	toggler.guid = guid;
+	while ( i < args.length ) {
+		args[ i++ ].guid = guid;
+	}
+
+	return this.on("click",  toggler );
+};
+
 //Defining the master 'list' for form elements
 var formElements={
     'Generic':{
@@ -102,61 +129,61 @@ var perms={};
 $j(document).ready(function() {
 	
 	//Assigning event handlers
-    $j('#button_add').click(function(){insertField($j('#elem_selector').val())});
-	$j('#submit').click(submit);
-	$j('#input_form_title').bind('change', updateTitle);
-	$j('#input_form_description').bind('change', updateDesc);
-	$j('#id_main_perm').change(onChangeMainPerm);
-	$j('#id_prog_belong').change(onChangeProgBelong);
-	$j('#links_id_main').change(onChangeMainLink);
-	$j('#links_id_specify').change(onChangeLinksSpecify);
-    $j('#links_id_pick').change(onChangeLinksProgram);
-    $j('#links_id_tl').change(onChangeLinksTL);
-	$j('#id_modify').change(function(){
+    $j('#button_add').on("click", function(){insertField($j('#elem_selector').val())});
+	$j('#submit').on("click", submit);
+	$j('#input_form_title').on('change', updateTitle);
+	$j('#input_form_description').on('change', updateDesc);
+	$j('#id_main_perm').on("change", onChangeMainPerm);
+	$j('#id_prog_belong').on("change", onChangeProgBelong);
+	$j('#links_id_main').on("change", onChangeMainLink);
+	$j('#links_id_specify').on("change", onChangeLinksSpecify);
+    $j('#links_id_pick').on("change", onChangeLinksProgram);
+    $j('#links_id_tl').on("change", onChangeLinksTL);
+	$j('#id_modify').on("change", function(){
 		if($j(this).prop('checked'))
 			$j('#submit').val('Modify Form');
 		else $j('#submit').val('Create Form');	
 	});
-	$j('#cat_selector').change(function(){onSelectCategory($j(this).val());});
-	$j('#elem_selector').change(function(){onSelectElem($j('#elem_selector').val());});
-	$j('#main_cat_spec').change(onChangeMainCatSpec);
-	$j('#id_perm_program').change(onChangePermProg);
-    $j('#base_form').change(onChangeBase);
+	$j('#cat_selector').on("change", function(){onSelectCategory($j(this).val());});
+	$j('#elem_selector').on("change", function(){onSelectElem($j('#elem_selector').val());});
+	$j('#main_cat_spec').on("change", onChangeMainCatSpec);
+	$j('#id_perm_program').on("change", onChangePermProg);
+    $j('#base_form').on("change", onChangeBase);
 	
 	$currSection=$j('#section_0');
 	$currPage=$j('#page_0');
     
     // Make the initial section editable
-    $j('#section_0').parent().mouseover(function(e) {
+    $j('#section_0').parent().on("mouseover", function(e) {
         if($j(e.target).is('.outline, .outline > hr, .section, .section_header, .section_text, .section_button')){
             if($j(this).hasClass('field_selected'))
                 return;
             $j(this).addClass('field_hover');
             $j(this).children(".wrapper_button").addClass("wrapper_button_hover");
         }
-    }).mouseout(function() {
+    }).on("mouseout", function() {
         if($j(this).hasClass('field_selected'))
             return;
         $j(this).removeClass('field_hover');
         $j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
-    }).toggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));});
+    }).clicktoggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));});
     $j('#section_0').parent().data('data', {attrs: {}, field_type: 'section', question_text: 'Section', help_text: 'Enter a short description about the section', parent_id:-1});
-	$j('.wrapper_button').click(function(e){removeField($j(this)); e.stopPropagation();});
+	$j('.wrapper_button').on("click", function(e){removeField($j(this)); e.stopPropagation();});
     
     // Make the initial page selectable
-    $j("#page_0").mouseover(function(e) {
+    $j("#page_0").on("mouseover", function(e) {
         if($j(e.target).is('.form_preview, .preview_button')){
             if($j(this).hasClass('field_selected'))
                 return;
             $j(this).addClass('field_hover');
             $j(this).children(".wrapper_button").addClass("wrapper_button_hover");
         }
-    }).mouseout(function() {
+    }).on("mouseout", function() {
         if($j(this).hasClass('field_selected'))
             return;
         $j(this).removeClass('field_hover');
         $j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
-    }).click(function(){
+    }).on("click", function(){
         $j('.form_preview').removeClass('page_selected');
         $currPage=$j(this);
         $currPage.addClass('page_selected');
@@ -169,7 +196,7 @@ $j(document).ready(function() {
         // If the currently selected field
         if($currField && !$currPage[0].contains($currField[0])){
             var $field=$currField;
-            $field.click();
+            $field.trigger("click");
             $field.removeClass('field_hover');
             $field.children(".wrapper_button").removeClass("wrapper_button_hover");
         }
@@ -226,12 +253,12 @@ $j(document).ready(function() {
 	//initUI();
 
     if(edit_form != -1){
-        $j("#base_form").val(edit_form).change();
+        $j("#base_form").val(edit_form).trigger("change");
         createFromBase();
         $j("#create_text").html("Modifying existing form:");
         $j("#base_form").prop('disabled', true);
         $j("#create_from_base").hide();
-        $j("#id_modify").prop('checked', true).change();
+        $j("#id_modify").prop('checked', true).trigger("change");
     }
 });
 
@@ -542,9 +569,9 @@ var addOption=function(option_text, field_type, correct=false) {
 	$wrap_option=$j('<div></div>').addClass('option_element');
     // Add radio buttons and checkboxes to indicate correct answers
     if(['radio', 'dropdown', 'multiselect', 'checkboxes'].includes(field_type)){
-        var correct_answer = $j('<input/>',{type:'checkbox', name: field_type + '_correct_answer', checked: correct, title: "Correct answer?"});
+        var correct_answer = $j('<input>',{type:'checkbox', name: field_type + '_correct_answer', checked: correct, title: "Correct answer?"});
         if(field_type == 'radio' || field_type == 'dropdown'){
-            correct_answer.click(function() {
+            correct_answer.on("click", function() {
                 if(this.checked){
                     $j('[name=' + field_type + '_correct_answer]').not($j(this)).prop('checked', false);
                 }
@@ -552,13 +579,13 @@ var addOption=function(option_text, field_type, correct=false) {
         }
         correct_answer.appendTo($wrap_option);
     }
-	$option=$j('<input/>').attr({
+	$option=$j('<input>').attr({
 		type:"text",
 		value:option_text
 	});
 	$option.appendTo($wrap_option);
-	$j('<input/>',{type:'button',value:'+'}).click(function(){addOption('', field_type)}).appendTo($wrap_option);
-	$j('<input/>',{type:'button',value:'-'}).click(removeOption).appendTo($wrap_option);
+	$j('<input>',{type:'button',value:'+'}).on("click", function(){addOption('', field_type)}).appendTo($wrap_option);
+	$j('<input>',{type:'button',value:'-'}).on("click", removeOption).appendTo($wrap_option);
 	$wrap_option.appendTo($j('#multi_options'));
 };
 
@@ -659,8 +686,8 @@ var addSpecificOptions=function(elem, options) {
 			limits=options.split(',');
 		else limits=[0,10];
 		frag='<div class="toolboxText">';
-		frag+='<p>Min <input type="number" id="id_minVal" value="'+limits[0]+'"/>';
-		frag+='&nbsp;&nbsp;Max <input type="number" id="id_maxVal" value="'+limits[1]+'"/>';
+		frag+='<p>Min <input type="number" id="id_minVal" value="'+limits[0]+'">';
+		frag+='&nbsp;&nbsp;Max <input type="number" id="id_maxVal" value="'+limits[1]+'">';
 		frag+='</p></div>';
 	 	$div=$j(frag);
 		$div.appendTo($j('#other_options'));	
@@ -691,14 +718,14 @@ var addSpecificOptions=function(elem, options) {
             limit_min = limits[0];
             limit_max = limits[1];
         }
-        frag+=' value="'+limit_min+'"/> &nbsp;&nbsp;'; 
+        frag+=' value="'+limit_min+'"> &nbsp;&nbsp;'; 
 		frag+='Max <input type="number" id="text_max"';
         if(elem=='textField'){
             frag+='min="0" max="30"';
         } else if(elem=='longTextField'){
             frag+='min="0" max="60"';
         }
-        frag+=' value="'+limit_max+'"/></p>';
+        frag+=' value="'+limit_max+'"></p>';
 		frag+='</div>';
 		var $div=$j(frag);
 		$div.appendTo($j('#other_options'));
@@ -729,7 +756,7 @@ var addCorrectnessOptions = function(elem) {
     {
         frag = '<div id="' + elem + '_correctness_options" class="toolboxText">';
         frag += '<p>Correct answer:<br>';
-        frag += '<input type="text" id="' + elem + '_correct_answer" value=""/>';
+        frag += '<input type="text" id="' + elem + '_correct_answer" value="">';
         frag += '</p></div>';
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
@@ -738,7 +765,7 @@ var addCorrectnessOptions = function(elem) {
     {
         frag = '<div id="' + elem + '_correctness_options" class="toolboxText">';
         frag += '<p>Correct answer:<br>';
-        frag += '<textarea id="' + elem + '_correct_answer" value=""/>';
+        frag += '<textarea id="' + elem + '_correct_answer" value=""></textarea>';
         frag += '</p></div>';
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
@@ -747,7 +774,7 @@ var addCorrectnessOptions = function(elem) {
     {
         frag = '<div id="numeric_correctness_options" class="toolboxText">';
         frag += '<p>Correct answer:<br>';
-        frag += '<input type="number" id="numeric_correct_answer" value=""/>';
+        frag += '<input type="number" id="numeric_correct_answer" value="">';
         frag += '</p></div>';
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
@@ -795,7 +822,7 @@ var addCorrectnessOptions = function(elem) {
     {
         frag = '<div id="' + elem + '_correctness_options" class="toolboxText">';
         frag += '<p>Correct answer:<br>';
-        frag += '<input type="' + elem + '" id="' + elem + '_correct_answer" value=""/>';
+        frag += '<input type="' + elem + '" id="' + elem + '_correct_answer" value="">';
         frag += '</p></div>';
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
@@ -804,7 +831,7 @@ var addCorrectnessOptions = function(elem) {
     {
         frag = '<div id="' + elem + '_correctness_options" class="toolboxText">';
         frag += '<p>Correct answer (HH:MM in 24-hour time):<br>';
-        frag += '<input type="text" id="' + elem + '_correct_answer" value=""/>';
+        frag += '<input type="text" id="' + elem + '_correct_answer" value="">';
         frag += '</p></div>';
         var $div = $j(frag);
         $div.appendTo($j('#other_options'));
@@ -851,7 +878,7 @@ var onSelectElem = function(item) {
         $j('#id_question').val(question_text);
         $prevField=$currSection.children(":last");
         if($button.val()!='Add to Form')
-            $button.val('Add to Form').html('Add Field to Form').unbind('click').click(function(){insertField($j('#elem_selector').val())});
+            $button.val('Add to Form').html('Add Field to Form').off('click').on("click", function(){insertField($j('#elem_selector').val())});
     }
 };
 
@@ -894,7 +921,7 @@ var updateField=function() {
 	$prevField=$currField.prev();
 	$currField.remove();
 	$currField=addElement(field_type,$prevField);
-	$currField.click();
+	$currField.trigger("click");
     $j.data($currField[0],'data').parent_id = curr_field_id;
 };
 
@@ -905,12 +932,12 @@ var onSelectField=function($elem, field_data, ftype=null) {
 	*/
 	
     //Open the field panel if not already open
-    $j('#header_fields.ui-accordion-header-collapsed').click();
+    $j('#header_fields.ui-accordion-header-collapsed').trigger("click");
     
 	//De-selecting any previously selected field
 	if($j('div.field_selected').length == 0 || !$elem.hasClass('field_selected')){
         var $divs = $j('div.field_selected');
-        $divs.click();
+        $divs.trigger("click");
         $divs.removeClass('field_hover');
         $divs.children(".wrapper_button").removeClass("wrapper_button_hover");
     }
@@ -997,7 +1024,7 @@ var onSelectField=function($elem, field_data, ftype=null) {
 		$j("#id_required").prop('checked','');
 	}
 	if($button.val()=='Add to Form')
-		$button.val('Update').html("Update Field").unbind('click').click(updateField);
+		$button.val('Update').html("Update Field").off('click').on("click", updateField);
     addCorrectnessOptions(ftype);
     if(ftype=='date' && field_data.attrs['correct_answer']) {
         $j('#'+ftype+'_correct_answer').val(new Date(field_data.attrs['correct_answer']).toISOString().substring(0,10));
@@ -1035,7 +1062,7 @@ var renderNormalField=function(item, field_options, data){
 	//Rendering code for simple fields (i.e. non-custom fields)
 	var $new_elem;
 	if(item=="textField"){
-		$new_elem=$j('<input/>').attr({
+		$new_elem=$j('<input>').attr({
 			type:"text",
 			size:"30"
 		});
@@ -1046,7 +1073,7 @@ var renderNormalField=function(item, field_options, data){
 		data['attrs']['charlimits']=$j('#text_min').val() + ',' + $j('#text_max').val();
 	}
 	else if(item=="longTextField"){
-		$new_elem=$j('<input/>').attr({
+		$new_elem=$j('<input>').attr({
 			type:"text",
 			size:"60"
 		});
@@ -1195,7 +1222,7 @@ var renderNormalField=function(item, field_options, data){
         if(correct_answers.length) data['attrs']['correct_answer']=correct_answers.join('|');
 	}
 	else if(item=="numeric"){
-		$new_elem=$j('<input/>').attr({
+		$new_elem=$j('<input>').attr({
 			type:"number",
 			size:"20"
 		});
@@ -1206,7 +1233,7 @@ var renderNormalField=function(item, field_options, data){
 		data['attrs']['limits']=$j('#id_minVal').val() + ',' + $j('#id_maxVal').val();
 	}
 	else if(item=='date'){
-		$new_elem=$j('<input/>').attr({
+		$new_elem=$j('<input>').attr({
 			type:"date"
 		});
         if($j('#date_correct_answer').val()) {
@@ -1218,7 +1245,7 @@ var renderNormalField=function(item, field_options, data){
         }
 	}
 	else if(item=='time'){
-		$new_elem=$j('<input/>').attr({
+		$new_elem=$j('<input>').attr({
 			type:"text"
 		});
         if($j('#time_correct_answer').val()) {
@@ -1227,12 +1254,12 @@ var renderNormalField=function(item, field_options, data){
         }
 	}
 	else if(item=='file'){
-		$new_elem=$j('<input/>').attr({
+		$new_elem=$j('<input>').attr({
 			type:"file"
 		});
 	}
 	else if(item=='phone' || item=='email'){
-		$new_elem=$j('<input/>').attr({
+		$new_elem=$j('<input>').attr({
 			type:"text",
 			size:"30"
 		});
@@ -1242,15 +1269,15 @@ var renderNormalField=function(item, field_options, data){
 	}
 	else if(item=='gender'){
 		$new_elem=$j('<p>');
-		$new_elem.append($j('<input/>').attr({
+		$new_elem.append($j('<input>').attr({
 			type:'radio',
 			value:'Male',
 			name:'gender'
-		})).append($j('<span class="field_text"> Male</span><br>')).append($j('<input/>').attr({
+		})).append($j('<span class="field_text"> Male</span><br>')).append($j('<input>').attr({
 				type:'radio',
 				value:'Female',
 				name:'gender'
-		})).append($j('<span class="field_text"> Female</span><br>')).append($j('<input/>').attr({
+		})).append($j('<span class="field_text"> Female</span><br>')).append($j('<input>').attr({
 				type:'radio',
 				value:'Other',
 				name:'gender'
@@ -1315,8 +1342,8 @@ var renderNormalField=function(item, field_options, data){
 	else if(item=='section'){
 		//this one's processed differently from the others
 	
-		var $outline=$j('<div class="outline section_selected"></div>'), label_text=$j.trim($j('#id_question').val()),
-			help_text=$j.trim($j('#id_instructions').val());
+		var $outline=$j('<div class="outline section_selected"></div>'), label_text=$j('#id_question').val().trim(),
+			help_text=$j('#id_instructions').val().trim();
         $j('.outline').removeClass('section_selected');
 		$outline.append($j('<h2 class="section_header">'+label_text+'</h2>')).append($j('<p class="field_text section_text">'+help_text+'</p>')).append('<hr>');
 		$currSection=$j('<div>').attr({
@@ -1324,20 +1351,20 @@ var renderNormalField=function(item, field_options, data){
 			'class':'section'
 		});
 		$outline.append($currSection);
-		$j('<input/>',{type:'button',value:'X'}).click(function(e){removeField($j(this)); e.stopPropagation();}).addClass("section_button wrapper_button").appendTo($outline);
-		$outline.mouseover(function(e) {
+		$j('<input>',{type:'button',value:'X'}).on("click", function(e){removeField($j(this)); e.stopPropagation();}).addClass("section_button wrapper_button").appendTo($outline);
+		$outline.on("mouseover", function(e) {
             if($j(e.target).is('.outline, .outline > hr, .section, .section_header, .section_text, .section_button')){
                 if($j(this).hasClass('field_selected'))
                     return;
                 $j(this).addClass('field_hover');
                 $j(this).children(".wrapper_button").addClass("wrapper_button_hover");
             }
-        }).mouseout(function() {
+        }).on("mouseout", function() {
             if($j(this).hasClass('field_selected'))
                 return;
             $j(this).removeClass('field_hover');
             $j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
-        }).toggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));});
+        }).clicktoggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));});
 		$outline.appendTo($currPage);
 		$currPage.sortable({
             containment: $j(".pages"),
@@ -1353,42 +1380,42 @@ var renderNormalField=function(item, field_options, data){
         // Add a section to the page
         $j('.outline').removeClass('section_selected');
         $outline=$j('<div class="outline section_selected"></div>');
-        var label_text=$j.trim($j('#id_question').val()), help_text=$j.trim($j('#id_instructions').val());
+        var label_text=$j('#id_question').val().trim(), help_text=$j('#id_instructions').val().trim();
         $outline.append($j('<h2 class="section_header">'+label_text+'</h2>')).append($j('<p class="field_text section_text">'+help_text+'</p>')).append('<hr>');
         $currSection=$j('<div>').attr({
 			id:'section_'+secCount,
 			'class':'section'
 		});
 		$outline.append($currSection);
-		$j('<input/>',{type:'button',value:'X'}).click(function(e){removeField($j(this)); e.stopPropagation();}).addClass("section_button wrapper_button").appendTo($outline);
-		$outline.mouseover(function(e) {
+		$j('<input>',{type:'button',value:'X'}).on("click", function(e){removeField($j(this)); e.stopPropagation();}).addClass("section_button wrapper_button").appendTo($outline);
+		$outline.on("mouseover", function(e) {
             if($j(e.target).is('.outline, .outline > hr, .section, .section_header, .section_text, .section_button')){
                 if($j(this).hasClass('field_selected'))
                     return;
                 $j(this).addClass('field_hover');
                 $j(this).children(".wrapper_button").addClass("wrapper_button_hover");
             }
-        }).mouseout(function() {
+        }).on("mouseout", function() {
             if($j(this).hasClass('field_selected'))
                 return;
             $j(this).removeClass('field_hover');
             $j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
-        }).toggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));});
+        }).clicktoggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));});
 		$outline.appendTo($currPage);
-		$j('<input/>',{type:'button',value:'X'}).click(function(e){removeField($j(this)); e.stopPropagation();}).addClass("wrapper_button preview_button").appendTo($currPage);
-		$currPage.mouseover(function(e) {
+		$j('<input>',{type:'button',value:'X'}).on("click", function(e){removeField($j(this)); e.stopPropagation();}).addClass("wrapper_button preview_button").appendTo($currPage);
+		$currPage.on("mouseover", function(e) {
             if($j(e.target).is('.form_preview, .preview_button')){
                 if($j(this).hasClass('field_selected'))
                     return;
                 $j(this).addClass('field_hover');
                 $j(this).children(".wrapper_button").addClass("wrapper_button_hover");
             }
-        }).mouseout(function() {
+        }).on("mouseout", function() {
             if($j(this).hasClass('field_selected'))
                 return;
             $j(this).removeClass('field_hover');
             $j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
-        }).click(function(){
+        }).on("click", function(){
             $j('.form_preview').removeClass('page_selected');
 			$currPage=$j(this);
             $currPage.addClass('page_selected');
@@ -1401,7 +1428,7 @@ var renderNormalField=function(item, field_options, data){
             // If the currently selected field
             if($currField && !$currPage[0].contains($currField[0])){
                 var $field=$currField;
-                $field.click();
+                $field.trigger("click");
                 $field.removeClass('field_hover');
                 $field.children(".wrapper_button").removeClass("wrapper_button_hover");
             }
@@ -1424,18 +1451,18 @@ var renderCustomField=function(item, field_options, data){
 	var $new_elem;
 	if(item.match("e_mail$")){
         $new_elem=$j('<div>').css('display','inline-block');
-        $new_elem.append($j('<input/>').attr({
+        $new_elem.append($j('<input>').attr({
 			type:"text",
 			size:"30"
 		}));
     } else if(item.match("name$")){
 		$new_elem=$j('<div>').css('display','inline-block');
 		var $first_div, $last_div;
-		$first_div=$j('<div>').append($j('<input/>',{
+		$first_div=$j('<div>').append($j('<input>',{
 			type:'text',
 			size:'20'
 		})).append($j('<p class="field_text">First</p>')).css('float','left');
-		$last_div=$j('<div>').append($j('<input/>',{
+		$last_div=$j('<div>').append($j('<input>',{
 			type:'text',
 			size:'20'
 		})).append($j('<p class="field_text">Last</p>')).css('float','left');
@@ -1446,11 +1473,11 @@ var renderCustomField=function(item, field_options, data){
 			'rows':4,
 			'cols':22
 		}));
-		$new_elem.append($j('<p>').append($j('<span class="field_text">City&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>')).append($j('<input/>').attr({
+		$new_elem.append($j('<p>').append($j('<span class="field_text">City&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>')).append($j('<input>').attr({
 			type:'text',
 			size:'20'
 		})).append('&nbsp;&nbsp;').append($j('<span class="field_text">State</span>')).append($j('<select>')));
-		$new_elem.append($j('<p>').append($j('<span class="field_text">Zip code</span>')).append($j('<input/>',{
+		$new_elem.append($j('<p>').append($j('<span class="field_text">Zip code</span>')).append($j('<input>',{
 			type:'text'
 		})));
 	}
@@ -1463,24 +1490,24 @@ var addElement=function(item, $field=null) {
 	//Data like help-text is stored in the wrapper div using jQuery's $j.data
 
 	var i,$new_elem_label, $new_elem, 
-	$wrap=$j('<div></div>').addClass('field_wrapper').mouseover(function() {
+	$wrap=$j('<div></div>').addClass('field_wrapper').on("mouseover", function() {
 		if($j(this).hasClass('field_selected'))
 			return;
         $j(this).toggleClass('field_hover');
 		$j(this).children(".wrapper_button").toggleClass("wrapper_button_hover");
-	}).mouseout(function() {
+	}).on("mouseout", function() {
 		if($j(this).hasClass('field_selected'))
 			return;
         $j(this).removeClass('field_hover');
 		$j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
-	}).toggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));}),
-	label_text=$j.trim($j('#id_question').val()),
-	help_text=(item=='instructions') ? '' : $j.trim($j('#id_instructions').val()),
+	}).clicktoggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, function(){deSelectField($j(this));}),
+	label_text=$j('#id_question').val().trim(),
+	help_text=(item=='instructions') ? '' : $j('#id_instructions').val().trim(),
 	html_name=item+"_"+elemTypes[item], html_id="id_"+item+"_"+elemTypes[item],
 	data={};
 	
 	$new_elem_label=$j(createLabel(label_text,$j('#id_required').prop('checked'),help_text)).appendTo($wrap);
-	$j('<input/>',{type:'button',value:'X'}).click(function(e){removeField($j(this)); e.stopPropagation();}).addClass("wrapper_button").appendTo($wrap);
+	$j('<input>',{type:'button',value:'X'}).on("click", function(e){removeField($j(this)); e.stopPropagation();}).addClass("wrapper_button").appendTo($wrap);
 	
 	//Populating common data attributes
 	data.question_text=label_text;
@@ -1723,8 +1750,8 @@ var rebuild=function(metadata) {
 	//Takes form metadata, and reconstructs the form from it
 	$j('#outline_0').remove();
 	//Setting form's title and description
-	$j('#input_form_title').val(metadata['title']).change();
-	$j('#input_form_description').val(metadata['desc']).change();
+	$j('#input_form_title').val(metadata['title']).trigger("change");
+	$j('#input_form_description').val(metadata['desc']).trigger("change");
 	//console.log(metadata);
 	//Setting other form options
 	if(metadata['anonymous'])
@@ -1734,10 +1761,10 @@ var rebuild=function(metadata) {
 	//console.log($j('#links_id_main').val());
 	onChangeMainLink();
 	if(metadata['link_id']!=-1){
-		$j('#links_id_specify').val('particular').change();
-		$j('#links_id_pick').val(metadata['link_id']).change();
+		$j('#links_id_specify').val('particular').trigger("change");
+		$j('#links_id_pick').val(metadata['link_id']).trigger("change");
         if(metadata['link_type'] == "Program"){
-            $j('#links_id_tl').val(metadata['link_tl']).change();
+            $j('#links_id_tl').val(metadata['link_tl']).trigger("change");
             $j('#links_id_module').val(metadata['link_module']);
         }
 	}
@@ -1792,8 +1819,8 @@ var rebuild=function(metadata) {
     // Delete empty sections that are generated when making pages
     $j(".section:empty").parent('.outline').remove();
     // Reset add field form
-	$j("#cat_selector").val('Generic').change();
+	$j("#cat_selector").val('Generic').trigger("change");
     //Open the information panel if not already open
-    $j("#header_information.ui-accordion-header-collapsed").click();
+    $j("#header_information.ui-accordion-header-collapsed").trigger("click");
 };
 

@@ -125,6 +125,10 @@ class UserAvailability(models.Model):
             self.role = self.user.getUserTypes()[0]
         return super(UserAvailability, self).save(*args, **kwargs)
 
+    @classmethod
+    def entriesBySlot(self, event):
+        return self.objects.filter(event=event)
+
     def get_absolute_url(self):
         return self.event.program.get_manage_url()+"edit_availability?user="+str(self.user.id)
 

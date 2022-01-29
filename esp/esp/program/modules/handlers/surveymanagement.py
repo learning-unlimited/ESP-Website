@@ -192,8 +192,6 @@ class SurveyManagement(ProgramModuleObj):
         elif extra == 'top_classes':
             return top_classes(request, tl, one, two)
 
-    survey = surveys
-
     def isStep(self):
         return False
 
