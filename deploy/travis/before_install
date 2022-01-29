@@ -1,10 +1,18 @@
 #!/bin/bash
 set -euf -o pipefail
 
-sudo apt-get update
+if [ $(echo "$(lsb_release -rs) > 20" | bc) -eq 1 ]; then 
+  sudo apt update
+ else
+  sudo apt-get update
+fi
 
 # install pip
 sudo add-apt-repository universe
-sudo apt-get install -y curl
+if [ $(echo "$(lsb_release -rs) > 20" | bc) -eq 1 ]; then 
+  sudo apt install -y curl
+ else
+  sudo apt-get install -y curl
+fi
 curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
 sudo python2 get-pip.py
