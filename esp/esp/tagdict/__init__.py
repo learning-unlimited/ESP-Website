@@ -1052,6 +1052,18 @@ all_program_tags = {
         'category': 'teach',
         'is_setting': True,
     },
+    'student_certificate': {
+        'is_boolean': False,
+        'help_text': 'Which students will be offered a completion certificate via the student certificate module \
+                      following the end of the program? If based on class attendance, the certificate will be filtered to \
+                      only attended classes (as will the program printable version).',
+        'default': 'program_attendance',
+        'category': 'learn',
+        'is_setting': True,
+        'field': forms.ChoiceField(choices=[('all', 'All students'),
+                                            ('program_attendance', 'Only students who attended the program'),
+                                            ('class_attendance', 'Only students who attended at least one class')]),
+    },
 }
 
 # Dictionary of categories that tags fall into (for grouping on the tag settings page)
