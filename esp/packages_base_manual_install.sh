@@ -1,11 +1,19 @@
 #!/bin/bash -e
 
 # This script will install the package dependencies for this website install
-# that cannot be installed via apt-get.
+# that cannot be installed via apt.
 
-sudo apt-get install -y curl
+if [ $(echo "$(lsb_release -rs) >= 20" | bc) -eq 1 ]; then 
+  sudo apt install -y curl
+ else
+  sudo apt-get install -y curl
+fi
 curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-sudo apt-get install -y nodejs
+if [ $(echo "$(lsb_release -rs) >= 20" | bc) -eq 1 ]; then 
+  sudo apt install -y nodejs
+ else
+  sudo apt-get install -y nodejs
+fi
 
 if [[ ":$PATH:" == *":/usr/bin:"* ]]
 then
