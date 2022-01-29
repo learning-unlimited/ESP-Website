@@ -31,8 +31,8 @@ done
 
 BASEDIR=$(dirname $(dirname $(readlink -e $0)))
 
-sudo apt-get update
-xargs sudo apt-get install -y < $BASEDIR/esp/packages_base.txt
+sudo apt update
+xargs sudo apt install -y < $BASEDIR/esp/packages_base.txt
 
 # This nodejs/less installation only works on Ubuntu 16+
 # The versions on the production server don't seem to break anything, so we'll just skip it
@@ -43,7 +43,12 @@ fi
 
 if [[ "$MODE_PROD" ]]
 then
-    xargs sudo apt-get install -y < $BASEDIR/esp/packages_prod.txt
+    if [ $((${UBUNTU_VERSION%.*}+0)) -ge 20 ]
+    then
+    xargs sudo apt install -y < $BASEDIR/esp/packages_prod.txt
+    else
+    xargs sudo apt-get install -y < $BASEDIR/esp/packages_prod_u12.txt
+    fi
 fi
 
 # Install pip
@@ -55,8 +60,14 @@ else
 sudo add-apt-repository "deb http://old-releases.ubuntu.com/ubuntu $(lsb_release -sc) universe"
 fi
 
+if [ $((${UBUNTU_VERSION%.*}+0)) -ge 20 ]
+then
+sudo apt update
+sudo apt install -y curl
+else
 sudo apt-get update
 sudo apt-get install -y curl
+fi
 
 # Ensure that the virtualenv exists and is activated.
 if [[ -z "$VIRTUAL_ENV" ]]
