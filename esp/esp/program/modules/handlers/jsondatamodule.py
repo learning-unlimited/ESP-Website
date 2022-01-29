@@ -36,7 +36,6 @@ Learning Unlimited, Inc.
 from collections import defaultdict
 from datetime import datetime
 import operator
-import json
 
 from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
