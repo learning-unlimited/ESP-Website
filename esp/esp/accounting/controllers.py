@@ -306,7 +306,7 @@ class IndividualAccountingController(ProgramAccountingController):
         result = []
         program_account = self.default_program_account()
         source_account = self.default_source_account()
-        line_items = self.get_lineitemtypes()
+        line_items = self.get_lineitemtypes().exclude(text__in=self.admission_items)
 
         #   Clear existing transfers
         Transfer.objects.filter(user=self.user, line_item__in=line_items).delete()
