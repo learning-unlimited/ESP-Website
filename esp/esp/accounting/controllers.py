@@ -127,12 +127,6 @@ class ProgramAccountingController(BaseAccountingController):
         )
         result.append(lit_finaid)
 
-        (lit_sibling, created) = LineItemType.objects.get_or_create(
-            text='Sibling discount',
-            program=program
-        )
-        result.append(lit_sibling)
-
         for item in optional_items:
             (lit_optional, created) = LineItemType.objects.get_or_create(
                 text=item[0],
@@ -338,7 +332,7 @@ class IndividualAccountingController(ProgramAccountingController):
                         option = LineItemOptions.objects.get(id=option_id)
                         if cost is None:
                             transfer_amount = option.amount_dec_inherited
-                    for i in range(quantity):
+                    for i in range(quantity or 0):
                         result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount, option=option))
                     break
             if not matched:
@@ -551,7 +545,7 @@ class IndividualAccountingController(ProgramAccountingController):
         return aid_amount
 
     def amount_siblingdiscount(self):
-        if (not self.program.sibling_discount) or self.program.splashinfo_objects.get(self.user.id):
+        if self.program.sibling_discount and SplashInfo.getForUser(self.user, self.program).siblingdiscount:
             return self.program.sibling_discount
         else:
             return Decimal('0')

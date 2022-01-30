@@ -46,6 +46,7 @@ class SiblingDiscountForm(forms.Form):
             raise KeyError('Need to supply program as named argument to SiblingDiscountForm')
         self.base_fields['siblingdiscount'].choices = [(False, 'I am the first in my household enrolling in Splash (+ $' + str(program.base_cost) + ').'),
                                                        (True, 'I have a sibling already enrolled in Splash (+ $' + str(program.base_cost - program.sibling_discount) + ').')]
+        self.base_fields['siblingdiscount'].initial = True
         super(SiblingDiscountForm, self).__init__(*args, **kwargs)
 
     def clean(self):

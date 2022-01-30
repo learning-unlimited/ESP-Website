@@ -215,7 +215,7 @@ class StudentExtraCosts(ProgramModuleObj):
                             form_prefs.append((lineitem_type.text, 1, lineitem_type.amount, None))
 
                     elif isinstance(form, MultiCostItem):
-                        form_prefs.append((lineitem_type.text, form.cleaned_data['count'], lineitem_type.amount, None))
+                        form_prefs.append((lineitem_type.text, form.cleaned_data['count'] or 0, lineitem_type.amount, None))
 
                     elif isinstance(form, MultiSelectCostItem):
                         if form.cleaned_data['option']:

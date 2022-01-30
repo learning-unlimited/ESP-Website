@@ -575,6 +575,8 @@ class ProgramFrameworkTest(TestCase):
                     'program_instance_name': '2222_Summer',
                     'program_instance_label': 'Summer 2222',
                     'start_time': datetime(2222, 7, 7, 7, 5),
+                    'base_cost': 666,
+                    'sibling_discount': 0
                     }
 
         #   Override parameters explicitly
@@ -634,7 +636,8 @@ class ProgramFrameworkTest(TestCase):
                 'student_reg_end':   '3001-01-01 00:00:00',
                 'publish_start':     '2000-01-01 00:00:00',
                 'publish_end':       '3001-01-01 00:00:00',
-                'base_cost':         '666',
+                'base_cost':         settings['base_cost'],
+                'sibling_discount':  settings['sibling_discount'],
             }
 
         #   Create the program much like the /manage/newprogram view does
@@ -658,7 +661,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog.save()
         pcf.save_m2m()
 
-        commit_program(new_prog, perms, pcf.cleaned_data['base_cost'])
+        commit_program(new_prog, perms, pcf.cleaned_data['base_cost'], pcf.cleaned_data['sibling_discount'])
 
         #   Add recursive permissions to open registration to the appropriate people
         (perm, created) = Permission.objects.get_or_create(role=Group.objects.get(name='Teacher'), permission_type='Teacher/All', program=new_prog)

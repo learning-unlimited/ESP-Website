@@ -40,7 +40,7 @@ td>ul { list-style-type: none; padding: 0px }
 <tr><th>Additional Items for {{ program.niceName }}</th></tr>
 {% for f in forms %}
 <tr>
-    <td><b>{{ f.LineItem.text }}</b> {% if f.LineItem.required %}(required; please make a selection below){% else %}(optional){% endif %}</td>
+    <td><b>{{ f.LineItem.text }}</b> {% if f.LineItem.required or f.type == "sibling" %}(required; please make a selection below){% else %}(optional){% endif %}</td>
 </tr>
 <tr style="border-bottom: 1px dashed grey;">
     <td>
@@ -57,6 +57,7 @@ td>ul { list-style-type: none; padding: 0px }
             {{ f.form.option }}
         {% endif %}
         {% if f.type == "sibling" %}
+            {% if f.form.siblingdiscount.errors %}<div style="color: red;">{{ f.form.siblingdiscount.errors|join:", " }}</div>{% endif %}
             {{ f.form.siblingdiscount }}
     </td>
 </tr>
