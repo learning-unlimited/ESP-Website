@@ -173,6 +173,9 @@ class ProgramAccountingController(BaseAccountingController):
     def default_siblingdiscount_lineitemtype(self):
         return LineItemType.objects.filter(program=self.program, text='Sibling discount').order_by('-id')[0]
 
+    def default_admission_lineitemtype(self):
+        return LineItemType.objects.filter(program=self.program, text='Program admission').order_by('-id')[0]
+
     def get_lineitemtypes_Q(self, required_only=False, optional_only=False, payment_only=False, lineitemtype_id=None):
         if lineitemtype_id:
             return Q(id=lineitemtype_id)

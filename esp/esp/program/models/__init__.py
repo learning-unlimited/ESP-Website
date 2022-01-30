@@ -1294,6 +1294,12 @@ class Program(models.Model, CustomFormsLinkModel):
 
     sibling_discount = property(_sibling_discount_get, _sibling_discount_set)
 
+    def base_cost(self):
+        from esp.accounting.controllers import ProgramAccountingController
+        pac = ProgramAccountingController(self)
+        return pac.default_admission_lineitemtype().amount_dec
+    base_cost = property(base_cost)
+
     @property
     def splashinfo_objects(self):
         """

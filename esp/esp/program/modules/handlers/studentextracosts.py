@@ -167,7 +167,7 @@ class StudentExtraCosts(ProgramModuleObj):
         multiselect_list = self.lineitemtypes().filter(lineitemoptions__isnull=False)
         if prog.sibling_discount:
             sibling_line_item = iac.default_siblingdiscount_lineitemtype()
-            sibling_form = SiblingDiscountForm(prefix="%s" % sibling_line_item.id)
+            sibling_form = SiblingDiscountForm(prefix="%s" % sibling_line_item.id, program=prog)
             spi = SplashInfo.getForUser(request.user, self.program)
             sibling_form.load(spi)
 
@@ -198,7 +198,7 @@ class StudentExtraCosts(ProgramModuleObj):
                                                                  is_custom=(x.has_custom_options)) }
                              for x in multiselect_list ]
             if prog.sibling_discount:
-                sibling_form = SiblingDiscountForm(request.POST, prefix="%s" % sibling_line_item.id)
+                sibling_form = SiblingDiscountForm(request.POST, prefix="%s" % sibling_line_item.id, program=prog)
                 costs_db.append({'LineItemType': sibling_line_item, 'CostChoice': sibling_form})
 
             #   Get a list of the (line item, quantity) pairs stored in the forms

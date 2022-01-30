@@ -33,14 +33,20 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
+from esp.program.models import Program
 
 class SiblingDiscountForm(forms.Form):
-    #   The default choices are somewhat unappetizing...
-    discount_choices = [(False, 'I am the first in my household enrolling in Splash (+ $40)'),
-                        (True, 'I have a sibling already enrolled in Splash  (+ $20).')]
-
-    siblingdiscount = forms.TypedChoiceField(choices=discount_choices, coerce=lambda x: x == 'True', widget=forms.RadioSelect)
+    siblingdiscount = forms.TypedChoiceField(choices=[], coerce=lambda x: x == 'True', widget=forms.RadioSelect)
     siblingname = forms.CharField(max_length=128, required=False)
+
+    def __init__(self, *args, **kwargs):
+        if 'program' in kwargs:
+            program = kwargs.pop('program')
+        else:
+            raise KeyError('Need to supply program as named argument to SiblingDiscountForm')
+        self.base_fields['siblingdiscount'].choices = [(False, 'I am the first in my household enrolling in Splash (+ $' + str(program.base_cost) + ').'),
+                                                       (True, 'I have a sibling already enrolled in Splash (+ $' + str(program.base_cost - program.sibling_discount) + ').')]
+        super(SiblingDiscountForm, self).__init__(*args, **kwargs)
 
     def clean(self):
         cleaned_data = super(SiblingDiscountForm, self).clean()
