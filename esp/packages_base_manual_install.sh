@@ -4,7 +4,7 @@
 # that cannot be installed via apt-get.
 
 sudo apt-get install -y python-software-properties
-sudo add-apt-repository -y ppa:chris-lea/node.js
+curl -fsSL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 sudo apt-get update
 sudo apt-get install -y nodejs
 

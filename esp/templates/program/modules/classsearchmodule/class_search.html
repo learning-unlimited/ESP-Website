@@ -137,7 +137,7 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
                     <button class="btn btn-reject" onclick="reject({{class.id}});">reject</button>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-danger" onclick="deleteClass({{class.id}}, '{{class.title}}');">delete</button>
+                    <button class="btn btn-danger" onclick='alert("You should \"delete\" a class by marking it as rejected. If you think you need to actually delete the class, and you have talked to webmins and understand the consequences (e.g. permanent loss of data about the class, possibly breaking some databases), then the only way to do so is on the admin panel. DO NOT fully delete a class unless you understand the consequences.");'>delete</button>
                 </div>
                 <div class="btn-group">
                     <button class="btn btn-default" onclick="emailTeachers('{{class.emailcode}}-teachers@{{EMAIL_HOST_SENDER}}', 'Your {{program.program_type}} Class {{class.emailcode}}: {{class.title}}');">email</button>

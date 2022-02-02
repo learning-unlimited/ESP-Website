@@ -29,6 +29,15 @@ done
 
 BASEDIR=$(dirname $(dirname $(readlink -e $0)))
 
+pythonversion=`python -V 2>&1`
+if [[ $pythonversion != "Python 2.7.18" ]]
+then
+    $BASEDIR/esp/update_python_2.7.18.sh
+    deactivate || :
+    unset VIRTUAL_ENV || :
+    rm -rf ${VIRTUALENV_DIR:-$BASEDIR/env} || :
+fi
+
 sudo apt-get update
 sudo apt-get install -y $(<"$BASEDIR/esp/packages_base.txt")
 $BASEDIR/esp/packages_base_manual_install.sh
@@ -49,6 +58,6 @@ then
 fi
 
 # Upgrade/install pip, setuptools, wheel, and application dependencies.
-pip install -U pip
-pip install -U setuptools wheel
-pip install -U -r "$BASEDIR/esp/requirements.txt"
+python -m pip install -U pip
+python -m pip install -U setuptools wheel
+python -m pip install -U -r "$BASEDIR/esp/requirements.txt"
