@@ -445,7 +445,7 @@ all_global_tags = {
     },
     'google_cloud_api_key': {
         'is_boolean': False,
-        'help_text': 'An API key for use with the Google Cloud Platform. Used for the student and teacher onsite webapps.',
+        'help_text': 'An API key for use with the Google Cloud Platform. Used for the maps in the student and teacher onsite webapps.',
         'default': '',
         'category': 'manage',
         'is_setting': True,

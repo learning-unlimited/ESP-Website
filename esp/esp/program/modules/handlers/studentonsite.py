@@ -199,6 +199,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['program'] = prog
         context['one'] = one
         context['two'] = two
+        context['map_tab'] = bool(Tag.getTag('google_cloud_api_key').strip())
         return context
 
     def isStep(self):
