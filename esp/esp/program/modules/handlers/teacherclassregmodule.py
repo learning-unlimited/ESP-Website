@@ -145,10 +145,10 @@ class TeacherClassRegModule(ProgramModuleObj):
         previous_programs = [x for x in Program.objects.all() if len(x.dates()) and x.dates()[0] < self.program.dates()[0]]
         Q_taught_before_temp = Q(classsubject__status=10, classsubject__parent_program__in=previous_programs)
         taught_before_users = ESPUser.objects.filter(Q_taught_before_temp).values('id').distinct()
-        # For past events, we want the query to be solely user based 
+        # For past events, we want the query to be solely user based
         # so events don't have to be BOTH current and past simultaneously for combo lists
         Q_taught_before = Q(id__in=taught_before_users)
-        Q_taught_before_and_now = Q_taught_before & Q_isteacher 
+        Q_taught_before_and_now = Q_taught_before & Q_isteacher
 
         #   Add dynamic queries for checking for teachers with particular resource requests
         additional_qs = {}

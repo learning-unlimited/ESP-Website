@@ -166,7 +166,7 @@ class StudentClassRegModule(ProgramModuleObj):
         ssi_ids = StudentSubjectInterest.valid_objects().filter(
             subject__parent_program=self.program).values('user').distinct()
         Q_classreg = Q(id__in = sr_ids) | Q(id__in = ssi_ids)
-        # For past events, we want the query to be solely user based 
+        # For past events, we want the query to be solely user based
         # so events don't have to be BOTH current and past simultaneously for combo lists
         past_enrolled_users = ESPUser.objects.filter(Enrolled & Past).values('id').distinct()
         Q_enrolled_past = Q(id__in=past_enrolled_users)
