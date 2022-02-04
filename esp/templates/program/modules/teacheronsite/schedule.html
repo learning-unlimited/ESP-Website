@@ -30,7 +30,7 @@
                 <td class="time">{{ cls.time_blocks.0.short_time }}</td>
                 <td class="cls">
                     <b>{{ cls.parent_class.title }}</b>{% if request.user in cls.get_moderators %}</br>({{ program.getModeratorTitle }}){% endif %}
-                    <br>{{ cls.prettyrooms|join:", " }}&nbsp;<a class="no-dec" title="Directions" href="/teach/{{one}}/{{two}}/onsitemap/{{ cls.initial_rooms.0.id }}"><i class="material-icons md-3">directions</i></a>
+                    <br>{% if cls.initial_lat_long %}<a class="no-dec" title="Directions" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination={{ cls.initial_lat_long }}&travelmode=walking">{% endif %}{{ cls.prettyrooms|join:", " }}{% if cls.initial_lat_long %}&nbsp;<i class="material-icons md-3">directions</i></a>{% endif %}
                 </td>
                 <td class="list">
                     <a class="no-dec" title="More Details" href="/teach/{{one}}/{{two}}/onsitedetails/{{ cls.id }}"><i class="material-icons md-4">list</i></a>
