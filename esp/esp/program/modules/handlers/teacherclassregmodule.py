@@ -143,9 +143,12 @@ class TeacherClassRegModule(ProgramModuleObj):
         Q_full_teacher = Q(classsubject__in=full_classes) & Q_isteacher
 
         previous_programs = [x for x in Program.objects.all() if len(x.dates()) and x.dates()[0] < self.program.dates()[0]]
-        Q_taught_before = Q(classsubject__status=10, classsubject__parent_program__in=previous_programs)
-        taught_before_users = ESPUser.objects.filter(Q_taught_before).values('id').distinct()
-        Q_taught_before_and_now = Q(classsubject__in=classes_qs, id__in=taught_before_users)
+        Q_taught_before_temp = Q(classsubject__status=10, classsubject__parent_program__in=previous_programs)
+        taught_before_users = ESPUser.objects.filter(Q_taught_before_temp).values('id').distinct()
+        # For past events, we want the query to be solely user based 
+        # so events don't have to be BOTH current and past simultaneously for combo lists
+        Q_taught_before = Q(id__in=taught_before_users)
+        Q_taught_before_and_now = Q_taught_before & Q_isteacher 
 
         #   Add dynamic queries for checking for teachers with particular resource requests
         additional_qs = {}
@@ -159,6 +162,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 'class_rejected': Q_rejected_teacher,
                 'class_nearly_full': Q_nearly_full_teacher,
                 'class_full': Q_full_teacher,
+                'taught_before': Q_taught_before,
                 'taught_before_and_now': Q_taught_before_and_now,
         }
 
@@ -183,7 +187,8 @@ class TeacherClassRegModule(ProgramModuleObj):
             'class_rejected': """Teachers teaching a rejected class""",
             'class_full': """Teachers teaching a completely full class""",
             'class_nearly_full': """Teachers teaching a nearly-full class (>%d%% of capacity)""" % (100 * capacity_factor),
-            'taught_before_and_now': """Teachers who have taught for a previous program""",
+            'taught_before': """Teachers who have taught for a previous program""",
+            'taught_before_and_now': """Teachers who have submitted a class and who have taught for a previous program""",
         }
         for item in self.get_resource_pairs():
             result[item[0]] = item[1]

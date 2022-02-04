@@ -157,7 +157,6 @@ class StudentClassRegModule(ProgramModuleObj):
         past_programs = [x for x in Program.objects.all() if len(x.dates()) and x.dates()[0] < self.program.dates()[0]]
         Past = Q(studentregistration__section__parent_class__parent_program__in=past_programs)
         past_users = ESPUser.objects.filter(Past).values('id').distinct()
-        Past_enrolled = Q(studentregistration__relationship__name='Enrolled', id__in=past_users)
 
         # Force Django to generate two subqueries without joining SRs to SSIs,
         # as efficiently as possible since it's still a big query.
@@ -167,13 +166,22 @@ class StudentClassRegModule(ProgramModuleObj):
         ssi_ids = StudentSubjectInterest.valid_objects().filter(
             subject__parent_program=self.program).values('user').distinct()
         Q_classreg = Q(id__in = sr_ids) | Q(id__in = ssi_ids)
+        # For past events, we want the query to be solely user based 
+        # so events don't have to be BOTH current and past simultaneously for combo lists
+        past_enrolled_users = ESPUser.objects.filter(Enrolled & Past).values('id').distinct()
+        Q_enrolled_past = Q(id__in=past_enrolled_users)
         Q_enrolled = Enrolled & Par & Unexpired
-        Q_enrolled_past_and_now = Past_enrolled & Par & Unexpired
+        Q_enrolled_new = (~Q_enrolled_past) & Q_enrolled
+        Q_attended_past_temp = Q(record__event= "attended", record__program__in=past_programs)
+        past_attended_users = ESPUser.objects.filter(Q_attended_past_temp).values('id').distinct()
+        Q_attended_past = Q(id__in=past_attended_users)
 
         qobjects = {
             'enrolled': Q_enrolled,
             'classreg': Q_classreg,
-            'enrolled_past_and_now': Q_enrolled_past_and_now
+            'enrolled_past': Q_enrolled_past,
+            'enrolled_new': Q_enrolled_new,
+            'attended_past': Q_attended_past
         }
 
         if QObject:
@@ -192,7 +200,9 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return {'classreg': """Students who signed up for at least one class""",
                 'enrolled': """Students who are enrolled in at least one class""",
-                'enrolled_past_and_now': """Students who are enrolled and have enrolled in a past program"""}
+                'enrolled_past': """Students who have enrolled in a past program""",
+                'enrolled_past_and_now': """Students who are enrolled and have enrolled in a past program""",
+                'attended_past': """Students who have attended a past program"""}
 
     def isCompleted(self):
         if hasattr(self, 'user'):
