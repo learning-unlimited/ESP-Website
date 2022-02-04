@@ -201,7 +201,7 @@ class StudentClassRegModule(ProgramModuleObj):
         return {'classreg': """Students who signed up for at least one class""",
                 'enrolled': """Students who are enrolled in at least one class""",
                 'enrolled_past': """Students who have enrolled in a past program""",
-                'enrolled_past_and_now': """Students who are enrolled and have enrolled in a past program""",
+                'enrolled_new': """Students who are enrolled and have not enrolled in the past""",
                 'attended_past': """Students who have attended a past program"""}
 
     def isCompleted(self):
