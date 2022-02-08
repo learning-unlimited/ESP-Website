@@ -82,6 +82,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         user = request.user
 
         iac = IndividualAccountingController(self.program, request.user)
+        iac.ensure_required_transfers()
         context = {}
         context['module'] = self
         context['one'] = one
