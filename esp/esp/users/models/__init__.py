@@ -2273,7 +2273,6 @@ class Record(models.Model):
         ("checked_out", "Checked out of program"),
         ("conf_email","Was sent confirmation email"),
         ("teacher_quiz_done","Completed teacher quiz"),
-        ("paid","Paid for program"),
         ("med","Submitted medical form"),
         ("med_bypass","Recieved medical bypass"),
         ("liab","Submitted liability form"),
@@ -2343,7 +2342,7 @@ class Record(models.Model):
     def createBit(cls, extension, program, user):
         from esp.accounting.controllers import IndividualAccountingController
         if extension == 'Paid':
-            IndividualAccountingController.updatePaid(True, program, user)
+            IndividualAccountingController.updatePaid(program, user, True)
 
         if cls.user_completed(user, extension.lower(), program):
             return False
