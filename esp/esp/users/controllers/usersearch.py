@@ -312,15 +312,16 @@ class UserSearchController(object):
                     if and_list_name in not_keys:
                         q_program = q_program & ~qobject
                     else:
-                        qobject_child = qobject.children[1]
                         needs_subquery = False
+                        if len(qobject.children) > 1:
+                            qobject_child = qobject.children[1]
 
-                        if isinstance(qobject_child, (list, tuple)):
-                            field_name, field_value = qobject.children[1]
-                            needs_subquery = field_name in subqry_fieldmap
+                            if isinstance(qobject_child, (list, tuple)):
+                                field_name, field_value = qobject.children[1]
+                                needs_subquery = field_name in subqry_fieldmap
 
-                            if needs_subquery:
-                                subqry_fieldmap[field_name].append(field_value)
+                                if needs_subquery:
+                                    subqry_fieldmap[field_name].append(field_value)
                         if not needs_subquery:
                             q_program = q_program & qobject
 
