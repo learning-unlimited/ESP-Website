@@ -5,25 +5,42 @@ from __future__ import unicode_literals
 from django.db import migrations, models
 
 from esp.accounting.controllers import IndividualAccountingController
+from esp.program.models import Program
+from esp.users.models import ESPUser
 
 def set_my_defaults(apps, schema_editor):
     Record = apps.get_model('users', 'Record')
-    recs = Record.objects.filter(event="paid")
-    if recs.exists():
-        for rec in recs:
-            IndividualAccountingController.updatePaid(rec.program, rec.user, True)
-        recs.delete()
+    Transfer = apps.get_model('accounting', 'Transfer')
+    LineItemType = apps.get_model('accounting', 'LineItemType')
+    Account = apps.get_model('accounting', 'Account')
+    recs = Record.objects.filter(event="paid", program__isnull=False, user__isnull=False)
+    for rec in recs:
+        # Use normal imports to get amount_due
+        prog = Program.objects.get(id=rec.program.id)
+        user = ESPUser.objects.get(id=rec.user.id)
+        iac = IndividualAccountingController(prog, user)
+        amount_due = iac.amount_due()
+
+        if amount_due:
+            # Use migration imports to create payment
+            payments_lit = LineItemType.objects.filter(program__id=rec.program.id, for_payments=True).order_by('-id')[0]
+            target_account = Account.objects.get(name='receivable')
+            Transfer.objects.create(source=None,
+                                    destination=target_account,
+                                    user=rec.user,
+                                    line_item=payments_lit,
+                                    amount_dec=amount_due)
+    recs.delete()
 
 def reverse_func(apps, schema_editor):
     Transfer = apps.get_model('accounting', 'Transfer')
     Record = apps.get_model('users', 'Record')
     tfs = Transfer.objects.filter(line_item__text="Student payment")
-    if tfs.exists():
-        for tf in tfs:
-            iac = IndividualAccountingController(tf.line_item.program, tf.user)
-            if iac.has_paid(in_full=True):
-                Record.get_or_create(user=tf.user, program=tf.line_item.program, event="paid")
-        tfs.delete()
+    for tf in tfs:
+        prog = Program.objects.get(id=tf.line_item.program.id)
+        user = ESPUser.objects.get(id=tf.user.id)
+        if IndividualAccountingController(prog, user).has_paid(in_full=True):
+            Record.objects.get_or_create(user=tf.user, program=tf.line_item.program, event="paid")
 
 class Migration(migrations.Migration):
 
