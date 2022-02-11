@@ -252,11 +252,11 @@ function initialize()
         $j("#bool_options_" + list_names[i]).buttonset();
     }
 
-    //  Make the ANDs turn off the ORs and vice versa
     for (var i = 0; i < list_names.length; i++)
     {
         with ({list_name: list_names[i]})
         {
+            //  Make the ANDs turn off the ORs and vice versa
             $j("input[name=checkbox_and_" + list_name + "]").change(function () {
                 if ($j("input[name=checkbox_and_" + list_name + "]").prop("checked")
                     && $j("input[name=checkbox_or_" + list_name + "]").prop("checked"))
@@ -265,6 +265,13 @@ function initialize()
             $j("input[name=checkbox_or_" + list_name + "]").change(function () {
                 if ($j("input[name=checkbox_and_" + list_name + "]").prop("checked")
                     && $j("input[name=checkbox_or_" + list_name + "]").prop("checked"))
+                    $j("input[name=checkbox_and_" + list_name + "]").click();
+            });
+            //  NOT can't be selected by itself
+            $j("input[name=checkbox_not_" + list_name + "]").change(function () {
+                if ($j("input[name=checkbox_not_" + list_name + "]").prop("checked")
+                    && !$j("input[name=checkbox_and_" + list_name + "]").prop("checked")
+                    && !$j("input[name=checkbox_or_" + list_name + "]").prop("checked"))
                     $j("input[name=checkbox_and_" + list_name + "]").click();
             });
         }
