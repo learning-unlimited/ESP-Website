@@ -851,6 +851,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @cache_function
     def teacher_nums(prog):
         teachers = prog.teachers()
+        teachers_qobjects = prog.teachers(QObjects = True)
         list_labels = prog.teacherDesc()
         teacher_num_list = []
 
@@ -858,10 +859,15 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         ## Not much to be done about it, though;
         ## the loop is iterating over a list of independent queries and running each.
         for key in teachers.keys():
-            if key in list_labels:
-                teacher_num_list.append((list_labels[key], teachers[key].filter(is_active = True).distinct().count()))
-            else:
-                teacher_num_list.append((key, teachers[key].filter(is_active = True).distinct().count()))
+            # This is useful for AUL/comm panel, but doesn't need to be on program dashboard
+            if key not in ['taught_before']:
+                if key in list_labels:
+                    teacher_num_list.append((list_labels[key], teachers[key].filter(is_active = True).distinct().count()))
+                else:
+                    teacher_num_list.append((key, teachers[key].filter(is_active = True).distinct().count()))
+                # Hack to insert this combined count in a logical position
+                if key == 'class_submitted':
+                    teacher_num_list.append(("""Teachers who have submitted a class and have not taught for a previous program""", ESPUser.objects.filter(~teachers_qobjects['taught_before'] & teachers_qobjects['class_submitted'] & Q(is_active = True)).distinct().count()))
         return teacher_num_list
     teacher_nums.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     teacher_nums.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
@@ -877,16 +883,22 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @cache_function
     def student_nums(prog):
         students = prog.students()
+        students_qobjects = prog.students(QObjects = True)
         list_labels = prog.studentDesc()
         student_num_list = []
 
         ## Ew, another set of queries in a for loop...
         ## Same justification, though.
         for key in students.keys():
-            if key in list_labels:
-                student_num_list.append((list_labels[key], students[key].filter(is_active = True).distinct().count()))
-            else:
-                student_num_list.append((key, students[key].filter(is_active = True).distinct().count()))
+            # These lists are useful for AUL/comm panel, but don't need to be on program dashboard
+            if key not in ['attended_past', 'enrolled_past']:
+                if key in list_labels:
+                    student_num_list.append((list_labels[key], students[key].filter(is_active = True).distinct().count()))
+                else:
+                    student_num_list.append((key, students[key].filter(is_active = True).distinct().count()))
+                # Hack to insert this combined count into a logical position
+                if key == 'enrolled':
+                    student_num_list.append(("""Students who are enrolled and have not enrolled in the past""", ESPUser.objects.filter(~students_qobjects['enrolled_past'] & students_qobjects['enrolled'] & Q(is_active = True)).distinct().count()))
         return student_num_list
     student_nums.depend_on_row(StudentSubjectInterest, lambda ssi: {'prog': ssi.subject.parent_program})
     student_nums.depend_on_row(StudentRegistration, lambda sr: {'prog': sr.section.parent_class.parent_program})

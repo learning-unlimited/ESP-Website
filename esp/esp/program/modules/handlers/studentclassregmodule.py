@@ -171,7 +171,6 @@ class StudentClassRegModule(ProgramModuleObj):
         past_enrolled_users = ESPUser.objects.filter(Enrolled & Past).values('id').distinct()
         Q_enrolled_past = Q(id__in=past_enrolled_users)
         Q_enrolled = Enrolled & Par & Unexpired
-        Q_enrolled_new = (~Q_enrolled_past) & Q_enrolled
         Q_attended_past_temp = Q(record__event= "attended", record__program__in=past_programs)
         past_attended_users = ESPUser.objects.filter(Q_attended_past_temp).values('id').distinct()
         Q_attended_past = Q(id__in=past_attended_users)
@@ -180,7 +179,6 @@ class StudentClassRegModule(ProgramModuleObj):
             'enrolled': Q_enrolled,
             'classreg': Q_classreg,
             'enrolled_past': Q_enrolled_past,
-            'enrolled_new': Q_enrolled_new,
             'attended_past': Q_attended_past
         }
 
@@ -201,7 +199,6 @@ class StudentClassRegModule(ProgramModuleObj):
         return {'classreg': """Students who signed up for at least one class""",
                 'enrolled': """Students who are enrolled in at least one class""",
                 'enrolled_past': """Students who have enrolled in a past program""",
-                'enrolled_new': """Students who are enrolled and have not enrolled in the past""",
                 'attended_past': """Students who have attended a past program"""}
 
     def isCompleted(self):

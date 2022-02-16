@@ -148,7 +148,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         # For past events, we want the query to be solely user based
         # so events don't have to be BOTH current and past simultaneously for combo lists
         Q_taught_before = Q(id__in=taught_before_users)
-        Q_taught_before_and_now = Q_taught_before & Q_isteacher
 
         #   Add dynamic queries for checking for teachers with particular resource requests
         additional_qs = {}
@@ -163,7 +162,6 @@ class TeacherClassRegModule(ProgramModuleObj):
                 'class_nearly_full': Q_nearly_full_teacher,
                 'class_full': Q_full_teacher,
                 'taught_before': Q_taught_before,
-                'taught_before_and_now': Q_taught_before_and_now,
         }
 
         if QObject:
@@ -188,7 +186,6 @@ class TeacherClassRegModule(ProgramModuleObj):
             'class_full': """Teachers teaching a completely full class""",
             'class_nearly_full': """Teachers teaching a nearly-full class (>%d%% of capacity)""" % (100 * capacity_factor),
             'taught_before': """Teachers who have taught for a previous program""",
-            'taught_before_and_now': """Teachers who have submitted a class and who have taught for a previous program""",
         }
         for item in self.get_resource_pairs():
             result[item[0]] = item[1]
