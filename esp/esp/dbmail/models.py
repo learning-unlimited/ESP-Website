@@ -198,7 +198,7 @@ class MessageRequest(models.Model):
     public = models.BooleanField(default=False) # Should the subject and msgtext of this request be publicly viewable at /email/<id>?
 
     def public_url(self):
-        return '%s/email/%s' % (Site.objects.get_current().domain, self.id)
+        return '%s/email/%s' % (Site.objects.get_current().domain, self.id or "{ID will be here}")
 
     def __unicode__(self):
         return unicode(self.subject)
@@ -224,7 +224,6 @@ class MessageRequest(models.Model):
 
         if var_dict is not None:
             new_request.save()
-            var_dict['request'] = new_request
             MessageVars.createMessageVars(new_request, var_dict) # create the message Variables
         return new_request
 
@@ -519,6 +518,9 @@ class MessageVars(models.Model):
 
         for msgvar in msgvars:
             context.update(msgvar.getDict(user))
+
+        context['request'] = ActionHandler(msgrequest, user) # add the request so the public url is accessible
+
         return Context(context)
 
     @staticmethod
