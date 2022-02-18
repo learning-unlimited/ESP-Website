@@ -72,8 +72,9 @@ class JSONDataModuleTest(ProgramFrameworkTest):
             student_labels_dict.update(module.studentDesc())
         students_dict = self.program.students()
         student_display_dict = {}
-        for key in students_dict.iterkeys() if key not in ['attended_past', 'enrolled_past']:
-            student_display_dict[student_labels_dict.get(key, key)] = students_dict[key]
+        for key in students_dict.iterkeys():
+            if key not in ['attended_past', 'enrolled_past']:
+                student_display_dict[student_labels_dict.get(key, key)] = students_dict[key]
 
         for query_label, query in student_display_dict.iteritems():
             value = query.count()
@@ -87,8 +88,9 @@ class JSONDataModuleTest(ProgramFrameworkTest):
             teacher_labels_dict.update(module.teacherDesc())
         teachers_dict = self.program.teachers()
         teacher_display_dict = {}
-        for key in teachers_dict.iterkeys() if key not in ['taught_before']:
-            teacher_display_dict[teacher_labels_dict.get(key, key)] = teachers_dict[key]
+        for key in teachers_dict.iterkeys():
+            if key not in ['taught_before']:
+                teacher_display_dict[teacher_labels_dict.get(key, key)] = teachers_dict[key]
 
         for query_label, query in teacher_display_dict.iteritems():
             value = query.count()
