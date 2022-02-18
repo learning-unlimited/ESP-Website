@@ -156,7 +156,6 @@ class StudentClassRegModule(ProgramModuleObj):
         Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
         past_programs = [x for x in Program.objects.all() if len(x.dates()) and x.dates()[0] < self.program.dates()[0]]
         Past = Q(studentregistration__section__parent_class__parent_program__in=past_programs)
-        past_users = ESPUser.objects.filter(Past).values('id').distinct()
 
         # Force Django to generate two subqueries without joining SRs to SSIs,
         # as efficiently as possible since it's still a big query.
