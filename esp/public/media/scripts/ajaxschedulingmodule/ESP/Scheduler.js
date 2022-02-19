@@ -144,20 +144,6 @@ function Scheduler(
             }
         });
 
-        // set up handlers for selecting/scheduling classes and assigning/unassigning moderators
-        $j("body").on("click", "td.matrix-cell > a", function(evt, ui) {
-            var cell = $j(evt.currentTarget.parentElement).data("cell");
-            if((evt.ctrlKey || evt.metaKey) && has_moderator_module === "True" && this.moderatorDirectory.selectedModerator) {
-                if(this.moderatorDirectory.selectedModerator.sections.includes(cell.section.id)) {
-                    this.moderatorDirectory.unassignModerator(cell.section);
-                } else {
-                    this.moderatorDirectory.assignModerator(cell.section);
-                }
-            } else {
-                this.sections.selectSection(cell.section);
-            }
-        }.bind(this));
-
         // set up handler for selecting moderators
         $j("body").on("click", "td.moderator-cell", function(evt, ui) {
             var moderatorCell = $j(evt.currentTarget).data("moderatorCell");
@@ -166,7 +152,7 @@ function Scheduler(
 
         // prevent above handler if clicking a link within a moderator cell
         $j("body").on("click", "td.moderator-cell > a", function(evt){
-             evt.stopPropagation();
+            evt.stopPropagation();
         });
 
         // set up handler for selecting moderators from section info panel
@@ -175,8 +161,21 @@ function Scheduler(
             this.moderatorDirectory.selectModerator(this.moderatorDirectory.moderators[modID]);
         }.bind(this));
 
-        $j("body").on("mouseleave click", "td.teacher-available-cell", function(evt, ui) {
-            this.sections.unscheduleAsGhost();
+        // set up handlers for selecting/scheduling classes and assigning/unassigning moderators
+        $j("body").on("click", "td.matrix-cell > a", function(evt, ui) {
+            var cell = $j(evt.currentTarget.parentElement).data("cell");
+            if((evt.ctrlKey || evt.metaKey) && this.sections.selectedSection){
+                // attempt to swap the previously selected section with the section in the newly clicked cell
+                this.sections.swapSections(this.sections.selectedSection, cell.section);
+            } else if((evt.ctrlKey || evt.metaKey) && has_moderator_module === "True" && this.moderatorDirectory.selectedModerator) {
+                if(this.moderatorDirectory.selectedModerator.sections.includes(cell.section.id)) {
+                    this.moderatorDirectory.unassignModerator(cell.section);
+                } else {
+                    this.moderatorDirectory.assignModerator(cell.section);
+                }
+            } else {
+                this.sections.selectSection(cell.section);
+            }
         }.bind(this));
 
         $j("body").on("click", "td.teacher-available-cell", function(evt, ui) {
@@ -191,6 +190,7 @@ function Scheduler(
             this.sections.unselectSection();
         }.bind(this));
 
+        // set up handlers to schedule and unschedule ghost sections while hovering over empty cells
         $j("body").on("mouseenter", "td.teacher-available-cell", function(evt, ui) {
             if(this.sections.selectedSection){
                 var cell = $j(evt.currentTarget).data("cell");
@@ -198,6 +198,11 @@ function Scheduler(
             }
         }.bind(this));
 
+        $j("body").on("mouseleave click", "td.teacher-available-cell", function(evt, ui) {
+            this.sections.unscheduleAsGhost();
+        }.bind(this));
+
+        // set up handler from print button
         $j("body").on("click", "#print_button", function(evt, ui) {
             printJS({
                 printable: "matrix-div",

@@ -20,6 +20,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
     this.selectedSection = null;
     this.ghostScheduleAssignment = {};
     this.availableTimeslots = [];
+    this.swappedSections = 0;
 
     // Set up filtering
     this.filter = {
@@ -396,8 +397,9 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
      * @param section: The section to schedule
      * @param room_id: The name of the room to schedule it in
      * @param first_timeslot_id: The ID of the first timeslot to schedule the section in
+     * @param callback: A function to run upon success
      */
-    this.scheduleSection = function(section, room_id, first_timeslot_id){
+    this.scheduleSection = function(section, room_id, first_timeslot_id, callback = function() {}){
         var old_assignment = this.scheduleAssignments[section.id];
         var schedule_timeslots = this.matrix.timeslots.
             get_timeslots_to_schedule_section(section, first_timeslot_id);
@@ -422,7 +424,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             schedule_timeslots,
             room_id,
             override,
-            function() {},
+            callback,
             // If there's an error, reschedule the section in its old location
             function(msg) {
                 this.scheduleSectionLocal(section,
@@ -515,7 +517,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
      *
      * @param section: the section to unschedule
      */
-    this.unscheduleSection = function(section){
+    this.unscheduleSection = function(section, callback = function(){}){
         // Make sure section not locked
         if (section.schedulingLocked){
             this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", color = "red");
@@ -531,7 +533,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         this.unscheduleSectionLocal(section);
         this.apiClient.unschedule_section(
             section.id,
-            function(){},
+            callback,
             // If the server returns an error, put the class back in its original spot
             function(msg){
                 this.scheduleSectionLocal(section, old_room_id, old_schedule_timeslots);
@@ -539,6 +541,132 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                 console.log(msg);
             }.bind(this)
         );
+    };
+
+    /**
+     * Update the local interface to reflect unscheduling a class
+     *
+     * @param section: the section to unschedule
+     */
+    this.unscheduleSectionLocal = function(section) {
+        this.scheduleSectionLocal(section, null, [])
+    };
+
+    this.swapSections = function(section1, section2) {
+        // Abort if either section is locked
+        if (section1.schedulingLocked){
+            this.matrix.messagePanel.addMessage("Error: the first selected section is locked (" + section1.schedulingComment + ")! Unlock it first.", color = "red");
+            this.unselectSection();
+            return;
+        } else if (section2.schedulingLocked){
+            this.matrix.messagePanel.addMessage("Error: the second selected section is locked (" + section2.schedulingComment + ")! Unlock it first.", color = "red");
+            this.unselectSection();
+            return;
+        }
+
+        // Get the current assignments for the sections
+        var old_assignment1 = this.scheduleAssignments[section1.id];
+        var old_assignment2 = this.scheduleAssignments[section2.id];
+        // Extract room and timeslots from assignments
+        var room1 = old_assignment1.room_id;
+        var room2 = old_assignment2.room_id;
+        var old_timeslots1 = old_assignment1.timeslots;
+        var old_timeslots2 = old_assignment2.timeslots;
+        var new_timeslots1 = this.matrix.timeslots.get_timeslots_to_schedule_section(section1, old_timeslots2[0]);
+        var new_timeslots2 = this.matrix.timeslots.get_timeslots_to_schedule_section(section2, old_timeslots1[0]);
+
+        // Abort if there isn't enough time for either section in their new classroom
+        if(new_timeslots1 === null){
+            this.matrix.messagePanel.addMessage("Error: not enough time to swap the first section to the new room.", color = "red");
+            this.unselectSection();
+            return;
+        }
+        if(new_timeslots2 === null){
+            this.matrix.messagePanel.addMessage("Error: not enough time to swap the second section to the new room.", color = "red");
+            this.unselectSection();
+            return;
+        }
+
+        // Get the sections you'll be swapping with (might be different than section1/section2)
+        var swapping_sections1 = new_timeslots2.map(ts => this.matrix.getCell(room1, ts).section);
+        var swapping_sections2 = new_timeslots1.map(ts => this.matrix.getCell(room2, ts).section);
+        // If there's more than one swapping section, confirm the user is OK with this
+        if(_.uniq(swapping_sections1.filter(Boolean)).length > 1 && !confirm("More than one section will need to be swapped from the old room. Is this OK?")){
+            return;
+        } else if(_.uniq(swapping_sections2.filter(Boolean)).length > 1 && !confirm("More than one section will need to be swapped from the new room. Is this OK?")){
+            return;
+        }
+        $j(".ui-tooltip").hide() // There seems to be a bug or something caused by the confirm box that causes the tooltip to get stuck
+        var old_assignments1 = _.uniq(swapping_sections1.filter(Boolean)).map(sec => ({"section": sec, "timeslots": this.scheduleAssignments[sec.id].timeslots, "room_id": room1}));
+        var old_assignments2 = _.uniq(swapping_sections2.filter(Boolean)).map(sec => ({"section": sec, "timeslots": this.scheduleAssignments[sec.id].timeslots, "room_id": room2}));
+        console.log(old_assignments1)
+        console.log(old_assignments2)
+
+        // Determine new schedule for room 1 sections and validate assignments
+        var new_assignments1 = [];
+        var start_slot = this.matrix.timeslots.get_by_id(old_timeslots2[0]);
+        for(var sec of swapping_sections1){
+            if(sec){
+                if(new_assignments1.length == 0 || sec !== new_assignments1[new_assignments1.length - 1].section){
+                    var new_timeslots = this.matrix.timeslots.get_timeslots_to_schedule_section(sec, start_slot.id);
+                    var valid = this.matrix.validateAssignment(sec, room2, new_timeslots, swapping_sections2);
+                    if(!valid.valid){
+                        console.log(valid.reason);
+                        return;
+                    }
+                    new_assignments1.push({"section": sec, "timeslots": new_timeslots, "room_id": room2});
+                    start_slot = this.matrix.timeslots.get_by_order(this.matrix.timeslots.get_by_id(new_timeslots[new_timeslots.length - 1]).order + 1);
+                }
+            } else {
+                start_slot = this.matrix.timeslots.get_by_order(start_slot.order + 1);
+            }
+        }
+        console.log(new_assignments1)
+        // Determine new schedule for room 2 sections and validate assignments
+        var new_assignments2 = [];
+        var start_slot = this.matrix.timeslots.get_by_id(old_timeslots1[0])
+        for(var sec of swapping_sections2){
+            if(sec){
+                if(new_assignments2.length == 0 || sec !== new_assignments2[new_assignments2.length - 1].section){
+                    var new_timeslots = this.matrix.timeslots.get_timeslots_to_schedule_section(sec, start_slot.id);
+                    var valid = this.matrix.validateAssignment(sec, room1, new_timeslots, swapping_sections1);
+                    if(!valid.valid){
+                        console.log(valid.reason);
+                        return;
+                    }
+                    new_assignments2.push({"section": sec, "timeslots": new_timeslots, "room_id": room1});
+                    start_slot = this.matrix.timeslots.get_by_order(this.matrix.timeslots.get_by_id(new_timeslots[new_timeslots.length - 1]).order + 1);
+                }
+            } else {
+                start_slot = this.matrix.timeslots.get_by_order(start_slot.order + 1);
+            }
+        }
+        console.log(new_assignments2)
+
+        // Unschedule the section(s) in room 1
+        window.swappedSections = 0;
+        for(var asmt of old_assignments1){
+            this.unscheduleSection(asmt.section, function() {window.swappedSections++});
+        }
+
+        // We need to wait to reschedule things until the backend changes have taken effect
+        (async() => {
+            while(window.swappedSections < old_assignments1.length) 
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            // Schedule the section(s) from room 2 into room 1
+            window.swappedSections = 0;
+            for(var asmt of new_assignments2){
+                this.scheduleSection(asmt.section, room1, asmt.timeslots[0], function() {window.swappedSections++});
+            }
+            (async() => {
+                while(window.swappedSections < new_assignments2.length) 
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                // Schedule the section(s) from room 1 into room 2
+                for(var asmt of new_assignments1){
+                    this.scheduleSection(asmt.section, room2, asmt.timeslots[0], function() {window.swappedSections++});
+                }
+            })();
+        })();
     };
 
     /**
@@ -588,15 +716,6 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             this.unselectSection();
         }
     }
-
-    /**
-     * Update the local interface to reflect unscheduling a class
-     *
-     * @param section: the section to unschedule
-     */
-    this.unscheduleSectionLocal = function(section) {
-        this.scheduleSectionLocal(section, null, [])
-    };
 
 
     this.getBaseUrlString = function() {

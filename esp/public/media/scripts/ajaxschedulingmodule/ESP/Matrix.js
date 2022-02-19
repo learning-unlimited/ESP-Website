@@ -387,8 +387,9 @@ function Matrix(
      * @param section: The section to validate.
      * @param room_id: The name of the room we want to put the section into.
      * @param schedule_timeslots: The array of timeslots we want to put the section into.
+     * @param ignore_sections: An optional array of sections to ignore
      */
-    this.validateAssignment = function(section, room_id, schedule_timeslots){
+    this.validateAssignment = function(section, room_id, schedule_timeslots, ignore_sections = []){
         var result = {
             valid: true,
             reason: null,
@@ -403,7 +404,7 @@ function Matrix(
 
         var availableTimeslots = this.sections.getAvailableTimeslots(section)[0];
         var validateIndividualCell = function(index, cell) {
-            return !(cell.disabled || (cell.section && cell.section !== section) ||
+            return !(cell.disabled || (cell.section && cell.section !== section && !ignore_sections.includes(cell.section)) ||
                     availableTimeslots.indexOf(schedule_timeslots[index]) == -1);
         };
 
