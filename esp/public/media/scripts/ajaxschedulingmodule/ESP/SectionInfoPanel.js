@@ -167,6 +167,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
             partDiv.append(content_parts[header]);
             contentDiv.append(partDiv);
         }
+        contentDiv.append($j('<br><div><b>Click on another section while holding down "Ctrl"/"Cmd" to swap it with this section</b>'));
 
         return contentDiv;
     }.bind(this);
