@@ -402,7 +402,7 @@ function Matrix(
             return result;
         }
 
-        var availableTimeslots = this.sections.getAvailableTimeslots(section)[0];
+        var availableTimeslots = this.sections.getAvailableTimeslots(section, ignore_sections)[0];
         var validateIndividualCell = function(index, cell) {
             return !(cell.disabled || (cell.section && cell.section !== section && !ignore_sections.includes(cell.section)) ||
                     availableTimeslots.indexOf(schedule_timeslots[index]) == -1);

@@ -326,8 +326,9 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
      * The second has all the timeslots where teachers are available but already teaching
      *
      * @param section: The section to check availability.
+     * @param ignore_sections: An optional array of sections to ignore.
      */
-    this.getAvailableTimeslots = function(section) {
+    this.getAvailableTimeslots = function(section, ignore_sections=[]) {
         var availableTimeslots = [];
         var already_teaching = [];
         if(this.matrix.sectionInfoPanel.override){
@@ -343,7 +344,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                 }.bind(this));
                 $j.each(teacher.sections, function(index, section_id) {
                     var assignment = this.scheduleAssignments[section_id];
-                    if(assignment && section_id != section.id) {
+                    if(assignment && section_id != section.id && !ignore_sections.includes(this.getById(section_id))) {
                         $j.each(assignment.timeslots, function(index, timeslot_id) {
                             var availability_index = teacher_availabilities.indexOf(timeslot_id);
                             if(availability_index >= 0) {
@@ -601,6 +602,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         var old_assignments2 = _.uniq(swapping_sections2.filter(Boolean)).map(sec => ({"section": sec, "timeslots": this.scheduleAssignments[sec.id].timeslots, "room_id": room2}));
         console.log(old_assignments1)
         console.log(old_assignments2)
+        var ignore_sections = _.uniq(_.union(swapping_sections1, swapping_sections2));
 
         // Determine new schedule for room 1 sections and validate assignments
         var new_assignments1 = [];
@@ -609,9 +611,11 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             if(sec){
                 if(new_assignments1.length == 0 || sec !== new_assignments1[new_assignments1.length - 1].section){
                     var new_timeslots = this.matrix.timeslots.get_timeslots_to_schedule_section(sec, start_slot.id);
-                    var valid = this.matrix.validateAssignment(sec, room2, new_timeslots, swapping_sections2);
+                    var valid = this.matrix.validateAssignment(sec, room2, new_timeslots, ignore_sections);
                     if(!valid.valid){
                         console.log(valid.reason);
+                        this.matrix.messagePanel.addMessage("Error: can not swap those classes.", color = "red");
+                        this.unselectSection();
                         return;
                     }
                     new_assignments1.push({"section": sec, "timeslots": new_timeslots, "room_id": room2});
@@ -629,9 +633,11 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             if(sec){
                 if(new_assignments2.length == 0 || sec !== new_assignments2[new_assignments2.length - 1].section){
                     var new_timeslots = this.matrix.timeslots.get_timeslots_to_schedule_section(sec, start_slot.id);
-                    var valid = this.matrix.validateAssignment(sec, room1, new_timeslots, swapping_sections1);
+                    var valid = this.matrix.validateAssignment(sec, room1, new_timeslots, ignore_sections);
                     if(!valid.valid){
                         console.log(valid.reason);
+                        this.matrix.messagePanel.addMessage("Error: can not swap those classes.", color = "red");
+                        this.unselectSection();
                         return;
                     }
                     new_assignments2.push({"section": sec, "timeslots": new_timeslots, "room_id": room1});
@@ -663,7 +669,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 // Schedule the section(s) from room 1 into room 2
                 for(var asmt of new_assignments1){
-                    this.scheduleSection(asmt.section, room2, asmt.timeslots[0], function() {window.swappedSections++});
+                    this.scheduleSection(asmt.section, room2, asmt.timeslots[0]);
                 }
             })();
         })();
