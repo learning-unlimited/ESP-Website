@@ -600,8 +600,6 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         $j(".ui-tooltip").hide() // There seems to be a bug or something caused by the confirm box that causes the tooltip to get stuck
         var old_assignments1 = _.uniq(swapping_sections1.filter(Boolean)).map(sec => ({"section": sec, "timeslots": this.scheduleAssignments[sec.id].timeslots, "room_id": room1}));
         var old_assignments2 = _.uniq(swapping_sections2.filter(Boolean)).map(sec => ({"section": sec, "timeslots": this.scheduleAssignments[sec.id].timeslots, "room_id": room2}));
-        console.log(old_assignments1)
-        console.log(old_assignments2)
         var ignore_sections = _.uniq(_.union(swapping_sections1, swapping_sections2));
 
         // Determine new schedule for room 1 sections and validate assignments
@@ -625,7 +623,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                 start_slot = this.matrix.timeslots.get_by_order(start_slot.order + 1);
             }
         }
-        console.log(new_assignments1)
+
         // Determine new schedule for room 2 sections and validate assignments
         var new_assignments2 = [];
         var start_slot = this.matrix.timeslots.get_by_id(old_timeslots1[0])
@@ -647,7 +645,6 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                 start_slot = this.matrix.timeslots.get_by_order(start_slot.order + 1);
             }
         }
-        console.log(new_assignments2)
 
         // Unschedule the section(s) in room 1
         window.swappedSections = 0;
@@ -659,6 +656,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         (async() => {
             while(window.swappedSections < old_assignments1.length) 
                 await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 1000)); // A little extra breathing room
             // Schedule the section(s) from room 2 into room 1
             window.swappedSections = 0;
             for(var asmt of new_assignments2){
@@ -667,6 +665,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             (async() => {
                 while(window.swappedSections < new_assignments2.length) 
                     await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, 1000)); // A little extra breathing room
                 // Schedule the section(s) from room 1 into room 2
                 for(var asmt of new_assignments1){
                     this.scheduleSection(asmt.section, room2, asmt.timeslots[0]);
