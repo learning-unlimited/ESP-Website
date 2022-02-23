@@ -39,7 +39,7 @@ Learning Unlimited, Inc.
 #                       Edit local_settings.py instead                         #
 #                                                                              #
 ################################################################################
-
+import os
 
 ###############################################
 # Default site identification                 #
@@ -117,7 +117,7 @@ DATABASES = {'default':
 ##########################
 EMAIL_HOST   = 'localhost'
 EMAIL_PORT   = '25'
-SERVER_EMAIL = 'server@diogenes.learningu.org'
+SERVER_EMAIL = 'server@{}'.format(os.uname()[1])
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 EMAIL_HOST_SENDER = EMAIL_HOST
 EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
@@ -261,7 +261,6 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
 )
 
-import os
 for app in ('django_evolution', 'django_command_extensions'):
     if os.path.exists(app):
         INSTALLED_APPS += (app,)

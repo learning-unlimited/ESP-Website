@@ -8,14 +8,12 @@
 {% if module.isStep %}
 <tr>
 <td>{% if module.useTemplate %}
-<a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
-    {{ module.module.link_title }} 
-    </a> <i>(below)</i>
+<a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">{{ module.module.link_title }}</a> <i>(below)</i>
 {% else %}
     {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
 {% endif %}
 {% if module.required_label %}<i>{{ module.required_label }}</i>{% else %}
-    {% if not module.required %}{% if not module.hideNotRequired %} <i>(not required)</i> {% endif %}{% endif %}
+    {% if not module.isRequired %}{% if not module.hideNotRequired %} <i>(not required)</i> {% endif %}{% endif %}
 {% endif %}
 </td>
 <td>{% if not module.useTemplate %}

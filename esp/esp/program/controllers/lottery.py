@@ -742,7 +742,10 @@ class LotteryAssignmentController(object):
 
         relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
         self.now = datetime.now()   # The time that all the registrations start at, in case all lottery registrations need to be manually reverted later
-        StudentRegistration.objects.bulk_create([StudentRegistration(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship, start_date=self.now) for i in range(student_ids.shape[0])])
+        srs = StudentRegistration.objects.bulk_create([StudentRegistration(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship, start_date=self.now) for i in range(student_ids.shape[0])])
+        # Trigger any relevant caches
+        for sr in srs:
+            sr.save()
         if self.options['stats_display']:
             logger.info("StudentRegistration enrollments all created to start at %s", self.now)
             logger.info('Created %d registrations', student_ids.shape[0])

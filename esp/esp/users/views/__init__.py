@@ -5,7 +5,7 @@ from django.contrib.auth.views import login
 from django.http import HttpResponseRedirect, HttpResponse
 from django.template import RequestContext
 
-from esp.program.models import Program
+from esp.program.models import Program, RegistrationProfile
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, admin_required
 from esp.users.models.forwarder import UserForwarder
@@ -49,7 +49,10 @@ def mask_redirect(user, next):
 def login_checked(request, *args, **kwargs):
     if request.user.is_authenticated():
         next = request.GET.get('next', '')
-        if next in mask_locations:
+        # If the user doesn't have a profile, redirect them to the profile page
+        if RegistrationProfile.objects.filter(user__exact=request.user).count() == 0:
+            reply = HttpMetaRedirect('/myesp/profile')
+        elif next in mask_locations:
             reply = mask_redirect(request.user, next)
         elif next:
             reply = HttpMetaRedirect(next)
@@ -80,7 +83,10 @@ def login_checked(request, *args, **kwargs):
             auth_logout(request)
             auth_login(request, user)
             # Try to display a friendly error message
-            next_uri = reply.get('Location', '').strip()
+            if RegistrationProfile.objects.filter(user__exact=user).count() == 0:
+                next_uri = '/myesp/profile'
+            else:
+                next_uri = reply.get('Location', '').strip()
             if next_uri:
                 context = {
                     'request': request,
@@ -93,7 +99,9 @@ def login_checked(request, *args, **kwargs):
                 return render_to_response('users/login_duplicate_warning.html', request, context)
 
     next = reply.get('Location', '')
-    if next in mask_locations:
+    if request.user.is_authenticated() and RegistrationProfile.objects.filter(user__exact=request.user).count() == 0:
+        reply = HttpMetaRedirect('/myesp/profile')
+    elif next in mask_locations:
         reply = mask_redirect(request.user, next)
     elif reply.status_code == 302:
         #   Even if the redirect was going to a reasonable place, we need to
