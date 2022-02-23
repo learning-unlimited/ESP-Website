@@ -664,7 +664,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     # This is separate from class_info because students shouldn't see it
     @aux_call
-    @cache_control(public=True, max_age=300)
+    @cache_control(public=True, max_age=30)
     @json_response()
     @needs_admin
     def class_admin_info(self, request, tl, one, two, module, extra, prog):

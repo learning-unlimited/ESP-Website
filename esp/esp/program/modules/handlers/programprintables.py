@@ -1019,12 +1019,10 @@ class ProgramPrintables(ProgramModuleObj):
         return u''
 
     @staticmethod
-    def get_student_classlist(program, student):
+    def get_student_classlist(program, student, verbs = ['Enrolled'], valid_only = True):
         # get list of valid classes
-        classes = [ cls for cls in student.getEnrolledSections()]
-        classes = [ cls for cls in classes
-                    if cls.parent_program == program
-                    and cls.isAccepted()                       ]
+        classes = [ cls for cls in student.getSections(program = program, verbs = verbs, valid_only = valid_only)]
+        classes = [ cls for cls in classes if cls.isAccepted() ]
         classes.sort()
         return classes
 
@@ -1053,7 +1051,7 @@ class ProgramPrintables(ProgramModuleObj):
         return scheditems
 
     @staticmethod
-    def getTranscript(program, student, format='text'):
+    def getTranscript(program, student, format='text', verbs = ['Enrolled'], valid_only = True):
         from django.template import Template
         from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 
@@ -1070,7 +1068,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         t = get_template(template_filename)
 
-        context = {'classlist': ProgramPrintables.get_student_classlist(program, student)}
+        context = {'classlist': ProgramPrintables.get_student_classlist(program, student, verbs = verbs, valid_only = valid_only)}
 
         return t.render(context)
 
@@ -1713,9 +1711,15 @@ class ProgramPrintables(ProgramModuleObj):
         else:
             file_type = 'pdf'
 
+        attended = Tag.getProgramTag('student_certificate', prog) == 'class_attendance'
+        if attended:
+            verbs = ['Attended']
+        else:
+            verbs = ['Enrolled']
+
         context = {'user': user, 'prog': prog,
-                    'schedule': ProgramPrintables.getTranscript(prog, user, 'latex'),
-                    'descriptions': ProgramPrintables.getTranscript(prog, user, 'latex_desc')}
+                   'schedule': ProgramPrintables.getTranscript(prog, user, 'latex', verbs, valid_only = (not attended)),
+                   'descriptions': ProgramPrintables.getTranscript(prog, user, 'latex_desc', verbs, valid_only = (not attended))}
 
         return render_to_latex(self.baseDir()+'completion_certificate.tex', context, file_type)
 

@@ -467,7 +467,7 @@ function Matrix(
 
         //Time headers
         var header_row = $j("<tr/>").appendTo($j("<thead/>").appendTo(table));
-        header_row.append($j("<th/>"));
+        header_row.append($j("<th/>").append($j("<button id = 'print_button'>Print Matrix</button>")));
         $j.each(this.timeslots.timeslots_sorted, function(index, timeslot){
             var timeslotHeader = $j("<th>" + timeslot.label + "</th>");
             this.timeslotHeaders[timeslot.id] = timeslotHeader;

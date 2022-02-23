@@ -22,6 +22,7 @@ var settings = {
     show_closed_reg: false,
     hide_past_time_blocks: false,
     hide_conflicting: false,
+    check_in_student: false,
     search_term: "",
     categories_to_display: {},
     sort_setting: "length"
@@ -176,6 +177,7 @@ function setup_settings()
     settings.show_closed_reg = $j("#show_closed_reg").prop("checked");
     settings.hide_past_time_blocks = $j("#hide_past_time_blocks").prop("checked");
     settings.hide_conflicting = $j("#hide_conflicting").prop("checked");
+    settings.check_in_student = $j("#check_in_student").prop("checked");
     settings.sort_setting = $j("#sort_control").val();
 
     $j("#hide_full_control").on("change", handle_settings_change);
@@ -556,7 +558,7 @@ function add_student(student_id, section_id, size_override)
     
     //  Commit changes to server
     var schedule_resp = $j.ajax({
-        url: program_base_url + "update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]&override=" + size_override,
+        url: program_base_url + "update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]&override=" + size_override + "&check_in=" + settings.check_in_student.toString(),
         dataType: 'json',
         success: handle_schedule_response,
         complete: [update_checkboxes, unlock_schedule]
@@ -592,7 +594,7 @@ function remove_student(student_id, section_id)
    
     //  Commit changes to server
     var schedule_resp = $j.ajax({
-        url: program_base_url + "update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]",
+        url: program_base_url + "update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]" + "&check_in=" + settings.check_in_student.toString(),
         dataType: 'json',
         success: handle_schedule_response,
         complete: [update_checkboxes, unlock_schedule]

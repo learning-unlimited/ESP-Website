@@ -197,6 +197,17 @@ function Scheduler(
                 this.sections.scheduleAsGhost(cell.room_id, cell.timeslot_id);
             }
         }.bind(this));
+
+        $j("body").on("click", "#print_button", function(evt, ui) {
+            printJS({
+                printable: "matrix-div",
+                type: 'html',
+                css: ["/media/default_styles/scheduling.css", "/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.css", "https://ajax.aspnetcdn.com/ajax/jquery.ui/" + jqueryui_version + "/themes/base/jquery-ui.css"],
+                targetStyles: ['*'],
+                maxWidth: 5000,
+                ignoreElements: ['print_button']
+            });
+        });
     };
 
     this.init();

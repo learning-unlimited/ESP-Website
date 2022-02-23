@@ -1,6 +1,5 @@
 //  Global variables for storing the class and section data
 var classes_global = {};
-var sections_global = {};
 
 function deleteClass() {
     if (confirm('Are you sure you would like to delete this class? \n Since you are an admin, you can delete this class with students. \n Deleting is hard to undo, so consider instead marking it unreviewed or rejected.')) {
@@ -193,7 +192,6 @@ function update_class(clsid, statusId) {
 function fillClasses(data)
 {
     // First pull out the data
-    var sections = data.sections;
     var classes = data.classes;
 
     // Clear the current classes list (most likely just "Loading...")
@@ -207,7 +205,6 @@ function fillClasses(data)
 
     //  Save the data for later if we need it
     classes_global = classes;
-    sections_global = sections;
 }
 
 function createClassTitleTd(clsObj) {
