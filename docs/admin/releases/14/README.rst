@@ -13,6 +13,8 @@ User search modules
 - There is now a list of commonly used searches to simplify the user selection process
 - Printables that use the user search controller now have default settings
 - Improved the performance of searching for users (hotfixed to Stable Release 13)
+- Added options to search by students/teachers that have enrolled in/attended/taught for previous programs
+- Fixed some combination lists
 
 Program records
 ~~~~~~~~~~~~~~~
@@ -42,6 +44,18 @@ Student and teacher registration changes
 - Fixed the order of modules on the student and teacher registration mainpages (sorting order is now required -> seq -> isCompleted)
 - Added a warning banner to the top of all required modules (this banner and the deadline banner are also now included in all themes)
 - Fixed the bottom of the phase zero confirmation page being cut off
+- Added a module that allows students to get a completion certificate after attending a program (see the "student certificate" tag for options)
+- The maps in the student and teacher webapps are now entirely free (but do require a Google Cloud API key which is set as a tag)
+- Walking directions in the student and teacher webapps are now fulfilled entirely by Google Maps (will open the app on mobile devices)
+
+Optional and required extra costs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- The Extra Costs Module now shows all required or optional extra costs that are not related to admission or financial aid
+- If there are any required items, the module is required during registration, and the form will require selections to be made for those required items before it can be submitted
+- Required items may have associated costs and/or options; this is now the supported method for asking students which kind of lunch/meal they would like (e.g., pizza vs. sandwich)
+- The numbers of students that have requested particular options can be seen on the program dashboard
+- The sibling discount form has also been added to this module (if enabled in the program settings) and the discount value now reflects the respective program setting
+- The Splash Info Module, which previously included the lunch options and sibling discount forms, has been completely removed
 
 Program management changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -57,6 +71,7 @@ Program management changes
 - Tweaked the tooltip of the popularity graphs on the student big board
 - Student and teacher registration status is now shown on the userview page
 - Fixed the color of messages on the deadline management page
+- Added statistics to the dashboard for "teachers who have submitted a class and have not taught for a program" and "students who are enrolled and have not enrolled in the past"
 
 Onsite changes
 ~~~~~~~~~~~~~~
@@ -80,6 +95,7 @@ Minor new features
 - Added an anonymous option to the contact form
 - Added a filter for expired vs unexpired permissions and student registrations in the admin panel
 - Users without a profile are now prompted to fill one out upon logging in
+- Forms can no longer be submitted more than once before the new page loads, hopefully preventing some rare database errors and duplicate program charges
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
