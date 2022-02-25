@@ -76,6 +76,16 @@
       });
     </script>
 
+    <!-- prevent forms from being submitted twice -->
+    <script text="text/javascript">
+      $j(function() {
+        $j('[type=submit]').click(function(){
+          $j(this).prop('disabled', true);
+          $j(this).parents('form').submit();
+        });
+      });
+    </script>
+
     <script type="text/javascript" src="/media/scripts/json2.js"></script>
     <script type="text/javascript" src="/media/scripts/qsd.js"></script>
     <script type="text/javascript" src="/media/scripts/jsprettify-all-latest.js"></script>
