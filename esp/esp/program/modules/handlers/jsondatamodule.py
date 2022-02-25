@@ -36,7 +36,6 @@ Learning Unlimited, Inc.
 from collections import defaultdict
 from datetime import datetime
 import operator
-import json
 
 from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
@@ -48,9 +47,8 @@ from argcache import cache_function
 from esp.cal.models import Event
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
-from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType, ClassFlag, ModeratorRecord, RegistrationProfile, TeacherBio, PhaseZeroRecord, FinancialAidRequest, VolunteerOffer
+from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, ClassFlagType, ClassFlag, ModeratorRecord, RegistrationProfile, TeacherBio, PhaseZeroRecord, FinancialAidRequest, VolunteerOffer
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, no_auth, main_call, aux_call
-from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, UserAvailability, StudentInfo, Record
@@ -914,30 +912,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     volunteer_nums.depend_on_row(VolunteerOffer, lambda vo: {'prog': vo.request.program})
     volunteer_nums = staticmethod(volunteer_nums)
 
-    @cache_function
-    def splashinfo_nums(prog):
-        splashinfo_module = prog.getModule('SplashInfoModule')
-        splashinfo_data = {}
-        tag_data = Tag.getProgramTag('splashinfo_choices', prog)
-        if tag_data:
-            splashinfo_choices = json.loads(tag_data)
-        else:
-            splashinfo_choices = {'lunchsat': SplashInfoForm.default_choices, 'lunchsun': SplashInfoForm.default_choices}
-        for key in splashinfo_choices:
-            counts = {}
-            for item in splashinfo_choices[key]:
-                filter_kwargs = {'program': prog}
-                filter_kwargs[key] = item[0]
-                counts[item[1]] = SplashInfo.objects.filter(**filter_kwargs).distinct().count()
-            splashinfo_data[key] = counts
-        splashinfo_data['siblings'] = {
-            'yes': SplashInfo.objects.filter(program=prog, siblingdiscount=True).distinct().count(),
-            'no':  SplashInfo.objects.filter(program=prog).exclude(siblingdiscount=True).distinct().count()
-        }
-        return splashinfo_data
-    splashinfo_nums.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
-    splashinfo_nums = staticmethod(splashinfo_nums)
-
     @staticmethod
     def calc_hours(classes):
         hours = {"class-hours": 0, "class-student-hours": 0, "class-registered-hours": 0, "class-checked-in-hours": 0}
@@ -1077,10 +1051,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         ## Calculate the grade data:
         dictOut["stats"].append({"id": "grades", "data": self.grade_nums(prog)})
-
-        #   Add SplashInfo statistics if our program has them
-        if prog.hasModule('SplashInfoModule'):
-            dictOut["stats"].append({"id": "splashinfo", "data": self.splashinfo_nums(prog)})
 
         #   Add accounting stats
         pac = ProgramAccountingController(prog)

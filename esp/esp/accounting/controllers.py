@@ -75,6 +75,7 @@ class ProgramAccountingController(BaseAccountingController):
     def __init__(self, program, *args, **kwargs):
         self.program = program
         self.finaid_items = ['Financial aid grant', 'Sibling discount']
+        self.admission_items = ["Program admission", "Student payment"]
 
     def clear_all_data(self):
         #   Clear all financial data for the program
@@ -126,12 +127,6 @@ class ProgramAccountingController(BaseAccountingController):
         )
         result.append(lit_finaid)
 
-        (lit_sibling, created) = LineItemType.objects.get_or_create(
-            text='Sibling discount',
-            program=program
-        )
-        result.append(lit_sibling)
-
         for item in optional_items:
             (lit_optional, created) = LineItemType.objects.get_or_create(
                 text=item[0],
@@ -172,20 +167,23 @@ class ProgramAccountingController(BaseAccountingController):
     def default_siblingdiscount_lineitemtype(self):
         return LineItemType.objects.filter(program=self.program, text='Sibling discount').order_by('-id')[0]
 
+    def default_admission_lineitemtype(self):
+        return LineItemType.objects.filter(program=self.program, text='Program admission').order_by('-id')[0]
+
     def get_lineitemtypes_Q(self, required_only=False, optional_only=False, payment_only=False, lineitemtype_id=None):
         if lineitemtype_id:
             return Q(id=lineitemtype_id)
         q_object = Q(program=self.program) & ~Q(text__in=self.finaid_items) # exclude finaid grants and sibling discounts
+        # The Stripe module (or, if used, donation module) currently takes care of the donation
+        # optional line item, so ignore it in the optional costs module.
+        for module_name in ['CreditCardModule_Stripe', 'DonationModule']:
+            other_module = self.program.getModule(module_name)
+            if other_module and other_module.get_setting('offer_donation', default=True):
+                q_object &= ~Q(text=other_module.get_setting('donation_text'))
         if required_only:
             q_object &= Q(required=True, for_payments=False)
         elif optional_only:
             q_object &= Q(required=False, for_payments=False)
-            # The Stripe module (or, if used, donation module) currently takes care of the donation
-            # optional line item, so ignore it in the optional costs module.
-            for module_name in ['CreditCardModule_Stripe', 'DonationModule']:
-                other_module = self.program.getModule(module_name)
-                if other_module and other_module.get_setting('offer_donation', default=True):
-                    q_object &= ~Q(text=other_module.get_setting('donation_text'))
         elif payment_only:
             q_object &= Q(required=False, for_payments=True)
         return q_object
@@ -300,7 +298,7 @@ class IndividualAccountingController(ProgramAccountingController):
 
     def apply_preferences(self, optional_items):
         """ Function to ensure there are transfers for this user corresponding
-            to optional line item types, accoring to their preferences.
+            to optional line item types, according to their preferences.
             optional_items is a list of 4-tuples: (item name, quantity, cost, option ID)
             The last 2 items, cost and option ID, are non-required and should
             be set to None if unused.   """
@@ -308,7 +306,7 @@ class IndividualAccountingController(ProgramAccountingController):
         result = []
         program_account = self.default_program_account()
         source_account = self.default_source_account()
-        line_items = self.get_lineitemtypes(optional_only=True)
+        line_items = self.get_lineitemtypes().exclude(text__in=self.admission_items)
 
         #   Clear existing transfers
         Transfer.objects.filter(user=self.user, line_item__in=line_items).delete()
@@ -334,7 +332,7 @@ class IndividualAccountingController(ProgramAccountingController):
                         option = LineItemOptions.objects.get(id=option_id)
                         if cost is None:
                             transfer_amount = option.amount_dec_inherited
-                    for i in range(quantity):
+                    for i in range(quantity or 0):
                         result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount, option=option))
                     break
             if not matched:
@@ -380,7 +378,7 @@ class IndividualAccountingController(ProgramAccountingController):
     def get_preferences(self, line_items=None):
         #   Return a list of 4-tuples: (item name, quantity, cost, options)
         result = []
-        transfers = self.get_transfers(line_items, optional_only=True)
+        transfers = self.get_transfers(line_items)
         for transfer in transfers:
             li_name = transfer.line_item.text
             if (li_name, transfer.amount_dec, transfer.option_id) not in map(lambda x: (x[0], x[2], x[3]), result):
@@ -547,7 +545,7 @@ class IndividualAccountingController(ProgramAccountingController):
         return aid_amount
 
     def amount_siblingdiscount(self):
-        if (not self.program.sibling_discount) or self.program.splashinfo_objects.get(self.user.id):
+        if self.program.sibling_discount and SplashInfo.getForUser(self.user, self.program).siblingdiscount:
             return self.program.sibling_discount
         else:
             return Decimal('0')

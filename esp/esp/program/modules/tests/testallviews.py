@@ -155,6 +155,7 @@ class AllViewsTest(ProgramFrameworkTest):
             for module in modules:
                 views = module.views
                 for view in views:
+                    passes = False
                     cls = self.program.classes()[0]
                     cls_id = str(cls.id)
                     sec = cls.get_sections()[0]
@@ -168,25 +169,31 @@ class AllViewsTest(ProgramFrameworkTest):
                     try: # Various GET arguments
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '?cls=' + cls_id + '&clsid=' + cls_id + '&name=Admin&username=admin')
                         if str(response.status_code)[:1] in ['2', '3']:
-                            continue
+                            passes = True
                     except Exception, e:
                         print(e)
                     try: # Use a class ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + cls_id)
                         if str(response.status_code)[:1] in ['2', '3']:
-                            continue
+                            passes = True
                     except Exception, e:
                         print(e)
                     try: # Use a section ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + sec_id)
                         if str(response.status_code)[:1] in ['2', '3']:
-                            continue
+                            passes = True
                     except Exception, e:
                         print(e)
                     try: # Use an event ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + event_id)
                         if str(response.status_code)[:1] in ['2', '3']:
-                            continue
+                            passes = True
+                    except Exception, e:
+                        print(e)
+                    try: # Use a user ID as the extra argument
+                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + self.adminUser.id)
+                        if str(response.status_code)[:1] in ['2', '3']:
+                            passes = True
                     except Exception, e:
                         print(e)
                     try: # Various POST data
@@ -194,22 +201,23 @@ class AllViewsTest(ProgramFrameworkTest):
                         sec.unpreregister_student(self.adminUser)
                         response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'class_id': cls_id,  'section_id': sec_id, 'json_data': '{}'})
                         if str(response.status_code)[:1] in ['2', '3']:
-                            continue
+                            passes = True
                     except Exception, e:
                         print(e)
                     try: # Student lottery POST data
                         response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'json_data': '{"interested": [1, 5, 3, 9], "not_interested": [4, 6, 10]}'})
                         if str(response.status_code)[:1] in ['2', '3']:
-                            continue
+                            passes = True
                     except Exception, e:
                         print(e)
                     try: # Different student lottery POST data
                         response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'json_data': '{"' + event_id + '": {}}'})
                         if str(response.status_code)[:1] in ['2', '3']:
-                            continue
+                            passes = True
                     except Exception, e:
                         print(e)
-                    failed_modules.append((module, view))
+                    if not passes:
+                        failed_modules.append((module, view))
 
         # Check if any failed
         self.assertTrue(len(failed_modules) == 0, '\n'.join(['The "' + view + '" view from the "' + module.module.handler + '" module is broken.' for (module, view) in failed_modules]))

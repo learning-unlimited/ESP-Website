@@ -8,7 +8,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('modules', '0037_medliab_split'),
+        ('modules', '0038_delete_splashinfomodule'),
     ]
 
     operations = [

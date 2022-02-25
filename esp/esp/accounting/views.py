@@ -83,6 +83,7 @@ def user_accounting(user, progs = []):
             for t in iac.get_transfers().select_related('line_item')
         ]
         sort_order = {"Cost (required)": 0, "Cost (optional)": 1, "Sibling discount": 2, "Financial aid": 3, "Payment": 4}
+        classified_transfers.sort(key=lambda t: 'Program admission' not in t['transfer'].line_item.text) # put Program admission at the top
         classified_transfers.sort(key=lambda t: sort_order[t['type']])
         result = {
             'program': prog,

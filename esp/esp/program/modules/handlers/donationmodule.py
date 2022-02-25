@@ -39,7 +39,7 @@ from esp.dbmail.models import send_mail
 from esp.users.models import ESPUser, Record
 from esp.tagdict.models import Tag
 from esp.accounting.models import LineItemType
-from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.accounting.controllers import IndividualAccountingController
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -119,8 +119,7 @@ class DonationModule(ProgramModuleObj):
         return self.apply_settings().get(name, default)
 
     def line_item_type(self):
-        pac = ProgramAccountingController(self.program)
-        (donate_type, created) = pac.get_lineitemtypes().get_or_create(program=self.program, text=self.get_setting('donation_text'))
+        (donate_type, created) = LineItemType.objects.get_or_create(program=self.program, text=self.get_setting('donation_text'))
         return donate_type
 
     def isCompleted(self):

@@ -134,9 +134,12 @@ class Admin_SplashInfo(admin.ModelAdmin):
     list_display = (
         'student',
         'program',
+        'siblingdiscount',
+        'siblingname',
+        'submitted'
     )
-    search_fields = default_user_search('student')
-    list_filter = [ 'program', ]
+    search_fields = default_user_search('student') + ['siblingname']
+    list_filter = [ 'program', 'siblingdiscount', 'submitted']
 admin_site.register(SplashInfo, Admin_SplashInfo)
 
 ## Schedule stuff (wish it was schedule_.py)
