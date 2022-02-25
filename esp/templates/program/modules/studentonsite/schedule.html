@@ -50,7 +50,7 @@ function togglePopup() {
                         <!--link to course details-->
                         <a class="no-dec" title="More Details" href="/learn/{{one}}/{{two}}/onsitedetails/{{ cls.section.id }}"><b>{{ cls.section.title }}&nbsp;<i class="material-icons md-3">list</i></a></b>
                         {% if checked_in and not cls.section.initial_rooms.count == 0 %}
-                        <br><a class="no-dec" title="Directions" href="/learn/{{one}}/{{two}}/onsitemap/{{ cls.section.initial_rooms.0.id }}">{{ cls.section.prettyrooms|join:", " }}&nbsp;<i class="material-icons md-3">directions</i></a>
+                        <br>{% if cls.section.initial_lat_long %}<a class="no-dec" title="Directions" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination={{ cls.section.initial_lat_long }}&travelmode=walking">{% endif %}{{ cls.section.prettyrooms|join:", " }}{% if cls.section.initial_lat_long %}&nbsp;<i class="material-icons md-3">directions</i></a>{% endif %}
                         {% endif %}
                     </td>
                     {% endif %}

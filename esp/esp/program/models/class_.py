@@ -40,6 +40,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import random
+import re
 
 # django Util
 from django.conf import settings
@@ -529,6 +530,14 @@ class ClassSection(models.Model):
             return self.classrooms().filter(event=initial_time).order_by('id')
         else:
             return Resource.objects.none()
+
+    def initial_lat_long(self):
+        classroom = self.initial_rooms().first()
+        if classroom:
+            res = classroom.associated_resources().filter(res_type__name='Lat/Long')
+            if res.count() == 1 and re.match("^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$", res[0].attribute_value):
+                return res[0].attribute_value
+        return None
 
     def prettyrooms(self):
         """ Return the pretty name of the rooms. """

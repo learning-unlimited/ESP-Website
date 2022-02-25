@@ -29,7 +29,6 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, CoreModule, main_call, aux_call
 from esp.program.models  import ClassSection
-from esp.resources.models import Resource
 from esp.utils.web import render_to_response
 from esp.users.models    import Record
 from esp.survey.views   import survey_view, survey_review
@@ -83,23 +82,9 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         context = self.onsitecontext(request, tl, one, two, prog)
         context['webapp_page'] = 'map'
         context['center'] = Tag.getProgramTag('program_center', program = prog)
+        context['zoom'] = Tag.getProgramTag('program_center_zoom', program = prog)
         context['API_key'] = Tag.getTag('google_cloud_api_key')
 
-        #extra should be a classroom id
-        if extra:
-            #gets lat/long of classroom and adds it to context
-            try:
-                classroom = Resource.objects.get(id=extra)
-            except:
-                res = None
-            else:
-                try:
-                    res = classroom.associated_resources().get(res_type__name='Lat/Long')
-                except:
-                    res = None
-            if res and res.attribute_value:
-                classroom = res.attribute_value.split(",")
-                context['classroom'] = '{lat: ' + classroom[0].strip() + ', lng: ' + classroom[1].strip() + '}'
         return render_to_response(self.baseDir()+'map.html', request, context)
 
     @aux_call
@@ -179,6 +164,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         context['program'] = prog
         context['one'] = one
         context['two'] = two
+        context['map_tab'] = bool(Tag.getTag('google_cloud_api_key').strip())
         return context
 
     def isStep(self):

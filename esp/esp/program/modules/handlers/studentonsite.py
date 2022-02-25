@@ -35,7 +35,6 @@ import datetime
 
 from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, CoreModule, main_call, aux_call, meets_cap
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
-from esp.resources.models import Resource
 from esp.utils.web import render_to_response
 from esp.users.models    import Record
 from esp.cal.models import Event
@@ -110,23 +109,9 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context = self.onsitecontext(request, tl, one, two, prog)
         context['webapp_page'] = 'map'
         context['center'] = Tag.getProgramTag('program_center', program = prog)
+        context['zoom'] = Tag.getProgramTag('program_center_zoom', program = prog)
         context['API_key'] = Tag.getTag('google_cloud_api_key')
 
-        #extra should be a classroom id
-        if extra:
-            #gets lat/long of classroom and adds it to context
-            try:
-                classroom = Resource.objects.get(id=extra)
-            except:
-                res = None
-            else:
-                try:
-                    res = classroom.associated_resources().get(res_type__name='Lat/Long')
-                except:
-                    res = None
-            if res and res.attribute_value:
-                classroom = res.attribute_value.split(",")
-                context['classroom'] = '{lat: ' + classroom[0].strip() + ', lng: ' + classroom[1].strip() + '}'
         return render_to_response(self.baseDir()+'map.html', request, context)
 
     @aux_call
@@ -199,6 +184,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['program'] = prog
         context['one'] = one
         context['two'] = two
+        context['map_tab'] = bool(Tag.getTag('google_cloud_api_key').strip())
         return context
 
     def isStep(self):
