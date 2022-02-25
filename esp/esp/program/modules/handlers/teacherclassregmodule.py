@@ -142,39 +142,35 @@ class TeacherClassRegModule(ProgramModuleObj):
         full_classes = [x for x in classes if x.isFull()]
         Q_full_teacher = Q(classsubject__in=full_classes) & Q_isteacher
 
-        #   With the new schema it is impossible to make a single Q object for
-        #   teachers who have taught for a previous program and teachers
-        #   who are teaching for the current program.  You have to chain calls
-        #   to .filter().
-        Q_taught_before = Q(classsubject__status=10, classsubject__parent_program__in=Program.objects.exclude(pk=self.program.pk))
+        previous_programs = [x for x in Program.objects.all() if len(x.dates()) and x.dates()[0] < self.program.dates()[0]]
+        Q_taught_before_temp = Q(classsubject__status=10, classsubject__parent_program__in=previous_programs)
+        taught_before_users = ESPUser.objects.filter(Q_taught_before_temp).values('id').distinct()
+        # For past events, we want the query to be solely user based
+        # so events don't have to be BOTH current and past simultaneously for combo lists
+        Q_taught_before = Q(id__in=taught_before_users)
 
         #   Add dynamic queries for checking for teachers with particular resource requests
         additional_qs = {}
         for item in self.get_resource_pairs():
             additional_qs[item[0]] = Q_isteacher & (Q_rejected_teacher | Q_approved_teacher | Q_proposed_teacher) & item[2]
 
-        if QObject:
-            result = {
+        qobjects = {
                 'class_submitted': Q_isteacher,
                 'class_approved': Q_approved_teacher,
                 'class_proposed': Q_proposed_teacher,
                 'class_rejected': Q_rejected_teacher,
                 'class_nearly_full': Q_nearly_full_teacher,
                 'class_full': Q_full_teacher,
-                'taught_before': Q_taught_before,     #   not exactly correct, see above
-            }
+                'taught_before': Q_taught_before,
+        }
+
+        if QObject:
+            result = qobjects
             for key in additional_qs:
                 result[key] = additional_qs[key]
         else:
-            result = {
-                'class_submitted': ESPUser.objects.filter(Q_isteacher).distinct(),
-                'class_approved': ESPUser.objects.filter(Q_approved_teacher).distinct(),
-                'class_proposed': ESPUser.objects.filter(Q_proposed_teacher).distinct(),
-                'class_rejected': ESPUser.objects.filter(Q_rejected_teacher).distinct(),
-                'class_nearly_full': ESPUser.objects.filter(Q_nearly_full_teacher).distinct(),
-                'class_full': ESPUser.objects.filter(Q_full_teacher).distinct(),
-                'taught_before': ESPUser.objects.filter(Q_isteacher).filter(Q_taught_before).distinct(),
-            }
+            result = {k: ESPUser.objects.filter(v).distinct()
+                      for k, v in qobjects.iteritems()}
             for key in additional_qs:
                 result[key] = ESPUser.objects.filter(additional_qs[key]).distinct()
 
