@@ -148,12 +148,12 @@ $j(document).ready(function() {
             {% for item in kv.1 %}{% if not item.all_flag %}
             {% ifchanged kv.0 %}<li><div class="combo_list_separator">Category: {{ kv.0 }}</div></li>{% endifchanged %}
             <li>
-                <span id="bool_options_{{ item.name }}">
+                <span class="checkbox_wrapper" id="bool_options_{{ item.name }}">
                 <input type="checkbox" id="checkbox_and_{{ item.name }}" name="checkbox_and_{{ item.name }}" /><label for="checkbox_and_{{ item.name }}">AND</label>
                 <input type="checkbox" id="checkbox_or_{{ item.name }}" name="checkbox_or_{{ item.name }}" /><label for="checkbox_or_{{ item.name }}">OR</label>
                 <input type="checkbox" id="checkbox_not_{{ item.name }}"  name="checkbox_not_{{ item.name }}"/><label for="checkbox_not_{{ item.name }}">NOT</label>
                 </span>
-                {{ item.description }}
+                <span class="checkbox_label">{{ item.description }}</span>
             </li>
             {% endif %}{% endfor %}{% endfor %}
             </ul>
