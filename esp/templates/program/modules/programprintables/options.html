@@ -115,7 +115,10 @@ Please select from options below.
 {% endif %}
 </ul>
 
-<h3>Teacher Lists</h3>
+<br>
+<h3 style="line-height:normal;">Teacher{% if program|hasModule:"TeacherModeratorModule" %} and/or {{ program.getModeratorTitle }}{% endif %} Check-in Sheets</h3>
+<h4 style="line-height:normal;">(filtered to Teachers{% if program|hasModule:"TeacherModeratorModule" %}/{{ program.getModeratorTitle }}s{% endif %} of approved and scheduled classes)</h4>
+<br>
 <ul>
 <li><a href="./teachersbyname?recipient_type=Teacher&base_list=class_approved" title="Teacher List">Teacher List</a> (can be sorted by name, class, or start time) (<a href="./teachersbyname/csv?recipient_type=Teacher&base_list=class_approved">CSV</a>)
 <ul><li><a href="./teachersbyname/secondday?recipient_type=Teacher&base_list=class_approved">Teachers for second day of classes only</a> (<a href="./teachersbyname/seconddaycsv?recipient_type=Teacher&base_list=class_approved">CSV</a>)</li></ul></li>
