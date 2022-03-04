@@ -26,15 +26,17 @@ $j(document).ready(function() {
 <h1>Availability for <u>{{ class|escape }}</u></h1>
 
 {% if is_overbooked %}
-<p style="color: red;">
+<div class="alert alert-danger">
+    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
 This class is registered for more hours than the number of hours for which the teachers are jointly availabile.
-</p>
+</div>
 {% endif %}
 
 {% if conflict_found %}
-<p style="color: red;">
+<div class="alert alert-danger">
+    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
 This class is scheduled during at least one timeslot in which at least one teacher is not marked as available (indicated with a red border).
-</p>
+</div>
 {% endif %}
 
 <h2>Length:</h2>

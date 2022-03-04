@@ -58,7 +58,11 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
 
     def isCompleted(self):
         """ Whether the user has paid for this program or its parent program. """
-        return IndividualAccountingController(self.program, get_current_request().user).has_paid()
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return IndividualAccountingController(self.program, user).has_paid()
     have_paid = isCompleted
 
     def students(self, QObject = False):
@@ -110,6 +114,9 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
             raise ESPError("The Cybersource module is not configured")
 
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
+
+    def isStep(self):
+        return settings.CYBERSOURCE_CONFIG['post_url'] and settings.CYBERSOURCE_CONFIG['merchant_id']
 
     class Meta:
         proxy = True

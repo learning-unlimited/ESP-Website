@@ -22,8 +22,18 @@ it doesn't get out-of-date next time.  (Out-of-date data indicates a bug.
 Flushing the cache may patch the bug for now, but it'll very likely come up
 later, possibly in a more annoying way.)</p>
 
-{% if error %}<p><font color="red">{{ error }}</font></p>{% endif %}
-{% if success %}<p><font color="blue">{{ success }}</font></p>{% endif %}
+{% if error %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        {{ error }}
+    </div>
+{% endif %}
+{% if success %}
+    <div class="alert alert-success">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        {{ success }}
+    </div>
+{% endif %}
 <p>
 <form action="/manage/flushcache/" method="POST">
 <textarea name="reason" placeholder="Reason for flushing cache"></textarea>

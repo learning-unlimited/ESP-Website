@@ -1,6 +1,7 @@
 {% extends "program/modules/teacheronsite/webapp.html" %}
 
 {% block body %}
+{% load users %}
 <center>
   <div class="main">
     {% for section in sections %}
@@ -24,16 +25,16 @@
                 <tr>
                     <td>{% if user in section.parent_class.get_teachers %}Co-{% endif %}Teachers:</td>
                     <td>
-                        {% for t in section.parent_class.get_teachers %}{% ifnotequal t user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}<br />
+                        {% for t in section.parent_class.teachers.all|remove_from_qs:user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endfor %}<br />
                         (<a href="mailto:{{ section.emailcode }}-teachers@{{ EMAIL_HOST_SENDER }}">email</a>)
                     </td>
                 </tr>
                 {% endif %}
-                {% if user not in section.get_moderators and section.get_moderators or user in section.get_moderators and section.get_moderators.count > 1 %}
+                {% if section.get_moderators %}
                 <tr>
                     <td>{% if user in section.get_moderators %}Co-{% endif %}{{ program.getModeratorTitle }}s:</td>
                     <td>
-                        {% for m in section.get_moderators %}{% ifnotequal m user %}<a href="mailto:{{ m.email }}">{{ m.first_name }} {{ m.last_name }}</a>{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}<br />
+                        {% for m in section.get_moderators %}<a href="mailto:{{ m.email }}">{{ m.first_name }} {{ m.last_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}<br />
                     </td>
                 </tr>
                 {% endif %}

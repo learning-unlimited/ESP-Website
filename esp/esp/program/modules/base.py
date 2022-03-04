@@ -607,6 +607,8 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
         user = request.user
         program = request.program
         canView = user.updateOnsite(request)
+        request.mod_required = moduleObj.required
+        request.tl = tl
         if not canView:
             canView = Permission.user_has_perm(user,
                                                perm_name,
@@ -619,6 +621,8 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
             #   Give administrators additional information
             if user.isAdministrator(program=program):
                 request.show_perm_info = True
+                request.one = program.program_type
+                request.two = program.program_instance
                 if getattr(request, 'perm_names', None) is not None:
                     request.perm_names.append(perm_name)
                 else:

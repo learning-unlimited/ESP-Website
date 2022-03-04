@@ -126,6 +126,9 @@ class ProgramTagSettingsForm(BetterForm):
                 if key == 'teacherreg_hide_fields':
                     from esp.program.modules.forms.teacherreg import TeacherClassRegForm
                     self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[1].label if field[1].label else field[0]) for field in TeacherClassRegForm.declared_fields.items() if not field[1].required])
+                elif key in ['student_reg_records', 'teacher_reg_records']:
+                    from esp.users.models import Record
+                    self.fields[key] = forms.MultipleChoiceField(choices=Record.EVENT_CHOICES)
                 elif field is not None:
                     self.fields[key] = field
                 elif tag_info.get('is_boolean', False):
@@ -159,4 +162,4 @@ class ProgramTagSettingsForm(BetterForm):
                     Tag.unSetTag(key, prog)
 
     class Meta:
-        fieldsets = [(cat, {'fields': [key for key in sorted(all_program_tags.keys()) if all_program_tags[key].get('category') == cat], 'legend': tag_categories[cat]}) for cat in sorted(tag_categories.keys())]
+        fieldsets = [(cat, {'fields': [key for key in sorted(all_program_tags.keys()) if all_program_tags[key].get('category') == cat], 'legend': tag_categories[cat]}) for cat in tag_categories.keys()]

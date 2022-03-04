@@ -225,20 +225,30 @@ def registration_redirect(request):
     ctxt = {}
     userrole = {}
     regperm = None
-    if user.isStudent():
-        userrole['name'] = 'Student'
-        userrole['base'] = 'learn'
-        userrole['reg'] = 'studentreg'
-        regperm = 'Student/Classes'
-    elif user.isTeacher():
+    if user.isTeacher():
         userrole['name'] = 'Teacher'
         userrole['base'] = 'teach'
         userrole['reg'] = 'teacherreg'
         regperm = 'Teacher/Classes'
+    elif user.isVolunteer():
+        userrole['name'] = 'Volunteer'
+        userrole['base'] = 'volunteer'
+        userrole['reg'] = 'signup'
+        regperm = 'Volunteer/Signup'
+    elif user.isStudent():
+        userrole['name'] = 'Student'
+        userrole['base'] = 'learn'
+        userrole['reg'] = 'studentreg'
+        regperm = 'Student/Classes'
+
     ctxt['userrole'] = userrole
 
     if regperm:
-        progs = list(Permission.program_by_perm(user,regperm))
+        if user.isTeacher() or user.isVolunteer():
+            progs = list(Permission.program_by_perm(user,regperm))
+        else:
+            user_grade = user.getGrade()
+            progs = list(Permission.program_by_perm(user,regperm).filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
     else:
         progs = []
 

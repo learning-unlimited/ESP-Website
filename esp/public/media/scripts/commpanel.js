@@ -112,8 +112,23 @@ function populate_get()
     var items = location.search.substr(1).split("&").filter(Boolean);
     for (var index = 0; index < items.length; index++) {
         var key_val = items[index].split("=");
-        $j("[name=" + key_val[0] + "]").val(key_val[1].split(","));
-        if(key_val[0] == "recipient_type") recipient_type_change(clear = false);
+        var field = $j("[name=" + key_val[0] + "]");
+        if(field.length >= 1){
+            switch (field[0].type) {
+                case 'checkbox':
+                    // don't need a value for a checkbox, just check it
+                    field[0].checked = true;
+                    break;
+                default:
+                    if(key_val.length == 2){
+                        field.val(key_val[1].split(","));
+                        if(key_val[0] == "recipient_type") recipient_type_change(clear = false);
+                    } else {
+                        // skip it and keep going if a value wasn't specified
+                        break;
+                    }
+            }
+        }
     }
 }
 
@@ -123,9 +138,9 @@ function clear_filters()
     var $form = $j("#filter_accordion");
     var form_fields = $form.find(':input');
     form_fields.each(function(i, form_field) {
-        if(form_field.name == "grade_min"){
+        if(form_field.name == "grade_min" && $j("select[name=recipient_type]").val() == "Student"){
             $j(form_field).val(program_grade_min);
-        } else if(form_field.name == "grade_max"){
+        } else if(form_field.name == "grade_max" && $j("select[name=recipient_type]").val() == "Student"){
             $j(form_field).val(program_grade_max);
         } else{
             switch (form_field.type) {

@@ -982,14 +982,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         sched_sections = prog.sections().filter(status__gt=0, meeting_times__isnull=False).exclude(parent_class__category__category='Lunch').values('duration', 'enrolled_students', 'id')
         sched_hours = JSONDataModule.calc_section_hours(sched_sections)
         hour_num_list = []
-        hour_num_list.append(("Total # of Class-Hours (registered)", reg_hours["class-hours"]))
-        hour_num_list.append(("Total # of Class-Hours (approved)", app_hours["class-hours"]))
-        hour_num_list.append(("Total # of Class-Hours (scheduled)", sched_hours["class-hours"]))
-        hour_num_list.append(("Total # of Class-Student-Hours (registered)", reg_hours["class-student-hours"]))
-        hour_num_list.append(("Total # of Class-Student-Hours (approved)", app_hours["class-student-hours"]))
-        hour_num_list.append(("Total # of Class-Student-Hours (scheduled)", sched_hours["class-student-hours"]))
-        hour_num_list.append(("Total # of Class-Student-Hours (enrolled)", reg_hours["class-registered-hours"]))
-        hour_num_list.append(("Total # of Class-Student-Hours (attended program)", reg_hours["class-checked-in-hours"]))
+        hour_num_list.append(("Total # of Class-Hours (registered)", round(reg_hours["class-hours"], 2)))
+        hour_num_list.append(("Total # of Class-Hours (approved)", round(app_hours["class-hours"], 2)))
+        hour_num_list.append(("Total # of Class-Hours (scheduled)", round(sched_hours["class-hours"], 2)))
+        hour_num_list.append(("Total # of Class-Student-Hours (registered)", round(reg_hours["class-student-hours"], 2)))
+        hour_num_list.append(("Total # of Class-Student-Hours (approved)", round(app_hours["class-student-hours"], 2)))
+        hour_num_list.append(("Total # of Class-Student-Hours (scheduled)", round(sched_hours["class-student-hours"], 2)))
+        hour_num_list.append(("Total # of Class-Student-Hours (enrolled)", round(reg_hours["class-registered-hours"], 2)))
+        hour_num_list.append(("Total # of Class-Student-Hours (attended program)", round(reg_hours["class-checked-in-hours"], 2)))
         if sched_hours["class-student-hours"]:
             hour_num_list.append(("Class-Student-Hours Utilization", str(round(100 * reg_hours["class-registered-hours"] / sched_hours["class-student-hours"], 2)) + "%"))
         return hour_num_list

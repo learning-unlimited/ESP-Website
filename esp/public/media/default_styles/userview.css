@@ -13,6 +13,21 @@
   line-height: normal;
 }
 
+#user-sidebar table.modules {
+  border: 1px solid #3366cc;
+  margin-top: 5px;
+  width: 100%;
+}
+
+#user-sidebar table.modules tr:not(:first-child) {
+  border-top: 1px solid #dddddd;
+}
+
+#user-sidebar table.modules tr {
+  border-left: 1px solid #3366cc;
+  border-right: 1px solid #3366cc;
+}
+
 #user-sidebar a.sidelink:link {
   text-decoration: none;
   
@@ -20,7 +35,6 @@
   border: 1px solid #3366cc;
   
   padding: 7px;
-  margin-right: -20px;
   padding-right: 27px;
   padding-left: 10px;
   margin-top: 5px;

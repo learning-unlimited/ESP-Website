@@ -28,7 +28,10 @@
 {% inline_qsd_block "manage:tags" %}
 {% end_inline_qsd_block %}
 {% endif %}
-<p style="color: red">Please be aware that these settings can be very sensitive and there are currently no warnings or blocks in place to prevent you from providing incorrect values. Please use caution, read the help text, and make sure to test everything whenever you change any of these settings! Feel free to contact <a href="mailto:websupport@learningu.org">websupport</a> with any questions.</p>
+<div class="alert alert-danger">
+  <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+  Please be aware that these settings can be very sensitive and there are currently no warnings or blocks in place to prevent you from providing incorrect values. Please use caution, read the help text, and make sure to test everything whenever you change any of these settings! Feel free to contact <a href="mailto:websupport@learningu.org">websupport</a> with any questions.
+</div>
 
 <form action="/manage/{% if program %}{{ program.getUrlBase }}/{% endif %}tags/" method="post">
 {% autoescape off %}

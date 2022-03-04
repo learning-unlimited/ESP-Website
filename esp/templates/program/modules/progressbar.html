@@ -7,7 +7,7 @@
 <td><img src="/media/images/progress/left_fill.gif" /></td>
 {% for module in modules %}
 {% if module.isStep %}
-{% with module.fillProgressBar as moduleCompleted %}
+{% with module.isCompleted as moduleCompleted %}
 <td class="progress{% if moduleCompleted %}_fill{% endif %}">
 {% if module.useTemplate %}
 <a href="#module-{{ module.id }}">

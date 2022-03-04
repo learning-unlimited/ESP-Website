@@ -65,12 +65,16 @@ class FormstackMedliabModule(ProgramModuleObj):
                 }]
 
     def isCompleted(self):
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
         return Record.user_completed(
-                user=get_current_request().user,
+                user=user,
                 event="med",
                 program=self.program) \
             or Record.user_completed(
-                user=get_current_request().user,
+                user=user,
                 event="med_bypass",
                 program=self.program)
 
