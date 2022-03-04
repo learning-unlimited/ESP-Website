@@ -15,6 +15,7 @@ User search modules
 - Improved the performance of searching for users (hotfixed to Stable Release 13)
 - Added options to search by students/teachers that have enrolled in/attended/taught for previous programs
 - Fixed some combination lists
+- Fixed the combination lists to prevent "NOT"-only selections.
 
 Program records
 ~~~~~~~~~~~~~~~
@@ -81,6 +82,7 @@ Onsite changes
 Printables changes
 ~~~~~~~~~~~~~~~~~~
 - The student schedules pdf is now downloaded as a file instead of opening in the browser
+- Clarified the description of the teacher/moderator check-in lists
 
 Theme changes
 ~~~~~~~~~~~~~
@@ -107,6 +109,9 @@ Minor bug fixes
 - Fixed a bug that previously allowed non-admins to access 'manage' QSD pages
 - Fixed text wrapping in the webapp
 - Fixed the caching of the catalog and dashboard when scheduling classes and running the class lottery
+- Fixed teacher userview links on the dashboard
+- Fixed errors that occured when attempting to send emails with weird characters
+- Fixed the completion certificate printable for when a user's name had weird characters
 
 Development changes
 ===================
