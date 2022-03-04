@@ -3,18 +3,17 @@
 {% load latex %}
 {% block maincontent %}
 {{ block.super }}
-
+{% autoescape off %}
 \noindent {\bf {\underline {\Large Certificate of Completion \hspace{2.5in} \normalsize {{ prog.niceName|texescape }} {{ date_range }} }}} \\
 
 \vspace{0.3in}
 
-\noindent This is to certify that \underline{% templatetag openbrace %}{{ user.first_name }} {{ user.last_name }}} attended {{ prog.niceName|texescape }} and completed the following classes:
+\noindent This is to certify that \underline{% templatetag openbrace %}{{ user.name|texescape }}} attended {{ prog.niceName|texescape }} and completed the following classes:
 
 \vspace{0.25in} {{ schedule }}
 
 \vspace{0.25in}
 
-{% autoescape off %}
 \noindent {{ prog.program_type }} courses are taught by volunteers, primarily {{ settings.INSTITUTION_NAME|texescape }} students.
 The content and difficulty of the subjects varies significantly, from non-academic to college-level.
 Our program is not accredited to issue credit for any class, however, we leave it to school administrators to decide whether {{ settings.ORGANIZATION_SHORT_NAME|texescape }} courses can be counted as substitutes for school classes.
@@ -28,9 +27,11 @@ If you would like to talk to an administrator or teacher about the content of a 
 {% endblock %}
 
 {% block additionalcontent %}
+{% autoescape off %}
 \clearpage
-\noindent {\bf \underline{% templatetag openbrace %}{{ prog.niceName|texescape }} courses taken by {{ user.first_name }} {{ user.last_name }}}} \\
+\noindent {\bf \underline{% templatetag openbrace %}{{ prog.niceName|texescape }} courses taken by {{ user.name|texescape }}}} \\
 \hspace{0.5in}
 {{ descriptions }}
+{% endautoescape %}
 {% endblock %}
 
