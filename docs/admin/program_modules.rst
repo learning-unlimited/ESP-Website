@@ -122,57 +122,6 @@ Relevant settings include:
 
 More details on these Tags can be found here at http://wiki.learningu.org/Customize_behavior_with_Tags.
 
-Lunch Preferences and Sibling Discount (SplashInfoModule)
----------------------------------------------------------
-
-This module was designed specifically for Stanford Splash, although other chapters can use it too.  It will prompt students to choose a lunch option for each of the 1-2 days in the program.  It will also allow students to enter the name of their sibling in order to get a "sibling discount" for the program deducted from their invoice.  You will need to set up the following Tags (/admin/tagdict/tag), which can be program-specific:
-
-* splashinfo_choices: A JSON structure of form options for the "lunchsat" and "lunchsun" keys.  Example:
-
-::
-
-  {
-   "lunchsat": [
-    ["pizza_vegetarian", "Yes: Pizza-Vegetarian"],
-    ["pizza_meat", "Yes: Pizza-Meat"],
-    ["burrito_vegetarian", "Yes: Burrito-Vegetarian"],
-    ["burrito_meat", "Yes: Burrito-Meat"],
-    ["no", "No, I will bring my own lunch."]
-  ],
-    "lunchsun": [
-    ["pizza_vegetarian", "Yes: Pizza-Vegetarian"],
-    ["pizza_meat", "Yes: Pizza-Meat"],
-    ["burrito_vegetarian", "Yes: Burrito-Vegetarian"],
-    ["burrito_meat", "Yes: Burrito-Meat"],
-    ["no", "No, I will bring my own lunch."]
-  ]
-  }
-
-
-* splashinfo_costs: A JSON structure of form options for the "lunchsat" and "lunchsun" keys.  The option labels must be consistent with all of the options specified in splashinfo_choices.  Example:
-
-::
-
-  {
-    "lunchsat": {
-        "pizza_vegetarian": 0.0,
-        "pizza_meat": 0.0,
-        "burrito_vegetarian": 0.0,
-        "burrito_meat": 0.0,
-        "no": 0.0
-    },
-    "lunchsun": {
-        "pizza_vegetarian": 0.0,
-        "pizza_meat": 0.0,
-        "burrito_vegetarian": 0.0,
-        "burrito_meat": 0.0,
-        "no": 0.0
-    }
-  }
-
-The dollar amount of the sibling discount can be configured as a line item type (/admin/accounting/lineitemtype/).
-
-
 Student Class Registration (StudentClassRegModule)
 --------------------------------------------------
 
@@ -198,14 +147,14 @@ Optional Items for Purchase (StudentExtraCosts)
 This module allows students to select additional items for purchase along with admission to the program.  Typically this module is used to offer students optional meals and T-shirts.  The items can be classified as "buy one", meaning that students can purchase either quantity 0 or 1, or "buy many", meaning that students can purchase any number.
 
 The options on this page are controlled by the line item types associated with the program.
-You can create additional line item types for your program and set the "Max quantity" field
-appropriately; do not check the "for payments" or "for finaid" boxes.  For students to be able to choose
-how much an item costs, you can check the "is_custom" box for an option. If you
-are using the "SplashInfo Module" to offer lunch, the size of the sibling
-discount is set as a line item type, but the lunch options and their costs are
-still controlled by the splashinfo_choices and splashinfo_costs Tags.  Items no
-longer have a separate cost for financial aid students; the amount these
-students are charged is determined by the financial aid grant.
+You can create additional line item types for your program (using the Line Item Management Module) 
+and set the "Max quantity" field appropriately.  For students to be able to choose how much an item costs,
+you can check the "Is custom?" box for an option. You can also add required items, which will prompt and require
+students to confirm these extra items (if no options) or select an option (if there are any). You can use this
+functionality to force students to select the kind of meal/lunch that they would like (e.g., pizza vs. sandwich).
+If a sibling discount is enabled in the program settings, that option will also appear in this module.
+
+Note that numbers of students that have selected particular items/options in this module are reflected on the dashboard.
 
 
 Donation module
