@@ -49,7 +49,7 @@ From this page, you can view documents related to the program (in the first sect
 	{% endif %}
 	{% for doc in prog.getDocuments %}
 	<tr>
-            <td class="class_stuff"><a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a></td>
+            <td class="class_stuff"><a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a></td>
 		<td class="clsmiddle">
 			<form method="post" action="/manage/{{ prog.url }}/get_materials" onsubmit="return confirm('Are you sure that you want to delete {{ doc.friendly_name|escapejs|escape }}?');">
 				<input type="hidden" name="docid" value="{{ doc.id }}">
@@ -75,7 +75,7 @@ From this page, you can view documents related to the program (in the first sect
 		</tr>
 			{% for doc in cls.getDocuments %}
 			<tr>
-				<td class="class_stuff"><a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a></td>
+				<td class="class_stuff"><a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a></td>
 				<td class="clsmiddle">
 					<form method="post" action="/manage/{{ program.url }}/get_materials" onsubmit="return confirm('Are you sure that you want to delete {{ doc.friendly_name|escapejs|escape }}?');">
 						<input type="hidden" name="docid" value="{{ doc.id }}">
