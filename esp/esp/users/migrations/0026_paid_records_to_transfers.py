@@ -29,7 +29,8 @@ def set_my_defaults(apps, schema_editor):
                                     destination=target_account,
                                     user=rec.user,
                                     line_item=payments_lit,
-                                    amount_dec=amount_due)
+                                    amount_dec=amount_due,
+                                    transaction_id="created from deprecated paid records")
     recs.delete()
 
 def reverse_func(apps, schema_editor):
