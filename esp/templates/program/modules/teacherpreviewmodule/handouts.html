@@ -10,7 +10,7 @@
     </tr>
     {% for doc in prog.getDocuments %}
     <tr>
-        <td class="class_stuff"><a href="{{ doc.target_file.url }}">{{ doc.friendly_name }}</a></td>
+        <td class="class_stuff"><a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a></td>
     </tr>
     {% endfor %}
     {% endif %}

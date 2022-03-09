@@ -70,7 +70,7 @@
             {% if class.documents.exists %}
             <ul>
                 {% for doc in class.getDocuments %}
-                <li style="color: black;"><a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a></li>
+                <li style="color: black;"><a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a></li>
                 {% endfor %}
             </ul>
             {% else %}
