@@ -113,6 +113,7 @@ Minor bug fixes
 - Fixed teacher userview links on the dashboard
 - Fixed errors that occured when attempting to send emails with weird characters
 - Fixed the completion certificate printable for when a user's name had weird characters
+- Fixed a small number of forms that could not be submitted via javascript
 
 Development changes
 ===================
