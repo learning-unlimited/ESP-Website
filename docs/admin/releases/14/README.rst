@@ -48,6 +48,7 @@ Student and teacher registration changes
 - Added a module that allows students to get a completion certificate after attending a program (see the "student certificate" tag for options)
 - The maps in the student and teacher webapps are now entirely free (but do require a Google Cloud API key which is set as a tag)
 - Walking directions in the student and teacher webapps are now fulfilled entirely by Google Maps (will open the app on mobile devices)
+- Fixed some links to program and class documents
 
 Optional and required extra costs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
