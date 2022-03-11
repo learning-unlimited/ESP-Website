@@ -50,7 +50,7 @@
                     <td>Document uploads:</td>
                     <td>
                         {% for doc in section.parent_class.documents.all %}
-                            <a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a><br />
+                            <a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a><br />
                         {% empty %}
                             No documents uploaded<br />
                         {% endfor %}
