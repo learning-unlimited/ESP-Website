@@ -159,6 +159,32 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         return self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
 
+    def ajax_schedule_swap(self, prog, assignments1, assignments2, user=None, override=False):
+        # assignments1: the list of new assignments for the section(s) in room 1 in json format
+        # assignments2: the list of new assignments for the section(s) in room 2 in json format
+        # Unschedule the section(s) in room 1
+        for asmt in assignments1:
+            cls = ClassSection.objects.get(id=asmt['section'])
+            retval = self.ajax_schedule_deletereg(prog, cls, user)
+            if not json.loads(retval.content)['ret']:
+                return retval
+        
+        # Schedule the section(s) from room 2 into room 1
+        for asmt in assignments2:
+            cls = ClassSection.objects.get(id=asmt['section'])
+            retval = self.ajax_schedule_assignreg(prog, cls, asmt['timeslots'], [asmt['room_id']], user, override)
+            if not json.loads(retval.content)['ret']:
+                return retval
+        
+        # Schedule the section(s) from room 1 into room 2
+        for asmt in assignments1:
+            cls = ClassSection.objects.get(id=asmt['section'])
+            retval = self.ajax_schedule_assignreg(prog, cls, asmt['timeslots'], [asmt['room_id']], user, override)
+            if not json.loads(retval.content)['ret']:
+                return retval
+            
+        return self.makeret(prog, ret=True, msg="Class sections successfully swapped")
+
     @aux_call
     @needs_admin
     @json_response()
@@ -214,16 +240,17 @@ class AJAXSchedulingModule(ProgramModuleObj):
             raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
 
         # Pull relevant data out of the JSON structure
-        cls_id = request.POST['cls']
-        cls = ClassSection.objects.get(id=cls_id)
         action = request.POST['action']
 
         if action == 'deletereg':
+            cls_id = request.POST['cls']
+            cls = ClassSection.objects.get(id=cls_id)
             times = []
             classrooms = [ None ]
             retval =  self.ajax_schedule_deletereg(prog, cls, request.user)
-
         elif action == 'assignreg':
+            cls_id = request.POST['cls']
+            cls = ClassSection.objects.get(id=cls_id)
             blockrooms = request.POST['block_room_assignments'].split("\n")
             times = []
             classrooms = []
@@ -233,6 +260,11 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 classrooms.append(classroom)
             override = request.POST['override'] == "true"
             retval = self.ajax_schedule_assignreg(prog, cls, times, classrooms, request.user, override)
+        elif action == 'swap':
+            assignments1 = json.loads(request.POST['assignments1'])
+            assignments2 = json.loads(request.POST['assignments2'])
+            override = request.POST['override'] == "true"
+            retval = self.ajax_schedule_swap(prog, assignments1, assignments2, request.user, override)
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
 

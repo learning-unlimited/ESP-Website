@@ -20,7 +20,6 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
     this.selectedSection = null;
     this.ghostScheduleAssignment = {};
     this.availableTimeslots = [];
-    this.swappedSections = 0;
 
     // Set up filtering
     this.filter = {
@@ -598,8 +597,8 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             return;
         }
         $j(".ui-tooltip").hide() // There seems to be a bug or something caused by the confirm box that causes the tooltip to get stuck
-        var old_assignments1 = _.uniq(swapping_sections1.filter(Boolean)).map(sec => ({"section": sec, "timeslots": this.scheduleAssignments[sec.id].timeslots, "room_id": room1}));
-        var old_assignments2 = _.uniq(swapping_sections2.filter(Boolean)).map(sec => ({"section": sec, "timeslots": this.scheduleAssignments[sec.id].timeslots, "room_id": room2}));
+        var old_assignments1 = _.uniq(swapping_sections1.filter(Boolean)).map(sec => ({"section": sec.id, "timeslots": this.scheduleAssignments[sec.id].timeslots, "room_id": room1}));
+        var old_assignments2 = _.uniq(swapping_sections2.filter(Boolean)).map(sec => ({"section": sec.id, "timeslots": this.scheduleAssignments[sec.id].timeslots, "room_id": room2}));
         var ignore_sections = _.uniq(_.union(swapping_sections1, swapping_sections2));
 
         // Determine new schedule for room 1 sections and validate assignments
@@ -607,7 +606,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         var start_slot = this.matrix.timeslots.get_by_id(old_timeslots2[0]);
         for(var sec of swapping_sections1){
             if(sec){
-                if(new_assignments1.length == 0 || sec !== new_assignments1[new_assignments1.length - 1].section){
+                if(new_assignments1.length == 0 || sec.id !== new_assignments1[new_assignments1.length - 1].section){
                     var new_timeslots = this.matrix.timeslots.get_timeslots_to_schedule_section(sec, start_slot.id);
                     var valid = this.matrix.validateAssignment(sec, room2, new_timeslots, ignore_sections);
                     if(!valid.valid){
@@ -616,7 +615,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                         this.unselectSection();
                         return;
                     }
-                    new_assignments1.push({"section": sec, "timeslots": new_timeslots, "room_id": room2});
+                    new_assignments1.push({"section": sec.id, "timeslots": new_timeslots, "room_id": room2});
                     start_slot = this.matrix.timeslots.get_by_order(this.matrix.timeslots.get_by_id(new_timeslots[new_timeslots.length - 1]).order + 1);
                 }
             } else {
@@ -629,7 +628,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         var start_slot = this.matrix.timeslots.get_by_id(old_timeslots1[0])
         for(var sec of swapping_sections2){
             if(sec){
-                if(new_assignments2.length == 0 || sec !== new_assignments2[new_assignments2.length - 1].section){
+                if(new_assignments2.length == 0 || sec.id !== new_assignments2[new_assignments2.length - 1].section){
                     var new_timeslots = this.matrix.timeslots.get_timeslots_to_schedule_section(sec, start_slot.id);
                     var valid = this.matrix.validateAssignment(sec, room1, new_timeslots, ignore_sections);
                     if(!valid.valid){
@@ -638,7 +637,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                         this.unselectSection();
                         return;
                     }
-                    new_assignments2.push({"section": sec, "timeslots": new_timeslots, "room_id": room1});
+                    new_assignments2.push({"section": sec.id, "timeslots": new_timeslots, "room_id": room1});
                     start_slot = this.matrix.timeslots.get_by_order(this.matrix.timeslots.get_by_id(new_timeslots[new_timeslots.length - 1]).order + 1);
                 }
             } else {
@@ -646,33 +645,48 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             }
         }
 
-        // Unschedule the section(s) in room 1
-        window.swappedSections = 0;
-        for(var asmt of old_assignments1){
-            this.unscheduleSection(asmt.section, function() {window.swappedSections++});
-        }
+        var override = this.matrix.sectionInfoPanel.override;
+        // Make local changes (asynchronously)
+        this.swapSectionsLocal(new_assignments1, new_assignments2);
+        
+        // Make server changes
+        this.apiClient.swap_sections(
+            new_assignments1,
+            new_assignments2,
+            override,
+            function(){},
+            // If there's an error, locally reschedule the sections in their old locations
+            function(msg) {
+                this.swapSectionsLocal(old_assignments1, old_assignments2);
+                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
+                console.log(msg);
+            }.bind(this)
+        );
 
-        // We need to wait to reschedule things until the backend changes have taken effect
-        (async() => {
-            while(window.swappedSections < old_assignments1.length) 
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            await new Promise(resolve => setTimeout(resolve, 1000)); // A little extra breathing room
-            // Schedule the section(s) from room 2 into room 1
-            window.swappedSections = 0;
-            for(var asmt of new_assignments2){
-                this.scheduleSection(asmt.section, room1, asmt.timeslots[0], function() {window.swappedSections++});
-            }
-            (async() => {
-                while(window.swappedSections < new_assignments2.length) 
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                await new Promise(resolve => setTimeout(resolve, 1000)); // A little extra breathing room
-                // Schedule the section(s) from room 1 into room 2
-                for(var asmt of new_assignments1){
-                    this.scheduleSection(asmt.section, room2, asmt.timeslots[0]);
-                }
-            })();
-        })();
+        // Reset the availability override
+        this.matrix.sectionInfoPanel.override = false;
     };
+
+    /**
+     * Make the local changes associated with swapping sections and update the display
+     *
+     * @param assignments1: The new assignments for the section(s) in room 1
+     * @param assignments2: The new assignments for the section(s) in room 2
+     */
+    this.swapSectionsLocal = function(assignments1, assignments2){
+        // Unschedule the section(s) in room 1
+        for(var asmt of assignments1){
+            this.unscheduleSectionLocal(this.getById(asmt.section));
+        }
+        // Schedule the section(s) from room 2 into room 1
+        for(var asmt of assignments2){
+            this.scheduleSectionLocal(this.getById(asmt.section), asmt.room_id, asmt.timeslots);
+        }
+        // Schedule the section(s) from room 1 into room 2
+        for(var asmt of assignments1){
+            this.scheduleSectionLocal(this.getById(asmt.section), asmt.room_id, asmt.timeslots);
+        }
+    }
 
     /**
      * Set the comment and locked on a class.
