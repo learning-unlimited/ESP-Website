@@ -1579,7 +1579,7 @@ class ProgramPrintables(ProgramModuleObj):
         records = []
         tag_data = Tag.getProgramTag('student_reg_records', prog)
         if tag_data:
-            records = [event for event in [x.strip().lower() for x in tag_data.split(',')] if event not in ['paid', 'attended', 'med', 'liab']]
+            records = [event for event in [x.strip().lower() for x in tag_data.split(',')] if event not in ['attended', 'med', 'liab']]
         studentList = []
         for student in students:
             finaid_status = 'None'
@@ -1594,7 +1594,7 @@ class ProgramPrintables(ProgramModuleObj):
                 finaid_status = 'Approved'
 
             studentList.append({'user': student,
-                                'paid': Record.user_completed(student, "paid", self.program) or iac.has_paid(in_full=True),
+                                'paid': iac.has_paid(in_full=True),
                                 'amount_due': iac.amount_due(),
                                 'finaid': finaid_status,
                                 'checked_in': Record.user_completed(student, "attended",self.program),

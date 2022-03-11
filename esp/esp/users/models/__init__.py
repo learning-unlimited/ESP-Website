@@ -2343,7 +2343,7 @@ class Record(models.Model):
     def createBit(cls, extension, program, user):
         from esp.accounting.controllers import IndividualAccountingController
         if extension == 'Paid':
-            IndividualAccountingController.updatePaid(True, program, user)
+            IndividualAccountingController.updatePaid(program, user, True)
 
         if cls.user_completed(user, extension.lower(), program):
             return False
