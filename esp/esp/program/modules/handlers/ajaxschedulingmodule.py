@@ -168,21 +168,21 @@ class AJAXSchedulingModule(ProgramModuleObj):
             retval = self.ajax_schedule_deletereg(prog, cls, user)
             if not json.loads(retval.content)['ret']:
                 return retval
-        
+
         # Schedule the section(s) from room 2 into room 1
         for asmt in assignments2:
             cls = ClassSection.objects.get(id=asmt['section'])
             retval = self.ajax_schedule_assignreg(prog, cls, asmt['timeslots'], [asmt['room_id']], user, override)
             if not json.loads(retval.content)['ret']:
                 return retval
-        
+
         # Schedule the section(s) from room 1 into room 2
         for asmt in assignments1:
             cls = ClassSection.objects.get(id=asmt['section'])
             retval = self.ajax_schedule_assignreg(prog, cls, asmt['timeslots'], [asmt['room_id']], user, override)
             if not json.loads(retval.content)['ret']:
                 return retval
-            
+
         return self.makeret(prog, ret=True, msg="Class sections successfully swapped")
 
     @aux_call
