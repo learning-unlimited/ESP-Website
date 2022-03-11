@@ -26,9 +26,11 @@ div.required label.control-label:after {
     <div class="span12">
       {% load render_qsd %}
       {% inline_qsd_block "account_creation_basic_info" %}
-<p>First, please tell us a bit about yourself!  The fields with red asterisks are required.  After you have filled out everything, click the "update" button at the bottom of the page to continue.</p>
+<p>First, please tell us a bit about yourself!  The fields with red asterisks are required.  After you have filled out everything, click the "{% if new_user %}submit{% else %}update{% endif %}" button at the bottom of the page to continue.</p>
 
-<p>Email addresses have a tendency to change regularly, so we are asking that you re-enter your email address each time you visit this form.  Please take the time to also correct any other information that may be old or incorrect.  Thanks!</p>
+{% if not new_user %}
+<p>Email addresses have a tendency to change regularly, so we are asking that you re-enter your email address each time you visit this form. Please take the time to also correct any other information that may be old or incorrect.  Thanks!</p>
+{% endif %}
       {% end_inline_qsd_block %}
     </div>
   </div>
@@ -89,7 +91,7 @@ div.required label.control-label:after {
         {% endifequal %}
         {% endifequal %}
 
-        <div class="form-actions"><input type="submit" class="btn btn-primary" value="Update your Information!" /></div>
+        <div class="form-actions"><input type="submit" class="btn btn-primary" value="{% if new_user %}Submit{% else %}Update{% endif %} Your Information!" /></div>
 
         </fieldset>
     </form>

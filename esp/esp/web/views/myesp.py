@@ -252,6 +252,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             state_tag_map[field] = 'local_state'
         form = FormClass(curUser, initial=new_data, tag_map=state_tag_map)
 
+    context['new_user'] = regProf.id is None
     context['request'] = request
     context['form'] = form
     context['require_student_phonenum'] = Tag.getBooleanTag('require_student_phonenum')
