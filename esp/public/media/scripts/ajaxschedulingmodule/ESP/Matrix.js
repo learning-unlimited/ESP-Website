@@ -404,24 +404,24 @@ function Matrix(
 
         var availableTimeslots = this.sections.getAvailableTimeslots(section, ignore_sections)[0];
         var validateIndividualCell = function(index, cell) {
-            return !(cell.disabled || (cell.section && cell.section !== section && !ignore_sections.includes(cell.section)) ||
-                    availableTimeslots.indexOf(schedule_timeslots[index]) == -1);
-        };
-
-        var firstCell = this.getCell(room_id, schedule_timeslots[0]);
-        if (section.length <= 1 && !validateIndividualCell(0, firstCell)) {
-            result.valid = false;
-            result.reason = "first cell is not valid"
-            return result;
-        }
+            if(cell.disabled){
+                return "Error: " + this.rooms[cell.room_id].text + " is not available during timeslot " + (this.timeslots.get_by_id(cell.timeslot_id).order + 1).toString();
+            } else if (cell.section && cell.section !== section && !ignore_sections.includes(cell.section)) {
+                return "Error: There is already a class scheduled in " + this.rooms[cell.room_id].text + " during timeslot " + (this.timeslots.get_by_id(cell.timeslot_id).order + 1).toString();
+            } else if (availableTimeslots.indexOf(schedule_timeslots[index]) == -1){
+                return "Error: The teachers of " + cell.section.emailcode + " are not available during timeslot " + (this.timeslots.get_by_id(cell.timeslot_id).order + 1).toString();
+            } else {
+                return true;
+            }
+        }.bind(this);
 
         // Check to make sure all the cells are available
         for(var timeslot_index in schedule_timeslots){
             var cell = this.getCell(room_id, schedule_timeslots[timeslot_index]);
-            if (!validateIndividualCell(timeslot_index, cell)){
+            var valid = validateIndividualCell(timeslot_index, cell);
+            if (valid != true){
                 result.valid = false;
-                result.reason = "Error: timeslot" +  schedule_timeslots[timeslot_index] +
-                    " already has a class in " + room_id + "."
+                result.reason = valid;
                 return result;
             }
         }

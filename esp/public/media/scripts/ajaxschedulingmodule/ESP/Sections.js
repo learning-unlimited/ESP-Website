@@ -611,7 +611,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                     var valid = this.matrix.validateAssignment(sec, room2, new_timeslots, ignore_sections);
                     if(!valid.valid){
                         console.log(valid.reason);
-                        this.matrix.messagePanel.addMessage("Error: can not swap those classes.", color = "red");
+                        this.matrix.messagePanel.addMessage(valid.reason, color = "red");
                         this.unselectSection();
                         return;
                     }
@@ -633,7 +633,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                     var valid = this.matrix.validateAssignment(sec, room1, new_timeslots, ignore_sections);
                     if(!valid.valid){
                         console.log(valid.reason);
-                        this.matrix.messagePanel.addMessage("Error: can not swap those classes.", color = "red");
+                        this.matrix.messagePanel.addMessage(valid.reason, color = "red");
                         this.unselectSection();
                         return;
                     }
