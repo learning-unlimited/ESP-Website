@@ -81,6 +81,7 @@ function Scheduler(
         this.messagePanel = new MessagePanel(messageEl,
                                              "<i>Welcome to the Ajax Scheduler!</i><br><br>" +
                                              "<strong>Delete</strong>: unschedule the selected section<br>" +
+                                             "<strong>Ctrl/Cmd + Click</strong>: swap the clicked section with the selected section<br>" +
                                              "<strong>Escape</strong>: unselect the selected section" + (has_moderator_module === "True" ? "/moderator": "") + "<br>" +
                                              "<strong>F1</strong>: open the 'Classes' tab<br>" +
                                              "<strong>F2</strong>: open the 'Room Filters' tab<br>" +
