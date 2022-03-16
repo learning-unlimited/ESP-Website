@@ -597,11 +597,16 @@ class IndividualAccountingController(ProgramAccountingController):
         payment), find all of the Transfers representing the items that were
         paid for and add a link back to the payment. """
 
+        # TODO: Check if financial aid didn't fully cover the line items for financial aid
+        partial_finaid = False
+        fin_aid_grants = self.??? # Or do we look for approved requests
+
         # Filter out Transfers representing payments, financial aid grants, and
         # purchasable items that have already been paid for.
         outstanding_transfers = self.get_transfers().filter(
             line_item__for_payments=False,
-            line_item__for_finaid=False,
+            # Include the line items that are included in financial aid if there was only a partial financial aid grant
+            line_item__for_finaid=partial_finaid,
             paid_in__isnull=True,
         ).order_by('id')
 
@@ -610,12 +615,24 @@ class IndividualAccountingController(ProgramAccountingController):
         total = 0
         target = payment.get_amount()
 
+        # TODO: add fin aid grant to target 
+        # TODO: But what if the fin aid grant was used up in a previous payment?
+        # TODO: Add financial aid grant number to the transaction id of the payment
+
+        # TODO: Maybe, instead, we should first check whether the financial aid amount is < the sum of the line items for finaid
+        # TODO: If so, then add however much is not covered to the total and add financial aid grant number with a note 
+        # TODO: "With partial finaid from #____"
+
         for transfer in outstanding_transfers:
             total += transfer.get_amount()
             transfer.paid_in = payment
             transfer.save()
             if total >= target:
                 break
+
+        if total != target:
+            # This will cause all changes to be rolled back
+            raise ValueError("Transfers do not sum to target: %.2f" % target)
 
     @staticmethod
     def updatePaid(program, user, paid=True):
