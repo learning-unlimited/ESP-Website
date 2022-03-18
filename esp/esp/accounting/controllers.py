@@ -597,9 +597,18 @@ class IndividualAccountingController(ProgramAccountingController):
         payment), find all of the Transfers representing the items that were
         paid for and add a link back to the payment. """
 
-        # TODO: Check if financial aid didn't fully cover the line items for financial aid
+        # Check if financial aid didn't fully cover the line items for financial aid
         partial_finaid = False
-        fin_aid_grants = self.??? # Or do we look for approved requests
+        # What would full financial aid of unpaid items be?
+        fin_aid_needed = 0
+        fin_aid_transfers = self.get_transfers().filter(
+            line_item__for_payments=False,
+            line_item__for_finaid=True
+        ).order_by('id')
+        for transfer in fin_aid_transfers:
+            fin_aid_needed += transfer.get_amount()
+        if self.amount_finaid + self.amount_siblingdiscount < fin_aid_needed:
+            partial_finaid = True
 
         # Filter out Transfers representing payments, financial aid grants, and
         # purchasable items that have already been paid for.
@@ -613,19 +622,16 @@ class IndividualAccountingController(ProgramAccountingController):
         # Find the paid transfers by examining Transfers in order of creation
         # until they sum to the given amount.
         total = 0
-        target = payment.get_amount()
-
-        # TODO: add fin aid grant to target 
-        # TODO: But what if the fin aid grant was used up in a previous payment?
-        # TODO: Add financial aid grant number to the transaction id of the payment
-
-        # TODO: Maybe, instead, we should first check whether the financial aid amount is < the sum of the line items for finaid
-        # TODO: If so, then add however much is not covered to the total and add financial aid grant number with a note 
-        # TODO: "With partial finaid from #____"
+        target = payment.get_amount() + self.amount_siblingdiscount
+        if partial_finaid:
+            target += self.amount_finaid
 
         for transfer in outstanding_transfers:
             total += transfer.get_amount()
-            transfer.paid_in = payment
+            if partial_finaid: 
+                transfer.paid_in = payment + " and partial financial aid"
+            else:
+                transfer.paid_in = payment
             transfer.save()
             if total >= target:
                 break
