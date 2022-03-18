@@ -39,7 +39,7 @@ Learning Unlimited, Inc.
 #                       Edit local_settings.py instead                         #
 #                                                                              #
 ################################################################################
-
+import os
 
 ###############################################
 # Default site identification                 #
@@ -117,7 +117,7 @@ DATABASES = {'default':
 ##########################
 EMAIL_HOST   = 'localhost'
 EMAIL_PORT   = '25'
-SERVER_EMAIL = 'server@diogenes.learningu.org'
+SERVER_EMAIL = 'server@{}'.format(os.uname()[1])
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 EMAIL_HOST_SENDER = EMAIL_HOST
 EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
@@ -261,7 +261,6 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
 )
 
-import os
 for app in ('django_evolution', 'django_command_extensions'):
     if os.path.exists(app):
         INSTALLED_APPS += (app,)
@@ -309,13 +308,16 @@ CONTACTFORM_EMAIL_ADDRESSES = {}
 #   It can be overridden by setting CDN_ADDRESS in local_settings.py.
 CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
 
+JQUERY_VERSION = '3.6.0'
+JQUERY_HASH = 'sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=='
+
+JQUERY_UI_VERSION = '1.13.0'
+
 # allow configuration of additional Javascript to be placed on website
 # configuration should include <script></script> tags
 ADDITIONAL_TEMPLATE_SCRIPTS = ''
 
 DEBUG_TOOLBAR = True # set to False in local_settings to globally disable the debug toolbar
-
-DEBUG_TOOLBAR_PATCH_SETTINGS = False
 
 DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.cache.CachePanel',
@@ -347,7 +349,7 @@ DEBUG_TOOLBAR_CONFIG = {
         'argcache.signals.cache_deleted',
     ],
     'SHOW_TEMPLATE_CONTEXT': True,
-    'INSERT_BEFORE': '</div>',
+    'INSERT_BEFORE': '</body>',
     'ENABLE_STACKTRACES' : True,
     'RENDER_PANELS': None,
     'SHOW_COLLAPSED': False, # Ideally would be True, but there is a bug in their code.

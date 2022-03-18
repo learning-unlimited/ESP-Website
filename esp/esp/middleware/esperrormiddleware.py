@@ -41,10 +41,13 @@ import sys
 from django.conf import settings
 from django.db.models.base import ObjectDoesNotExist
 from django.http import HttpResponse, Http404
-from django.shortcuts import render
 from django.template import RequestContext
 from django.utils.translation import ugettext as _
 
+try:
+    from django.utils.deprecation import MiddlewareMixin
+except ImportError:
+    MiddlewareMixin = object
 
 # TODO(benkraft): replace with the django version
 class Http403(Exception):
@@ -90,7 +93,7 @@ def ESPError(message=None, log=True):
         return cls(message)
 
 """ Adapted from http://www.djangosnippets.org/snippets/802/ """
-class AjaxErrorMiddleware(object):
+class AjaxErrorMiddleware(MiddlewareMixin):
     '''Return AJAX errors to the browser in a sensible way.
 
     Includes some code from http://www.djangosnippets.org/snippets/650/
@@ -153,7 +156,7 @@ class AjaxErrorMiddleware(object):
 AjaxError = AjaxErrorMiddleware.AjaxError
 
 
-class ESPErrorMiddleware(object):
+class ESPErrorMiddleware(MiddlewareMixin):
     """ This middleware handles errors appropriately.
     It will display a friendly error if there indeed was one
     (and emails the admin). This, of course, is only true if DEBUG is
@@ -161,6 +164,7 @@ class ESPErrorMiddleware(object):
     """
 
     def process_exception(self, request, exception):
+        from esp.utils.web import render_to_response
 
         if exception == ESPError_Log or exception == ESPError_NoLog:
             # TODO(benkraft): remove remaining instances of this.
@@ -207,6 +211,6 @@ class ESPErrorMiddleware(object):
         # TODO(benkraft): merge our various error templates (403, 500, error).
         # They're all slightly different, but should probably be more similar
         # and share code.
-        response = render(request, template, context)
+        response = render_to_response(template, request, context)
         response.status_code = status
         return response

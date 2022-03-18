@@ -79,7 +79,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
             'use_checklist': 0,
         }
         response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), view_name), post_data)
-        self.assertTrue(response.status_code, 200)
+        self.assertEquals(response.status_code, 200)
         return response
 
     def get_userlist_views(self):
@@ -109,10 +109,13 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         self.assertContains(response, '<div class="classtitle">', count=len(self.program.classes()))
 
     def testSchedules(self):
+        response = self.get_response('studentschedules/log', 'students', 'enrolled')
+        print(response)
         #   Check that our Latex->PDF schedule generation code runs without error
         response = self.get_response('studentschedules', 'students', 'enrolled')
 
         #   Check that the output is an actual PDF file
+        print(response['Content-Type'])
         self.assertTrue(response['Content-Type'].startswith('application/pdf'))
 
     def test_all_classes_spreadsheet_loads(self):

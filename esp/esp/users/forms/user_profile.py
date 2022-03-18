@@ -9,6 +9,7 @@ from datetime import datetime
 from esp.program.models import RegistrationProfile
 from django.conf import settings
 import json
+from pytz import country_names
 from localflavor.us.forms import USPhoneNumberField
 
 class DropdownOtherWidget(forms.MultiWidget):
@@ -52,6 +53,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     address_city = StrippedCharField(required=True, length=20, max_length=50)
     address_state = forms.ChoiceField(required=True, choices=zip(_states,_states), widget=forms.Select(attrs={'class': 'input-mini'}))
     address_zip = StrippedCharField(required=True, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
+    address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(country_names.items(), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
     address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args, **kwargs):
@@ -62,17 +64,9 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
             del self.fields['receive_txt_message']
         if self.user.isTeacher() and not Tag.getBooleanTag('teacher_address_required'):
             self.fields['address_street'].required = False
-            if 'class' in self.fields['address_street'].widget.attrs and self.fields['address_street'].widget.attrs['class']:
-                self.fields['address_street'].widget.attrs['class'] = self.fields['address_street'].widget.attrs['class'].replace('required', '')
             self.fields['address_city'].required = False
-            if 'class' in self.fields['address_city'].widget.attrs and self.fields['address_city'].widget.attrs['class']:
-                self.fields['address_city'].widget.attrs['class'] = self.fields['address_city'].widget.attrs['class'].replace('required', '')
             self.fields['address_state'].required = False
-            if 'class' in self.fields['address_state'].widget.attrs and self.fields['address_state'].widget.attrs['class']:
-                self.fields['address_state'].widget.attrs['class'] = self.fields['address_state'].widget.attrs['class'].replace('required', '')
             self.fields['address_zip'].required = False
-            if 'class' in self.fields['address_zip'].widget.attrs and self.fields['address_zip'].widget.attrs['class']:
-                self.fields['address_zip'].widget.attrs['class'] = self.fields['address_zip'].widget.attrs['class'].replace('required', '')
 
     def clean(self):
         super(UserContactForm, self).clean()
@@ -98,6 +92,7 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_address_city = StrippedCharField(length=20, max_length=50)
     emerg_address_state = forms.ChoiceField(choices=zip(_states,_states), widget=forms.Select(attrs={'class': 'input-mini'}))
     emerg_address_zip = StrippedCharField(length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
+    emerg_address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(country_names.items(), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
     emerg_address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def clean(self):
@@ -473,6 +468,7 @@ class MinimalUserInfo(FormUnrestrictedOtherUser):
     address_city = StrippedCharField(length=20, max_length=50)
     address_state = forms.ChoiceField(choices=zip(_states,_states))
     address_zip = StrippedCharField(length=5, max_length=5)
+    address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(country_names.items(), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
     address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
 _grad_years = range(datetime.now().year, datetime.now().year + 6)

@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
+from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.dbmail.models import MessageRequest
 from esp.users.models   import ESPUser, PersistentQueryFilter
@@ -46,6 +47,7 @@ from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.middleware import ESPError
 
 class CommModule(ProgramModuleObj):
+    doc = """Email users that match specific search criteria."""
     """ Want to email all ESP students within a 60 mile radius of NYC?
     How about emailing all esp users within a 30 mile radius of New Hampshire whose last name contains 'e' and 'a'?
     Do that and even more useful things in the communication panel.
@@ -110,7 +112,8 @@ class CommModule(ProgramModuleObj):
             body = '<html>' + body + '</html>'
 
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
-                       'program': ActionHandler(self.program, firstuser) }
+                       'program': ActionHandler(self.program, firstuser),
+                       'request': ActionHandler(MessageRequest(), firstuser)}
 
         renderedtext = Template(body).render(DjangoContext(contextdict))
 
@@ -240,13 +243,7 @@ class CommModule(ProgramModuleObj):
         #   If list information was submitted, continue to prepare a message
         if request.method == 'POST':
             #   Turn multi-valued QueryDict into standard dictionary
-            data = {}
-            for key in request.POST:
-                #   Some keys have list values
-                if key in ['regtypes']:
-                    data[key] = request.POST.getlist(key)
-                else:
-                    data[key] = request.POST[key]
+            data = ListGenModule.processPost(request)
 
             ##  Handle normal list selecting submissions
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
@@ -257,7 +254,7 @@ class CommModule(ProgramModuleObj):
                 sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
                 if data['use_checklist'] == '1':
-                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/commpanel_old' % prog.getUrlBase())
+                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/commpanel_old' % prog.getUrlBase(), extra_context = {'module': "Communications Portal"})
                     return response
 
                 context['filterid'] = filterObj.id
@@ -312,6 +309,9 @@ class CommModule(ProgramModuleObj):
                                                'subject': subject,
                                                'body': body,
                                                'public_view': public_view})
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

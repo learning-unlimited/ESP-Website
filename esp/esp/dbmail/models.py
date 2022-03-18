@@ -198,7 +198,7 @@ class MessageRequest(models.Model):
     public = models.BooleanField(default=False) # Should the subject and msgtext of this request be publicly viewable at /email/<id>?
 
     def public_url(self):
-        return '%s/email/%s' % (Site.objects.get_current().domain, self.id)
+        return '%s/email/%s' % (Site.objects.get_current().domain, self.id or "{ID will be here}")
 
     def __unicode__(self):
         return unicode(self.subject)
@@ -224,7 +224,6 @@ class MessageRequest(models.Model):
 
         if var_dict is not None:
             new_request.save()
-            var_dict['request'] = new_request
             MessageVars.createMessageVars(new_request, var_dict) # create the message Variables
         return new_request
 
@@ -331,7 +330,7 @@ class MessageRequest(models.Model):
             send_from = self.sender
         else:
             if self.creator is not None:
-                send_from = '%s <%s>' % (self.creator.name(), self.creator.email)
+                send_from = self.creator.get_email_sendto_address()
             else:
                 send_from = 'ESP Web Site <esp@mit.edu>'
 
@@ -462,7 +461,7 @@ class TextOfEmail(models.Model):
         return orm_class.objects.filter(Q(sent_by__isnull=True) | Q(sent_by__lt=now), sent__isnull=True, tries__gte=min_tries).update(sent=now)
 
     class Meta:
-        verbose_name_plural = 'Email Texts'
+        verbose_name_plural = 'Email texts'
 
 class MessageVars(models.Model):
     """ A storage of message variables for a specific message. """
@@ -519,6 +518,9 @@ class MessageVars(models.Model):
 
         for msgvar in msgvars:
             context.update(msgvar.getDict(user))
+
+        context['request'] = ActionHandler(msgrequest, user) # add the request so the public url is accessible
+
         return Context(context)
 
     @staticmethod
@@ -542,7 +544,7 @@ class MessageVars(models.Model):
         return "Message Variables for %s" % self.messagerequest
 
     class Meta:
-        verbose_name_plural = 'Message Variables'
+        verbose_name_plural = 'Message variables'
 
 
 class EmailRequest(models.Model):

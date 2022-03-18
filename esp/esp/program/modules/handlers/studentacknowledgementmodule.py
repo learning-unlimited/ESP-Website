@@ -16,6 +16,8 @@ def studentacknowledgementform_factory(prog):
     return type(name, bases, d)
 
 class StudentAcknowledgementModule(ProgramModuleObj):
+    doc = """Serves a form asking students to acknowledge some agreement."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -27,7 +29,11 @@ class StudentAcknowledgementModule(ProgramModuleObj):
         }
 
     def isCompleted(self):
-        return Record.objects.filter(user=get_current_request().user,
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return Record.objects.filter(user=user,
                                      program=self.program,
                                      event="studentacknowledgement").exists()
 
@@ -55,14 +61,14 @@ class StudentAcknowledgementModule(ProgramModuleObj):
         """ Returns a list of students who have submitted the acknowledgement. """
         qo = Q(record__program=self.program, record__event="studentacknowledgement")
         if QObject is True:
-            return {'acknowledgement': qo}
+            return {'studentacknowledgement': qo}
 
         student_list = ESPUser.objects.filter(qo).distinct()
 
-        return {'acknowledgement': student_list }
+        return {'studentacknowledgement': student_list }
 
     def studentDesc(self):
-        return {'acknowledgement': """Students who have submitted the acknowledgement for the program"""}
+        return {'studentacknowledgement': """Students who have submitted the acknowledgement for the program"""}
 
     class Meta:
         proxy = True

@@ -43,26 +43,29 @@ You can click on individual timeblocks, highlight multiple timeblocks, and even 
 {% end_inline_program_qsd_block %}
 
 {% if is_overbooked %}
-{% inline_program_qsd_block prog "teacher_overbooked" %}
-<p style="color: red;">
-We have detected that you are currently signed up to teach more hours of class than you have hours of availability.  This makes it impossible to schedule your classes.  Please add to your available times in order to continue with registration.
-</p>
-{% end_inline_program_qsd_block %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            We have detected that you are currently signed up to teach more hours of class than you have hours of availability.  This makes it impossible to schedule your classes.  Please add to your available times in order to continue with registration.
+    </div>
+    {% inline_program_qsd_block prog "teacher_overbooked" %}
+    {% end_inline_program_qsd_block %}
 {% endif %}
 
 {% if conflict_found %}
 {% inline_program_qsd_block prog "teacher_conflict" %}
-<p style="color: red;">
-You are scheduled to teach a class during at least one timeslot in which you are not marked as available (indicated with a red border below).  Please <a href="mailto:{{ prog.director_email }}">contact the directors</a> immediately to resolve this conflict.
-</p>
+<div class="alert alert-danger">
+    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        You are scheduled to teach a class during at least one timeslot in which you are not marked as available (indicated with a red border below).  Please <a href="mailto:{{ prog.director_email }}">contact the directors</a> immediately to resolve this conflict.
+</div>
 {% end_inline_program_qsd_block %}
 {% endif %}
 
 {% if submitted_blank %}
 {% inline_program_qsd_block prog "teacher_blank_availability" %}
-<p style="color: red;">
-You submitted a schedule with no available times.  You can't register a class without first telling us when you are free!  Please add your available times in order to continue with registration.
-</p>
+<div class="alert alert-danger">
+    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        You submitted a schedule with no available times.  You can't register a class without first telling us when you are free!  Please add your available times in order to continue with registration.
+</div>
 {% end_inline_program_qsd_block %}
 {% endif %}
 
@@ -76,7 +79,7 @@ You submitted a schedule with no available times.  You can't register a class wi
   <div hidden id="checkboxes">
     {% for group in groups %}
       {% for time in group %}
-        <input type="checkbox" name="timeslots" {% if time.section %}data-hover="{{ time.section }} ({{ time.section.prettyrooms|join:", " }})"{% endif %} value="{{ time.slot.id }}" {% if time.checked %}checked{% endif %} {% if time.taken %}disabled{% endif %}>
+        <input type="checkbox" name="timeslots" {% if time.sections %}data-hover="{% for section in time.sections %}{{ section }} ({{ section.prettyrooms|join:", " }}){% if section.moderating %} ({{ program.getModeratorTitle }}){% endif %}{% if not forloop.last %}<br><br>{% endif %}{% endfor %}"{% endif %} value="{{ time.slot.id }}" {% if time.checked %}checked{% endif %} {% if time.taken %}disabled{% endif %}>
       {% endfor %}
     {% endfor %}
   </div>
@@ -98,7 +101,7 @@ You submitted a schedule with no available times.  You can't register a class wi
 <div class="side right" hidden>
   <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
   <span class="summary" style="background-color: #00FF00;">Available</span>
-  <span class="summary" style="background-color: #42b3f4;">Scheduled to Teach</span>
+  <span class="summary" style="background-color: #42b3f4;">Scheduled</span>
 </div>
 {% endif %}
 
@@ -109,6 +112,10 @@ You submitted a schedule with no available times.  You can't register a class wi
 <input type="hidden" name="search" hidden />
 <input type="submit" value="Search" />
 </form>
+{% endif %}
+
+{% if isAdmin %}
+{% include "program/modules/admincore/returnlink.html" %}
 {% endif %}
 
 {% endblock %}

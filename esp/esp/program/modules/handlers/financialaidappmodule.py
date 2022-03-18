@@ -47,8 +47,9 @@ from esp.middleware.threadlocalrequest import get_current_request
 from django              import forms
 
 
-# student class picker module
 class FinancialAidAppModule(ProgramModuleObj):
+    doc = """Serve a financial aid application to students."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -81,7 +82,11 @@ class FinancialAidAppModule(ProgramModuleObj):
                 'studentfinaid_approved': """Students who have been granted financial aid"""}
 
     def isCompleted(self):
-        return get_current_request().user.appliedFinancialAid(self.program)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return user.appliedFinancialAid(self.program)
 
     @main_call
     @needs_student

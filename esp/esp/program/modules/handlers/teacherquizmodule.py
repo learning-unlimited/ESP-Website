@@ -32,64 +32,37 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-#from esp.program.modules.forms.teacherreg import TeacherEventSignupForm
-#from esp.program.modules import module_ext
-from esp.utils.web import render_to_response
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import csrf_exempt
-#from django.core.mail import send_mail
-from django.db.models.query import Q
-#from esp.miniblog.models import Entry
-#from esp.cal.models import Event
-from esp.users.models import ESPUser, User, Record
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, main_call
+from esp.program.modules.handlers.teachercustomformmodule import TeacherCustomFormModule
+
+from esp.users.models import ESPUser, Record
 from esp.customforms.models import Form
-from esp.customforms.DynamicForm import FormHandler
+from esp.customforms.DynamicForm import FormHandler, ComboForm
 from esp.tagdict.models import Tag
+
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
-from datetime import datetime
-import re
 
-class TeacherQuizController(object):
+from django.db.models.query import Q
 
-    twoday_pattern = re.compile('^[^0-9]*([0-9]+)[^0-9]+([0-9]+)[^0-9]*$')
+class TeacherQuizComboForm(ComboForm):
+    template_name = "program/modules/customformmodule/custom_form.html"
+    event = "teacher_quiz_done"
+    program = None
 
-    def __init__(self, program, *args, **kwargs):
-        super(TeacherQuizController, self).__init__(*args, **kwargs)
-        self.program = program
-
-        # Some setup
-        self.event = "teacher_quiz_done"
-
-    def markCompleted(self, user):
-        """Mark a user as having completed the quiz."""
-        r,created = Record.objects.get_or_create(user=user, event=self.event, program=self.program)
-        if not created:
-            r.time=datetime.now()
-            r.save()
-
-    def unmarkCompleted(self, user):
-        """Mark a user as not having completed the quiz."""
-        Record.objects.filter(user=user, event=self.event, program=self.program).delete()
-
-    def isCompleted(self, user):
-        """Has a user completed the quiz?"""
-        if Record.objects.filter(user=user, event=self.event, program=self.program).count()>0:
-            return True
-        return False
+    def done(self, form_list, **kwargs):
+        # Delete old records, if any exist, and then make a new one
+        Record.objects.filter(user=self.curr_request.user, program=self.program, event=self.event).delete()
+        Record.objects.create(user=self.curr_request.user, program=self.program, event=self.event)
+        return super(TeacherQuizComboForm, self).done(form_list=form_list, redirect_url = '/teach/'+self.program.getUrlBase()+'/teacherreg', **kwargs)
 
 class TeacherQuizModule(ProgramModuleObj):
+    doc = """Serves a custom form quiz during teacher registration."""
+
     # Initialization
     def __init__(self, *args, **kwargs):
         super(TeacherQuizModule, self).__init__(*args, **kwargs)
         self.event="teacher_quiz_done"
-
-    @property
-    def controller(self):
-        if hasattr(self, '_controller'):
-            return self._controller
-        return TeacherQuizController(self.program)
 
     # General Info functions
     @classmethod
@@ -125,33 +98,31 @@ class TeacherQuizModule(ProgramModuleObj):
     # Per-user info
     def isCompleted(self):
         """Return true if user has filled out the teacher quiz."""
-        return self.controller.isCompleted(get_current_request().user)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return Record.objects.filter(user=user, program=self.program, event=self.event).exists()
 
     # Views
     @main_call
     @needs_teacher
     @meets_deadline('/Quiz')
     def quiz(self, request, tl, one, two, module, extra, prog):
-
         custom_form_id = Tag.getProgramTag('quiz_form_id', prog)
         if custom_form_id:
             cf = Form.objects.get(id=int(custom_form_id))
         else:
             raise ESPError('Cannot find an appropriate form for the quiz.  Please ask your administrator to create a form and set the quiz_form_id Tag.')
 
-        form_wizard = FormHandler(cf, request, request.user).get_wizard()
-        form_wizard.curr_request = request
-
-        if request.method == 'POST':
-            form = form_wizard.get_form(0, request.POST, request.FILES)
-            if form.is_valid():
-                form_wizard.done([form])
-                self.controller.markCompleted(request.user)
-                return self.goToCore(tl)
+        #   If the user already filled out the form, use their earlier response for the initial values
+        if self.isCompleted():
+            prev_result_data = TeacherCustomFormModule.get_prev_data(cf, request)
+            return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=TeacherQuizComboForm, initial_data = prev_result_data,
+                               extra_context = {'prog': prog, 'qsd_name': 'teach:quizheader', 'module': self.module.link_title}, program = prog)
         else:
-            form = form_wizard.get_form(0)
-
-        return render_to_response(self.baseDir()+'quiz.html', request, {'prog':prog, 'form': form})
+            return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=TeacherQuizComboForm,
+                               extra_context = {'prog': prog, 'qsd_name': 'teach:quizheader', 'module': self.module.link_title}, program = prog)
 
     def isStep(self):
         custom_form_id = Tag.getProgramTag('quiz_form_id', self.program)

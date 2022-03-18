@@ -1,4 +1,5 @@
 <html>
+{% load modules %}
 <head>
 <title>List of Class Subjects for {{ program.niceName }}</title>
 <style type="text/css" media="print,screen">
@@ -48,6 +49,10 @@ table.sortable thead {
  <th>Max Grade</th>
  <th>Teachers</th>
  <th>Teacher Phone #s</th>
+ {% if program|hasModule:"TeacherModeratorModule" %}
+  <th>{{ program.getModeratorTitle }}s</th>
+  <th>{{ program.getModeratorTitle }} Phone #s</th>
+ {% endif %}
  <th>Room(s)</th>
  <th>Time(s)</th>
  <td>Status</th>
@@ -56,13 +61,17 @@ table.sortable thead {
 {% for cls in classes %}
 <tr>
  <!-- <td>{{ forloop.counter }}</td> -->
- <td sorttable_customkey="{{ cls.id }}">{{ cls.emailcode }}</td>
+ <td data-st-key="{{ cls.id }}">{{ cls.emailcode }}</td>
  <td>{{ cls.title }}</td>
  <td>{{ cls.class_info|truncatewords_html:10 }}</td>
  <td>{{ cls.grade_min }}</td>
  <td>{{ cls.grade_max }}</td>
  <td>{% for teacher in cls.teachers.all %}{% if teacher.id == cls.split_teacher.id %}<b>{% endif %}{{ teacher.name_last_first }}{% if teacher.id == cls.split_teacher.id %}</b>{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
  <td>{% for teacher in cls.teachers.all %}{% if teacher.id == cls.split_teacher.id %}<b>{% endif %}{{ teacher.getLastProfile.contact_user.phone_cell }}{% if teacher.id == cls.split_teacher.id %}</b>{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
+ {% if program|hasModule:"TeacherModeratorModule" %}
+  <td>{% for sec in cls.sections.all %}Section {{ sec.index }}: {% for moderator in sec.get_moderators %}{{ moderator.name_last_first|addslashes }}{% if not forloop.last %}; {% endif %}{% empty %}None{% endfor %}<br />{% endfor %}</td>
+  <td>{% for sec in cls.sections.all %}Section {{ sec.index }}: {% for moderator in sec.get_moderators %}{% if moderator.getLastProfile.contact_user.phone_cell %}{{ moderator.getLastProfile.contact_user.phone_cell }}{% else %}Missing{% endif %}{% if not forloop.last %}; {% endif %}{% empty %}None{% endfor %}<br />{% endfor %}</td>
+ {% endif %}
  <td width="170">{% for sec in cls.sections.all %}Section {{ sec.index }}: {% if not sec.prettyrooms|length_is:0 %}{{ sec.prettyrooms|join:", "}}{% else %} Unassigned{% endif %}<br />{% endfor %}</td>
  <td width="260">{% for sec in cls.sections.all %}Section {{ sec.index }}: {% if not sec.prettyrooms|length_is:0 %}{{ sec.friendly_times|join:", "}}{% else %} Unassigned{% endif %}<br />{% endfor %}</td>
  <td>{{ cls.status_str|capfirst }}</td>

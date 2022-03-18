@@ -45,6 +45,8 @@ from django.db.models.query import Q
 from esp.tagdict.models import Tag
 
 class VolunteerSignup(ProgramModuleObj, CoreModule):
+    doc = """Provides a form for volunteers to signup for particular timeslots."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -67,6 +69,8 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
     @staticmethod
     def signupForm(request, tl, one, two, prog, volunteer, isAdmin=False):
         context = {}
+        context['one'] = one
+        context['two'] = two
 
         if request.method == 'POST':
             form = VolunteerOfferForm(request.POST, program=prog)
@@ -97,7 +101,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         if not Tag.getBooleanTag('availability_group_timeslots'):
             time_groups = [list(time_options)]
         else:
-            time_groups = Event.group_contiguous(list(time_options))
+            time_groups = Event.group_contiguous(list(time_options), int(Tag.getProgramTag('availability_group_tolerance', program = prog)))
 
         context['groups'] = [[{'slot': t, 'id': time_options_dict[t].id} for t in group] for group in time_groups]
 

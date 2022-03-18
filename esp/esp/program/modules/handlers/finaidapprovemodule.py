@@ -40,6 +40,8 @@ from esp.accounting.models import FinancialAidGrant
 
 
 class FinAidApproveModule(ProgramModuleObj):
+    doc = """View and approve student financial aid applications."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -49,6 +51,9 @@ class FinAidApproveModule(ProgramModuleObj):
             "seq": 26,
             "choosable": 0,
             }
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

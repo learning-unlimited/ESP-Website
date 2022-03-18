@@ -53,6 +53,8 @@ import json
 import re
 
 class CreditCardModule_Stripe(ProgramModuleObj):
+    doc = """Accept credit card payments via Stripe."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -82,9 +84,17 @@ class CreditCardModule_Stripe(ProgramModuleObj):
     def get_setting(self, name, default=None):
         return self.apply_settings().get(name, default)
 
+    def line_item_type(self):
+        (donate_type, created) = LineItemType.objects.get_or_create(program=self.program, text=self.get_setting('donation_text'))
+        return donate_type
+
     def isCompleted(self):
         """ Whether the user has paid for this program or its parent program. """
-        return IndividualAccountingController(self.program, get_current_request().user).has_paid()
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return IndividualAccountingController(self.program, user).has_paid()
     have_paid = isCompleted
 
     def students(self, QObject = False):
@@ -102,8 +112,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
     def check_setup(self):
         """ Validate the keys specified in the stripe_settings Tag.
-            If something is wrong, provide an error message which will hopefully
-            only be seen by admins during setup. """
+            If something is wrong, return False, otherwise return True. """
 
         self.apply_settings()
 
@@ -122,7 +131,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         valid_pk_re = r'pk_(test|live)_([A-Za-z0-9+/=]){24}'
         valid_sk_re = r'sk_(test|live)_([A-Za-z0-9+/=]){24}'
         if not re.match(valid_pk_re, self.settings['publishable_key']) or not re.match(valid_sk_re, self.settings['secret_key']):
-            raise ESPError('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href="mailto:{{settings.SUPPORT}}">websupport team to get it set up.', True)
+            return False
+        return True
 
     @main_call
     @needs_student
@@ -143,7 +153,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             raise ESPError("Please go back and ensure that you have completed all required steps of registration before paying by credit card.", log=False)
 
         #   Check for setup of module.  This is also required to initialize settings.
-        self.check_setup()
+        if not self.check_setup():
+            raise ESPError('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href="mailto:{{settings.SUPPORT}}">websupport team to get it set up.', True)
 
         user = request.user
 
@@ -158,7 +169,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         sibling_type = iac.default_siblingdiscount_lineitemtype()
         grant_type = iac.default_finaid_lineitemtype()
         offer_donation = self.settings['offer_donation']
-        donate_type = iac.get_lineitemtypes().get(text=self.settings['donation_text']) if offer_donation else None
+        donate_type = LineItemType.objects.get(program=self.program, text=self.settings['donation_text']) if offer_donation else None
         context['itemizedcosts'] = iac.get_transfers().exclude(line_item__in=filter(None, [payment_type, sibling_type, grant_type, donate_type])).order_by('-line_item__required')
         context['itemizedcosttotal'] = iac.amount_due()
         #   This amount should be formatted as an integer in order to be
@@ -209,7 +220,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
     @needs_student
     def charge_payment(self, request, tl, one, two, module, extra, prog):
         #   Check for setup of module.  This is also required to initialize settings.
-        self.check_setup()
+        if not self.check_setup():
+            raise ESPError('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href="mailto:{{settings.SUPPORT}}">websupport team to get it set up.', True)
 
         context = {'postdata': request.POST.copy()}
 
@@ -318,6 +330,9 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         context['statement_descriptor'] = group_name[0:22]
         context['can_confirm'] = self.deadline_met('/Confirm')
         return render_to_response(self.baseDir() + 'success.html', request, context)
+
+    def isStep(self):
+        return self.check_setup()
 
     class Meta:
         proxy = True

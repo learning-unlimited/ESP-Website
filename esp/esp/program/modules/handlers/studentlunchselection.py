@@ -103,6 +103,7 @@ class StudentLunchSelectionForm(forms.Form):
 
 
 class StudentLunchSelection(ProgramModuleObj):
+    doc = """Allows students to enroll in lunch blocks."""
 
     @classmethod
     def module_properties(cls):
@@ -116,7 +117,11 @@ class StudentLunchSelection(ProgramModuleObj):
             }
 
     def isCompleted(self):
-        return Record.objects.filter(user=get_current_request().user,event="lunch_selected",program=self.program).exists()
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return Record.objects.filter(user=user,event="lunch_selected",program=self.program).exists()
 
     @main_call
     @needs_student

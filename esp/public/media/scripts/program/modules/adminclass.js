@@ -1,6 +1,5 @@
 //  Global variables for storing the class and section data
 var classes_global = {};
-var sections_global = {};
 
 function deleteClass() {
     if (confirm('Are you sure you would like to delete this class? \n Since you are an admin, you can delete this class with students. \n Deleting is hard to undo, so consider instead marking it unreviewed or rejected.')) {
@@ -68,7 +67,8 @@ function getShortTitle(clsObj) {
 
 function fill_class_popup(clsid, classes_data) {
   var class_info = classes_data.classes[clsid];
-  var status_details = getStatusDetails(class_info.status);
+  // Get the status from our local data in case we've changed it
+  var status_details = getStatusDetails(classes_global[clsid].status);
   var status_string = status_details['text'];
 
   var sections_list = $j('<ul>')
@@ -108,6 +108,8 @@ function fill_class_popup(clsid, classes_data) {
     .html('')
     .append(make_attrib_para("Status", status_string))
     .append(make_attrib_para("Teachers", class_info.teacher_names))
+  if (class_info.moderator_names.length) class_desc_popup.append(make_attrib_para("Moderators", class_info.moderator_names));
+  class_desc_popup
     .append(make_attrib_para("Sections", class_info.sections.length))
     .append(sections_list)
     .append(make_attrib_para("Max Size", class_info.class_size_max))
@@ -133,7 +135,7 @@ function show_approve_class_popup(clsid) {
   // Load the class data and fill the popup using it
     json_get('class_admin_info', {'class_id': clsid},
     function(data) {
-	fill_class_popup(clsid, data);
+      fill_class_popup(clsid, data);
     },
     function(jqXHR, status, errorThrown) {
       if (errorThrown == "NOT FOUND") {
@@ -173,10 +175,10 @@ function update_class(clsid, statusId) {
   });
 
   // Update our local data
-  classes[clsid].status = statusId;
+  classes_global[clsid].status = statusId;
 
   // Set the appropriate styling and tag text
-  var el = $j("#clsid-"+clsid+"-row").find("td > span > span");
+  var el = $j("#"+clsid).find("td.classname > span");
   el.removeClass("unapproved").removeClass("approved").removeClass("dashboard_blue").removeClass("dashboard_red");
 
   for(var i = 0; i < status_details['classes'].length; ++i)
@@ -190,8 +192,7 @@ function update_class(clsid, statusId) {
 function fillClasses(data)
 {
     // First pull out the data
-    sections = data.sections;
-    classes = data.classes;
+    var classes = data.classes;
 
     // Clear the current classes list (most likely just "Loading...")
     $j("#classes_anchor").html('');
@@ -204,7 +205,6 @@ function fillClasses(data)
 
     //  Save the data for later if we need it
     classes_global = classes;
-    sections_global = sections;
 }
 
 function createClassTitleTd(clsObj) {
@@ -221,7 +221,7 @@ function createClassTitleTd(clsObj) {
         $j('<span/>', {'class': title_css_class})
             .text(getShortTitle(clsObj) + ' ')
             .append(statusStrong)
-    );
+    ).attr("data-st-key", clsObj.id);
 }
 
 function createTeacherListTd(clsObj) {
@@ -235,7 +235,7 @@ function createTeacherListTd(clsObj) {
             td.append(', ');
         }
         var teacher = json_data.teachers[val];
-        var href = '/manage/userview?username=' + teacher.username;
+        var href = '/manage/userview?username=' + teacher.username + '&program=' + program_id;
         td.append($j('<a/>', {href: href}).text(
             teacher.first_name + ' ' + teacher.last_name));
     });
@@ -319,17 +319,17 @@ function handle_sort_control()
         }
         var cls = classes_global[clsid];
         if (method == "id")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.id);
+            $j(this).children("td").first().attr("data-st-key", cls.id);
         else if (method == "category")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.emailcode);
+            $j(this).children("td").first().attr("data-st-key", cls.emailcode);
         else if (method == "name")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.title);
+            $j(this).children("td").first().attr("data-st-key", cls.title);
         else if (method == "status")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.status);
+            $j(this).children("td").first().attr("data-st-key", cls.status);
         else if (method == "size")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.class_size_max);
+            $j(this).children("td").first().attr("data-st-key", cls.class_size_max);
         else if (method == "special")
-            $j(this).children("td").first().attr("sorttable_customkey", (cls.message_for_directors || "").length + (cls.requested_special_resources || "").length);
+            $j(this).children("td").first().attr("data-st-key", (cls.message_for_directors || "").length + (cls.requested_special_resources || "").length);
     });
     
     $j("#header-row > th").first().removeClass("sorttable_sorted sorttable_sorted_reverse");

@@ -74,7 +74,18 @@ td {
 
 <center>
 <hr>
-{% if error %}<p><font color="red">{{ error }}</font></p>{% endif %}
+{% if error %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {{ error }}
+    </div>
+{% endif %}
+{% if invalid_grades %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            The following students have invalid grades:</br>{% for student in invalid_grades %}{{ student }}</br>{% endfor %}
+    </div>
+{% endif %}
 {% autoescape off %}
 {% if lottery_messages %}<p><font color="blue">{{ lottery_messages|join:"<br/>" }}</font></p>{% endif %}
 {% endautoescape %}
@@ -108,8 +119,11 @@ td {
             You must set the <i>program_size_by_grade</i> <a href="/manage/{{ program.getUrlBase }}/tags">tag</a>.
         {% endif %}
         <!--<b>Specify Role Name for Winners: </b>--><input type="hidden" name="rolename" value="{{role}}"></br></br>
-        <input type="checkbox" name="confirm">  I confirm that I would like to run the default student lottery algorithm.</br></br>
-        <input {% if not grade_caps %}disabled {% endif %}type="submit" style="float:none" value="Run Default Student Lottery Algorithm" />
+        <input type="checkbox" name="perms" id="perms_default_checkbox" checked>  <label for="perms_default_checkbox">Open all student registration deadlines for lottery winners.</label></br></br>
+        <input type="checkbox" name="confirm" id="confirm_default_checkbox">  <label for="confirm_default_checkbox">I confirm that I would like to run the default student lottery algorithm.<label></label></br></br>
+        <input {% if lottery_run or not grade_caps or invalid_grades %}disabled {% endif %}{% if lottery_run %}title="Lottery has already been run" 
+        {% elif invalid_grades %}title="Lottery can not be run with students with invalid grades" 
+        {% elif not grade_caps %}title="The grade cap tag must be set to run the lottery" {% endif %}type="submit" style="float:none" value="Run Default Student Lottery Algorithm" />
     </form>
 </div>
 
@@ -123,11 +137,27 @@ td {
         <input type="hidden" name="mode" value="manual">
         <textarea name="usernames" rows="6" placeholder="Enter comma-separated or space-separated student usernames here"></textarea>
         <!--<b>Specify Role Name for Winners: </b>--><input type="hidden" name="rolename" value="{{role}}"></br></br>
-        <input type="checkbox" name="groups">  I would also like to accept any students in the same lottery groups.</br></br>
-        <input type="checkbox" name="confirm">  I confirm that I would like to use the above list of students for a manual student lottery.</br></br>
-        <input type="submit" style="float:none" value="Run Manual Student Lottery" />
+        <input type="checkbox" name="groups" id="groups_checkbox">  <label for="groups_checkbox">I would also like to accept any students in the same lottery groups.</label></br></br>
+        <input type="checkbox" name="perms" id="perms_manual_checkbox" checked>  <label for="perms_manual_checkbox">Open all student registration deadlines for lottery winners.</label></br></br>
+        <input type="checkbox" name="confirm" id="confirm_manual_checkbox">  <label for="confirm_manual_checkbox">I confirm that I would like to use the above list of students for a manual student lottery.</label></br></br>
+        <input {% if lottery_run or invalid_grades %}disabled {% endif %}{% if lottery_run %}title="Lottery has already been run" 
+        {% elif invalid_grades %}title="Lottery can not be run with students with invalid grades" {% endif %}type="submit" style="float:none" value="Run Manual Student Lottery" />
     </form>
 </div>
+
+{% if lottery_run %}
+<button class="dsphead">
+    <b><u>Undo the Student Lottery:</u></b>
+</button>
+<div class="dspcont">
+    This will UNDO the student lottery, which will delete the winners group and remove any permissions that were created for the group. This can NOT be undone.<br/><br/>
+    <form action="#" method="POST">
+        <input type="hidden" name="mode" value="undo">
+        <input type="checkbox" name="confirm" id="confirm_undo_checkbox">  <label for="confirm_undo_checkbox">I confirm that I would like to UNDO the student lottery.</label></br></br>
+        <input type="submit" style="float:none" value="Undo the Student Lottery" />
+    </form>
+</div>
+{% endif %}
 
 </center>
 
@@ -159,5 +189,6 @@ td {
     {% endfor %}
 </table>
 {% endif %}
+{% include "program/modules/admincore/returnlink.html" %}
 <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 {% endblock %}

@@ -513,8 +513,8 @@ class RecordTest(TestCase):
         self.future   = datetime.datetime.max
         self.user     = ESPUser.objects.create(username='RecordTest')
         self.event    = Record.EVENT_CHOICES[0][0]
-        self.program1 = Program.objects.create(grade_min=7, grade_max=12)
-        self.program2 = Program.objects.create(grade_min=7, grade_max=12)
+        self.program1 = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program1')
+        self.program2 = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program2')
 
     def tearDown(self):
         Record.filter(self.user, self.event, when=self.future).delete()
@@ -598,7 +598,7 @@ class PermissionTestCase(TestCase):
         self.role = Group.objects.create(name='group')
         self.user = ESPUser.objects.create(username='user')
         self.user.makeRole(self.role)
-        self.program = Program.objects.create(grade_min=7, grade_max=12)
+        self.program = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program1')
 
     def create_perm(self, name, user_or_role, **kwargs):
         """Create Permission object of type `name`.
@@ -680,7 +680,7 @@ class PermissionTestCase(TestCase):
 
     def testProgramPerm(self):
         perm = 'Student/MainPage'
-        other_program = Program.objects.create(grade_min=7, grade_max=12)
+        other_program = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program2')
         self.create_role_perm_for_program(perm)
         self.assertTrue(self.user_has_perm_for_program(perm))
         self.assertFalse(self.user_has_perm(perm))

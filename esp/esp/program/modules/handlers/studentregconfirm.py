@@ -38,7 +38,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 from django.http import HttpResponseRedirect
 
 class StudentRegConfirm(ProgramModuleObj):
-    """ Basically, a dirty hack to add a link to registration confirmation into the list of stuffs to do during reg """
+    doc = """Basically, a dirty hack to add a link to registration confirmation into the list of stuffs to do during reg"""
     @classmethod
     def module_properties(cls):
         return {
@@ -55,7 +55,11 @@ class StudentRegConfirm(ProgramModuleObj):
         return HttpResponseRedirect("confirmreg")
 
     def isCompleted(self):
-        return self.program.isConfirmed(get_current_request().user)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return self.program.isConfirmed(user)
 
     def hideNotRequired(self):
         return True

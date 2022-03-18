@@ -5,21 +5,7 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
-<link rel="stylesheet" href="//code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">
-{% endblock %}
-
-{% block xtrajs %}
-<script type="text/javascript">
-$j(document).ready(function () {
-    {% for f in forms %}{% if f.type == "multiple" %}
-    $j("#id_{{ f.form.prefix }}-count").spinner({
-        min: 0,
-        max: {{ f.max }},
-        change: function (event, ui) { $j("#id_{{ f.form.prefix }}-count").attr("value", $j("#id_{{ f.form.prefix }}-count").spinner("value")) }
-    });
-    {% endif %}{% endfor %}
-});
-</script>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.13.0/themes/smoothness/jquery-ui.css">
 {% endblock %}
 
 {% block content %}
@@ -27,7 +13,6 @@ $j(document).ready(function () {
 .nocheckmark { border: 1px solid black; }
 td>ul { list-style-type: none; padding: 0px }
 </style>
-<br /><br />
 <h1>Additional Purchases</h1>
 
 {% load render_qsd %}
@@ -55,20 +40,41 @@ td>ul { list-style-type: none; padding: 0px }
 <tr><th>Additional Items for {{ program.niceName }}</th></tr>
 {% for f in forms %}
 <tr>
-    <td><b>{{ f.LineItem.text }}</b> {% if f.LineItem.required %}(required; please make a selection below){% else %}<!-- (optional) -->{% endif %}</td>
+    <td><b>{{ f.LineItem.text }}</b> {% if f.LineItem.required or f.type == "sibling" %}(required; please make a selection below){% else %}(optional){% endif %}</td>
 </tr>
 <tr style="border-bottom: 1px dashed grey;">
     <td>
         {% if f.type == "single" %}
+            {% if f.form.cost.errors %}<div style="color: red;">{{ f.form.cost.errors|join:", " }}</div>{% endif %}
             {{ f.form.cost }} ${{ f.LineItem.amount_dec|floatformat:2 }}
         {% endif %}
         {% if f.type == "multiple" %}
+            {% if f.form.count.errors %}<div style="color: red;">{{ f.form.count.errors|join:", " }}</div>{% endif %}
             {{ f.form.count }} ${{ f.LineItem.amount_dec|floatformat:2 }} each
         {% endif %}
         {% if f.type == "select" %}
-            <div class="form-inline">{{ f.form.option }}</div>
+            {% if f.form.option.errors %}<div style="color: red;">{{ f.form.option.errors|join:", " }}</div>{% endif %}
+            {{ f.form.option }}
         {% endif %}
-        {% if f.form.errors %}<font color="red">{{ f.form.errors }}</font>{% endif %}
+        {% if f.type == "sibling" %}
+            {% if f.form.siblingdiscount.errors %}<div style="color: red;">{{ f.form.siblingdiscount.errors|join:", " }}</div>{% endif %}
+            {{ f.form.siblingdiscount }}
+    </td>
+</tr>
+            <tr>
+                <td>If you selected that you have a sibling, please enter their name below:</td>
+            </tr>
+            {% if f.form.siblingname.errors %}
+            <tr>
+                <td>
+                    <div style="color: red;">{{ f.form.siblingname.errors|join:", " }}</div>
+                </td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td>{{ f.form.siblingname }}</td>
+            </tr>
+        {% endif %}
         
         {# If num_options, radio buttons will be used for the field. In order to  #}
         {# be able to remove a selected item, we need a button. The Javascript    #}

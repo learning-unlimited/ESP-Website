@@ -59,6 +59,7 @@ from esp.utils.query_utils import nest_Q
 
 
 class LotteryStudentRegModule(ProgramModuleObj):
+    doc = """Allows students to enter a lottery for particular classes."""
 
     def students(self, QObject = False):
         q = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
@@ -71,7 +72,11 @@ class LotteryStudentRegModule(ProgramModuleObj):
         return {'lotteried_students': "Students who have entered the lottery"}
 
     def isCompleted(self):
-        return bool(StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, user=get_current_request().user))
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return bool(StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, user=user))
 
     @classmethod
     def module_properties(cls):

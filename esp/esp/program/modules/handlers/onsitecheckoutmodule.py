@@ -40,8 +40,11 @@ from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.users.models    import ESPUser, Record
 from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
 from esp.middleware.esperrormiddleware import ESPError
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 
 class OnSiteCheckoutModule(ProgramModuleObj):
+    doc = """Check students out (temporarily or indefinitely) from a program."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -89,16 +92,17 @@ class OnSiteCheckoutModule(ProgramModuleObj):
 
             # Get most recent check-in record
             if not prog.isCheckedIn(student):
-                context['checkout_message'] = "Caution: %s (%s) is not currently checked in for this program!" % (student.name(), student.username)
+                context['checkout_message_warning'] = "Caution: %s (%s) is not currently checked in for this program!" % (student.name(), student.username)
 
             if 'checkout_student' in request.POST:
                 # Make checked_out record
                 Record.objects.create(user=student, event="checked_out", program=prog)
 
                 # Unenroll student from selected classes
+                verbs = RTC.getVisibleRegistrationTypeNames(prog)
                 for sec in ClassSection.objects.filter(id__in=filter(None, request.POST.getlist('unenroll'))).distinct():
-                    sec.unpreregister_student(student, prereg_verb = "Enrolled")
-                context['checkout_message'] = "Successfully checked out %s (%s)" % (student.name(), student.username)
+                    sec.unpreregister_student(student, verbs)
+                context['checkout_message_success'] = "Successfully checked out %s (%s)" % (student.name(), student.username)
 
             context.update(StudentClassRegModule.prepare_static(student, prog))
         else:

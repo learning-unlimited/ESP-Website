@@ -36,6 +36,8 @@ from esp.program.modules.base import ProgramModuleObj, needs_student, meets_dead
 from esp.program.modules import module_ext
 from esp.program.models  import Program
 from esp.program.controllers.confirmation import ConfirmationEmailController
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, Record
 from esp.utils.models import Printer
@@ -53,6 +55,8 @@ from django.template.loader import render_to_string, get_template, select_templa
 import operator
 
 class StudentRegCore(ProgramModuleObj, CoreModule):
+    doc = """Serves the main page for student registration."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -126,7 +130,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         self.request = request
 
         if prog.user_can_join(request.user):
-            raise ESPError("You can't subscribe to the waitlist of a program that isn't full yet!  Please click 'Back' and refresh the page to see the button to confirm your registration.", log=False)
+            return self.goToCore(tl)
 
         waitlist = Record.objects.filter(event="waitlist",
                                          user=request.user,
@@ -189,7 +193,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         for module in modules:
             if hasattr(module, 'onConfirm'):
                 module.onConfirm(request)
-            if not module.isCompleted() and module.required:
+            if not module.isCompleted() and module.isRequired():
                 completedAll = False
             context = module.prepare(context)
 
@@ -236,10 +240,11 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         #   If the appropriate flag is set, remove the student from their classes.
         scrmi = prog.studentclassregmoduleinfo
+        verbs = RTC.getVisibleRegistrationTypeNames(prog)
         if scrmi.cancel_button_dereg:
             sections = request.user.getSections()
             for sec in sections:
-                sec.unpreregister_student(request.user)
+                sec.unpreregister_student(request.user, verbs)
 
         #   If a cancel receipt template is there, use it.  Otherwise, return to the main studentreg page.
         try:
@@ -257,6 +262,20 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     printer_names.depend_on_model('utils.Printer')
     printer_names = staticmethod(printer_names) # stolen from program.models.getLastProfile, not sure if this is actually the right way to do this?
 
+    @staticmethod
+    def get_reg_records(user, prog, tl):
+        records = []
+        if tl == 'learn':
+            tag_data = Tag.getProgramTag('student_reg_records', prog)
+        else:
+            tag_data = Tag.getProgramTag('teacher_reg_records', prog)
+        if tag_data:
+            event_dict = dict(Record.EVENT_CHOICES)
+            for event in [x.strip().lower() for x in tag_data.split(',')]:
+                records.append({'event': event, 'full_event': event_dict[event], 'isCompleted': Record.user_completed(event = event, user = user, program = prog)})
+            records.sort(key=lambda rec: not rec['isCompleted'])
+        return records
+
     @main_call
     @needs_student
     @meets_grade
@@ -272,18 +291,17 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         for module in modules:
             # If completed all required modules so far...
             if context['completedAll']:
-                if module.isCompleted():
-                    module.fillProgressBar = True
-                else:
-                    if module.required:
-                        context['completedAll'] = False
+                if not module.isCompleted() and module.isRequired():
+                    context['completedAll'] = False
 
             context = module.prepare(context)
 
+        records = self.get_reg_records(request.user, prog, 'learn')
+
         context['canRegToFullProgram'] = request.user.canRegToFullProgram(prog)
 
-
         context['modules'] = modules
+        context['records'] = records
         context['one'] = one
         context['two'] = two
         context['coremodule'] = self

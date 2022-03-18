@@ -1,25 +1,30 @@
 /**
- * The grid of cells that displays the schedule.
+ * The grid of cells (Cells) that displays the schedule.
+ * Has pointers to Sections, Timeslots, and the rooms data
  *
  * @param timeslots: A Timeslots object corresponding to times available for classes
  * @param rooms: The rooms that are available for scheduling. Keys are ids values are room data.
  * @param sections: A list of all sections for the program
  * @param el: The element to morph into the matrix
  * @param messsagePanel: The panel that can display messages and errors
- * @param secionInfoPanel: The panel that displays section info
+ * @param sectionInfoPanel: The panel that displays section info
+ * @param moderatorDirectory: The interface for moderator scheduling
  */
 function Matrix(
         timeslots,
         rooms,
+        categories,
         sections,
         el,
         messagePanel,
-        sectionInfoPanel
+        sectionInfoPanel,
+        moderatorDirectory
         ){
     this.el = el;
     this.el.id = "matrix-table";
 
     this.timeslots = timeslots;
+    this.categories = categories;
     this.rooms = rooms;
     
     // Set up filtering
@@ -30,10 +35,10 @@ function Matrix(
         roomName: {active: false, el: $j("input#room-filter-name-text"), type: "string"},
     };
     this.filter.roomCapacityMin.valid = function(a) {
-        return Math.ceil(a.num_students) >= this.filter.roomCapacityMin.val;
+        return a.num_students >= this.filter.roomCapacityMin.val;
     }.bind(this);
     this.filter.roomCapacityMax.valid = function(a) {
-        return Math.ceil(a.num_students) <= this.filter.roomCapacityMax.val;
+        return a.num_students <= this.filter.roomCapacityMax.val;
     }.bind(this);
     this.filter.roomResource.valid = function(a) {
         var result = false;
@@ -49,7 +54,7 @@ function Matrix(
     }.bind(this);
 
     $j.each(this.filter, function(filterName, filterObject) {
-        filterObject.el.change(function() {
+        filterObject.el.on("change", function() {
             filterObject.val = filterObject.el.val().trim();
             if(filterObject.type==="number") {
                 filterObject.val = parseInt(filterObject.val);
@@ -72,8 +77,8 @@ function Matrix(
     /**
      * Get the rooms satisfying the search criteria.
      */
-    this.filtered_rooms = function(allowScheduled){
-        var returned_rooms = [];
+    this.filteredRooms = function(){
+        var returnedRooms = [];
         $j.each(this.rooms, function(index, room) {
             var roomValid;
             // check every criterion in the room filter tab, short-circuiting if possible
@@ -89,18 +94,18 @@ function Matrix(
                 }
             }
             if (roomValid) {
-                returned_rooms.push(room);
+                returnedRooms.push(room);
             }
         }.bind(this));
-        return returned_rooms;
+        return returnedRooms;
     };
     
-    this.update = function(){
-        var filt_rooms = this.filtered_rooms()
+    this.updateRooms = function(){
+        var filtRooms = this.filteredRooms()
         $j.each(this.rooms, function(index, room) {
             // get rows to show or hide
             var rows = $j(".room[data-id='" + room.id + "']").parent();
-            if (filt_rooms.includes(room)) {
+            if (filtRooms.includes(room)) {
                 rows.css("display", "table-row");
             } else {
                 rows.css("display", "none");
@@ -110,6 +115,23 @@ function Matrix(
 
     this.sections = sections;
     this.sections.bindMatrix(this);
+    this.moderatorDirectory = moderatorDirectory;
+    if(has_moderator_module === "True") this.moderatorDirectory.bindMatrix(this);
+
+    // Set up scheduling checks
+    this.updateCells = function(){
+        $j.each(this.cells, function(index, room) {
+            $j.each(room, function(index, cell) {
+                if(!cell.disabled && cell.section) cell.update();
+            })
+        });
+    };
+    
+    this.scheduling_check = "";
+    $j('input[type=radio][name=scheduling-checks]').on("change", function() {
+        this.scheduling_check = event.target.value;
+        this.updateCells();
+    }.bind(this));
 
     this.messagePanel = messagePanel;
     this.sectionInfoPanel = sectionInfoPanel;
@@ -119,7 +141,7 @@ function Matrix(
      * Initialize the matrix
      */
     this.init = function(){
-        $j("body").on("room-filters-changed", this.update.bind(this));
+        $j("body").on("room-filters-changed", this.updateRooms.bind(this));
         // set up cells
         var matrix = this;
         this.cells = function(){
@@ -153,56 +175,97 @@ function Matrix(
      *                   timeslots where all teachers are completely available.
      *                   The second is an array of timeslots where one or more
      *                   teachers are teaching, but would be available otherwise.
+     * @param moderator: An optional moderator (if specified, shows moderator availability)
      */
-    this.highlightTimeslots = function(timeslots, section) {
+    this.highlightTimeslots = function(timeslots, section, moderator = null) {
         /**
          * Adds a class to all non-disabled cells corresponding to each
          * timeslot in timeslots.
          *
-         * @param timeslots: A 1-d array of tiemslot IDs
+         * @param timeslots: A 1-d array of timeslot IDs
          * @param className: The class to add to the cells
+         * @param moderator: An optional moderator (if specified, adds class to section cells)
          */
-        addClassToTimeslots = function(timeslots, className) {
+        addClassToTimeslots = function(timeslots, className, moderator = null) {
             $j.each(timeslots, function(j, timeslot) {
                 this.timeslotHeaders[timeslot].addClass(className);
                 $j.each(this.rooms, function(k, room) {
                     var cell = this.getCell(room.id, timeslot);
-                    if(!cell.section && !cell.disabled) {
+                    if(moderator){ // If we are doing moderator availability, we want to highlight cells with sections
+                        if(cell.section && !cell.section.moderators.includes(moderator.id)) {
+                            cell.el.addClass(className);
+                        }
+                    } else if(!cell.section && !cell.disabled) { // If we're doing class availability, we want to highlight cells without sections
                         cell.el.addClass(className);
                     }
                 }.bind(this));
             }.bind(this));
         }.bind(this);
-        var available_timeslots = timeslots[0];
-        var teaching_timeslots = timeslots[1];
-        addClassToTimeslots(available_timeslots, "teacher-available-cell");
-        addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
-        if(section.length<=1) {
-            return;
-        }
-        $j.each(available_timeslots, function(j, timeslot_id) {
-            var timeslot = this.timeslots.get_by_id(timeslot_id);
-            $j.each(this.rooms, function(k, room) {
-                var cell = this.getCell(room.id, timeslot_id);
-                if(cell.el.hasClass("teacher-available-cell")) {
-                    var scheduleTimeslots = [timeslot.id];
-                    var notEnoughSlots = false;
-                    for(var i=1; i<section.length; i++) {
-                        var nextTimeslot = this.timeslots.get_by_order(timeslot.order+i);
-                        if(nextTimeslot) {
-                            scheduleTimeslots.push(nextTimeslot.id);
-                        } else {
-                            notEnoughSlots = true;
+        /**
+         * Adds a class to all non-disabled cells corresponding to each
+         * section in sections.
+         *
+         * @param sections: A 1-d array of section IDs
+         * @param className: The class to add to the cells
+         */
+        addClassToSections = function(sections, className) {
+            $j.each(sections, function(j, section) {
+                var assignment = this.sections.scheduleAssignments[section];
+                if(assignment) {
+                    var roomID = assignment.room_id
+                    $j.each(assignment.timeslots, function(k, timeslot) {
+                        var cell = this.getCell(roomID, timeslot);
+                        if(!cell.disabled) {
+                            cell.el.addClass(className);
                         }
-                    }
-                    if(notEnoughSlots ||
-                       !this.validateAssignment(section, room.id, scheduleTimeslots).valid) {
-                                cell.el.removeClass("teacher-available-cell");
-                                cell.el.addClass("teacher-available-not-first-cell");
-                    }
+                    }.bind(this));
                 }
             }.bind(this));
-        }.bind(this));
+        }.bind(this);
+        var available_timeslots = timeslots[0];
+        var teaching_timeslots = timeslots[1];
+        if(moderator){
+            addClassToTimeslots(available_timeslots, "moderator-available-cell", moderator);
+            addClassToTimeslots(teaching_timeslots, "moderator-teaching-cell", moderator);
+            var not_first_sections = [];
+            var not_available_sections = []
+            for(var section in this.sections.scheduleAssignments) {
+                for(var timeslot of this.sections.scheduleAssignments[section].timeslots) {
+                    if(teaching_timeslots.includes(timeslot) && !(not_first_sections.includes(section))){
+                        not_first_sections.push(section);
+                    }
+                    if(!(available_timeslots.includes(timeslot) || teaching_timeslots.includes(timeslot)) && !(not_available_sections.includes(section))){
+                        not_available_sections.push(section);
+                    }
+                }
+            }
+            addClassToSections(not_first_sections, "moderator-available-not-first-cell");
+            addClassToSections(not_available_sections, "moderator-unavailable-cell");
+            addClassToSections(Object.keys(this.sections.scheduleAssignments).filter(section => this.sections.sections_data[section].moderators.length > 0), "lowOpacity");
+            addClassToTimeslots(Object.values(this.timeslots.timeslots).map(el => el.id).filter(el => !(available_timeslots.includes(el) || teaching_timeslots.includes(el))), "moderator-unavailable-cell", moderator);
+            addClassToSections(this.moderatorDirectory.getTeachingAndModeratingSections(moderator), "moderator-moderating-or-teaching-cell");
+            if($j("#mod-category-match").prop("checked")) {
+                addClassToSections(Object.keys(this.sections.scheduleAssignments).filter(section => !(moderator.categories.includes(this.sections.sections_data[section].category_id))), "hiddenCell")
+            }
+        } else {
+            addClassToTimeslots(available_timeslots, "teacher-available-cell");
+            addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
+        }
+        
+        if(section){
+            $j.each(available_timeslots, function(j, timeslot_id) {
+                $j.each(this.rooms, function(k, room) {
+                    var cell = this.getCell(room.id, timeslot_id);
+                    if(cell.el.hasClass("teacher-available-cell")) {
+                        var scheduleTimeslots = this.timeslots.get_timeslots_to_schedule_section(section, timeslot_id);
+                        if(scheduleTimeslots == null || !this.validateAssignment(section, room.id, scheduleTimeslots).valid) {
+                            cell.el.removeClass("teacher-available-cell");
+                            cell.el.addClass("teacher-available-not-first-cell");
+                        }
+                    }
+                }.bind(this));
+            }.bind(this));
+        }
     }
 
     /**
@@ -212,13 +275,14 @@ function Matrix(
      *                   timeslots where all teachers are completely available.
      *                   The second is an array of timeslots where one or more
      *                   teachers are teaching, but would be available otherwise.
+     * @param moderator: An optional moderator (if specified, removes moderator availability)
      */
-    this.unhighlightTimeslots = function(timeslots) {
+    this.unhighlightTimeslots = function(timeslots, moderator = null) {
         /**
          * Removes a class from all non-disabled cells corresponding to each
          * timeslot in timeslots.
          *
-         * @param timeslots: A 1-d array of tiemslot IDs
+         * @param timeslots: A 1-d array of timeslot IDs
          * @param className: The class to remove from the cells
          */
         removeClassFromTimeslots = function(timeslots, className) {
@@ -230,11 +294,34 @@ function Matrix(
                 }.bind(this));
             }.bind(this));
         }.bind(this);
+        /**
+         * Removes a class from all non-disabled cells corresponding to each
+         * section in sections.
+         *
+         * @param sections: A 1-d array of section IDs
+         * @param className: The class to remove from the cells
+         */
+        removeClassFromSections = function(sections, className) {
+            $j.each(sections, function(j, section) {
+                var assignments = this.sections.scheduleAssignments[section];
+                var roomID = assignments.room_id
+                $j.each(assignments.timeslots, function(k, timeslot) {
+                    var cell = this.getCell(roomID, timeslot);
+                    if(!cell.disabled) {
+                        cell.el.removeClass(className);
+                    }
+                }.bind(this));
+            }.bind(this));
+        }.bind(this);
 
         var available_timeslots = timeslots[0];
         var teaching_timeslots = timeslots[1];
-        removeClassFromTimeslots(available_timeslots, "teacher-available-cell teacher-available-not-first-cell");
-        removeClassFromTimeslots(teaching_timeslots, "teacher-teaching-cell");
+        if(moderator) {
+            removeClassFromSections(Object.keys(this.sections.scheduleAssignments), "moderator-teaching-cell moderator-unavailable-cell moderator-available-cell moderator-moderating-or-teaching-cell moderator-available-not-first-cell lowOpacity hiddenCell");
+        } else {
+            removeClassFromTimeslots(available_timeslots, "teacher-available-cell teacher-available-not-first-cell");
+            removeClassFromTimeslots(teaching_timeslots, "teacher-teaching-cell");
+        }
     };
 
 
@@ -245,34 +332,36 @@ function Matrix(
     this.initSections = function() {
         // Associated already scheduled classes with rooms
         $j.each(this.sections.scheduleAssignments, function(class_id, assignmentData){
-            $j.each(assignmentData.timeslots, function(j, timeslot_id){
-                var cell = this.getCell(assignmentData.room_id, timeslot_id);
-                if(cell && !cell.disabled) {
-                    cell.addSection(sections.getById(class_id));
-                } else {
-                    if(!cell) {
-                        var errorMessage = "Error: Could not find cell with room with id "
-                            + assignmentData.room_id
-                            + " and timeslot with id "
-                            + timeslot_id
-                            + " to schedule section with id "
-                            + class_id;
-                        console.log(errorMessage);
-                        messagePanel.addMessage(errorMessage);
+            if(assignmentData.room_id){
+                $j.each(assignmentData.timeslots, function(j, timeslot_id){
+                    var cell = this.getCell(assignmentData.room_id, timeslot_id);
+                    if(cell && !cell.disabled) {
+                        cell.addSection(sections.getById(class_id));
+                    } else {
+                        if(!cell) {
+                            var errorMessage = "Error: Could not find cell with room with id "
+                                + assignmentData.room_id
+                                + " and timeslot with id "
+                                + timeslot_id
+                                + " to schedule section with id "
+                                + class_id;
+                            console.log(errorMessage);
+                            messagePanel.addMessage(errorMessage);
+                        }
+                        else {
+                            var errorMessage = "Error: Room with id "
+                                + assignmentData.room_id
+                                + " appears to be unavailable during timeslot with id "
+                                + timeslot_id
+                                + " but section with id "
+                                + class_id
+                                + " is scheduled there.";
+                            console.log(errorMessage);
+                            messagePanel.addMessage(errorMessage);
+                        }
                     }
-                    else {
-                        var errorMessage = "Error: Room with id "
-                            + assignmentData.room_id
-                            + " appears to be unavailable during timeslot with id "
-                            + timeslot_id
-                            + " but section with id "
-                            + class_id
-                            + " is scheduled there.";
-                        console.log(errorMessage);
-                        messagePanel.addMessage(errorMessage);
-                    }
-                }
-            }.bind(this));
+                }.bind(this));
+            }
         }.bind(this));
     };
 
@@ -378,7 +467,7 @@ function Matrix(
 
         //Time headers
         var header_row = $j("<tr/>").appendTo($j("<thead/>").appendTo(table));
-        header_row.append($j("<th/>"));
+        header_row.append($j("<th/>").append($j("<button id = 'print_button'>Print Matrix</button>")));
         $j.each(this.timeslots.timeslots_sorted, function(index, timeslot){
             var timeslotHeader = $j("<th>" + timeslot.label + "</th>");
             this.timeslotHeaders[timeslot.id] = timeslotHeader;
@@ -400,7 +489,8 @@ function Matrix(
             var room_header = $j("<td>")
                 .addClass('room')
                 .text(room.text + " [" + room['num_students'] + "]")
-                .attr('data-id', id);
+                .attr('data-id', id)
+                .css({"max-width": "140px", "min-width": "140px"});
             var row = $j("<tr></tr>");
             room_header.appendTo(row);
             rows[id] = row;
@@ -435,7 +525,6 @@ function Matrix(
             hide: {duration: 100},
         });
     };
-
 
     this.initSections();
 

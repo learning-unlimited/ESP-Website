@@ -43,8 +43,9 @@ from esp.program.models  import StudentApplication
 from django              import forms
 from esp.middleware.threadlocalrequest import get_current_request
 
-# student class picker module
 class StudentJunctionAppModule(ProgramModuleObj):
+    doc = """Allows students to submit applications for a program."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -75,8 +76,11 @@ class StudentJunctionAppModule(ProgramModuleObj):
     def isCompleted(self):
         """ This step is completed if the student has marked their application as complete or answered questions for
         all of their classes.  I know this is slow sometimes.  -Michael P"""
-
-        app = get_current_request().user.getApplication(self.program)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        app = user.getApplication(self.program)
 
         #   Check if the application is empty or marked as completed.
         if app.done:
@@ -96,7 +100,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
             response_dict[response_question_ids[i]] = responses[i]
 
         #   Check that they responded to everything.
-        classes = get_current_request().user.getAppliedClasses(self.program)
+        classes = user.getAppliedClasses(self.program)
         for cls in classes:
             for i in [x['id'] for x in cls.studentappquestion_set.all().values('id')]:
                 if i not in response_question_ids:

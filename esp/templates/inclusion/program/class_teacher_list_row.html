@@ -1,4 +1,6 @@
-{# expects program, class, can_req_cancel, survey_results, and crmi (ClassRegModuleInfo) #}
+{# expects program, class, can_req_cancel, survey_results, crmi (ClassRegModuleInfo), user #}
+
+{% load users %}
 
 <tr{% if not cls.isReviewed %} style="color: gray"{% endif %}{% if cls.isRejected or cls.isCancelled %} style="color: red"{% endif %}>
   <td class="clsleft classname bordertop2" colspan="3">
@@ -108,8 +110,8 @@ Popup div for class cancellation request
 
 {% if crmi.allow_coteach %}
 <tr>
-  <td class="clsleft"><b>Teachers (<a href="mailto:{{ cls.emailcode }}-teachers@{{ email_host_sender }}">email</a>): </b></td>
-  <td class="clsmiddle" colspan="5">{% for t in cls.get_teachers %}{% ifnotequal t request.user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>
+  <td class="clsleft"><b>Coteachers (<a href="mailto:{{ cls.emailcode }}-teachers@{{ email_host_sender }}">email</a>): </b></td>
+  <td class="clsmiddle" colspan="5">{% for t in cls.teachers.all|remove_from_qs:user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
   <td class="clsright">
   {% block cls_row_4_buttons %}
     <form method="post" action="/teach/{{program.getUrlBase}}/coteachers">
@@ -139,7 +141,11 @@ Popup div for class cancellation request
     <span style="font-weight: bold; color: #00C;">Unreviewed</span>
     {% endif %}
   </td>
-  <td class="clsmiddle" valign="top" colspan="4">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif%}{% endif %}</td>
+  <td class="clsmiddle" valign="top" colspan="4">
+    Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />
+    Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif%}{% endif %}<br />
+    {% if sec.get_moderators %}{{ program.getModeratorTitle }}s: {% for m in sec.get_moderators %}<a href="mailto:{{ m.email }}">{{ m.first_name }} {{ m.last_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}
+  </td>
   <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students
     <br />(<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">view list</a>)
     {% if sec.meeting_times.count > 0 %}<br />(<a href="/teach/{{ program.getUrlBase }}/section_attendance/{{ sec.id }}">attendance</a>){% endif %}

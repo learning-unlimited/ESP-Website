@@ -50,6 +50,8 @@ import json
 
 
 class OnSiteCheckinModule(ProgramModuleObj):
+    doc = """Check in students for a program (including for payments and forms)."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -61,13 +63,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
             }
 
     def updatePaid(self, paid=True):
-        """ Close off the student's invoice and, if paid is True, create a receipt showing
-        that they have paid all of the money they owe for the program. """
-        if not self.hasPaid():
-            iac = IndividualAccountingController(self.program, self.student)
-            iac.ensure_required_transfers()
-            if paid:
-                iac.submit_payment(iac.amount_due())
+        IndividualAccountingController.updatePaid(self.program, self.student, paid)
 
     def create_record(self, event):
         created = False
@@ -76,10 +72,9 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 rec = Record(user=self.student, event="attended", program=self.program)
                 rec.save()
                 created = True
+        elif event=="paid":
+            self.updatePaid(True)
         else:
-            if event=="paid":
-                self.updatePaid(True)
-
             recs, created = Record.objects.get_or_create(user=self.student,
                                                          event=event,
                                                          program=self.program)
@@ -90,13 +85,12 @@ class OnSiteCheckinModule(ProgramModuleObj):
             if self.program.isCheckedIn(self.student):
                 rec = Record(user=self.student, event="checked_out", program=self.program)
                 rec.save()
+        elif event=="paid":
+            self.updatePaid(False)
         else:
-            if event=="paid":
-                self.updatePaid(False)
-
             recs, created = Record.objects.get_or_create(user=self.student,
-                                                event=event,
-                                                program=self.program)
+                                                         event=event,
+                                                         program=self.program)
             recs.delete()
         return True
 
@@ -108,8 +102,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
     def hasPaid(self):
         iac = IndividualAccountingController(self.program, self.student)
-        return Record.user_completed(self.student, "paid", self.program) or \
-            iac.has_paid(in_full=True)
+        return iac.has_paid(in_full=True)
 
     def hasMedical(self):
         return Record.user_completed(self.student, "med", self.program)
@@ -296,11 +289,11 @@ class OnSiteCheckinModule(ProgramModuleObj):
             else:
                 error = True
 
-            context = {'error': error, 'message': message}
+            context = {'error': error, 'message': message, 'module': self.module.link_title}
             return render_to_response('users/usersearch.html', request, context)
 
         else:
-            user, found = search_for_user(request, self.program.students_union())
+            user, found = search_for_user(request, self.program.students_union(), add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
             if not found:
                 return user
 

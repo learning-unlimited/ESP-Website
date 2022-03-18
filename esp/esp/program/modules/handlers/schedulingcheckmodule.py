@@ -1,5 +1,5 @@
 from django.http import HttpResponse
-from esp.program.models import Program, ClassSection, ClassSubject
+from esp.program.models import Program, ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.resources.models import ResourceRequest
 from copy import deepcopy
@@ -17,6 +17,7 @@ import re
 
 
 class SchedulingCheckModule(ProgramModuleObj):
+    doc = """Provides diagnostics to check for invalid class schedule assignments."""
 
     @classmethod
     def module_properties(cls):
@@ -38,6 +39,9 @@ class SchedulingCheckModule(ProgramModuleObj):
          else:
               context = {'check_list': s.all_diagnostics, 'unreviewed': "unreviewed" in request.GET}
               return render_to_response(self.baseDir()+'output.html', request, context)
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True
@@ -171,7 +175,9 @@ class SchedulingCheckRunner:
          ('capacity_by_category', 'Total capacity in each block by category'),
          ('classes_by_grade', 'Number of classes in each block by grade'),
          ('capacity_by_grade', 'Total capacity in each block by grade'),
-         ('admins_teaching_per_timeblock', 'Admins teaching per timeslot')
+         ('admins_teaching_per_timeblock', 'Admins teaching per timeslot'),
+         ('mismatched_moderators', 'Moderators with mismatched assignments'),
+         ('multiple_classes_same_resource_same_time', 'Double-booked resources')
 
      ]
 
@@ -237,7 +243,7 @@ class SchedulingCheckRunner:
         problem_classes = []
         for s in self._all_class_sections():
             mt =  sorted(s.get_meeting_times())
-            rooms = s.getResources()
+            rooms = [a.resource for a in s.classroomassignments()]
             if(len(rooms) != len(mt)):
                 problem_classes.append(s)
             else:
@@ -250,7 +256,7 @@ class SchedulingCheckRunner:
         output = []
         for s in self._all_class_sections():
             mt = sorted(s.get_meeting_times())
-            rooms = s.getResources()
+            rooms = [a.resource for a in s.classroomassignments()]
             res_events = sorted([x.event for x in rooms])
             if res_events != mt:
                 output.append({"Section": s, "Resource events": res_events,
@@ -275,7 +281,7 @@ class SchedulingCheckRunner:
              start_time = sec.start_time_prefetchable()
              end_time = sec.end_time_prefetchable()
              length = end_time - start_time
-             if abs(length.total_seconds() / 3600.0 - float(sec.duration)) > 0.0:
+             if abs(round(length.total_seconds() / 3600.0, 2) - float(sec.duration)) > 0.0:
                  output.append(sec)
          return self.formatter.format_list(output, ["Classes"])
 
@@ -467,6 +473,7 @@ class SchedulingCheckRunner:
              return
          l_resources = []
          l_classrooms = []
+         l_mod = []
          for s in self._all_class_sections():
              meeting_times = s.get_meeting_times()
              first_hour = meeting_times[0] if meeting_times else None
@@ -482,8 +489,20 @@ class SchedulingCheckRunner:
                              l_classrooms.append({ "Section": s, "First Hour": first_hour, "Requested Type": u.desired_value, "Classroom": classroom })
                      else:
                          l_resources.append({ "Section": s, "First Hour": first_hour, "Unfulfilled Request": u, "Classroom": classroom })
+             for moderator in s.get_moderators():
+                mod_recs = ModeratorRecord.objects.filter(program=s.parent_class.parent_program, user=moderator)
+                if mod_recs.count() == 0 or s.parent_class.category not in mod_recs[0].class_categories.all():
+                    if mod_recs.count() == 0:
+                        mod_recs_text = "No selection"
+                    else:
+                        mod_recs_text = [cat.category for cat in list(mod_recs[0].class_categories.all())]
+                    if not mod_recs_text:
+                        mod_recs_text.append("No Selection")
+                    mod_recs_list = ", ".join(mod_recs_text)
+                    l_mod.append({ "Section": s, "Section Time": first_hour, "Requested Category": mod_recs_list, "Moderator": moderator })
          self.l_wrong_classroom_type = l_classrooms
          self.l_missing_resources = l_resources
+         self.l_mod_missing = l_mod
          self.calculated_classes_missing_resources = True
          return [l_classrooms, l_resources]
 
@@ -641,7 +660,7 @@ class SchedulingCheckRunner:
              class_hours = teacher.getTaughtTime(program=self.p, round_to=1).seconds/3600
              delta = availability - class_hours
              # Arbitrary formula, seems to do a good job of catching the cases I care about
-             if class_hours/float(availability) >= 2/float(3):
+             if (availability == 0) or (class_hours/float(availability) >= 2/float(3)):
                  inflexible.append({'Username': teacher.username,
                                'Teacher Name': teacher.name(),
                                'Class hours': class_hours,
@@ -652,3 +671,9 @@ class SchedulingCheckRunner:
                                                           'Available hours',
                                                           'Free hours']},
                                             help_text=self.inflexible_teachers.__doc__)
+     def mismatched_moderators(self):
+         """
+         Moderators who have indicated a preference for which class type they would like to moderate and are moderating another type of class.
+         """
+         self._calculate_classes_missing_resources()
+         return self.formatter.format_table(self.l_mod_missing, {"headings": ["Section", "Section Time", "Requested Category", "Moderator"]})

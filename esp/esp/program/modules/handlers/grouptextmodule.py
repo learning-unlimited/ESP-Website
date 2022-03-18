@@ -32,15 +32,12 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter, ContactInfo
 from esp.users.controllers.usersearch import UserSearchController
-from esp.users.views.usersearch import get_user_checklist
 from django.db.models.query   import Q
-from esp.dbmail.models import ActionHandler
-from django.template import Template
-from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.middleware import ESPError
 
 from django.conf import settings
@@ -49,6 +46,7 @@ from twilio import TwilioRestException
 from twilio.rest import TwilioRestClient
 
 class GroupTextModule(ProgramModuleObj):
+    doc = """Text users that match specific search criteria."""
     """ Want to tell all enrolled students about a last-minute lunch location
         change? Want to inform students about a cancelled class? The Group Text
         Panel is your friend!
@@ -109,13 +107,7 @@ class GroupTextModule(ProgramModuleObj):
         context['program'] = prog
 
         if request.method == "POST":
-            data = {}
-            for key in request.POST:
-                #   Some keys have list values
-                if key in ['regtypes']:
-                    data[key] = request.POST.getlist(key)
-                else:
-                    data[key] = request.POST[key]
+            data = ListGenModule.processPost(request)
             filterObj = UserSearchController().filter_from_postdata(prog, data)
 
             context['filterid'] = filterObj.id
@@ -157,8 +149,8 @@ class GroupTextModule(ProgramModuleObj):
 
             contactInfo = None
             try:
-                # TODO: handle multiple ContactInfo objects per user
-                contactInfo = ContactInfo.objects.filter(user=user).order_by("-id")[0]
+                #   Only get contact info for the actual user (not guardians or emergency contacts)
+                contactInfo = ContactInfo.objects.filter(user=user, as_user__isnull=False).distinct('user')[0]
             except ContactInfo.DoesNotExist:
                 pass
             if not contactInfo:
@@ -190,6 +182,9 @@ class GroupTextModule(ProgramModuleObj):
                 numberIndex = (numberIndex + 1) % len(ourNumbers)
 
         return "\n".join(send_log)
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

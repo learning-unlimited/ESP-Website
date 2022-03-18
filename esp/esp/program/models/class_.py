@@ -40,6 +40,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import random
+import re
 
 # django Util
 from django.conf import settings
@@ -249,10 +250,7 @@ class ClassManager(Manager):
         class_ids = map(lambda x: x.id, classes)
 
         # Now to get the sections corresponding to these classes...
-
         sections = ClassSection.objects.filter(parent_class__in=class_ids)
-
-        sections = ClassSection.prefetch_catalog_data(sections.distinct())
 
         sections_by_parent_id = defaultdict(list)
         for s in sections:
@@ -307,6 +305,8 @@ class ClassSection(models.Model):
     max_class_capacity = models.IntegerField(blank=True, null=True)
 
     parent_class = AjaxForeignKey('ClassSubject', related_name='sections')
+
+    moderators = models.ManyToManyField(ESPUser, blank=True, related_name="moderating_sections")
 
     registrations = models.ManyToManyField(ESPUser, through='StudentRegistration')
 
@@ -369,6 +369,27 @@ class ClassSection(models.Model):
 
     def get_edit_absolute_url(self):
         return self.parent_class.get_edit_absolute_url()
+
+    def get_moderators(self):
+        return self.moderators.all()
+
+    def getModeratorNames(self):
+        moderators = []
+        for moderator in self.get_moderators():
+            name = moderator.name()
+            if name.strip() == '':
+                name = moderator.username
+            moderators.append(name)
+        return moderators
+
+    def getModeratorNamesLast(self):
+        moderators = []
+        for moderator in self.get_moderators():
+            name = moderator.name_last_first()
+            if name.strip() == '':
+                name = moderator.username
+            moderators.append(name)
+        return moderators
 
     @cache_function
     def get_meeting_times(self):
@@ -509,6 +530,14 @@ class ClassSection(models.Model):
             return self.classrooms().filter(event=initial_time).order_by('id')
         else:
             return Resource.objects.none()
+
+    def initial_lat_long(self):
+        classroom = self.initial_rooms().first()
+        if classroom:
+            res = classroom.associated_resources().filter(res_type__name='Lat/Long')
+            if res.count() == 1 and re.match("^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$", res[0].attribute_value):
+                return res[0].attribute_value
+        return None
 
     def prettyrooms(self):
         """ Return the pretty name of the rooms. """
@@ -736,7 +765,7 @@ class ClassSection(models.Model):
                 if k not in available_times:
                     available_times.append(k)
 
-        timeslots = Event.group_contiguous(available_times)
+        timeslots = Event.group_contiguous(available_times, int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = self.parent_class.parent_program)))
 
         viable_list = []
 
@@ -887,7 +916,7 @@ class ClassSection(models.Model):
         user = teacher
         if meeting_times is None:
             meeting_times = self.meeting_times.all()
-        for sec in user.getTaughtSections(self.parent_program).exclude(id=self.id):
+        for sec in user.getTaughtSections(self.parent_program, include_cancelled = False).exclude(id=self.id):
             for time in sec.meeting_times.all():
                 if meeting_times.filter(id = time.id).count() > 0:
                     return (sec, time)
@@ -952,19 +981,11 @@ class ClassSection(models.Model):
     def students_checked_in(self):
         return self.students() & self.parent_program.currentlyCheckedInStudents()
 
-    @cache_function
     def num_students_checked_in(self):
         return self.students_checked_in().count()
-    num_students_checked_in.depend_on_model('users.Record')
-    num_students_checked_in.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
-    @cache_function
     def count_ever_checked_in_students(self):
         return (self.students() & ESPUser.objects.filter(Q(record__event="attended", record__program=self.parent_program)).distinct()).count()
-    count_ever_checked_in_students.depend_on_model('users.Record')
-    count_ever_checked_in_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
-
-    ever_checked_in_students = DerivedField(models.IntegerField, count_ever_checked_in_students)(null=False, default=0)
 
     @cache_function
     def num_students_prereg(self):
@@ -1027,8 +1048,10 @@ class ClassSection(models.Model):
                 students_to_email[student] = True
 
             for student in students_to_email:
-                to_email = ['%s <%s>' % (student.name(), student.email)]
-                from_email = '%s at %s <%s>' % (self.parent_program.program_type, settings.INSTITUTION_NAME, self.parent_program.director_email)
+                to_email = [student.get_email_sendto_address()]
+                from_email = ESPUser.email_sendto_address(self.parent_program.director_email,
+                                                          '%s at %s' % (self.parent_program.program_type,
+                                                                        settings.INSTITUTION_NAME))
                 #   Here we render the template to include the username, and also whether the student is registered
                 context['classreg'] = students_to_email[student]
                 context['user'] = student
@@ -1050,20 +1073,23 @@ class ClassSection(models.Model):
         if email_ssis:
             context['classreg'] = False
             email_content += '\n' + render_to_string('email/class_cancellation_body.txt', context)
-        to_email = ['Directors <%s>' % (self.parent_program.director_email)]
-        from_email = '%s Web Site <%s>' % (self.parent_program.program_type, self.parent_program.director_email)
+        to_email = [ESPUser.email_sendto_address(self.parent_program.director_email, 'Directors')]
+        from_email = ESPUser.email_sendto_address(self.parent_program.director_email,
+                                                  '%s Web Site' % (self.parent_program.program_type))
         send_mail(email_title, email_content, from_email, to_email)
 
         #   Send email to teachers
         if email_teachers:
             context['director_email'] = self.parent_program.director_email
             email_content = render_to_string('email/class_cancellation_teacher.txt', context)
-            from_email = '%s at %s <%s>' % (self.parent_program.program_type, settings.INSTITUTION_NAME, self.parent_program.director_email)
+            from_email = ESPUser.email_sendto_address(self.parent_program.director_email,
+                                                      '%s at %s' % (self.parent_program.program_type,
+                                                                    settings.INSTITUTION_NAME))
             if email_ssis:
                 email_content += '\n' + render_to_string('email/class_cancellation_body.txt', context)
             teachers = self.parent_class.get_teachers()
             for t in teachers:
-                to_email = ['%s <%s>' % (t.name(), t.email)]
+                to_email = [t.get_email_sendto_address()]
                 send_mail(email_title, email_content, from_email, to_email)
 
         self.clearStudents()
@@ -1244,17 +1270,17 @@ class ClassSection(models.Model):
         else:
             return [v.relationship for v in qs.filter(relationship__name__in=allowed_verbs).distinct()]
 
-    def unpreregister_student(self, user, prereg_verb = None):
-        #   New behavior: prereg_verb should be a string matching the name of
-        #   RegistrationType to match (if you want to use it)
+    def unpreregister_student(self, user, prereg_verbs = []):
+        #   New behavior: prereg_verbs should be a list of strings matching the names of
+        #   RegistrationTypes to match (if you want to use it)
 
         from esp.program.models.app_ import StudentAppQuestion
 
         now = datetime.datetime.now()
 
         #   Stop all active or pending registrations
-        if prereg_verb:
-            qs = StudentRegistration.valid_objects(now).filter(relationship__name=prereg_verb, section=self, user=user)
+        if prereg_verbs:
+            qs = StudentRegistration.valid_objects(now).filter(relationship__name__in=prereg_verbs, section=self, user=user)
             qs.update(end_date=now)
         else:
             qs = StudentRegistration.valid_objects(now).filter(section=self, user=user)
@@ -1574,6 +1600,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             result = result | sec.students(verbs=verbs)
         return result
 
+    def moderators(self):
+        result = ESPUser.objects.none()
+        for sec in self.get_sections():
+            result = result.union(sec.get_moderators())
+        return result
+
     def num_students(self, verbs=['Enrolled']):
         result = 0
         for sec in self.get_sections():
@@ -1641,6 +1673,10 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def pretty_teachers(self):
         """ Return a prettified string listing of the class's teachers """
         return u", ".join([ u"%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
+
+    def pretty_moderators(self):
+        """ Return a prettified string listing of the class's moderators """
+        return u", ".join([ u"%s %s" % (u.first_name, u.last_name) for u in self.moderators() ])
 
     def isFull(self, ignore_changes=False, timeslot=None, webapp=False):
         """ A class subject is full if all of its sections are full. """
@@ -1752,13 +1788,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def conflicts(self, teacher):
         user = teacher
-        for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
+        for cls in user.getTaughtClasses(self.parent_program, include_cancelled = False):
             for section in cls.get_sections():
                 for time in section.meeting_times.all():
                     for sec in self.sections.all().exclude(id=section.id):
                         if sec.meeting_times.filter(id = time.id).count() > 0:
                             return True
-
 
         #   Check that adding this teacher as a coteacher would not overcommit them
         #   to more hours of teaching than the program allows.
@@ -1769,7 +1804,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             td = tg.duration()
             time_avail += (td.seconds / 3600.0)
         #   Subtract out time already pledged for teaching classes other than this one
-        for cls in user.getTaughtClasses(self.parent_program):
+        for cls in user.getTaughtClasses(self.parent_program, include_cancelled = False):
             if cls.id != self.id:
                 for sec in cls.get_sections():
                     time_avail -= float(str(sec.duration))
@@ -1921,11 +1956,11 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         if best_section:
             best_section.preregister_student(user, overridefull, automatic)
 
-    def unpreregister_student(self, user):
+    def unpreregister_student(self, user, prereg_verbs = []):
         """ Find the student's registration for the class and expire it.
         Also update the cache on each of the sections.  """
         for s in self.sections.all():
-            s.unpreregister_student(user)
+            s.unpreregister_student(user, prereg_verbs)
 
     def getArchiveClass(self):
         result = ArchiveClass.objects.filter(original_id=self.id)
@@ -2015,7 +2050,7 @@ class ClassCategories(models.Model):
     seq = models.IntegerField(default=0)
 
     class Meta:
-        verbose_name_plural = 'Class Categories'
+        verbose_name_plural = 'Class categories'
         app_label = 'program'
         db_table = 'program_classcategories'
 

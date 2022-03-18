@@ -1,35 +1,37 @@
 
 {% extends "outlines/letter_base.tex" %}
 {% load latex %}
-
 {% block maincontent %}
 {{ block.super }}
-
-{\bf {\underline {\Large Certificate of Completion \hspace{2.5in} \normalsize {{ prog.niceName }} {{ date_range }} }}} \\
+{% autoescape off %}
+\noindent {\bf {\underline {\Large Certificate of Completion \hspace{2.5in} \normalsize {{ prog.niceName|texescape }} {{ date_range }} }}} \\
 
 \vspace{0.3in}
 
-This is to certify that \underline{ {{ user.first_name }} {{ user.last_name }} } attended {{ prog.niceName }} and completed the following classes: \\
+\noindent This is to certify that \underline{% templatetag openbrace %}{{ user.name|texescape }}} attended {{ prog.niceName|texescape }} and completed the following classes:
 
-\hspace{1in} {{ schedule }}
+\vspace{0.25in} {{ schedule }}
 
 \vspace{0.25in}
 
-{{ prog.program_type }} courses are taught by volunteers, primarily {{ settings.INSTITUTION_NAME }} students.
+\noindent {{ prog.program_type }} courses are taught by volunteers, primarily {{ settings.INSTITUTION_NAME|texescape }} students.
 The content and difficulty of the subjects varies significantly, from non-academic to college-level.
-Our program is not accredited to issue credit for any class, however, we leave it to school administrators to decide whether {{ settings.ORGANIZATION_SHORT_NAME }} courses can be counted as substitutes for school classes.
+Our program is not accredited to issue credit for any class, however, we leave it to school administrators to decide whether {{ settings.ORGANIZATION_SHORT_NAME|texescape }} courses can be counted as substitutes for school classes.
 You may view the teachers' course descriptions on the attached pages.
-If you would like to talk to an administrator or teacher about the content of a particular course, please email us at {\tt {{ settings.DEFAULT_EMAIL_ADDRESSES.default }} }. \\
+If you would like to talk to an administrator or teacher about the content of a particular course, please email us at {\tt {{ settings.DEFAULT_EMAIL_ADDRESSES.default|texescape }}}. \\
 
-\hspace{3in}\begin{minipage}{4in}{{ prog.niceName }} Directors \\
-{{settings.INSTITUTION_NAME}} {{settings.ORGANIZATION_SHORT_NAME}} \end{minipage}
+\hspace{3in}\begin{minipage}{4in}{{ prog.niceName|texescape }} Directors \\
+{{ settings.INSTITUTION_NAME|texescape }} {{ settings.ORGANIZATION_SHORT_NAME|texescape }} \end{minipage}
 
+{% endautoescape %}
 {% endblock %}
 
 {% block additionalcontent %}
+{% autoescape off %}
 \clearpage
-\noindent {\bf \underline{ {{ prog.niceName }} courses taken by {{ user.first_name }} {{ user.last_name }} } } \\
+\noindent {\bf \underline{% templatetag openbrace %}{{ prog.niceName|texescape }} courses taken by {{ user.name|texescape }}}} \\
 \hspace{0.5in}
 {{ descriptions }}
+{% endautoescape %}
 {% endblock %}
 

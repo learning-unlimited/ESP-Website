@@ -84,6 +84,7 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf'):
 
     context_dict['MEDIA_ROOT'] = settings.MEDIA_ROOT
     context_dict['file_type'] = filetype
+    context_dict['settings'] = settings
 
     rendered_source = t.render(context_dict)
 

@@ -59,7 +59,7 @@ class ClassChangeRequestModule(ProgramModuleObj):
             "link_title": "Class Change Request",
             "module_type": "learn",
             "required": False,
-            "choosable": 1,
+            "choosable": 0,
         }
 
     class Meta:
@@ -67,8 +67,11 @@ class ClassChangeRequestModule(ProgramModuleObj):
         app_label = 'modules'
 
     def isCompleted(self):
-        return StudentRegistration.valid_objects().filter(user=get_current_request().user,
-                                                          relationship__name="Request").exists()
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return StudentRegistration.valid_objects().filter(user=user, relationship__name="Request").exists()
 
     @main_call
     @needs_student

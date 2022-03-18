@@ -76,6 +76,10 @@
         {{ form.address_zip }} {% if form.address_zip.errors %}
         <br /><span class="form_error">{{ form.address_zip.errors|join:", " }}</span>
         {% endif %}
+        
+        {{ form.address_country }} {% if form.address_country.errors %}
+        <br /><span class="form_error">{{ form.address_country.errors|join:", " }}</span>
+        {% endif %}
     </div>
 </div>
 {% endif %}
@@ -116,10 +120,14 @@
 {% endif %}
 
 {% if form.receive_txt_message and form.phone_cell %}
- <small><i><label = "id_receive_txt_message">I would like to receive text-message reminders about the program:</label></i></small>
+<div class="control-group">
+ <small><i><label class="control-label" for="id_receive_txt_message">I would like to receive text-message reminders about the program:</label></i></small>
+ <div class="controls">
  {{ form.receive_txt_message }} {% if form.receive_txt_message.errors %}
    <br /><span class="form_error">{{ form.receive_txt_message.errors|join:", " }}</span>
    {% endif %}
+ </div>
+</div>
 {% endif %}
 
 <!-- End User ContactInfo -->

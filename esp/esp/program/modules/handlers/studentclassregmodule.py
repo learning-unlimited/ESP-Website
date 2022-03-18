@@ -51,7 +51,9 @@ from django.core.cache import cache
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call, meets_cap, no_auth
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
-from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, StudentRegistration, StudentSubjectInterest
+
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
 from esp.utils.web import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
 from esp.users.models    import ESPUser, Permission, Record
@@ -91,7 +93,7 @@ def json_encode(obj):
         return { 'id': obj.id,
                  'status': obj.status,
                  'duration': obj.duration,
-                 'get_meeting_times': obj._events,
+                 'get_meeting_times': sorted(list(obj.get_meeting_times()), cmp=lambda e1, e2: cmp(e1.start, e2.start)),
                  'num_students': obj.num_students(),
                  'capacity': obj.capacity
                  }
@@ -129,6 +131,8 @@ def json_encode(obj):
 
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj):
+    doc = """Allows students to directly enroll in classes."""
+
     @classmethod
     def module_properties(cls):
         return [ {
@@ -150,6 +154,8 @@ class StudentClassRegModule(ProgramModuleObj):
         Enrolled = Q(studentregistration__relationship__name='Enrolled')
         Par = Q(studentregistration__section__parent_class__parent_program=self.program)
         Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
+        past_programs = [x for x in Program.objects.all() if len(x.dates()) and x.dates()[0] < self.program.dates()[0]]
+        Past = Q(studentregistration__section__parent_class__parent_program__in=past_programs)
 
         # Force Django to generate two subqueries without joining SRs to SSIs,
         # as efficiently as possible since it's still a big query.
@@ -158,15 +164,26 @@ class StudentClassRegModule(ProgramModuleObj):
         ).values('user').distinct()
         ssi_ids = StudentSubjectInterest.valid_objects().filter(
             subject__parent_program=self.program).values('user').distinct()
-        any_reg_q = Q(id__in = sr_ids) | Q(id__in = ssi_ids)
+        Q_classreg = Q(id__in = sr_ids) | Q(id__in = ssi_ids)
+        # For past events, we want the query to be solely user based
+        # so events don't have to be BOTH current and past simultaneously for combo lists
+        past_enrolled_users = ESPUser.objects.filter(Enrolled & Past).values('id').distinct()
+        Q_enrolled_past = Q(id__in=past_enrolled_users)
+        Q_enrolled = Enrolled & Par & Unexpired
+        Q_attended_past_temp = Q(record__event= "attended", record__program__in=past_programs)
+        past_attended_users = ESPUser.objects.filter(Q_attended_past_temp).values('id').distinct()
+        Q_attended_past = Q(id__in=past_attended_users)
 
         qobjects = {
-            'enrolled': Enrolled & Par & Unexpired,
-            'classreg': any_reg_q,
+            'enrolled': Q_enrolled,
+            'classreg': Q_classreg,
+            'enrolled_past': Q_enrolled_past,
+            'attended_past': Q_attended_past
         }
 
         if QObject:
             return qobjects
+
         else:
             return {k: ESPUser.objects.filter(v).distinct()
                     for k, v in qobjects.iteritems()}
@@ -179,10 +196,16 @@ class StudentClassRegModule(ProgramModuleObj):
             role_dict[item[0]] = item[1]
 
         return {'classreg': """Students who signed up for at least one class""",
-                'enrolled': """Students who are enrolled in at least one class"""}
+                'enrolled': """Students who are enrolled in at least one class""",
+                'enrolled_past': """Students who have enrolled in a past program""",
+                'attended_past': """Students who have attended a past program"""}
 
     def isCompleted(self):
-        return (len(get_current_request().user.getSectionsFromProgram(self.program)[:1]) > 0)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return (len(user.getSectionsFromProgram(self.program)[:1]) > 0)
 
     def deadline_met(self, extension=None):
         #   Allow default extension to be overridden if necessary
@@ -610,7 +633,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @staticmethod
     def clearslot_logic(request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return True if there are no errors """
-
+        verbs = RTC.getVisibleRegistrationTypeNames(prog)
         #   Get the sections that the student is registered for in the specified timeslot.
         oldclasses = request.user.getSections(prog).filter(meeting_times=extra)
         #   Narrow this down to one class if we're using the priority system.
@@ -622,7 +645,7 @@ class StudentClassRegModule(ProgramModuleObj):
             if result and not hasattr(request.user, "onsite_local"):
                 return result
             else:
-                sec.unpreregister_student(request.user)
+                sec.unpreregister_student(request.user, verbs)
         #   Return the ID of classes that were removed.
         return oldclasses.values_list('id', flat=True)
 

@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from collections import defaultdict
 from datetime import datetime, timedelta, date
+from pytz import country_names
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -43,14 +44,14 @@ from django import forms, dispatch
 from django.conf import settings
 from django.contrib.auth import logout, login, REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User, AnonymousUser, Group, UserManager
-from localflavor.us.models import USStateField, PhoneNumberField
+from localflavor.us.models import PhoneNumberField
 from localflavor.us.forms import USStateSelect
 
 from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db import models
-from django.db.models import signals
+from django.db.models import signals, Min
 from django.db.models.base import ModelState
 from django.db.models.manager import Manager
 from django.db.models.query import Q
@@ -111,6 +112,7 @@ class UserAvailability(models.Model):
     class Meta:
         app_label = 'users'
         db_table = 'users_useravailability'
+        verbose_name_plural = 'User availabilities'
 
     def __unicode__(self):
         return u'%s available as %s at %s' % (self.user.username, self.role.name, unicode(self.event))
@@ -122,6 +124,10 @@ class UserAvailability(models.Model):
         if (not hasattr(self, 'role')) or self.role is None:
             self.role = self.user.getUserTypes()[0]
         return super(UserAvailability, self).save(*args, **kwargs)
+
+    @classmethod
+    def entriesBySlot(self, event):
+        return self.objects.filter(event=event)
 
     def get_absolute_url(self):
         return self.event.program.get_manage_url()+"edit_availability?user="+str(self.user.id)
@@ -261,7 +267,8 @@ class BaseESPUser(object):
         Given an email and a name, returns the string used to address mail.
         """
         if name:
-            return u'%s <%s>' % (name, email)
+            # enclose name in quotes per RFC 2822 so that special characters in names are handled properly
+            return u'"%s" <%s>' % (name.replace('\\', '\\\\').replace('"', '\\"'), email)
         else:
             return u'<%s>' % email
 
@@ -376,33 +383,79 @@ class BaseESPUser(object):
         taught_programs = taught_programs.distinct()
         return taught_programs
 
-    def getTaughtClasses(self, program = None, include_rejected = False):
+    def getTaughtClasses(self, program = None, include_rejected = False, include_cancelled = True):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset. """
         if program is None:
-            return self.getTaughtClassesAll(include_rejected = include_rejected)
+            return self.getTaughtClassesAll(include_rejected = include_rejected, include_cancelled = include_cancelled)
         else:
-            return self.getTaughtClassesFromProgram(program, include_rejected = include_rejected)
+            return self.getTaughtClassesFromProgram(program, include_rejected = include_rejected, include_cancelled = include_cancelled)
 
     @cache_function
-    def getTaughtClassesFromProgram(self, program, include_rejected = False):
+    def getTaughtClassesFromProgram(self, program, include_rejected = False, include_cancelled = True):
         from esp.program.models import Program # Need the Class object.
         if not isinstance(program, Program): # if we did not receive a program
             raise ESPError("getTaughtClassesFromProgram expects a Program, not a `"+str(type(program))+"'.")
         else:
-            if include_rejected:
-                return self.classsubject_set.filter(parent_program = program)
-            else:
-                return self.classsubject_set.filter(parent_program = program).exclude(status=-10)
+            classes = self.classsubject_set.filter(parent_program = program)
+            if not include_rejected:
+                classes = classes.exclude(status=-10)
+            if not include_cancelled:
+                classes = classes.exclude(status=-20)
+            return classes
     getTaughtClassesFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
     getTaughtClassesFromProgram.depend_on_row('program.ClassSubject', lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
 
     @cache_function
-    def getTaughtClassesAll(self, include_rejected = False):
-        if include_rejected:
-            return self.classsubject_set.all()
+    def getModeratingSectionsFromProgram(self, program):
+        from esp.program.models import Program # Need the Class object.
+        if not isinstance(program, Program): # if we did not receive a program
+            raise ESPError("getModeratingSectionsFromProgram expects a Program, not a `" + str(type(program)) + "'.")
         else:
-            return self.classsubject_set.exclude(status=-10)
+            return self.moderating_sections.filter(parent_class__parent_program = program).annotate(start_time = Min('meeting_times__start')).order_by('start_time')
+    getModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
+    getModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
+
+    def getModeratingTimesFromProgram(self, program, exclude = []):
+        """ Return the times moderated for a program as a set.
+            If exclude is specified (as a list of classes), exclude sections from the specified classes. """
+        from esp.program.models import Program # Need the Class object.
+        if not isinstance(program, Program): # if we did not receive a program
+            raise ESPError("getModeratingTimesFromProgram expects a Program, not a `" + str(type(program)) + "'.")
+        else:
+            sections = self.getModeratingSectionsFromProgram(program)
+            times = set()
+            for s in sections:
+                if s.parent_class not in exclude:
+                    times.update(s.meeting_times.all())
+            return times
+
+    @cache_function
+    def getTaughtOrModeratingSectionsFromProgram(self, program, include_rejected = False, include_cancelled = True):
+        from esp.program.models import Program
+        from esp.program.models import ClassSection
+        if not isinstance(program, Program): # if we did not receive a program
+            raise ESPError("getTaughtOrModeratingSectionsFromProgram expects a Program, not a `" + str(type(program)) + "'.")
+        else:
+            classes = list(self.getTaughtClasses(program, include_rejected = include_rejected, include_cancelled = include_cancelled))
+            sections = ClassSection.objects.filter(parent_class__in=classes)
+            if not include_rejected:
+                sections = sections.exclude(status=-10)
+            if not include_cancelled:
+                sections = sections.exclude(status=-20)
+            return self.moderating_sections.filter(parent_class__parent_program = program) | sections
+    getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
+    getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda sec, teacher: {'self': teacher})
+    getTaughtOrModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
+
+    @cache_function
+    def getTaughtClassesAll(self, include_rejected = False, include_cancelled = True):
+        classes = self.classsubject_set.all()
+        if not include_rejected:
+            classes = classes.exclude(status=-10)
+        if not include_cancelled:
+            classes = classes.exclude(status=-20)
+        return classes
     getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {'self': cls})
     getTaughtClassesAll.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
 
@@ -412,42 +465,46 @@ class BaseESPUser(object):
         return "\n".join([cls.emailcode()+": "+cls.title for cls in full_classes])
     getFullClasses_pretty.depend_on_model('program.ClassSubject') # should filter by teachers... eh.
 
-
-    def getTaughtSections(self, program = None, include_rejected = False):
+    def getTaughtSections(self, program = None, include_rejected = False, include_cancelled = True):
         if program is None:
-            return self.getTaughtSectionsAll(include_rejected = include_rejected)
+            return self.getTaughtSectionsAll(include_rejected = include_rejected, include_cancelled = include_cancelled)
         else:
-            return self.getTaughtSectionsFromProgram(program, include_rejected = include_rejected)
+            return self.getTaughtSectionsFromProgram(program, include_rejected = include_rejected, include_cancelled = include_cancelled)
 
     @cache_function
-    def getTaughtSectionsAll(self, include_rejected = False):
+    def getTaughtSectionsAll(self, include_rejected = False, include_cancelled = True):
         from esp.program.models import ClassSection
-        classes = list(self.getTaughtClassesAll(include_rejected = include_rejected))
-        if include_rejected:
-            return ClassSection.objects.filter(parent_class__in=classes)
-        else:
-            return ClassSection.objects.filter(parent_class__in=classes).exclude(status=-10)
+        classes = list(self.getTaughtClassesAll(include_rejected = include_rejected, include_cancelled = include_cancelled))
+        sections = ClassSection.objects.filter(parent_class__in=classes)
+        if not include_rejected:
+            sections = sections.exclude(status=-10)
+        if not include_cancelled:
+            sections = sections.exclude(status=-20)
+        return sections
     getTaughtSectionsAll.depend_on_model('program.ClassSection')
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
                                                               {'self':self})
+
     @cache_function
-    def getTaughtSectionsFromProgram(self, program, include_rejected = False):
+    def getTaughtSectionsFromProgram(self, program, include_rejected = False, include_cancelled = True):
         from esp.program.models import ClassSection
-        classes = list(self.getTaughtClasses(program, include_rejected = include_rejected))
-        if include_rejected:
-            return ClassSection.objects.filter(parent_class__in=classes)
-        else:
-            return ClassSection.objects.filter(parent_class__in=classes).exclude(status=-10)
+        classes = list(self.getTaughtClasses(program, include_rejected = include_rejected, include_cancelled = include_cancelled))
+        sections = ClassSection.objects.filter(parent_class__in=classes)
+        if not include_rejected:
+            sections = sections.exclude(status=-10)
+        if not include_cancelled:
+            sections = sections.exclude(status=-20)
+        return sections
     getTaughtSectionsFromProgram.get_or_create_token(('program',))
     getTaughtSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
     getTaughtSectionsFromProgram.depend_on_cache(getTaughtClassesFromProgram, lambda self=wildcard, program=wildcard, **kwargs:
                                                                               {'self':self, 'program':program})
 
-    def getTaughtTime(self, program = None, include_scheduled = True, round_to = 0.0, include_rejected = False):
+    def getTaughtTime(self, program = None, include_scheduled = True, round_to = 0.0, include_rejected = False, include_cancelled = True):
         """ Return the time taught as a timedelta. If a program is specified, return the time taught for that program.
             If include_scheduled is given as False, we don't count time for already-scheduled classes.
             Rounds to the nearest round_to (if zero, doesn't round at all). """
-        user_sections = self.getTaughtSections(program, include_rejected = include_rejected)
+        user_sections = self.getTaughtSections(program, include_rejected = include_rejected, include_cancelled = include_cancelled)
         total_time = timedelta()
         round_to = float( round_to )
         if round_to:
@@ -512,24 +569,30 @@ class BaseESPUser(object):
             return ESPUser.objects.filter(Q_useroftype)
 
     @cache_function
-    def getAvailableTimes(self, program, ignore_classes=False):
+    def getAvailableTimes(self, program, ignore_classes=False, ignore_moderation=False):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
-        from esp.cal.models import Event
+        from esp.cal.models import Event, EventType
 
         #   Detect whether the program has the availability module, and assume
         #   the user is always available if it isn't there.
         if program.hasModule('AvailabilityModule'):
-            valid_events = Event.objects.filter(useravailability__user=self, program=program).order_by('start')
+            et = EventType.get_from_desc('Class Time Block')
+            valid_events = Event.objects.filter(useravailability__user=self, program=program, event_type=et).order_by('start')
         else:
             valid_events = program.getTimeSlots()
 
         if not ignore_classes:
             #   Subtract out the times that they are already teaching.
             other_sections = self.getTaughtSections(program)
-
             other_times = [sec.meeting_times.values_list('id', flat=True) for sec in other_sections]
             for lst in other_times:
+                valid_events = valid_events.exclude(id__in=lst)
+        if not ignore_moderation:
+            #   Subtract out the times that they are moderating
+            moderating_sections = self.getModeratingSectionsFromProgram(program)
+            moderating_times = [sec.meeting_times.values_list('id', flat=True) for sec in moderating_sections]
+            for lst in moderating_times:
                 valid_events = valid_events.exclude(id__in=lst)
 
         return list(valid_events)
@@ -614,7 +677,7 @@ class BaseESPUser(object):
     def getEnrolledClassesAll(self):
         return self.getClasses(None, verbs=['Enrolled'])
 
-    def getSections(self, program=None, verbs=None):
+    def getSections(self, program=None, verbs=None, valid_only=True):
         """ Since enrollment is not the only way to tie a student to a ClassSection,
         here's a slightly more general function for finding who belongs where. """
         from esp.program.models import ClassSection, RegistrationType
@@ -624,13 +687,16 @@ class BaseESPUser(object):
         else:
             rts = RegistrationType.objects.all()
 
+        srs = self.studentregistration_set.filter(relationship__in=rts)
+        if valid_only:
+            srs = srs.filter(StudentRegistration.is_valid_qobject())
+        sections = ClassSection.objects.filter(id__in=srs.values_list('section', flat=True))
         if program:
-            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(StudentRegistration.is_valid_qobject(), relationship__in=rts).values_list('section', flat=True)).filter(parent_class__parent_program=program)
-        else:
-            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(StudentRegistration.is_valid_qobject(), relationship__in=rts).values_list('section', flat=True))
+            sections = sections.filter(parent_class__parent_program=program)
+        return sections
 
-    def getSectionsFromProgram(self, program, verbs=None):
-        return self.getSections(program, verbs=verbs)
+    def getSectionsFromProgram(self, program, verbs=None, valid_only=True):
+        return self.getSections(program, verbs=verbs, valid_only=valid_only)
 
     def getEnrolledSections(self, program=None):
         if program is None:
@@ -756,7 +822,7 @@ class BaseESPUser(object):
             raise ESPError('User %s has blank email address; cannot recover password. Please contact webmasters to reset your password.' % self.username)
 
         # email addresses
-        to_email = ['%s <%s>' % (self.name(), self.email)]
+        to_email = [self.get_email_sendto_address()]
         from_email = settings.SERVER_EMAIL
 
         # create the ticket
@@ -883,10 +949,18 @@ class BaseESPUser(object):
     def canEdit(self, cls):
         """Returns if the user can edit the class
 
-A user can edit a class if they can administrate the program or if they
-are a teacher of the class"""
+        A user can edit a class if they can administrate the program or if they
+        are a teacher of the class"""
         if self in cls.get_teachers(): return True
         return self.isAdmin(cls.parent_program)
+
+    def canMod(self, sec):
+        """Returns if the user can moderate the section
+
+        A user can moderate a section if they can administrate the program or if they
+        are a moderator of the section or a teacher of the parent class"""
+        if self in sec.get_moderators() or self in sec.parent_class.get_teachers(): return True
+        return self.isAdmin(sec.parent_class.parent_program)
 
     def getVolunteerOffers(self, program):
         return self.volunteeroffer_set.filter(request__program=program)
@@ -902,12 +976,13 @@ are a teacher of the class"""
         if now is None:
             now = date.today()
         curyear = now.year
-        # Changed from 6/1 to 5/1 rollover so as not to affect start of Summer HSSP registration
-        # - Michael P 5/24/2010
-        # Changed from 5/1 to 7/31 rollover to as to neither affect registration starts nor occur prior to graduation.
-        # Adam S 8/1/2010
-        #if datetime(curyear, 6, 1) > now:
-        if date(curyear, 7, 31) > now:
+        try:
+            # An error here can cause a good chunk of the site to break,
+            # so we'll just catch this if it fails and fall back on the default
+            d = datetime.strptime(Tag.getTag('grade_increment_date'), '%Y-%m-%d').date().replace(year=curyear)
+        except:
+            d = date(curyear, 7, 31)
+        if d > now:
             schoolyear = curyear
         else:
             schoolyear = curyear + 1
@@ -1059,7 +1134,7 @@ class ESPUser(User, BaseESPUser):
 
     class Meta:
         proxy = True
-        verbose_name = 'ESP User'
+        verbose_name = 'ESP user'
 
     def makeAdmin(self):
         """
@@ -1416,8 +1491,10 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         ('shirt_type', 'Shirt type'),
     ]
     link_fields_widgets = {
-        'from_here': NullRadioSelect,
+        'from_here': NullCheckboxSelect,
         'is_graduate_student': NullCheckboxSelect,
+        'shirt_size': forms.TextInput,
+        'shirt_type': forms.TextInput
     }
 
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
@@ -1726,7 +1803,7 @@ class ZipCodeSearches(models.Model):
     class Meta:
         app_label = 'users'
         db_table = 'users_zipcodesearches'
-        verbose_name_plural = 'Zip Code Searches'
+        verbose_name_plural = 'Zip code searches'
 
     def __unicode__(self):
         return u'%s Zip Codes that are less than %s miles from %s' % \
@@ -1766,7 +1843,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         if queryset: return queryset[0]
         else: return None
 
-    user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=False)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     e_mail = models.EmailField('Email address', blank=True, null=True, max_length=75)
@@ -1776,9 +1853,10 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     phone_even = PhoneNumberField('Alternate phone',blank=True, null=True)
     address_street = models.CharField('Street address',max_length=100,blank=True, null=True)
     address_city = models.CharField('City',max_length=50,blank=True, null=True)
-    address_state = USStateField('State',blank=True, null=True)
+    address_state = models.CharField('State',max_length=32,blank=True, null=True)
     address_zip = models.CharField('Zip code',max_length=5,blank=True, null=True)
     address_postal = models.TextField(blank=True,null=True)
+    address_country = models.CharField('Country', max_length=2, choices=sorted(country_names.items(), key = lambda x: x[1]), default='US')
     undeliverable = models.BooleanField(default=False)
 
     class Meta:
@@ -1830,15 +1908,14 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
             return "%s, %s (%s)" % (self.last_name, self.first_name, self.e_mail)
 
     @staticmethod
-    def addOrUpdate(regProfile, new_data, contactInfo, prefix='', curUser=None):
+    def addOrUpdate(curUser, regProfile, new_data, contactInfo, prefix=''):
         """ adds or updates a ContactInfo record """
         if contactInfo is None:
             contactInfo = ContactInfo()
         for i in contactInfo.__dict__.keys():
             if i != 'user_id' and i != 'id' and prefix+i in new_data:
                 contactInfo.__dict__[i] = new_data[prefix+i]
-        if curUser is not None:
-            contactInfo.user = curUser
+        contactInfo.user = curUser
         contactInfo.save()
         return contactInfo
 
@@ -2205,7 +2282,8 @@ class Record(models.Model):
         ("teacheracknowledgement","Did teacher acknowledgement"),
         ("studentacknowledgement", "Did student acknowledgement"),
         ("lunch_selected","Selected a lunch block"),
-        ("extra_form_done","Filled out Custom Form"),
+        ("student_extra_form_done","Filled out Student Custom Form"),
+        ("teacher_extra_form_done","Filled out Teacher Custom Form"),
         ("extra_costs_done","Filled out Student Extra Costs Form"),
         ("donation_done", "Filled out Donation Form"),
         ("waitlist","Waitlisted for a program"),
@@ -2265,7 +2343,7 @@ class Record(models.Model):
     def createBit(cls, extension, program, user):
         from esp.accounting.controllers import IndividualAccountingController
         if extension == 'Paid':
-            IndividualAccountingController.updatePaid(True, program, user)
+            IndividualAccountingController.updatePaid(program, user, True)
 
         if cls.user_completed(user, extension.lower(), program):
             return False
@@ -2307,50 +2385,50 @@ class Permission(ExpirableModel):
         ("OverrideFull", "Register for a full program"),
         ("OverridePhaseZero", "Bypass Phase Zero to proceed to other student reg modules"),
         ("Student Deadlines", (
-            ("Student", "Basic student access"),
             ("Student/All", "All student deadlines"),
+            ("Student", "Basic student access"),
+            ("Student/MainPage", "Registration mainpage"),
+            ("Student/Profile", "Set profile info"),
             ("Student/Acknowledgement", "Student acknowledgement"),
+            ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
+            ("Student/PhaseZero", "Enter Phase Zero"),
             ("Student/Applications", "Apply for classes"),
             ("Student/Classes", "Register for classes"),
             ("Student/Classes/Lunch", "Register for lunch"),
             ("Student/Classes/Lottery", "Enter the lottery"),
-            ("Student/Classes/PhaseZero", "Enter Phase Zero"),
             ("Student/Classes/Lottery/View", "View lottery results"),
-            ("Student/ExtraCosts", "Extra costs page"),
-            ("Student/MainPage", "Registration mainpage"),
             ("Student/Confirm", "Confirm registration"),
             ("Student/Cancel", "Cancel registration"),
             ("Student/Removal", "Remove class registrations after registration closes"),
-            ("Student/Payment", "Pay for a program"),
-            ("Student/Profile", "Set profile info"),
-            ("Student/Survey", "Access to survey"),
-            ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
             ("Student/Finaid", "Access to financial aid application"),
+            ("Student/ExtraCosts", "Extra costs page"),
+            ("Student/Payment", "Pay for a program"),
             ("Student/Webapp", "Access to student onsite webapp"),
+            ("Student/Survey", "Access to survey"),
         )),
         ("Teacher Deadlines", (
-            ("Teacher", "Basic teacher access"),
             ("Teacher/All", "All teacher deadlines"),
+            ("Teacher", "Basic teacher access"),
+            ("Teacher/MainPage", "Registration mainpage"),
+            ("Teacher/Profile", "Set profile info"),
             ("Teacher/Acknowledgement", "Teacher acknowledgement"),
-            ("Teacher/AppReview", "Review students' apps"),
             ("Teacher/Availability", "Set availability"),
+            ("Teacher/Moderate", "Fill out the moderator form"),
+            ("Teacher/Events", "Teacher training signup"),
+            ("Teacher/Quiz", "Teacher quiz"),
             ("Teacher/Catalog", "Catalog"),
+            ("Teacher/Classes/All", "All classes deadlines"),
             ("Teacher/Classes", "Classes"),
-            ("Teacher/Classes/All", "Classes/All"),
-            ("Teacher/Classes/View", "Classes/View"),
-            ("Teacher/Classes/Edit", "Classes/Edit"),
+            ("Teacher/Classes/View", "View registered classes"),
+            ("Teacher/Classes/Edit", "Edit registered classes"),
             ("Teacher/Classes/CancelReq", "Request class cancellation"),
             ("Teacher/Classes/Coteachers", "Add or remove coteachers"),
             ("Teacher/Classes/Create", "Create classes of all types"),
             ("Teacher/Classes/Create/Class", "Create standard classes"),
             ("Teacher/Classes/Create/OpenClass", "Create open classes"),
-            ("Teacher/Events", "Teacher training signup"),
-            ("Teacher/Quiz", "Teacher quiz"),
-            ("Teacher/MainPage", "Registration mainpage"),
-            ("Teacher/Survey", "Teacher Survey"),
-            ("Teacher/Profile", "Set profile info"),
-            ("Teacher/Survey", "Access to survey"),
+            ("Teacher/AppReview", "Review students' apps"),
             ("Teacher/Webapp", "Access to teacher onsite webapp"),
+            ("Teacher/Survey", "Access to survey"),
         )),
         ("Volunteer Deadlines", (
             ("Volunteer", "Basic volunteer access"),

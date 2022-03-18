@@ -1,4 +1,4 @@
-<select name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>
+<select {% if widget.required %}required {% endif %}name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>
   <option value="{{ widget.blank_value }}" selected="selected">{{ widget.blank_label }}</option>
   {% for group_name, group_choices, group_index in widget.optgroups %}
     {% if group_name %}<optgroup label="{{ group_name }}">{% endif %}

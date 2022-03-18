@@ -39,7 +39,7 @@ from esp.dbmail.models import send_mail
 from esp.users.models import ESPUser, Record
 from esp.tagdict.models import Tag
 from esp.accounting.models import LineItemType
-from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.accounting.controllers import IndividualAccountingController
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -87,6 +87,7 @@ class DonationForm(forms.Form):
 
 
 class DonationModule(ProgramModuleObj):
+    doc = """Solicit donations from students."""
 
     event = "donation_done"
 
@@ -118,13 +119,16 @@ class DonationModule(ProgramModuleObj):
         return self.apply_settings().get(name, default)
 
     def line_item_type(self):
-        pac = ProgramAccountingController(self.program)
-        (donate_type, created) = pac.get_lineitemtypes().get_or_create(program=self.program, text=self.get_setting('donation_text'))
+        (donate_type, created) = LineItemType.objects.get_or_create(program=self.program, text=self.get_setting('donation_text'))
         return donate_type
 
     def isCompleted(self):
         """Whether the user made a decision about donating to LU."""
-        return Record.objects.filter(user=get_current_request().user, program=self.program, event=self.event).exists()
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return Record.objects.filter(user=user, program=self.program, event=self.event).exists()
 
     def students(self, QObject = False):
         QObj = Q(transfer__line_item=self.line_item_type())
