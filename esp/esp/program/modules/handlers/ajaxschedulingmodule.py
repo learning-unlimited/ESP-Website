@@ -159,29 +159,22 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         return self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
 
-    def ajax_schedule_swap(self, prog, assignments1, assignments2, user=None, override=False):
-        # assignments1: the list of new assignments for the section(s) in room 1 in json format
-        # assignments2: the list of new assignments for the section(s) in room 2 in json format
-        # Unschedule the section(s) in room 1
-        for asmt in assignments1:
+    def ajax_schedule_swap(self, prog, assignments, user=None, override=False):
+        # assignments: the list of new assignments for the section(s) in json format
+        # Unschedule all of the section(s)
+        for asmt in assignments:
             cls = ClassSection.objects.get(id=asmt['section'])
             retval = self.ajax_schedule_deletereg(prog, cls, user)
             if not json.loads(retval.content)['ret']:
                 return retval
 
-        # Schedule the section(s) from room 2 into room 1
-        for asmt in assignments2:
-            cls = ClassSection.objects.get(id=asmt['section'])
-            retval = self.ajax_schedule_assignreg(prog, cls, asmt['timeslots'], [asmt['room_id']], user, override)
-            if not json.loads(retval.content)['ret']:
-                return retval
-
-        # Schedule the section(s) from room 1 into room 2
-        for asmt in assignments1:
-            cls = ClassSection.objects.get(id=asmt['section'])
-            retval = self.ajax_schedule_assignreg(prog, cls, asmt['timeslots'], [asmt['room_id']], user, override)
-            if not json.loads(retval.content)['ret']:
-                return retval
+        # Reschedule all of the section(s)
+        for asmt in assignments:
+            if asmt['room_id']:
+                cls = ClassSection.objects.get(id=asmt['section'])
+                retval = self.ajax_schedule_assignreg(prog, cls, asmt['timeslots'], [asmt['room_id']], user, override)
+                if not json.loads(retval.content)['ret']:
+                    return retval
 
         return self.makeret(prog, ret=True, msg="Class sections successfully swapped")
 
@@ -261,10 +254,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
             override = request.POST['override'] == "true"
             retval = self.ajax_schedule_assignreg(prog, cls, times, classrooms, request.user, override)
         elif action == 'swap':
-            assignments1 = json.loads(request.POST['assignments1'])
-            assignments2 = json.loads(request.POST['assignments2'])
+            assignments = json.loads(request.POST['assignments'])
             override = request.POST['override'] == "true"
-            retval = self.ajax_schedule_swap(prog, assignments1, assignments2, request.user, override)
+            retval = self.ajax_schedule_swap(prog, assignments, request.user, override)
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
 

@@ -101,8 +101,7 @@ function ApiClient() {
         var req = {
             action: 'swap',
             csrfmiddlewaretoken: csrf_token(),
-            assignments1: JSON.stringify(assignments1),
-            assignments2: JSON.stringify(assignments2),
+            assignments: JSON.stringify(assignments1.concat(assignments2)),
             override: override
         };
         this.send_request('ajax_schedule_class', req, callback, errorReporter);
