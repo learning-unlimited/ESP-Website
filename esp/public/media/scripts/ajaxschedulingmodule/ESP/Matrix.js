@@ -118,6 +118,15 @@ function Matrix(
     this.moderatorDirectory = moderatorDirectory;
     if(has_moderator_module === "True") this.moderatorDirectory.bindMatrix(this);
 
+    /**
+     * Bind a scheduler to the matrix to access various functions
+     *
+     * @param scheduler: The scheduler to bind
+     */
+    this.bindScheduler = function(scheduler) {
+        this.scheduler = scheduler;
+    }
+
     // Set up scheduling checks
     this.updateCells = function(){
         $j.each(this.cells, function(index, room) {

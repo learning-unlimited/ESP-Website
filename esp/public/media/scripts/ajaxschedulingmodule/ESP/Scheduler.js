@@ -105,6 +105,8 @@ function Scheduler(
             this.moderatorDirectory
         );
 
+        this.matrix.bindScheduler(this);
+
         this.directory = new Directory(this.sections,
                                        directoryEl,
                                        data.schedule_assignments,

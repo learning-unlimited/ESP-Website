@@ -654,7 +654,9 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             new_assignments1,
             new_assignments2,
             override,
-            function(){},
+            function() {
+                this.matrix.scheduler.changelogFetcher.getChanges();
+            }.bind(this),
             // If there's an error, locally reschedule the sections in their old locations
             function(msg) {
                 this.swapSectionsLocal(old_assignments1, old_assignments2);
