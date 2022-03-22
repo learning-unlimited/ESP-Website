@@ -572,24 +572,47 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         var room2 = old_assignment2.room_id;
         var old_timeslots1 = old_assignment1.timeslots;
         var old_timeslots2 = old_assignment2.timeslots;
-        var new_timeslots1 = this.matrix.timeslots.get_timeslots_to_schedule_section(section1, old_timeslots2[0]);
-        var new_timeslots2 = this.matrix.timeslots.get_timeslots_to_schedule_section(section2, old_timeslots1[0]);
 
-        // Abort if there isn't enough time for either section in their new classroom
-        if(new_timeslots1 === null){
-            this.matrix.messagePanel.addMessage("Error: not enough time to swap the first section to the new room.", color = "red");
-            this.unselectSection();
+        if (room1 === null && room2 === null) {
             return;
         }
-        if(new_timeslots2 === null){
-            this.matrix.messagePanel.addMessage("Error: not enough time to swap the second section to the new room.", color = "red");
-            this.unselectSection();
-            return;
+        if (room1 === null){
+            // If section 1 is unscheduled, section 2 will become unscheduled
+            var new_timeslots2 = [];
+            var swapping_sections1 = [section1];
+        } else {
+            // Get timeslots to schedule section 2 in classroom 1
+            var new_timeslots2 = this.matrix.timeslots.get_timeslots_to_schedule_section(section2, old_timeslots1[0]);
+
+            // Abort if there isn't enough time for section 2 in classroom 1
+            if(new_timeslots2 === null){
+                this.matrix.messagePanel.addMessage("Error: not enough time to swap the second section to the new room.", color = "red");
+                this.unselectSection();
+                return;
+            }
+
+            // Get the sections you'll be swapping with
+            var swapping_sections1 = new_timeslots2.map(ts => this.matrix.getCell(room1, ts).section);
+        }
+        if (room2 === null){
+            // If section 2 is unscheduled, section 1 will become unscheduled
+            var new_timeslots1 = [];
+            var swapping_sections2 = [section2];
+        } else {
+            // Get timeslots to schedule section 1 in classroom 2
+            var new_timeslots1 = this.matrix.timeslots.get_timeslots_to_schedule_section(section1, old_timeslots2[0]);
+
+            // Abort if there isn't enough time for section 1 in classroom 2
+            if(new_timeslots1 === null){
+                this.matrix.messagePanel.addMessage("Error: not enough time to swap the first section to the new room.", color = "red");
+                this.unselectSection();
+                return;
+            }
+
+            // Get the sections you'll be swapping with
+            var swapping_sections2 = new_timeslots1.map(ts => this.matrix.getCell(room2, ts).section);
         }
 
-        // Get the sections you'll be swapping with (might be different than section1/section2)
-        var swapping_sections1 = new_timeslots2.map(ts => this.matrix.getCell(room1, ts).section);
-        var swapping_sections2 = new_timeslots1.map(ts => this.matrix.getCell(room2, ts).section);
         // If there's more than one swapping section, confirm the user is OK with this
         if(_.uniq(swapping_sections1.filter(Boolean)).length > 1 && !confirm("More than one section will need to be swapped from the old room. Is this OK?")){
             return;
@@ -605,7 +628,9 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         var new_assignments1 = [];
         var start_slot = this.matrix.timeslots.get_by_id(old_timeslots2[0]);
         for(var sec of swapping_sections1){
-            if(sec){
+            if(room2 === null) {
+                new_assignments1.push({"section": sec.id, "timeslots": [], "room_id": room2});
+            } else if(sec){
                 if(new_assignments1.length == 0 || sec.id !== new_assignments1[new_assignments1.length - 1].section){
                     var new_timeslots = this.matrix.timeslots.get_timeslots_to_schedule_section(sec, start_slot.id);
                     var valid = this.matrix.validateAssignment(sec, room2, new_timeslots, ignore_sections);
@@ -627,7 +652,9 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         var new_assignments2 = [];
         var start_slot = this.matrix.timeslots.get_by_id(old_timeslots1[0])
         for(var sec of swapping_sections2){
-            if(sec){
+            if(room1 === null) {
+                new_assignments2.push({"section": sec.id, "timeslots": [], "room_id": room1});
+            } else if(sec){
                 if(new_assignments2.length == 0 || sec.id !== new_assignments2[new_assignments2.length - 1].section){
                     var new_timeslots = this.matrix.timeslots.get_timeslots_to_schedule_section(sec, start_slot.id);
                     var valid = this.matrix.validateAssignment(sec, room1, new_timeslots, ignore_sections);
@@ -682,11 +709,15 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         }
         // Schedule the section(s) from room 2 into room 1
         for(var asmt of assignments2){
-            this.scheduleSectionLocal(this.getById(asmt.section), asmt.room_id, asmt.timeslots);
+            if(asmt.room_id !== null){
+                this.scheduleSectionLocal(this.getById(asmt.section), asmt.room_id, asmt.timeslots);
+            }
         }
         // Schedule the section(s) from room 1 into room 2
         for(var asmt of assignments1){
-            this.scheduleSectionLocal(this.getById(asmt.section), asmt.room_id, asmt.timeslots);
+            if(asmt.room_id !== null){
+                this.scheduleSectionLocal(this.getById(asmt.section), asmt.room_id, asmt.timeslots);
+            }
         }
     }
 
