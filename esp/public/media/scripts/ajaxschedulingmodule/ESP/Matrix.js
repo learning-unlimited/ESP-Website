@@ -418,7 +418,7 @@ function Matrix(
             } else if (cell.section && cell.section !== section && !ignore_sections.includes(cell.section)) {
                 return "Error: There is already a class scheduled in " + this.rooms[cell.room_id].text + " during timeslot " + (this.timeslots.get_by_id(cell.timeslot_id).order + 1).toString();
             } else if (availableTimeslots.indexOf(schedule_timeslots[index]) == -1){
-                return "Error: The teachers of " + cell.section.emailcode + " are not available during timeslot " + (this.timeslots.get_by_id(cell.timeslot_id).order + 1).toString();
+                return "Error: The teachers of " + section.emailcode + " are not available during timeslot " + (this.timeslots.get_by_id(cell.timeslot_id).order + 1).toString();
             } else {
                 return true;
             }
