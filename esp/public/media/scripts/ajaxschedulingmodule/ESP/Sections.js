@@ -579,7 +579,9 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         if (room1 === null){
             // If section 1 is unscheduled, section 2 will become unscheduled
             var new_timeslots2 = [];
-            var swapping_sections1 = [section1];
+            // Repeat section 1 for each timeslot it needs
+            var temp_timeslots = this.matrix.timeslots.get_timeslots_to_schedule_section(section1, old_timeslots2[0]);
+            var swapping_sections1 = Array(temp_timeslots.length).fill(section1);
         } else {
             // Get timeslots to schedule section 2 in classroom 1
             var new_timeslots2 = this.matrix.timeslots.get_timeslots_to_schedule_section(section2, old_timeslots1[0]);
@@ -597,7 +599,9 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         if (room2 === null){
             // If section 2 is unscheduled, section 1 will become unscheduled
             var new_timeslots1 = [];
-            var swapping_sections2 = [section2];
+            // Repeat section 2 for each timeslot it needs
+            var temp_timeslots = this.matrix.timeslots.get_timeslots_to_schedule_section(section2, old_timeslots1[0]);
+            var swapping_sections2 = Array(temp_timeslots.length).fill(section2);
         } else {
             // Get timeslots to schedule section 1 in classroom 2
             var new_timeslots1 = this.matrix.timeslots.get_timeslots_to_schedule_section(section1, old_timeslots2[0]);
@@ -629,22 +633,26 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         var start_slot = this.matrix.timeslots.get_by_id(old_timeslots2[0]);
         for(var sec of swapping_sections1){
             if(room2 === null) {
-                new_assignments1.push({"section": sec.id, "timeslots": [], "room_id": room2});
-            } else if(sec){
-                if(new_assignments1.length == 0 || sec.id !== new_assignments1[new_assignments1.length - 1].section){
-                    var new_timeslots = this.matrix.timeslots.get_timeslots_to_schedule_section(sec, start_slot.id);
-                    var valid = this.matrix.validateAssignment(sec, room2, new_timeslots, ignore_sections);
-                    if(!valid.valid){
-                        console.log(valid.reason);
-                        this.matrix.messagePanel.addMessage(valid.reason, color = "red");
-                        this.unselectSection();
-                        return;
-                    }
-                    new_assignments1.push({"section": sec.id, "timeslots": new_timeslots, "room_id": room2});
-                    start_slot = this.matrix.timeslots.get_by_order(this.matrix.timeslots.get_by_id(new_timeslots[new_timeslots.length - 1]).order + 1);
+                if(sec){
+                    new_assignments1.push({"section": sec.id, "timeslots": [], "room_id": room2});
                 }
             } else {
-                start_slot = this.matrix.timeslots.get_by_order(start_slot.order + 1);
+                if(sec){
+                    if(new_assignments1.length == 0 || sec.id !== new_assignments1[new_assignments1.length - 1].section){
+                        var new_timeslots = this.matrix.timeslots.get_timeslots_to_schedule_section(sec, start_slot.id);
+                        var valid = this.matrix.validateAssignment(sec, room2, new_timeslots, ignore_sections);
+                        if(!valid.valid){
+                            console.log(valid.reason);
+                            this.matrix.messagePanel.addMessage(valid.reason, color = "red");
+                            this.unselectSection();
+                            return;
+                        }
+                        new_assignments1.push({"section": sec.id, "timeslots": new_timeslots, "room_id": room2});
+                        start_slot = this.matrix.timeslots.get_by_order(this.matrix.timeslots.get_by_id(new_timeslots[new_timeslots.length - 1]).order + 1);
+                    }
+                } else {
+                    start_slot = this.matrix.timeslots.get_by_order(start_slot.order + 1);
+                }
             }
         }
 
@@ -653,22 +661,26 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         var start_slot = this.matrix.timeslots.get_by_id(old_timeslots1[0])
         for(var sec of swapping_sections2){
             if(room1 === null) {
-                new_assignments2.push({"section": sec.id, "timeslots": [], "room_id": room1});
-            } else if(sec){
-                if(new_assignments2.length == 0 || sec.id !== new_assignments2[new_assignments2.length - 1].section){
-                    var new_timeslots = this.matrix.timeslots.get_timeslots_to_schedule_section(sec, start_slot.id);
-                    var valid = this.matrix.validateAssignment(sec, room1, new_timeslots, ignore_sections);
-                    if(!valid.valid){
-                        console.log(valid.reason);
-                        this.matrix.messagePanel.addMessage(valid.reason, color = "red");
-                        this.unselectSection();
-                        return;
-                    }
-                    new_assignments2.push({"section": sec.id, "timeslots": new_timeslots, "room_id": room1});
-                    start_slot = this.matrix.timeslots.get_by_order(this.matrix.timeslots.get_by_id(new_timeslots[new_timeslots.length - 1]).order + 1);
+                if(sec){
+                    new_assignments2.push({"section": sec.id, "timeslots": [], "room_id": room1});
                 }
             } else {
-                start_slot = this.matrix.timeslots.get_by_order(start_slot.order + 1);
+                if(sec){
+                    if(new_assignments2.length == 0 || sec.id !== new_assignments2[new_assignments2.length - 1].section){
+                        var new_timeslots = this.matrix.timeslots.get_timeslots_to_schedule_section(sec, start_slot.id);
+                        var valid = this.matrix.validateAssignment(sec, room1, new_timeslots, ignore_sections);
+                        if(!valid.valid){
+                            console.log(valid.reason);
+                            this.matrix.messagePanel.addMessage(valid.reason, color = "red");
+                            this.unselectSection();
+                            return;
+                        }
+                        new_assignments2.push({"section": sec.id, "timeslots": new_timeslots, "room_id": room1});
+                        start_slot = this.matrix.timeslots.get_by_order(this.matrix.timeslots.get_by_id(new_timeslots[new_timeslots.length - 1]).order + 1);
+                    }
+                } else {
+                    start_slot = this.matrix.timeslots.get_by_order(start_slot.order + 1);
+                }
             }
         }
 
@@ -711,12 +723,16 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         for(var asmt of assignments2){
             if(asmt.room_id !== null){
                 this.scheduleSectionLocal(this.getById(asmt.section), asmt.room_id, asmt.timeslots);
+            } else {
+                this.unscheduleSectionLocal(this.getById(asmt.section));
             }
         }
         // Schedule the section(s) from room 1 into room 2
         for(var asmt of assignments1){
             if(asmt.room_id !== null){
                 this.scheduleSectionLocal(this.getById(asmt.section), asmt.room_id, asmt.timeslots);
+            } else {
+                this.unscheduleSectionLocal(this.getById(asmt.section));
             }
         }
     }
