@@ -139,7 +139,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 // Color cell based on how well room capacity matches section capacity
                 if(this.matrix.rooms[this.room_id].num_students < .5 * section.class_size_max) { // Class size is too big, make cell red
                     return this.cellColors.HSLToRGB(0,100,50 + 50 * (this.matrix.rooms[this.room_id].num_students / section.class_size_max));
-                } else if(this.matrix.rooms[this.room_id].num_students > 1.5 * section.class_size_max) { // Class size is too small, make cell red
+                } else if(this.matrix.rooms[this.room_id].num_students > 1.5 * section.class_size_max) { // Class size is too small, make cell blue
                     return this.cellColors.HSLToRGB(240,100,50 + 50 * (section.class_size_max / this.matrix.rooms[this.room_id].num_students));
                 } else { // Class size is good, make cell green
                     return this.cellColors.HSLToRGB(120,100,100 - 50 * (Math.min(section.class_size_max, this.matrix.rooms[this.room_id].num_students) / Math.max(section.class_size_max, this.matrix.rooms[this.room_id].num_students)));
