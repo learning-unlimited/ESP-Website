@@ -578,7 +578,6 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         }
         if (room1 === null){
             // If section 1 is unscheduled, section 2 will become unscheduled
-            var new_timeslots2 = [];
             // Repeat section 1 for each timeslot it needs
             var temp_timeslots = this.matrix.timeslots.get_timeslots_to_schedule_section(section1, old_timeslots2[0]);
             var swapping_sections1 = Array(temp_timeslots.length).fill(section1);
@@ -598,7 +597,6 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         }
         if (room2 === null){
             // If section 2 is unscheduled, section 1 will become unscheduled
-            var new_timeslots1 = [];
             // Repeat section 2 for each timeslot it needs
             var temp_timeslots = this.matrix.timeslots.get_timeslots_to_schedule_section(section2, old_timeslots1[0]);
             var swapping_sections2 = Array(temp_timeslots.length).fill(section2);
