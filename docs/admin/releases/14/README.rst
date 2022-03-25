@@ -16,6 +16,7 @@ User search modules
 - Added options to search by students/teachers that have enrolled in/attended/taught for previous programs
 - Fixed some combination lists
 - Fixed the combination lists to prevent "NOT"-only selections.
+- Fixed multiselect filters (cherry-picked to SR-13)
 
 Program records
 ~~~~~~~~~~~~~~~
@@ -30,11 +31,18 @@ AJAX Scheduler
 - Classes can now be sorted by teacher "hosedness"
 - If a server error is encountered while saving a scheduling comment, the comment is now reverted
 - Added a button to print the scheduling matrix
+- Added the ability to swap sections in the scheduler
+- Fixed a bug that prevented sections from being rescheduled to an overlapping time (e.g., from 10-12 to 9-11)
+- Added dates to the timeslots (column headers) in the scheduler
+- Added class style to the scheduler
+- Added a class category scheduling check to the scheduler (colors classes by category)
+- The capacity mismatch scheduling check now distinguishes between a class being too small (shades of blue) for the room versus too big for the room (shades of red)
 
 Accounting
 ~~~~~~~~~~
 - Line items can now be marked as covered by financial aid (or not, e.g., t-shirts). When financial aid is granted, it will only be granted in an amount that covers only the line items that are marked as covered by financial aid.
 - Added a new page to see all of the accounting for a user across all programs (/accounting/user)
+- All "Paid for a program" records have been converted to transfers; these records are now deprecated
 
 Student and teacher registration changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -58,6 +66,7 @@ Optional and required extra costs
 - The numbers of students that have requested particular options can be seen on the program dashboard
 - The sibling discount form has also been added to this module (if enabled in the program settings) and the discount value now reflects the respective program setting
 - The Splash Info Module, which previously included the lunch options and sibling discount forms, has been completely removed
+- The name that students record for the sibling discount can be retrieved as a field in the arbitrary user list
 
 Program management changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -89,6 +98,7 @@ Theme changes
 ~~~~~~~~~~~~~
 - Changed the default font families for the default theme customizations ("Default" and "Rupaa")
 - Fixed many bugs in the theme editor, including when loading and saving customizations
+- The icon dropdown for the bigpicture theme settings now shows the actual icons
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
@@ -114,6 +124,8 @@ Minor bug fixes
 - Fixed errors that occured when attempting to send emails with weird characters
 - Fixed the completion certificate printable for when a user's name had weird characters
 - Fixed a small number of forms that could not be submitted via javascript
+- Fixed the wording on the profile form for new users
+- Fixed the review_single survey links for admin survey review pages
 
 Development changes
 ===================
