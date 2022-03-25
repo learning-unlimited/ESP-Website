@@ -1,0 +1,109 @@
+{% extends "main.html" %}
+
+{% block title %}Monitor Emails{% endblock %}
+{% block content_title %}Monitor Emails{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<style>
+table.emails-table {
+  border: 1px solid black;
+}
+  
+table {
+  width: 100%;
+  table-layout: fixed;
+  word-wrap: break-word;
+  border-collapse: collapse;
+}
+
+th {
+  background: black;
+  color: white;
+}
+
+tr.email-header > th, tr.email-header > td {
+  border-bottom: 1px solid #ddd;
+}
+
+th, td {
+  padding-top: 5px !important;
+  padding-left: 5px !important;
+  padding-bottom: 5px !important;
+  padding-right: 5px !important;
+}
+
+tr.email-header:hover {
+  background-color: #f5f5f5;
+}
+
+tr.email-details {
+  display: none;
+  border-left: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<p>This page lets you monitor emails that have been sent through the website via a program's comm panel.</p>
+<form action="/manage/emails" method="get">
+<p>Currently showing emails since <input name="start_date" type="date" onchange="$j(this).parents('form').submit();return false;" value="{{ start_date|date:"Y-m-d" }}"></p>
+</form>
+<p>If you notice any problems (emails aren't getting processed, emails won't send, emails are not sent to everyone, etc.), please contact <a href="mailto:websupport@learningu.org">websupport</a>.</p>
+
+{% if not requests %}
+<p>There are no emails to monitor.</p>
+{% else %}
+<p>Click on a row for more details:</p>
+<table class="emails-table">
+    <tr>
+        <th style="width:5%;"></th>
+        <th style="width:50%;">Subject</th>
+        <th>Request Processed</th>
+        <th># Recipients</th>
+        <th># Emails Sent</th>
+    </tr>
+    {% for req in requests %}
+        <tr class="email-header">
+            <td>+</td>
+            <td><b>{{ req.subject }}</b></td>
+            <td style="text-align:center;">{% if req.processed %}&#10003;{% else %}&#10005;{% endif %}</td>
+            <td style="text-align:center;">{{ req.num_rec }}</td>
+            <td style="text-align:center;">{{ req.num_sent }}</td>
+        </tr>
+        <tr class="email-details">
+            {% autoescape off %}
+            <td colspan="3" style="vertical-align:top;">{{ req.msgtext }}</td>
+            {% endautoescape %}
+            <td colspan="2" style="vertical-align:top;padding:0;"><table>
+                <tr><td><i>Sent by:</i><br /><a href="/manage/userview?username={{ req.creator|urlencode }}">{{ req.creator }}</a></td></tr>
+                <tr><td><i>Sending address:</i><br />{{ req.sender }}</td></tr>
+                <tr><td><i>Created at:</i><br />{{ req.created_at }}</td></tr>
+                <tr><td><i>Finished at:</i><br />{{ req.finished_at }}</td></tr>
+                {% if req.public %}
+                <tr><td><i><a href="/email/{{ req.id }}" target="_blank">Public here</a></i><br /></td></tr>
+                {% endif %}
+            </table></td>
+        </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+<script>
+$j(function() {
+    $j("tr.email-header").click(function(event) {
+        var $target = $j(event.target).parent("tr.email-header");
+        $target.next("tr").toggle();
+        if ($target.find("td:first").html() == "+") {
+            $target.find("td:first").html("-");
+        } else {
+            $target.find("td:first").html("+");
+        }
+    });
+});
+</script>
+
+{% endblock %}

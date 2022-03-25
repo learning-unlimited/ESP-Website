@@ -8,7 +8,9 @@ import sys
 # If this has happened, then the VIRTUAL_ENV environment variable should be
 # defined.
 # If the variable isn't defined, then activate our own virtualenv.
-if os.environ.get('VIRTUAL_ENV') is None:
+# Alternatively, if we're using the Github Actions testing environment,
+# then the GITHUB_ACTIONS environment variable should be set to true.
+if os.environ.get('VIRTUAL_ENV') is None and not os.environ.get('GITHUB_ACTIONS'):
     project = os.path.dirname(os.path.realpath(__file__))
     root = os.path.dirname(project)
     activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')

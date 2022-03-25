@@ -1,6 +1,7 @@
 from esp.customforms.models import Field, Attribute, Section, Page, Form
 from django import forms
 from django.forms.models import fields_for_model
+from django.utils.safestring import mark_safe
 from form_utils.forms import BetterForm
 from collections import OrderedDict
 from formtools.wizard.views import SessionWizardView
@@ -10,6 +11,7 @@ from django.http import HttpResponseRedirect
 from localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
 from esp.customforms.forms import NameField, AddressField
 from esp.customforms.DynamicModel import DMH
+from esp.tagdict.models import Tag
 from esp.utils.forms import DummyField
 from esp.users.models import ContactInfo, ESPUser
 from argcache import cache_function
@@ -19,6 +21,8 @@ from esp.customforms.linkfields import cf_cache, generic_fields, custom_fields
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from esp.middleware import ESPError
+
+from datetime import datetime
 
 class BaseCustomForm(BetterForm):
     """
@@ -86,7 +90,7 @@ class CustomFormHandler():
         for attr in attrs:
             if attr['attr_type'] == 'options':
                 other_attrs['choices'] = []
-                options_list = attr['value'].split('|')[:-1]
+                options_list = attr['value'].split('|')
                 for option in options_list:
                     other_attrs['choices'].append( (option, option) )
             elif attr['attr_type'] == 'limits':
@@ -134,7 +138,7 @@ class CustomFormHandler():
 
             for field in section:
                 field_name = 'question_%d' % field['id']
-                field_attrs = {'label': field['label'], 'help_text': field['help_text'], 'required': field['required']}
+                field_attrs = {'label': mark_safe(field['label']), 'help_text': mark_safe(field['help_text']), 'required': field['required']}
 
                 # Setting the 'name' attribute for combo fields
                 """
@@ -149,15 +153,23 @@ class CustomFormHandler():
 
                     #   Create dynamic validators to check results if the correct answer has
                     #   been specified by the form author
-                    if attr_name == 'correct_answer' and len(field['attributes'][attr_name].strip()) > 0:
+                    if attr_name == 'correct_answer' and len(field['attributes']['correct_answer'].strip()) > 0:
                         if field['field_type'] in ['dropdown', 'radio']:
                             value_choices = field['attributes']['options'].split('|')
-                            target_value = value_choices[int(field['attributes'][attr_name])]
-                        elif field['field_type'] in ['checkboxes']:
+                            target_value = value_choices[int(field['attributes']['correct_answer'])]
+                        elif field['field_type'] in ['checkboxes', 'multiselect']:
                             value_choices = field['attributes']['options'].split('|')
-                            target_value = [value_choices[int(index)] for index in field['attributes'][attr_name].split(',')]
+                            target_value = [value_choices[int(index)] for index in field['attributes']['correct_answer'].split('|')]
+                        elif field['field_type'] == 'null_boolean':
+                            target_value = {'Unknown': None, 'Yes': True, 'No': False}[field['attributes']['correct_answer']]
+                        elif field['field_type'] == 'numeric':
+                            target_value = float(field['attributes']['correct_answer'])
+                        elif field['field_type'] == 'date':
+                            target_value = datetime.strptime(field['attributes']['correct_answer'], '%Y-%m-%d').date()
+                        elif field['field_type'] == 'time':
+                            target_value = datetime.strptime(field['attributes']['correct_answer'], '%H:%M').time()
                         else:
-                            target_value = field['attributes'][attr_name]
+                            target_value = field['attributes']['correct_answer']
 
                         field_attrs['validators'] = [matches_answer(target_value)]
 
@@ -198,7 +210,7 @@ class CustomFormHandler():
                     if not field_is_custom:
                         # Add in other classes for validation
                         generic_type = cf_cache.getGenericType(form_field)
-                        if 'widget_attrs' in self._field_types[generic_type] and 'class' in self._field_types[generic_type]['widget_attrs']:
+                        if generic_type in self._field_types and 'widget_attrs' in self._field_types[generic_type] and 'class' in self._field_types[generic_type]['widget_attrs']:
                             form_field.widget.attrs['class'] += self._field_types[generic_type]['widget_attrs']['class']
 
                     # Adding to field list
@@ -313,6 +325,7 @@ class ComboForm(SessionWizardView):
     form_handler = None
     form = None
     file_storage = FormStorage()
+    extra_context = None
 
     def get_context_data(self, form, **kwargs):
         """
@@ -325,6 +338,8 @@ class ComboForm(SessionWizardView):
                         'form_title': self.form.title,
                         'form_description': self.form.description,
             })
+        if self.extra_context is not None:
+            context.update(self.extra_context)
 
         return context
 
@@ -401,8 +416,11 @@ class ComboForm(SessionWizardView):
             #   Check that this value didn't come from a dummy field
             if key.split('_')[0] == 'question' and generic_fields[fields[int(key.split('_')[1])]]['typeMap'] == DummyField:
                 del data[key]
+        # Delete old response(s) if not anonymous (we only want one response per user)
+        if not self.form.anonymous:
+            dynModel.objects.filter(user=self.curr_request.user).delete()
         dynModel.objects.create(**data)
-        return HttpResponseRedirect('/customforms/success/%d/' % self.form.id)
+        return HttpResponseRedirect(kwargs.get('redirect_url', '/customforms/success/%d/' % self.form.id))
 
     def render_to_response(self, context):
         #   Override rendering function to use our context processors.
@@ -562,7 +580,7 @@ class FormHandler:
             initial_data = {}
         linked_initial_data = self._getInitialData(self.form, self.user)
         combined_initial_data = {}
-        for i in range(len(self.handlers)):
+        for i in map(str, range(len(self.handlers))):
             combined_initial_data[i] = {}
             if i in linked_initial_data:
                 combined_initial_data[i].update(linked_initial_data[i])
@@ -570,14 +588,14 @@ class FormHandler:
                 combined_initial_data[i].update(initial_data[i])
         return combined_initial_data
 
-    def get_wizard(self, initial_data=None):
+    def get_wizard(self, initial_data=None, wizard_view=ComboForm):
         combined_initial_data = self.get_initial_data(initial_data)
-        return ComboForm(   form_list = self._getFormList(),
+        return wizard_view( form_list = self._getFormList(),
                             initial_dict = combined_initial_data,
                             form_handler = self,
                             form = self.form)
 
-    def get_wizard_view(self, initial_data=None):
+    def get_wizard_view(self, initial_data=None, wizard_view=ComboForm, **kwargs):
         """
         Calls the as_view() method of ComboForm with the appropriate arguments and returns the response
         """
@@ -586,12 +604,13 @@ class FormHandler:
         combined_initial_data = self.get_initial_data(initial_data)
 
         # Now, return the appropriate response
-        return ComboForm.as_view(
+        return wizard_view.as_view(
                                 self._getFormList(),
                                 initial_dict = combined_initial_data,
                                 curr_request = self.request,
                                 form_handler = self,
-                                form = self.form)(self.request)
+                                form = self.form,
+                                **kwargs)(self.request)
 
     def deleteForm(self):
         """
@@ -625,7 +644,7 @@ class FormHandler:
         if not form.anonymous:
             response_data['questions'].append(['user_id', 'User ID', 'fk'])
             response_data['questions'].append(['user_display', 'User', 'textField'])
-            response_data['questions'].append(['user_email', 'User e-mail', 'textField'])
+            response_data['questions'].append(['user_email', 'User email', 'textField'])
             response_data['questions'].append(['username', 'Username', 'textField'])
 
         # Add in the column for link fields, if any
@@ -657,7 +676,7 @@ class FormHandler:
             link_instances_cache={}
 
             # Add in user if form is not anonymous
-            if not form.anonymous:
+            if not form.anonymous and response['user_id']:
                 user = users[response['user_id']]
                 response['user_id'] = unicode(response['user_id'])
                 response['user_display'] = user.name()
@@ -756,6 +775,30 @@ class FormHandler:
             'perms': self.form.perms,
             'pages': self._getFormMetadata(self.form)
         }
+        # Identify if this form has been linked to a registration module
+        if self.form.link_type == 'Program' and self.form.link_id != -1:
+            try:
+                prog = Program.objects.get(id=self.form.link_id)
+            except Program.DoesNotExist:
+                raise ESPError('No program with ID %i' % (self.form.link_id))
+            tags = Tag.objects.filter(content_type=ContentType.objects.get_for_model(Program), object_id=prog.id, value=self.form.id, key__in=['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id'])
+            if tags.count() == 1:
+                tag = tags[0]
+                if 'learn_extraform_id' in tag.key:
+                    tl = "learn"
+                    module = "StudentCustomFormModule"
+                elif 'teach_extraform_id' in tag.key:
+                    tl = "teach"
+                    module = "TeacherCustomFormModule"
+                elif tag.key == 'quiz_form_id':
+                    tl = "teach"
+                    module = "TeacherQuizModule"
+            elif tags.count() > 1:
+                raise ESPError('Custom form #%i is linked to multiple registration modules for %s' % (self.form.id, prog.name))
+            else:
+                tl = ''
+                module = ''
+            metadata.update({'link_tl': tl, 'link_module': module})
         return metadata
 
 

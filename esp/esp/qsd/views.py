@@ -77,8 +77,10 @@ def qsd(request, url):
         page_name_base = page_name
     base_url = '/'.join(url_parts[:-1] + [page_name_base])
 
-    # Detect edit authorizations
+    # Detect read authorizations
     have_read = True
+    if url_parts[0] == 'manage' and not request.user.isAdministrator():
+        have_read = False
 
     if not have_read and action == 'read':
         raise Http403, "You do not have permission to access this page."
@@ -122,8 +124,6 @@ def qsd(request, url):
 
     # Detect the standard read verb
     if action == 'read':
-        if not have_read:
-            raise Http403, 'You do not have permission to read this page.'
 
         # Render response
         response = render_to_response('qsd/qsd.html', request, {
@@ -219,6 +219,11 @@ def ajax_qsd(request):
             return HttpResponse(content='Sorry, you do not have permission to edit this page.', status=403)
 
         qsd, created = QuasiStaticData.objects.get_or_create(url=post_dict['url'], defaults={'author': request.user})
+
+        # Clobber prevention. -ageng 2013-08-12
+        # Now needs to be slightly more complicated since we're on reversion. -ageng 2014-01-04
+        if not QuasiStaticData.objects.get_by_url(qsd.url) == qsd:
+            return HttpResponse(content='The edit you are submitting is not based on the newest version!\n(Is someone else editing? Did you get here by a back button?)\nCopy out your work if you need it. Then refresh the page to get the latest version.', status=409)
 
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
         # The revision will automatically be created upon calling the save function of the model object

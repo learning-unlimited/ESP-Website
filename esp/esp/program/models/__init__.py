@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 import copy
+import re
 from collections import defaultdict, OrderedDict
 from datetime import datetime, timedelta, date
 from decimal import Decimal
@@ -44,7 +45,7 @@ logger = logging.getLogger(__name__)
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from localflavor.us.models import PhoneNumberField
-from django.core import urlresolvers
+from django.core import urlresolvers, validators
 from django.core.cache import cache
 from django.db import models
 from django.db.models import Count
@@ -52,15 +53,18 @@ from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
+from django.template.loader import render_to_string
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 
 from argcache import cache_function, cache_function_for, wildcard
-from esp.cal.models import Event
+from esp.cal.models import Event, EventType
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
+from esp.dbmail.models import send_mail
 from esp.middleware import ESPError, AjaxError
 from esp.tagdict.models import Tag
-from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types, Record
+from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, Record
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
@@ -92,6 +96,10 @@ class ProgramModule(models.Model):
     # Must the user supply this ProgramModule with data in order to complete program registration?
     required = models.BooleanField(default=False)
 
+    # When creating a new program, should this module be available for admins to select (0), included by default (1)
+    # or excluded by default (2).
+    choosable = models.IntegerField(default=0, validators=[validators.MinValueValidator(0), validators.MaxValueValidator(2)])
+
     class Meta:
         app_label = 'program'
         db_table = 'program_programmodule'
@@ -107,7 +115,7 @@ class ProgramModule(models.Model):
         The file 'esp/program/module/handlers/[self.handler]' must contain
         a class named [self.handler]; we return that class.
 
-        Raises a PrograModule.CannotGetClassException() if the class can't be imported.
+        Raises a ProgramModule.CannotGetClassException() if the class can't be imported.
         """
         try:
             path = "esp.program.modules.handlers.%s" % (self.handler.lower())
@@ -124,7 +132,7 @@ class ProgramModule(models.Model):
             super(ProgramModule.CannotGetClassException, self).__init__(msg)
 
     def __unicode__(self):
-        return u'Program Module: %s' % self.admin_title
+        return u'{}'.format(self.admin_title)
 
 
 class ArchiveClass(models.Model):
@@ -177,10 +185,9 @@ class ArchiveClass(models.Model):
         return self.description
 
     def __unicode__(self):
-        from esp.middleware.threadlocalrequest import AutoRequestContext as Context
         from django.template import loader
         t = loader.get_template('program/archive_class.html')
-        return t.render(Context({'class': self}, autoescape=True))
+        return t.render({'class': self})
 
     def num_students(self):
         if self.student_ids is not None:
@@ -238,23 +245,24 @@ class Program(models.Model, CustomFormsLinkModel):
     #customforms definitions
     form_link_name='Program'
 
-    url = models.CharField(max_length=80)
+    url = models.CharField(max_length=80, unique=True)
     name = models.CharField(max_length=80)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     director_email = models.EmailField(max_length=75) # director contact email address used for from field and display
-    director_cc_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, automated outgoing mail (except class cancellations) will be sent to this address instead of the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.') # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
-    director_confidential_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, confidential emails such as financial aid applications will be sent to this address instead of the director email.')
+    director_cc_email = models.EmailField(blank=True, default='', max_length=75, help_text=mark_safe('If set, automated outgoing mail (except class cancellations) will be sent to this address <i>instead of</i> the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.')) # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
+    director_confidential_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, confidential emails such as financial aid applications will be sent to this address <i>instead of</i> the director email.')
     program_size_max = models.IntegerField(null=True, help_text='Set to 0 for no cap. Student registration performance is best when no cap is set.')
     program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule,
                          help_text='The set of enabled program functionalities. See ' +
                          '<a href="https://github.com/learning-unlimited/ESP-Website/blob/main/docs/admin/program_modules.rst">' +
                          'the documentation</a> for details.')
-    class_categories = models.ManyToManyField('ClassCategories')
+    class_categories = models.ManyToManyField('ClassCategories',
+                                              blank=True,
+                                              help_text=format_lazy('You can add new categories or modify existing ones from <a href="%s">the admin panel</a>.',
+                                                                    urlresolvers.reverse_lazy('admin:program_classcategories_changelist')))
 
-    #so we don't have to delete old ones and don't end up with
-    # 3 seemingly-identical flags in the same program.
     flag_types = models.ManyToManyField('ClassFlagType',
                     blank=True,
                     help_text=format_lazy(
@@ -284,6 +292,7 @@ class Program(models.Model, CustomFormsLinkModel):
             for i, user_type in enumerate(cls.USER_TYPE_LIST_FUNCS):
                 setattr(cls, user_type, cls.get_users_from_module(user_type))
                 setattr(cls, cls.USER_TYPE_LIST_NUM_FUNCS[i], cls.counts_from_query_dict(getattr(cls, user_type)))
+                setattr(cls, cls.USER_TYPE_LIST_DESC_FUNCS[i], cls.get_labels_from_module(cls.USER_TYPE_LIST_DESC_FUNCS[i]))
 
     def get_absolute_url(self):
         return "/manage/"+self.url+"/main"
@@ -357,6 +366,20 @@ class Program(models.Model, CustomFormsLinkModel):
         return get_users
 
     @staticmethod
+    def get_labels_from_module(method_name):
+        def get_labels(self):
+            modules = self.getModules(None)
+            labels = OrderedDict()
+            for module in modules:
+                tmplabels = getattr(module, method_name)()
+                if tmplabels is not None:
+                    labels.update(tmplabels)
+            return labels
+        get_labels.__name__  = method_name
+        get_labels.__doc__   = "Returns a dictionary of labels for the different sets of %s for this program, as defined by the enabled ProgramModules" % method_name
+        return get_labels
+
+    @staticmethod
     def counts_from_query_dict(query_func):
         def _get_num(self):
             result = query_func(self, QObjects=False)
@@ -386,7 +409,8 @@ class Program(models.Model, CustomFormsLinkModel):
         section_ids = sections_in_program_by_id(self)
 
         counts = {}
-        checked_in_ids = self.students()['attended'].values_list('id', flat=True)
+        students = self.students(True)
+        checked_in_ids = ESPUser.objects.filter(students['attended'] & ~students['checked_out']).distinct().values_list('id', flat = True)
 
         reg_type = RegistrationType.get_map()['Enrolled']
 
@@ -612,14 +636,15 @@ class Program(models.Model, CustomFormsLinkModel):
         Returns a dict with tuples of valid grades as keys, and caps as values,
         or an empty dict if the Tag does not exist.
         """
-        size_tag = Tag.getProgramTag("program_size_by_grade", self, "{}")
+        size_tag = Tag.getProgramTag("program_size_by_grade", self)
         size_dict = {}
-        for k, v in json.loads(size_tag).iteritems():
-            if '-' in k:
-                low, high = map(int, k.split('-'))
-                size_dict[tuple(xrange(low, high + 1))] = v
-            else:
-                size_dict[(int(k),)] = v
+        if size_tag:
+            for k, v in json.loads(size_tag).iteritems():
+                if '-' in k:
+                    low, high = map(int, k.split('-'))
+                    size_dict[tuple(xrange(low, high + 1))] = v
+                else:
+                    size_dict[(int(k),)] = v
         return size_dict
     grade_caps.depend_on_model('tagdict.Tag')
 
@@ -655,7 +680,7 @@ class Program(models.Model, CustomFormsLinkModel):
         Returns:
           A ClassCategories object if one was found, or None.
         """
-        pk = Tag.getProgramTag('open_class_category', self, default=None)
+        pk = Tag.getProgramTag('open_class_category', self)
         cc = None
         if pk is not None:
             try:
@@ -694,6 +719,44 @@ class Program(models.Model, CustomFormsLinkModel):
         return Record.objects.filter(event="reg_confirmed",user=espuser,
                                      program=self).exists()
 
+    def isCheckedIn(self, espuser, verbose = False):
+        status = 0
+        verbose_names = ["not_checked_in", "checked_in", "checked_out"]
+        recs = Record.objects.filter(event__in=["attended","checked_out"],user=espuser,
+                                     program=self).order_by("-time")
+        if recs.count() > 0:
+            # Check if student has ever been checked_in
+            if recs.filter(event="attended").exists():
+                status = 1
+                # Check if most recent record is checked_out
+                if recs[0].event == "checked_out":
+                    status = 2
+        if verbose:
+            return verbose_names[status]
+        else:
+            return status == 1
+
+    """ Returns a queryset of students that are checked out of the program at the specified time """
+    def checkedOutStudents(self, time_max = datetime.now()):
+        recs = Record.objects.filter(program = self, event__in=["attended", "checked_out"], time__lt=time_max).order_by('user', '-time').distinct('user')
+        return ESPUser.objects.filter(record__id__in=recs, record__event="checked_out")
+
+    """ Returns a queryset of students that are CURRENTLY checked out of the program at the specified time """
+    @cache_function
+    def currentlyCheckedOutStudents(self):
+        return self.checkedOutStudents(time_max=datetime.now())
+    currentlyCheckedOutStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event in ['attended', "checked_out"])
+
+    """ Returns a queryset of students that are checked in to the program at the specified time """
+    def checkedInStudents(self, time_max = datetime.now()):
+        return ESPUser.objects.filter(Q(record__event="attended", record__program=self)).exclude(id__in=self.checkedOutStudents(time_max)).distinct()
+
+    """ Returns a queryset of students that are CURRENTLY checked in to the program at the specified time """
+    @cache_function
+    def currentlyCheckedInStudents(self):
+        return self.checkedInStudents(time_max=datetime.now())
+    currentlyCheckedInStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event == 'attended')
+
     """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
     "Classrooms."  So, if you try to call the old functions (which have no point anymore), then
     you'll get an error and you'll notice that you need to change the call and its associated
@@ -723,6 +786,7 @@ class Program(models.Model, CustomFormsLinkModel):
                 result[c.name].furnishings = c.associated_resources()
                 result[c.name].sequence = c.schedule_sequence(self)
                 result[c.name].prog_available_times = c.available_times_html(self)
+                result[c.name].num_items = c.number_duplicates()
             else:
                 result[c.name].timeslots.append(c.event)
 
@@ -731,6 +795,12 @@ class Program(models.Model, CustomFormsLinkModel):
 
         return result
 
+    @staticmethod
+    def natural_sort(l):
+        convert = lambda text: int(text) if text.isdigit() else text.lower()
+        alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
+        return sorted(l, key = alphanum_key)
+
     @cache_function
     def groupedClassrooms(self):
 
@@ -738,9 +808,9 @@ class Program(models.Model, CustomFormsLinkModel):
 
         result = self.collapsed_dict(classrooms)
         key_list = result.keys()
-        key_list.sort()
+        natural_key_list = self.natural_sort(key_list)
         #   Turn this into a list instead of a dictionary.
-        ans = [result[key] for key in key_list]
+        ans = [result[key] for key in natural_key_list]
 
         return ans
     groupedClassrooms.depend_on_row('resources.Resource', lambda res: {'self': res.event.parent_program()})
@@ -786,7 +856,7 @@ class Program(models.Model, CustomFormsLinkModel):
         ts_list = Event.collapse(list(self.getTimeSlots()), tol=timedelta(minutes=15))
         time_sum = timedelta()
         for t in ts_list:
-            time_sum = time_sum + (t.end - t.start)
+            time_sum = time_sum + t.duration()
         return time_sum
 
     def dates(self):
@@ -807,18 +877,15 @@ class Program(models.Model, CustomFormsLinkModel):
     @cache_function_for(60*60*24)
     def current_programs():
         """Guess a list of "current programs" by their time ranges.
-
-        - All programs' time ranges are determined by the start of their first
-          timeslot and the end of their last timeslot.
-        - If there are any programs currently running, any programs whose first
-          timeslot is in less than 60 days, or any programs whose last timeslot
-          was less than 30 days ago, we return all such programs as current
-          programs.
-        - Otherwise, the current program is the one program in the future (<100
-          years) that will start the soonest.
-        - If still no such program exists, the current program is the program
-          in the past that ended the most recently.
-        - Test programs (programs with "test" in their name) are skipped.
+            - All programs whose time ranges include today,
+              programs whose first timeslot is in less than 60 days,
+              and programs whose last timeslot was less than 30 days ago
+              are returned as current programs.
+            - If there are no such programs, the next upcoming program
+              (within 100 years) is returned as the current program.
+            - If there is no upcoming program, the most recent past program
+              is returned as the current program.
+            - Programs with "test" in their names are skipped.
         """
 
         now = datetime.now()
@@ -870,6 +937,7 @@ class Program(models.Model, CustomFormsLinkModel):
                 return [tagged_programs[0][1]]
         return []
     current_programs.depend_on_model('cal.Event')
+    current_programs.depend_on_model('program.ProgramModule')
     current_programs = staticmethod(current_programs)
 
     def date_range(self):
@@ -891,6 +959,12 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             return None
 
+    def get_teacher_event_times(self, event_type):
+        """event_type should be 'interview' or 'training'"""
+        event_type_obj = EventType.teacher_event_types()[event_type]
+        return Event.objects.filter(
+            program=self, event_type=event_type_obj).order_by('start')
+
     @cache_function
     def getResourceTypes(self, include_classroom=False, include_global=None, include_hidden=True):
         #   Show all resources pertaining to the program (except those of types that are excluded).
@@ -905,7 +979,7 @@ class Program(models.Model, CustomFormsLinkModel):
             exclude_types += [ResourceType.get_or_create('Classroom')]
 
         if include_global is None:
-            include_global = Tag.getTag('allow_global_restypes')
+            include_global = Tag.getBooleanTag('allow_global_restypes')
 
         if include_global:
             Q_filters = Q(program=self) | Q(program__isnull=True)
@@ -936,16 +1010,16 @@ class Program(models.Model, CustomFormsLinkModel):
             result = self.collapsed_dict(res_list)
             return [result[c] for c in result]
 
-    def getAvailableResources(self, timeslot):
+    def getAvailableResources(self, timeslot, queryset=False):
         #   Filters down the floating resources to those that are not taken.
-        return filter(lambda x: x.is_available(), self.getFloatingResources(timeslot))
+        return filter(lambda x: x.is_available(), self.getFloatingResources(timeslot=timeslot, queryset=queryset))
 
-    def getDurations(self, round=False):
+    def getDurations(self, round_15=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
         from esp.program.modules.module_ext import ClassRegModuleInfo
         from decimal import Decimal
 
-        times = Event.group_contiguous(list(self.getTimeSlots()))
+        times = Event.group_contiguous(list(self.getTimeSlots()), int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = self)))
         crmi = self.classregmoduleinfo
         if crmi and crmi.class_max_duration is not None:
             max_seconds = crmi.class_max_duration * 60
@@ -959,26 +1033,28 @@ class Program(models.Model, CustomFormsLinkModel):
             n = len(t_list)
             for i in range(0, n):
                 for j in range(i, n):
-                    time_option = t_list[j].end - t_list[i].start
+                    time_option = Event.total_length([t_list[i], t_list[j]])
                     durationSeconds = time_option.seconds
                     #   If desired, round up to the nearest 15 minutes
-                    if round:
+                    if round_15:
                         rounded_seconds = int(durationSeconds / 900.0 + 1.0) * 900
                     else:
                         rounded_seconds = durationSeconds
                     if (max_seconds is None) or (durationSeconds <= max_seconds):
                         durationDict[(Decimal(durationSeconds) / 3600).quantize(Decimal('.01'))] = \
                                         str(rounded_seconds / 3600) + ':' + \
-                                        str((rounded_seconds / 60) % 60).rjust(2,'0')
+                                        str(int(round((rounded_seconds / 60.0) % 60))).rjust(2,'0')
 
         durationList = durationDict.items()
 
-        return durationList
+        return sorted(durationList, key=lambda x: x[0])
 
     def getSurveys(self):
         from esp.survey.models import Survey
         return Survey.objects.filter(program=self)
 
+    def getModeratorTitle(self):
+        return Tag.getProgramTag('moderator_title', program = self)
 
     def getLineItemTypes(self, user=None, required=True):
         from esp.accounting.controllers import ProgramAccountingController
@@ -991,24 +1067,18 @@ class Program(models.Model, CustomFormsLinkModel):
         return li_types
 
     @cache_function
-    def getModules_cached(self, tl = None):
+    def getModules_cached(self, tl = None, old_prog = None):
         """ Gets a list of modules for this program. """
         from esp.program.modules import base
 
-        def cmpModules(mod1, mod2):
-            """ comparator function for two modules """
-            try:
-                return cmp(mod1.seq, mod2.seq)
-            except AttributeError:
-                return 0
         if tl:
             modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
-                 for module in self.program_modules.filter(module_type = tl) ]
+                 for module in self.program_modules.filter(module_type = tl)]
         else:
-            modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
+            modules =  [ base.ProgramModuleObj.getFromProgModule(self, module, old_prog)
                  for module in self.program_modules.all()]
 
-        modules.sort(cmpModules)
+        modules.sort(key=lambda mod: (not mod.required, mod.seq))
         return modules
     getModules_cached.depend_on_row('program.Program', lambda prog: {'self': prog})
     getModules_cached.depend_on_model('program.ProgramModule')
@@ -1018,16 +1088,13 @@ class Program(models.Model, CustomFormsLinkModel):
     getModules_cached.depend_on_row('modules.ClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
     getModules_cached.depend_on_row('modules.StudentClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
 
-    def getModules(self, user = None, tl = None):
+    def getModules(self, user = None, tl = None, old_prog = None):
         """ Gets modules for this program, optionally attaching a user. """
-        modules = self.getModules_cached(tl)
+        modules = self.getModules_cached(tl, old_prog)
         if user:
             for module in modules:
-                module.setUser(user)
-        #   Populate the view attributes so they can be cached
-        for module in modules:
-            module.get_all_views()
-            module.get_main_view()
+                module.user = user
+            modules.sort(key=lambda mod: not mod.isCompleted())
         return modules
 
     @cache_function
@@ -1054,8 +1121,8 @@ class Program(models.Model, CustomFormsLinkModel):
     getModule.depend_on_cache(hasModule, lambda self=wildcard, name=wildcard, **kwargs: {'self': self, 'name': name})
 
     @cache_function
-    def getModuleViews(self, main_only=False, tl=None):
-        modules = self.getModules_cached(tl)
+    def getModuleViews(self, main_only=False):
+        modules = self.getModules_cached()
         result = {}
         for mod in modules:
             tl = mod.module.module_type
@@ -1094,38 +1161,71 @@ class Program(models.Model, CustomFormsLinkModel):
     def getVolunteerRequests(self):
         return VolunteerRequest.objects.filter(timeslot__program=self).order_by('timeslot__start')
 
+    @staticmethod
+    def extractShirtStats(query, shirt_type_tag, values_list_prefix, default_shirt_type):
+        shirt_count = defaultdict(lambda: defaultdict(int))
+        if not Tag.getBooleanTag(shirt_type_tag):
+            query = query.values_list(values_list_prefix + '__shirt_size')
+            query = query.annotate(people=Count('id', distinct=True))
+
+            for row in query:
+                shirt_size, count = row
+                shirt_count[default_shirt_type][shirt_size] = count
+
+        else:
+            query = query.values_list(values_list_prefix + '__shirt_type',
+                                      values_list_prefix + '__shirt_size')
+            query = query.annotate(people=Count('id', distinct=True))
+
+            for row in query:
+                shirt_type, shirt_size, count = row
+                shirt_count[shirt_type][shirt_size] = count
+        return shirt_count
+
     @cache_function
     def getShirtInfo(self):
-        shirt_count = defaultdict(lambda: defaultdict(int))
+        shirts = []
+        shirt_types = [x.strip() for x in Tag.getTag('shirt_types').split(',')]
+
         teacher_dict = self.teachers()
-        if 'class_approved' in teacher_dict:
-            query = teacher_dict['class_approved']
-            query = query.filter(registrationprofile__most_recent_profile=True)
-            if not Tag.getBooleanTag('teacherinfo_shirt_type_selection'):
-                query = query.values_list('registrationprofile__teacher_info__shirt_size')
-                query = query.annotate(people=Count('id', distinct=True))
+        teacher_types = {'Approved Teachers': 'class_approved', 'All Teachers': 'class_submitted'}
+        if self.hasModule('TeacherModeratorModule'):
+            teacher_types.update({'Assigned Moderators': 'assigned_moderator'})
+        shirt_sizes = [x.strip() for x in Tag.getTag('teacher_shirt_sizes').split(',')]
+        for teacher_type in teacher_types.items():
+            if teacher_type[1] in teacher_dict:
+                query = teacher_dict[teacher_type[1]].filter(registrationprofile__most_recent_profile=True)
+                shirt_count = self.extractShirtStats(query, 'teacherinfo_shirt_type_selection', 'registrationprofile__teacher_info', shirt_types[0])
+                shirts.append({'name': teacher_type[0], 'shirt_sizes': shirt_sizes, 'distribution': [ { 'type': shirt_type, 'counts':[ shirt_count[shirt_type][shirt_size] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ] })
 
-                for row in query:
-                    shirt_size, count = row
-                    shirt_count['M'][shirt_size] = count
+        student_dict = self.students()
+        student_types = {'Enrolled Students': 'enrolled', 'Attended Students': 'attended'}
+        shirt_sizes = [x.strip() for x in Tag.getTag('student_shirt_sizes').split(',')]
+        for student_type in student_types.items():
+            if student_type[1] in student_dict:
+                query = student_dict[student_type[1]].filter(registrationprofile__most_recent_profile=True)
+                shirt_count = self.extractShirtStats(query, 'studentinfo_shirt_type_selection', 'registrationprofile__student_info', shirt_types[0])
+                shirts.append({'name': student_type[0], 'shirt_sizes': shirt_sizes, 'distribution': [ { 'type': shirt_type, 'counts':[ shirt_count[shirt_type][shirt_size] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ] })
 
-            else:
-                query = query.values_list('registrationprofile__teacher_info__shirt_type',
-                                          'registrationprofile__teacher_info__shirt_size')
-                query = query.annotate(people=Count('id', distinct=True))
+        volunteer_dict = self.volunteers()
+        volunteer_types = {'All Volunteers': 'volunteer_all'}
+        shirt_sizes = [x.strip() for x in Tag.getTag('volunteer_shirt_sizes').split(',')]
+        for volunteer_type in volunteer_types.items():
+            if volunteer_type[1] in volunteer_dict:
+                query = volunteer_dict[volunteer_type[1]].filter(registrationprofile__most_recent_profile=True)
+                shirt_count = self.extractShirtStats(query, 'volunteer_tshirt_type_selection', 'volunteeroffer', shirt_types[0])
+                shirts.append({'name': volunteer_type[0], 'shirt_sizes': shirt_sizes, 'distribution': [ { 'type': shirt_type, 'counts':[ shirt_count[shirt_type][shirt_size] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ] })
 
-                for row in query:
-                    shirt_type, shirt_size, count = row
-                    shirt_count[shirt_type][shirt_size] = count
+        return {'shirts' : shirts, 'shirt_types' : shirt_types }
 
-        shirts = {}
-        shirts['teachers'] = [ { 'type': shirt_type[1], 'distribution':[ shirt_count[shirt_type[0]][shirt_size[0]] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
-
-        return {'shirts' : shirts, 'shirt_sizes' : shirt_sizes, 'shirt_types' : shirt_types }
-
-    #   Update cache whenever a class is approved or a teacher changes their profile
+    #   Update cache whenever a class is approved, a student is marked as attending, a teacher or student changes their profile, or a volunteer offer is changed
     getShirtInfo.depend_on_row('program.ClassSubject', lambda cls: {'self': cls.parent_program})
+    getShirtInfo.depend_on_row('users.Record', lambda record: {'self': record.program}, lambda record: record.event == 'attended')
     getShirtInfo.depend_on_model('users.TeacherInfo')
+    getShirtInfo.depend_on_model('users.StudentInfo')
+    getShirtInfo.depend_on_model('program.VolunteerOffer')
+    getShirtInfo.depend_on_model('program.ModeratorRecord')
+    getShirtInfo.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': sec.parent_class.parent_program})
 
     @cache_function
     def incrementGrade(self):
@@ -1138,7 +1238,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         See ESPUser.program_schoolyear.
         """
-        return int(Tag.getBooleanTag('increment_default_grade_levels', self, False))
+        return int(Tag.getBooleanTag('increment_default_grade_levels', self))
     incrementGrade.depend_on_row('tagdict.Tag', lambda tag: {'self' :  tag.target})
 
     def priorityLimit(self):
@@ -1181,18 +1281,27 @@ class Program(models.Model, CustomFormsLinkModel):
         """
         if hasattr(self, "_sibling_discount"):
             return self._sibling_discount
-        self._sibling_discount = Decimal(Tag.getProgramTag('sibling_discount', program=self, default='0.00'))
+        self._sibling_discount = Decimal(Tag.getProgramTag('sibling_discount', program=self))
         return self._sibling_discount
 
     def _sibling_discount_set(self, value):
+        from esp.accounting.models import LineItemType
         if value is not None:
             self._sibling_discount = Decimal(value)
             Tag.setTag('sibling_discount', target=self, value=self._sibling_discount)
+            LineItemType.objects.get_or_create(text='Sibling discount', program=self, amount_dec = self._sibling_discount)
         else:
             self._sibling_discount = Decimal('0.00')
             Tag.objects.filter(key='sibling_discount', object_id=self.id).delete()
+            LineItemType.objects.filter(text='Sibling discount', program=self).delete()
 
     sibling_discount = property(_sibling_discount_get, _sibling_discount_set)
+
+    def base_cost(self):
+        from esp.accounting.controllers import ProgramAccountingController
+        pac = ProgramAccountingController(self)
+        return pac.default_admission_lineitemtype().amount_dec
+    base_cost = property(base_cost)
 
     @property
     def splashinfo_objects(self):
@@ -1217,8 +1326,8 @@ class SplashInfo(models.Model):
     student = AjaxForeignKey(ESPUser)
     #   Program field may be empty for backwards compatibility with Stanford data
     program = AjaxForeignKey(Program, null=True)
-    lunchsat = models.CharField(max_length=32, blank=True, null=True)
-    lunchsun = models.CharField(max_length=32, blank=True, null=True)
+    lunchsat = models.CharField(max_length=32, blank=True, null=True) # No longer used, kept for backwards compatibility
+    lunchsun = models.CharField(max_length=32, blank=True, null=True) # No longer used, kept for backwards compatibility
     siblingdiscount = models.NullBooleanField(default=False, blank=True)
     siblingname = models.CharField(max_length=64, blank=True, null=True)
     submitted = models.NullBooleanField(default=False, blank=True)
@@ -1251,62 +1360,22 @@ class SplashInfo(models.Model):
             n.save()
             return n
 
-    def pretty_version(self, attr_name):
-        #   Look up choices
-        tag_data = Tag.getProgramTag('splashinfo_choices', self.program)
-
-        #   Check for matching item in list of choices
-        if tag_data:
-            tag_struct = json.loads(tag_data)
-            for item in tag_struct[attr_name]:
-                if item[0] == getattr(self, attr_name):
-                    return item[1].decode('utf-8')
-
-        return u'N/A'
-
-    def pretty_satlunch(self):
-        return self.pretty_version('lunchsat')
-
-    def pretty_sunlunch(self):
-        return self.pretty_version('lunchsun')
-
     def execute_sibling_discount(self):
+        from esp.accounting.controllers import IndividualAccountingController
+        from esp.accounting.models import Transfer
+        iac = IndividualAccountingController(self.program, self.student)
+        line_item_type = iac.default_siblingdiscount_lineitemtype()
+        source_account = iac.default_finaid_account()
+        dest_account = iac.default_source_account()
         if self.siblingdiscount:
-            from esp.accounting.controllers import IndividualAccountingController
-            from esp.accounting.models import Transfer
-            iac = IndividualAccountingController(self.program, self.student)
-            source_account = iac.default_finaid_account()
-            dest_account = iac.default_source_account()
-            line_item_type = iac.default_siblingdiscount_lineitemtype()
-            transfer, created = Transfer.objects.get_or_create(source=source_account, destination=dest_account, user=self.student, line_item=line_item_type, amount_dec=Decimal('20.00'))
+            transfer, created = Transfer.objects.get_or_create(source=source_account, destination=dest_account, user=self.student, line_item=line_item_type, amount_dec=self.program.sibling_discount)
             return transfer
+        else:
+            Transfer.objects.filter(source=source_account, destination=dest_account, user=self.student, line_item=line_item_type).delete()
 
     def save(self):
-        from esp.accounting.controllers import IndividualAccountingController
-
-        #   We have two things to put in: "Saturday Lunch" and "Sunday Lunch".
-        #   If they are not there, they will be created.  These names are hard coded.
-        from esp.accounting.models import LineItemType
-        LineItemType.objects.get_or_create(program=self.program, text='Saturday Lunch')
-        LineItemType.objects.get_or_create(program=self.program, text='Sunday Lunch')
-
-        #   Figure out how much everything costs
-        cost_info = json.loads(Tag.getProgramTag('splashinfo_costs', self.program, default='{}'))
-
-        #   Save accounting information
-        iac = IndividualAccountingController(self.program, self.student)
-
-        if not self.lunchsat or self.lunchsat == 'no':
-            iac.set_preference('Saturday Lunch', 0)
-        elif 'lunchsat' in cost_info:
-            iac.set_preference('Saturday Lunch', 1, cost_info['lunchsat'][self.lunchsat])
-
-        if not self.lunchsun or self.lunchsun == 'no':
-            iac.set_preference('Sunday Lunch', 0)
-        elif 'lunchsun' in cost_info:
-            iac.set_preference('Sunday Lunch', 1, cost_info['lunchsun'][self.lunchsun])
-
         super(SplashInfo, self).save()
+        self.execute_sibling_discount()
 
 
 class RegistrationProfile(models.Model):
@@ -1334,6 +1403,7 @@ class RegistrationProfile(models.Model):
     def _set_text_reminder(self, val):
         if not self.contact_user:
             contact_user = ContactInfo()
+            contact_user.user = self.user
             contact_user.first_name = self.user.first_name
             contact_user.last_name = self.user.last_name
             contact_user.save()
@@ -1406,25 +1476,42 @@ class RegistrationProfile(models.Model):
         super(RegistrationProfile, self).save(*args, **kwargs)
 
     @cache_function
-    def getLastForProgram(user, program):
-        """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
+    def getLastForProgram(user, program, tl = None):
+        """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program).
+            Can also specify whether the profile must be associated with a student or teacher info. """
         if user.is_anonymous():
             regProfList = RegistrationProfile.objects.none()
         else:
-            regProfList = (RegistrationProfile.objects
-                           .filter(user__exact=user, program__exact=program)
-                           .select_related(
+            regProfList = RegistrationProfile.objects.filter(user__exact=user, program__exact=program)
+            if tl == "learn":
+                regProfList = regProfList.filter(student_info__isnull=False)
+            elif tl == "teach":
+                regProfList = regProfList.filter(teacher_info__isnull=False)
+            regProfList = (regProfList.select_related(
                                'user', 'program', 'contact_user',
                                'contact_guardian', 'contact_emergency',
                                'student_info', 'teacher_info', 'guardian_info',
-                               'educator_info')
-                           .order_by('-last_ts','-id')[:1])
+                               'educator_info').order_by('-last_ts','-id')[:1])
         if len(regProfList) < 1:
             regProf = RegistrationProfile.getLastProfile(user)
+            # get the old program, if any
+            prog = regProf.program
             regProf.program = program
+            # if the user didn't have any profiles before (id = None), just return the brand new one unsaved
             if regProf.id is not None:
-                regProf.id = None
-                if (datetime.now() - regProf.last_ts).days <= 5:
+                # if the latest profile is old, wipe the id,
+                # then it will save as a new object if submitted with the profile form
+                if (datetime.now() - regProf.last_ts).days >= 5:
+                    regProf.id = None
+                # if the latest profile is new-ish,
+                # assume the info is up-to-date and save it now
+                else:
+                    # but, if the profile was for a previous program, we should keep the old profile
+                    # and make a new one for this program by wiping the id, then saving
+                    if prog is not None:
+                        regProf.id = None
+                    # otherwise, it was a profile without a program,
+                    # and we can just associate it with this program now, so just save
                     regProf.save()
         else:
             regProf = regProfList[0]
@@ -1564,6 +1651,31 @@ class FinancialAidRequest(models.Model):
 
         return string
 
+    def approve(self, dollar_amount = None, discount_percent = 100):
+        from esp.accounting.models import FinancialAidGrant
+        if not self.approved:
+            if any([dollar_amount, discount_percent]):
+                # create financial aid grant
+                f = FinancialAidGrant(request = self, amount_max_dec = dollar_amount, percent = discount_percent)
+                # finalize the grant (creates the accounting transfer)
+                f.finalize()
+                # mark request as done
+                self.done = True
+                self.save()
+                # send email to student
+                email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
+                email_to = [self.user.get_email_sendto_address()]
+                subj = 'Financial Aid Approved for %s for %s' % (self.user.name(), self.program.niceName())
+                email_context = {'student': self.user,
+                                 'program': self.program,
+                                 'grant': f,
+                                 'curtime': datetime.now(),
+                                 'DEFAULT_HOST': settings.DEFAULT_HOST}
+                email_contents = render_to_string('program/modules/finaidapprovemodule/approval_email.txt', email_context)
+                send_mail(subj, email_contents, email_from, email_to)
+            else:
+                raise ESPError('Need to supply at least one of dollar_amount and discount_percent', log=True)
+
 """ Functions for scheduling constraints
     I'm sorry that these are in the same __init__.py file;
     whenever I tried moving them to a separate file,
@@ -1590,7 +1702,7 @@ class BooleanToken(models.Model):
         other models, such as:
         - Whether a user is violating a schedule constraint
         - Whether a user is in a particular age range
-        - Whether a user has been e-mailed in the last month
+        - Whether a user has been emailed in the last month
 
         Also meant to be combined into logical expressions for queries/tests
         (see BooleanExpression below).
@@ -1865,6 +1977,7 @@ class ScheduleTestCategory(ScheduleTestTimeblock):
 
     class Meta:
         app_label = 'program'
+        verbose_name_plural = 'Schedule test categories'
 
 class ScheduleTestSectionList(ScheduleTestTimeblock):
     """ Boolean value testing: Does the schedule contain one of the specified
@@ -1928,8 +2041,8 @@ class VolunteerOffer(models.Model):
     name = models.CharField(max_length=80, blank=True, null=True)
     phone = PhoneNumberField(blank=True, null=True)
 
-    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
-    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
+    shirt_size = models.TextField(blank=True, null=True)
+    shirt_type = models.TextField(blank=True, null=True)
 
     comments = models.TextField(blank=True, null=True)
 
@@ -2014,6 +2127,20 @@ class PhaseZeroRecord(models.Model):
         # Creates a string for the Users. This is required to display user in Admin.
         return ', '.join([user.username for user in self.user.all()])
     display_user.short_description = 'Username(s)'
+
+class ModeratorRecord(models.Model):
+    def __unicode__(self):
+        return str(self.id)
+
+    user = AjaxForeignKey(ESPUser)
+    program = models.ForeignKey(Program)
+    will_moderate = models.BooleanField(default = False)
+    num_slots = models.PositiveIntegerField(default = 0)
+    class_categories = models.ManyToManyField('ClassCategories', blank=True)
+    comments = models.TextField(blank=True, null=True)
+
+    class Meta:
+        app_label = 'program'
 
 class StudentRegistration(ExpirableModel):
     """

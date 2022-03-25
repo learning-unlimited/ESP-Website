@@ -6,6 +6,7 @@ from django.contrib.auth.models import Group
 import random
 
 class BulkCreateAccountModule(ProgramModuleObj):
+    doc = """Create a bulk set of accounts (e.g. for outreach)."""
 
     MAX_PREFIX_LENGTH = 30
     MAX_NUMBER_OF_ACCOUNTS = 1000  # backstop so that an errant request can't fill up the DB with accounts
@@ -16,7 +17,8 @@ class BulkCreateAccountModule(ProgramModuleObj):
             "admin_title": "Bulk Create Accounts",
             "link_title": "Bulk Create Accounts",
             "module_type": "manage",
-            "seq": 10
+            "seq": 10,
+            "choosable": 2,
         }
 
     @main_call
@@ -84,6 +86,9 @@ class BulkCreateAccountModule(ProgramModuleObj):
     def bulk_account_error(self, request, message):
         context = {'bulk_account_error_message': message}
         return render_to_response(self.baseDir() + 'bulk_create_error.html', request, context)
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

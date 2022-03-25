@@ -50,7 +50,8 @@ class AdminMorph(ProgramModuleObj):
             "admin_title": "User Morphing Capability",
             "link_title": "Morph into User",
             "module_type": "manage",
-            "seq": 34
+            "seq": 34,
+            "choosable": 1,
             }
 
     @main_call
@@ -84,7 +85,7 @@ class AdminMorph(ProgramModuleObj):
         else:
             query = saved_queries['program']
 
-        user, found = search_for_user(request, ESPUser.objects.filter(query))
+        user, found = search_for_user(request, ESPUser.objects.filter(query), add_to_context = {'module': self.module.link_title})
 
         if not found:
             return user
@@ -97,6 +98,8 @@ class AdminMorph(ProgramModuleObj):
 
         return HttpResponseRedirect('/')
 
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

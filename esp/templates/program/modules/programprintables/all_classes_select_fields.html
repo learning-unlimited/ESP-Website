@@ -1,0 +1,51 @@
+{% extends "main.html" %} 
+{% block title %}{{ program.niceName }} Printables{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" type="text/css" href="/media/styles/multiselect.css" />
+<script src="/media/scripts/jquery.multi-select.js" type="text/javascript"></script>
+<h1>All Classes CSV Export for {{ program.niceName }}</h1>
+<p>
+You can use this form to download information about all of the classes for this program. Select the fields that you would like to include in the CSV export, then hit the "Export CSV" button.
+</p>
+
+{% if form.errors %}
+<div class="alert alert-error">
+    Please select at least one field.
+</div>
+{% endif %}
+<center>
+<form method="post" action="all_classes_spreadsheet">
+    <fieldset>
+       <div>
+          {{ form.subject_fields }}
+      </div>
+    </fieldset>
+    <br />
+    <button type="button" id='select-all'>Select All</button> <button type="button" id='deselect-all'>Deselect All</button>
+    <br />
+    <br />
+    <div>
+      <button type="submit" class="btn btn-large btn-primary">Export CSV</button>
+    </div>
+</form>
+</center>
+<br />
+<a class="btn" href="/manage/{{ program.getUrlBase }}/printoptions">Return to the main printables page</a>
+<script type="text/javascript">
+$j(function() {
+    $j('#id_subject_fields').multiSelect({
+        selectableHeader: "<div class='custom-header'>Available  Fields</div>",
+        selectionHeader: "<div class='custom-header'>Selected Fields</div>"
+    });
+    $j('#select-all').click(function(){
+        $j('#id_subject_fields').multiSelect('select_all');
+        return false;
+    });
+    $j('#deselect-all').click(function(){
+        $j('#id_subject_fields').multiSelect('deselect_all');
+        return false;
+    });
+});
+</script>
+{% endblock %}

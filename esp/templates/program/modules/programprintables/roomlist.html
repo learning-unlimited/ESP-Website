@@ -52,8 +52,8 @@ table.sortable thead {
 <tr>
     <td>{{ forloop.counter }}</td>
     <td>{{ room.name }}</td>
-    <td>&nbsp;{% autoescape off %}{{ room.prog_available_times }}{% endautoescape %}</td>
-    <td>&nbsp;
+    <td>{% autoescape off %}{{ room.prog_available_times }}{% endautoescape %}</td>
+    <td>
         {% for f in room.furnishings %}
             {{ f.res_type.name }}{% if not forloop.last %}<br />{% endif %}
         {% endfor %}

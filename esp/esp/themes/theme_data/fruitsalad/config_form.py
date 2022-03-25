@@ -44,7 +44,7 @@ class ConfigForm(ThemeConfigurationForm):
     titlebar_prefix = forms.CharField()
     full_group_name = forms.CharField()
     contact_info = forms.CharField(widget=forms.Textarea)
-    nav_structure = forms.Field(widget=NavStructureWidget)
+    nav_structure = forms.Field(widget=NavStructureWidget, label='Nav structure (use relative URLs)')
     # TODO(benkraft): Make all the contact info links fully editable, like the
     # navbar links.
     facebook_link = forms.URLField(required=False, help_text='Leave blank to omit a Facebook link.')

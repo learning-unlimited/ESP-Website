@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
+from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.dbmail.models import MessageRequest
 from esp.users.models   import ESPUser, PersistentQueryFilter
@@ -46,6 +47,7 @@ from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.middleware import ESPError
 
 class CommModule(ProgramModuleObj):
+    doc = """Email users that match specific search criteria."""
     """ Want to email all ESP students within a 60 mile radius of NYC?
     How about emailing all esp users within a 30 mile radius of New Hampshire whose last name contains 'e' and 'a'?
     Do that and even more useful things in the communication panel.
@@ -57,7 +59,8 @@ class CommModule(ProgramModuleObj):
             "admin_title": "Communications Panel for Admin",
             "link_title": "Communications Panel",
             "module_type": "manage",
-            "seq": 10
+            "seq": 10,
+            "choosable": 1,
             }
 
     @aux_call
@@ -72,6 +75,7 @@ class CommModule(ProgramModuleObj):
                                               request.POST['body']    ]
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
+        public_view = 'public_view' in request.POST
 
         # Set From address
         if request.POST.get('from', '').strip():
@@ -89,14 +93,17 @@ class CommModule(ProgramModuleObj):
         try:
             filterid = int(filterid)
         except:
-            raise ESPError("Corrupted POST data!  Please contact us at esp-web@mit.edu and tell us how you got this error, and we'll look into it.")
+            raise ESPError("Corrupted POST data!  Please contact us at" +
+            "websupport@learningu.org and tell us how you got this error," +
+            "and we'll look into it.")
 
         userlist = PersistentQueryFilter.getFilterFromID(filterid, ESPUser).getList(ESPUser)
 
         try:
             firstuser = userlist[0]
         except:
-            raise ESPError("You seem to be trying to email 0 people!  Please go back, edit your search, and try again.")
+            raise ESPError("You seem to be trying to email 0 people!  " +
+            "Please go back, edit your search, and try again.")
 
         MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
@@ -105,7 +112,8 @@ class CommModule(ProgramModuleObj):
             body = '<html>' + body + '</html>'
 
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
-                       'program': ActionHandler(self.program, firstuser) }
+                       'program': ActionHandler(self.program, firstuser),
+                       'request': ActionHandler(MessageRequest(), firstuser)}
 
         renderedtext = Template(body).render(DjangoContext(contextdict))
 
@@ -117,10 +125,12 @@ class CommModule(ProgramModuleObj):
                                                'subject': subject,
                                                'from': fromemail,
                                                'replyto': replytoemail,
+                                               'public_view': public_view,
                                                'body': body,
                                                'renderedtext': renderedtext})
 
-    def approx_num_of_recipients(self, filterObj, sendto_fn):
+    @staticmethod
+    def approx_num_of_recipients(filterObj, sendto_fn):
         """
         Approximates the number of recipients of a message, given the filter
         and the sendto function.
@@ -156,11 +166,14 @@ class CommModule(ProgramModuleObj):
                                     request.POST['subject'],
                                     request.POST['body']    ]
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
+        public_view = 'public_view' in request.POST
 
         try:
             filterid = int(filterid)
         except:
-            raise ESPError("Corrupted POST data!  Please contact us at esp-web@mit.edu and tell us how you got this error, and we'll look into it.")
+            raise ESPError("Corrupted POST data!  Please contact us at " +
+            "websupport@learningu and tell us how you got this error, " +
+            "and we'll look into it.")
 
         filterobj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
 
@@ -174,7 +187,8 @@ class CommModule(ProgramModuleObj):
                                                       sendto_fn_name  = sendto_fn_name,
                                                       sender     = fromemail,
                                                       creator    = request.user,
-                                                      msgtext    = body,
+                                                      msgtext = body,
+                                                      public = public_view,
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )
 
@@ -193,8 +207,10 @@ class CommModule(ProgramModuleObj):
         else:
             est_time = 1.5 * numusers
 
-        return render_to_response(self.baseDir()+'finished.html', request,
-                                  {'time': est_time})
+        context = {'time': est_time}
+        if public_view:
+            context['req_id'] = newmsg_request.id
+        return render_to_response(self.baseDir()+'finished.html', request, context)
 
 
     @aux_call
@@ -227,9 +243,7 @@ class CommModule(ProgramModuleObj):
         #   If list information was submitted, continue to prepare a message
         if request.method == 'POST':
             #   Turn multi-valued QueryDict into standard dictionary
-            data = {}
-            for key in request.POST:
-                data[key] = request.POST[key]
+            data = ListGenModule.processPost(request)
 
             ##  Handle normal list selecting submissions
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
@@ -240,7 +254,7 @@ class CommModule(ProgramModuleObj):
                 sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
                 if data['use_checklist'] == '1':
-                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/commpanel_old' % prog.getUrlBase())
+                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/commpanel_old' % prog.getUrlBase(), extra_context = {'module': "Communications Portal"})
                     return response
 
                 context['filterid'] = filterObj.id
@@ -283,6 +297,7 @@ class CommModule(ProgramModuleObj):
                                                          request.POST['body']    ]
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
+        public_view = 'public_view' in request.POST
 
         return render_to_response(self.baseDir()+'step2.html', request,
                                               {'listcount': listcount,
@@ -292,7 +307,11 @@ class CommModule(ProgramModuleObj):
                                                'from': fromemail,
                                                'replyto': replytoemail,
                                                'subject': subject,
-                                               'body': body})
+                                               'body': body,
+                                               'public_view': public_view})
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

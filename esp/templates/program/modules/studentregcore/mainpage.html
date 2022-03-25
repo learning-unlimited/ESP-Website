@@ -45,9 +45,9 @@
 {% end_inline_program_qsd_block %}
 
 {% render_inline_program_qsd program "learn:studentregheader" %}
-<div class="alert alert-info">
+<div class="alert alert-block">
 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-<b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.
+<big><b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.</big>
 </div>
     
 {% ifequal scrmi.progress_mode 1 %}
@@ -56,6 +56,29 @@
 {% ifequal scrmi.progress_mode 2 %}
     {% include "program/modules/progressbar.html" %}
 {% endifequal %}
+
+{% if records %}
+{% render_inline_program_qsd program record_steps %}
+<div class="row-fluid">
+<div class="span10 offset1">
+<table class="table table-condensed" align="center" width="400">
+<tr class="well"><th>Other Registration Requirements</th><th>Done?</th></tr>
+{% for record in records %}
+    <tr>
+        <td>{{ record.full_event }}</td>
+        <td>
+            {% if record.isCompleted %}
+                <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+            {% else %}
+                <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+            {% endif %}
+        </td>
+    </tr>
+{% endfor %}
+</table>
+</div>
+</div>
+{% endif %}
 
 {% endif %}
 

@@ -42,6 +42,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 
 from argcache import cache_function
+from collections import OrderedDict
 
 try:
     import cPickle as pickle
@@ -53,6 +54,7 @@ from esp.db.fields import AjaxForeignKey
 # Models to depend on.
 from esp.middleware import ESPError
 from esp.program.models import Program
+from esp.tagdict.models import Tag
 
 class ListField(object):
     """ Create a list type field descriptor. Allows you to
@@ -110,9 +112,11 @@ class Survey(models.Model):
         prog = self.program
         if prog:
             if self.category == 'teach':
-                return prog.teachers()['class_approved'].count()
+                filters = [x.strip() for x in Tag.getProgramTag('survey_teacher_filter', prog).split(",") if x.strip()]
+                return len(set().union(*[prog.teachers().get(filter, []) for filter in filters]))
             elif self.category == 'learn':
-                return prog.students()['confirmed'].count()
+                filters = [x.strip() for x in Tag.getProgramTag('survey_student_filter', prog).split(",") if x.strip()]
+                return len(set().union(*[prog.students().get(filter, []) for filter in filters]))
             else:
                 return 0
         else:
@@ -214,7 +218,10 @@ class QuestionType(models.Model):
         return 'survey/questions/%s.html' % self.name.replace(' ', '_').lower()
 
     def __unicode__(self):
-        return '%s: includes %s' % (self.name, self._param_names.replace('|', ', '))
+        if len(self.param_names) > 0:
+            return '%s: includes %s' % (self.name, self._param_names.replace('|', ', '))
+        else:
+            return '%s' % (self.name)
 
 
 class Question(models.Model):
@@ -231,7 +238,7 @@ class Question(models.Model):
         " Get the parameters for this question, as a dictionary. "
 
         a, b = self.question_type.param_names, self.param_values
-        params = dict(zip(map(lambda x: x.replace(' ', '_').lower(), a),
+        params = OrderedDict(zip(map(lambda x: x.replace(' ', '_').lower(), a),
                           b))
         min_length = min(len(a), len(b))
         params['list'] = b[min_length:]

@@ -7,7 +7,8 @@
 set -ef -o pipefail
 
 # Parameters
-GIT_REPO="git://github.com/learning-unlimited/ESP-Website.git"
+GIT_PUBLIC_REPO="https://github.com/learning-unlimited/ESP-Website.git"
+GIT_REPO="git@github.com:learning-unlimited/ESP-Website.git"
 APACHE_CONF_FILE="/etc/apache2/sites-available/esp_sites.conf"
 APACHE_REDIRECT_CONF_FILE="/etc/apache2/sites-available/esp_sites/https_redirect.conf"
 AUTH_USER_FILE="/lu/auth/dav_auth"
@@ -139,7 +140,7 @@ echo "ESPHOSTNAME=\"$ESPHOSTNAME\"" >> $BASEDIR/.espsettings
 
 while [[ ! -n $GROUPEMAIL ]]; do
     echo
-    echo -n "Enter your group's contact e-mail address --> "
+    echo -n "Enter your group's contact email address --> "
     read GROUPEMAIL
 done
 echo "Contact forms on the site will direct mail to $GROUPEMAIL."
@@ -158,18 +159,18 @@ while [[ ! -n $GROUPNAME ]]; do
     read GROUPNAME
 done
 echo "GROUPNAME=\"$GROUPNAME\"" >> $BASEDIR/.espsettings
-echo "In printed materials and e-mails your group will be referred to as"
+echo "In printed materials and emails your group will be referred to as"
 echo "$INSTITUTION $GROUPNAME.  To substitute a more detailed name in"
 echo "some printed materials, set the 'full_group_name' Tag."
 
 while [[ ! -n $EMAILHOST ]]; do
     echo
-    echo "Enter the hostname you will be using for e-mail"
+    echo "Enter the hostname you will be using for email"
     echo -n "  (default = $ESPHOSTNAME) --> "
     read EMAILHOST
     EMAILHOST=${EMAILHOST:-$ESPHOSTNAME}
 done
-echo "Selected e-mail host: $EMAILHOST"
+echo "Selected email host: $EMAILHOST"
 echo "EMAILHOST=\"$EMAILHOST\"" >> $BASEDIR/.espsettings
 
 while [[ ! -n $TIMEZONE ]]; do
@@ -182,24 +183,10 @@ done
 echo "Selected time zone: $TIMEZONE"
 echo "TIMEZONE=\"$TIMEZONE\"" >> $BASEDIR/.espsettings
 
-while [[ ! -n $DBNAME ]]; do
-    echo
-    echo "Please enter the name of the PostgreSQL database for this site"
-    echo -n "  (default = ${SITENAME}_django) --> "
-    read DBNAME
-    DEFAULT_DBNAME=${SITENAME}_django
-    DBNAME=${DBNAME:-$DEFAULT_DBNAME}
-done
-echo "Selected database name: $DBNAME"
+DBNAME=${SITENAME}_django
 echo "DBNAME=\"$DBNAME\"" >> $BASEDIR/.espsettings
 
-while [[ ! -n $DBUSER ]] ; do
-    echo "Please enter the name of the PostgreSQL user for this site"
-    echo -n "  (default = $SITENAME) --> "
-    read DBUSER
-    DBUSER=${DBUSER:-$SITENAME}
-done
-echo "Selected database username: $DBUSER"
+DBUSER=${DBUSER:-$SITENAME}
 echo "DBUSER=\"$DBUSER\"" >> $BASEDIR/.espsettings
 
 if [[ ! -n $DBPASS ]]
@@ -241,8 +228,9 @@ if [[ "$MODE_GIT" || "$MODE_ALL" ]] ; then
             mv "$BASEDIR" "$BASEDIR.old"
         fi
         echo "Creating site $SITENAME in $CURDIR."
-        git clone "$GIT_REPO" "$SITENAME"
+        git clone "$GIT_PUBLIC_REPO" "$SITENAME"
         cd "$BASEDIR"
+        git remote set-url --push origin $GIT_REPO
         git checkout "$GIT_BRANCH"
         if [[ -e "$BASEDIR.old/.espsettings" ]] ; then
             echo "Executing: cp $BASEDIR.tmp/.espsettings $BASEDIR/"
@@ -385,7 +373,7 @@ then
     chown -R $WWW_USER:$WWW_USER "$BASEDIR"
     cd $CURDIR
 
-    #   Set initial Site (used in password recovery e-mail)
+    #   Set initial Site (used in password recovery email)
     # TODO(benkraft): do this in python.
     sudo -u postgres psql -c "DELETE FROM django_site; INSERT INTO django_site (id, domain, name) VALUES (1, '$ESPHOSTNAME', '$INSTITUTION $GROUPNAME Site');" $DBNAME
 

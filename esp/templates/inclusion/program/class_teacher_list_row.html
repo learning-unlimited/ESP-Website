@@ -1,4 +1,6 @@
-{# expects program, class, can_req_cancel, and crmi (ClassRegModuleInfo) #}
+{# expects program, class, can_req_cancel, survey_results, crmi (ClassRegModuleInfo), user #}
+
+{% load users %}
 
 <tr{% if not cls.isReviewed %} style="color: gray"{% endif %}{% if cls.isRejected or cls.isCancelled %} style="color: red"{% endif %}>
   <td class="clsleft classname bordertop2" colspan="3">
@@ -12,7 +14,7 @@
   {% block cls_row_1_buttons %}
   <td class="clsmiddle bordertop2">
     {% if can_req_cancel %}
-        <button class="cancelbutton" onclick="requestCancel({{cls.id}})">Request Cancellation</button>
+        <button class="button" onclick="requestCancel({{cls.id}})">Request Cancellation</button>
     {% endif %}
   </td>
   <td class="clsmiddle bordertop2">
@@ -56,26 +58,43 @@ Popup div for class cancellation request
 </div>
 
 <tr>
-  <td class="clsleft" colspan="6">
-    <b>Directors' review status</b>: {% if cls.isReviewed %}{% if cls.isAccepted %}
-    <span style="font-weight: bold; color: #0C0;">Accepted</span>
-    {% else %}
-    <span style="font-weight: bold; color: #C00;">Rejected</span>
-    {% endif %}
+  <td class="clsleft" colspan="5">
+    <b>Directors' review status</b>:
+    {% if cls.isReviewed %}
+        {% if cls.isAccepted %}
+        <span style="font-weight: bold; color: #0C0;">Accepted{% if cls.isHidden %} (Hidden){% endif %}</span>
+        {% elif cls.isCancelled %}
+        <span style="font-weight: bold; color: #C00;">Cancelled</span>
+        {% else %}
+        <span style="font-weight: bold; color: #C00;">Rejected</span>
+        {% endif %}
     {% else %}
     <span style="font-weight: bold; color: #00C;">Unreviewed</span>
     {% endif %}
   </td>
-  <td class="clsright" colspan="1">
+  <td class="clsright" colspan="2">
   {% block cls_row_2_buttons %}
     {% if cls.isAccepted %}
     <a href="/teach/{{program.getUrlBase}}/class_students/{{cls.id}}" 
        title="View Class' Students" class="abutton">
       View Students
     </a>
+    &emsp;
+    <a href="mailto:{{ cls.emailcode }}-students@{{ email_host_sender }}"
+       title="Email Class' Students" class="abutton">
+      Email Students
+    </a>
+    {% if survey_results %}
+    <br /><br />
+    <a href="/teach/{{ program.getUrlBase }}/survey/review?classsubject_id={{ cls.id }}"
+       title="Review Results from Student Survey" class="abutton">
+      Student Survey Results
+    </a>
+    {% endif %}
     {% endif %}
   {% endblock %}
   </td>
+  
 </tr>
 
 <tr>
@@ -91,8 +110,8 @@ Popup div for class cancellation request
 
 {% if crmi.allow_coteach %}
 <tr>
-  <td class="clsleft"><b>(Co-)Teachers: </b></td>
-  <td class="clsmiddle" colspan="5">{% for t in cls.get_teachers %}{% ifnotequal t request.user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>
+  <td class="clsleft"><b>Coteachers (<a href="mailto:{{ cls.emailcode }}-teachers@{{ email_host_sender }}">email</a>): </b></td>
+  <td class="clsmiddle" colspan="5">{% for t in cls.teachers.all|remove_from_qs:user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
   <td class="clsright">
   {% block cls_row_4_buttons %}
     <form method="post" action="/teach/{{program.getUrlBase}}/coteachers">
@@ -109,22 +128,34 @@ Popup div for class cancellation request
 {% for sec in cls.sections.all %}
 <tr>
   <td class="clsleft" valign="top"><i>Section {{ sec.index }}</i> <br />
-    Status: {% if sec.isReviewed %}{% if sec.isAccepted %}
-    <span style="font-weight: bold; color: #0C0;">Accepted</span>
-    {% else %}
-    <span style="font-weight: bold; color: #C00;">Rejected</span>
-    {% endif %}
+    Status:
+    {% if sec.isReviewed %}
+        {% if sec.isAccepted %}
+        <span style="font-weight: bold; color: #0C0;">Accepted{% if sec.isHidden %} (Hidden){% endif %}</span>
+        {% elif sec.isCancelled %}
+        <span style="font-weight: bold; color: #C00;">Cancelled</span>
+        {% else %}
+        <span style="font-weight: bold; color: #C00;">Rejected</span>
+        {% endif %}
     {% else %}
     <span style="font-weight: bold; color: #00C;">Unreviewed</span>
     {% endif %}
   </td>
-  <td class="clsmiddle" valign="top" colspan="4">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif%}{% endif %}</td>
-  <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students
-    <br />(<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">view list</a>) 
+  <td class="clsmiddle" valign="top" colspan="4">
+    Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />
+    Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif%}{% endif %}<br />
+    {% if sec.get_moderators %}{{ program.getModeratorTitle }}s: {% for m in sec.get_moderators %}<a href="mailto:{{ m.email }}">{{ m.first_name }} {{ m.last_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}
   </td>
-  <td class="clsright" valign="top">
+  <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students
+    <br />(<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">view list</a>)
+    {% if sec.meeting_times.count > 0 %}<br />(<a href="/teach/{{ program.getUrlBase }}/section_attendance/{{ sec.id }}">attendance</a>){% endif %}
+  </td>
+  <td class="clsright" valign="middle">
   {% block cls_row_5_buttons %}
-    <a class="abutton" href="mailto:{{ sec.emailcode }}-students@{{ email_host_sender }}">E-mail students</a>
+    <a href="mailto:{{ sec.emailcode }}-students@{{ email_host_sender }}"
+       title="Email Section's Students" class="abutton">
+      Email S{{ sec.index }} Students
+    </a>
   {% endblock %}
   </td>
 </tr>

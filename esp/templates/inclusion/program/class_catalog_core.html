@@ -2,7 +2,7 @@
           {% if class.got_index_qsd %}
            <a href="Classes/{{ class.emailcode }}/index.html">{% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape }}</a>
           {% else %}
-           {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape }} {% if class.hasScheduledSections and class.isFull and collapse_full %}<font color="#990000" style="font-size: 14px">Full!</font>{% else %}{% if class.isRegClosed %}<font color="#990000" style="font-size: 14px">Closed!</font>{% endif %}{% endif %}
+           {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape }} {% if class.hasScheduledSections and collapse_full %}{% if class.isFull %}<font color="#990000" style="font-size: 14px">Full!</font>{% elif class.isRegClosed %}<font color="#990000" style="font-size: 14px">Closed!</font>{% elif class.isFullOrClosed %}<font color="#990000" style="font-size: 14px">Full/Closed!</font>{% endif %}{% endif %}
           {% endif %}
 	 </div>
      <div class="class_subtitle_row">
@@ -95,22 +95,6 @@
     </div>
     </div>
     </div>
-    
-    {% if class.media_count %}
-    <div class="class_footer_row">
-    <div id="{{ cls.id }}_media" class="class_doclist">
-       <b>Materials for this class include:</b>
-        <span class="doclist">
-        {% for doc in class.docs_summary %}
-        <a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a>{% if not forloop.last %},{% endif %}
-        {% endfor %}
-        {% if class.media_count > class.docs_summary|length %}
-        <b><a href="{{ class.parent_program.get_learn_url }}class_docs/{{ class.id }}">(view all {{ class.media_count }})</a></b>
-        {% endif %}
-        </span>
-    </div>
-    </div>
-    {% endif %}
 
     {% with class.numStudentAppQuestions as num_questions %}
     {% if num_questions %}
@@ -123,8 +107,24 @@
     {% endwith %}
     </div>
     
+    {% if class.media_count %}
+    <div class="class_footer_row">
+    <div id="{{ cls.id }}_media" class="class_doclist">
+       <b>Materials for this class include:</b>
+        <span class="doclist">
+        {% for doc in class.docs_summary %}
+        <a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a>{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        {% if class.media_count > class.docs_summary|length %}
+        <b><a href="{{ class.parent_program.get_learn_url }}class_docs/{{ class.id }}">(view all {{ class.media_count }})</a></b>
+        {% endif %}
+        </span>
+    </div>
+    </div>
+    {% endif %}
+    
 {% if collapse_full %}
-{% if class.isFull or class.isRegClosed %}
+{% if class.isFullOrClosed %}
 <!-- This class is already full; start it off as invisible -->
 <script type="text/javascript">
 swap_visible('class_{{ class.id }}_content');

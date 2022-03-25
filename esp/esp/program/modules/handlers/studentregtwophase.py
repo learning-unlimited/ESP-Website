@@ -51,6 +51,7 @@ from esp.utils.web import render_to_response
 from esp.utils.query_utils import nest_Q
 
 class StudentRegTwoPhase(ProgramModuleObj):
+    doc = """Allows students to set preferences for the class lottery."""
 
     def students(self, QObject = False):
         q_sr = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
@@ -67,7 +68,11 @@ class StudentRegTwoPhase(ProgramModuleObj):
                 'twophase_priority_students': "Students who have marked choices in the two-phase lottery"}
 
     def isCompleted(self):
-        records = Record.objects.filter(user=get_current_request().user,
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        records = Record.objects.filter(user=user,
                                         event="twophase_reg_done",
                                         program=self.program)
         return records.count() != 0
@@ -79,7 +84,8 @@ class StudentRegTwoPhase(ProgramModuleObj):
             "admin_title": "Two-Phase Student Registration",
             "module_type": "learn",
             "seq": 3,
-            "required": True
+            "required": True,
+            "choosable": 0,
             }
 
     @main_call
@@ -138,7 +144,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         timeslots = prog.getTimeSlots(types=['Class Time Block', 'Compulsory'])
 
         context['num_priority'] = prog.priorityLimit()
-        context['num_star'] = Tag.getProgramTag("num_stars", program = prog, default = 10)
+        context['num_star'] = int(Tag.getProgramTag("num_stars", program = prog))
 
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
@@ -153,7 +159,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             temp_list = []
             for i in range(1, context['num_priority'] + 1):
                 priority_name = 'Priority/%s' % i
-                reg_type = RegistrationType.objects.get(name = priority_name, category = "student")
+                reg_type, created = RegistrationType.objects.get_or_create(name = priority_name, category = "student")
                 if priority_name in priority_dict:
                     temp_list.append((reg_type, priority_dict[priority_name]))
                 else:

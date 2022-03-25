@@ -64,16 +64,19 @@ class RegProfileModuleTest(ProgramFrameworkTest):
             get_current_request().user = student
             self.assertTrue( not self.moduleobj.isCompleted(), "The profile should be incomplete at first." )
 
-        # First student: Test copying of sufficiently recent profiles
+        # First student: Test non-saving of initial program profile
         get_current_request().user = self.students[0]
+        prof = RegistrationProfile.getLastForProgram(self.students[0], self.program)
+        self.assertTrue( self.students[0].registrationprofile_set.count() <= 0, "Profile was saved when it shouldn't have been." )
+        # Test migration of initial non-program profile to a program
         prof = self.students[0].getLastProfile()
         prof.program = None
         prof.save()
         self.assertTrue( self.students[0].registrationprofile_set.count() >= 1, "Profile failed to save." )
         self.assertTrue( self.students[0].registrationprofile_set.count() <= 1, "Too many profiles." )
-        self.assertTrue( self.moduleobj.isCompleted(), "Profile failed to copy." )
-        self.assertTrue( self.students[0].registrationprofile_set.count() >= 2, "Copy failed to save." )
-        self.assertTrue( self.students[0].registrationprofile_set.count() <= 2, "Too many profiles." )
+        self.assertTrue( self.moduleobj.isCompleted(), "Profile id wiped." )
+        self.assertTrue( self.students[0].registrationprofile_set.all()[0].program == self.program, "Profile failed to migrate to program." )
+        self.assertTrue( self.students[0].registrationprofile_set.count() <= 1, "Too many profiles." )
 
         # Second student: Test non-auto-saving of sufficiently old profiles
         get_current_request().user = self.students[1]
@@ -100,7 +103,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
 
         ## Find the line for the start of the graduation-year form field
         for i, line in enumerate(lines):
-            if '<select class="required" id="id_graduation_year" name="graduation_year">' in line:
+            if 'id="id_graduation_year"' in line:
                 break
         self.assertTrue(i < len(lines)-1) ## Found the relevant line
 
@@ -116,5 +119,5 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         ## Validate that the default value of the form is the empty string, like we assumed in POST'ing it above
         found_default = False
         for line in lines[i:i+j]:
-            found_default = found_default or ('<option value="" selected="selected"></option>' in line)
+            found_default = found_default or ('<option value="" selected></option>' in line)
         self.assertTrue(found_default)

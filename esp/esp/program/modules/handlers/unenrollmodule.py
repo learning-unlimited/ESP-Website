@@ -44,7 +44,7 @@ from esp.utils.web import render_to_response
 logger = logging.getLogger(__name__)
 
 class UnenrollModule(ProgramModuleObj):
-    """ Frontend to kick students from classes. """
+    doc = """Frontend to unenroll students from classes."""
 
     @classmethod
     def module_properties(cls):
@@ -53,6 +53,7 @@ class UnenrollModule(ProgramModuleObj):
             "link_title": "Unenroll Students",
             "module_type": "onsite",
             "seq": 100,
+            "choosable": 1,
         }
 
     class Meta:

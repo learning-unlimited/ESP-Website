@@ -21,21 +21,31 @@ function updateDocs(docs) {
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
     <link rel="stylesheet" type="text/css" href="/media/styles/scheduling_checks.css" />
+    <style type="text/css">
+    .nocheckmark { border: 1px solid black; }
+    </style>
 {% endblock %}
 
 {% block content %}
-<style type="text/css">
-.nocheckmark { border: 1px solid black; }
-</style>
-
+{% include "program/modules/admincore/returnlink.html" %}
+<div id="scheduling_help_text" class="move_left">
 <h1>Schedule Diagnostic Output for {{program.niceName}} </h1>
+    <p>Open/Close reveals each scheduling diagnostic. Each diagnostic is loaded each time the page is reloaded. In addition individual diagnostics can be reloaded by clicking the "refresh" button.</p>
+    <p>After opening a diagnostic, there are several useful features for analysing the data.</p>
+    <p>First, it is possible to gray out a specific row by clicking on it.</p>
+    <p>Second, each column can be sorted by clicking on the header. The currently selected header will change color to indicate that it has been selected. A blue header color indicates that the column is sorted in order of least to greatest and a red header means that it is sorted from greatest to least.</p>
+    <p>The reset button serves to undo these changes resetting the diagnostic to the state in which is was last loaded.</p>
+    <p>Clicking "Include unreviewed classes" will show all classes in the diagnostic.</p>
+    <br></div>
+<a class="btn move_left" href="scheduling_checks{% if unreviewed %}">Exclude{% else %}?unreviewed">Include{% endif %} unreviewed classes</a>
+<button class="btn btn-success" name="refresh">Start Auto Refresh</button><input type="number" min="5" name="refresh_interval" title="(Refresh interval in seconds)" value=30>
 
-<div id="scheduling-check-wrapper" />
+<div id="scheduling-check-wrapper"></div>
 <script type="text/jsx">
   React.render(
     <SchedulingCheckList>
       {% for slug, title in check_list %}
-        <SchedulingCheck slug="{{slug}}" title="{{title}}" />
+        <SchedulingCheck slug="{{slug}}{% if unreviewed %}?unreviewed{% endif %}" title="{{title}}" />
       {% endfor %}
     </SchedulingCheckList>,
     document.getElementById("scheduling-check-wrapper"));

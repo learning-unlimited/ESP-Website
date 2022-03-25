@@ -51,7 +51,8 @@ class AdminMaterials(ProgramModuleObj):
             "admin_title": "Course Materials",
             "link_title": "Manage Documents",
             "module_type": "manage",
-            "seq": -9999
+            "seq": -9999,
+            "choosable": 1,
             }
 
     @main_call
@@ -102,8 +103,8 @@ class AdminMaterials(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'listmaterials.html', request, context)
 
-
-
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

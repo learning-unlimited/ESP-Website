@@ -44,13 +44,16 @@ from esp.program.modules.forms.onsite import OnSiteRegForm
 from esp.accounting.controllers import IndividualAccountingController
 
 class OnSiteRegister(ProgramModuleObj):
+    doc = """Register a new student onsite."""
+
     @classmethod
     def module_properties(cls):
         return {
             "admin_title": "Onsite New Registration",
             "link_title": "New Student Registration",
             "module_type": "onsite",
-            "seq": 30
+            "seq": 30,
+            "choosable": 1,
             }
 
 
@@ -99,7 +102,6 @@ class OnSiteRegister(ProgramModuleObj):
                 regProf.save()
 
                 if new_data['paid']:
-                    Record.createBit('paid', self.program, self.user)
                     IndividualAccountingController.updatePaid(self.program, self.user, True)
                 else:
                     IndividualAccountingController.updatePaid(self.program, self.user, False)

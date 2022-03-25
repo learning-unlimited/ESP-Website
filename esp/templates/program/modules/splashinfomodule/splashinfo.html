@@ -16,7 +16,12 @@
 
 <div id="program_form">
 
-{% if form.errors or missing_siblingname %}<p align="center" style="color: red;">Please correct the form below before continuing. <br />{{ form.errors }}</p>{% endif %}
+{% if form.errors or missing_siblingname %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            Please correct the form below before continuing. <br />{{ form.errors }}
+    </div>
+{% endif %}
 
 {% inline_program_qsd_block program "splashinfo_lunch" %}
 <h2>Lunch Preferences</h2>
@@ -82,7 +87,7 @@ We are offering a special discount to households with more than one attendee reg
 <hr/>
 <h2>Financial Aid</h2>
 <p>
-Full financial aid is available to any students who need it. If you require financial aid, please fill out a quick request by clicking the "Financial Aid Application (optional)" link on the next page.  Please e-mail us if you have any questions.
+Full financial aid is available to any students who need it. If you require financial aid, please fill out a quick request by clicking the "Financial Aid Application (optional)" link on the next page.  Please email us if you have any questions.
 </p>
 {% end_inline_program_qsd_block %}
 

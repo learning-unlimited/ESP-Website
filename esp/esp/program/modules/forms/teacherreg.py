@@ -36,11 +36,13 @@ Learning Unlimited, Inc.
 from django import forms
 from django.core import validators
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.safestring import mark_safe
 from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 import re
 from esp.program.models import ClassCategories, ClassSubject, ClassSection, ClassSizeRange
 from esp.program.modules.module_ext import ClassRegModuleInfo
+from esp.users.models import UserAvailability
 from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from django.conf import settings
@@ -70,7 +72,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     title          = StrippedCharField(    label='Course Title', length=50, max_length=200 )
     category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget() )
     class_info     = StrippedCharField(   label='Course Description', widget=forms.Textarea(),
-                                        help_text='<span class="tex2jax_ignore">Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &pi;)</span>' )
+                                        help_text=mark_safe('<span class="tex2jax_ignore">Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &pi;)</span>'))
     prereqs        = forms.CharField(   label='Course Prerequisites', widget=forms.Textarea(attrs={'rows': 4}), required=False,
                                         help_text='If your course does not have prerequisites, leave this box blank.')
 
@@ -161,7 +163,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         else:
             del self.fields['class_size_max']
 
-        if Tag.getBooleanTag('use_class_size_optimal', default=False):
+        if Tag.getBooleanTag('use_class_size_optimal'):
             if not crmi.use_class_size_optimal:
                 del self.fields['class_size_optimal']
 
@@ -217,9 +219,9 @@ class TeacherClassRegForm(FormWithRequiredCss):
         #   Modify help text on these fields if necessary.
         #   TODO(benkraft): Is there a reason not to allow this on all fields?
         custom_helptext_fields = [
-            'duration', 'class_size_max', 'num_sections', 'requested_room',
-            'message_for_directors', 'purchase_requests', 'class_info',
-            'grade_max', 'grade_min'] + custom_fields.keys()
+            'duration', 'class_size_max', 'class_size_optimal', 'num_sections',
+            'requested_room', 'message_for_directors', 'purchase_requests',
+            'class_info', 'grade_max', 'grade_min'] + custom_fields.keys()
         for field in custom_helptext_fields:
             tag_data = Tag.getProgramTag('teacherreg_label_%s' % field, prog)
             if tag_data:
@@ -231,7 +233,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         #   Hide fields as desired.
         tag_data = Tag.getProgramTag('teacherreg_hide_fields', prog)
         if tag_data:
-            for field_name in tag_data.split(','):
+            for field_name in [x.strip().lower() for x in tag_data.split(',')]:
                 hide_field(self.fields[field_name])
 
         tag_data = Tag.getProgramTag('teacherreg_default_min_grade', prog)
@@ -345,11 +347,11 @@ class TeacherEventSignupForm(FormWithRequiredCss):
 
     def _slot_is_taken(self, event):
         """ Determine whether an interview slot is taken. """
-        return self.module.entriesBySlot(event).count() > 0
+        return UserAvailability.entriesBySlot(event).count() > 0
 
     def _slot_is_mine(self, event):
         """ Determine whether an interview slot is taken by you. """
-        return self.module.entriesBySlot(event).filter(user=self.user).count() > 0
+        return UserAvailability.entriesBySlot(event).filter(user=self.user).count() > 0
 
     def _slot_too_late(self, event):
         """ Determine whether it is too late to register for a time slot. """

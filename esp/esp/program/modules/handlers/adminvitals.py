@@ -32,25 +32,13 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
-from esp.program.modules import module_ext
-from esp.utils.web import render_to_response
-from django.contrib.auth.decorators import login_required
-from esp.program.models import ClassSubject, ClassSection, Program, ClassCategories
-from esp.users.models import shirt_sizes, shirt_types
-from django.core.cache import cache
-from django.db.models import Count, Sum
-from django.db.models.query      import Q
-from collections import defaultdict
-import math
-from decimal import Decimal
+from esp.program.modules.base import ProgramModuleObj
 
 class KeyDoesNotExist(Exception):
     pass
 
 class AdminVitals(ProgramModuleObj):
-    doc = """ This allows you to view the major numbers for your program on the main page.
-        This will present itself below the options in a neat little table. """
+    doc = """This allows you to view the major numbers for your program on the dashboard."""
 
     @classmethod
     def module_properties(cls):
@@ -60,12 +48,14 @@ class AdminVitals(ProgramModuleObj):
             "module_type": "manage",
             "inline_template": "vitals.html",
             "seq": -2,
+            "choosable": 1,
             }
 
     def prepare(self, context=None):
         return context
 
-
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

@@ -11,26 +11,38 @@ def teacheracknowledgementform_factory(prog):
     bases = (forms.Form,)
     date_range = prog.date_range()
 
-    if date_range is None:
-        label = u"I have read the above, and commit to teaching my %s class." % (prog.program_type)
+    if prog.hasModule("TeacherModeratorModule"):
+        teach_text = "teacher and/or " + prog.getModeratorTitle().lower()
     else:
-        label = u"I have read the above, and commit to teaching my %s class on %s." % (prog.program_type, date_range)
+        teach_text = "teacher"
+
+    if date_range is None:
+        label = u"I have read the above and commit to serving as a %s for my %s class(es)." % (teach_text, prog.program_type)
+    else:
+        label = u"I have read the above and commit to serving as a %s for my %s class(es) on %s." % (teach_text, prog.program_type, date_range)
 
     d = dict(acknowledgement=forms.BooleanField(required=True, label=label))
     return type(name, bases, d)
 
 class TeacherAcknowledgementModule(ProgramModuleObj):
+    doc = """Serves a form asking teachers to acknowledge some agreement."""
+
     @classmethod
     def module_properties(cls):
         return {
             "admin_title": "Teacher Acknowledgement",
             "link_title": "Teacher Acknowledgement",
             "module_type": "teach",
-            "required": False,
+            "required": True,
+            'choosable': 1,
         }
 
     def isCompleted(self):
-        return Record.objects.filter(user=get_current_request().user,
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return Record.objects.filter(user=user,
                                      program=self.program,
                                      event="teacheracknowledgement").exists()
 
@@ -66,7 +78,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
         return {'acknowledgement': teacher_list }
 
     def teacherDesc(self):
-        return {'acknowledgement': """Teachers who have submitted the acknowledgement for the program."""}
+        return {'acknowledgement': """Teachers who have submitted the acknowledgement for the program"""}
 
     class Meta:
         proxy = True

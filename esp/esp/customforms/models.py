@@ -61,6 +61,10 @@ class Field(models.Model):
             attr = Attribute.objects.create(field=self, attr_type=atype, value=value)
         return attr
 
+    def clean_attributes(self, keep):
+        from esp.customforms.models import Attribute
+        Attribute.objects.filter(field=self).exclude(attr_type__in=keep).delete()
+
 class Attribute(models.Model):
     field = models.ForeignKey(Field)
     attr_type = models.CharField(max_length=80)

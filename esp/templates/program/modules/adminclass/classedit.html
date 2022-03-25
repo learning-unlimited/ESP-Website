@@ -16,7 +16,10 @@ Thank you for teaching for {{ one }}. Please fill out/update the form below.
 <br />
 
 {% if form.has_errors %}
-<h2 style="color:red">Please fix the error{{ form.error_dict|pluralize }} in the form.</h2>
+<div class="alert alert-danger">
+    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        Please fix the error{{ form.error_dict|pluralize }} in the form.
+</div>
 {% endif %}
 
 <form action="{{request.path}}" name="clsform" method="post">

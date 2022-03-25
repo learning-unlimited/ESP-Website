@@ -1,0 +1,181 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Survey Administration{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/survey_manage.css" type="text/css" />
+{% endblock %}
+
+{% block xtrajs %}
+    {{ block.super }}
+    <script type="text/javascript">
+        var question_types = {{ question_types|safe }};
+    </script>
+{% endblock %}
+
+{% block content %}
+{% load survey %}
+<h1>Survey Management for {{ program.niceName }}</h1>
+
+<p>
+You can use this page to set up surveys for teachers or students of the program. You will first need to create a survey, then you can add questions to it.
+</p>
+
+<p>
+Each step below is a form that you can expand or contract by clicking on the header. If you'd like to import a survey from a previous program, you can do that in Step 1.
+</p>
+
+<div id="program_form">
+    {% ifequal open_section "survey" %}
+    <button class="dsphead active">
+       <b>Step 1: Add Surveys</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont active">
+    {% else %}
+    <button class="dsphead">
+       <b>Step 1: Surveys</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont">
+    {% endifequal %}
+    <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=survey&op=import">
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="2">Import a survey from a previous program</th></tr>
+        {{ import_survey_form }}
+        <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Import Survey" /></td></tr>
+    </table>
+    </form>
+    <br />
+    <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=survey">
+        {% if survey_form.id %}
+        <input type="hidden" name="survey_id" value="{{ survey_form.id }}" />
+        {% endif %}
+        <table align="center" cellpadding="0" cellspacing="0" width="100%">
+            <tr><th colspan="2">Add/modify a Survey</th></tr>
+            {{ survey_form.as_table }}
+            <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Create/Save Survey" /></td></tr>
+        </table>
+    </form>
+    <br />
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="3">Surveys for {{ program.niceName }}</th></tr>
+        <tr><td colspan="3"><table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+            <td width="75%" class="underline"><b>Question</b></td>
+            <td width="15%" class="underline"><b>Category</b></td>
+            <td width="10%" class="underline"></td>
+        </tr>
+        {% for survey in surveys %}
+            <tr>
+                <td class="underline">{{ survey.name }}</td>
+                <td class="underline">{{ survey.category }}</td>
+                <td class="underline">
+                    <a href="/manage/{{ program.url }}/surveys/manage?obj=survey&op=edit&id={{ survey.id }}">[Edit]</a>
+                    <a href="/manage/{{ program.url }}/surveys/manage?obj=survey&op=delete&id={{ survey.id }}">[Delete]</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </table></td></tr>
+    </table>
+    </div>
+    {% ifequal open_section "question" %}
+    <button class="dsphead active">
+       <b>Step 2: Add Questions</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont active">
+    {% else %}
+    <button class="dsphead">
+       <b>Step 2: Add Questions</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont">
+    {% endifequal %}
+    <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=question">
+        {% if question_form.id %}
+        <input type="hidden" name="question_id" value="{{ question_form.id }}" />
+        {% endif %}
+        <table align="center" cellpadding="0" cellspacing="0" width="100%">
+            <tr><th colspan="2">Add/modify a Question</th></tr>
+            {{ question_form.as_table }}
+            <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Create/Save Question" /></td></tr>
+        </table>
+    </form>
+    <br />
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="5">Questions for {{ program.niceName }}</th></tr>
+        <tr>
+            <th class="selector active" colspan="3" width="50%" data-panel="details">Question Details</th>
+            <th class="selector" colspan="2" width="50%" data-panel="rendered">Rendered Questions</th>
+        </tr>
+        <tr id="details-panel"><td colspan="5"><table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+            <td width="5%"><b>Seq</b></td>
+            <td width="30%"><b>Question</b></td>
+            <td width="25%"><b>Question Type</b></td>
+            <td width="30%"><b>Parameter Values</b></td>
+            <td width="10%"></td>
+        </tr>
+        {% for question in questions %}
+            {% ifchanged question.survey %}
+            <tr><th colspan="5">{{ question.survey.name }} ({{ question.survey.category|capfirst }})</th></tr>
+            {% endifchanged %}
+            {% ifchanged question.survey and question.per_class %}
+            <tr><th colspan="5" class="subheader">{% if question.per_class %}Per Class{% else %}Individual{% endif %} Questions</th></tr>
+            {% endifchanged %}
+            <tr>
+                <td class="underline">{{ question.seq }}</td>
+                <td class="underline">{{ question.name }}</td>
+                <td class="underline">{{ question.question_type.name }}</td>
+                <td class="underline">
+                    {% for key, value in question.get_params.items %}
+                        {% if key != "list" or value %}
+                            <i>{% if key == "list" %}other{% else %}{{ key }}{% endif %}</i>: {% if value %}{{ value }}{% endif %}
+                            {% if not forloop.last %}<br />{% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </td>
+                <td class="underline">
+                    <a href="/manage/{{ program.url }}/surveys/manage?obj=question&op=edit&id={{ question.id }}">[Edit]</a>
+                    <a href="/manage/{{ program.url }}/surveys/manage?obj=question&op=delete&id={{ question.id }}">[Delete]</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </table></td></tr>
+        <tr hidden id="rendered-panel"><td colspan="5"><table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+            <td width="5%"><b>Seq</b></td>
+            <td width="85%" colspan="3" align="center"><b>Rendered Question</b></td>
+            <td width="10%"></td>
+        </tr>
+        {% for question in questions %}
+            {% ifchanged question.survey %}
+            <tr><th colspan="5">{{ question.survey.name }} ({{ question.survey.category|capfirst }})</th></tr>
+            {% endifchanged %}
+            {% ifchanged question.survey and question.per_class %}
+            <tr><th colspan="5" class="subheader">{% if question.per_class %}Per Class{% else %}Individual{% endif %} Questions</th></tr>
+            {% endifchanged %}
+            <tr>
+                <td class="underline">{{ question.seq }}</td>
+                <td class="underline" colspan="3">{% if question.per_class %}{{ question.render|substitute:section }}{% else %}{{ question.render|uselist:classes }}{% endif %}</td>
+                <td class="underline">
+                    <a href="/manage/{{ program.url }}/surveys/manage?obj=question&op=edit&id={{ question.id }}">[Edit]</a>
+                    <a href="/manage/{{ program.url }}/surveys/manage?obj=question&op=delete&id={{ question.id }}">[Delete]</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </table></td></tr>
+    </table>
+    </div>
+</div>
+
+<a class="btn" href="/manage/{{ program.getUrlBase }}/surveys">Return to the main survey page</a>
+
+<script type="text/javascript" src="/media/scripts/program/modules/survey_manage.js"></script>
+<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
+
+{% endblock %}

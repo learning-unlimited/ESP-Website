@@ -24,11 +24,13 @@ def _populate_related(target, related_list, many_to_many):
 
 def _get_simply_related(target):
     """Gets objects related to 'target' through anything but many-to-many."""
-    return _populate_related(target, target._meta.get_all_related_objects(), False)
+    objects = [f for f in target._meta.get_fields() if (f.one_to_many or f.one_to_one) and f.auto_created and not f.concrete]
+    return _populate_related(target, objects, False)
 
 def _get_m2m_related(target):
     """Gets objects related to 'target' through a many-to-many."""
-    return _populate_related(target, target._meta.get_all_related_many_to_many_objects(), True)
+    objects = [f for f in target._meta.get_fields(include_hidden=True) if f.many_to_many and f.auto_created]
+    return _populate_related(target, objects, True)
 
 
 ################################
@@ -53,12 +55,19 @@ def merge(absorber, absorbee):
         # Then I wouldn't have to do any transaction stuff here.
         with transaction.atomic():
             if m2m:
-                getattr(obj, name).remove(absorbee)
-                getattr(obj, name).add(absorber)
-                # No need to save(); remove and add implicitly do it.
+                # TODO: handle symmetric relations.
+                rel = getattr(obj, name)
+                # If it's not auto_created then it's handled by a "through".
+                if rel.through._meta.auto_created:
+                    rel.remove(absorbee)
+                    rel.add(absorber)
+                    # No need to save(); remove and add implicitly do it.
             else:
                 setattr(obj, name, absorber)
                 obj.save()
+    # Also check local m2m fields.
+    for field in absorber._meta.local_many_to_many:
+        getattr(absorber, field.attname).add(getattr(absorbee, field.attname).all())
 
 
 #########################

@@ -1,0 +1,51 @@
+<html>
+<head>
+<title>Class Flags for {{ program.niceName }}</title>
+<style type="text/css" media="print,screen">
+body { font-family: georgia; margin: 0; font-size: 12px;}
+.title { text-align: center; font-size: 12pt; font-family: georgia; }
+.title span { font-weight:bolder; text-decoration: underline;
+              font-size:16pt; }
+.title { padding: 1in 0 0 0; }
+td, th {
+       border: 1px solid black; 
+       border-collapse: collapse
+}
+table.sortable thead {
+    background-color:#eee;
+    color:#666666;
+    font-weight: bold;
+    cursor: default;
+}
+</style>
+<script src="/media/scripts/sorttable.js"></script>
+
+</head>
+<body>
+{% load main %}
+
+<table class="sortable" style="border: 1px solid black; border-collapse: collapse;">
+<tr>
+ <!-- <th>#</th> -->
+ <th>Class Code</th>
+ <th>Class Title</th>
+ <th>Teachers</th>
+ {% for type in flag_types %}
+ <th>{{ type.name }}</th>
+ {% endfor %}
+</tr>
+{% for cls in classes %}
+<tr>
+ <!-- <td>{{ forloop.counter }}</td> -->
+ <td data-st-key="{{ cls.id }}">{{ cls.emailcode }}</td>
+ <td>{{ cls.title }}</td>
+ <td>{% for teacher in cls.teachers.all %}{% if teacher.id == cls.split_teacher.id %}<b>{% endif %}{{ teacher.name_last_first }}{% if teacher.id == cls.split_teacher.id %}</b>{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
+ {% for flag in cls.flag_list %}
+ <td data-st-key="{% if flag %}{% if flag != True %}1{% else %}2{% endif %}{% else %}3{% endif %}">{% if flag %}{% if flag != True %}{{ flag|join:"; " }}{% else %}&#10003;{% endif %}{% else %}&#10005;{% endif %}</td>
+ {% endfor %}
+</tr>
+{% endfor %}
+</table>
+
+</body>
+</html>

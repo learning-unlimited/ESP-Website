@@ -6,9 +6,14 @@ label .commpanel_list_preferred {
     color: red;
 }
 
-#filter_accordion h4 {
-    font-weight: bold;
-    font-style: normal;
+.ui-widget select {
+    width: auto;
+    max-width: 100%;
+}
+
+.ui-accordion h4 {
+    font-weight: bold !important;
+    font-style: normal !important;
 }
 
 #tabs {
@@ -57,8 +62,8 @@ div #recipient_type_options {
     margin-top: 10px;
 }
 
-div #filter_accordion {
-    margin-bottom: 10px;
+div .ui-accordion {
+    margin-bottom: 10px !important;
 }
 
 div .ui-accordion-content {
@@ -79,9 +84,19 @@ div #combo_list_form li {
     margin-bottom: 8px;
 }
 
+#combo_list_form .checkbox_wrapper {
+    float: left;
+    margin-right: 5px;
+}
+
+#combo_list_form .checkbox_label {
+    display: table-cell;
+    padding-top: 2px;
+}
+
 #combo_list_form label.ui-button {
     margin: 0px;
-    margin-left: -5px;
+    margin-left: 2px;
     padding: 2px;
 }
 
@@ -103,6 +118,7 @@ div #combo_list_form li {
 
 div .combo_list_separator {
     font-weight: bold;
+    padding-top: 10px;
 }
 
 div #msgreq_info_area {

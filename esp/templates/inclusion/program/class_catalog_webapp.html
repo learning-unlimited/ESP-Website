@@ -1,0 +1,51 @@
+<div class="class_title">
+    <b>{{ class.emailcode }}: {{ class.title }}</b>
+</div>
+<div class="class_teachers">
+    <i>{% for teacher in class.get_teachers %}
+        {{ teacher.first_name }} {{teacher.last_name }}</a>{% if not forloop.last %},{% endif %}
+    {% endfor %}</i>
+</div>
+<div class="class_content">
+    {% autoescape off %}
+        {{ class.class_info|escape|linebreaksbr }}
+    {% endautoescape %}
+</div>
+{% if class.class_style %}
+    <div class="class_style">
+        <b>Class Style:</b> <i>{{ class.class_style }}</i>
+    </div>
+{% endif %}
+{% if class.prereqs %}
+    <div class="class_prereqs">
+        <b>Prerequisites:</b> <i>{{ class.prereqs }}</i>
+    </div>
+{% endif %}
+<div class="class_grades">
+    <b>Grades:</b> {{ class.grade_min }} - {{ class.grade_max }}
+</div>
+<div class="class_meeting_times">
+    {% if not section %}
+        {% for sec in class.get_sections %}
+           {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "}}<b><font color="#990000">{% if sec.isFullWebapp %} (Full!){% elif sec.isRegClosed %} (Closed!){% elif sec.isCancelled %} (Cancelled!){% endif %}</font></b><br />{% endif %}
+        {% endfor %}
+    {% else %}
+        Section {{ section.index }}: {{ section.friendly_times|join:", "}}<b><font color="#990000">{% if section.isFullWebapp %} (Full!){% elif section.isRegClosed %} (Closed!){% endif %}</font></b>
+    {% endif %}
+</div>
+{% if section and checked_in and prereg_url %}
+    <div class="add_button">
+        <form id="prereg_{{ class.id }}" name="prereg_{{ class.id }}" method="post" action="{{ prereg_url }}" style="margin: 0px;">
+            <script type="text/javascript">add_csrf_token();</script>
+            <input type="hidden" name="class_id" value="{{ class.id }}" />
+            <input type="hidden" name="section_id" value="{{ section.id }}" />
+            {% if not errormsg %}
+                <div id="addbutton_fillslot_sec{{ section.id }}"><button type="submit" class="btn" name="action" id="submitbutton{{ class.id }}">
+                    Click here to add this class
+                </button></div>
+            {% else %}
+              <input type="submit" class="btn-disabled" name="action" value="{{ errormsg }}" id="submitbutton{{ sec.id }}" disabled />
+            {% endif %}
+        </form>
+    </div>
+{% endif %}

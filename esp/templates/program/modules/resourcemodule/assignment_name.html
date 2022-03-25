@@ -1,0 +1,11 @@
+<span style="background: {% if assignment.returned %}#8ece8e{% else %}#f7a5a5{% endif %};" class="assignment-header"
+      id="fqr-assignment-header-{{ assignment.id }}">
+    <span class="assignment-name">
+        {{ assignment.resource.name }}
+    </span>
+    <span class="assignment-remove"
+          title="Click to remove resource"
+          onclick="removeAssignment('/manage/{{program.getUrlBase}}/deleteassignment/',{{ assignment.id }});">
+    </span>
+    <input id="returned-{{ assignment.id }}" title="Returned?" type="checkbox" name="returned" onChange="editAssignment('/manage/{{program.getUrlBase}}/editassignment/', {{ assignment.id }});"{% if assignment.returned %} checked{% endif %}>
+</span>

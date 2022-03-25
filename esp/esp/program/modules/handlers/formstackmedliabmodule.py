@@ -32,52 +32,47 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap, meets_grade
-from esp.program.modules import module_ext
-from esp.utils.web       import render_to_response
-from esp.middleware      import ESPError
-from esp.users.models    import ESPUser, Permission, Record, User
+from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, main_call, aux_call, meets_cap, meets_grade
+from esp.utils.web import render_to_response
+from esp.users.models import ESPUser, Record
 from esp.tagdict.models import Tag
-from django.db.models.query       import Q
-from django.shortcuts import redirect
+from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.users.forms.generic_search_form import GenericSearchForm
 
 # hackish solution for Splash 2012
 class FormstackMedliabModule(ProgramModuleObj):
-    """ Module for collecting medical information online via Formstack """
+    doc = """Module for collecting medical information online via Formstack"""
 
     @classmethod
     def module_properties(cls):
-        return [{
+        return {
                 "admin_title": "Formstack Med-liab Module",
                 "link_title": "Medical and Emergency Contact Information",
                 "module_type": "learn",
                 "seq": 3,
-                "required": True
-                },
-                {
-                "admin_title": "Formstack Med-liab Bypass Page",
-                "link_title": "Grant Medliab Bypass",
-                "module_type": "manage",
-                }]
+                "required": True,
+                "choosable": 2,
+                }
 
     def isCompleted(self):
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
         return Record.user_completed(
-                user=get_current_request().user,
+                user=user,
                 event="med",
                 program=self.program) \
             or Record.user_completed(
-                user=get_current_request().user,
+                user=user,
                 event="med_bypass",
                 program=self.program)
 
-    def students(self, QObject = False):
+    def students(self, QObject=False):
         Q_students = Q(record__event="med",
                        record__program=self.program)
         Q_bypass = Q(record__event="med_bypass",
-                       record__program=self.program)
-
+                     record__program=self.program)
 
         if QObject:
             students = Q_students
@@ -103,9 +98,7 @@ class FormstackMedliabModule(ProgramModuleObj):
     @meets_deadline('/FormstackMedliab')
     @meets_cap
     def medliab(self, request, tl, one, two, module, extra, prog):
-        """
-        Landing page redirecting to med-liab form on Formstack.
-        """
+        """Landing page redirecting to med-liab form on Formstack."""
         t = Tag.getProgramTag("formstack_id", self.program)
         v = Tag.getProgramTag("formstack_viewkey", self.program)
         context = {"formstack_id": t, "formstack_viewkey": v}
@@ -115,78 +108,12 @@ class FormstackMedliabModule(ProgramModuleObj):
     @aux_call
     @needs_student
     def medicalpostback581309742(self, request, tl, one, two, module, extra, prog):
-        """
-        Marks student off as completed.
-        """
+        """Marks student off as completed."""
         Record.objects.create(user=request.user, event="med", program=self.program)
         return self.goToCore(tl)
 
-    @main_call
-    @needs_admin
-    def medicalbypass(self, request, tl, one, two, module, extra, prog):
-        status = None
-        status_type = None
-
-        if request.method == 'POST':
-            form = GenericSearchForm(request.POST)
-            if form.is_valid():
-                user = form.cleaned_data['target_user']
-                bypass_records = Record.objects.filter(
-                        user=user,
-                        program=self.program,
-                        event="med_bypass")
-                med_records = Record.objects.filter(
-                        user=user,
-                        program=self.program,
-                        event="med")
-
-                if 'add-bypass' in request.POST:
-                    if bypass_records.exists():
-                        status_type = 'error'
-                        status = 'Bypass record already exists.'
-                    elif med_records.exists():
-                        status_type = 'error'
-                        status = 'User has already submitted form.'
-                    else:
-                        Record.objects.create(user=user,
-                                              program=self.program,
-                                              event="med_bypass")
-                        status_type = 'success'
-                        status = 'Bypass record added successfully.'
-                elif 'query-status' in request.POST:
-                    if med_records.exists():
-                        if bypass_records.exists():
-                            status_type = 'error'
-                            status = 'Both medical form and bypass record exist (!!).'
-                        else:
-                            status_type = 'success'
-                            status = 'User has submitted medical form.'
-                    else:
-                        if bypass_records.exists():
-                            status_type = 'success'
-                            status = 'User has bypass record.'
-                        else:
-                            status_type = 'info'
-                            status = 'User has neither medical form nor bypass record.'
-                elif 'delete-bypass' in request.POST:
-                    if bypass_records.exists():
-                        bypass_records.delete()
-                        status_type = 'success'
-                        status = 'Deleted user\'s bypass record.'
-                    else:
-                        status_type = 'error'
-                        status = 'User has no bypass record.'
-                else:
-                    status_type = 'error'
-                    status = 'Invalid operation.'
-            else:
-                status_type = 'error'
-                status = 'Invalid user.'
-
-        context = {'status': status, 'status_type': status_type, 'form': GenericSearchForm()}
-
-        return render_to_response(self.baseDir()+'medicalbypass.html',
-                                  request, context)
+    def isStep(self):
+        return bool(Tag.getProgramTag("formstack_id", self.program) and Tag.getProgramTag("formstack_viewkey", self.program))
 
     class Meta:
         proxy = True

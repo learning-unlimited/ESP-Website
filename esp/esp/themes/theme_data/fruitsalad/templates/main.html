@@ -3,6 +3,7 @@
 {% block fulltitle %}{{ theme.titlebar_prefix }} - {% block title %}Home{% endblock %}{% endblock %}
 
 {% load main %} {# helpful functions #}
+{% load modules %}
 
 {% block stylesheets %}
 {{ block.super }}
@@ -68,8 +69,8 @@
 {% endblock %}
 
 {% block body %}
-
-<div id="adminbar" class="admin hidden">
+<link rel="stylesheet" type="text/css" href="/media/default_styles/admin_bar.css">
+<div id="adminbar" class="admin hidden" style="position: fixed !important">
   <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
   <div id="adminbar_content"></div>
 </div>
@@ -79,11 +80,12 @@ var currentPrograms = [
     {
         urlBase: "{{ current_program.getUrlBase }}",
         name: "{{ current_program.niceName }}",
+        class_search: {% if current_program|hasModule:"ClassSearchModule" %}true{% else %}false{% endif %}
     },
 {% endfor %}
-];
+]; 
 </script>
-<script type="text/javascript" src="/media/scripts/theme/mit_usersearch.js"> </script>
+<script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
     <div id="page" class="{{ request.path|extract_theme }}">
     <div id="tab_sidebar">
       <ul id="menu">
@@ -118,7 +120,7 @@ var currentPrograms = [
       <div id="contact_info">
         <span class="title accentcolor">{{ theme.full_group_name }}</span>
         <span class="normal">{{ theme.contact_info|linebreaksbr }}</span>
-        <span class="normal">E-mail: <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></span>
+        <span class="normal">Email: <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></span>
         <span class="normal">
           {% if theme.faq_link %}
             <a href="{{theme.faq_link}}">FAQ</a> |
@@ -147,7 +149,7 @@ var currentPrograms = [
 </div>
 <div class="logged_in hidden">
   {% include "users/loginbox_userinfo.html" %}
-  <span class="accentcolor"><a href="/myesp/signout/">Logout</a> | <a href="/myesp/accountmanage.html">My Profile</a></span>
+  <span class="accentcolor"><a href="/myesp/signout/">Logout</a> | <a href="/myesp/accountmanage">Manage Account</a></span>
 </div>
 
 </div>
@@ -208,15 +210,21 @@ var currentPrograms = [
 {% endblock %}
 
       <div id="content">
+          {% if request.mod_required %}
+          <div class="alert alert-danger">
+              <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+              This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
+          </div>
+          {% endif %}
           {% if request.show_perm_info %}
           <div class="alert alert-info">
               <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-              <a href="/manage/{{ one }}/{{ two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
+              <a href="/manage/{{ request.one }}/{{ request.two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
               <br />
               {% if request.roles_with_perm %}
                   Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
               {% else %}
-                  <strong>No roles have permission to view this page!</strong>
+                  <strong>No (non-admin) roles have permission to view this page!</strong>
               {% endif %}
           </div>
           {% endif %}
@@ -237,6 +245,8 @@ var currentPrograms = [
     </div>
     <div id="footer">
       &copy; {{ theme.full_group_name }}, {{ theme.mtime.year }}
+      <br />
+      <a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
     </div>
   </div>
 </div>

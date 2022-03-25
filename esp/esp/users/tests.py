@@ -152,13 +152,17 @@ class PasswordRecoveryTicketTest(TestCase):
 
 class TeacherInfo__validationtest(TestCase):
     def setUp(self):
+        Tag.setTag('teacher_shirt_sizes', value='XS, S, M, L, XL, XXL')
+        Tag.setTag('student_shirt_sizes', value='XS, S, M, L, XL, XXL')
+        Tag.setTag('volunteer_shirt_sizes', value='XS, S, M, L, XL, XXL')
+        Tag.setTag('shirt_types', value='Straight cut, Fitted cut')
         self.user, created = ESPUser.objects.get_or_create(username='teacherinfo_teacher')
         self.user.profile = self.user.getLastProfile()
         self.info_data = {
             'graduation_year': '2000',
             'major': 'Underwater Basket Weaving',
             'shirt_size': 'XXL',
-            'shirt_type': 'M'
+            'shirt_type': 'Straight cut'
         }
 
     def useData(self, data):
@@ -339,7 +343,7 @@ class AccountCreationTest(TestCase):
         #first try an email that shouldn't have an account
         #first without follow, to see that it redirects correctly
         response1 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com"})
-        if not Tag.getBooleanTag('ask_about_duplicate_accounts', default=False):
+        if not Tag.getBooleanTag('ask_about_duplicate_accounts'):
             self.assertTemplateUsed(response1,"registration/newuser.html")
             return
 
@@ -376,7 +380,7 @@ class AccountCreationTest(TestCase):
         """Testing phase 2, where user provides info, and we make the account"""
 
         url = "/myesp/register/"
-        if Tag.getBooleanTag("ask_about_duplicate_accounts", default=False):
+        if Tag.getBooleanTag("ask_about_duplicate_accounts"):
             url+="information/"
         response = self.client.post(url,
                                    data={"username":"username",
@@ -397,7 +401,7 @@ class AccountCreationTest(TestCase):
         except ESPUser.DoesNotExist, ESPUser.MultipleObjectsReturned:
             self.fail("User not created correctly or created multiple times")
 
-        if not Tag.getBooleanTag('require_email_validation', default=False):
+        if not Tag.getBooleanTag('require_email_validation'):
             return
 
         self.assertFalse(u.is_active)
@@ -494,9 +498,9 @@ class TestChangeRequestView(TestCase):
         c.login(username=self.user.username, password=self.password)
 
         #   Submit a valid grade change request
-        response = c.post("/myesp/grade_change_request", { "reason": 'I should not get this e-mail', 'claimed_grade': 10 })
+        response = c.post("/myesp/grade_change_request", { "reason": 'I should not get this email', 'claimed_grade': 10 })
 
-        #   Check that an e-mail was sent with the right from/to
+        #   Check that an email was sent with the right from/to
         self.assertEqual(len(mail.outbox), 1)
         msg = mail.outbox[0]
         self.assertEqual(msg.to, [settings.DEFAULT_EMAIL_ADDRESSES['default']])
@@ -509,8 +513,8 @@ class RecordTest(TestCase):
         self.future   = datetime.datetime.max
         self.user     = ESPUser.objects.create(username='RecordTest')
         self.event    = Record.EVENT_CHOICES[0][0]
-        self.program1 = Program.objects.create(grade_min=7, grade_max=12)
-        self.program2 = Program.objects.create(grade_min=7, grade_max=12)
+        self.program1 = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program1')
+        self.program2 = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program2')
 
     def tearDown(self):
         Record.filter(self.user, self.event, when=self.future).delete()
@@ -594,7 +598,7 @@ class PermissionTestCase(TestCase):
         self.role = Group.objects.create(name='group')
         self.user = ESPUser.objects.create(username='user')
         self.user.makeRole(self.role)
-        self.program = Program.objects.create(grade_min=7, grade_max=12)
+        self.program = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program1')
 
     def create_perm(self, name, user_or_role, **kwargs):
         """Create Permission object of type `name`.
@@ -676,7 +680,7 @@ class PermissionTestCase(TestCase):
 
     def testProgramPerm(self):
         perm = 'Student/MainPage'
-        other_program = Program.objects.create(grade_min=7, grade_max=12)
+        other_program = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program2')
         self.create_role_perm_for_program(perm)
         self.assertTrue(self.user_has_perm_for_program(perm))
         self.assertFalse(self.user_has_perm(perm))

@@ -36,6 +36,8 @@ from django.conf import settings
 
 from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.handlers.listgenmodule import ListGenModule
+from esp.users.controllers.usersearch import UserSearchController
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
@@ -45,33 +47,43 @@ from django.db.models.query import Q
 
 
 class NameTagModule(ProgramModuleObj):
-    """ This module allows you to generate a bunch of IDs for everyone in the program. """
+    doc = """This module allows you to generate a bunch of IDs for users that match specific criteria."""
+
     @classmethod
     def module_properties(cls):
         return {
             "admin_title": "Nametag Generation",
             "link_title": "Generate Nametags",
             "module_type": "manage",
-            "seq": 100
+            "seq": 100,
+            "choosable": 1,
             }
 
     @main_call
     @needs_admin
     def selectidoptions(self, request, tl, one, two, module, extra, prog):
-        """ Display a teacher eg page """
+        """ Display a page for admins to pick users for nametags """
         context = {'module': self}
         context['groups'] = Group.objects.all()
+        usc = UserSearchController()
+        context.update(usc.prepare_context(prog, target_path='/manage/%s/generatetags' % prog.url))
+        context['combo_form'] = False
+        context['include_continue'] = False
 
         return render_to_response(self.baseDir()+'selectoptions.html', request, context)
 
-    def nametag_data(self, users_list, user_title):
+    def nametag_data(self, users_list1, user_title1, users_list2 = ESPUser.objects.none(), user_title2 = None):
         users = []
-        users_list = [ user for user in users_list ]
+        users_list = [ user for user in users_list1 | users_list2]
         users_list = filter(lambda x: len(x.first_name+x.last_name), users_list)
         users_list.sort()
 
         for user in users_list:
-            users.append({'title': user_title,
+            if user in users_list1:
+                title = user_title1
+            else:
+                title = user_title2
+            users.append({'title': title,
                           'name' : '%s %s' % (user.first_name, user.last_name),
                           'id'   : user.id,
                           'username': user.username})
@@ -91,7 +103,14 @@ class NameTagModule(ProgramModuleObj):
 
         user_title = idtype
 
-        if idtype == 'students':
+        if idtype == 'aul':
+            user_title = request.POST['blanktitle']
+            data = ListGenModule.processPost(request)
+            usc = UserSearchController()
+            filterObj = usc.filter_from_postdata(prog, data)
+            users = self.nametag_data(ESPUser.objects.filter(filterObj.get_Q()).distinct(), user_title)
+
+        elif idtype == 'students':
             user_title = "Student"
             student_dict = self.program.students(QObjects = True)
             if 'classreg' in student_dict:
@@ -103,10 +122,25 @@ class NameTagModule(ProgramModuleObj):
 
         elif idtype == 'teacher':
             user_title = "Teacher"
-            teacher_dict = self.program.teachers(QObjects=True)
-            teachers = ESPUser.objects.filter(teacher_dict['class_approved']).distinct()
+            teachers = self.program.teachers()['class_approved'].distinct()
 
             users = self.nametag_data(teachers, user_title)
+
+        elif idtype == 'teachermoderators':
+            user_title = "Teacher"
+            user_title2 = self.program.getModeratorTitle()
+            teacher_dict = self.program.teachers()
+            teachers = teacher_dict['class_approved'].distinct()
+            moderators = teacher_dict['assigned_moderator'].distinct()
+
+            users = self.nametag_data(teachers, user_title, moderators, user_title2)
+
+        elif idtype == 'moderators':
+            user_title = self.program.getModeratorTitle()
+            teacher_dict = self.program.teachers()
+            moderators = teacher_dict['assigned_moderator'].distinct()
+
+            users = self.nametag_data(moderators, user_title)
 
         elif idtype == 'other':
             user_title = request.POST['blanktitle']
@@ -170,12 +204,26 @@ class NameTagModule(ProgramModuleObj):
                 else:
                     users.append(expanded[j][i])
 
-        context['users'] = users
+        user_backs = [None]*len(users)
+        for j in range(len(users)):
+            if j % 2 == 0:
+                user_backs[j+1] = users[j]
+            else:
+                user_backs[j-1] = users[j]
+
+        users_and_backs = []
+        for j in range(len(users)/6):
+            users_and_backs.append([users[j*6:(j+1)*6], user_backs[j*6:(j+1)*6]])
+
+        context['barcodes'] = True if 'barcodes' in request.POST else False
+        context['users_and_backs'] = users_and_backs
         context['group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['phone_number'] = Tag.getTag('group_phone_number')
 
         return render_to_response(self.baseDir()+'ids.html', request, context)
 
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

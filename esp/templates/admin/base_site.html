@@ -4,7 +4,8 @@
 {% comment "DO NOT DELETE THIS FILE; this customizes the admin panel." %}{% endcomment %}
 
 {% block extrahead %}{{ block.super }}
-<script type="text/javascript" src="/media/scripts/jquery.js"> </script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/{{ settings.JQUERY_VERSION }}/jquery.min.js" integrity="{{ settings.JQUERY_HASH }}" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-migrate-3.3.2.{% if not settings.DEBUG %}min.{% endif %}js"></script>
 <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
 <script type="text/javascript" src="/media/scripts/common.js"> </script>
 <script type="text/javascript">
@@ -15,8 +16,8 @@
 <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
 <script type="text/javascript" src="/media/scripts/content/user_classes.js"></script>
 <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
-<link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" />
-<script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+<link href="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/jquery-ui.js"></script>
 <style type="text/css">
 ul.ui-autocomplete li
 {
@@ -31,6 +32,4 @@ ul.ui-autocomplete li
 
 {% block userlinks %}
 {{ block.super }}
-<li><a href="{% url 'filebrowser:fb_browse' %}">{% trans 'FileBrowser' %}</a></li>
-<li><a href="{% url 'esp.themes.views.landing' %}">{% trans 'Theme settings' %}</a></li>
 {% endblock userlinks %}

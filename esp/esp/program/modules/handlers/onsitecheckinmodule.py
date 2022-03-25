@@ -33,12 +33,13 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.forms.onsite import OnSiteRapidCheckinForm, OnsiteBarcodeCheckinForm
+from esp.program.modules.forms.onsite import OnsiteBarcodeCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
+from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.users.models    import ESPUser, User, Record
 from django              import forms
 from django.http import HttpResponse, HttpResponseRedirect
@@ -49,50 +50,59 @@ import json
 
 
 class OnSiteCheckinModule(ProgramModuleObj):
+    doc = """Check in students for a program (including for payments and forms)."""
+
     @classmethod
     def module_properties(cls):
         return {
             "admin_title": "On-Site User Check-In",
             "link_title": "Check-in (check students off for payments and forms)",
             "module_type": "onsite",
-            "seq": 1
+            "seq": 1,
+            "choosable": 1,
             }
 
     def updatePaid(self, paid=True):
-        """ Close off the student's invoice and, if paid is True, create a receipt showing
-        that they have paid all of the money they owe for the program. """
-        if not self.hasPaid():
-            iac = IndividualAccountingController(self.program, self.student)
-            iac.ensure_required_transfers()
-            if paid:
-                iac.submit_payment(iac.amount_due())
+        IndividualAccountingController.updatePaid(self.program, self.student, paid)
 
     def create_record(self, event):
-        if event=="paid":
+        created = False
+        if event=="attended":
+            if not self.program.isCheckedIn(self.student):
+                rec = Record(user=self.student, event="attended", program=self.program)
+                rec.save()
+                created = True
+        elif event=="paid":
             self.updatePaid(True)
-
-        recs, created = Record.objects.get_or_create(user=self.student,
-                                                     event=event,
-                                                     program=self.program)
+        else:
+            recs, created = Record.objects.get_or_create(user=self.student,
+                                                         event=event,
+                                                         program=self.program)
         return created
 
     def delete_record(self, event):
-        if event=="paid":
+        if event=="attended":
+            if self.program.isCheckedIn(self.student):
+                rec = Record(user=self.student, event="checked_out", program=self.program)
+                rec.save()
+        elif event=="paid":
             self.updatePaid(False)
-
-        recs = Record.objects.get_or_create(user=self.student,
-                                            event=event,
-                                            program=self.program)
-        recs.delete()
+        else:
+            recs, created = Record.objects.get_or_create(user=self.student,
+                                                         event=event,
+                                                         program=self.program)
+            recs.delete()
         return True
 
     def hasAttended(self):
         return Record.user_completed(self.student, "attended",self.program)
 
+    def isAttending(self):
+        return self.program.isCheckedIn(self.student)
+
     def hasPaid(self):
         iac = IndividualAccountingController(self.program, self.student)
-        return Record.user_completed(self.student, "paid", self.program) or \
-            iac.has_paid(in_full=True)
+        return iac.has_paid(in_full=True)
 
     def hasMedical(self):
         return Record.user_completed(self.student, "med", self.program)
@@ -102,7 +112,26 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
     def timeCheckedIn(self):
         u = Record.objects.filter(event="attended",program=self.program, user=self.student).order_by("time")
-        return str(u[0].time.strftime("%H:%M %d/%m/%y"))
+        return str(u[0].time.strftime("%H:%M %m/%d/%y"))
+
+    def lastCheckedIn(self):
+        u = Record.objects.filter(event="attended",program=self.program, user=self.student).order_by("-time")
+        return str(u[0].time.strftime("%H:%M %m/%d/%y"))
+
+    def checkinPairs(self):
+        recs = Record.objects.filter(program = self.program, user = self.student, event__in=["attended", "checked_out"]).order_by('time')
+        pairs = []
+        checked_in = False
+        ind = 0
+        for rec in recs:
+            if not checked_in and rec.event == "attended":
+                pairs.append([rec])
+                checked_in = True
+            elif checked_in and rec.event == "checked_out":
+                pairs[ind].append(rec)
+                checked_in = False
+                ind += 1
+        return pairs
 
     @aux_call
     @needs_onsite
@@ -154,14 +183,14 @@ class OnSiteCheckinModule(ProgramModuleObj):
         context = {}
         if request.method == 'POST':
             #   Handle submission of student
-            form = OnSiteRapidCheckinForm(request.POST)
+            form = StudentSearchForm(request.POST)
             if form.is_valid():
-                student = form.cleaned_data['user']
+                student = form.cleaned_data['target_user']
                 #   Check that this is a student user who is not also teaching (e.g. an admin)
                 if student.isStudent() and student not in self.program.teachers()['class_approved']:
-                    recs = Record.objects.filter(user=student, event="attended", program=prog)
-                    if not recs.exists():
-                        rec, created = Record.objects.get_or_create(user=student, event="attended", program=prog)
+                    if not prog.isCheckedIn(student):
+                        rec = Record(user=student, event="attended", program=prog)
+                        rec.save()
                     context['message'] = '%s %s marked as attended.' % (student.first_name, student.last_name)
                     if request.is_ajax():
                         return self.ajax_status(request, tl, one, two, module, extra, prog, context)
@@ -169,8 +198,9 @@ class OnSiteCheckinModule(ProgramModuleObj):
                     context['message'] = '%s %s is not a student and has not been checked in' % (student.first_name, student.last_name)
                     if request.is_ajax():
                         return self.ajax_status(request, tl, one, two, module, extra, prog, context)
+                form = StudentSearchForm(initial={'target_user': student.id})
         else:
-            form = OnSiteRapidCheckinForm()
+            form = StudentSearchForm()
 
         context['module'] = self
         context['form'] = form
@@ -193,8 +223,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
                         continue
 
                     if student.isStudent():
-                        existing = Record.user_completed(student, 'attended', prog)
-                        if existing:
+                        if prog.isCheckedIn(student):
                             results['existing'].append(code)
                         else:
                             new = Record(user=student, program=prog, event='attended')
@@ -228,8 +257,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 student = students[0]
                 info_string = student.name() + " (" + str(code) + ")"
                 if student.isStudent():
-                    existing = Record.user_completed(student, 'attended', prog)
-                    if existing:
+                    if prog.isCheckedIn(student):
                         json_data['message'] = '%s is already checked in!' % info_string
                     else:
                         new = Record(user=student, program=prog, event='attended')
@@ -242,23 +270,35 @@ class OnSiteCheckinModule(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def checkin(self, request, tl, one, two, module, extra, prog):
-        user, found = search_for_user(request, self.program.students_union())
-        if not found:
-            return user
+        if request.method == 'POST' and 'userid' in request.POST:
+            error = False
+            message = None
+            user = ESPUser.objects.filter(id = request.POST['userid']).first()
+            if user:
+                self.student = user
+                for key in ['attended','paid','liab','med']:
+                    if key in request.POST:
+                        self.create_record(key)
+                    else:
+                        self.delete_record(key)
+                if "undocheckin" in request.POST:
+                    Record.objects.filter(event="attended",program=self.program, user=self.student).order_by("-time")[0].delete()
+                if "undocheckout" in request.POST:
+                    Record.objects.filter(event="checked_out",program=self.program, user=self.student).order_by("-time")[0].delete()
+                message = "Check-in updated for " + user.username
+            else:
+                error = True
 
-        self.student = user
+            context = {'error': error, 'message': message, 'module': self.module.link_title}
+            return render_to_response('users/usersearch.html', request, context)
 
-        if request.method == 'POST':
-            for key in ['attended','paid','liab','med']:
-                if key in request.POST:
-                    self.create_record(key)
-                else:
-                    self.delete_record(key)
+        else:
+            user, found = search_for_user(request, self.program.students_union(), add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
+            if not found:
+                return user
 
-
-            return self.goToCore(tl)
-
-        return render_to_response(self.baseDir()+'checkin.html', request, {'module': self, 'program': prog})
+            self.student = user
+            return render_to_response(self.baseDir()+'checkin.html', request, {'module': self, 'program': prog})
 
 
     class Meta:

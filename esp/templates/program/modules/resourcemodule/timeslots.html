@@ -1,12 +1,13 @@
 {% ifequal open_section "timeslot" %}
-<!-- Not in a dspcont div. The section below always shows -->
-<h2>Step 1: Create Timeslots</h2>
-<br />
+<button class="dsphead active">
+   <b>Step 1: Create Timeslots</b> (click to expand/contract)
+</button>
+
+<div class="dspcont active">
 {% else %}
-<p class="dspsection">
-<a href="javascript:void(0)" class="dsphead" onclick="expand_disp(this)">
-   <span class="dspchar">+</span> <b>Step 1: Create Timeslots</b> (click to expand/contract)
-</a>
+<button class="dsphead">
+   <b>Step 1: Create Timeslots</b> (click to expand/contract)
+</button>
 
 <div class="dspcont">
 {% endifequal %}
@@ -63,12 +64,4 @@
     {% endfor %}
 </table>
 </div>
-
-{% ifequal open_section "timeslot" %}
-<!-- Not in a dspcont div. -->
-{% else %}
 </div>
-</p>
-{% endifequal %}
-
-<br />

@@ -45,13 +45,16 @@ from esp.accounting.controllers import IndividualAccountingController
 
 
 class OnsitePaidItemsModule(ProgramModuleObj):
+    doc = """Lists the items that a student has requested/paid for."""
+
     @classmethod
     def module_properties(cls):
         return {
             "admin_title": "Onsite View Purchased Items",
             "link_title": "View Purchased Items for a Student",
             "module_type": "onsite",
-            "seq": 31
+            "seq": 31,
+            "choosable": 1,
             }
 
     @main_call
@@ -59,7 +62,7 @@ class OnsitePaidItemsModule(ProgramModuleObj):
     def paiditems(self, request, tl, one, two, module, extra, prog):
 
         #   Get a user
-        user, found = search_for_user(request, add_to_context = {'tl': 'onsite'})
+        user, found = search_for_user(request, add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
         if not found:
             return user
 

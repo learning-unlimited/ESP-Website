@@ -32,8 +32,11 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import os
 import re
-from django.template import Context, Template, loader, RequestContext
+import zipfile
+from io import BytesIO as StringIO
+from django.template import Template, loader, RequestContext
 from django.conf import settings
 from django import http
 from django.http import HttpResponse, HttpResponseRedirect
@@ -56,11 +59,6 @@ def get_from_id(id, module, strtype = 'object', error = True):
         return None
     return foundobj
 
-
-def render_response(request, *args, **kwargs):
-    kwargs['context_instance'] = RequestContext(request)
-    return django.shortcuts.render_to_response(*args, **kwargs)
-
 def render_to_response(template, request, context, content_type=None, use_request_context=True):
     from esp.web.views.navBar import makeNavBar
 
@@ -81,12 +79,9 @@ def render_to_response(template, request, context, content_type=None, use_reques
             category = context['nav_category']
         context['navbar_list'] = makeNavBar(section, category, path=request.path[1:])
 
-    if not use_request_context:
-        context['request'] = request
-        response = django.shortcuts.render_to_response(template, context, content_type=content_type)
-        return response
-    else:
-        return render_response(request, template, context, content_type=content_type)
+    if use_request_context:
+        context = RequestContext(request, context).flatten()
+    return django.shortcuts.render(request, template, context, content_type=content_type)
 
 """ Override Django error views to provide some context info. """
 def error404(request, template_name='404.html'):
@@ -119,9 +114,9 @@ def error500(request, template_name='500.html'):
         # want to display the original 500 error page, so fall back to using a
         # normal Context.
         try:
-            return http.HttpResponseServerError(t.render(RequestContext(request, context)))
+            return http.HttpResponseServerError(t.render(RequestContext(request, context).flatten()))
         except Exception:
-            return http.HttpResponseServerError(t.render(Context(context)))
+            return http.HttpResponseServerError(t.render(context))
 
 def secure_required(view_fn):
     """
@@ -141,3 +136,16 @@ def secure_required(view_fn):
         return view_fn(request, *args, **kwargs)
     return _wrapped_view
 
+def zip_download(files = [], zipname = 'files'):
+    """
+    Zips a list of files together and returns it as a download
+    """
+    file_like = StringIO()
+    zf = zipfile.ZipFile(file_like, 'w')
+    for file in files:
+        if file:
+            zf.write(file, os.path.basename(os.path.normpath(file)))
+    zf.close()
+    response = HttpResponse(file_like.getvalue(), content_type='application/zip')
+    response['Content-Disposition']='attachment; filename=%s.zip' % zipname
+    return response

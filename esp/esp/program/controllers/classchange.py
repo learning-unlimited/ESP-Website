@@ -35,7 +35,8 @@ Learning Unlimited, Inc.
 import logging
 logger = logging.getLogger(__name__)
 import numpy
-assert numpy.version.short_version >= "1.7.0"
+from pkg_resources import parse_version
+assert parse_version(numpy.version.short_version) >= parse_version("1.7.0")
 import numpy.random
 import Queue
 import random
@@ -100,7 +101,7 @@ class ClassChangeController(object):
             text += "%s\n\n<br /><br />\n\n" % self.get_student_schedule(student_ind, for_real)
             text += "See you soon!<br /><br />"
         else:
-            text += "We're sorry that we couldn't accomodate your class preferences this time, and we hope to see you at a future ESP program.<br /<br />\n\n"
+            text += "We're sorry that we couldn't accommodate your class preferences this time, and we hope to see you at a future " + self.program.niceName() + " program.<br /<br />\n\n"
         text += "The " + self.program.niceName() + " Directors\n"
         text += "</html>"
         text = text.encode('ascii','ignore')
@@ -462,7 +463,7 @@ class ClassChangeController(object):
         except IndexError:
             pass
 
-        self.student_not_checked_in[numpy.transpose(numpy.nonzero(True-self.enroll_orig.any(axis=(1,2))))] = True
+        self.student_not_checked_in[numpy.transpose(numpy.nonzero(~(self.enroll_orig.any(axis=(1,2)))))] = True
 
         #   Populate request matrix
         request_regs = StudentRegistration.objects.filter(self.Q_REQ).values_list('user__id', 'section__id', 'section__meeting_times__id').distinct()
@@ -517,7 +518,7 @@ class ClassChangeController(object):
             self.section_capacities[sec_ind] += numpy.count_nonzero(sec_enroll_orig * any_overlapping_requests)
             # Commit to enrolling students into this section if they were
             # originally in it and they didn't request any overlapping classes
-            self.enroll_final[numpy.transpose(numpy.nonzero(sec_enroll_orig * (True - any_overlapping_requests))), sec_ind, self.section_schedules[sec_ind,:]] = True
+            self.enroll_final[numpy.transpose(numpy.nonzero(sec_enroll_orig * ~(any_overlapping_requests))), sec_ind, self.section_schedules[sec_ind,:]] = True
             self.section_scores[sec_ind] = -self.section_capacities[sec_ind]
             self.section_scores[sec_ind] += numpy.count_nonzero(self.request[:, sec_ind, :].any(axis=1)) # number who want to switch in
         self.section_capacities_orig = numpy.copy(self.section_capacities)
@@ -562,11 +563,11 @@ class ClassChangeController(object):
 
         #   Filter students by who has all of the section's timeslots available
         for [ts_ind,] in timeslots:
-            possible_students *= (True - self.enroll_final[:, :, ts_ind].any(axis=1))
+            possible_students *= ~(self.enroll_final[:, :, ts_ind].any(axis=1))
 
         #   Filter students by who is not already registered for a different section of the class
         for sec_index in numpy.nonzero(self.same_subject[:, si])[0]:
-            possible_students *= (True - self.enroll_final[:, sec_index, :].any(axis=1))
+            possible_students *= ~(self.enroll_final[:, sec_index, :].any(axis=1))
 
         #   Filter students by lunch constraint - if class overlaps with lunch period, student must have 1 additional free spot
         #   NOTE: Currently only works with 2 lunch periods per day
@@ -576,7 +577,7 @@ class ClassChangeController(object):
                 for j in range(self.lunch_timeslots.shape[1]):
                     timeslot_index = self.timeslot_indices[self.lunch_timeslots[lunch_day, j]]
                     if timeslot_index != ts_ind:
-                        possible_students *= (True - self.student_schedules[:, timeslot_index])
+                        possible_students *= ~(self.student_schedules[:, timeslot_index])
 
         candidate_students = numpy.nonzero(possible_students)[0]
         num_spaces = self.section_capacities[si]
@@ -620,7 +621,7 @@ class ClassChangeController(object):
                 # 1-dimensional matrix of whether students are free during the
                 # times of this class section in the enrollment we've computed
                 # so far
-                no_enroll_final = True - self.enroll_final[:,:,self.section_schedules[sec_ind,:]].any(axis=(1,2))
+                no_enroll_final = ~(self.enroll_final[:,:,self.section_schedules[sec_ind,:]].any(axis=(1,2)))
                 # Find students that were originally enrolled in this class and
                 # did not get any classes overlapping it in the enrollment
                 # we've computed so far
@@ -691,12 +692,12 @@ class ClassChangeController(object):
         """ Store lottery assignments in the database once they have been computed.
             This is a fairly time consuming step compared to computing the assignments. """
 
-        assignments = numpy.transpose(numpy.nonzero((self.enroll_final * (True - self.enroll_orig)).any(axis=2)))
-        removals = numpy.transpose(numpy.nonzero((self.enroll_orig * (True - self.enroll_final)).any(axis=2)))
+        assignments = numpy.transpose(numpy.nonzero((self.enroll_final * ~(self.enroll_orig)).any(axis=2)))
+        removals = numpy.transpose(numpy.nonzero((self.enroll_orig * ~(self.enroll_final)).any(axis=2)))
         relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
 
         for (student_ind,section_ind) in removals:
-            self.sections[section_ind].unpreregister_student(self.students[student_ind], prereg_verb = "Enrolled")
+            self.sections[section_ind].unpreregister_student(self.students[student_ind], prereg_verbs = ["Enrolled"])
             self.changed[student_ind] = True
         for (student_ind,section_ind) in assignments:
             self.sections[section_ind].preregister_student(self.students[student_ind], overridefull=False, prereg_verb = "Enrolled", fast_force_create=False)
@@ -734,11 +735,11 @@ class ClassChangeController(object):
             self.timeout = 2
         f = open(os.getenv("HOME")+'/'+"classchanges.txt", 'w')
         self.subject = "[" + self.program.niceName() + "] Class Change"
-        self.from_email = "%s <%s>" % (self.program.niceName(), self.program.director_email)
+        self.from_email = ESPUser.email_sendto_address(self.program.director_email, self.program.niceName())
         self.bcc = [self.from_email]
         self.extra_headers = {}
         self.extra_headers['Reply-To'] = self.from_email
         for [student_ind] in numpy.transpose(numpy.nonzero(self.changed)):
             self.send_student_email(student_ind, changed = True, for_real = for_real, f = f)
-        for [student_ind] in numpy.transpose(numpy.nonzero(True-self.changed)):
+        for [student_ind] in numpy.transpose(numpy.nonzero(~(self.changed))):
             self.send_student_email(student_ind, changed = False, for_real = for_real, f = f)

@@ -41,8 +41,11 @@ from esp.program.models import Program, ProgramModule, ClassFlag
 from esp.utils.widgets import DateTimeWidget
 from django import forms
 from django.core import validators
-from form_utils.forms import BetterModelForm
-
+from form_utils.forms import BetterModelForm, BetterForm
+from django.utils.safestring import mark_safe
+from esp.tagdict import all_global_tags, tag_categories
+from esp.tagdict.models import Tag
+from collections import OrderedDict
 
 def make_id_tuple(object_list):
     return tuple([(o.id, str(o)) for o in object_list])
@@ -50,30 +53,56 @@ def make_id_tuple(object_list):
 class ProgramCreationForm(BetterModelForm):
     """ Massive form for creating a new instance of a program. """
 
-    term = forms.SlugField(label='Term or year, in URL form (i.e. "2007_Fall")', widget=forms.TextInput(attrs={'size': '40'}))
-    term_friendly = forms.CharField(label='Term, in English (i.e. "Fall 07")', widget=forms.TextInput(attrs={'size': '40'}))
+    term = forms.SlugField(label=mark_safe('Term or year, in URL form (e.g. <tt>2007_Fall</tt>)'), widget=forms.TextInput(attrs={'size': '40'}))
+    term_friendly = forms.CharField(label=mark_safe('Term, in English (e.g. <tt>Fall 2007</tt>)'), widget=forms.TextInput(attrs={'size': '40'}))
 
     teacher_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     teacher_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
-    base_cost         = forms.IntegerField( label = 'Cost of Program Admission $', min_value = 0 )
-    sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None, help_text='The amount of the sibling discount. Leave blank to disable sibling discounts.')
-    program_type      = forms.CharField(label = "Program Type")
-    program_modules   = forms.MultipleChoiceField(
-                          choices=[],
-                          label='Program Modules',
-                          widget=forms.SelectMultiple(attrs={'class': 'input-xxlarge'}),
-                          help_text=Program.program_modules.field.help_text)
+    base_cost         = forms.IntegerField(label = 'Cost of Program Admission $', min_value = 0 )
+    sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None,
+                                           help_text="The amount of the sibling discount. Leave blank if you don't use sibling discounts.")
+    program_type      = forms.CharField(label = "Program Type", help_text='e.g. Splash or Cascade')
+    program_module_questions   = forms.MultipleChoiceField(choices=[],
+                                                           label='Program Modules',
+                                                           widget=forms.CheckboxSelectMultiple(),
+                                                           help_text=Program.program_modules.field.help_text,
+                                                           required=False)
 
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current modules. """
+        # These modules are the "choosable" ones that admins will usually want to choose to select or exclude (i.e. not automatically include or exclude)
+        self.program_module_question_ids = OrderedDict([('Will you charge for items such as shirts or lunch?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Optional Fees', 'Accounting', 'Financial Aid Application', 'Easily Approve Financial Aid Requests'])]),
+                                                        ('If you will charge for admission or other costs, will you accept payment by credit card?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Credit Card Payment Module (Stripe)', 'Credit Card View Module'])]),
+                                                        ('Do you want a pre-program quiz for teachers?', [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Logistics Quiz')]),
+                                                        ('Will you have any additional non-survey forms that teachers should fill out?', [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Custom Form')]),
+                                                        ('Will you have any (non-survey) forms that students should fill out?', [x.id for x in ProgramModule.objects.filter(admin_title='Student Custom Form')]),
+                                                        ('Will you have more than one lunch period (per day)?', [x.id for x in ProgramModule.objects.filter(admin_title='Student Lunch Period Selection')]),
+                                                        ('Would you be willing to solicit donations for LU?', [x.id for x in ProgramModule.objects.filter(admin_title='Donation Module')]),
+                                                        ('Do you plan to have teacher training or interviews?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Training and Interview Signups', 'Manage Teacher Training and Interviews'])]),
+                                                        (mark_safe('Will you use lottery admission (as opposed to first come, first served) for <b>classes</b>?'), [x.id for x in ProgramModule.objects.filter(admin_title__in=['Two-Phase Student Registration', 'Lottery Frontend'])]),
+                                                        (mark_safe('Will you use lottery registration (as opposed to first come, first served) to the <b>program</b>?'), [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Registration Phase Zero', 'Manage Student Registration Phase Zero'])]),
+                                                        ('Will you let students enter a lottery to switch classes after the program has started?', [x.id for x in ProgramModule.objects.filter(admin_title='Class Change Request')]),
+                                                        ('Will you have students accept some sort of agreement?', [x.id for x in ProgramModule.objects.filter(admin_title='Student Acknowledgement')]),
+                                                        ('Do students have to apply to individual classes?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Application Review for Admin', 'Admin Admissions Dashboard'])]),
+                                                        ('If yes, can teachers admit them (as opposed to just admins)?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Admissions Dashboard', 'Application Reviews for Teachers', 'Application Review for Admin', 'Admin Admissions Dashboard'])]),
+                                                        ('Will you have moderators or assistants for individual class sections?', [x.id for x in ProgramModule.objects.filter(admin_title='Moderator Signup')]),
+                                                        ('Do you want students to be able to download a completion certificate after the program ends?', [x.id for x in ProgramModule.objects.filter(admin_title='Student Certificate Module')]),
+                                                       ])
+        # Include additional or new modules that haven't been added to the list
+        for x in ProgramModule.objects.filter(choosable=0):
+            if x.id not in sum(self.program_module_question_ids.values(), []): # flatten list of modules
+                self.program_module_question_ids['Would you like to include the {} module?'.format(x.admin_title)] = [x.id]
+        # Now initialize the form
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
-        self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())
-
+        self.fields['program_module_questions'].choices = [(','.join(map(str, ids)), q) for q, ids in self.program_module_question_ids.items()]
+        #self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())
+        self.fields['program_modules'].required = False
         #   Enable validation on other fields
         self.fields['program_size_max'].required = True
         self.fields['program_size_max'].validators.append(validators.MaxValueValidator((1 << 31) - 1))
+
 
     def save(self, commit=True):
         '''
@@ -93,35 +122,30 @@ class ProgramCreationForm(BetterModelForm):
               }
         return super(ProgramCreationForm, self).save(commit=commit)
 
+
     def load_program(self, program):
         #   Copy the data in the program into the form so that we don't have to re-select modules and stuff.
         pass
 
     def clean_program_modules(self):
-        value = self.cleaned_data['program_modules']
-        value = map(int, value)
-        json_module = ProgramModule.objects.get(handler=u'JSONDataModule')
-        # If the JSON Data Module isn't already in the list of selected
-        # program modules, add it. The JSON Data Module is a dependency for
-        # many commonly-used modules, so it is important that it be enbabled
-        # by default for all new programs.
-        if json_module.id not in value:
-            value.append(json_module.id)
-        return value
+        mods = list(self.cleaned_data['program_modules'])[:] # take a copy of the list to be safe
+        # Add "include by default" modules (choosable property = 1)
+        mods.extend(ProgramModule.objects.filter(choosable=1))
+        return list(set(mods)) # Database wants a unique collection, so take set
 
 
     class Meta:
         fieldsets = [
-('Program Title', {'fields': ['term', 'term_friendly'] }),
+                     ('Program Title', {'fields': ['term', 'term_friendly'] }),
                      ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
                      ('About Program Creator',{'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
                      ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
-                     ('Program Internal details' ,{'fields':['program_type','program_modules','class_categories','flag_types']}),
-                     ('Registrations Date',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
-
-
-]                      # Here You can also add description for each fieldset.
-
+                     ('Program Internal Details' ,{'fields':['program_type','program_modules','program_module_questions','class_categories','flag_types']}),
+                     ('Registration Dates',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
+        ]                      # Here You can also add description for each fieldset.
+        widgets = {
+            'program_modules': forms.SelectMultiple(attrs={'class': 'hidden-field'}),
+        }
         model = Program
 ProgramCreationForm.base_fields['director_email'].widget = forms.TextInput(attrs={'size': 40})
 ProgramCreationForm.base_fields['director_cc_email'].widget = forms.TextInput(attrs={'size': 40})
@@ -158,17 +182,28 @@ class StatisticsQueryForm(forms.Form):
         ('repeats', 'What other programs have the students attended?'),
         ('heardabout', 'How did the students hear about the program?'),
         ('hours', 'How many hours of class did the students take and when?'),
-        #   Not yet implemented
-        #   ('classes', 'What were the most and least popular classes?'),
+        ('student_reg', 'How many students registered?'),
+        ('teacher_reg', 'How many teachers registered?'),
+        ('class_reg', 'How many classes were registered by teachers?'),
         #   (other queries here)
     )
 
     #   Keys into the program.students() dictionary (and descriptions)
-    reg_categories = (
+    student_reg_categories = (
+        ('student_profile', 'Created a profile'),
         ('confirmed', 'Confirmed registration'),
         ('attended', 'Marked as attended on the Web site'),
         ('classreg', 'Registered for at least one class'),
         ('student_survey', 'Completed the online survey'),
+    )
+
+    #   Keys into the program.students() dictionary (and descriptions)
+    teacher_reg_categories = (
+        ('teacher_profile', 'Created a profile'),
+        ('class_proposed', 'Proposed a class'),
+        ('class_approved', 'Had a class approved'),
+        ('class_rejected', 'Had a class rejected'),
+        ('teacher_survey', 'Completed the online survey'),
     )
 
     @staticmethod
@@ -203,16 +238,19 @@ class StatisticsQueryForm(forms.Form):
     query = forms.ChoiceField(choices=stats_questions, widget=forms.Select(), help_text='What question would you like to ask?')
     limit = forms.IntegerField(required=False, min_value=0, widget=forms.TextInput(), help_text='Limit number of aggregate results to display (leave blank or enter 0 to display all results)')
 
-    program_type_all = forms.BooleanField(required=False, initial=False, widget=forms.CheckboxInput(), label='Search All Programs?', help_text='Uncheck to select a program type')
-    program_type = forms.ChoiceField(required=False, choices=((None, ''),), widget=forms.Select(), help_text='Type of Program')
-    program_instance_all = forms.BooleanField(required=False, initial=True, widget=forms.CheckboxInput(), label='Search All Instances?', help_text='Uncheck to select specific instances')
-    program_instances = forms.MultipleChoiceField(required=False, choices=((None, ''),), widget=forms.SelectMultiple(), label='Instance[s] of Program')  #   Choices will be replaced by Ajax request if necessary
+    program_type_all = forms.BooleanField(required=False, initial=False, widget=forms.CheckboxInput(), label='Search All Programs?', help_text='Uncheck to select program type(s)')
+    program_type = forms.ChoiceField(required=False, choices=((None, ''),), widget=forms.Select())
+    program_instance_all = forms.BooleanField(required=False, initial=True, widget=forms.CheckboxInput(), label='Search All Instances?', help_text='Uncheck to select specific instance(s)')
+    program_instances = forms.MultipleChoiceField(required=False, choices=((None, ''),), widget=forms.SelectMultiple(), label='Instance(s) of Program')  #   Choices will be replaced by Ajax request if necessary
 
-    reg_types = forms.MultipleChoiceField(choices=reg_categories, widget=forms.SelectMultiple(), initial=['classreg'], label='Registration Categories')
+    student_reg_type_all = forms.BooleanField(required=False, initial=True, widget=forms.CheckboxInput(), label='Search All Students?', help_text='Uncheck to select student registration type(s)')
+    student_reg_types = forms.MultipleChoiceField(required=False, choices=student_reg_categories, widget=forms.SelectMultiple(), label='Registration Categories')
+    teacher_reg_type_all = forms.BooleanField(required=False, initial=True, widget=forms.CheckboxInput(), label='Search All Teachers?', help_text='Uncheck to select teacher registration type(s)')
+    teacher_reg_types = forms.MultipleChoiceField(required=False, choices=teacher_reg_categories, widget=forms.SelectMultiple(), label='Registration Categories')
 
-    school_query_type = forms.ChoiceField(choices=(('all', 'Match any school'), ('name', 'Enter partial school name'), ('list', 'Select school[s] from list')), initial='all', widget=forms.RadioSelect(), label='School Query Type')
+    school_query_type = forms.ChoiceField(choices=(('all', 'Match any school'), ('name', 'Enter partial school name')), initial='all', widget=forms.RadioSelect(), label='School Query Type')
     school_name = forms.CharField(required=False, widget=forms.TextInput(), label='[Partial] School Name')
-    school_multisel = forms.MultipleChoiceField(required=False, choices=(), widget=forms.SelectMultiple(), label='School[s]', help_text='Hold down Ctrl to select more than one')
+    school_multisel = forms.MultipleChoiceField(required=False, choices=(), widget=forms.SelectMultiple(), label='School(s)', help_text='Hold down Ctrl to select more than one')
 
     zip_query_type = forms.ChoiceField(choices=(('all', 'Any Zip code'), ('exact', 'Exact match'), ('partial', 'Partial match'), ('distance', 'Distance from Zip code')), initial='all', widget=forms.RadioSelect(), label='Zip Code Query Type')
     zip_code = forms.CharField(required=False, widget=forms.TextInput())
@@ -229,8 +267,10 @@ class StatisticsQueryForm(forms.Form):
         self.fields['program_type'].choices = StatisticsQueryForm.get_program_type_choices()
         self.fields['program_instances'].choices = StatisticsQueryForm.get_program_instance_choices(self.fields['program_type'].choices[0][0])
 
-        #   This will be done later if they ask
-        #   self.fields['school_multisel'].choices = StatisticsQueryForm.get_school_choices()
+        school_choices = StatisticsQueryForm.get_school_choices()
+        if len(school_choices) > 0:
+            self.fields['school_query_type'].choices.append(('list', 'Select school(s) from list'))
+            self.fields['school_multisel'].choices = school_choices
 
     def clean(self):
         """ Check that either 'All Programs' is selected or a program is selected   """
@@ -307,7 +347,6 @@ class StatisticsQueryForm(forms.Form):
             if hasattr(self, 'initial'):
                 data.update(self.initial)
 
-
         #   Program selection
         if 'program_type_all' in data and data['program_type_all']:
             self.hide_field('program_type')
@@ -346,6 +385,20 @@ class StatisticsQueryForm(forms.Form):
         if 'query' not in data or data['query'] not in ['zipcodes', 'heardabout', 'schools']:
             self.hide_field('limit')
 
+        if 'query' in data and data['query'] in ['teacher_reg', 'class_reg']:
+            #   Hide fields that don't apply to teachers
+            self.hide_field('student_reg_types')
+            self.hide_field('school_query_type')
+            self.hide_field('student_reg_type_all')
+            if 'teacher_reg_type_all' in data and data['teacher_reg_type_all']:
+                self.hide_field('teacher_reg_types')
+        else:
+            #   Hide fields that don't apply to students
+            self.hide_field('teacher_reg_types')
+            self.hide_field('teacher_reg_type_all')
+            if 'student_reg_type_all' in data and data['student_reg_type_all']:
+                self.hide_field('student_reg_types')
+
     @staticmethod
     def get_multiselect_fields():
         result = []
@@ -359,3 +412,63 @@ class ClassFlagForm(forms.ModelForm):
     class Meta:
         model = ClassFlag
         fields = ['subject','flag_type','comment']
+
+class TagSettingsForm(BetterForm):
+    """ Form for changing global tags. """
+    def __init__(self, *args, **kwargs):
+        self.categories = set()
+        super(TagSettingsForm, self).__init__(*args, **kwargs)
+        for key in all_global_tags:
+            # generate field for each tag
+            tag_info = all_global_tags[key]
+            if tag_info.get('is_setting', False):
+                self.categories.add(tag_info.get('category'))
+                field = tag_info.get('field')
+                # Some field widgets need to be setup manually because we can't do it during compilation
+                if key == 'teacher_profile_hide_fields':
+                    from esp.users.forms.user_profile import TeacherProfileForm
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in TeacherProfileForm.declared_fields.items() if not field[1].required])
+                elif key == 'student_profile_hide_fields':
+                    from esp.users.forms.user_profile import StudentProfileForm
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in StudentProfileForm.declared_fields.items() if not field[1].required])
+                elif key == 'volunteer_profile_hide_fields':
+                    from esp.users.forms.user_profile import VolunteerProfileForm
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in VolunteerProfileForm.declared_fields.items() if not field[1].required])
+                elif key == 'educator_profile_hide_fields':
+                    from esp.users.forms.user_profile import EducatorProfileForm
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in EducatorProfileForm.declared_fields.items() if not field[1].required])
+                elif key == 'guardian_profile_hide_fields':
+                    from esp.users.forms.user_profile import GuardianProfileForm
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in GuardianProfileForm.declared_fields.items() if not field[1].required])
+                elif field is not None:
+                    self.fields[key] = field
+                elif tag_info.get('is_boolean', False):
+                    self.fields[key] = forms.BooleanField()
+                else:
+                    self.fields[key] = forms.CharField()
+                self.fields[key].help_text = tag_info.get('help_text', '')
+                self.fields[key].initial = self.fields[key].default = tag_info.get('default')
+                self.fields[key].required = False
+                set_val = Tag.getBooleanTag(key) if tag_info.get('is_boolean', False) else Tag.getTag(key)
+                if set_val != None and set_val != self.fields[key].initial:
+                    if isinstance(self.fields[key], forms.MultipleChoiceField):
+                        set_val = set_val.split(",")
+                    self.fields[key].initial = set_val
+
+    def save(self):
+        for key in all_global_tags:
+            # Update tags if necessary
+            tag_info = all_global_tags[key]
+            if tag_info.get('is_setting', False):
+                set_val = self.cleaned_data[key]
+                if isinstance(set_val, list):
+                    set_val = ",".join(set_val)
+                if not set_val in ("", "None", None, tag_info.get('default')):
+                    # Set a [new] tag if a value was provided and the value is not the default
+                    Tag.setTag(key, value=set_val)
+                else:
+                    # Otherwise, delete the old tag, if there is one
+                    Tag.unSetTag(key)
+
+    class Meta:
+        fieldsets = [(cat, {'fields': [key for key in sorted(all_global_tags.keys()) if all_global_tags[key].get('category') == cat], 'legend': tag_categories[cat]}) for cat in tag_categories.keys()]

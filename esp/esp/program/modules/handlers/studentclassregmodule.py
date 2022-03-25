@@ -51,7 +51,9 @@ from django.core.cache import cache
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call, meets_cap, no_auth
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
-from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, StudentRegistration, StudentSubjectInterest
+
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
 from esp.utils.web import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
 from esp.users.models    import ESPUser, Permission, Record
@@ -91,7 +93,7 @@ def json_encode(obj):
         return { 'id': obj.id,
                  'status': obj.status,
                  'duration': obj.duration,
-                 'get_meeting_times': obj._events,
+                 'get_meeting_times': sorted(list(obj.get_meeting_times()), cmp=lambda e1, e2: cmp(e1.start, e2.start)),
                  'num_students': obj.num_students(),
                  'capacity': obj.capacity
                  }
@@ -129,6 +131,8 @@ def json_encode(obj):
 
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj):
+    doc = """Allows students to directly enroll in classes."""
+
     @classmethod
     def module_properties(cls):
         return [ {
@@ -138,6 +142,7 @@ class StudentClassRegModule(ProgramModuleObj):
             "seq": 10,
             "inline_template": "classlist.html",
             "required": True,
+            "choosable": 1
             }]
 
     @property
@@ -149,6 +154,8 @@ class StudentClassRegModule(ProgramModuleObj):
         Enrolled = Q(studentregistration__relationship__name='Enrolled')
         Par = Q(studentregistration__section__parent_class__parent_program=self.program)
         Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
+        past_programs = [x for x in Program.objects.all() if len(x.dates()) and x.dates()[0] < self.program.dates()[0]]
+        Past = Q(studentregistration__section__parent_class__parent_program__in=past_programs)
 
         # Force Django to generate two subqueries without joining SRs to SSIs,
         # as efficiently as possible since it's still a big query.
@@ -157,15 +164,26 @@ class StudentClassRegModule(ProgramModuleObj):
         ).values('user').distinct()
         ssi_ids = StudentSubjectInterest.valid_objects().filter(
             subject__parent_program=self.program).values('user').distinct()
-        any_reg_q = Q(id__in = sr_ids) | Q(id__in = ssi_ids)
+        Q_classreg = Q(id__in = sr_ids) | Q(id__in = ssi_ids)
+        # For past events, we want the query to be solely user based
+        # so events don't have to be BOTH current and past simultaneously for combo lists
+        past_enrolled_users = ESPUser.objects.filter(Enrolled & Past).values('id').distinct()
+        Q_enrolled_past = Q(id__in=past_enrolled_users)
+        Q_enrolled = Enrolled & Par & Unexpired
+        Q_attended_past_temp = Q(record__event= "attended", record__program__in=past_programs)
+        past_attended_users = ESPUser.objects.filter(Q_attended_past_temp).values('id').distinct()
+        Q_attended_past = Q(id__in=past_attended_users)
 
         qobjects = {
-            'enrolled': Enrolled & Par & Unexpired,
-            'classreg': any_reg_q,
+            'enrolled': Q_enrolled,
+            'classreg': Q_classreg,
+            'enrolled_past': Q_enrolled_past,
+            'attended_past': Q_attended_past
         }
 
         if QObject:
             return qobjects
+
         else:
             return {k: ESPUser.objects.filter(v).distinct()
                     for k, v in qobjects.iteritems()}
@@ -178,10 +196,16 @@ class StudentClassRegModule(ProgramModuleObj):
             role_dict[item[0]] = item[1]
 
         return {'classreg': """Students who signed up for at least one class""",
-                'enrolled': """Students who are enrolled in at least one class"""}
+                'enrolled': """Students who are enrolled in at least one class""",
+                'enrolled_past': """Students who have enrolled in a past program""",
+                'attended_past': """Students who have attended a past program"""}
 
     def isCompleted(self):
-        return (len(get_current_request().user.getSectionsFromProgram(self.program)[:1]) > 0)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return (len(user.getSectionsFromProgram(self.program)[:1]) > 0)
 
     def deadline_met(self, extension=None):
         #   Allow default extension to be overridden if necessary
@@ -199,18 +223,24 @@ class StudentClassRegModule(ProgramModuleObj):
                    super(StudentClassRegModule, self).deadline_met('/Classes/Lottery')
 
     def prepare(self, context={}):
+        user = get_current_request().user
+        program = self.program
+        scrmi = self.program.studentclassregmoduleinfo
+        return self.prepare_static(user, program, context=context, scrm = self)
+
+    @staticmethod
+    def prepare_static(user, program, context={}, scrm = ""):
         from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
-        verbs = RTC.getVisibleRegistrationTypeNames(prog=self.program)
-        regProf = RegistrationProfile.getLastForProgram(get_current_request().user, self.program)
-        timeslots = self.program.getTimeSlots(types=['Class Time Block', 'Compulsory'])
+        verbs = RTC.getVisibleRegistrationTypeNames(prog=program)
+        regProf = RegistrationProfile.getLastForProgram(user, program)
+        timeslots = program.getTimeSlots(types=['Class Time Block', 'Compulsory'])
         classList = ClassSection.prefetch_catalog_data(regProf.preregistered_classes(verbs=verbs))
 
         prevTimeSlot = None
         blockCount = 0
 
-        user = get_current_request().user
-        is_onsite = user.isOnsite(self.program)
-        scrmi = self.program.studentclassregmoduleinfo
+        is_onsite = user.isOnsite(program)
+        scrmi = program.studentclassregmoduleinfo
 
         #   Filter out volunteer timeslots
         timeslots = [x for x in timeslots if x.event_type.description != 'Volunteer']
@@ -267,7 +297,8 @@ class StudentClassRegModule(ProgramModuleObj):
         context['num_classes'] = len(classList)
         context['timeslots'] = schedule
         context['use_priority'] = scrmi.use_priority
-        context['allow_removal'] = self.deadline_met('/Removal')
+        if scrm:
+            context['allow_removal'] = scrm.deadline_met('/Removal')
 
         return context
 
@@ -326,11 +357,12 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return HttpResponse(json.dumps(json_data))
 
-    def addclass_logic(self, request, tl, one, two, module, extra, prog):
+    @staticmethod
+    def addclass_logic(request, tl, one, two, module, extra, prog, webapp=False):
         """ Pre-register the student for the class section in POST['section_id'].
             Return True if there are no errors.
         """
-        scrmi = self.program.studentclassregmoduleinfo
+        scrmi = prog.studentclassregmoduleinfo
 
         #   Explicitly set the user's onsiteness, since we refer to it soon.
         if not hasattr(request.user, "onsite_local"):
@@ -344,10 +376,10 @@ class StudentClassRegModule(ProgramModuleObj):
 
         section = ClassSection.objects.get(id=sectionid)
         if not scrmi.use_priority:
-            error = section.cannotAdd(request.user,self.scrmi.enforce_max)
+            error = section.cannotAdd(request.user,scrmi.enforce_max, webapp=webapp)
         if scrmi.use_priority or not error:
             cobj = ClassSubject.objects.get(id=classid)
-            error = cobj.cannotAdd(request.user,self.scrmi.enforce_max) or section.cannotAdd(request.user, self.scrmi.enforce_max)
+            error = cobj.cannotAdd(request.user,scrmi.enforce_max, webapp=webapp) or section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
 
         if scrmi.use_priority:
             priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
@@ -358,7 +390,7 @@ class StudentClassRegModule(ProgramModuleObj):
             raise ESPError(error, log=False)
 
         #   Desired priority level is 1 above current max
-        if section.preregister_student(request.user, request.user.onsite_local, priority):
+        if section.preregister_student(request.user, request.user.onsite_local, priority, webapp=webapp):
             return True
         else:
             raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
@@ -367,7 +399,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @needs_student
     @meets_deadline('/Classes')
     @meets_cap
-    def addclass(self,request, tl, one, two, module, extra, prog):
+    def addclass(self, request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class, then return to the studentreg page """
         if self.addclass_logic(request, tl, one, two, module, extra, prog):
             return self.goToCore(tl)
@@ -469,14 +501,14 @@ class StudentClassRegModule(ProgramModuleObj):
 
         # Allow tag configuration of whether class descriptions get collapsed
         # when the class is full (default: yes)
-        collapse_full = Tag.getBooleanTag('collapse_full_classes', prog, True)
+        collapse_full = Tag.getBooleanTag('collapse_full_classes', prog)
         context = {'classes': classes, 'one': one, 'two': two, 'categories': categories_sort, 'collapse_full': collapse_full}
 
         scrmi = prog.studentclassregmoduleinfo
         context['register_from_catalog'] = scrmi.register_from_catalog
 
         prog_color = prog.getColor()
-        collapse_full_classes = Tag.getBooleanTag('collapse_full_classes', prog, True)
+        collapse_full_classes = Tag.getBooleanTag('collapse_full_classes', prog)
         class_blobs = []
 
         category_header_str = """<hr size="1"/>
@@ -559,19 +591,11 @@ class StudentClassRegModule(ProgramModuleObj):
         json.dump(reg_bits_data, resp)
         return resp
 
-    # This function exists only to apply the @meets_deadline decorator.
-    @meets_deadline('/Catalog')
-    def catalog_student(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        """ Return the program class catalog, after checking the deadline """
-        return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
-
-    # This function gets called and branches off to the two above depending on the user's role
     @disable_csrf_cookie_update
     @aux_call
     @no_auth
     @cache_control(public=True, max_age=120)
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        """ Check user role and maybe return the program class catalog """
         return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
 
     @disable_csrf_cookie_update
@@ -606,10 +630,10 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'class_docs.html', request, context)
 
-
-    def clearslot_logic(self, request, tl, one, two, module, extra, prog):
+    @staticmethod
+    def clearslot_logic(request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return True if there are no errors """
-
+        verbs = RTC.getVisibleRegistrationTypeNames(prog)
         #   Get the sections that the student is registered for in the specified timeslot.
         oldclasses = request.user.getSections(prog).filter(meeting_times=extra)
         #   Narrow this down to one class if we're using the priority system.
@@ -621,7 +645,7 @@ class StudentClassRegModule(ProgramModuleObj):
             if result and not hasattr(request.user, "onsite_local"):
                 return result
             else:
-                sec.unpreregister_student(request.user)
+                sec.unpreregister_student(request.user, verbs)
         #   Return the ID of classes that were removed.
         return oldclasses.values_list('id', flat=True)
 
