@@ -594,42 +594,39 @@ class IndividualAccountingController(ProgramAccountingController):
         payment), find all of the Transfers representing the items that were
         paid for and add a link back to the payment. """
 
+        # TODO: Somehow need to check if we have already used finaid and shouldn't add it
+        # TODO: Check the date of the last finaid grant vs the date of the last payment?
+        # TODO: What if you use some of it and then it gets revoked?
         # Check if financial aid didn't fully cover the line items for financial aid
         partial_finaid = False
-        # What would full financial aid of unpaid items be?
-        fin_aid_needed = 0
-        fin_aid_transfers = self.get_transfers().filter(
-            line_item__for_payments=False,
-            line_item__text__in=self.finaid_items
-        ).order_by('id')
-        for transfer in fin_aid_transfers:
-            fin_aid_needed += transfer.get_amount()
-        if self.amount_finaid + self.amount_siblingdiscount < fin_aid_needed:
+        if self.amount_finaid < self.amount_requested(for_finaid_only=True):
             partial_finaid = True
+
+        # Use this later to check if program admission has already been paid
+        admission_transfer = self.get_transfers().filter(
+            line_item__text__in=admission_items
+        )
 
         # Filter out Transfers representing payments, financial aid grants, and
         # purchasable items that have already been paid for.
         outstanding_transfers = self.get_transfers().filter(
             line_item__for_payments=False,
             paid_in__isnull=True
+        ).exclude(line_item__text__in=self.finaid_items
         ).order_by('id')
-        # Exclude the line items that are included in financial aid unless there was only a partial financial aid grant
-        if not partial_finaid:
-            outstanding_transfers = outstanding_transfers.exclude(line_item__text__in=self.finaid_items)
 
         # Find the paid transfers by examining Transfers in order of creation
         # until they sum to the given amount.
         total = 0
-        target = payment.get_amount() + self.amount_siblingdiscount
+        target = payment.get_amount()
+        if admission_transfer.paid_in__isnull:
+            target += self.amount_siblingdiscount
         if partial_finaid:
             target += self.amount_finaid
 
         for transfer in outstanding_transfers:
             total += transfer.get_amount()
-            if partial_finaid: 
-                transfer.paid_in = payment + " and partial financial aid"
-            else:
-                transfer.paid_in = payment
+            transfer.paid_in = payment
             transfer.save()
             if total >= target:
                 break
