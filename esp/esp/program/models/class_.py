@@ -936,7 +936,7 @@ class ClassSection(models.Model):
             return False
         # otherwise, check if all teachers are available
         for t in self.teachers:
-            available = t.getAvailableTimes(self.parent_program, ignore_classes=ignore_classes)
+            available = t.getAvailableTimes(self.parent_program, ignore_classes=ignore_classes, ignore_sections=[self])
             for e in meeting_times:
                 if e not in available:
                     return u"The teacher %s has not indicated availability during %s." % (t.name(), e.pretty_time())

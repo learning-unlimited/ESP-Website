@@ -225,7 +225,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @no_auth
     @cached_module_view
     def timeslots(prog):
-        timeslots = list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values('id', 'short_description', 'label', 'start', 'end'))
+        timeslots = list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy MM/DD HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values('id', 'short_description', 'label', 'start', 'end'))
         for i in range(len(timeslots)):
             timeslot_start = Event.objects.get(pk=timeslots[i]['id']).start
             timeslots_before = Event.objects.filter(start__lt=timeslot_start)
@@ -350,6 +350,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'parent_class': cls.id,
                 'category': cls.category.symbol,
                 'category_id': cls.category.id,
+                'class_style': cls.class_style,
                 'grade_max': cls.grade_max,
                 'grade_min': cls.grade_min,
                 'title': cls.title,

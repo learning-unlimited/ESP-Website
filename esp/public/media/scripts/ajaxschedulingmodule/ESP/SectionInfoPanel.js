@@ -140,6 +140,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         content_parts['Category'] = this.sections.categories_data[section.category_id].name;
         content_parts['Teachers'] = teacher_links;
         if(has_moderator_module === "True") content_parts[moderator_title + 's'] = getModeratorLinks(section);
+        content_parts['Style'] = section.class_style;
         content_parts['Class size max'] = section.class_size_max;
         var length_str = '';
         if(Math.floor(section.length) > 0){
@@ -167,6 +168,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
             partDiv.append(content_parts[header]);
             contentDiv.append(partDiv);
         }
+        contentDiv.append($j('<br><div><b>Click on another section while holding down "Ctrl"/"Cmd" to swap it with this section</b>'));
 
         return contentDiv;
     }.bind(this);

@@ -89,6 +89,25 @@ function ApiClient() {
     };
 
     /**
+     * Swap two sets of sections on the server.
+     *
+     * @param assignments1: List of new assignments for the section(s) in room 1
+     * @param assignments2: List of new assignments for the section(s) in room 2
+     * @param callback: If successful, this function will be called. Takes no params.
+     * @param errorReporter: If server reports an error, this function will be called.
+     *                       Takes one param msg with an error message.
+     */
+    this.swap_sections = function(assignments1, assignments2, override, callback, errorReporter){
+        var req = {
+            action: 'swap',
+            csrfmiddlewaretoken: csrf_token(),
+            assignments: JSON.stringify(assignments1.concat(assignments2)),
+            override: override
+        };
+        this.send_request('ajax_schedule_class', req, callback, errorReporter);
+    };
+
+    /**
      * Assign a moderator to a section on the server.
      *
      * @param section_id: The ID of the section to which to assign a moderator.
