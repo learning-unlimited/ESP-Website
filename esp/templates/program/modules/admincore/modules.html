@@ -1,0 +1,93 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Module Management{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/module_management.css" type="text/css" />
+{% endblock %}
+
+{% block xtrajs %}
+    {{block.super }}
+    <script type="text/javascript" src="/media/scripts/program/modules/module_management.js"></script>
+{% endblock %}
+
+{% block }
+
+{% block content %}
+
+{% load render_qsd %}
+
+<h1>Module Management for {{ program.niceName }}</h1>
+
+<p>Welcome to the module management page for {{ program.niceName }}. This page lists the modules that students and teachers will encounter during registration. You can drag individual modules to reorder them and change whether they are required or not. To add or remove modules, you will need to enable/disable them in the <a href="/manage/{{ program.getUrlBase }}/settings/program">program settings</a>.</p>
+{% inline_program_qsd_block program "manage:modules" %}
+{% end_inline_program_qsd_block %}
+
+<div class="alert alert-danger">
+  <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+  Please be aware that some modules require other modules (e.g., teacher class registration usually requires a teacher to have already set their availability), some modules should always be required (e.g., the student lottery module), and some modules should always be last (e.g., the credit card payment module). Please use common sense and make sure to test everything whenever you change any of these settings! Feel free to contact <a href="mailto:websupport@learningu.org">websupport</a> with any questions.
+</div>
+
+<form action="/manage/{{ program.getUrlBase }}/modules/" method="post">
+    <input type='hidden' name='learn_req' id='learn_req'>
+    <input type='hidden' name='learn_not_req' id='learn_not_req'>
+    <input type='hidden' name='teach_req' id='teach_req'>
+    <input type='hidden' name='teach_not_req' id='teach_not_req'>
+    
+    <div class="wrapper">
+        <h2>
+          Student Registration
+        </h2>
+        <div id="learn_mods" class="column">
+            <h3>
+                Required
+            </h3>
+            <ol id="sortable1" class="connectedSortable">
+            {% for mod in learn_modules %}
+                {% ifchanged mod.required %}
+                    {% if not mod.required %}
+                        </ol>
+                        <h3>
+                            Not Required
+                        </h3>
+                        <ol id="sortable2" class="connectedSortable">
+                    {% endif %}
+                {% endifchanged %}
+                <li id='{{ mod.id }}' class="ui-state-default">{{ mod.module.admin_title }}</li>
+            {% endfor %}
+            </ol>
+        </div>
+    </div>
+    <div class="wrapper">
+        <h2>
+          Teacher Registration
+        </h2>
+        <div id="teach_mods" class="column">
+            <h3>
+                Required
+            </h3>
+            <ol id="sortable3" class="connectedSortable">
+            {% for mod in teach_modules %}
+                {% ifchanged mod.required %}
+                    {% if not mod.required %}
+                        </ol>
+                        <h3>
+                            Not Required
+                        </h3>
+                        <ol id="sortable4" class="connectedSortable">
+                    {% endif %}
+                {% endifchanged %}
+                <li id='{{ mod.id }}' class="ui-state-default">{{ mod.module.admin_title }}</li>
+            {% endfor %}
+            </ol>
+        </div>
+    </div>
+    
+    <center><input class="fancybutton" type="submit" value="Save Modules"/></center>
+</form>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

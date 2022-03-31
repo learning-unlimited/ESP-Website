@@ -403,6 +403,54 @@ class AdminCore(ProgramModuleObj, CoreModule):
     #   Alias for deadline management
     deadlines = deadline_management
 
+    @aux_call
+    @needs_admin
+    def modules(self, request, tl, one, two, module, extra, prog):
+        context = {}
+
+        if request.method == 'POST':
+            # If the form was submitted, process it and update program modules
+            learn_req = [mod for mod in request.POST.get("learn_req", "").split(",") if mod]
+            learn_not_req = [mod for mod in request.POST.get("learn_not_req", "").split(",") if mod]
+            teach_req = [mod for mod in request.POST.get("teach_req", "").split(",") if mod]
+            teach_not_req = [mod for mod in request.POST.get("teach_not_req", "").split(",") if mod]
+            # Set student registration module sequence and requiredness
+            seq = 0
+            for mod_id in learn_req:
+                pmo = ProgramModuleObj.objects.get(id=mod_id)
+                pmo.seq = seq
+                seq += 1
+                pmo.required = True
+                pmo.save()
+            for mod_id in learn_not_req:
+                pmo = ProgramModuleObj.objects.get(id=mod_id)
+                pmo.seq = seq
+                seq += 1
+                pmo.required = False
+                pmo.save()
+            # Set teacher registration module sequence and requiredness
+            seq = 0
+            for mod_id in teach_req:
+                pmo = ProgramModuleObj.objects.get(id=mod_id)
+                pmo.seq = seq
+                seq += 1
+                pmo.required = True
+                pmo.save()
+            for mod_id in teach_not_req:
+                pmo = ProgramModuleObj.objects.get(id=mod_id)
+                pmo.seq = seq
+                seq += 1
+                pmo.required = False
+                pmo.save()
+
+        context['learn_modules'] = prog.getModules(tl = 'learn')
+        context['teach_modules'] = prog.getModules(tl = 'teach')
+        context['one'] = one
+        context['two'] = two
+        context['program'] = prog
+
+        return render_to_response(self.baseDir()+'modules.html', request, context)
+
     def isStep(self):
         return False
 
