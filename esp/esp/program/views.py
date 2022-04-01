@@ -404,12 +404,14 @@ def userview(request):
         if gcrs.count() == 1:
             gcr = gcrs[0]
             gcr.approved = True
+            gcr.acknowledged_by = request.user
             gcr.save()
     if 'reject_request' in request.GET:
         gcrs = GradeChangeRequest.objects.filter(id=request.GET['reject_request'])
         if gcrs.count() == 1:
             gcr = gcrs[0]
             gcr.approved = False
+            gcr.acknowledged_by = request.user
             gcr.save()
 
     if 'graduation_year' in request.GET:

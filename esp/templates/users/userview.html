@@ -251,22 +251,24 @@
             <div class="alert alert-danger">
                 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                 {{ gcr }}{% if gcr.reason %} ({{ gcr.reason }}){% endif %}<br />
-                <form action="/manage/userview/" method="get" name="approve_grade_request">
-                    <input type="hidden" name="approve_request" value="{{ gcr.id }}" />
-                    <input type="hidden" name="username" value="{{ user.username }}" />
-                    {% if program %}
-                    <input type="hidden" name="program" value="{{ program.id }}" />
-                    {% endif %}
-                    <input type="submit" value="Approve" class="btn btn-default" />
-                </form>
-                <form action="/manage/userview/" method="get" name="reject_grade_request">
-                    <input type="hidden" name="reject_request" value="{{ gcr.id }}" />
-                    <input type="hidden" name="username" value="{{ user.username }}" />
-                    {% if program %}
-                    <input type="hidden" name="program" value="{{ program.id }}" />
-                    {% endif %}
-                    <input type="submit" value="Reject" class="btn btn-default" />
-                </form>
+                <center>
+                    <form action="/manage/userview/" method="get" name="approve_grade_request">
+                        <input type="hidden" name="approve_request" value="{{ gcr.id }}" />
+                        <input type="hidden" name="username" value="{{ user.username }}" />
+                        {% if program %}
+                        <input type="hidden" name="program" value="{{ program.id }}" />
+                        {% endif %}
+                        <input type="submit" value="Approve" class="btn btn-default" />
+                    </form>
+                    <form action="/manage/userview/" method="get" name="reject_grade_request">
+                        <input type="hidden" name="reject_request" value="{{ gcr.id }}" />
+                        <input type="hidden" name="username" value="{{ user.username }}" />
+                        {% if program %}
+                        <input type="hidden" name="program" value="{{ program.id }}" />
+                        {% endif %}
+                        <input type="submit" value="Reject" class="btn btn-default" />
+                    </form>
+                </center>
             </div>
             {% endfor%}
         </td></tr>
