@@ -2742,6 +2742,7 @@ class GradeChangeRequest(TimeStampedModel):
 
         if is_new:
             self.send_request_email()
+            super(GradeChangeRequest, self).save(**kwargs)
             return
 
         if self.approved is not None and not self.acknowledged_time:
