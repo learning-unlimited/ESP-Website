@@ -598,6 +598,9 @@ class IndividualAccountingController(ProgramAccountingController):
         # TODO: Check the date of the last finaid grant vs the date of the last payment?
         # TODO: What if you use some of it and then it gets revoked?
         # Check if financial aid didn't fully cover the line items for financial aid
+        
+        # TODO: should we mark the items that fin aid paid for? 
+        # Then if you try to delete the fin aid, admin pages would tell you it would affect the items payment?
         partial_finaid = False
         if self.amount_finaid < self.amount_requested(for_finaid_only=True):
             partial_finaid = True
@@ -614,6 +617,7 @@ class IndividualAccountingController(ProgramAccountingController):
             paid_in__isnull=True
         ).exclude(line_item__text__in=self.finaid_items
         ).order_by('id')
+        # TODO: If full fin aid, then need to remove the for_finaid transfers so we dont count payment for these
 
         # Find the paid transfers by examining Transfers in order of creation
         # until they sum to the given amount.
