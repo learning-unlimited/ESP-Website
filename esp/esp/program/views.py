@@ -47,7 +47,6 @@ from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from django.http import HttpResponseRedirect, HttpResponseBadRequest
 
 from django.core.mail import send_mail
-from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
@@ -71,6 +70,7 @@ from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.program.modules.handlers.commmodule import CommModule
+from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import CybersourcePostback
@@ -399,6 +399,21 @@ def userview(request):
 
     from esp.users.forms.user_profile import StudentInfoForm
 
+    if 'approve_request' in request.GET:
+        gcrs = GradeChangeRequest.objects.filter(id=request.GET['approve_request'])
+        if gcrs.count() == 1:
+            gcr = gcrs[0]
+            gcr.approved = True
+            gcr.acknowledged_by = request.user
+            gcr.save()
+    if 'reject_request' in request.GET:
+        gcrs = GradeChangeRequest.objects.filter(id=request.GET['reject_request'])
+        if gcrs.count() == 1:
+            gcr = gcrs[0]
+            gcr.approved = False
+            gcr.acknowledged_by = request.user
+            gcr.save()
+
     if 'graduation_year' in request.GET:
         user.set_student_grad_year(request.GET['graduation_year'])
 
@@ -426,6 +441,7 @@ def userview(request):
         'profile': profile,
         'volunteer': VolunteerOffer.objects.filter(request__program = program, user = user).exists(),
         'avail_set': UserAvailability.objects.filter(event__program = program, user = user).exists(),
+        'grade_change_requests': user.requesting_student_set.filter(approved=None),
     }
     return render_to_response("users/userview.html", request, context )
 
