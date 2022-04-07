@@ -896,7 +896,6 @@ def categoriesandflags(request, section=""):
     context['flag_types'] = ClassFlagType.objects.all().order_by('seq')
 
     return render_to_response('program/categories_and_flags.html', request, context)
-    
 
 @admin_required
 def statistics(request, program=None):
