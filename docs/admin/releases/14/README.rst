@@ -83,11 +83,16 @@ Program management changes
 - Student and teacher registration status is now shown on the userview page
 - Fixed the color of messages on the deadline management page
 - Added statistics to the dashboard for "teachers who have submitted a class and have not taught for a program" and "students who are enrolled and have not enrolled in the past"
+- Added the ability to edit existing teacher events (e.g., trainings, interviews) on the teacher event page
 
 Onsite changes
 ~~~~~~~~~~~~~~
 - Added an option to the grid-based class changes interface to check-in (or not check-in) students when changing their schedules
 - Fixed a bug that prevented the "full" status of classes from updating on the grid-based class changes page
+
+Userview changes
+~~~~~~~~~~~~~~~~
+- Added an interface to approve and reject grade change requests on the userview page.
 
 Printables changes
 ~~~~~~~~~~~~~~~~~~
