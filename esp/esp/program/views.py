@@ -64,8 +64,8 @@ from django.http import HttpResponse
 from django import forms
 
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
-from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile
-from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm
+from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile, ClassCategories, ClassFlagType
+from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm, CategoryForm, FlagTypeForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
@@ -822,6 +822,81 @@ def tags(request, section=""):
     context['open_section'] = section
 
     return render_to_response('program/modules/admincore/tags.html', request, context)
+
+@admin_required
+def categoriesandflags(request, section=""):
+    """
+    View that lets admins create/edit class categories and flag types
+    """
+    context = {}
+    cat_form = CategoryForm()
+    flag_form = FlagTypeForm()
+
+    if request.method == 'POST':
+        if request.POST.get('object') == 'category':
+            section = 'categories'
+            if request.POST.get('command') == 'add': # New category
+                cat_form = CategoryForm(request.POST)
+                if cat_form.is_valid():
+                    cat_form.save()
+                    cat_form = CategoryForm()
+            elif request.POST.get('command') == 'load': # Load existing category into form
+                cat_id = request.POST.get('id')
+                cats = ClassCategories.objects.filter(id = cat_id)
+                if cats.count() == 1:
+                    cat = cats[0]
+                    cat_form = CategoryForm(instance = cat)
+            elif request.POST.get('command') == 'edit': # Edit existing category
+                cat_id = request.POST.get('id')
+                cats = ClassCategories.objects.filter(id = cat_id)
+                if cats.count() == 1:
+                    cat = cats[0]
+                    cat_form = CategoryForm(request.POST, instance = cat)
+                    if cat_form.is_valid():
+                        cat_form.save()
+                        cat_form = CategoryForm()
+            elif request.POST.get('command') == 'delete': # Delete category
+                cat_id = request.POST.get('id')
+                cats = ClassCategories.objects.filter(id = cat_id)
+                if cats.count() == 1:
+                    cat = cats[0]
+                    cat.delete()
+        elif request.POST.get('object') == 'flag_type':
+            section = 'flagtypes'
+            if request.POST.get('command') == 'add': # New flag type
+                flag_form = FlagTypeForm(request.POST)
+                if flag_form.is_valid():
+                    flag_form.save()
+                    flag_form = FlagTypeForm()
+            elif request.POST.get('command') == 'load': # Load existing flag type into form
+                ft_id = request.POST.get('id')
+                fts = ClassFlagType.objects.filter(id = ft_id)
+                if fts.count() == 1:
+                    ft = fts[0]
+                    flag_form = FlagTypeForm(instance = ft)
+            elif request.POST.get('command') == 'edit': # Edit existing flag type
+                ft_id = request.POST.get('id')
+                fts = ClassFlagType.objects.filter(id = ft_id)
+                if fts.count() == 1:
+                    ft = fts[0]
+                    flag_form = FlagTypeForm(request.POST, instance = ft)
+                    if flag_form.is_valid():
+                        flag_form.save()
+                        flag_form = FlagTypeForm()
+            elif request.POST.get('command') == 'delete': # Delete flag type
+                ft_id = request.POST.get('id')
+                fts = ClassFlagType.objects.filter(id = ft_id)
+                if fts.count() == 1:
+                    ft = fts[0]
+                    ft.delete()
+    context['open_section'] = section
+    context['cat_form'] = cat_form
+    context['flag_form'] = flag_form
+    context['categories'] = ClassCategories.objects.all().order_by('seq')
+    context['flag_types'] = ClassFlagType.objects.all().order_by('seq')
+
+    return render_to_response('program/categories_and_flags.html', request, context)
+    
 
 @admin_required
 def statistics(request, program=None):

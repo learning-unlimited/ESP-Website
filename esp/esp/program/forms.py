@@ -37,7 +37,7 @@ import re
 import unicodedata
 
 from esp.users.models import StudentInfo, K12School
-from esp.program.models import Program, ProgramModule, ClassFlag
+from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories
 from esp.utils.widgets import DateTimeWidget
 from django import forms
 from django.core import validators
@@ -412,6 +412,16 @@ class ClassFlagForm(forms.ModelForm):
     class Meta:
         model = ClassFlag
         fields = ['subject','flag_type','comment']
+
+class FlagTypeForm(forms.ModelForm):
+    class Meta:
+        model = ClassFlagType
+        fields = ['name','color','seq','show_in_scheduler','show_in_dashboard']
+
+class CategoryForm(forms.ModelForm):
+    class Meta:
+        model = ClassCategories
+        fields = ['category','symbol','seq']
 
 class TagSettingsForm(BetterForm):
     """ Form for changing global tags. """

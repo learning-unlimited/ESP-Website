@@ -2042,12 +2042,12 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 class ClassCategories(models.Model):
     """ A list of all possible categories for an ESP class
 
-    Categories include 'Mathematics', 'Science', 'Zocial Zciences', etc.
+    Categories include 'Mathematics', 'Science', 'Social Sciences', etc.
     """
 
-    category = models.TextField(blank=False)
-    symbol = models.CharField(max_length=1, default='?', blank=False)
-    seq = models.IntegerField(default=0)
+    category = models.TextField(blank=False, help_text='The name of the category')
+    symbol = models.CharField(max_length=1, default='?', blank=False, help_text='A single character to represent the category')
+    seq = models.IntegerField(default=0, help_text='Categories will be ordered by this.  Smaller is earlier; the default is 0.')
 
     class Meta:
         verbose_name_plural = 'Class categories'
