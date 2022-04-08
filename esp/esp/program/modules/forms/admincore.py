@@ -104,7 +104,7 @@ class StudentRegSettingsForm(BetterModelForm):
     class Meta:
         fieldsets = [
                      ('Capacity Settings', {'fields': ['enforce_max', 'class_cap_multiplier', 'class_cap_offset', 'apply_multiplier_to_room_cap']}),
-                     ('Priority Registration Settings', {'fields': ['use_priority', 'priority_limit']}),
+                     ('Priority Registration Settings', {'fields': ['priority_limit']}), # use_priority is not included here to prevent confusion; to my knowledge, only HSSP uses this setting - WG
                      ('Enrollment Settings', {'fields': ['use_grade_range_exceptions', 'register_from_catalog', 'visible_enrollments', 'visible_meeting_times', 'show_emailcodes']}),
                      ('Button Settings', {'fields': ['confirm_button_text', 'view_button_text', 'cancel_button_text', 'temporarily_full_text', 'cancel_button_dereg', 'send_confirmation']}),
                      ('Visual Options', {'fields': ['progress_mode','force_show_required_modules']}),
