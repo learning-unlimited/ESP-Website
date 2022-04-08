@@ -87,7 +87,17 @@ td {
     </div>
 {% endif %}
 {% autoescape off %}
-{% if lottery_messages %}<p><font color="blue">{{ lottery_messages|join:"<br/>" }}</font></p>{% endif %}
+{% if lottery_succ_msg %}
+    <div class="alert alert-success">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {{ lottery_succ_msg|join:"<br/>" }}
+    </div>
+{% elif lottery_err_msg %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {{ lottery_err_msg|join:"<br/>" }}
+    </div>
+{% endif %}
 {% endautoescape %}
 
 <button class="dsphead">
@@ -98,7 +108,7 @@ td {
     <form action="#" method="POST">
         <input type="hidden" name="mode" value="default">
         {% if grade_caps %}
-            The following grade capacities will be used</br>(as specified by the <i>program_size_by_grade</i> <a href="/manage/{{ program.getUrlBase }}/tags">tag</a>):</br>
+            The following grade capacities will be used</br>(as specified by the <i>program_size_by_grade</i> <a href="/manage/{{ program.getUrlBase }}/tags/learn">tag</a>):</br>
             <table align="center" width="200">
                 <tr>
                     <th>Grade(s)</th>

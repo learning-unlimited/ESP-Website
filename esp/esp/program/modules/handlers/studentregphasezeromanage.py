@@ -59,15 +59,14 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         }
 
     def lottery(self, prog, role, post):
-        messages = []
+        messages = {'success':[], 'error': []}
         winners, _ = Group.objects.get_or_create(name=role)
         students = []
 
         if post.get('mode') == 'default':
             # Get grade caps
-            grade_caps_str = prog.grade_caps()
-            if grade_caps_str:
-                grade_caps = {int(key[0]): value for key, value in grade_caps_str.iteritems()}
+            grade_caps = prog.grade_caps()
+            if grade_caps:
                 ###############################################################################
                 # The default lottery algorithm is run, with randomization and processing in order.
                 # If any one in the group doesn't get in (due to cap size), no one in that group gets in.
@@ -79,7 +78,16 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                     sibs = i.user.all()
                     newcounts = copy.copy(counts)
                     for j in sibs:
-                        newcounts[j.getGrade(prog)] += 1
+                        grade = j.getGrade(prog)
+                        grade_keys = [key for key in grade_caps if grade in key]
+                        if len(grade_keys) == 1:
+                            newcounts[grade_keys[0]] += 1
+                        elif len(grade_keys) == 0:
+                            messages['error'].append("The <i>program_size_by_grade</i> <a href='/manage/" + prog.getUrlBase() + "/tags/learn'>tag</a> does not include grade %i. Lottery not run." % (grade))
+                            break
+                        else:
+                            messages['error'].append("The <i>program_size_by_grade</i> <a href='/manage/" + prog.getUrlBase() + "/tags/learn'>tag</a> includes grade %i multiple times. Lottery not run." % (grade))
+                            break
 
                     cpass = not any(newcounts[c] > grade_caps[c] for c in counts)
 
@@ -87,7 +95,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                         students.extend(sibs)
                         counts = newcounts
             else:
-                messages.append("<i>program_size_by_grade</i> <a href='/manage/" + prog.getUrlBase() + "/tags'>tag</a> is not set. Lottery not run.")
+                messages['error'].append("<i>program_size_by_grade</i> <a href='/manage/" + prog.getUrlBase() + "/tags'>tag</a> is not set. Lottery not run.")
 
         elif post.get('mode') == 'manual':
             usernames = filter(None, re.split(r'[;,\s]\s*', post.get('usernames')))
@@ -97,7 +105,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                 try:
                     student = ESPUser.objects.get(username=username)
                 except (ValueError, ESPUser.DoesNotExist):
-                    messages.append("Could not find a user with username " + username)
+                    messages['error'].append("Could not find a user with username " + username)
                     continue
                 if student.isStudent():
                     records = PhaseZeroRecord.objects.filter(program=prog, user=student).order_by('time')
@@ -107,17 +115,17 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                         else:
                             students.append(student)
                     else:
-                        messages.append(username + " is not in the lottery")
+                        messages['error'].append(username + " is not in the lottery")
                 else:
-                    messages.append(username + " is not a student")
+                    messages['error'].append(username + " is not a student")
 
         else:
-            messages.append("Lottery mode " + post.get('mode') + " is not supported")
+            messages['error'].append("Lottery mode " + post.get('mode') + " is not supported")
 
         ###############################################################################
         # Post lottery, assign permissions to people in the lottery winners group
         # Assign OverridePhaseZero permission and Student/All permissions
-        if len(messages) == 0:
+        if len(messages['error']) == 0:
             # Add users to winners group once we are sure there were no problems
             winners.user_set.add(*students)
             override_perm = Permission(permission_type='OverridePhaseZero', role=winners, start_date=datetime.datetime.now(), program=prog)
@@ -127,7 +135,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                 studentAll_perm.save()
             # Add tag to indicate student lottery has been run
             Tag.setTag('student_lottery_run', target=prog, value='True')
-            messages.append("The student lottery has been run successfully")
+            messages['success'].append("The student lottery has been run successfully")
 
         return messages
 
@@ -174,7 +182,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                     if "confirm" in request.POST:
                         Group.objects.filter(name=role).delete()
                         Tag.unSetTag('student_lottery_run', prog)
-                        context['lottery_messages'] = ["The student lottery has been undone."]
+                        context['lottery_succ_msg'] = ["The student lottery has been undone."]
                     else:
                         context['error'] = "You did not confirm that you would like to undo the lottery."
                 else:
@@ -183,7 +191,9 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                 if "confirm" in request.POST:
                     role = request.POST['rolename']
                     context['role'] = role
-                    context['lottery_messages'] = self.lottery(prog, role, request.POST)
+                    messages = self.lottery(prog, role, request.POST)
+                    context['lottery_succ_msg'] = messages['success']
+                    context['lottery_err_msg'] = messages['error']
                 else:
                     context['error'] = "You did not confirm that you would like to run the lottery"
 
