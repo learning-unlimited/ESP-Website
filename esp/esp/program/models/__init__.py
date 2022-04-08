@@ -260,16 +260,11 @@ class Program(models.Model, CustomFormsLinkModel):
                          'the documentation</a> for details.')
     class_categories = models.ManyToManyField('ClassCategories',
                                               blank=True,
-                                              help_text=format_lazy('You can add new categories or modify existing ones from <a href="%s">the admin panel</a>.',
-                                                                    urlresolvers.reverse_lazy('admin:program_classcategories_changelist')))
+                                              help_text='You can add new categories or modify existing ones <a href="/manage/categoriesandflags/categories">here</a>.')
 
     flag_types = models.ManyToManyField('ClassFlagType',
                     blank=True,
-                    help_text=format_lazy(
-                    'The set of flags that can be used ' +
-                    'to tag classes for this program. ' +
-                    'Add flag types in <a href="%s">the admin panel</a>.',
-                    urlresolvers.reverse_lazy('admin:program_classflagtype_changelist')))
+                    help_text='The set of flags that can be used to tag classes for this program. You can add and modify flag types <a href="/manage/categoriesandflags/flagtypes">here</a>.')
 
     documents = GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
 
