@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}Set Deadlines{% endblock %}
+{% block title %}Set Deadlines and Permissions{% endblock %}
 
 {% block keywords %}{% endblock %}
 {% block description %}{% endblock %}
@@ -20,7 +20,7 @@
 {% block content %}
 {% load users %}
 <div id="userbitforms">
-<p><h1>Deadline Management</h1></p>
+<p><h1>Deadline and Permission Management</h1></p>
 
 {% if message_good %}
     <div class="alert alert-success">
@@ -35,24 +35,28 @@
     </div>
 {% endif %}
 
-<p>Access to each program's Web pages (including registration pages) is controlled by a set of deadlines, each of which prescribes when a certain set of activities can be performed.  "Recursive" deadlines can control a range of activities jointly; you may open all registration features using a single recursive deadline (e.g., "All student deadlines"), or specify several non-recursive deadlines ("Register for classes", "Access to survey", etc.) for finer control.</p>
+<p>Access to each program's Web pages (including registration pages) is controlled by a set of <b>deadlines</b>, which prescribe when a certain set of activities can be performed by a certain group of users (e.g., Students), and <b>permissions</b>, which prescribe when a certain set of activities can be performed by an individual user.</p>
 
-<p>If you use recursive deadlines, keep in mind that the "implied" deadlines can only be used to open registration features when the recursive deadline is closed; you cannot close implied deadlines to override an open recursive deadline.  Hence it is wise to make the deadlines non-recursive when controlling individual registration features.</p>
+<p>"Recursive" deadlines can control a range of activities jointly; you may open all registration features using a single recursive deadline (e.g., "All student deadlines"), or specify several non-recursive deadlines ("Register for classes", "Access to survey", etc.) for finer control. If you use recursive deadlines, keep in mind that the "implied" deadlines can only be used to open registration features when the recursive deadline is closed; you cannot close implied deadlines to override an open recursive deadline.  Hence it is wise to make the deadlines non-recursive when controlling individual registration features.</p>
 
-<p>Please proceed to edit <a href="#existing">existing deadlines</a> or <a href="#new">create a new deadline</a> if necessary.</p>
+<p>Please proceed to edit <a href="#existing">existing deadlines for user groups</a> or <a href="#new">create a new deadline</a> if necessary.</p>
+
+<p>Alternatively, you can edit <a href="#permissions">existing permissions for individual users</a> or <a href="#new_perm">create a new permission</a>.</p>
 
 {% include "program/modules/admincore/returnlink.html" %}
 
+<br />
 <a name="existing"></a>
-<h2>Existing Deadlines</h2>
+<h2>Deadlines (for user groups)</h2>
 
 <form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="manage_form">
 {% autoescape off %}
 {{ manage_form }}
+<input type="hidden" name="action" value="save_deadlines">
 
-{% for group, perm_types in group_perms.items %}
+{% for group, perm_types in deadlines.items %}
 <button type="button" class="dsphead">
-   <b>{{ group }}s</b> (click to expand/contract)
+   <b>Deadlines for {{ group }}s</b> (click to expand/contract)
 </button>
 <div class="dspcont">
     <table width="100%" cellspacing="0" cellpadding="3px">
@@ -78,7 +82,7 @@
                     <span class="bituri">{{ perm_type }}</span>
                     <br /><br />
                     {% if details.is_open %}
-                        <a {% if not details.implied_open %}href="/manage/{{ program.getUrlBase }}/deadlines/close?group={{ group.id }}&perm={{ perm_type|urlencode }}"{% endif %}><button {% if details.implied_open %}disabled title="Can not be closed due to implied permission" {% endif %}type="button" class="btn btn-danger">Close</button></a>
+                        <a {% if not details.implied_open %}href="/manage/{{ program.getUrlBase }}/deadlines/close?group={{ group.id }}&perm={{ perm_type|urlencode }}"{% endif %}><button {% if details.implied_open %}disabled title="Can not be closed due to implied deadline" {% endif %}type="button" class="btn btn-danger">Close</button></a>
                     {% else %}
                         <a href="/manage/{{ program.getUrlBase }}/deadlines/open?group={{ group.id }}&perm={{ perm_type|urlencode }}"><button type="button" class="btn btn-success">Open</button></a>
                     {% endif %}
@@ -95,13 +99,13 @@
                     {% else %}
                         <input class="btn btn-primary" type="Submit" name="submit_btn" value="Save" />
                         {% if details.perms|length > 1 %}
-                            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}"><button type="button" class="btn btn-danger btn-small">Delete</button></a>
+                            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&deadline"><button type="button" class="btn btn-danger btn-small">Delete</button></a>
                         {% endif %}
                     {% endif %}
                 </td>
             </tr>
             {% empty %}
-                <td colspan="3">No permission set</td>
+                <td colspan="3">No deadline set</td>
             </tr>
             {% endfor %}
         {% endfor %}
@@ -116,15 +120,16 @@
 <form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="create_form">
 
 <a name="new"></a>
-<h2>Create new deadlines</h2>
+<h3>Create new deadlines</h3>
 
-<p>If you have made changes to the current deadlines, please click "Save Changes" above before creating a new deadline.</p>
+<p>If you have made changes to the current deadlines, please click "Save" above before creating a new deadline.</p>
 
 {% autoescape off %}
 <table cellspacing="0" width="550px" cellpadding="3">
 {{ create_form }}
 <tr>
     <td align="center" valign="center" colspan="2">
+        <input type="hidden" name="action" value="add_deadline">
         <input class="button" type="Submit" name="submit_btn" value="Create Deadline" />
     </td>
 </tr>
@@ -132,7 +137,92 @@
 {% endautoescape %}
 </form>
 
+<hr>
+
+<a name="permissions"></a>
+<h2>Permissions (for individual users)</h2>
+
+<button type="button" class="dsphead">
+   <b>Existing Permissions</b> (click to expand/contract)
+</button>
+<div class="dspcont">
+
+<form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="manage_perms_form">
+{{ perm_manage_form }}
+<input type="hidden" name="action" value="save_permissions">
+
+<table width="100%" cellspacing="0" cellpadding="3px">
+    <colgroup>
+       <col span="1" width="20%">
+       <col span="1" width="30%">
+       <col span="1">
+       <col span="1" width="15%">
+    </colgroup>
+    <tbody>
+    {% for perm in permissions %}
+    {% if forloop.counter0|divisibleby:"5" %}
+    <tr>
+        <th>User</th>
+        <th>Permission</th>
+        <th>Timing</th>
+        <th></th>
+    </tr>
+    {% endif %}
+    <tr style="border-top: 1px solid grey;{% if details.perms|length_is:1 %}border-bottom: 1px solid grey;{% endif %}">
+        <th>{{ perm.user }}</th>
+        <th class="{% if perm.is_valid %}is_open{% else %}is_closed{% endif %}">
+            {{ perm.permission_type|perm_nice_name }}<br>
+            <span class="bituri">{{ perm.permission_type }}</span>
+            <br /><br />
+            {% if perm.is_valid %}
+                <a href="/manage/{{ program.getUrlBase }}/deadlines/close?perm_id={{ perm.id }}"><button type="button" class="btn btn-danger">Close</button></a>
+            {% else %}
+                <a href="/manage/{{ program.getUrlBase }}/deadlines/open?perm_id={{ perm.id }}"><button type="button" class="btn btn-success">Open</button></a>
+            {% endif %}
+        </th>
+        <td>
+            {{ perm.form.id }}
+            <b>Start:</b><br>{{ perm.form.start_date }}<br>
+            <b>End:</b><br>{{ perm.form.end_date }}
+        </td>
+        <td align="center" valign="center">
+            <input class="btn btn-primary" type="Submit" name="submit_btn" value="Save" />
+            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&permission"><button type="button" class="btn btn-danger btn-small">Delete</button></a>
+        </td>
+    </tr>
+    {% empty %}
+        <td colspan="3">No permissions set</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
 </div>
+
+</form>
+
+<form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="create_perm_form">
+
+<a name="new_perm"></a>
+<h3>Create new permissions</h3>
+
+<p>If you have made changes to the current permissions, please click "Save" above before creating a new permission.</p>
+
+{% autoescape off %}
+<table cellspacing="0" width="550px" cellpadding="3">
+{{ create_perm_form }}
+<tr>
+    <td align="center" valign="center" colspan="2">
+        <input type="hidden" name="action" value="add_permission">
+        <input class="button" type="Submit" name="submit_btn" value="Create Permission" />
+    </td>
+</tr>
+</table>
+{% endautoescape %}
+</form>
+
+</div>
+
+<br /><br />
 
 <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 {% endblock %}
