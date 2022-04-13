@@ -62,11 +62,14 @@ class EditPermissionForm(forms.Form):
 
 class NewDeadlineForm(forms.Form):
     deadline_type = forms.ChoiceField(choices=filter(lambda x: "Administer" not in x[0], Permission.PERMISSION_CHOICES))
-    role = forms.ChoiceField(choices = [("Student","Students"),("Teacher","Teachers"),("Volunteer","Volunteers")] +
-                                        [(role, role + "s") for role in Group.objects.exclude(name__in=["Student", "Teacher", "Volunteer"]
-                                                                                      ).order_by('name').values_list('name', flat = True)])
+    role = forms.ChoiceField(choices = [("Student","Students"),("Teacher","Teachers"),("Volunteer","Volunteers")])
     start_date = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget(), required=False)
     end_date = forms.DateTimeField(label='Closing date/time', initial=None, widget=DateTimeWidget(), required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(NewDeadlineForm, self).__init__(*args, **kwargs)
+        self.fields['role'].choices = self.fields['role'].choices + [(role, role + "s") for role in Group.objects.exclude(name__in=["Student", "Teacher", "Volunteer"]
+                                                                                                                          ).order_by('name').values_list('name', flat = True)]
 
 class NewPermissionForm(forms.Form):
     permission_type = forms.ChoiceField(choices=filter(lambda x: "Administer" not in x[0], Permission.PERMISSION_CHOICES))
