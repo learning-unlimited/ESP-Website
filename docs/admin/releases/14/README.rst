@@ -84,6 +84,14 @@ Program management changes
 - Fixed the color of messages on the deadline management page
 - Added statistics to the dashboard for "teachers who have submitted a class and have not taught for a program" and "students who are enrolled and have not enrolled in the past"
 - Added the ability to edit existing teacher events (e.g., trainings, interviews) on the teacher event page
+- Fixed running the phase zero lottery with complex grade caps (e.g., a single capacity across multiple grades)
+- Added error messages to the phase zero lottery page if the grade cap tag is not set properly
+- Fixed the role name of lottery winners (removed the "s")
+- Clarified the help text for the "Priority limit" setting and removed the "Use priority" setting in the student registration settings
+
+Death of the admin pages
+~~~~~~~~~~~~~~~~~~~~~~~~
+- Added a user interface for adding and editing class categories and class flag types (/manage/categoriesandflags)
 
 Onsite changes
 ~~~~~~~~~~~~~~
