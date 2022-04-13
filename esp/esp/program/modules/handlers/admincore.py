@@ -61,7 +61,7 @@ class EditPermissionForm(forms.Form):
     skip = forms.BooleanField(required=False, widget=forms.HiddenInput)
 
 class NewDeadlineForm(forms.Form):
-    deadline_type = forms.ChoiceField(choices=filter(lambda x: isinstance(x[1], tuple) and "Deadline" in x[0], Permission.PERMISSION_CHOICES))
+    deadline_type = forms.ChoiceField(choices=filter(lambda x: "Administer" not in x[0], Permission.PERMISSION_CHOICES))
     role = forms.ChoiceField(choices = [("Student","Students"),("Teacher","Teachers"),("Volunteer","Volunteers")])
     start_date = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget(), required=False)
     end_date = forms.DateTimeField(label='Closing date/time', initial=None, widget=DateTimeWidget(), required=False)
@@ -72,7 +72,7 @@ class NewDeadlineForm(forms.Form):
         self.fields['role'].choices = self.fields['role'].choices + [(role, role) for role in extra_roles]
 
 class NewPermissionForm(forms.Form):
-    permission_type = forms.ChoiceField(choices=Permission.PERMISSION_CHOICES)
+    permission_type = forms.ChoiceField(choices=filter(lambda x: "Administer" not in x[0], Permission.PERMISSION_CHOICES))
     user = AjaxForeignKeyNewformField(key_type=ESPUser, field_name='user', label='User',
         help_text='Start typing a username or "Last Name, First Name", then select the user from the dropdown.')
     perm_start_date = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget(), required=False)
@@ -396,7 +396,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     message_bad = 'Error(s) while saving permission(s): %s' % edit_formset.errors
 
         #   find all the existing user group permissions for this program
-        perms = Permission.deadlines().filter(program=self.program, user__isnull=True)
+        perms = Permission.objects.filter(program=self.program, user__isnull=True, permission_type__in=Permission.PERMISSION_CHOICES_FLAT).exclude(permission_type="Administer")
         #   Get roles associated with those permissions, plus the normal roles (if not already selected)
         groups = list(Group.objects.filter(Q(id__in=perms.values_list('role', flat = True).distinct()) | Q(name__in=["Student", "Teacher", "Volunteer"])))
 
@@ -459,7 +459,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['deadlines'] = group_perms
         context['perm_manage_form'] = perm_formset.management_form
         context['permissions'] = ind_perms
-        context['create_form'] = NewDeadlineForm(extra_roles = [group.name for group in groups if group.name not in ["Student", "Teacher", "Volunteer"]])
+        context['create_form'] = NewDeadlineForm(extra_roles = Group.objects.exclude(name__in=["Student", "Teacher", "Volunteer"]).order_by('name').values_list('name', flat = True))
         context['create_perm_form'] = NewPermissionForm()
 
         return render_to_response(self.baseDir()+'deadlines.html', request, context)
