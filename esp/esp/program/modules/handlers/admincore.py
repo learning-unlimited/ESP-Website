@@ -62,14 +62,11 @@ class EditPermissionForm(forms.Form):
 
 class NewDeadlineForm(forms.Form):
     deadline_type = forms.ChoiceField(choices=filter(lambda x: "Administer" not in x[0], Permission.PERMISSION_CHOICES))
-    role = forms.ChoiceField(choices = [("Student","Students"),("Teacher","Teachers"),("Volunteer","Volunteers")])
+    role = forms.ChoiceField(choices = [("Student","Students"),("Teacher","Teachers"),("Volunteer","Volunteers")] +
+                                        [(role, role + "s") for role in Group.objects.exclude(name__in=["Student", "Teacher", "Volunteer"]
+                                                                                      ).order_by('name').values_list('name', flat = True)])
     start_date = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget(), required=False)
     end_date = forms.DateTimeField(label='Closing date/time', initial=None, widget=DateTimeWidget(), required=False)
-
-    def __init__(self, *args, **kwargs):
-        extra_roles = kwargs.pop('extra_roles', [])
-        super(NewDeadlineForm, self).__init__(*args, **kwargs)
-        self.fields['role'].choices = self.fields['role'].choices + [(role, role) for role in extra_roles]
 
 class NewPermissionForm(forms.Form):
     permission_type = forms.ChoiceField(choices=filter(lambda x: "Administer" not in x[0], Permission.PERMISSION_CHOICES))
@@ -285,6 +282,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
     def deadline_management(self, request, tl, one, two, module, extra, prog):
         #   Define a formset for editing multiple perms simultaneously.
         EditPermissionFormset = formset_factory(EditPermissionForm)
+        create_form = NewDeadlineForm()
+        perm_form = NewPermissionForm()
 
         #   Define good and bad status messages
         message_good = ''
@@ -352,16 +351,18 @@ class AdminCore(ProgramModuleObj, CoreModule):
                                                      role=Group.objects.get(name=create_form.cleaned_data['role']),program=prog,
                                                      start_date = create_form.cleaned_data['start_date'], end_date = create_form.cleaned_data['end_date'])
                     message_good = 'Deadline created for %ss: %s.' % (create_form.cleaned_data['role'], perm.nice_name())
+                    create_form = NewDeadlineForm()
                 else:
-                    message_bad = 'Error(s) while creating deadline: %s' % create_form.errors
+                    message_bad = 'Error(s) while creating deadline (see below)'
             elif request.POST['action'] == "add_permission":
-                create_form = NewPermissionForm(request.POST.copy())
-                if create_form.is_valid():
-                    perm = Permission.objects.create(user=create_form.cleaned_data['user'], permission_type=create_form.cleaned_data['permission_type'], program=prog,
-                                                     start_date = create_form.cleaned_data['perm_start_date'], end_date = create_form.cleaned_data['perm_end_date'])
-                    message_good = 'Permission created for %s: %s.' % (create_form.cleaned_data['user'], perm.nice_name())
+                perm_form = NewPermissionForm(request.POST.copy())
+                if perm_form.is_valid():
+                    perm = Permission.objects.create(user=perm_form.cleaned_data['user'], permission_type=perm_form.cleaned_data['permission_type'], program=prog,
+                                                     start_date = perm_form.cleaned_data['perm_start_date'], end_date = perm_form.cleaned_data['perm_end_date'])
+                    message_good = 'Permission created for %s: %s.' % (perm_form.cleaned_data['user'], perm.nice_name())
+                    perm_form = NewPermissionForm()
                 else:
-                    message_bad = 'Error(s) while creating permission: %s' % create_form.errors
+                    message_bad = 'Error(s) while creating permission (see below)'
             elif request.POST['action'] == 'save_deadlines':
                 edit_formset = EditPermissionFormset(request.POST.copy(), prefix='edit')
                 if edit_formset.is_valid():
@@ -459,8 +460,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['deadlines'] = group_perms
         context['perm_manage_form'] = perm_formset.management_form
         context['permissions'] = ind_perms
-        context['create_form'] = NewDeadlineForm(extra_roles = Group.objects.exclude(name__in=["Student", "Teacher", "Volunteer"]).order_by('name').values_list('name', flat = True))
-        context['create_perm_form'] = NewPermissionForm()
+        context['create_form'] = create_form
+        context['create_perm_form'] = perm_form
 
         return render_to_response(self.baseDir()+'deadlines.html', request, context)
 
