@@ -143,7 +143,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
     @needs_admin
     def phasezero(self, request, tl, one, two, module, extra, prog):
         context = {}
-        role = str(prog) + " Winners"
+        role = str(prog) + " Winner"
         context['role'] = role
         q_phasezero = Q(phasezerorecord__program=self.program)
         entrants = ESPUser.objects.filter(q_phasezero).distinct()
