@@ -117,7 +117,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
     @aux_call
     @needs_admin
     def settings(self, request, tl, one, two, module, extra, prog):
-        from esp.program.modules.forms.admincore import ProgramSettingsForm, TeacherRegSettingsForm, StudentRegSettingsForm
+        from esp.program.modules.forms.admincore import ProgramSettingsForm, TeacherRegSettingsForm, StudentRegSettingsForm, ReceiptsForm
         context = {}
         submitted_form = ""
         crmi = ClassRegModuleInfo.objects.get(program=prog)
@@ -150,6 +150,12 @@ class AdminCore(ProgramModuleObj, CoreModule):
                         form.save()
                     scrmi_form = form
                     context['open_section'] = "scrmi"
+                elif submitted_form == "receipts":
+                    form = ReceiptsForm(request.POST, program = prog)
+                    if form.is_valid():
+                        form.save()
+                    receipts_form = form
+                    context['open_section'] = "receipts"
                 if form.is_valid():
                     form.save()
                     #If the url for the program is now different, redirect to the new settings page
@@ -176,6 +182,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
         if submitted_form != "scrmi":
             scrmi_form = StudentRegSettingsForm(instance = scrmi)
 
+        if submitted_form != "receipts":
+            receipts_form = ReceiptsForm(program = prog)
+
         context['one'] = one
         context['two'] = two
         context['program'] = prog
@@ -183,6 +192,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                             ("Program Settings", "program", prog_form),
                             ("Teacher Registration Settings", "crmi", crmi_form),
                             ("Student Registration Settings", "scrmi", scrmi_form),
+                            ("Registration Receipts", "receipts", receipts_form)
                            ]
 
         return render_to_response(self.baseDir()+'settings.html', request, context)
