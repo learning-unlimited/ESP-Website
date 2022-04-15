@@ -53,7 +53,7 @@ class ConfirmationEmailController(object):
             try:
                 receipt_template = Template(DBReceipt.objects.get(program=program, action='confirmemail').receipt)
             except:
-                receipt_template = select_template(['program/confemails/%s_confemail.txt' %(program.id),'program/confirm_email.txt'])
+                receipt_template = select_template(['program/confemails/%s_confemail.txt' %(program.id),'program/confemails/default.txt'])
             send_mail("Thank you for registering for %s!" %(program.niceName()), \
                       receipt_template.render({'user': user, 'program': program}), \
                       (ESPUser.email_sendto_address(program.director_email, program.niceName() + " Directors")), \
