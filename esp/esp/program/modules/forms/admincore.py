@@ -114,12 +114,17 @@ class StudentRegSettingsForm(BetterModelForm):
 
 class ReceiptsForm(BetterForm):
     confirm = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),
-                              help_text = "This receipt is shown on the website when a student clicks the 'confirm registration' button.")
+                              help_text = "This receipt is shown on the website when a student clicks the 'confirm registration' button.\
+                                           If no text is supplied, the default text will be used.",
+                              required = False)
     confirmemail = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),
-                              help_text = "This receipt is sent via email when a student clicks the 'confirm registration' button.")
+                              help_text = "This receipt is sent via email when a student clicks the 'confirm registration' button.\
+                                           If no text is supplied, the default text will be used.",
+                              required = False)
     cancel = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),
                               help_text = "This receipt is shown on the website when a student clicks the 'cancel registration' button.\
-                                           If no text is supplied, the student will be redirected to the main student registration page instead.")
+                                           If no text is supplied, the student will be redirected to the main student registration page instead.",
+                              required = False)
     
     def __init__(self, *args, **kwargs):
         self.program = kwargs.pop('program')
@@ -127,31 +132,38 @@ class ReceiptsForm(BetterForm):
         for action in ['confirm', 'confirmemail', 'cancel']:
             receipts = DBReceipt.objects.filter(program=self.program, action=action)
             if receipts.count() > 0:
-                receipt_text = receipts.latest().receipt
+                receipt_text = receipts.latest('id').receipt
             elif action == "confirm":
                 template = select_template(['program/receipts/%s_custom_receipt.html' %(self.program.id), 'program/receipts/default.html'])
-                receipt_text = open(template.origin.name, 'r').read()
+                receipt_text = open(template.origin.name, 'r').read().encode('UTF-8')
             elif action == "confirmemail":
                 template = select_template(['program/confemails/%s_confemail.txt' %(self.program.id),'program/confemails/default.txt'])
-                receipt_text = open(template.origin.name, 'r').read()
+                receipt_text = open(template.origin.name, 'r').read().encode('UTF-8')
             else:
-                receipt_text = ""
+                receipt_text = "".encode('UTF-8')
             self.fields[action].initial = receipt_text
 
     def save(self):
         for action in ['confirm', 'confirmemail', 'cancel']:
-            if action == "confirm":
-                template = select_template(['program/receipts/%s_custom_receipt.html' %(self.program.id), 'program/receipts/default.html'])
-                receipt_text = open(template.origin.name, 'r').read()
-            elif action == "confirmemail":
-                template = select_template(['program/confemails/%s_confemail.txt' %(self.program.id),'program/confemails/default.txt'])
-                receipt_text = open(template.origin.name, 'r').read()
-            elif action == "cancel":
-                receipt_text = ""
-            if self.cleaned_data[action] != receipt_text:
-                DBReceipt.objects.filter(program=self.program, action=action).delete()
-                receipt = DBReceipt(program=self.program, action=action, receipt=self.cleaned_data[action])
-                receipt.save()
+            receipts = DBReceipt.objects.filter(program=self.program, action=action)
+            cleaned_text = self.cleaned_data[action].replace('\r\n', '\n').strip() # Use unix line endings and strip whitespace just in case
+            if cleaned_text == "":
+                receipts.delete()
+            else:
+                if action == "confirm":
+                    template = select_template(['program/receipts/%s_custom_receipt.html' %(self.program.id), 'program/receipts/default.html'])
+                    default_text = open(template.origin.name, 'r').read().strip()
+                elif action == "confirmemail":
+                    template = select_template(['program/confemails/%s_confemail.txt' %(self.program.id),'program/confemails/default.txt'])
+                    default_text = open(template.origin.name, 'r').read().strip()
+                elif action == "cancel":
+                    default_text = ""
+                if cleaned_text == default_text:
+                    receipts.delete()
+                else:
+                    receipt, created = DBReceipt.objects.get_or_create(program=self.program, action=action)
+                    receipt.receipt = cleaned_text
+                    receipt.save()
 
     class Meta:
         fieldsets = [('Student Registration Receipts', {'fields': ['confirm', 'confirmemail', 'cancel']})]
