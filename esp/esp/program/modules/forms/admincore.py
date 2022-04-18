@@ -125,7 +125,7 @@ class ReceiptsForm(BetterForm):
                               help_text = "This receipt is shown on the website when a student clicks the 'cancel registration' button.\
                                            If no text is supplied, the student will be redirected to the main student registration page instead.",
                               required = False)
-    
+
     def __init__(self, *args, **kwargs):
         self.program = kwargs.pop('program')
         super(ReceiptsForm, self).__init__(*args, **kwargs)
