@@ -214,7 +214,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             return HttpResponse( Template(receipt_text).render( Context(context, autoescape=False) ) )
         except DBReceipt.DoesNotExist:
             receipt = select_template(['program/receipts/%s_custom_receipt.html' %(prog.id), 'program/receipts/default.html'])
-            return render_to_response(receipt, request, context)
+            return HttpResponse( receipt.render( Context(context, autoescape=False) ) )
 
     @aux_call
     @needs_student
