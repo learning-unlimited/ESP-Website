@@ -2,7 +2,7 @@
     width: 80%;
     min-height: 20px;
     list-style-type: none;
-    padding-left: 10%;
+    padding-left: calc(10% - 5px);
     padding-right: 10%;
     margin-bottom: 25px;
     margin-left: 0;
@@ -10,8 +10,7 @@
 }
 
 .connectedSortable li {
-    padding-top: 5px;
-    padding-bottom: 5px;
+    padding: 5px;
     margin-top: 5px;
     margin-bottom: 5px;
     font-size: 1.2em;

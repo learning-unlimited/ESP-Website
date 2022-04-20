@@ -443,8 +443,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 pmo.required = False
                 pmo.save()
 
-        context['learn_modules'] = prog.getModules(tl = 'learn')
-        context['teach_modules'] = prog.getModules(tl = 'teach')
+        context['learn_modules'] = [mod for mod in prog.getModules(tl = 'learn') if mod.isStep()]
+        context['teach_modules'] = [mod for mod in prog.getModules(tl = 'teach') if mod.isStep()]
         context['one'] = one
         context['two'] = two
         context['program'] = prog
