@@ -409,40 +409,68 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context = {}
 
         if request.method == 'POST':
-            # If the form was submitted, process it and update program modules
+            if "default_seq" in request.POST or "default_req" in request.POST or "default_lab" in request.POST:
+                # Reset some or all values for learn and teach modules
+                print("hello")
+                for pmo in [mod for mod in prog.getModules(tl = 'learn') if mod.isStep()]:
+                    pmo = ProgramModuleObj.objects.get(id=pmo.id) # Get the uncached object to make sure we trigger the cache
+                    if "default_seq" in request.POST: # Reset module seq values
+                        pmo.seq = pmo.module.seq
+                    if "default_req" in request.POST: # Reset module required values
+                        pmo.required = pmo.module.required
+                    if "default_lab" in request.POST: # Reset module required label values
+                        pmo.required_label = ""
+                    pmo.save()
+                for pmo in [mod for mod in prog.getModules(tl = 'teach') if mod.isStep()]:
+                    pmo = ProgramModuleObj.objects.get(id=pmo.id) # Get the uncached object to make sure we trigger the cache
+                    if "default_seq" in request.POST: # Reset module seq values
+                        pmo.seq = pmo.module.seq
+                    if "default_req" in request.POST: # Reset module required values
+                        pmo.required = pmo.module.required
+                    if "default_lab" in request.POST: # Reset module required label values
+                        pmo.required_label = ""
+                    pmo.save()
+
+            # If the sequence form was submitted, process it and update program modules
             learn_req = [mod for mod in request.POST.get("learn_req", "").split(",") if mod]
             learn_not_req = [mod for mod in request.POST.get("learn_not_req", "").split(",") if mod]
             teach_req = [mod for mod in request.POST.get("teach_req", "").split(",") if mod]
             teach_not_req = [mod for mod in request.POST.get("teach_not_req", "").split(",") if mod]
             # Set student registration module sequence and requiredness
-            seq = 0
+            # Also set requirement labels if supplied
+            seq = 12 # In case there are other modules that aren't steps and should be earlier
             for mod_id in learn_req:
                 pmo = ProgramModuleObj.objects.get(id=mod_id)
                 pmo.seq = seq
                 seq += 1
                 pmo.required = True
+                pmo.required_label = request.POST.get("%s_label" % mod_id, "")
                 pmo.save()
             for mod_id in learn_not_req:
                 pmo = ProgramModuleObj.objects.get(id=mod_id)
                 pmo.seq = seq
                 seq += 1
                 pmo.required = False
+                pmo.required_label = request.POST.get("%s_label" % mod_id, "")
                 pmo.save()
             # Set teacher registration module sequence and requiredness
-            seq = 0
+            seq = 12 # In case there are other modules that aren't steps and should be earlier
             for mod_id in teach_req:
                 pmo = ProgramModuleObj.objects.get(id=mod_id)
                 pmo.seq = seq
                 seq += 1
                 pmo.required = True
+                pmo.required_label = request.POST.get("%s_label" % mod_id, "")
                 pmo.save()
             for mod_id in teach_not_req:
                 pmo = ProgramModuleObj.objects.get(id=mod_id)
                 pmo.seq = seq
                 seq += 1
                 pmo.required = False
+                pmo.required_label = request.POST.get("%s_label" % mod_id, "")
                 pmo.save()
 
+        # Are there any modules that we should manually exclude here? Credit card module?
         context['learn_modules'] = [mod for mod in prog.getModules(tl = 'learn') if mod.isStep()]
         context['teach_modules'] = [mod for mod in prog.getModules(tl = 'teach') if mod.isStep()]
         context['one'] = one

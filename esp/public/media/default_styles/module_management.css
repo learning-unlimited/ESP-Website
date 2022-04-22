@@ -18,6 +18,10 @@
     cursor: pointer;
 }
 
+.connectedSortable li input {
+    font-size: small !important;
+}
+
 .column {
     width: 100%;
     text-align: center;
