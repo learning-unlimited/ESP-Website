@@ -207,10 +207,11 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         cfe = ConfirmationEmailController()
         cfe.send_confirmation_email(request.user, self.program)
 
+        context["request"] = request
+        context["program"] = prog
+
         try:
             receipt_text = DBReceipt.objects.get(program=self.program, action='confirm').receipt
-            context["request"] = request
-            context["program"] = prog
             return HttpResponse( Template(receipt_text).render( Context(context, autoescape=False) ) )
         except DBReceipt.DoesNotExist:
             receipt = select_template(['program/receipts/%s_custom_receipt.html' %(prog.id), 'program/receipts/default.html'])
