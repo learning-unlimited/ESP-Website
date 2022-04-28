@@ -432,12 +432,12 @@ class RedirectForm(forms.ModelForm):
         fields = ['old_path', 'new_path']
 
 class PlainRedirectForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(PlainRedirectForm, self).__init__(*args, **kwargs)
+        self.fields['original'].help_text = 'A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@%s will be redirected to the destination email address(es).' % Site.objects.get_current().domain
     class Meta:
         model = PlainRedirect
         fields = ['original', 'destination']
-        help_texts = {
-            'original': 'A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@%s will be redirected to the destination email address(es).' % Site.objects.get_current().domain,
-        }
 
 class TagSettingsForm(BetterForm):
     """ Form for changing global tags. """
