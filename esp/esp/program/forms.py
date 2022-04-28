@@ -436,7 +436,7 @@ class PlainRedirectForm(forms.ModelForm):
         model = PlainRedirect
         fields = ['original', 'destination']
         help_texts = {
-            'original': _('A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@%s will be redirected to the destination email address(es).' % Site.objects.get_current().domain),
+            'original': 'A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@%s will be redirected to the destination email address(es).' % Site.objects.get_current().domain,
         }
 
 class TagSettingsForm(BetterForm):
