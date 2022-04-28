@@ -18,6 +18,7 @@ urlpatterns = [
     url(r'^manage/emails/?$', views.emails),
     url(r'^manage/categoriesandflags/?(?P<section>[^/]*)/?$', views.categoriesandflags),
     url(r'^manage/tags/?(?P<section>[^/]*)/?$', views.tags),
+    url(r'^manage/redirects/?(?P<section>[^/]*)/?$', views.redirects),
     url(r'^manage/statistics/?$', views.statistics),
     url(r'^manage/preview/?$', views.template_preview),
     url(r'^manage/mergeaccounts/?$', esp.users.views.merge.merge_accounts),

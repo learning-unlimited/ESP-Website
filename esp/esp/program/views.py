@@ -50,6 +50,8 @@ from django.core.mail import send_mail
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.redirects.models import Redirect
+from django.contrib.sites.models import Site
 from django.db.models.query import Q
 from django.db.models import Min
 from django.db import transaction
@@ -64,7 +66,7 @@ from django import forms
 
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile, ClassCategories, ClassFlagType
-from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm, CategoryForm, FlagTypeForm
+from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm, CategoryForm, FlagTypeForm, RedirectForm, PlainRedirectForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
@@ -74,7 +76,7 @@ from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserA
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import CybersourcePostback
-from esp.dbmail.models import MessageRequest, TextOfEmail
+from esp.dbmail.models import MessageRequest, TextOfEmail, PlainRedirect
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_members
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
@@ -838,6 +840,82 @@ def tags(request, section=""):
     context['open_section'] = section
 
     return render_to_response('program/modules/admincore/tags.html', request, context)
+
+@admin_required
+def redirects(request, section=""):
+    """
+    View that lets admins create/edit URL and email redirects
+    """
+    context = {}
+    redirect_form = RedirectForm()
+    email_redirect_form = PlainRedirectForm()
+
+    if request.method == 'POST':
+        if request.POST.get('object') == 'redirect':
+            section = 'redirects'
+            if request.POST.get('command') == 'add': # New redirect
+                redirect_form = RedirectForm(request.POST)
+                if redirect_form.is_valid():
+                    redirect = redirect_form.save(commit=False)
+                    redirect.site = Site.objects.get_current()
+                    redirect.save()
+                    redirect_form = RedirectForm()
+            elif request.POST.get('command') == 'load': # Load existing redirect into form
+                redirect_id = request.POST.get('id')
+                redirects = Redirect.objects.filter(id = redirect_id)
+                if redirects.count() == 1:
+                    redirect = redirects[0]
+                    redirect_form = RedirectForm(instance = redirect)
+            elif request.POST.get('command') == 'edit': # Edit existing redirect
+                redirect_id = request.POST.get('id')
+                redirects = Redirect.objects.filter(id = redirect_id)
+                if redirects.count() == 1:
+                    redirect = redirects[0]
+                    redirect_form = RedirectForm(request.POST, instance = redirect)
+                    if redirect_form.is_valid():
+                        redirect_form.save()
+                        redirect_form = RedirectForm()
+            elif request.POST.get('command') == 'delete': # Delete redirect
+                redirect_id = request.POST.get('id')
+                redirects = Redirect.objects.filter(id = redirect_id)
+                if redirects.count() == 1:
+                    redirect = redirects[0]
+                    redirect.delete()
+        elif request.POST.get('object') == 'email_redirect':
+            section = 'email_redirects'
+            if request.POST.get('command') == 'add': # New email redirect
+                email_redirect_form = PlainRedirectForm(request.POST)
+                if email_redirect_form.is_valid():
+                    email_redirect_form.save()
+                    email_redirect_form = PlainRedirectForm()
+            elif request.POST.get('command') == 'load': # Load existing email redirect into form
+                redirect_id = request.POST.get('id')
+                redirects = PlainRedirect.objects.filter(id = redirect_id)
+                if redirects.count() == 1:
+                    redirect = redirects[0]
+                    email_redirect_form = PlainRedirectForm(instance = redirect)
+            elif request.POST.get('command') == 'edit': # Edit existing email redirect
+                redirect_id = request.POST.get('id')
+                redirects = PlainRedirect.objects.filter(id = redirect_id)
+                if redirects.count() == 1:
+                    redirect = redirects[0]
+                    email_redirect_form = PlainRedirectForm(request.POST, instance = redirect)
+                    if email_redirect_form.is_valid():
+                        email_redirect_form.save()
+                        email_redirect_form = PlainRedirectForm()
+            elif request.POST.get('command') == 'delete': # Delete email redirect
+                redirect_id = request.POST.get('id')
+                redirects = PlainRedirect.objects.filter(id = redirect_id)
+                if redirects.count() == 1:
+                    redirect = redirects[0]
+                    redirect.delete()
+    context['open_section'] = section
+    context['redirect_form'] = redirect_form
+    context['email_redirect_form'] = email_redirect_form
+    context['redirects'] = Redirect.objects.all()
+    context['email_redirects'] = PlainRedirect.objects.all()
+
+    return render_to_response('program/redirects.html', request, context)
 
 @admin_required
 def categoriesandflags(request, section=""):
