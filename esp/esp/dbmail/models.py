@@ -601,7 +601,7 @@ class PlainRedirect(models.Model):
     A simple catch-all for mail redirection.
     """
 
-    original = models.CharField(max_length=512, help_text='A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@%s will be redirected to the destination email address(es).' % Site.objects.get_current().domain)
+    original = models.CharField(max_length=512, help_text='A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@<yourdomain> will be redirected to the destination email address(es).')
 
     destination = models.CharField(max_length=512, help_text='A comma-seperated list of one or more real email address(es) that will receive the redirected email(s)')
 

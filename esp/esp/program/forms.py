@@ -43,6 +43,7 @@ from esp.utils.widgets import DateTimeWidget
 from django import forms
 from django.core import validators
 from django.contrib.redirects.models import Redirect
+from django.contrib.sites.models import Site
 from form_utils.forms import BetterModelForm, BetterForm
 from django.utils.safestring import mark_safe
 from esp.tagdict import all_global_tags, tag_categories
@@ -434,6 +435,9 @@ class PlainRedirectForm(forms.ModelForm):
     class Meta:
         model = PlainRedirect
         fields = ['original', 'destination']
+        help_texts = {
+            'original': _('A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@%s will be redirected to the destination email address(es).' % Site.objects.get_current().domain),
+        }
 
 class TagSettingsForm(BetterForm):
     """ Form for changing global tags. """
