@@ -48,8 +48,8 @@ from decimal import Decimal
 from datetime import datetime
 from django.db import models
 from django.contrib import admin
-from django.template import Template
-from esp.middleware.threadlocalrequest import AutoRequestContext as Context
+from django.template import Template, Context
+from esp.middleware.threadlocalrequest import AutoRequestContext
 from django.http import HttpResponse
 from django.template.loader import render_to_string, get_template, select_template
 import operator
@@ -212,10 +212,10 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         try:
             receipt_text = DBReceipt.objects.get(program=self.program, action='confirm').receipt
-            return HttpResponse( Template(receipt_text).render( Context(context, autoescape=False) ) )
+            return HttpResponse( Template(receipt_text).render( Context(context) ) )
         except DBReceipt.DoesNotExist:
             receipt = select_template(['program/receipts/%s_custom_receipt.html' %(prog.id), 'program/receipts/default.html'])
-            return HttpResponse( receipt.render( Context(context, autoescape=False) ) )
+            return HttpResponse( receipt.render( AutoRequestContext(context, autoescape=False) ) )
 
     @aux_call
     @needs_student
@@ -249,7 +249,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             context = {}
             context["request"] = request
             context["program"] = prog
-            return HttpResponse( Template(receipt_text).render( Context(context, autoescape=False) ) )
+            return HttpResponse( Template(receipt_text).render( Context(context) ) )
         except:
             return self.goToCore(tl)
 
