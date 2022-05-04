@@ -92,15 +92,16 @@ Program management changes
 Death of the admin pages
 ~~~~~~~~~~~~~~~~~~~~~~~~
 - Added a user interface for adding and editing class categories and class flag types (/manage/categoriesandflags)
+- Added a user interface to approve and reject grade change requests on the userview page
+- Added a user interface to create, edit, and delete permissions for individual users (on what was previously the Deadline Management page)
+- Added a user interface to create, edit, and delete URL and email redirects (/manage/redirects)
+- Added a user interface to edit registration receipts on the program settings page
+- Added a user interface to change the sequence and requiredness of program modules
 
 Onsite changes
 ~~~~~~~~~~~~~~
 - Added an option to the grid-based class changes interface to check-in (or not check-in) students when changing their schedules
 - Fixed a bug that prevented the "full" status of classes from updating on the grid-based class changes page
-
-Userview changes
-~~~~~~~~~~~~~~~~
-- Added an interface to approve and reject grade change requests on the userview page.
 
 Printables changes
 ~~~~~~~~~~~~~~~~~~
@@ -139,6 +140,7 @@ Minor bug fixes
 - Fixed a small number of forms that could not be submitted via javascript
 - Fixed the wording on the profile form for new users
 - Fixed the review_single survey links for admin survey review pages
+- Fixed the behavior of registration receipts and the registration cancellation button
 
 Development changes
 ===================
