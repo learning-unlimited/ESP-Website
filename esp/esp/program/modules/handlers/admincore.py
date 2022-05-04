@@ -125,13 +125,14 @@ class AdminCore(ProgramModuleObj, CoreModule):
     @aux_call
     @needs_admin
     def settings(self, request, tl, one, two, module, extra, prog):
-        from esp.program.modules.forms.admincore import ProgramSettingsForm, TeacherRegSettingsForm, StudentRegSettingsForm
+        from esp.program.modules.forms.admincore import ProgramSettingsForm, TeacherRegSettingsForm, StudentRegSettingsForm, ReceiptsForm
         context = {}
         submitted_form = ""
         crmi = ClassRegModuleInfo.objects.get(program=prog)
         scrmi = StudentClassRegModuleInfo.objects.get(program=prog)
         old_url = prog.url
         context['open_section'] = extra
+        forms = {}
 
         #If one of the forms was submitted, process it and save if valid
         if request.method == 'POST':
@@ -143,29 +144,34 @@ class AdminCore(ProgramModuleObj, CoreModule):
                         form.save()
                         #If the url for the program is now different, redirect to the new settings page
                         if prog.url is not old_url:
-                            return HttpResponseRedirect( '/manage/%s/settings' % (prog.url))
-                    prog_form = form
+                            return HttpResponseRedirect( '/manage/%s/settings/program' % (prog.url))
+                    else:
+                        forms['program'] = form
                     context['open_section'] = "program"
                 elif submitted_form == "crmi":
                     form = TeacherRegSettingsForm(request.POST, instance = crmi)
                     if form.is_valid():
                         form.save()
-                    crmi_form = form
+                    else:
+                        forms['crmi'] = form
                     context['open_section'] = "crmi"
                 elif submitted_form == "scrmi":
                     form = StudentRegSettingsForm(request.POST, instance = scrmi)
                     if form.is_valid():
                         form.save()
-                    scrmi_form = form
+                    else:
+                        forms['scrmi'] = form
                     context['open_section'] = "scrmi"
-                if form.is_valid():
-                    form.save()
-                    #If the url for the program is now different, redirect to the new settings page
-                    if prog.url is not old_url:
-                        return HttpResponseRedirect( '/manage/%s/settings/%s' % (prog.url, context['open_section']))
+                elif submitted_form == "receipts":
+                    form = ReceiptsForm(request.POST, program = prog)
+                    if form.is_valid():
+                        form.save()
+                    else:
+                        forms['receipts'] = form
+                    context['open_section'] = "receipts"
 
         #Set up any other forms on the page
-        if submitted_form != "program":
+        if "program" not in forms:
             prog_dict = {}
             prog_dict.update(model_to_dict(prog))
             #We need to populate all of these manually
@@ -176,21 +182,25 @@ class AdminCore(ProgramModuleObj, CoreModule):
             line_items = pac.get_lineitemtypes(required_only=True).filter(text="Program admission").values('amount_dec')
             prog_dict['base_cost'] = int(sum(x["amount_dec"] for x in line_items))
             prog_dict["sibling_discount"] = prog.sibling_discount
-            prog_form = ProgramSettingsForm(prog_dict, instance = prog)
+            forms['program'] = ProgramSettingsForm(prog_dict, instance = prog)
 
-        if submitted_form != "crmi":
-            crmi_form = TeacherRegSettingsForm(instance = crmi)
+        if "crmi" not in forms:
+            forms['crmi'] = TeacherRegSettingsForm(instance = crmi)
 
-        if submitted_form != "scrmi":
-            scrmi_form = StudentRegSettingsForm(instance = scrmi)
+        if "scrmi" not in forms:
+            forms['scrmi'] = StudentRegSettingsForm(instance = scrmi)
+
+        if "receipts" not in forms:
+            forms['receipts'] = ReceiptsForm(program = prog)
 
         context['one'] = one
         context['two'] = two
         context['program'] = prog
         context['forms'] = [
-                            ("Program Settings", "program", prog_form),
-                            ("Teacher Registration Settings", "crmi", crmi_form),
-                            ("Student Registration Settings", "scrmi", scrmi_form),
+                            ("Program Settings", "program", forms['program']),
+                            ("Teacher Registration Settings", "crmi", forms['crmi']),
+                            ("Student Registration Settings", "scrmi", forms['scrmi']),
+                            ("Registration Receipts", "receipts", forms['receipts'])
                            ]
 
         return render_to_response(self.baseDir()+'settings.html', request, context)
