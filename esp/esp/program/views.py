@@ -47,10 +47,11 @@ from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from django.http import HttpResponseRedirect, HttpResponseBadRequest
 
 from django.core.mail import send_mail
-from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.redirects.models import Redirect
+from django.contrib.sites.models import Site
 from django.db.models.query import Q
 from django.db.models import Min
 from django.db import transaction
@@ -64,17 +65,18 @@ from django.http import HttpResponse
 from django import forms
 
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
-from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile
-from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm
+from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile, ClassCategories, ClassFlagType
+from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm, CategoryForm, FlagTypeForm, RedirectForm, PlainRedirectForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.program.modules.handlers.commmodule import CommModule
+from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import CybersourcePostback
-from esp.dbmail.models import MessageRequest, TextOfEmail
+from esp.dbmail.models import MessageRequest, TextOfEmail, PlainRedirect
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_members
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
@@ -399,6 +401,21 @@ def userview(request):
 
     from esp.users.forms.user_profile import StudentInfoForm
 
+    if 'approve_request' in request.GET:
+        gcrs = GradeChangeRequest.objects.filter(id=request.GET['approve_request'])
+        if gcrs.count() == 1:
+            gcr = gcrs[0]
+            gcr.approved = True
+            gcr.acknowledged_by = request.user
+            gcr.save()
+    if 'reject_request' in request.GET:
+        gcrs = GradeChangeRequest.objects.filter(id=request.GET['reject_request'])
+        if gcrs.count() == 1:
+            gcr = gcrs[0]
+            gcr.approved = False
+            gcr.acknowledged_by = request.user
+            gcr.save()
+
     if 'graduation_year' in request.GET:
         user.set_student_grad_year(request.GET['graduation_year'])
 
@@ -426,6 +443,7 @@ def userview(request):
         'profile': profile,
         'volunteer': VolunteerOffer.objects.filter(request__program = program, user = user).exists(),
         'avail_set': UserAvailability.objects.filter(event__program = program, user = user).exists(),
+        'grade_change_requests': user.requesting_student_set.filter(approved=None),
     }
     return render_to_response("users/userview.html", request, context )
 
@@ -822,6 +840,156 @@ def tags(request, section=""):
     context['open_section'] = section
 
     return render_to_response('program/modules/admincore/tags.html', request, context)
+
+@admin_required
+def redirects(request, section=""):
+    """
+    View that lets admins create/edit URL and email redirects
+    """
+    context = {}
+    redirect_form = RedirectForm()
+    email_redirect_form = PlainRedirectForm()
+
+    if request.method == 'POST':
+        if request.POST.get('object') == 'redirect':
+            section = 'redirects'
+            if request.POST.get('command') == 'add': # New redirect
+                redirect_form = RedirectForm(request.POST)
+                if redirect_form.is_valid():
+                    redirect = redirect_form.save(commit=False)
+                    redirect.site = Site.objects.get_current()
+                    redirect.save()
+                    redirect_form = RedirectForm()
+            elif request.POST.get('command') == 'load': # Load existing redirect into form
+                redirect_id = request.POST.get('id')
+                redirects = Redirect.objects.filter(id = redirect_id)
+                if redirects.count() == 1:
+                    redirect = redirects[0]
+                    redirect_form = RedirectForm(instance = redirect)
+            elif request.POST.get('command') == 'edit': # Edit existing redirect
+                redirect_id = request.POST.get('id')
+                redirects = Redirect.objects.filter(id = redirect_id)
+                if redirects.count() == 1:
+                    redirect = redirects[0]
+                    redirect_form = RedirectForm(request.POST, instance = redirect)
+                    if redirect_form.is_valid():
+                        redirect_form.save()
+                        redirect_form = RedirectForm()
+            elif request.POST.get('command') == 'delete': # Delete redirect
+                redirect_id = request.POST.get('id')
+                redirects = Redirect.objects.filter(id = redirect_id)
+                if redirects.count() == 1:
+                    redirect = redirects[0]
+                    redirect.delete()
+        elif request.POST.get('object') == 'email_redirect':
+            section = 'email_redirects'
+            if request.POST.get('command') == 'add': # New email redirect
+                email_redirect_form = PlainRedirectForm(request.POST)
+                if email_redirect_form.is_valid():
+                    email_redirect_form.save()
+                    email_redirect_form = PlainRedirectForm()
+            elif request.POST.get('command') == 'load': # Load existing email redirect into form
+                redirect_id = request.POST.get('id')
+                redirects = PlainRedirect.objects.filter(id = redirect_id)
+                if redirects.count() == 1:
+                    redirect = redirects[0]
+                    email_redirect_form = PlainRedirectForm(instance = redirect)
+            elif request.POST.get('command') == 'edit': # Edit existing email redirect
+                redirect_id = request.POST.get('id')
+                redirects = PlainRedirect.objects.filter(id = redirect_id)
+                if redirects.count() == 1:
+                    redirect = redirects[0]
+                    email_redirect_form = PlainRedirectForm(request.POST, instance = redirect)
+                    if email_redirect_form.is_valid():
+                        email_redirect_form.save()
+                        email_redirect_form = PlainRedirectForm()
+            elif request.POST.get('command') == 'delete': # Delete email redirect
+                redirect_id = request.POST.get('id')
+                redirects = PlainRedirect.objects.filter(id = redirect_id)
+                if redirects.count() == 1:
+                    redirect = redirects[0]
+                    redirect.delete()
+    context['open_section'] = section
+    context['redirect_form'] = redirect_form
+    context['email_redirect_form'] = email_redirect_form
+    context['redirects'] = Redirect.objects.all()
+    context['email_redirects'] = PlainRedirect.objects.all()
+
+    return render_to_response('program/redirects.html', request, context)
+
+@admin_required
+def categoriesandflags(request, section=""):
+    """
+    View that lets admins create/edit class categories and flag types
+    """
+    context = {}
+    cat_form = CategoryForm()
+    flag_form = FlagTypeForm()
+
+    if request.method == 'POST':
+        if request.POST.get('object') == 'category':
+            section = 'categories'
+            if request.POST.get('command') == 'add': # New category
+                cat_form = CategoryForm(request.POST)
+                if cat_form.is_valid():
+                    cat_form.save()
+                    cat_form = CategoryForm()
+            elif request.POST.get('command') == 'load': # Load existing category into form
+                cat_id = request.POST.get('id')
+                cats = ClassCategories.objects.filter(id = cat_id)
+                if cats.count() == 1:
+                    cat = cats[0]
+                    cat_form = CategoryForm(instance = cat)
+            elif request.POST.get('command') == 'edit': # Edit existing category
+                cat_id = request.POST.get('id')
+                cats = ClassCategories.objects.filter(id = cat_id)
+                if cats.count() == 1:
+                    cat = cats[0]
+                    cat_form = CategoryForm(request.POST, instance = cat)
+                    if cat_form.is_valid():
+                        cat_form.save()
+                        cat_form = CategoryForm()
+            elif request.POST.get('command') == 'delete': # Delete category
+                cat_id = request.POST.get('id')
+                cats = ClassCategories.objects.filter(id = cat_id)
+                if cats.count() == 1:
+                    cat = cats[0]
+                    cat.delete()
+        elif request.POST.get('object') == 'flag_type':
+            section = 'flagtypes'
+            if request.POST.get('command') == 'add': # New flag type
+                flag_form = FlagTypeForm(request.POST)
+                if flag_form.is_valid():
+                    flag_form.save()
+                    flag_form = FlagTypeForm()
+            elif request.POST.get('command') == 'load': # Load existing flag type into form
+                ft_id = request.POST.get('id')
+                fts = ClassFlagType.objects.filter(id = ft_id)
+                if fts.count() == 1:
+                    ft = fts[0]
+                    flag_form = FlagTypeForm(instance = ft)
+            elif request.POST.get('command') == 'edit': # Edit existing flag type
+                ft_id = request.POST.get('id')
+                fts = ClassFlagType.objects.filter(id = ft_id)
+                if fts.count() == 1:
+                    ft = fts[0]
+                    flag_form = FlagTypeForm(request.POST, instance = ft)
+                    if flag_form.is_valid():
+                        flag_form.save()
+                        flag_form = FlagTypeForm()
+            elif request.POST.get('command') == 'delete': # Delete flag type
+                ft_id = request.POST.get('id')
+                fts = ClassFlagType.objects.filter(id = ft_id)
+                if fts.count() == 1:
+                    ft = fts[0]
+                    ft.delete()
+    context['open_section'] = section
+    context['cat_form'] = cat_form
+    context['flag_form'] = flag_form
+    context['categories'] = ClassCategories.objects.all().order_by('seq')
+    context['flag_types'] = ClassFlagType.objects.all().order_by('seq')
+
+    return render_to_response('program/categories_and_flags.html', request, context)
 
 @admin_required
 def statistics(request, program=None):

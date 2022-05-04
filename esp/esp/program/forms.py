@@ -37,10 +37,13 @@ import re
 import unicodedata
 
 from esp.users.models import StudentInfo, K12School
-from esp.program.models import Program, ProgramModule, ClassFlag
+from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories
+from esp.dbmail.models import PlainRedirect
 from esp.utils.widgets import DateTimeWidget
 from django import forms
 from django.core import validators
+from django.contrib.redirects.models import Redirect
+from django.contrib.sites.models import Site
 from form_utils.forms import BetterModelForm, BetterForm
 from django.utils.safestring import mark_safe
 from esp.tagdict import all_global_tags, tag_categories
@@ -412,6 +415,29 @@ class ClassFlagForm(forms.ModelForm):
     class Meta:
         model = ClassFlag
         fields = ['subject','flag_type','comment']
+
+class FlagTypeForm(forms.ModelForm):
+    class Meta:
+        model = ClassFlagType
+        fields = ['name','color','seq','show_in_scheduler','show_in_dashboard']
+
+class CategoryForm(forms.ModelForm):
+    class Meta:
+        model = ClassCategories
+        fields = ['category','symbol','seq']
+
+class RedirectForm(forms.ModelForm):
+    class Meta:
+        model = Redirect
+        fields = ['old_path', 'new_path']
+
+class PlainRedirectForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(PlainRedirectForm, self).__init__(*args, **kwargs)
+        self.fields['original'].help_text = 'A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@%s will be redirected to the destination email address(es).' % Site.objects.get_current().domain
+    class Meta:
+        model = PlainRedirect
+        fields = ['original', 'destination']
 
 class TagSettingsForm(BetterForm):
     """ Form for changing global tags. """

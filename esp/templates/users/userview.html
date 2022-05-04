@@ -219,12 +219,12 @@
         <table class="dottedtable">
             <tr><td class="key">Affiliation</td><td>{{ profile.teacher_info.affiliation }}</td></tr>
             <tr><td class="key">Graduation Year</td><td>{{ profile.teacher_info.graduation_year }}</td></tr>
-        <tr><td class="key">College/Employer</td><td>{{ profile.teacher_info.college }}</td></tr>
-        <tr><td class="key">Major</td><td>{{ profile.teacher_info.major }}</td></tr>
-        <tr><td class="key">Shirt Size/Type</td><td>{{ profile.teacher_info.shirt_size }} {{ profile.teacher_info.shirt_type }}</td></tr>
-        {% if profile.teacher_info.bio %}
+            <tr><td class="key">College/Employer</td><td>{{ profile.teacher_info.college }}</td></tr>
+            <tr><td class="key">Major</td><td>{{ profile.teacher_info.major }}</td></tr>
+            <tr><td class="key">Shirt Size/Type</td><td>{{ profile.teacher_info.shirt_size }} {{ profile.teacher_info.shirt_type }}</td></tr>
+            {% if profile.teacher_info.bio %}
             <tr><td class="key">Bio</td><td>{{ profile.teacher_info.bio }}</td></tr>
-        {% endif %}
+            {% endif %}
         </table>
     {% else %}
         <em>(None specified)</em>
@@ -240,8 +240,39 @@
         <form action="/manage/userview/" method="get" name="change_grade">
         {{ change_grade_form.graduation_year }}
         <input type="hidden" name="username" value="{{ user.username }}" />
+        {% if program %}
+        <input type="hidden" name="program" value="{{ program.id }}" />
+        {% endif %}
         <input type="submit" value="Change" class="btn btn-default" />
         </form></td></tr>
+        {% if grade_change_requests %}
+        <tr><td colspan="2">
+            {% for gcr in grade_change_requests %}
+            <div class="alert alert-danger">
+                <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                {{ gcr }}{% if gcr.reason %} ({{ gcr.reason }}){% endif %}<br />
+                <center>
+                    <form action="/manage/userview/" method="get" name="approve_grade_request">
+                        <input type="hidden" name="approve_request" value="{{ gcr.id }}" />
+                        <input type="hidden" name="username" value="{{ user.username }}" />
+                        {% if program %}
+                        <input type="hidden" name="program" value="{{ program.id }}" />
+                        {% endif %}
+                        <input type="submit" value="Approve" class="btn btn-default" />
+                    </form>
+                    <form action="/manage/userview/" method="get" name="reject_grade_request">
+                        <input type="hidden" name="reject_request" value="{{ gcr.id }}" />
+                        <input type="hidden" name="username" value="{{ user.username }}" />
+                        {% if program %}
+                        <input type="hidden" name="program" value="{{ program.id }}" />
+                        {% endif %}
+                        <input type="submit" value="Reject" class="btn btn-default" />
+                    </form>
+                </center>
+            </div>
+            {% endfor%}
+        </td></tr>
+        {% endif %}
         <tr><td class="key">Date of Birth</td><td>{{ profile.student_info.dob|date }}</td></tr>
         <tr><td class="key">Applied to be Student Rep?</td><td>{% if profile.student_info.studentrep %}<span class="yes"><a class="tooltip">Yes<span>{{ profile.student_info.studentrep_expl }}</span></a></span>{% else %}<span class="no">No</span>{% endif %}</td></tr>
         <tr><td class="key">How Heard About {{ settings.ORGANIZATION_SHORT_NAME }}?</td><td>{% ifnotequal profile.student_info.heard_about "" %}<span>{{ profile.student_info.heard_about }}</span>{% else %}(blank){% endifnotequal %}</td><tr>

@@ -2739,10 +2739,10 @@ class GradeChangeRequest(TimeStampedModel):
 
     def save(self, **kwargs):
         is_new = self.id is None
-        super(GradeChangeRequest, self).save(**kwargs)
 
         if is_new:
             self.send_request_email()
+            super(GradeChangeRequest, self).save(**kwargs)
             return
 
         if self.approved is not None and not self.acknowledged_time:
@@ -2752,6 +2752,8 @@ class GradeChangeRequest(TimeStampedModel):
         #   Update the student's grade if the request has been approved
         if self.approved is True:
             self.requesting_student.set_grade(self.claimed_grade)
+
+        super(GradeChangeRequest, self).save(**kwargs)
 
     def _request_email_content(self):
         """

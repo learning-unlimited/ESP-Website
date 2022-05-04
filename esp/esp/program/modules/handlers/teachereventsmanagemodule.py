@@ -74,8 +74,25 @@ class TeacherEventsManageModule(ProgramModuleObj):
                 ts = Event.objects.get(id=data['id'])
                 ts.delete()
 
+            elif data['command'] == 'load':
+                #   load timeslot for editing
+                ts = Event.objects.get(id=data['id'])
+                form = TimeslotForm()
+                form.load_timeslot(ts)
+                context['timeslot_form'] = form
+                context['editing_timeslot'] = ts
+
+            elif data['command'] == 'edit':
+                #   edit timeslot
+                ts = Event.objects.get(id=data['id'])
+                form = TimeslotForm(data)
+                if form.is_valid():
+                    form.save_timeslot(self.program, ts, ts.event_type)
+                else:
+                    context['timeslot_form'] = form
+
             elif data['command'] == 'add':
-                #   add/edit timeslot
+                #   add timeslot
                 form = TimeslotForm(data)
                 if form.is_valid():
                     new_timeslot = Event()

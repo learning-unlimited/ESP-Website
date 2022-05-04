@@ -79,9 +79,11 @@ class StudentClassRegModuleInfo(models.Model):
     apply_multiplier_to_room_cap = models.BooleanField(default=False, help_text='Apply class cap multipler and offset to room capacity instead of class capacity.')
 
     #   Whether to use priority
-    use_priority         = models.BooleanField(default=False, help_text='Check this box to enable priority registration.')
+    use_priority         = models.BooleanField(default=False, help_text='Check this box to enable priority registration. Note, this is NOT for the two-phase student registration module. This will remove \
+                                                                         the ability for students to enroll in classes during normal student registration (i.e., first-come first-served).')
     #   Number of choices a student can make for each time block (1st choice, 2nd choice, ...Nth choice.)
-    priority_limit       = models.IntegerField(default=3, help_text='The maximum number of choices a student can make per timeslot when priority registration is enabled.')
+    priority_limit       = models.IntegerField(default=3, help_text='The maximum number of choices a student can make per timeslot when priority registration is enabled. Also, the \
+                                                                     number of priority slots listed in the rank classes interface for the two-phase student registration module.')
     #   Whether to use grade range exceptions
     use_grade_range_exceptions = models.BooleanField(default=False, help_text='Check this box to enable grade range exceptions.')
 
