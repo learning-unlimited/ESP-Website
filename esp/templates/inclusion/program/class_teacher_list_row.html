@@ -3,44 +3,13 @@
 {% load users %}
 
 <tr{% if not cls.isReviewed %} style="color: gray"{% endif %}{% if cls.isRejected or cls.isCancelled %} style="color: red"{% endif %}>
-  <td class="clsleft classname bordertop2" colspan="3">
+  <td class="clsleft classname bordertop2" colspan="7">
   {% block cls_title %}
     <span title="{{cls}}">
       {{ cls|truncatewords:6 }}
-      <br><a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">(Catalog Preview)</a>
     </span>
   {% endblock %}
   </td>
-  {% block cls_row_1_buttons %}
-  <td class="clsmiddle bordertop2">
-    {% if can_req_cancel %}
-        <button class="button" onclick="requestCancel({{cls.id}})">Request Cancellation</button>
-    {% endif %}
-  </td>
-  <td class="clsmiddle bordertop2">
-    <form class="teachbutton" method="post" action="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}">
-      <input type="hidden" name="command" value="edit_class_{{cls.id}}">
-      <input class="button" type="submit" value="View/Edit">
-    </form>
-  </td>
-  <td class="clsmiddle bordertop2">
-    <form class="teachbutton" method="get" action="/teach/{{program.getUrlBase}}/class_status/{{cls.id}}">
-      <input class="button" type="submit" value="Detailed Status" />
-    </form>
-  </td>
-
-  <td class="clsright bordertop2">
-    {% if not cls.isRejected and not cls.isCancelled %}
-    {% if cls.got_index_qsd %}
-    <a class="abutton" href="/learn/{{ cls.url }}/index.html"
-       title="{{ cls }}...">Visit web page</a>
-    {% else %}
-    <a class="abutton" href="/learn/{{ cls.url }}/index.edit.html"
-       title="Create `{{ cls }}'...">Create web page</a>
-    {% endif %}
-    {% endif %}
-  </td>
-  {% endblock %}
 </tr>
 
 <!--
@@ -72,57 +41,91 @@ Popup div for class cancellation request
     <span style="font-weight: bold; color: #00C;">Unreviewed</span>
     {% endif %}
   </td>
-  <td class="clsright" colspan="2">
-  {% block cls_row_2_buttons %}
+<td>
+    <div class="btn-group" id="manage_links">
+        <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+            Manage options
+            <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu">
+          <li><a href="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}" title="View/edit class" target="_blank">View/Edit</a></li>
+    <li><a href="/teach/{{program.getUrlBase}}/coteachers?clsid={{cls.id}}" title="Add/remove coteachers" target="_blank">Modify Coteachers</a></li>
+    {% if can_req_cancel %}
+        <li><a href="requestCancel({{cls.id}})" title="Send cancellation request to directors" target="_blank">Request Cancellation</a></li>
+    {% endif %}
+    <li><a href="/teach/{{program.getUrlBase}}/class_status/{{cls.id}}" title="View detailed status" target="_blank">Detailed Status</a></li>
+<li><a href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}" title="Catalog preview" target="_blank">Catalog Preview</a></li>
+     <li><a href="/teach/{{ program.getUrlBase }}/class_docs/{{cls.id}}" title="Upload/manage files" target="_blank">Manage Documents</a></li>
+    {% if not cls.isRejected and not cls.isCancelled %}
+    <li>{% if cls.got_index_qsd %}
+    <a href="/learn/{{ cls.url }}/index.html"
+       title="{{ cls }}..." target="_blank">Visit web page</a>
+    {% else %}
+    <a href="/learn/{{ cls.url }}/index.edit.html"
+       title="Create `{{ cls }}'..." target="_blank">Create Web Page</a>
+    {% endif %}</li>
+ {% if survey_results %}
+    <li><a href="/teach/{{ program.getUrlBase }}/survey/review?classsubject_id={{ cls.id }}"
+       title="Review results from student survey" target="_blank">Student Survey Results</a></li>
+    {% endif %}
+    {% endif %}
+        </ul>
+    </div>
+</td>
     {% if cls.isAccepted %}
-    <a href="/teach/{{program.getUrlBase}}/class_students/{{cls.id}}" 
-       title="View Class' Students" class="abutton">
-      View Students
-    </a>
-    &emsp;
-    <a href="mailto:{{ cls.emailcode }}-students@{{ email_host_sender }}"
-       title="Email Class' Students" class="abutton">
-      Email Students
-    </a>
-    {% if survey_results %}
-    <br /><br />
-    <a href="/teach/{{ program.getUrlBase }}/survey/review?classsubject_id={{ cls.id }}"
-       title="Review Results from Student Survey" class="abutton">
-      Student Survey Results
-    </a>
-    {% endif %}
-    {% endif %}
-  {% endblock %}
-  </td>
-  
+<td>
+    <div class="btn-group" id="student_links">
+        <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+            Student list options
+            <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu multi-level">
+            <li class="dropdown-submenu">
+                <a tabindex="-1" href="#">Class</a>
+                <ul class="dropdown-menu">
+                  <li><a href="/teach/{{program.getUrlBase}}/class_students/{{cls.id}}" 
+                    title="View students enrolled in any section" target="_blank">View Class' Students</a></li>
+                  <li><a href="mailto:{{ cls.emailcode }}-students@{{ email_host_sender }}"
+                    title="Email students enrolled in any section" target="_blank">Email Class' Students</a></li>
+                </ul>
+            </li>
+            {% for sec in cls.sections.all %}
+            <li class="dropdown-submenu">
+                <a tabindex="-1" href="#">Section {{ sec.index }}</a>
+                <ul class="dropdown-menu">
+                    <li><a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}"
+                    title="View students enrolled in section {{ sec.index }}" target="_blank">View Section {{ sec.index }}'s Students</a></li>
+                    <li><a href="mailto:{{ sec.emailcode }}-students@{{ email_host_sender }}"
+                     title="Email students enrolled in section {{ sec.index }}" target="_blank">Email Section {{ sec.index }}'s Students</a></li>
+                    {% if sec.meeting_times.count > 0 %}
+                        <li><a href="/teach/{{ program.getUrlBase }}/section_attendance/{{ sec.id }}"
+                        title="Take attendance for section {{ sec.index }}" target="_blank">Section {{ sec.index }} Attendance</a></li>
+                    {% endif %}
+                </ul>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</td>
+{% endif %}
 </tr>
 
 <tr>
   <td class="clsleft" colspan="5">
     <b>Document uploads</b>: There are {{ cls.documents.count }} documents associated with this class.
   </td>
-  <td class="clsright" colspan="2">
-  {% block cls_row_3_buttons %}
-    <a href="/teach/{{ program.getUrlBase }}/class_docs/{{cls.id}}" title="Upload/manage files" class="abutton">Manage Documents</a>
-  {% endblock %}
-  </td>
 </tr>
+
+
 
 {% if crmi.allow_coteach %}
 <tr>
   <td class="clsleft"><b>Coteachers (<a href="mailto:{{ cls.emailcode }}-teachers@{{ email_host_sender }}">email</a>): </b></td>
   <td class="clsmiddle" colspan="5">{% for t in cls.teachers.all|remove_from_qs:user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
-  <td class="clsright">
-  {% block cls_row_4_buttons %}
-    <form method="post" action="/teach/{{program.getUrlBase}}/coteachers">
-      <input type="hidden" name="command" value="edit_class_{{cls.id}}" />
-      <input type="hidden" name="clsid"   value="{{cls.id }}" />
-      <input class="button" type="submit" value="Modify Coteachers">
-    </form>
-  {% endblock %}
-  </td>
 </tr>
 {% endif %}
+
+
 
 {% if cls.isAccepted %}
 {% for sec in cls.sections.all %}
@@ -144,19 +147,10 @@ Popup div for class cancellation request
   <td class="clsmiddle" valign="top" colspan="4">
     Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />
     Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif%}{% endif %}<br />
+  </td>
+  <td class="clsmiddle" valign="top" colspan="3">
+    {{ sec.num_students }} / {{ sec.capacity }} students <br />
     {% if sec.get_moderators %}{{ program.getModeratorTitle }}s: {% for m in sec.get_moderators %}<a href="mailto:{{ m.email }}">{{ m.first_name }} {{ m.last_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}
-  </td>
-  <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students
-    <br />(<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">view list</a>)
-    {% if sec.meeting_times.count > 0 %}<br />(<a href="/teach/{{ program.getUrlBase }}/section_attendance/{{ sec.id }}">attendance</a>){% endif %}
-  </td>
-  <td class="clsright" valign="middle">
-  {% block cls_row_5_buttons %}
-    <a href="mailto:{{ sec.emailcode }}-students@{{ email_host_sender }}"
-       title="Email Section's Students" class="abutton">
-      Email S{{ sec.index }} Students
-    </a>
-  {% endblock %}
   </td>
 </tr>
 {% endfor %}
