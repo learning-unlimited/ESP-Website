@@ -43,10 +43,10 @@ Popup div for class cancellation request
   </td>
 <td>
     <div class="btn-group" id="manage_links">
-        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+        <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
             Manage options
             <span class="caret"></span>
-        </a>
+        </button>
         <ul class="dropdown-menu">
           <li><a href="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}" title="View/edit class" target="_blank">View/Edit</a></li>
     <li><a href="/teach/{{program.getUrlBase}}/coteachers?clsid={{cls.id}}" title="Add/remove coteachers" target="_blank">Modify Coteachers</a></li>
@@ -75,10 +75,10 @@ Popup div for class cancellation request
     {% if cls.isAccepted %}
 <td>
     <div class="btn-group" id="student_links">
-        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+        <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
             Student list options
             <span class="caret"></span>
-        </a>
+        </button>
         <ul class="dropdown-menu multi-level">
             <li class="dropdown-submenu">
                 <a tabindex="-1" href="#">Class</a>
