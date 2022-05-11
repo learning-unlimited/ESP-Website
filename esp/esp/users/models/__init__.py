@@ -241,6 +241,14 @@ class BaseESPUser(object):
             QObject = Q(classsubject__status__gt=0)
         return cls.ajax_autocomplete(data, QObject)
 
+    @classmethod
+    def ajax_autocomplete_student_lottery(cls, data, prog = None):
+        if prog:
+            QObject = Q(phasezerorecord__program=prog)
+        else:
+            QObject = Q(phasezerorecord__program__isnull=False)
+        return cls.ajax_autocomplete(data, QObject)
+
     def ajax_str(self):
         return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)
 
