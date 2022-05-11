@@ -145,6 +145,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         context = {}
         role = str(prog) + " Winner"
         context['role'] = role
+        num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
 
         if request.POST:
             if request.POST.get('mode') == 'addnew':
@@ -221,8 +222,6 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         timess_data, start = BigBoardModule.make_graph_data(timess)
         context["left_axis_data"] = [{"axis_name": "#", "series_data": timess_data}]
         context["first_hour"] = start
-
-        num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
 
         grades = range(prog.grade_min, prog.grade_max + 1)
         stats = {}
