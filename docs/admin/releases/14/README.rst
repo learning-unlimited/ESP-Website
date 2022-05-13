@@ -44,19 +44,26 @@ Accounting
 - Added a new page to see all of the accounting for a user across all programs (/accounting/user)
 - All "Paid for a program" records have been converted to transfers; these records are now deprecated
 
-Student and teacher registration changes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- Teachers no longer show up as their own coteachers on the teacher registration mainpage
-- When students are unenrolled from classes, their lottery preferences are no longer expired
+General registration changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Fixed bugs related to the registration progress bar interface
-- Fixed a bug where a teacher's availability could include times for which they signed up for training, etc (this may fix instances where teachers were able to register more hours of classes than they should have been able to)
 - Fixed the order of modules on the student and teacher registration mainpages (sorting order is now required -> seq -> isCompleted)
 - Added a warning banner to the top of all required modules (this banner and the deadline banner are also now included in all themes)
-- Fixed the bottom of the phase zero confirmation page being cut off
-- Added a module that allows students to get a completion certificate after attending a program (see the "student certificate" tag for options)
 - The maps in the student and teacher webapps are now entirely free (but do require a Google Cloud API key which is set as a tag)
 - Walking directions in the student and teacher webapps are now fulfilled entirely by Google Maps (will open the app on mobile devices)
 - Fixed some links to program and class documents
+
+Student registration changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- When students are unenrolled from classes, their lottery preferences are no longer expired
+- Added a module that allows students to get a completion certificate after attending a program (see the "student certificate" tag for options)
+- Fixed the bottom of the phase zero confirmation page being cut off
+
+Teacher registration changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Teachers no longer show up as their own coteachers on the teacher registration mainpage
+- Fixed a bug where a teacher's availability could include times for which they signed up for training, etc (this may fix instances where teachers were able to register more hours of classes than they should have been able to)
+- Consolidated the many buttons on the teacher class registration mainpage into two dropdown menus
 
 Optional and required extra costs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -97,6 +104,7 @@ Death of the admin pages
 - Added a user interface to create, edit, and delete URL and email redirects (/manage/redirects)
 - Added a user interface to edit registration receipts on the program settings page
 - Added a user interface to change the sequence and requiredness of program modules
+- Added a user interface for adding and removing students to/from the student lottery
 
 Onsite changes
 ~~~~~~~~~~~~~~
@@ -123,6 +131,7 @@ Minor new features
 - Added a filter for expired vs unexpired permissions and student registrations in the admin panel
 - Users without a profile are now prompted to fill one out upon logging in
 - Forms can no longer be submitted more than once before the new page loads, hopefully preventing some rare database errors and duplicate program charges
+- Added a link to edit a teacher's biography on the account manage page (if the user is a teacher)
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -141,6 +150,8 @@ Minor bug fixes
 - Fixed the wording on the profile form for new users
 - Fixed the review_single survey links for admin survey review pages
 - Fixed the behavior of registration receipts and the registration cancellation button
+- Fixed a bug where mailman details were included during account registration even when mailman was not enabled
+- Fixed the help text for the K12 school field for student profiles
 
 Development changes
 ===================
