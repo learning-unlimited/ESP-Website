@@ -128,7 +128,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         Q_isteacher = Q(classsubject__in=classes_qs)
         Q_rejected_teacher = Q(classsubject__in=classes_qs.filter(status__lt=0)) & Q_isteacher
-        Q_approved_teacher = Q(classsubject__in=classes_qs.filter(status__gt=0)) & Q_isteacher
+        Q_approved_teacher = Q(classsubject__in=classes_qs.filter(status__gt=0, sections__status__gt=0)) & Q_isteacher
         Q_proposed_teacher = Q(classsubject__in=classes_qs.filter(status=0)) & Q_isteacher
 
         ## is_nearly_full() means at least one section is more than float(ClassSubject.get_capacity_factor()) full
