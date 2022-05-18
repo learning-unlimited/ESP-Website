@@ -1845,21 +1845,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                 return False
         return True
 
-    def accept(self, user=None):
+    def accept(self):
         """ mark this class as accepted """
         if self.isAccepted():
             return False # already accepted
 
-        self.status = ACCEPTED
-        # I do not understand the following line, but it saves us from "Cannot convert float to Decimal".
-        # Also seen in /esp/program/modules/forms/management.py -ageng 2008-11-01
-        #self.duration = Decimal(str(self.duration))
-        self.save()
-        #   Accept any unreviewed sections.
-        for sec in self.sections.all():
-            if sec.status == UNREVIEWED:
-                sec.status = ACCEPTED
-                sec.save()
+        self.accept_all_sections()
         return True
 
     def set_all_sections_to_status(self, status, skip_cancelled = True, skip_rejected = True):
@@ -1889,7 +1880,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def reject(self):
         """ Mark this class as rejected; also kicks out students from each section. """
         self.clearStudents()
-        self.set_all_sections_to_status(REJECTED)
+        self.set_all_sections_to_status(REJECTED, skip_cancelled = False)
 
     def cancel(self, email_students=True, include_lottery_students=False, text_students=False, email_teachers=True, explanation=None, unschedule=False):
         """ Cancel this class by cancelling all of its sections. """
