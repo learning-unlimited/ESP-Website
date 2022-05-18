@@ -25,7 +25,7 @@ def test_func(user):
 
 @user_passes_test(test_func)
 def landing(request):
-    forms = Form.objects.all().order_by('-link_type', '-link_id')
+    forms = Form.objects.all().order_by('-link_type', '-link_id', '-id')
     if not request.user.isAdministrator():
         forms = forms.filter(created_by=request.user)
     for form in forms:
