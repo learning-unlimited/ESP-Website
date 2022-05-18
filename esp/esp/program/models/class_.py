@@ -1876,15 +1876,19 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             user = AnonymousUser()
         return True
 
-    def set_all_sections_to_status(self, status):
+    def set_all_sections_to_status(self, status, skip_cancelled = True, skip_rejected = True):
         self.status = status
         self.save()
         for sec in self.sections.all():
+            if skip_cancelled and sec.isCancelled():
+                continue
+            if skip_rejected and sec.isRejected():
+                continue
             sec.status = status
             sec.save()
 
     def accept_all_sections(self):
-        """ Accept all sections of this class, without any of the checks or messages that are in accept() """
+        """ Accept all sections of this class that aren't already cancelled/rejected, without any of the checks or messages that are in accept() """
         self.set_all_sections_to_status(ACCEPTED)
 
     def propose(self):

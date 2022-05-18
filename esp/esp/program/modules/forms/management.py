@@ -83,8 +83,8 @@ class ClassManageForm(ManagementForm):
 
         for sec in cls.sections.all():
             sec.duration = cls.duration
-            #   If the section's status has not already been marked, apply the subject's status.
-            if sec.status == 0:
+            #   If a section is unreviewed or approved, apply the subject's (possibly new) status.
+            if sec.status >= 0:
                 sec.status = self.cleaned_data['status']
             if self.cleaned_data['reg_status']:
                 sec.registration_status = self.cleaned_data['reg_status']
