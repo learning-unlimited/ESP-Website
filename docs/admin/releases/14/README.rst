@@ -115,6 +115,7 @@ Printables changes
 ~~~~~~~~~~~~~~~~~~
 - The student schedules pdf is now downloaded as a file instead of opening in the browser
 - Clarified the description of the teacher/moderator check-in lists
+- Clarified the nametag option help text
 
 Theme changes
 ~~~~~~~~~~~~~
@@ -132,6 +133,7 @@ Minor new features
 - Users without a profile are now prompted to fill one out upon logging in
 - Forms can no longer be submitted more than once before the new page loads, hopefully preventing some rare database errors and duplicate program charges
 - Added a link to edit a teacher's biography on the account manage page (if the user is a teacher)
+- The custom form landing page now has custom forms sorted by the programs or courses with which they are associated
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
