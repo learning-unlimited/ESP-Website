@@ -205,7 +205,7 @@ class AdminClass(ProgramModuleObj):
         sections = cls.sections.all().order_by('id')
         context = {}
 
-        if cls.isCancelled():
+        if cls.isCancelled() or not cls.hasScheduledSections():
             cls_cancel_form = None
         else:
             cls_cancel_form = ClassCancellationForm(subject=cls)

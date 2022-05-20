@@ -126,7 +126,7 @@
 {% else %}
     <table align="center" width="500">
     <tr>
-        <th colspan="2" align="center">Class {{ class.emailcode }} is already cancelled.</th>
+        <th colspan="2" align="center">{% if class.isCancelled %}Class {{ class.emailcode }} is already cancelled.{% else %}Class {{ class.emailcode }} has no scheduled sections and can not be cancelled. You can delete sections or reject the entire class below.{% endif %}</th>
     </tr>
     </table>
 {% endif %}
