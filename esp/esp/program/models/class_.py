@@ -539,9 +539,12 @@ class ClassSection(models.Model):
                 return res[0].attribute_value
         return None
 
+    def isScheduled(self):
+        return len(self.get_meeting_times()) > 0
+
     def prettyrooms(self):
         """ Return the pretty name of the rooms. """
-        if self.meeting_times.count() > 0:
+        if self.isScheduled():
             return [x.name for x in self.initial_rooms()]
         else:
             return []
@@ -576,7 +579,7 @@ class ClassSection(models.Model):
             return None
 
     def start_time(self):
-        if self.meeting_times.count() > 0:
+        if self.isScheduled():
             return self.meeting_times.order_by('start')[0]
         else:
             return None
@@ -760,7 +763,7 @@ class ClassSection(models.Model):
         available_times = intersect_lists(timeslot_list)
 
         #   If the class is already scheduled, put its time in.
-        if self.meeting_times.count() > 0:
+        if self.isScheduled():
             for k in self.meeting_times.all():
                 if k not in available_times:
                     available_times.append(k)
@@ -1696,7 +1699,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         """
         sections = self.get_sections()
         for s in sections:
-            if len(s.get_meeting_times()) > 0:
+            if s.isScheduled():
                 return True
         return False
 
@@ -1869,22 +1872,26 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         self.set_all_sections_to_status(ACCEPTED)
 
     def propose(self):
-        """ Mark this class as just `proposed' """
-        self.status = UNREVIEWED
-        self.save()
+        """ Mark this class as just 'proposed' """
+        self.unreview_all_sections()
 
     def unreview_all_sections(self):
-        """ Mark all sections of this class as unreviewed """
+        """ Unreview all sections of this class that aren't already cancelled/rejected. """
         self.set_all_sections_to_status(UNREVIEWED)
 
     def reject(self):
-        """ Mark this class as rejected; also kicks out students from each section. """
+        """ Mark this class as rejected. This should only ever be used if no sections are scheduled.
+            This kicks out students from each section and unschedules all of the sections (just in case). """
         self.clearStudents()
-        self.set_all_sections_to_status(REJECTED, skip_cancelled = False)
+        self.clearRooms()
+        self.clearTimes()
+        self.set_all_sections_to_status(REJECTED)
 
     def cancel(self, email_students=True, include_lottery_students=False, text_students=False, email_teachers=True, explanation=None, unschedule=False):
         """ Cancel this class by cancelling all of its sections. """
         for sec in self.sections.all():
+            if sec.isCancelled():
+                continue
             sec.cancel(email_students, include_lottery_students, text_students, email_teachers, explanation, unschedule)
         self.status = CANCELLED
         self.save()
@@ -1892,6 +1899,14 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def clearStudents(self):
         for sec in self.sections.all():
             sec.clearStudents()
+
+    def clearRooms(self):
+        for sec in self.sections.all():
+            sec.clearRooms()
+
+    def clearTimes(self):
+        for sec in self.sections.all():
+            self.meeting_times.clear()
 
     @cache_function
     def docs_summary(self):

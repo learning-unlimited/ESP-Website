@@ -158,11 +158,13 @@ class AdminClass(ProgramModuleObj):
             review_status = request.POST['review_status']
 
             if review_status == 'ACCEPT':
-                class_subject.accept_all_sections()
+                class_subject.accept()
             elif review_status == 'UNREVIEW':
-                class_subject.unreview_all_sections()
+                class_subject.propose()
             elif review_status == 'REJECT':
                 class_subject.reject()
+            elif review_status == 'CANCEL':
+                class_subject.cancel()
             else:
                 raise ESPError("Error: invalid review status")
 
