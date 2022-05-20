@@ -78,6 +78,7 @@ class ClassManageForm(ManagementForm):
         return self.initial
 
     def save_data(self, cls):
+        old_status = cls.status
         cls.status = self.cleaned_data['status']
         cls.grade_min = self.cleaned_data['min_grade']
         cls.grade_max = self.cleaned_data['max_grade']
@@ -86,8 +87,9 @@ class ClassManageForm(ManagementForm):
         cls.class_size_max = self.cleaned_data['class_size']
         cls.directors_notes = self.cleaned_data['notes']
 
-        # Updated sections; don't override sections that already cancelled/rejected
-        cls.set_all_sections_to_status(self.cleaned_data['status'])
+        if self.cleaned_data['status'] != old_status:
+            # Update sections; don't override sections that already cancelled/rejected
+            cls.set_all_sections_to_status(self.cleaned_data['status'])
 
         for sec in cls.sections.all():
             sec.duration = cls.duration
