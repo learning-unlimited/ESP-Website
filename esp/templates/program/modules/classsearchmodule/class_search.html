@@ -134,7 +134,7 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
                 <div class="btn-group">
                     <button class="btn btn-approve" onclick="approve({{class.id}});">approve</button>
                     <button class="btn btn-unreview" onclick="unreview({{class.id}});">unreview</button>
-                    <button class="btn btn-reject" onclick="reject({{class.id}});">reject</button>
+                    {% if not class.hasScheduledSections %}<button class="btn btn-reject" id="reject_{{ class.id }}" onclick="reject({{class.id}});">reject</button>{% endif %}
                 </div>
                 <div class="btn-group">
                     <button class="btn btn-danger" onclick="deleteClass({{class.id}}, '{{class.title}}');">delete</button>
