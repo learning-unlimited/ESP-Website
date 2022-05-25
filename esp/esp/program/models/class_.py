@@ -1919,7 +1919,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def clearTimes(self):
         for sec in self.sections.all():
-            self.meeting_times.clear()
+            sec.meeting_times.clear()
 
     @cache_function
     def docs_summary(self):

@@ -82,7 +82,7 @@ function fill_class_popup(clsid, classes_data) {
   }
   console.log(class_info.is_scheduled)
   if (class_info.is_scheduled) {
-    buttons = [
+    var buttons = [
     {
       text: "Approve (all sections)",
       click: function() {
@@ -102,7 +102,7 @@ function fill_class_popup(clsid, classes_data) {
       }
     }]
   } else {
-    buttons = [
+    var buttons = [
     {
       text: "Approve (all sections)",
       click: function() {
