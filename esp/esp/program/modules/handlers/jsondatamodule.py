@@ -719,6 +719,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return_dict = {
             'id': cls.id if return_key == 'classes' else section_id,
             'status': cls.status,
+            'is_scheduled': cls.hasScheduledSections(),
             'emailcode': cls.emailcode(),
             'title': cls.title,
             'class_info': cls.class_info,

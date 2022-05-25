@@ -80,31 +80,55 @@ function fill_class_popup(clsid, classes_data) {
     else
         sections_list.append($j('<li>').html('Section ' + (i + 1) + ': not scheduled'));
   }
+  console.log(class_info.is_scheduled)
+  if (class_info.is_scheduled) {
+    buttons = [
+    {
+      text: "Approve (all sections)",
+      click: function() {
+        update_class($j(this).attr('clsid'), 10);
+      }
+    },
+    {
+      text: "Unreview",
+      click: function() {
+        update_class($j(this).attr('clsid'), 0);
+      }
+    },
+    {
+      text: "Cancel on class management page",
+      click: function() {
+        window.open("/manage/"+base_url+"/manageclass/"+clsid);
+      }
+    }]
+  } else {
+    buttons = [
+    {
+      text: "Approve (all sections)",
+      click: function() {
+        update_class($j(this).attr('clsid'), 10);
+      }
+    },
+    {
+      text: "Unreview",
+      click: function() {
+        update_class($j(this).attr('clsid'), 0);
+      }
+    },
+    {
+      text: "Reject (all sections)",
+      click: function() {
+        update_class($j(this).attr('clsid'), -10);
+      }
+    }]
+  }
 
   class_desc_popup
     .dialog('option', 'title', class_info.emailcode + ": " +class_info.title)
     .dialog('option', 'width', 600)
     .dialog('option', 'height', 400)
     .dialog('option', 'position', 'center')
-    .dialog('option', 'buttons', [
-      {
-        text: "Approve (all sections)",
-        click: function() {
-          update_class($j(this).attr('clsid'), 10);
-        }
-      },
-      {
-        text: "Unreview",
-        click: function() {
-          update_class($j(this).attr('clsid'), 0);
-        }
-      },
-      {
-        text: "Reject (all sections)",
-        click: function() {
-          update_class($j(this).attr('clsid'), -10);
-        }
-      }])
+    .dialog('option', 'buttons', buttons)
     .html('')
     .append(make_attrib_para("Status", status_string))
     .append(make_attrib_para("Teachers", class_info.teacher_names))
