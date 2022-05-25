@@ -1372,6 +1372,19 @@ class ClassSection(models.Model):
                (int(self.duration),
             int(round((self.duration - int(self.duration)) * 60)))
 
+
+    def save(self, *args, **kwargs):
+        super(ClassSection, self).save(*args, **kwargs)
+        # If all sibling sections are now the same status, make the class that status
+        all_match = True
+        for sec in self.parent_class.get_sections():
+            if sec.status != int(self.status):
+                all_match = False
+                break
+        if all_match:
+            self.parent_class.status = sec.status
+            self.parent_class.save()
+
     class Meta:
         db_table = 'program_classsection'
         app_label = 'program'

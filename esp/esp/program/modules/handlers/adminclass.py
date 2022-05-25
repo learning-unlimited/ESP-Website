@@ -238,9 +238,8 @@ class AdminClass(ProgramModuleObj):
                 cls_form.is_bound = True
                 if cls_form.is_valid():
                     cls_form.save_data(cls)
-                    cls_form = ClassManageForm(self, subject=cls)
+                    return HttpResponseRedirect(request.get_full_path()) # Other forms may need updating, so just reload this view
             elif action == 'modify_sec':
-                print("hello")
                 for sf in sec_forms:
                     if 'sec'+str(sf.index)+'-secid' in request.POST:
                         sf.data = request.POST
@@ -254,7 +253,7 @@ class AdminClass(ProgramModuleObj):
                             if int(sec.status) < 0 and int(orig_sec_status) > 0:
                                 for student in sec.students():
                                     sec.unpreregister_student(student, verbs)
-                            sf = SectionManageForm(self, section=sec, prefix='sec'+str(sec.index()))
+                            return HttpResponseRedirect(request.get_full_path()) # Other forms may need updating, so just reload this view
 
         if self.program.program_modules.filter(handler='ClassFlagModule').exists():
             context['show_flags'] = True
