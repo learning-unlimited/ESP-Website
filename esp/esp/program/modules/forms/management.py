@@ -88,7 +88,7 @@ class ClassManageForm(ManagementForm):
         cls.directors_notes = self.cleaned_data['notes']
 
         if self.cleaned_data['status'] != old_status:
-            # Update sections; don't override sections that already cancelled/rejected
+            # Update sections; don't override sections that are already cancelled/rejected
             cls.set_all_sections_to_status(self.cleaned_data['status'])
 
         for sec in cls.sections.all():

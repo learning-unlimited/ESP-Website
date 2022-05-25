@@ -163,7 +163,7 @@
 Please use the form below to alter {{ class.title }}.  Note that changes made to the class will propagate to each of the sections (except the class status will not override a section's review status if it is already changed), but you can later change each section independently.
 </p>
 
-<form name="classmanage" action="{{ request.path }}?action=modify" method="POST">
+<form name="classmanage" action="{{ request.path }}?action=modify_cls" method="POST">
 <table align="center" width="500">
 
 <tr>
@@ -186,8 +186,11 @@ Please use the form below to alter {{ class.title }}.  Note that changes made to
 </tr>
 
 </table>
+</form><br /><br />
 
 {% for form in sec_forms %}
+<form name="classmanage" action="{{ request.path }}?action=modify_sec" method="POST">
+<input type="hidden" name="sec_id" value="{{ form.sec.id }}">
 <table align="center" width="500">
 <tr>
     <th colspan="2" style="text-align: center;">
@@ -235,6 +238,7 @@ Please use the form below to alter {{ class.title }}.  Note that changes made to
     </td>
 </tr>
 </table>
+</form><br /><br />
 {% endfor %}
 
 </form>
