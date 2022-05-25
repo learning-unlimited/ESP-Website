@@ -31,9 +31,9 @@ td.instructions {
 From this page, you can view documents related to the program (in the first section of the table below).  Teachers of your classes have also provided materials, which you can review and delete if necessary (in the second section of the table below).  Finally, you may upload new documents using the form at the bottom of the page.
 </p>
 
-<table cellpadding="2" cellspacing="0" align="center" width="550">
+<table cellpadding="4" cellspacing="0" align="center" width="550">
 <tr>
-		<th colspan="2" style="text-align: center;">
+		<th colspan="4" style="text-align: center;">
 		Program documents for {{ prog.niceName }}
 		</th>
 	</tr>
@@ -44,7 +44,7 @@ From this page, you can view documents related to the program (in the first sect
 	</tr>
 	{% else %}
 	<tr>
-		<td colspan="2">There are no documents associated with this program.  You may add some below!</td>
+		<td colspan="4">There are no documents associated with this program.  You may add some below!</td>
 	</tr>
 	{% endif %}
 	{% for doc in prog.getDocuments %}
@@ -59,9 +59,9 @@ From this page, you can view documents related to the program (in the first sect
 		</td>
 	</tr>
 	{% endfor %}
-	<tr>	<td colspan="2" height="10"> &nbsp; </td> </tr>	
+	<tr>	<td colspan="4" height="10"> &nbsp; </td> </tr>	
 	<tr>
-		<th colspan="2" style="text-align: center;">
+		<th colspan="4" style="text-align: center;">
 		Documents for classes in {{ prog.niceName }}
 		</th>
 	</tr>
@@ -69,20 +69,26 @@ From this page, you can view documents related to the program (in the first sect
 
 		{% if cls.documents.exists %}
 		<tr>
-			<td colspan="2" class="clshead">
+			<td colspan="4" class="clshead">
 			{{ cls.emailcode }}&mdash;{{ cls.title }}
 			</td>
 		</tr>
 			{% for doc in cls.getDocuments %}
 			<tr>
 				<td class="class_stuff"><a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a></td>
-				<td class="clsmiddle">
+                <td class="clsmiddle">
 					<form method="post" action="/manage/{{ program.url }}/get_materials" onsubmit="return confirm('Are you sure that you want to delete {{ doc.friendly_name|escapejs|escape }}?');">
 						<input type="hidden" name="docid" value="{{ doc.id }}">
 						<input type="hidden" name="command" value="delete">
 						<input class="button" type="submit" value="Delete">
 					</form>
 				</td>
+                <form method="post" action="manage/{{ program.url }}/get_materials" enctype="multipart/form-data">
+                    <input type="hidden" name="docid" value="{{ doc.id }}">
+                    <input type="hidden" name="command" value="rename">
+                    <td>{{ renameform.title }}</td>
+                    <td><input class="button" type="submit" value="Rename"></td>
+                </form>
 			</tr>
 			{% endfor %}
 		{% endif %}
