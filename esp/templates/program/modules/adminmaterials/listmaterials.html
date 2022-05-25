@@ -77,18 +77,20 @@ From this page, you can view documents related to the program (in the first sect
 			<tr>
 				<td class="class_stuff"><a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a></td>
                 <td class="clsmiddle">
-					<form method="post" action="/manage/{{ program.url }}/get_materials" onsubmit="return confirm('Are you sure that you want to delete {{ doc.friendly_name|escapejs|escape }}?');">
+					<form method="post" action="/manage/{{ prog.url }}/get_materials" onsubmit="return confirm('Are you sure that you want to delete {{ doc.friendly_name|escapejs|escape }}?');">
 						<input type="hidden" name="docid" value="{{ doc.id }}">
 						<input type="hidden" name="command" value="delete">
 						<input class="button" type="submit" value="Delete">
 					</form>
 				</td>
-                <form method="post" action="manage/{{ program.url }}/get_materials" enctype="multipart/form-data">
-                    <input type="hidden" name="docid" value="{{ doc.id }}">
-                    <input type="hidden" name="command" value="rename">
-                    <td>{{ renameform.title }}</td>
-                    <td><input class="button" type="submit" value="Rename"></td>
-                </form>
+                <td class="clsmiddle">
+                    <form method="post" action="/manage/{{ prog.url }}/get_materials" enctype="multipart/form-data">
+                        <input type="hidden" name="docid" value="{{ doc.id }}">
+                        <input type="hidden" name="command" value="rename">
+                        {{ renameform.title }}
+                        <input class="button" type="submit" value="Rename">
+                    </form>
+                </td>
 			</tr>
 			{% endfor %}
 		{% endif %}
