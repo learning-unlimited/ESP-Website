@@ -41,6 +41,7 @@ class LunchConstraintGenerator(object):
     """ A class for finding issues with the scheduling of a program. """
     def __init__(self, program, lunch_timeslots=[], generate_constraints=True, include_conditions=True, autocorrect=True, **kwargs):
         self.program = program
+        self.lunch_timeslots = lunch_timeslots
         self.generate_constraints = generate_constraints
         self.include_conditions = include_conditions
         self.autocorrect = autocorrect
@@ -66,8 +67,12 @@ class LunchConstraintGenerator(object):
                     self.days[day]['before'].append(timeslot)
 
     def clear_existing_constraints(self):
-        for lunch in ClassSubject.objects.filter(parent_program__id=self.program.id, category=self.get_lunch_category()):
-            lunch.delete()
+        # Delete any sections that we don't need anymore
+        for lunch_section in ClassSection.objects.filter(parent_class__parent_program=self.program, parent_class__category=self.get_lunch_category()).exclude(meeting_times__in=self.lunch_timeslots):
+            lunch_section.delete()
+        # Delete any classes that no longer have sections
+        for lunch_subject in ClassSubject.objects.filter(parent_program=self.program, category=self.get_lunch_category(), sections__isnull=True):
+            lunch_subject.delete()
         for constraint in ScheduleConstraint.objects.filter(program=self.program):
             for boolexp in [constraint.condition, constraint.requirement]:
                 boolexp.delete()
