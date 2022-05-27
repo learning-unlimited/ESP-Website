@@ -28,7 +28,7 @@ We would like you, as a teacher, to upload all documents and other materials rel
 
 <table cellpadding="4" cellspacing="0" align="center" width="550">
 	<tr>
-		<th colspan="2" style="text-align: center;">
+		<th colspan="3" style="text-align: center;">
 		Documents for {{ cls.emailcode }}&mdash;{{ cls.title }}
 		</th>
 	</tr>
@@ -39,7 +39,7 @@ We would like you, as a teacher, to upload all documents and other materials rel
 	</tr>
 	{% else %}
 	<tr>
-		<td colspan="2">There are no documents associated with this class.  Please add some below!</td>
+		<td colspan="3">There are no documents associated with this class.  Please add some below!</td>
 	</tr>
 	{% endif %}
 	{% for doc in cls.getDocuments %}
@@ -52,6 +52,14 @@ We would like you, as a teacher, to upload all documents and other materials rel
 				<input class="button" type="submit" value="Delete">
 			</form>
 		</td>
+        <td class="clsmiddle">
+            <form method="post" action="./{{ cls.id }}" enctype="multipart/form-data">
+                <input type="hidden" name="docid" value="{{ doc.id }}">
+                <input type="hidden" name="command" value="rename">
+                {{ renameform.title }}
+                <input class="button" type="submit" value="Rename">
+            </form>
+        </td>
 	</tr>
 	{% endfor %}
 </table>

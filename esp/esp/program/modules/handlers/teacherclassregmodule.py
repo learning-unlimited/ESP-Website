@@ -486,6 +486,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @meets_deadline("/MainPage")
     def class_docs(self, request, tl, one, two, module, extra, prog):
         from esp.web.forms.fileupload_form import FileUploadForm
+        from esp.web.forms.fileupload_form import FileRenameForm
         from esp.qsdmedia.models import Media
 
         clsid = 0
@@ -500,6 +501,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         target_class = classes[0]
         context_form = FileUploadForm()
+        context_rename_form = FileRenameForm()
 
         if request.method == 'POST':
             if request.POST['command'] == 'delete':
@@ -521,8 +523,17 @@ class TeacherClassRegModule(ProgramModuleObj):
                     media.save()
                 else:
                     context_form = form
+            elif request.POST['command'] == 'rename':
+                form = FileRenameForm(request.POST, request.FILES)
+                if form.is_valid():
+                    docid = request.POST['docid']
+                    media = Media.objects.get(id = docid)
+                    media.rename(form.cleaned_data['title'])
+                    media.save()
+                else:
+                    context_rename_form = form
 
-        context = {'cls': target_class, 'uploadform': context_form, 'module': self}
+        context = {'cls': target_class, 'uploadform': context_form, 'module': self, 'renameform': context_rename_form}
 
         return render_to_response(self.baseDir()+'class_docs.html', request, context)
 
