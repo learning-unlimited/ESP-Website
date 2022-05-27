@@ -9,7 +9,7 @@ from esp.accounting.models import LineItemType
 from esp.cal.models import Event
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
-from esp.program.models import RegistrationType, Program
+from esp.program.models import RegistrationType, Program, ScheduleConstraint, BooleanToken
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, DBReceipt
 from esp.tagdict import all_program_tags, tag_categories
 from esp.tagdict.models import Tag
@@ -39,7 +39,17 @@ class LunchConstraintsForm(forms.Form):
 
     def load_data(self):
         lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').distinct()
-        self.initial['timeslots'] = lunch_timeslots.values_list('id', flat=True)
+        self.fields['timeslots'].initial = list(lunch_timeslots.values_list('id', flat=True))
+        sched_constraints = ScheduleConstraint.objects.filter(program=self.program)
+        # If there are any schedule constraints for this program, check that box
+        if sched_constraints.exists():
+            self.fields['generate_constraints'].initial = True
+            # If any schedule constraints have an 'on_failure' function, check the autocorrect box
+            if sched_constraints.exclude(on_failure='').exists():
+                self.fields['autocorrect'].initial = True
+            # If any BooleanTokens associated with the schedule cosntraints have text other than '1', check the include_conditions box
+            if BooleanToken.objects.filter(exp__condition_constraint__program=2).exclude(text='1').exists():
+                self.fields['include_conditions'].initial = True
 
     def save_data(self):
         timeslots = Event.objects.filter(id__in=self.cleaned_data['timeslots']).order_by('start')
@@ -48,9 +58,9 @@ class LunchConstraintsForm(forms.Form):
 
     timeslots = forms.MultipleChoiceField(choices=[], required=False, widget=forms.CheckboxSelectMultiple)
 
-    generate_constraints=forms.BooleanField(initial=True, required=False, help_text="Check this box to generate lunch scheduling constraints. If unchecked, only lunch sections will be generated, and the other two check boxes will have no effect.")
-    autocorrect = forms.BooleanField(initial=True, required=False, help_text="Check this box to attempt automatically adding lunch to a student's schedule so that they are less likely to violate the schedule constraint.")
-    include_conditions = forms.BooleanField(initial=True, required=False, help_text="Check this box to allow students to schedule classes through lunch if they do not have morning or afternoon classes.")
+    generate_constraints=forms.BooleanField(initial=False, required=False, help_text="Check this box to generate lunch scheduling constraints. If unchecked, only lunch sections will be generated, and the other two check boxes will have no effect.")
+    autocorrect = forms.BooleanField(initial=False, required=False, help_text="Check this box to attempt automatically adding lunch to a student's schedule so that they are less likely to violate the schedule constraint.")
+    include_conditions = forms.BooleanField(initial=False, required=False, help_text="Check this box to allow students to schedule classes through lunch if they do not have morning or afternoon classes.")
 
 class ProgramSettingsForm(ProgramCreationForm):
     """ Form for changing program-related settings. """
