@@ -22,6 +22,7 @@
 
 <div id="nav_area">
     {% comment %} === Admin Toolbar (includes user search) === {% endcomment %}
+    {% load modules %}
     <style>
         #content_area h2, h3, p, form {
 	        padding-left: 0px;
@@ -39,6 +40,7 @@
         {
             urlBase: "{{ current_program.getUrlBase }}",
             name: "{{ current_program.niceName }}",
+            class_search: {% if current_program|hasModule:"ClassSearchModule" %}true{% else %}false{% endif %}
         },
     {% endfor %}
     ];

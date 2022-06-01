@@ -31,6 +31,7 @@
 </li> -->
 
 {% comment %} === Admin Toolbar (includes user search) === {% endcomment %}
+{% load modules %}
 <link rel="stylesheet" type="text/css" href="/media/default_styles/admin_bar.css">
 <div id="adminbar" class="admin hidden" style="position: fixed !important">
   <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
@@ -42,6 +43,7 @@ var currentPrograms = [
     {
         urlBase: "{{ current_program.getUrlBase }}",
         name: "{{ current_program.niceName }}",
+        class_search: {% if current_program|hasModule:"ClassSearchModule" %}true{% else %}false{% endif %}
     },
 {% endfor %}
 ];
