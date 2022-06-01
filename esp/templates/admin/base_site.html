@@ -23,6 +23,17 @@ ul.ui-autocomplete li
 {
     list-style-type: none;
 }
+.alert-danger {
+    color: #a94442;
+    background-color: #f2dede;
+    border-color: #ebccd1;
+}
+.alert {
+    padding: 15px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    text-align: center;
+}
 </style>
 {% endblock %}
 
@@ -30,6 +41,9 @@ ul.ui-autocomplete li
 
 {% block nav-global %}{% endblock %}
 
-{% block userlinks %}
+{% block messages %}
+<div class="alert alert-danger">
+    You probably shouldn't be here! You should check out the <a href="/manage/programs">general management page</a> or the main management pages for individual programs before resorting to using these admin pages.
+</div>
 {{ block.super }}
-{% endblock userlinks %}
+{% endblock %}
