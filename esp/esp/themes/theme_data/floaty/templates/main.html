@@ -42,6 +42,7 @@
         },
     {% endfor %}
     ];
+    var debug = {{ settings.DEBUG|yesno:"true,false" }};
     </script>
     <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
     {% comment %} === Ends Admin Toolbar (includes user search) === {% endcomment %}

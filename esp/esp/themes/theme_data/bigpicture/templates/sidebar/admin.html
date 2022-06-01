@@ -45,6 +45,7 @@ var currentPrograms = [
     },
 {% endfor %}
 ];
+var debug = {{ settings.DEBUG|yesno:"true,false" }};
 </script>
 <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
 {% comment %} === End Admin Toolbar === {% endcomment %}
