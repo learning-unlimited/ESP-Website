@@ -485,8 +485,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/MainPage")
     def class_docs(self, request, tl, one, two, module, extra, prog):
-        from esp.web.forms.fileupload_form import FileUploadForm
-        from esp.web.forms.fileupload_form import FileRenameForm
+        from esp.web.forms.fileupload_form import FileUploadForm, FileRenameForm
         from esp.qsdmedia.models import Media
 
         clsid = 0
