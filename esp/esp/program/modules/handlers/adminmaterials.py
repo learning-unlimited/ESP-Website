@@ -58,8 +58,7 @@ class AdminMaterials(ProgramModuleObj):
     @main_call
     @needs_admin
     def get_materials(self, request, tl, one, two, module, extra, prog):
-        from esp.web.forms.fileupload_form import FileUploadForm_Admin
-        from esp.web.forms.fileupload_form import FileRenameForm
+        from esp.web.forms.fileupload_form import FileUploadForm_Admin, FileRenameForm
         from esp.qsdmedia.models import Media
         context_form = FileUploadForm_Admin()
         context_rename_form = FileRenameForm()
