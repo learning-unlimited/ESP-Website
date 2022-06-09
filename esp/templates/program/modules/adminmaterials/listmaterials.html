@@ -31,7 +31,7 @@ td.instructions {
 From this page, you can view documents related to the program (in the first section of the table below).  Teachers of your classes have also provided materials, which you can review and delete if necessary (in the second section of the table below).  Finally, you may upload new documents using the form at the bottom of the page.
 </p>
 
-<table cellpadding="3" cellspacing="0" align="center" width="550">
+<table cellpadding="3" cellspacing="0" align="center" width="90%">
 <tr>
 		<th colspan="3" style="text-align: center;">
 		Program documents for {{ prog.niceName }}
@@ -40,7 +40,6 @@ From this page, you can view documents related to the program (in the first sect
 	{% if prog.documents.exists %}
 	<tr>
 		<td class="clsmiddle" style="text-indent: 20px"><b>Document</b></td>
-		<td class="clsmiddle"><b>Options</b></td>
 	</tr>
 	{% else %}
 	<tr>
@@ -49,7 +48,7 @@ From this page, you can view documents related to the program (in the first sect
 	{% endif %}
 	{% for doc in prog.getDocuments %}
 	<tr>
-            <td class="class_stuff"><a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a></td>
+        <td class="class_stuff"><a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a></td>
 		<td class="clsmiddle">
 			<form method="post" action="/manage/{{ prog.url }}/get_materials" onsubmit="return confirm('Are you sure that you want to delete {{ doc.friendly_name|escapejs|escape }}?');">
 				<input type="hidden" name="docid" value="{{ doc.id }}">
@@ -57,7 +56,7 @@ From this page, you can view documents related to the program (in the first sect
 				<input class="button" type="submit" value="Delete">
 			</form>
 		</td>
-        <td class="class_stuff">
+        <td class="clsmiddle" width="60%">
             <form method="post" action="/manage/{{ prog.url }}/get_materials" enctype="multipart/form-data">
                 <input type="hidden" name="docid" value="{{ doc.id }}">
                 <input type="hidden" name="command" value="rename">
@@ -91,7 +90,7 @@ From this page, you can view documents related to the program (in the first sect
 						<input class="button" type="submit" value="Delete">
 					</form>
 				</td>
-                <td class="class_stuff">
+                <td class="clsmiddle" width="60%">
                     <form method="post" action="/manage/{{ prog.url }}/get_materials" enctype="multipart/form-data">
                         <input type="hidden" name="docid" value="{{ doc.id }}">
                         <input type="hidden" name="command" value="rename">
@@ -110,7 +109,7 @@ From this page, you can view documents related to the program (in the first sect
 
 <form method="post" action="/manage/{{ prog.url }}/get_materials" enctype="multipart/form-data">
 <input type="hidden" name="command" value="add">
-<table cellpadding="12" cellspacing="0" align="center" width="450">
+<table cellpadding="12" cellspacing="0" align="center" width="70%">
 	<tr>
 		<th colspan="2" style="text-align: center;">
 		Add a document for {{ prog.niceName }}

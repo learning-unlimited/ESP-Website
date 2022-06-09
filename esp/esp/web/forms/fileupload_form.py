@@ -49,4 +49,4 @@ class FileUploadForm_Admin(forms.Form):
         self.fields['target_obj'] = forms.ChoiceField(choices = new_choices)
 
 class FileRenameForm(forms.Form):
-    title = forms.CharField(widget = forms.TextInput({'size': 25}), label = 'Rename')
+    title = forms.CharField(widget = forms.TextInput({'size': 15, 'style': 'vertical-align: baseline'}), label = 'Rename')
