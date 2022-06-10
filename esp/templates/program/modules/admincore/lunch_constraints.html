@@ -7,6 +7,22 @@
     <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 {% endblock %}
 
+{% block xtrajs %}
+<script type="text/javascript">
+    $j(function(){
+        function update_checkboxes() {
+            if(!$j("#id_generate_constraints").prop("checked")) {
+                $j("#id_autocorrect, #id_include_conditions").prop("checked", false).prop("disabled", true);
+            } else {
+                $j("#id_autocorrect, #id_include_conditions").prop("disabled", false);
+            }
+        }
+        $j("#id_generate_constraints").on("change", update_checkboxes);
+        update_checkboxes();
+    });
+</script>
+{% endblock %}
+
 {% block content %}
     <h1>{{program.niceName}} Lunch Constraints</h1>
     <p>Please select the timeslots you would like to be used for lunch.</p>
