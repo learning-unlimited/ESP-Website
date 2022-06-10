@@ -1382,7 +1382,7 @@ class ClassSection(models.Model):
                 all_match = False
                 break
         if all_match:
-            self.parent_class.status = sec.status
+            self.parent_class.status = int(self.status)
             self.parent_class.save()
 
     class Meta:
