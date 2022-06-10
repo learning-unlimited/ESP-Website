@@ -22,6 +22,7 @@
 
 <div id="nav_area">
     {% comment %} === Admin Toolbar (includes user search) === {% endcomment %}
+    {% load modules %}
     <style>
         #content_area h2, h3, p, form {
 	        padding-left: 0px;
@@ -39,9 +40,11 @@
         {
             urlBase: "{{ current_program.getUrlBase }}",
             name: "{{ current_program.niceName }}",
+            class_search: {% if current_program|hasModule:"ClassSearchModule" %}true{% else %}false{% endif %}
         },
     {% endfor %}
     ];
+    var debug = {{ settings.DEBUG|yesno:"true,false" }};
     </script>
     <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
     {% comment %} === Ends Admin Toolbar (includes user search) === {% endcomment %}
@@ -105,23 +108,6 @@
     </div>
     {% endif %}
     {% endif %}
-    
-    <!-- Old Admin
-    <div class="box admin hidden">
-    <div class="box_header"> Admin</div>	
-    <ul>
-    <li class="admin hidden"><a href="/admin/"><i class="glyphicon glyphicon-tasks" aria-hidden="true"></i> Administration pages</a>
-        <ul>
-            <li class="admin hidden"><a href="/admin/miniblog/entry/">Sidebar messages</a></li>
-            <li class="admin hidden"><a href="/admin/miniblog/announcementlink/">Sidebar links</a></li>
-        </ul>
-    </li>
-	<li class="admin hidden"><a href="/manage/programs/"><i class="glyphicon glyphicon-th-large" aria-hidden="true"></i> Manage programs</a></li>
-    <li class="admin hidden"><a href="/admin/filebrowser/browse/"><i class="glyphicon glyphicon-tasks" aria-hidden="true"></i> Manage media files</a>
-	<li class="admin hidden"><a href="/themes/"><i class="glyphicon glyphicon-pencil" aria-hidden="true"></i> Theme settings</a></li>
-    <li class="unmorph hidden"><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a></li>
-    </ul>
-    </div --->
 
     <!-- Onsite -->
     <div class="box onsite hidden">
