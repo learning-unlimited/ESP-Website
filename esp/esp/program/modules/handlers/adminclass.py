@@ -222,7 +222,7 @@ class AdminClass(ProgramModuleObj):
                 if cls_cancel_form.is_valid():
                     #   Call the Class{Subject,Section}.cancel() method to email and remove students, etc.
                     cls_cancel_form.cleaned_data['target'].cancel(email_students=True, include_lottery_students=cls_cancel_form.cleaned_data['email_lottery_students'], text_students=cls_cancel_form.cleaned_data['text_students'], email_teachers = cls_cancel_form.cleaned_data['email_teachers'], explanation=cls_cancel_form.cleaned_data['explanation'], unschedule=cls_cancel_form.cleaned_data['unschedule'])
-                    cls_cancel_form = None
+                    return HttpResponseRedirect(request.get_full_path()) # Other forms may need updating, so just reload this view
             elif action == 'cancel_sec':
                 sec_cancel_forms.data = request.POST
                 sec_cancel_forms.is_bound = True
@@ -231,7 +231,7 @@ class AdminClass(ProgramModuleObj):
                     for sec in sections:
                         if not sec.isCancelled() and sec in cleaned_data['target']:
                             sec.cancel(email_students=True, include_lottery_students=cleaned_data['email_lottery_students'], text_students=cleaned_data['text_students'], email_teachers = cleaned_data['email_teachers'], explanation=cleaned_data['explanation'], unschedule=cleaned_data['unschedule'])
-                            sec_cancel_forms = SectionCancellationForm(cls = cls)
+                    return HttpResponseRedirect(request.get_full_path()) # Other forms may need updating, so just reload this view
             elif action == 'modify_cls':
                 cls_form = ClassManageForm(self, subject=cls)
                 cls_form.data = request.POST
