@@ -1466,14 +1466,17 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def ajax_str(self):
         return self.title
 
+    def num_sections(self):
+        return len(self.get_sections())
+
     def prettyDuration(self):
-        if len(self.get_sections()) <= 0:
+        if self.num_sections() <= 0:
             return u"N/A"
         else:
             return self.get_sections()[0].prettyDuration()
 
     def prettyrooms(self):
-        if len(self.get_sections()) <= 0:
+        if self.num_sections() <= 0:
             return u"N/A"
         else:
             rooms = []
@@ -1873,9 +1876,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         self.status = status
         self.save()
         for sec in self.sections.all():
-            if skip_cancelled and sec.isCancelled():
+            if skip_cancelled and sec.isCancelled() and self.num_sections() > 1:
                 continue
-            if skip_rejected and sec.isRejected():
+            if skip_rejected and sec.isRejected() and self.num_sections() > 1:
                 continue
             sec.status = status
             sec.save()
