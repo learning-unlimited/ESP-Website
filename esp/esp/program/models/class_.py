@@ -1377,7 +1377,7 @@ class ClassSection(models.Model):
         super(ClassSection, self).save(*args, **kwargs)
         # If all sibling sections are now the same status, make the class that status
         all_match = True
-        for sec in self.parent_class.get_sections():
+        for sec in self.parent_class.sections.all():
             if sec.status != int(self.status):
                 all_match = False
                 break
