@@ -719,6 +719,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return_dict = {
             'id': cls.id if return_key == 'classes' else section_id,
             'status': cls.status,
+            'is_scheduled': cls.hasScheduledSections(),
             'emailcode': cls.emailcode(),
             'title': cls.title,
             'class_info': cls.class_info,
@@ -770,7 +771,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         class_num_list.append(("Total # of Class Sections Scheduled", sections.filter(meeting_times__isnull=False).distinct().count()))
         class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category = "Lunch").filter(status=10).distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=0).exclude(category__category='Lunch').distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=10).exclude(category__category='Lunch').distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=10, sections__status=10).exclude(category__category='Lunch').distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", classes.filter(status=-10).exclude(category__category='Lunch').distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", classes.filter(status=-20).exclude(category__category='Lunch').distinct().count()))
         return class_num_list

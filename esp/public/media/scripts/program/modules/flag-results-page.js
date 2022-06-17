@@ -81,10 +81,10 @@ function unreviewAll (IDs) {
 }
 
 function rejectAll (IDs) {
-    var r = confirm("Are you sure you'd like to reject ALL of these classes?");
+    var r = confirm("Are you sure you'd like to reject ALL of the unscheduled classes?");
     if (r) {
         IDs.forEach(function(element) {
-            reject(element);
+            if($j("#reject_"+element).length) reject(element);
         });
     }
 }

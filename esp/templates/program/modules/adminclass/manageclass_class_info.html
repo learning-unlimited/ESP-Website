@@ -34,7 +34,7 @@
             <span class="class-status" style="font-weight: bold; color: #C00;">Rejected</span>
             {% endif %}
         {% else %}
-        <span class="class-status" style="font-weight: bold; color: #00C;">Unreviewed<span class="manage-approve-link"> (<a href="/manage/{{ program.getUrlBase }}/approveclass/{{ class.id }}">Approve Now</a>)</span></span>
+        <span class="class-status" style="font-weight: bold; color: #00C;">Unreviewed<span class="manage-approve-link"> (<a href="/manage/{{ program.getUrlBase }}/approveclass/{{ class.id }}?redirect=/manage/{{ program.getUrlBase }}/manageclass/{{ class.id }}">Approve Now</a>)</span></span>
         {% endif %}
     </td>
 </tr>
