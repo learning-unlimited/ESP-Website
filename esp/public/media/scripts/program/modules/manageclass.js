@@ -3,7 +3,7 @@ $j(function () {
         $j(this).data('old_val', $j(this).val());
     });
     $j("#id_status").on("change", function() {
-        if($j(this).val() == -20) {
+        if($j(this).val() == -20 & $j(this).data('cls-status') != -20) {
             $j(this).val($j(this).data('old_val'));
             alert("This class has already been scheduled. Please use the cancellation form above to cancel the class.");
         }

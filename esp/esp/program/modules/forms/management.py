@@ -56,6 +56,7 @@ class ClassManageForm(ManagementForm):
                 self.fields['status'].choices.remove((-10, 'Rejected'))
             else:
                 self.fields['status'].choices.remove((-20, 'Cancelled'))
+            self.fields['status'].widget.attrs['data-cls-status'] = self.cls.status
         else:
             super(ClassManageForm, self).__init__(*args, **kwargs)
 
