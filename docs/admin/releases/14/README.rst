@@ -64,6 +64,7 @@ Teacher registration changes
 - Teachers no longer show up as their own coteachers on the teacher registration mainpage
 - Fixed a bug where a teacher's availability could include times for which they signed up for training, etc (this may fix instances where teachers were able to register more hours of classes than they should have been able to)
 - Consolidated the many buttons on the teacher class registration mainpage into two dropdown menus
+- Uploaded documents can now be renamed
 
 Optional and required extra costs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,6 +96,16 @@ Program management changes
 - Added error messages to the phase zero lottery page if the grade cap tag is not set properly
 - Fixed the role name of lottery winners (removed the "s")
 - Clarified the help text for the "Priority limit" setting and removed the "Use priority" setting in the student registration settings
+- Uploaded documents can now be renamed
+- Made several fixes and enhancements to the lunch constraints form (e.g., fixed the initial values of the form, lunches are no longer deleted if the form is resubmitted)
+
+Class and section status management
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- "Rejection" can now only happen before a class is scheduled, whereas "cancellation" can now only happen after a class is scheduled (this change is now implemented on the class management page,  dashboard, and class search page)
+- When a section's status is changed, if all sections of a class now have the same status, the status of the class is changed to that status
+- Section management forms now are submitted individually
+- Sections and classes can now only be cancelled via the cancellation form
+- Sections can no longer be approved unless their parent class is also approved
 
 Death of the admin pages
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -105,6 +116,7 @@ Death of the admin pages
 - Added a user interface to edit registration receipts on the program settings page
 - Added a user interface to change the sequence and requiredness of program modules
 - Added a user interface for adding and removing students to/from the student lottery
+- The link to the admin pages has been removed for all themes
 
 Onsite changes
 ~~~~~~~~~~~~~~
@@ -154,6 +166,8 @@ Minor bug fixes
 - Fixed the behavior of registration receipts and the registration cancellation button
 - Fixed a bug where mailman details were included during account registration even when mailman was not enabled
 - Fixed the help text for the K12 school field for student profiles
+- The class search in the admin toolbar now only appears if the program has the class search module enabled
+- Fixed statistics for number of approved classes and teachers when approved classes have no approved sections
 
 Development changes
 ===================
