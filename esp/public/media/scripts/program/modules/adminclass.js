@@ -80,7 +80,6 @@ function fill_class_popup(clsid, classes_data) {
     else
         sections_list.append($j('<li>').html('Section ' + (i + 1) + ': not scheduled'));
   }
-  console.log(class_info.is_scheduled)
   if (class_info.is_scheduled) {
     var buttons = [
     {

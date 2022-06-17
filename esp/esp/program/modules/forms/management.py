@@ -129,6 +129,8 @@ class SectionManageForm(ManagementForm):
                 self.fields['status'].choices.remove((-10, 'Rejected'))
             else:
                 self.fields['status'].choices.remove((-20, 'Cancelled'))
+            self.fields['status'].widget.attrs['data-sec-status'] = self.sec.status
+            self.fields['status'].widget.attrs['data-cls-status'] = self.sec.parent_class.status
         else:
             super(SectionManageForm, self).__init__(*args, **kwargs)
 
