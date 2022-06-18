@@ -1,0 +1,63 @@
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@1,500&family=Roboto&display=swap" rel="stylesheet">
+
+<style>
+  h1 {
+    font-family: Roboto; sans-serif;
+    font-size: 32px;
+  }
+  
+  h2 {
+    font-family: Roboto; sans-serif;
+  }
+
+	.checkout {
+	padding: 12px;
+  border: solid 2px #88a9e1;
+  border-left: solid 10px #88a9e1;
+	border-radius: 2px;
+  box-shadow: 2px 2px 2px #88a9e1;
+	}
+	
+	.checkout:hover {
+	background-color: #cacaca;
+	}
+  
+  .caption {
+  font-family: Raleway; sans-serif;
+  font-size: 18px;
+  font-style: italic;
+  float: top;
+  text-align: center;
+  }
+  
+  .contact {
+    font-family: Raleway; sans-serif;
+    font-weight: 600;
+    font-size: 20px;
+  }
+	
+</style>
+<body>
+<br><br><br>
+<h1 style="width: 66%; margin: auto; text-align: center;">Sorry, {{ settings.ORGANIZATION_SHORT_NAME }} at {{ settings.INSTITUTION_NAME }} is no longer active these days!</h1>
+<table style="margin: auto; width: 66%; padding: 16px; position: relative; top: 16px;">
+    <tbody>
+        <tr>
+            <td style="width: 100%; text-align: center; padding-right: 16px; padding-bottom: 20px;">
+				<button type="button" class="checkout">
+				<a href="https://www.learningu.org/current-programs/" target="_blank">
+					<img src="https://cloud.learningu.org/media/images/lu_logo_thing.png" alt="Learning Unlimited" style="height: 100px;">
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 100%;">
+                <p class="caption">Check out other programs at Learning Unlimited's website!</p>
+        </tr>
+    </tbody>
+</table>
+<div style="width: 66%; margin: auto;">
+<h2 style="text-align: center; font-weight: bold; position: relative; top: 20px; font-size: 28;">Are you a student at {{ settings.INSTITUTION_NAME }} who wants to get your program back up and running?</h2>
+<p class="contact" style="text-align: center; position: relative; top: 20px;">Contact us at <a href="mailto:info@learningu.org">info@learningu.org</a> - we can help!</p>
+      </div>
+  </body>
