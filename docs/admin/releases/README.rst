@@ -17,6 +17,9 @@ live sites. There is then a period of manual testing and bugfixing on the live
 sites before the code is declared stable. At this point, the code on the live
 sites is frozen until the next release.
 
+`SR14 - June 2022 <14/>`_
+----------------------------
+
 `SR13 - June 2021 <13/>`_
 ----------------------------
 
