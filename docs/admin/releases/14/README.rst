@@ -78,7 +78,7 @@ Optional and required extra costs
 
 Program management changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-- Added an admin checkbox interface for the steps that are required for ensuring a program is completely setup
+- Added an admin checkbox interface for the steps that are required for ensuring a program is completely set up
 - Rounded the hours stats on the dashboard
 - Added the default values to the help text in the tag settings UI
 - Fixed the performance of /manage/emails for sites that sent emails to lots of recipients (this was previously so bad that it could cause the entire server to crash)
