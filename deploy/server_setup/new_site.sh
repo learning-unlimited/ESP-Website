@@ -164,11 +164,11 @@ echo "$INSTITUTION $GROUPNAME.  To substitute a more detailed name in"
 echo "some printed materials, set the 'full_group_name' Tag."
 
 while [[ ! -n $EMAILHOST ]]; do
-    echo
-    echo "Enter the hostname you will be using for email"
-    echo -n "  (default = $ESPHOSTNAME) --> "
-    read EMAILHOST
-    EMAILHOST=${EMAILHOST:-$ESPHOSTNAME}
+#    echo
+#    echo "Enter the hostname you will be using for email"
+#    echo -n "  (default = $ESPHOSTNAME) --> "
+#    read EMAILHOST
+    EMAILHOST=$ESPHOSTNAME
 done
 echo "Selected email host: $EMAILHOST"
 echo "EMAILHOST=\"$EMAILHOST\"" >> $BASEDIR/.espsettings
@@ -219,6 +219,7 @@ if [[ "$MODE_GIT" || "$MODE_ALL" ]] ; then
             # Only apply the stash if we made one.
             git stash apply
         fi
+        for user in $(awk -F: '($3>=1000)&&($1!="nobody"){print $1}' /etc/passwd ) ; do sudo -u $user git config --global --add safe.directory $BASEDIR ; done
     else
         # We will almost certainly have created $BASEDIR already; get it out of
         # the way for git.
@@ -243,10 +244,10 @@ if [[ "$MODE_GIT" || "$MODE_ALL" ]] ; then
         fi
     fi
 
-    
+
     ./esp/make_virtualenv.sh
     ./esp/update_deps.sh --prod
-    chown -R $WWW_USER:$WWW_USER "$BASEDIR"
+    sudo chown -R $WWW_USER:$WWW_USER "$BASEDIR"
 
     echo "Git repository has been checked out, and dependencies have been installed"
     echo "with Python libraries in a local virtualenv.  Please check them by looking"
@@ -288,6 +289,7 @@ ORGANIZATION_SHORT_NAME = '$GROUPNAME'
 INSTITUTION_NAME = '$INSTITUTION'
 EMAIL_HOST = '$EMAILHOST'
 EMAIL_HOST_SENDER = EMAIL_HOST
+EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
 
 USE_MAILMAN = False
 TIME_ZONE = '$TIMEZONE'
@@ -321,12 +323,15 @@ ALLOWED_HOSTS = ['$ESPHOSTNAME']
 
 EOF
 
-    chown -R $WWW_USER:$WWW_USER "$BASEDIR"
+    sudo cat /lu/sites/.secret_keys >> ${BASEDIR}/esp/esp/local_settings.py
+
+    sudo chown -R $WWW_USER:$WWW_USER "$BASEDIR"
     # TODO(benkraft): This shouldn't be necessary; we should just set things up
     # to get the right perms on creation.
     for ext in .shell.log .log ; do
-        touch "$DJANGO_LOGDIR/$SITENAME-django$ext"
-        chown $WWW_USER:$WWW_USER "$DJANGO_LOGDIR/$SITENAME-django$ext"
+        sudo touch "$DJANGO_LOGDIR/$SITENAME-django$ext"
+        sudo chown $WWW_USER:$WWW_USER "$DJANGO_LOGDIR/$SITENAME-django$ext"
+        sudo chmod 666 "$DJANGO_LOGDIR/$SITENAME-django$ext"
     done
 
     echo "Generated Django settings overrides, saved to:"
@@ -341,13 +346,12 @@ EOF
 fi
 
 MEDIADIR="$BASEDIR/esp/public/media"
+mkdir -p $MEDIADIR/uploaded
+sudo chmod -R u+rwX,go+rX $MEDIADIR
+mkdir -p /tmp/esptmp__${SITENAME}ESP
+sudo chmod -R u+rwX,go+rX /tmp/esptmp__${SITENAME}ESP
 [[ -e "$MEDIADIR/images" ]] || ln -s "$MEDIADIR/default_images" "$MEDIADIR/images"
 [[ -e "$MEDIADIR/styles" ]] || ln -s "$MEDIADIR/default_styles" "$MEDIADIR/styles"
-
-mkdir -p $MEDIADIR/uploaded
-chmod -R u+rwX,go+rX $MEDIADIR
-mkdir -p /tmp/esptmp__${SITENAME}ESP
-chmod -R u+rwX,go+rX /tmp/esptmp__${SITENAME}ESP
 echo "Default images and styles have been symlinked."
 
 # Database setup
@@ -370,7 +374,7 @@ then
     # automatically.  With `set -o pipefail`, this will exit 141 (SIGPIPE), so
     # we need `|| true` to prevent the script from exiting failure.
     yes yes | ./manage.py collectstatic || true
-    chown -R $WWW_USER:$WWW_USER "$BASEDIR"
+    sudo chown -R $WWW_USER:$WWW_USER "$BASEDIR"
     cd $CURDIR
 
     #   Set initial Site (used in password recovery email)
