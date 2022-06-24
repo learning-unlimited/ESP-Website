@@ -115,8 +115,35 @@ if [[ -e $BASEDIR/.espsettings ]]
 then
     if [ "$MODE_RESET" ]
     then
-        rm $BASEDIR/.espsettings
-        echo "Any settings in $BASEDIR/.espsettings have been reset."
+        echo "Please confirm that you want to reset espsettings (y/[n])"
+        read THROWAWAY
+        if [[ "$THROWAWAY" != "y" ]]
+        then
+          echo "Confirmation not provided. Settings not reset."
+        else
+          rm $BASEDIR/.espsettings
+        fi
+        
+        echo "Please confirm that you want to reset local settings (y/[n])"
+        read THROWAWAY
+        if [[ "$THROWAWAY" != "y" ]]
+        then
+          echo "Confirmation not provided. Settings not reset."
+        else
+          rm ${BASEDIR}/esp/esp/local_settings.py
+          rm ${BASEDIR}/esp/esp/database_settings.py
+        fi
+        
+        echo "Please confirm that you want to reset the database (y/[n])"
+        read THROWAWAY
+        if [[ "$THROWAWAY" != "y" ]]
+        then
+          echo "Confirmation not provided. Settings not reset."
+        else
+          sudo -u postgres psql -c "DROP OWNED BY '$DBUSER' CASCADE;"
+          sudo -u postgres psql -c "DROP DATABASE IF EXISTS $DBNAME;"
+          sudo -u postgres psql -c "DROP USER $DBUSER;"
+        fi
     else
         source $BASEDIR/.espsettings
     fi
