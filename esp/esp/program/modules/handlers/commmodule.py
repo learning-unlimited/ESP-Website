@@ -119,7 +119,7 @@ class CommModule(ProgramModuleObj):
                        'program': ActionHandler(self.program, firstuser),
                        'request': ActionHandler(MessageRequest(), firstuser)}
 
-        renderedtext = Template(body).render(DjangoContext(contextdict))
+        renderedtext = Template(htmlbody).render(DjangoContext(contextdict))
 
         return render_to_response(self.baseDir()+'preview.html', request,
                                               {'filterid': filterid,
@@ -130,7 +130,7 @@ class CommModule(ProgramModuleObj):
                                                'from': fromemail,
                                                'replyto': replytoemail,
                                                'public_view': public_view,
-                                               'body': body,
+                                               'body': htmlbody,
                                                'renderedtext': renderedtext})
 
     @staticmethod
