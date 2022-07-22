@@ -184,6 +184,8 @@ class ProgramTagSettingsForm(BetterForm):
         self.program = kwargs.pop('program')
         self.categories = set()
         super(ProgramTagSettingsForm, self).__init__(*args, **kwargs)
+        from esp.program.modules.forms.teacherreg import TeacherClassRegForm
+        classreg_fields = [field.name for field in TeacherClassRegForm(self.program.classregmoduleinfo).visible_fields()]
         for key in all_program_tags:
             # generate field for each tag
             tag_info = all_program_tags[key]
@@ -191,7 +193,6 @@ class ProgramTagSettingsForm(BetterForm):
                 self.categories.add(tag_info.get('category'))
                 field = tag_info.get('field')
                 if key == 'teacherreg_hide_fields':
-                    from esp.program.modules.forms.teacherreg import TeacherClassRegForm
                     self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[1].label if field[1].label else field[0]) for field in TeacherClassRegForm.declared_fields.items() if not field[1].required])
                 elif key in ['student_reg_records', 'teacher_reg_records']:
                     from esp.users.models import Record
@@ -210,6 +211,11 @@ class ProgramTagSettingsForm(BetterForm):
                     if isinstance(self.fields[key], forms.MultipleChoiceField):
                         set_val = set_val.split(",")
                     self.fields[key].initial = set_val
+                # For class reg tags, hide them if the fields are not in the form 
+                if key.startswith("teacherreg_label") and key.partition("teacherreg_label_")[2] not in classreg_fields:
+                    self.fields[key].widget = forms.HiddenInput()
+                elif key.startswith("teacherreg_help_text") and key.partition("teacherreg_help_text_")[2] not in classreg_fields:
+                    self.fields[key].widget = forms.HiddenInput()
 
     def save(self):
         prog = self.program
