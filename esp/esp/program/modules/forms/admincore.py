@@ -211,7 +211,7 @@ class ProgramTagSettingsForm(BetterForm):
                     if isinstance(self.fields[key], forms.MultipleChoiceField):
                         set_val = set_val.split(",")
                     self.fields[key].initial = set_val
-                # For class reg tags, hide them if the fields are not in the form 
+                # For class reg tags, hide them if the fields are not in the form
                 if key.startswith("teacherreg_label") and key.partition("teacherreg_label_")[2] not in classreg_fields:
                     self.fields[key].widget = forms.HiddenInput()
                 elif key.startswith("teacherreg_help_text") and key.partition("teacherreg_help_text_")[2] not in classreg_fields:
