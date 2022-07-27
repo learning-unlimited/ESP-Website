@@ -2268,6 +2268,13 @@ class DBList(object):
     def __unicode__(self):
         return self.key
 
+class RecordType(models.Model):
+    name = models.CharField(max_length=80)
+    description = models.CharField(max_length=255)
+
+    def __unicode__(self):
+        return self.description
+
 class Record(models.Model):
     #To make these better to work with in the admin panel, and to have a
     #well defined set of possibilities, we'll use a set of choices
@@ -2301,8 +2308,8 @@ class Record(models.Model):
         ("twophase_reg_done", "Completed two-phase registration"),
     )
 
-    event = models.CharField(max_length=80,choices=EVENT_CHOICES)
-    program = models.ForeignKey("program.Program",blank=True,null=True)
+    event = models.ForeignKey("RecordType", blank=True, null=True)
+    program = models.ForeignKey("program.Program", blank=True, null=True)
     user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True)
 
     time = models.DateTimeField(blank=True, default = datetime.now)
@@ -2364,7 +2371,7 @@ class Record(models.Model):
             return True
 
     def __unicode__(self):
-        return unicode(self.user) + " has completed " + self.event + " for " + unicode(self.program)
+        return unicode(self.user) + " has completed " + unicode(self.event) + " for " + unicode(self.program)
 
 #helper method for designing implications
 def flatten(choices):
