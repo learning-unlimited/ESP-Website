@@ -121,7 +121,7 @@ class StudentLunchSelection(ProgramModuleObj):
             user = self.user
         else:
             user = get_current_request().user
-        return Record.objects.filter(user=user,event="lunch_selected",program=self.program).exists()
+        return Record.objects.filter(user=user,event__name="lunch_selected",program=self.program).exists()
 
     @main_call
     @needs_student
@@ -147,7 +147,8 @@ class StudentLunchSelection(ProgramModuleObj):
                         success = False
                     context['messages'] += [msg]
                 if success:
-                    rec, created = Record.objects.get_or_create(user=user,program=prog,event="lunch_selected")
+                    rt = RecordType.objects.get(name="lunch_selected")
+                    rec, created = Record.objects.get_or_create(user=user,program=prog,event=rt)
                     return self.goToCore(tl)
             else:
                 context['errors'] = True

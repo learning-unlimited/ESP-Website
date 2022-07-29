@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
-from esp.users.models   import ESPUser, PersistentQueryFilter, Record
+from esp.users.models   import ESPUser, PersistentQueryFilter, Record, RecordType
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_checklist, get_user_list
 from esp.middleware import ESPError
@@ -70,7 +70,7 @@ class UserRecordsModule(ProgramModuleObj):
             raise ESPError(), "Your query did not match any users"
 
         records = request.POST.getlist('records')
-        Record.objects.bulk_create([Record(event=rec, program = prog, user=user) for rec in records for user in users])
+        Record.objects.bulk_create([Record(event=RecordType.objects.get(name=rec), program = prog, user=user) for rec in records for user in users])
 
         context = {'num_users': users.count(), 'records': records}
 
@@ -82,7 +82,7 @@ class UserRecordsModule(ProgramModuleObj):
         usc = UserSearchController()
         context = {}
         context['program'] = prog
-        context['records'] = Record.EVENT_CHOICES
+        context['records'] = list(RecordType.objects.all().values_list('name', 'description'))
 
         if request.method == "POST":
             selected = []

@@ -195,8 +195,8 @@ class ProgramTagSettingsForm(BetterForm):
                 if key == 'teacherreg_hide_fields':
                     self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[1].label if field[1].label else field[0]) for field in TeacherClassRegForm.declared_fields.items() if not field[1].required])
                 elif key in ['student_reg_records', 'teacher_reg_records']:
-                    from esp.users.models import Record
-                    self.fields[key] = forms.MultipleChoiceField(choices=Record.EVENT_CHOICES)
+                    from esp.users.models import RecordType
+                    self.fields[key] = forms.MultipleChoiceField(choices=list(RecordType.objects.all().values_list('name', 'description')))
                 elif field is not None:
                     self.fields[key] = field
                 elif tag_info.get('is_boolean', False):

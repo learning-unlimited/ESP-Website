@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_student, main_call, meets_grade
 from esp.program.modules.handlers.teachercustomformmodule import TeacherCustomFormModule
 
-from esp.users.models import ESPUser, Record
+from esp.users.models import ESPUser, Record, RecordType
 from esp.customforms.models import Form
 from esp.customforms.DynamicForm import FormHandler, ComboForm
 from esp.tagdict.models import Tag
@@ -52,8 +52,9 @@ class StudentCustomComboForm(ComboForm):
 
     def done(self, form_list, **kwargs):
         # Delete old records, if any exist, and then make a new one
-        Record.objects.filter(user=self.curr_request.user, program=self.program, event=self.event).delete()
-        Record.objects.create(user=self.curr_request.user, program=self.program, event=self.event)
+        rt = RecordType.objects.get(name=self.event)
+        Record.objects.filter(user=self.curr_request.user, program=self.program, event=rt).delete()
+        Record.objects.create(user=self.curr_request.user, program=self.program, event=rt)
         return super(StudentCustomComboForm, self).done(form_list=form_list, redirect_url = '/learn/'+self.program.getUrlBase()+'/studentreg', **kwargs)
 
 class StudentCustomFormModule(ProgramModuleObj):
@@ -77,7 +78,7 @@ class StudentCustomFormModule(ProgramModuleObj):
     def students(self, QObject = False):
         """Returns lists of students who've completed the custom form."""
 
-        qo = Q(record__event=self.event, record__program=self.program)
+        qo = Q(record__event__name=self.event, record__program=self.program)
         if QObject is True:
             return {
                 'student_custom_form': qo,
@@ -98,7 +99,7 @@ class StudentCustomFormModule(ProgramModuleObj):
             user = self.user
         else:
             user = get_current_request().user
-        return Record.objects.filter(user=user, program=self.program, event=self.event).exists()
+        return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
 
     @main_call
     @needs_student

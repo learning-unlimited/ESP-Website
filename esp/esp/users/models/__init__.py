@@ -2324,7 +2324,7 @@ class Record(models.Model):
 
         Accepts the same parameters as filter().
         """
-        return cls.filter(user, event, program, when, only_today).count()>0
+        return cls.filter(user, event__name == event, program, when, only_today).count()>0
 
     @classmethod
     def filter(cls, user, event, program=None, when=None, only_today=False):

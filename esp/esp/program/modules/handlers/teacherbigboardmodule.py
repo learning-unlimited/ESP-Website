@@ -174,7 +174,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
     @cache_function_for(105)
     def num_checked_in_teachers(self, prog):
         now = datetime.datetime.now()
-        return Record.objects.filter(program=prog, event='teacher_checked_in',
+        return Record.objects.filter(program=prog, event__name='teacher_checked_in',
             time__year=now.year,
             time__month=now.month,
             time__day=now.day).count()

@@ -1,7 +1,7 @@
 from django import template
 
 from esp.program.models import Program
-from esp.users.models import Permission, Record
+from esp.users.models import Permission, Record, RecordType
 
 register = template.Library()
 
@@ -28,7 +28,7 @@ def checkRecordForProgram(user, record, program):
     """Return whether the specified record exists for the specified user for specified program."""
     return Record.user_completed(user, record, program)
 
-event_dict = dict(Record.EVENT_CHOICES)
+event_dict = dict(RecordType.objects.all().values_list('name', 'description'))
 
 @register.filter
 def getRecordDescription(record):

@@ -986,7 +986,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     hour_nums.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     hour_nums.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
     hour_nums.depend_on_row(StudentRegistration, lambda sr: {'prog': sr.section.parent_class.parent_program})
-    hour_nums.depend_on_row(Record, lambda rec: {'prog': rec.program}, lambda rec: rec.event == 'attended')
+    hour_nums.depend_on_row(Record, lambda rec: {'prog': rec.program}, lambda rec: rec.event.name == 'attended')
     hour_nums = staticmethod(hour_nums)
 
     @cache_function
