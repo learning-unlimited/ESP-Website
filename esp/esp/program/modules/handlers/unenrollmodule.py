@@ -164,7 +164,7 @@ class UnenrollModule(ProgramModuleObj):
         lambda sr: {'prog': sr.section.parent_class.parent_program})
     cache.depend_on_row('users.Record',
         lambda record: {'prog': record.program},
-        lambda record: record.event.name == 'attended')
+        lambda record: record.event and record.event.name == 'attended')
     cache.depend_on_model('program.ClassSection')
     cache.depend_on_model('program.ClassSubject')
     cache.depend_on_model('cal.Event')

@@ -76,7 +76,7 @@ render_class_webapp.cached_function.get_or_create_token(('cls',))
 # this user.  This only applies to tags that can depend on a user.
 render_class_webapp.cached_function.depend_on_row('program.StudentRegistration', lambda reg: {'user': reg.user})
 render_class_webapp.cached_function.get_or_create_token(('user',))
-render_class_webapp.cached_function.depend_on_row('users.Record', lambda record: {'prog': record.program}, lambda record: record.event.name == 'attended')
+render_class_webapp.cached_function.depend_on_row('users.Record', lambda record: {'prog': record.program}, lambda record: record.event and record.event.name == 'attended')
 
 @cache_function
 def render_class_direct(cls):
