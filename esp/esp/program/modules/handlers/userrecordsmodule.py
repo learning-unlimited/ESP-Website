@@ -82,7 +82,7 @@ class UserRecordsModule(ProgramModuleObj):
         usc = UserSearchController()
         context = {}
         context['program'] = prog
-        context['records'] = list(RecordType.objects.all().values_list('name', 'description'))
+        context['records'] = list(RecordType.desc())
 
         if request.method == "POST":
             selected = []

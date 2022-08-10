@@ -2272,42 +2272,14 @@ class RecordType(models.Model):
     name = models.CharField(max_length=80)
     description = models.CharField(max_length=255)
 
+    @classmethod
+    def desc(cls):
+        return cls.objects.all().values_list('name', 'description')
+
     def __unicode__(self):
         return self.description
 
 class Record(models.Model):
-    #To make these better to work with in the admin panel, and to have a
-    #well defined set of possibilities, we'll use a set of choices
-    #if you want to use this model for an additional thing,
-    #add it as a choice
-    EVENT_CHOICES=(
-        ("student_survey", "Completed student survey"),
-        ("teacher_survey", "Completed teacher survey"),
-        ("reg_confirmed", "Confirmed registration"),
-        ("attended", "Attended program"),
-        ("checked_out", "Checked out of program"),
-        ("conf_email","Was sent confirmation email"),
-        ("teacher_quiz_done","Completed teacher quiz"),
-        ("paid","Paid for program"),
-        ("med","Submitted medical form"),
-        ("med_bypass","Recieved medical bypass"),
-        ("liab","Submitted liability form"),
-        ("onsite","Registered for program onsite"),
-        ("schedule_printed","Printed student schedule onsite"),
-        ("teacheracknowledgement","Did teacher acknowledgement"),
-        ("studentacknowledgement", "Did student acknowledgement"),
-        ("lunch_selected","Selected a lunch block"),
-        ("student_extra_form_done","Filled out Student Custom Form"),
-        ("teacher_extra_form_done","Filled out Teacher Custom Form"),
-        ("extra_costs_done","Filled out Student Extra Costs Form"),
-        ("donation_done", "Filled out Donation Form"),
-        ("waitlist","Waitlisted for a program"),
-        ("interview","Teacher-interviewed for a program"),
-        ("teacher_training","Attended teacher-training for a program"),
-        ("teacher_checked_in", "Teacher checked in for teaching on the day of the program"),
-        ("twophase_reg_done", "Completed two-phase registration"),
-    )
-
     event = models.ForeignKey("RecordType", blank=True, null=True)
     program = models.ForeignKey("program.Program", blank=True, null=True)
     user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True)
@@ -2324,7 +2296,7 @@ class Record(models.Model):
 
         Accepts the same parameters as filter().
         """
-        return cls.filter(user, event__name == event, program, when, only_today).count()>0
+        return cls.filter(user, event, program, when, only_today).count()>0
 
     @classmethod
     def filter(cls, user, event, program=None, when=None, only_today=False):
@@ -2345,7 +2317,7 @@ class Record(models.Model):
         """
         if when is None:
             when = datetime.now()
-        filter = cls.objects.filter(user=user, event=event, time__lte=when)
+        filter = cls.objects.filter(user=user, event__name=event, time__lte=when)
         if program is not None:
             filter = filter.filter(program=program)
         if only_today:
