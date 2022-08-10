@@ -28,9 +28,8 @@ def checkRecordForProgram(user, record, program):
     """Return whether the specified record exists for the specified user for specified program."""
     return Record.user_completed(user, record, program)
 
-event_dict = dict(RecordType.desc())
-
 @register.filter
 def getRecordDescription(record):
     """ Return the full description for a record """
+    event_dict = dict(RecordType.desc())
     return event_dict[record]
