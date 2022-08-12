@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 
 from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_student, meets_cap, meets_deadline
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
-from esp.users.models            import Record
+from esp.users.models            import Record, RecordType
 from esp.cal.models              import Event
 
 from esp.middleware.threadlocalrequest import get_current_request

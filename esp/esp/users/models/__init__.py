@@ -2271,7 +2271,7 @@ class DBList(object):
 class RecordType(models.Model):
     name = models.CharField(max_length=80, help_text = "A unique short snake_case name for the record type", unique=True)
     description = models.CharField(max_length=255, help_text = "A unique sentence case description for the record type", unique=True)
-    
+
     BUILTIN_TYPES = [
         "student_survey", "teacher_survey", "reg_confirmed", "attended", "checked_out", "conf_email", "teacher_quiz_done",
         "paid", "med", "med_bypass", "liab", "onsite", "schedule_printed", "teacheracknowledgement", "studentacknowledgement",
