@@ -2286,8 +2286,8 @@ class RecordType(models.Model):
     def __unicode__(self):
         return self.description
 
-    def is_custom(cls):
-        return cls.name not in cls.BUILTIN_TYPES
+    def is_custom(self):
+        return self.name not in self.BUILTIN_TYPES
 
     class Meta:
         app_label = 'users'
