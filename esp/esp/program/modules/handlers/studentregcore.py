@@ -199,7 +199,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         if completedAll:
             if new_reg:
-                rec = Record.objects.create(user=user, event__name="reg_confirmed",
+                rt = RecordType.objects.get(name="reg_confirmed")
+                rec = Record.objects.create(user=user, event=rt,
                                             program=prog)
         else:
             raise ESPError("You must finish all the necessary steps first, then click on the Save button to finish registration.", log=False)
