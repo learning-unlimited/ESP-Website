@@ -2269,8 +2269,15 @@ class DBList(object):
         return self.key
 
 class RecordType(models.Model):
-    name = models.CharField(max_length=80)
-    description = models.CharField(max_length=255)
+    name = models.CharField(max_length=80, help_text = "A unique short snake_case name for the record type", unique=True)
+    description = models.CharField(max_length=255, help_text = "A unique sentence case description for the record type", unique=True)
+    
+    BUILTIN_TYPES = [
+        "student_survey", "teacher_survey", "reg_confirmed", "attended", "checked_out", "conf_email", "teacher_quiz_done",
+        "paid", "med", "med_bypass", "liab", "onsite", "schedule_printed", "teacheracknowledgement", "studentacknowledgement",
+        "lunch_selected", "student_extra_form_done", "teacher_extra_form_done", "extra_costs_done", "donation_done", "waitlist",
+        "interview", "teacher_training", "teacher_checked_in", "twophase_reg_done",
+    ]
 
     @classmethod
     def desc(cls):
@@ -2278,6 +2285,12 @@ class RecordType(models.Model):
 
     def __unicode__(self):
         return self.description
+
+    def is_custom(cls):
+        return cls.name not in cls.BUILTIN_TYPES
+
+    class Meta:
+        app_label = 'users'
 
 class Record(models.Model):
     event = models.ForeignKey("RecordType", blank=True, null=True)
