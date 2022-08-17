@@ -12,20 +12,6 @@
   {% endblock %}
 </tr>
 
-<!--
-Popup div for class cancellation request
--->
-<div hidden id="request_{{ cls.id }}">
-  <form method="post" action="/teach/{{program.getUrlBase}}/cancelrequest/">
-    <h3>Cancellation Request for {{ cls|truncatewords:6 }}</h3>
-    <input type="hidden" name="cls" value="{{ cls.id }}">
-    <label for="reason" class="ui-hidden-accessible">Reason for Cancellation:</label>
-    <textarea rows="4" style="width: 450px;" name="reason" placeholder="Enter text here..." required></textarea><br>
-    <input type="checkbox" name="confirm" required> I confirm I would like this class to be cancelled.<br>
-    <input type="submit" value="Submit">
-  </form>
-</div>
-
 <tr>
     <td class="clsleft" colspan="5">
         <b>Directors' review status</b>:
@@ -119,7 +105,7 @@ Popup div for class cancellation request
   </td>
   <td class="clsmiddle">
     {% if can_req_cancel %}
-        <button class="button" onclick="requestCancel({{cls.id}})">Request Cancellation</button>
+        <button class="btn btn-info" onclick="requestCancel({{cls.id}})">Request Cancellation</button>
     {% endif %}
   </td>
 </tr>

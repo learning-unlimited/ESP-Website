@@ -16,6 +16,12 @@
 
 {% block xtrajs %}
 <script type="text/javascript">
+$j(function() {
+    $j(".cancel_confirm").on("change", function() {
+        $j(this).nextAll("input").prop("disabled", !$j(this).prop("checked"));
+    });
+});
+
 function requestCancel(cls) {
     $j('#request_' + cls).dialog({
         height: "auto",
@@ -76,6 +82,22 @@ If you have any questions regarding the program, <br /> please email the
 
 <div id="battlescreen">
 
+{% for cls in clslist %}
+<!--
+Popup div for class cancellation request
+-->
+<div hidden id="request_{{ cls.id }}">
+  <form method="post" action="/teach/{{program.getUrlBase}}/cancelrequest/">
+    <h3>Cancellation Request for {{ cls|truncatewords:6 }}</h3>
+    <input type="hidden" name="cls" value="{{ cls.id }}">
+    <label for="reason_{{ cls.id }}" class="ui-hidden-accessible">Reason for Cancellation:</label>
+    <textarea rows="4" style="width: 450px;" id="reason_{{ cls.id }}" name="reason" placeholder="Enter text here..." required></textarea><br>
+    <input type="checkbox" class="cancel_confirm" name="confirm" id="confirm_{{ cls.id }}" required> <label for="confirm_{{ cls.id }}">I confirm I would like this class to be cancelled.</label><br>
+    <input type="submit" value="Submit" disabled>
+  </form>
+</div>
+{% endfor %}
+
 <table cellpadding="4" cellspacing="0" align="center">
   <tr>
     <th colspan="7">
@@ -84,7 +106,7 @@ If you have any questions regarding the program, <br /> please email the
   </tr>
   <tr>
     <td colspan="7">Below is a summary of the classes you have registered to teach for {{ program.niceName }}.  Please look through the information carefully; email the directors if you believe there is a problem with your time or room assignment.</td>
-   </tr>
+  </tr>
   {% if crmi.noclasses %}
   <tr>
     <td class="clsleft classname">
