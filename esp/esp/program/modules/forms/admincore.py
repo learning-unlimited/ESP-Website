@@ -13,6 +13,7 @@ from esp.program.models import RegistrationType, Program, ScheduleConstraint, Bo
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, DBReceipt
 from esp.tagdict import all_program_tags, tag_categories
 from esp.tagdict.models import Tag
+from esp.utils.models import TemplateOverride
 
 def get_rt_choices():
     choices = [("All","All")]
@@ -122,6 +123,13 @@ class StudentRegSettingsForm(BetterModelForm):
                     ]# Here you can also add description for each fieldset.
         model = StudentClassRegModuleInfo
 
+def get_template_source(template_list):
+    template = select_template(template_list)
+    if template.origin.loader: # source is from a file
+        return open(template.origin.name, 'r').read().strip()
+    else: # source is from a template override
+        return TemplateOverride.objects.get(name=template.template.name).content.replace('\r\n', '\n').strip() # Use unix line endings and strip whitespace just in case
+
 class ReceiptsForm(BetterForm):
     confirm = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),
                               help_text = "This receipt is shown on the website when a student clicks the 'confirm registration' button.\
@@ -144,14 +152,12 @@ class ReceiptsForm(BetterForm):
             if receipts.count() > 0:
                 receipt_text = receipts.latest('id').receipt
             elif action == "confirm":
-                template = select_template(['program/receipts/%s_custom_receipt.html' %(self.program.id), 'program/receipts/default.html'])
-                receipt_text = open(template.origin.name, 'r').read().encode('UTF-8')
+                receipt_text = get_template_source(['program/receipts/%s_custom_receipt.html' %(self.program.id), 'program/receipts/default.html'])
             elif action == "confirmemail":
-                template = select_template(['program/confemails/%s_confemail.txt' %(self.program.id),'program/confemails/default.txt'])
-                receipt_text = open(template.origin.name, 'r').read().encode('UTF-8')
+                receipt_text = get_template_source(['program/confemails/%s_confemail.txt' %(self.program.id),'program/confemails/default.txt'])
             else:
-                receipt_text = "".encode('UTF-8')
-            self.fields[action].initial = receipt_text
+                receipt_text = ""
+            self.fields[action].initial = receipt_text.encode('UTF-8')
 
     def save(self):
         for action in ['confirm', 'confirmemail', 'cancel']:
@@ -161,11 +167,9 @@ class ReceiptsForm(BetterForm):
                 receipts.delete()
             else:
                 if action == "confirm":
-                    template = select_template(['program/receipts/%s_custom_receipt.html' %(self.program.id), 'program/receipts/default.html'])
-                    default_text = open(template.origin.name, 'r').read().strip()
+                    default_text = get_template_source(['program/receipts/%s_custom_receipt.html' %(self.program.id), 'program/receipts/default.html'])
                 elif action == "confirmemail":
-                    template = select_template(['program/confemails/%s_confemail.txt' %(self.program.id),'program/confemails/default.txt'])
-                    default_text = open(template.origin.name, 'r').read().strip()
+                    default_text = get_template_source(['program/confemails/%s_confemail.txt' %(self.program.id),'program/confemails/default.txt'])
                 elif action == "cancel":
                     default_text = ""
                 if cleaned_text == default_text:
@@ -195,8 +199,8 @@ class ProgramTagSettingsForm(BetterForm):
                 if key == 'teacherreg_hide_fields':
                     self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[1].label if field[1].label else field[0]) for field in TeacherClassRegForm.declared_fields.items() if not field[1].required])
                 elif key in ['student_reg_records', 'teacher_reg_records']:
-                    from esp.users.models import Record
-                    self.fields[key] = forms.MultipleChoiceField(choices=Record.EVENT_CHOICES)
+                    from esp.users.models import RecordType
+                    self.fields[key] = forms.MultipleChoiceField(choices=list(RecordType.desc()))
                 elif field is not None:
                     self.fields[key] = field
                 elif tag_info.get('is_boolean', False):

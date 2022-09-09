@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, main_call, aux_call, meets_cap, meets_grade
 from esp.utils.web import render_to_response
-from esp.users.models import ESPUser, Record
+from esp.users.models import ESPUser, Record, RecordType
 from esp.tagdict.models import Tag
 from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
@@ -69,9 +69,9 @@ class FormstackMedliabModule(ProgramModuleObj):
                 program=self.program)
 
     def students(self, QObject=False):
-        Q_students = Q(record__event="med",
+        Q_students = Q(record__event__name="med",
                        record__program=self.program)
-        Q_bypass = Q(record__event="med_bypass",
+        Q_bypass = Q(record__event__name="med_bypass",
                      record__program=self.program)
 
         if QObject:
@@ -109,7 +109,8 @@ class FormstackMedliabModule(ProgramModuleObj):
     @needs_student
     def medicalpostback581309742(self, request, tl, one, two, module, extra, prog):
         """Marks student off as completed."""
-        Record.objects.create(user=request.user, event="med", program=self.program)
+        rt = RecordType.objects.get(name="med")
+        Record.objects.create(user=request.user, event=rt, program=self.program)
         return self.goToCore(tl)
 
     def isStep(self):

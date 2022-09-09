@@ -43,7 +43,7 @@ from esp.program.models.flags import ClassFlagType
 from esp.utils.web import render_to_response
 from esp.utils.decorators import json_response
 from django.contrib.auth.decorators import login_required
-from esp.users.models    import ESPUser, PersistentQueryFilter, Record, ContactInfo
+from esp.users.models    import ESPUser, PersistentQueryFilter, Record, RecordType, ContactInfo
 from esp.cal.models import Event
 from django              import forms
 from django.http import HttpResponse, HttpResponseRedirect
@@ -78,7 +78,8 @@ class TeacherCheckinModule(ProgramModuleObj):
             endtime = datetime(when.year, when.month, when.day) + timedelta(days=1, seconds=-1)
             checked_in_already = Record.user_completed(teacher, 'teacher_checked_in', prog, when, only_today=True)
             if not checked_in_already:
-                Record.objects.create(user=teacher, event='teacher_checked_in', program=prog, time=when)
+                rt = RecordType.objects.get(name="teacher_checked_in")
+                Record.objects.create(user=teacher, event=rt, program=prog, time=when)
                 return '%s is checked in until %s.' % (teacher.name(), str(endtime))
             else:
                 return '%s has already been checked in until %s.' % (teacher.name(), str(endtime))
@@ -312,14 +313,14 @@ class TeacherCheckinModule(ProgramModuleObj):
             moderating_sections__in=sections).distinct()
         arrived_teachers = teachers.filter(
             record__program=prog,
-            record__event='teacher_checked_in',
+            record__event__name='teacher_checked_in',
             record__time__lte=when,
             record__time__year=when.year,
             record__time__month=when.month,
             record__time__day=when.day).distinct()
         arrived_moderators = moderators.filter(
             record__program=prog,
-            record__event='teacher_checked_in',
+            record__event__name='teacher_checked_in',
             record__time__lte=when,
             record__time__year=when.year,
             record__time__month=when.month,

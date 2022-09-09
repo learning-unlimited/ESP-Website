@@ -25,13 +25,20 @@ function deleteFlagType() {
     }
     return false;
 }
+
+function deleteRecordType() {
+    if (confirm('Are you sure you would like to delete this record type?')) {
+       return true;
+    }
+    return false;
+}
 </script>
 {% endblock %}
 
 {% block content %}
 
 <h2>
-    Class Category and Flag Type Management
+    Class Category, Flag Type, and Record Type Management
 </h2>
 
 <div id="program_form">
@@ -158,6 +165,69 @@ function deleteFlagType() {
                         <input type="hidden" name="command" value="delete" />
                         <input type="hidden" name="object" value="flag_type" />
                         <input type="submit" value="Delete" class="btn btn-danger" />
+                    </form>
+                </center>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+    
+    {% if open_section == "recordtypes" %}
+    <button class="dsphead active">
+       <b>Record Types</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont active">
+    {% else %}
+    <button class="dsphead">
+       <b>Record Types</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont">
+    {% endif %}
+
+    <form method="post">
+    <input type="hidden" name="command" value="{% if rec_form.instance.id %}edit{% else %}add{% endif %}" />
+    {% if rec_form.instance.id %}
+    <input type="hidden" name="id" value="{{ rec_form.instance.id }}" />
+    {% endif %}
+    <input type="hidden" name="object" value="record_type" />
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="2" class="small">Add/Edit Record Types</th></tr>
+        {{ rec_form }}
+        <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="{% if rec_form.instance.id %}Edit{% else %}Add{% endif %} Record Type" /></td></tr>
+    </table>
+    </form>
+
+    <br />
+
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="4">Record Types</th></tr>
+        <tr>
+            <td><b>Name</b></td>
+            <td><b>Description</b></td>
+            <td><b>Custom?</b></td>
+            <td><b>Options</b></td>
+        </tr>
+        {% for rt in record_types %}
+        <tr>
+            <td>{{ rt.name }}</td>
+            <td>{{ rt.description }}</td>
+            <td>{{ rt.is_custom }}</td>
+            <td>
+                <center>
+                    <form method="post">
+                        <input type="hidden" name="id" value="{{ rt.id }}" />
+                        <input type="hidden" name="command" value="load" />
+                        <input type="hidden" name="object" value="record_type" />
+                        <input type="submit" value="Edit" class="btn btn-primary" {% if not rt.is_custom %}disabled title="Can not edit built-in record types" {% endif %}/>
+                    </form>
+                    <form method="post" onsubmit="return deleteRecordType()">
+                        <input type="hidden" name="id" value="{{ rt.id }}" />
+                        <input type="hidden" name="command" value="delete" />
+                        <input type="hidden" name="object" value="record_type" />
+                        <input type="submit" value="Delete" class="btn btn-danger" {% if not rt.is_custom %}disabled title="Can not delete built-in record types" {% endif %}/>
                     </form>
                 </center>
             </td>

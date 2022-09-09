@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
 from esp.utils.web import render_to_response
-from esp.users.models    import ESPUser, User, Record
+from esp.users.models    import ESPUser, User, Record, RecordType
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
 from esp.program.models  import ClassFlagType
 from esp.program.models.class_ import ACCEPTED
@@ -597,7 +597,7 @@ class ProgramPrintables(ProgramModuleObj):
         records = []
         tag_data = Tag.getProgramTag('teacher_reg_records', prog)
         if tag_data:
-            records = [x.strip().lower() for x in tag_data.split(',')]
+            records = [x.strip().lower() for x in tag_data.split(',') if RecordType.objects.filter(name = x.strip().lower()).exists()]
 
         for teacher in teachers:
             # get list of valid classes
@@ -1579,7 +1579,7 @@ class ProgramPrintables(ProgramModuleObj):
         records = []
         tag_data = Tag.getProgramTag('student_reg_records', prog)
         if tag_data:
-            records = [event for event in [x.strip().lower() for x in tag_data.split(',')] if event not in ['attended', 'med', 'liab']]
+            records = [event for event in [x.strip().lower() for x in tag_data.split(',') if RecordType.objects.filter(name = x.strip().lower()).exists()] if event not in ['attended', 'med', 'liab']]
         studentList = []
         for student in students:
             finaid_status = 'None'
