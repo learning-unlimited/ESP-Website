@@ -45,7 +45,7 @@ from esp.utils.web               import render_to_response
 from esp.dbmail.models           import send_mail
 from esp.middleware              import ESPError
 from django.db.models.query      import Q
-from esp.users.models            import User, ESPUser, Record, TeacherInfo
+from esp.users.models            import User, ESPUser, Record, RecordType, TeacherInfo
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.conf                 import settings
@@ -272,7 +272,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                         continue
                 if student.isStudent():
                     if not prog.isCheckedIn(student):
-                        rec = Record(user=student, program=prog, event='attended')
+                        rt = RecordType.objects.get(name="attended")
+                        rec = Record(user=student, program=prog, event=rt)
                         rec.save()
                     sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
                     sr.end_date = today_max
@@ -357,7 +358,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                             json_data['message'] = '%s was not marked as attending.' % student.name()
                     else:
                         if not prog.isCheckedIn(student):
-                            rec = Record(user=student, program=prog, event='attended')
+                            rt = RecordType.objects.get(name="attended")
+                            rec = Record(user=student, program=prog, event=rt)
                             rec.save()
                             json_data['checkedin'] = True
                         sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]

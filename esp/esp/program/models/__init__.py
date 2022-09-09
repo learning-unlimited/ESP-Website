@@ -711,20 +711,20 @@ class Program(models.Model, CustomFormsLinkModel):
         ResourceAssignment.objects.filter(target__parent_class__parent_program=self, lock_level__lt=lock_level).update(lock_level=lock_level)
 
     def isConfirmed(self, espuser):
-        return Record.objects.filter(event="reg_confirmed",user=espuser,
+        return Record.objects.filter(event__name="reg_confirmed",user=espuser,
                                      program=self).exists()
 
     def isCheckedIn(self, espuser, verbose = False):
         status = 0
         verbose_names = ["not_checked_in", "checked_in", "checked_out"]
-        recs = Record.objects.filter(event__in=["attended","checked_out"],user=espuser,
+        recs = Record.objects.filter(event__name__in=["attended","checked_out"],user=espuser,
                                      program=self).order_by("-time")
         if recs.count() > 0:
             # Check if student has ever been checked_in
-            if recs.filter(event="attended").exists():
+            if recs.filter(event__name="attended").exists():
                 status = 1
                 # Check if most recent record is checked_out
-                if recs[0].event == "checked_out":
+                if recs[0].event.name == "checked_out":
                     status = 2
         if verbose:
             return verbose_names[status]
@@ -733,24 +733,24 @@ class Program(models.Model, CustomFormsLinkModel):
 
     """ Returns a queryset of students that are checked out of the program at the specified time """
     def checkedOutStudents(self, time_max = datetime.now()):
-        recs = Record.objects.filter(program = self, event__in=["attended", "checked_out"], time__lt=time_max).order_by('user', '-time').distinct('user')
-        return ESPUser.objects.filter(record__id__in=recs, record__event="checked_out")
+        recs = Record.objects.filter(program = self, event__name__in=["attended", "checked_out"], time__lt=time_max).order_by('user', '-time').distinct('user')
+        return ESPUser.objects.filter(record__id__in=recs, record__event__name="checked_out")
 
     """ Returns a queryset of students that are CURRENTLY checked out of the program at the specified time """
     @cache_function
     def currentlyCheckedOutStudents(self):
         return self.checkedOutStudents(time_max=datetime.now())
-    currentlyCheckedOutStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event in ['attended', "checked_out"])
+    currentlyCheckedOutStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event and rec.event.name in ['attended', "checked_out"])
 
     """ Returns a queryset of students that are checked in to the program at the specified time """
     def checkedInStudents(self, time_max = datetime.now()):
-        return ESPUser.objects.filter(Q(record__event="attended", record__program=self)).exclude(id__in=self.checkedOutStudents(time_max)).distinct()
+        return ESPUser.objects.filter(Q(record__event__name="attended", record__program=self)).exclude(id__in=self.checkedOutStudents(time_max)).distinct()
 
     """ Returns a queryset of students that are CURRENTLY checked in to the program at the specified time """
     @cache_function
     def currentlyCheckedInStudents(self):
         return self.checkedInStudents(time_max=datetime.now())
-    currentlyCheckedInStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event == 'attended')
+    currentlyCheckedInStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event and rec.event.name == 'attended')
 
     """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
     "Classrooms."  So, if you try to call the old functions (which have no point anymore), then
@@ -1215,7 +1215,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     #   Update cache whenever a class is approved, a student is marked as attending, a teacher or student changes their profile, or a volunteer offer is changed
     getShirtInfo.depend_on_row('program.ClassSubject', lambda cls: {'self': cls.parent_program})
-    getShirtInfo.depend_on_row('users.Record', lambda record: {'self': record.program}, lambda record: record.event == 'attended')
+    getShirtInfo.depend_on_row('users.Record', lambda record: {'self': record.program}, lambda record: record.event and record.event.name == 'attended')
     getShirtInfo.depend_on_model('users.TeacherInfo')
     getShirtInfo.depend_on_model('users.StudentInfo')
     getShirtInfo.depend_on_model('program.VolunteerOffer')

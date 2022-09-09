@@ -1,7 +1,7 @@
 from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, meets_deadline
 from esp.utils.web import render_to_response
-from esp.users.models   import ESPUser, Record
+from esp.users.models   import ESPUser, Record, RecordType
 from django import forms
 from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
@@ -44,7 +44,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
             user = get_current_request().user
         return Record.objects.filter(user=user,
                                      program=self.program,
-                                     event="teacheracknowledgement").exists()
+                                     event__name="teacheracknowledgement").exists()
 
     @main_call
     @needs_teacher
@@ -53,9 +53,10 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
         context = {'prog': prog}
         if request.method == 'POST':
             context['form'] = teacheracknowledgementform_factory(prog)(request.POST)
+            rt = RecordType.objects.get(name="teacheracknowledgement")
             rec, created = Record.objects.get_or_create(user=request.user,
                                                         program=self.program,
-                                                        event="teacheracknowledgement")
+                                                        event=rt)
             if context['form'].is_valid():
                 return self.goToCore(tl)
             else:
@@ -69,7 +70,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
     def teachers(self, QObject = False):
         """ Returns a list of teachers who have submitted the acknowledgement. """
         from datetime import datetime
-        qo = Q(record__program=self.program, record__event="teacheracknowledgement")
+        qo = Q(record__program=self.program, record__event__name="teacheracknowledgement")
         if QObject is True:
             return {'acknowledgement': qo}
 

@@ -189,7 +189,7 @@ def startreg(form, programs, students, profiles, result_dict={}):
                     reg_dict[program][reg_bits[0].start_date.date()] = 0
                 reg_dict[program][reg_bits[0].start_date.date()] += 1
 
-            confirm_bits = Record.objects.filter(user=student, event='reg_confirmed', program=program).order_by('-time')
+            confirm_bits = Record.objects.filter(user=student, event__name='reg_confirmed', program=program).order_by('-time')
             if confirm_bits.exists():
                 if confirm_bits[0].time.date() not in confirm_dict[program]:
                     confirm_dict[program][confirm_bits[0].time.date()] = 0
@@ -217,7 +217,7 @@ def repeats(form, programs, students, profiles, result_dict={}):
     #   For each student, find out what other programs they registered for and bin by quantity in each program type
     repeat_count = {}
     for student in students:
-        programs = Program.objects.filter(record__user=student, record__event='reg_confirmed')
+        programs = Program.objects.filter(record__user=student, record__event__name='reg_confirmed')
         indiv_count = {}
         for program in programs:
             if program.program_type not in indiv_count:

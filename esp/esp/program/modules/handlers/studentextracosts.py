@@ -43,7 +43,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models  import StudentApplication, SplashInfo
 from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, main_call, meets_cap
 from esp.program.modules.forms.splashinfo import SiblingDiscountForm
-from esp.users.models    import Record
+from esp.users.models    import Record, RecordType
 from esp.utils.web import render_to_response
 from esp.utils.widgets import ChoiceWithOtherField
 
@@ -140,7 +140,7 @@ class StudentExtraCosts(ProgramModuleObj):
             user = self.user
         else:
             user = get_current_request().user
-        return Record.objects.filter(user=user, program=self.program, event=self.event).exists()
+        return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
 
     def lineitemtypes(self):
         pac = ProgramAccountingController(self.program)
@@ -256,7 +256,8 @@ class StudentExtraCosts(ProgramModuleObj):
             #   Redirect to main student reg page if all data was recorded properly
             #   (otherwise, the code below will reload the page)
             if forms_all_valid:
-                bit, created = Record.objects.get_or_create(user=request.user, program=self.program, event=self.event)
+                rt = RecordType.objects.get(name=self.event)
+                bit, created = Record.objects.get_or_create(user=request.user, program=self.program, event=rt)
                 return self.goToCore(tl)
 
             ### End Post
