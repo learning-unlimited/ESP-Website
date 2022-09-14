@@ -81,7 +81,14 @@
       $j(function() {
         $j('[type=submit]').click(function(){
           $j(this).prop('disabled', true);
-          $j(this).parents('form').submit();
+          var form = $j(this).parents('form');
+          <!-- this adds a hidden field in case we care what the button name/value are -->
+          $j('<input>', {
+              type: 'hidden',
+              name: $j(this).prop('name'),
+              value: $j(this).prop('value')
+          }).appendTo($j(form));
+          $j(form).submit();
         });
       });
     </script>
