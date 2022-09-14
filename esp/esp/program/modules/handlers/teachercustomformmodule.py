@@ -115,7 +115,10 @@ class TeacherCustomFormModule(ProgramModuleObj):
                 plain_form = form_wizard.get_form(step)
                 #   Load previous results, with a hack for multiple choice questions.
                 for field in plain_form.fields:
-                    if isinstance(plain_form.fields[field], forms.MultipleChoiceField):
+                    #   Some fields aren't saved or don't have values (e.g., instruction fields)
+                    if not hasattr(prev_results[0], field):
+                        continue
+                    elif isinstance(plain_form.fields[field], forms.MultipleChoiceField):
                         field_dict[field] = getattr(prev_results[0], field).split(';')
                     else:
                         field_dict[field] = getattr(prev_results[0], field)
