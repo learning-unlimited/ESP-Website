@@ -12,20 +12,6 @@
   {% endblock %}
 </tr>
 
-<!--
-Popup div for class cancellation request
--->
-<div hidden id="request_{{ cls.id }}">
-  <form method="post" action="/teach/{{program.getUrlBase}}/cancelrequest/">
-    <h3>Cancellation Request for {{ cls|truncatewords:6 }}</h3>
-    <input type="hidden" name="cls" value="{{ cls.id }}">
-    <label for="reason" class="ui-hidden-accessible">Reason for Cancellation:</label>
-    <textarea rows="4" style="width: 450px;" name="reason" placeholder="Enter text here..." required></textarea><br>
-    <input type="checkbox" name="confirm" required> I confirm I would like this class to be cancelled.<br>
-    <input type="submit" value="Submit">
-  </form>
-</div>
-
 <tr>
     <td class="clsleft" colspan="5">
         <b>Directors' review status</b>:
@@ -51,9 +37,6 @@ Popup div for class cancellation request
             <ul class="dropdown-menu">
                 <li><a href="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}" title="View/edit class" target="_blank">View/Edit</a></li>
                 <li><a href="/teach/{{program.getUrlBase}}/coteachers?clsid={{cls.id}}" title="Add/remove coteachers" target="_blank">Modify Coteachers</a></li>
-                {% if can_req_cancel %}
-                <li><a href="requestCancel({{cls.id}})" title="Send cancellation request to directors" target="_blank">Request Cancellation</a></li>
-                {% endif %}
                 <li><a href="/teach/{{program.getUrlBase}}/class_status/{{cls.id}}" title="View detailed status" target="_blank">Detailed Status</a></li>
                 <li><a href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}" title="Catalog preview" target="_blank">Catalog Preview</a></li>
                 <li><a href="/teach/{{ program.getUrlBase }}/class_docs/{{cls.id}}" title="Upload/manage files" target="_blank">Manage Documents</a></li>
@@ -117,8 +100,13 @@ Popup div for class cancellation request
 </tr>
 
 <tr>
-  <td class="clsleft" colspan="5">
+  <td class="clsleft" colspan="6">
     <b>Document uploads</b>: There are {{ cls.documents.count }} documents associated with this class.
+  </td>
+  <td class="clsmiddle">
+    {% if can_req_cancel %}
+        <button class="btn btn-info" onclick="requestCancel({{cls.id}})">Request Cancellation</button>
+    {% endif %}
   </td>
 </tr>
 
