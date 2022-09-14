@@ -896,7 +896,7 @@ all_program_tags = {
         'help_text': 'Form ID of the custom form used for student registration',
         'default': None,
         'category': 'learn',
-        'is_setting': True,
+        'is_setting': False,
         'field': forms.IntegerField(min_value=1),
     },
     'teach_extraform_id': {
@@ -904,7 +904,7 @@ all_program_tags = {
         'help_text': 'Form ID of the custom form used for teacher registration',
         'default': None,
         'category': 'teach',
-        'is_setting': True,
+        'is_setting': False,
         'field': forms.IntegerField(min_value=1),
     },
     'donation_settings': {
@@ -954,7 +954,7 @@ all_program_tags = {
         'help_text': 'The ID of the customform to associate with the Teacher Quiz Module',
         'default': None,
         'category': 'teach',
-        'is_setting': True,
+        'is_setting': False,
         'field': forms.IntegerField(min_value=1),
     },
     'display_registration_names': {
