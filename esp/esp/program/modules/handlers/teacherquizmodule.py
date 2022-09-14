@@ -52,7 +52,7 @@ class TeacherQuizComboForm(ComboForm):
 
     def done(self, form_list, **kwargs):
         # Delete old records, if any exist, and then make a new one
-        rt = RecordType.objects.filter(name=self.event)
+        rt = RecordType.objects.get(name=self.event)
         Record.objects.filter(user=self.curr_request.user, program=self.program, event=rt).delete()
         Record.objects.create(user=self.curr_request.user, program=self.program, event=rt)
         return super(TeacherQuizComboForm, self).done(form_list=form_list, redirect_url = '/teach/'+self.program.getUrlBase()+'/teacherreg', **kwargs)
