@@ -2,6 +2,22 @@
 <table align="center" class="loginform" cellspacing="0" cellpadding="5">
 <tr><td>
 
+<div id="contact_info">
+        <span class="title accentcolor">{{ theme.full_group_name }}</span><br>
+        <span class="normal">{{ theme.contact_info|linebreaksbr }}</span><br>
+        <span class="normal">Email: <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></span><br>
+        <span class="normal">
+          {% if theme.faq_link %}
+            <a href="{{theme.faq_link}}">FAQ</a> |
+          {% endif %}
+          <a href="/contact.html">contact us</a>
+          {% if theme.facebook_link %}
+            | <a href="{{ theme.facebook_link }}">facebook</a>
+          {% endif %}
+        </span>
+</div>
+<hr>
+
 {% if login_result %}
     <div><center><span style="color: #BCCAF5;">{{ login_result }}{% ifequal "Invalid username or password" login_result %}<br /><a href="/myesp/login/">Try again here.</a>{% endifequal %}</span></center><br /></div>
 {% else %}
