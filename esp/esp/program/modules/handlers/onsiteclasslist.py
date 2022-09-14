@@ -178,7 +178,7 @@ class OnSiteClassList(ProgramModuleObj):
         if success:
             registration_profile.save()
 
-            for extension in ['attended','medical','liability','onsite']:
+            for extension in ['attended','med','liab','onsite']:
                 Record.createBit(extension, program, student)
 
             IndividualAccountingController.updatePaid(self.program, student, paid=True)

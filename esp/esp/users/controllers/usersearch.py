@@ -336,7 +336,7 @@ class UserSearchController(object):
                 subquery = (
                               Record
                               .objects
-                              .filter(program=program,event__in=event_fields)
+                              .filter(program=program,event__name__in=event_fields)
                               .annotate(numusers=Count('user__id'))
                               .filter(numusers=len(event_fields))
                               .values_list('user_id',flat=True)

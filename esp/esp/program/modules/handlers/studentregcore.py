@@ -39,7 +39,7 @@ from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
-from esp.users.models    import ESPUser, Record
+from esp.users.models    import ESPUser, Record, RecordType
 from esp.utils.models import Printer
 from esp.accounting.controllers import IndividualAccountingController
 from django.db.models.query import Q
@@ -79,8 +79,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     def students(self, QObject = False):
         now = datetime.now()
 
-        q_confirmed = Q(record__event = "reg_confirmed", record__program=self.program)
-        q_attended = Q(record__event= "attended", record__program=self.program)
+        q_confirmed = Q(record__event__name = "reg_confirmed", record__program=self.program)
+        q_attended = Q(record__event__name= "attended", record__program=self.program)
         # if we don't do list(values_list()), it breaks downstream queries for some weird reason I don't understand -WG
         q_checked_out = Q(id__in=list(self.program.currentlyCheckedOutStudents().values_list('id', flat = True)))
         q_checked_in = Q(id__in=list(self.program.currentlyCheckedInStudents().values_list('id', flat = True)))
@@ -95,7 +95,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
 
             if self.program.program_allow_waitlist:
-                retVal['waitlisted_students'] = Q(record__event="waitlist",record__program=self.program)
+                retVal['waitlisted_students'] = Q(record__event__name="waitlist",record__program=self.program)
 
             return retVal
 
@@ -106,7 +106,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                   'studentrep': ESPUser.objects.filter(q_studentrep).distinct()}
 
         if self.program.program_allow_waitlist:
-            retVal['waitlisted_students'] = ESPUser.objects.filter(Q(record__event="waitlist",record__program=self.program)).distinct()
+            retVal['waitlisted_students'] = ESPUser.objects.filter(Q(record__event__name="waitlist",record__program=self.program)).distinct()
 
         return retVal
 
@@ -132,12 +132,12 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         if prog.user_can_join(request.user):
             return self.goToCore(tl)
 
-        waitlist = Record.objects.filter(event="waitlist",
+        waitlist = Record.objects.filter(event__name="waitlist",
                                          user=request.user,
                                          program=prog)
 
         if waitlist.count() <= 0:
-            Record.objects.create(event="waitlist", user=request.user,
+            Record.objects.create(event__name="waitlist", user=request.user,
                                   program=prog)
             already_on_list = False
         else:
@@ -149,7 +149,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @needs_student
     @meets_grade
     def confirmreg(self, request, tl, one, two, module, extra, prog):
-        if Record.objects.filter(user=request.user, event="reg_confirmed",program=prog).count() > 0:
+        if Record.objects.filter(user=request.user, event__name="reg_confirmed",program=prog).count() > 0:
             return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=False)
         return self.confirmreg_new(request, tl, one, two, module, extra, prog)
 
@@ -199,7 +199,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         if completedAll:
             if new_reg:
-                rec = Record.objects.create(user=user, event="reg_confirmed",
+                rt = RecordType.objects.get(name="reg_confirmed")
+                rec = Record.objects.create(user=user, event=rt,
                                             program=prog)
         else:
             raise ESPError("You must finish all the necessary steps first, then click on the Save button to finish registration.", log=False)
@@ -230,7 +231,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             raise ESPError("You have already paid for this program!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund.", log=False)
 
         recs = Record.objects.filter(user=request.user,
-                                     event="reg_confirmed",
+                                     event__name="reg_confirmed",
                                      program=prog)
         for rec in recs:
             rec.delete()
@@ -267,8 +268,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         else:
             tag_data = Tag.getProgramTag('teacher_reg_records', prog)
         if tag_data:
-            event_dict = dict(Record.EVENT_CHOICES)
-            for event in [x.strip().lower() for x in tag_data.split(',')]:
+            event_dict = dict(RecordType.desc())
+            for event in [x.strip().lower() for x in tag_data.split(',') if RecordType.objects.filter(name = x.strip().lower()).exists()]:
                 records.append({'event': event, 'full_event': event_dict[event], 'isCompleted': Record.user_completed(event = event, user = user, program = prog)})
             records.sort(key=lambda rec: not rec['isCompleted'])
         return records

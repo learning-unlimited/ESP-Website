@@ -988,7 +988,7 @@ class ClassSection(models.Model):
         return self.students_checked_in().count()
 
     def count_ever_checked_in_students(self):
-        return (self.students() & ESPUser.objects.filter(Q(record__event="attended", record__program=self.parent_program)).distinct()).count()
+        return (self.students() & ESPUser.objects.filter(Q(record__event__name="attended", record__program=self.parent_program)).distinct()).count()
 
     @cache_function
     def num_students_prereg(self):

@@ -66,13 +66,13 @@ from django import forms
 
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile, ClassCategories, ClassFlagType
-from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm, CategoryForm, FlagTypeForm, RedirectForm, PlainRedirectForm
+from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm, CategoryForm, FlagTypeForm, RecordTypeForm, RedirectForm, PlainRedirectForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.program.modules.handlers.commmodule import CommModule
-from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest
+from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest, RecordType
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import CybersourcePostback
@@ -918,13 +918,14 @@ def redirects(request, section=""):
     return render_to_response('program/redirects.html', request, context)
 
 @admin_required
-def categoriesandflags(request, section=""):
+def catsflagsrecs(request, section=""):
     """
     View that lets admins create/edit class categories and flag types
     """
     context = {}
     cat_form = CategoryForm()
     flag_form = FlagTypeForm()
+    rec_form = RecordTypeForm()
 
     if request.method == 'POST':
         if request.POST.get('object') == 'category':
@@ -983,11 +984,41 @@ def categoriesandflags(request, section=""):
                 if fts.count() == 1:
                     ft = fts[0]
                     ft.delete()
+        elif request.POST.get('object') == 'record_type':
+            section = 'recordtypes'
+            if request.POST.get('command') == 'add': # New record type
+                rec_form = RecordTypeForm(request.POST)
+                if rec_form.is_valid():
+                    rec_form.save()
+                    rec_form = RecordTypeForm()
+            elif request.POST.get('command') == 'load': # Load existing record type into form
+                ft_id = request.POST.get('id')
+                fts = RecordType.objects.filter(id = ft_id)
+                if fts.count() == 1:
+                    ft = fts[0]
+                    rec_form = RecordTypeForm(instance = ft)
+            elif request.POST.get('command') == 'edit': # Edit existing record type
+                rt_id = request.POST.get('id')
+                rts = RecordType.objects.filter(id = rt_id)
+                if rts.count() == 1:
+                    rt = rts[0]
+                    rec_form = RecordTypeForm(request.POST, instance = rt)
+                    if rec_form.is_valid():
+                        rec_form.save()
+                        rec_form = RecordTypeForm()
+            elif request.POST.get('command') == 'delete': # Delete record type
+                rt_id = request.POST.get('id')
+                rts = RecordType.objects.filter(id = rt_id)
+                if rts.count() == 1:
+                    rt = rts[0]
+                    rt.delete()
     context['open_section'] = section
     context['cat_form'] = cat_form
     context['flag_form'] = flag_form
+    context['rec_form'] = rec_form
     context['categories'] = ClassCategories.objects.all().order_by('seq')
     context['flag_types'] = ClassFlagType.objects.all().order_by('seq')
+    context['record_types'] = RecordType.objects.all().order_by('id')
 
     return render_to_response('program/categories_and_flags.html', request, context)
 

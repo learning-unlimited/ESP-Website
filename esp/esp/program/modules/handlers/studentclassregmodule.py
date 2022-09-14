@@ -170,7 +170,7 @@ class StudentClassRegModule(ProgramModuleObj):
         past_enrolled_users = ESPUser.objects.filter(Enrolled & Past).values('id').distinct()
         Q_enrolled_past = Q(id__in=past_enrolled_users)
         Q_enrolled = Enrolled & Par & Unexpired
-        Q_attended_past_temp = Q(record__event= "attended", record__program__in=past_programs)
+        Q_attended_past_temp = Q(record__event__name= "attended", record__program__in=past_programs)
         past_attended_users = ESPUser.objects.filter(Q_attended_past_temp).values('id').distinct()
         Q_attended_past = Q(id__in=past_attended_users)
 

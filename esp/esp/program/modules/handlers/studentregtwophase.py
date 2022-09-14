@@ -73,7 +73,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         else:
             user = get_current_request().user
         records = Record.objects.filter(user=user,
-                                        event="twophase_reg_done",
+                                        event__name="twophase_reg_done",
                                         program=self.program)
         return records.count() != 0
 
