@@ -13,7 +13,7 @@
 <input type="hidden" name="selected" value="{{selected}}" />
 <h3>Choose which record(s) to set for these users:</h3>
 {% for rec in records %}
-<input type="checkbox" name="records" value="{{ rec.0 }}"/> {{ rec.1 }}<br>
+<input type="checkbox" name="records" value="{{ rec.0 }}" id="records_{{ forloop.counter }}"/> <label for="records_{{ forloop.counter }}">{{ rec.1 }}</label><br>
 {% endfor %}
 <br>
 <input type="submit" value="Set Record(s)" />

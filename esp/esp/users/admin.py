@@ -4,7 +4,7 @@ from esp.admin import admin_site
 from django import forms
 from django.db import models
 from esp.users.models.forwarder import UserForwarder
-from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, Record, Permission, GradeChangeRequest
+from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, RecordType, Record, Permission, GradeChangeRequest
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from esp.utils.admin_user_search import default_user_search
@@ -51,6 +51,11 @@ class ESPUserAdmin(UserAdmin):
         (_('User Roles'), {'fields': ('groups',)}),
         )
 admin_site.register(ESPUser, ESPUserAdmin)
+
+class RecordTypeAdmin(admin.ModelAdmin):
+    list_display = ['id', 'name', 'description']
+    search_fields = ['name', 'description']
+admin_site.register(RecordType, RecordTypeAdmin)
 
 class RecordAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'event', 'program', 'time',]

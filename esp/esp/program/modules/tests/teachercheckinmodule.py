@@ -59,7 +59,7 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
         self.teacher2.makeRole("Teacher")
 
     def tearDown(self):
-        Record.objects.filter(program=self.program, event=self.event).delete()
+        Record.objects.filter(program=self.program, event__name=self.event).delete()
         super(TeacherCheckinModuleTest, self).tearDown()
 
     def addCoteacher(self, cls, coteacher):

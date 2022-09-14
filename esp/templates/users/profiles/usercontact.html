@@ -1,5 +1,7 @@
 <!-- User ContactInfo -->
 
+{% load render_qsd %}
+
 <h3>{{ profiletype|capfirst }} Contact Information</h3>
 
 {% if form.first_name %}
@@ -28,7 +30,9 @@
 {% ifequal profiletype "student" %}
 <div class="alert">
     <button type="button" class="close" data-dismiss="alert">x</button>
+    {% inline_program_qsd_block program "student_email_instructions" %}
     <strong>Students:</strong> Please enter your primary email address.  It is important that you check your email at this address regularly, since it is our only means of contacting you with important information for each program you participate in.  Enter your parents' email address in the parent/guardian section below.
+    {% end_inline_program_qsd_block %}
 </div>
 {% endifequal %}
 
@@ -92,7 +96,9 @@
 {% if profiletype == "student" %}
 <div class="alert">
     <button type="button" class="close" data-dismiss="alert">x</button>
+    {% inline_program_qsd_block program "student_phone_instructions" %}
     <strong>Students:</strong> Please enter <b>your</b> phone numbers below.{% if not require_student_phonenum %} If you do not have {% if form.phone_day %}a home phone {% endif %}{% if form.phone_day and form.phone_cell %}nor {% endif %}{% if form.phone_cell %}a personal cell phone{% endif %}, please leave this blank.{% endif %} You will enter your guardian and emergency contact phone numbers in the sections below.
+    {% end_inline_program_qsd_block %}
 </div>
 {% endif %}
 

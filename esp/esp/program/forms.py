@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 import re
 import unicodedata
 
-from esp.users.models import StudentInfo, K12School
+from esp.users.models import StudentInfo, K12School, RecordType
 from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories
 from esp.dbmail.models import PlainRedirect
 from esp.utils.widgets import DateTimeWidget
@@ -420,6 +420,17 @@ class FlagTypeForm(forms.ModelForm):
     class Meta:
         model = ClassFlagType
         fields = ['name','color','seq','show_in_scheduler','show_in_dashboard']
+
+class RecordTypeForm(forms.ModelForm):
+    def clean_name(self):
+        name = self.cleaned_data.get('name').strip()
+        if name in RecordType.BUILTIN_TYPES:
+            raise forms.ValidationError('You can not add/edit a built-in record type.')
+        else:
+            return name
+    class Meta:
+        model = RecordType
+        fields = ['name','description']
 
 class CategoryForm(forms.ModelForm):
     class Meta:
