@@ -120,23 +120,26 @@ div.nav-collapse.collapse {
 
 .sidebar {
     & {
-        background: none;
+      color: @navbarText;
+        background: @sidebarBackground;
         margin-bottom: 2em;
     }
     .nav-header {
-        color: #666;
+        color: @sidebarHeader;
     }
     li > a:hover {
-        color: @identity-blue;
+        color: @sidebarLinkHover;
+        background-color: @sidebarHover
     }
     > .active > a {
         &, &:hover {
-            background-color: @identity-blue
-        }
+            color: @sidebarActive;
+            background-color: @sidebarActiveBackground;
+    }
     }
     > li > a {
         padding: 8px 18px;
-        color: black;
+        color: @sidebarLink;
         font-family: 'Patrick Hand', Helvetica, 'Helvetica Neue', sans-serif;
         font-size: 17px;
     }
