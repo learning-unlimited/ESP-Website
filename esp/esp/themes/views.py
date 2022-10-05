@@ -136,7 +136,7 @@ def logos(request):
     context['header_files'] = [(path.split('public')[1], path.split('images/theme/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/theme', "header\..*\.png")]
     context['favicon_files'] = [(path.split('public')[1], path.split('images/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images', "favicon\..*\.ico")]
     context['has_header'] = os.path.exists(settings.MEDIA_ROOT + 'images/theme/header.png')
-    
+
     return render_to_response('themes/logos.html', request, context)
 
 @admin_required
