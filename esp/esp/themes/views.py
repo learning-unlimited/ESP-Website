@@ -46,6 +46,7 @@ from datetime import datetime
 import random
 import string
 import os.path
+import shutil
 
 THEME_ERROR_STRING = "Your site's theme is not in the generic templates system. " + \
                      "If you want to switch to one of the standard themes, " + \
@@ -93,6 +94,50 @@ def selector(request, keep_files=None):
     context['theme_name'] = tc.get_current_theme()
     context['themes'] = tc.get_theme_names()
     return render_to_response('themes/selector.html', request, context)
+
+@admin_required
+def logos(request):
+    context = {}
+    tc = ThemeController()
+
+    if request.POST:
+        if 'new_logo' in request.FILES:
+            f = request.FILES['new_logo']
+            with open(settings.MEDIA_ROOT + 'images/theme/logo.png', 'wb+') as destination:
+                for chunk in f.chunks():
+                    destination.write(chunk)
+            with open(settings.MEDIA_ROOT + 'images/theme/logo.' + datetime.now().strftime("%Y%m%d-%H%M%S") + '.png', 'wb+') as destination:
+                for chunk in f.chunks():
+                    destination.write(chunk)
+        elif 'new_header' in request.FILES:
+            f = request.FILES['new_header']
+            with open(settings.MEDIA_ROOT + 'images/theme/header.png', 'wb+') as destination:
+                for chunk in f.chunks():
+                    destination.write(chunk)
+            with open(settings.MEDIA_ROOT + 'images/theme/header.' + datetime.now().strftime("%Y%m%d-%H%M%S") + '.png', 'wb+') as destination:
+                for chunk in f.chunks():
+                    destination.write(chunk)
+        elif 'new_favicon' in request.FILES:
+            f = request.FILES['new_favicon']
+            with open(settings.MEDIA_ROOT + 'images/favicon.ico', 'wb+') as destination:
+                for chunk in f.chunks():
+                    destination.write(chunk)
+            with open(settings.MEDIA_ROOT + 'images/favicon.' + datetime.now().strftime("%Y%m%d-%H%M%S") + '.ico', 'wb+') as destination:
+                for chunk in f.chunks():
+                    destination.write(chunk)
+        elif 'logo_select' in request.POST:
+            shutil.copyfile(settings.MEDIA_ROOT + 'images/theme/' + request.POST['logo_select'], settings.MEDIA_ROOT + 'images/theme/logo.png')
+        elif 'header_select' in request.POST:
+            shutil.copyfile(settings.MEDIA_ROOT + 'images/theme/' + request.POST['header_select'], settings.MEDIA_ROOT + 'images/theme/header.png')
+        elif 'favicon_select' in request.POST:
+            shutil.copyfile(settings.MEDIA_ROOT + 'images/' + request.POST['favicon_select'], settings.MEDIA_ROOT + 'images/favicon.ico')
+
+    context['logo_files'] = [(path.split('public')[1], path.split('images/theme/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/theme', "logo\..*\.png")]
+    context['header_files'] = [(path.split('public')[1], path.split('images/theme/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/theme', "header\..*\.png")]
+    context['favicon_files'] = [(path.split('public')[1], path.split('images/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images', "favicon\..*\.ico")]
+    context['has_header'] = os.path.exists(settings.MEDIA_ROOT + 'images/theme/header.png')
+    
+    return render_to_response('themes/logos.html', request, context)
 
 @admin_required
 def confirm_overwrite(request, current_theme=None, differences=None, orig_view=None):
