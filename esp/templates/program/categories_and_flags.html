@@ -41,6 +41,9 @@ function deleteRecordType() {
     Class Category, Flag Type, and Record Type Management
 </h2>
 
+<p>This page is for adding, removing, and editing website-wide Class Categories, Flag Types, and Record Types. Note that new categories and flag types will not automatically populate into existing programs.
+You will need to use the main settings page for a specific program to modify which of the categories and flag types below will be available for teachers and admins (respectively) for that program.</p>
+
 <div id="program_form">
 
     {% if open_section == "categories" %}
@@ -56,6 +59,10 @@ function deleteRecordType() {
 
     <div class="dspcont">
     {% endif %}
+
+    <p>Teachers choose categories for their classes when they register them. These categories are then displayed in schedules, catalogs, etc.
+    The following class <b>categories</b> are available to use for your programs. You can add another category or edit an existing one using the form below.
+    Note that you can not delete categories that are already being used for classes.</p>
 
     <form method="post">
     <input type="hidden" name="command" value="{% if cat_form.instance.id %}edit{% else %}add{% endif %}" />
@@ -97,7 +104,7 @@ function deleteRecordType() {
                         <input type="hidden" name="id" value="{{ cat.id }}" />
                         <input type="hidden" name="command" value="delete" />
                         <input type="hidden" name="object" value="category" />
-                        <input type="submit" value="Delete" class="btn btn-danger" />
+                        <input type="submit" value="Delete" class="btn btn-danger" {% if cat.used_by_classes %}disabled title="This category is used for classes and can not be deleted"{% endif %}/>
                     </form>
                 </center>
             </td>
@@ -119,6 +126,10 @@ function deleteRecordType() {
 
     <div class="dspcont">
     {% endif %}
+
+    <p>Flags allow you to annotate classes with particular information (e.g., classroom needs, needs further review).
+    The following flag <b>types</b> are available to use for your programs. You can add another flag type or edit an existing one using the form below.
+    Note that you can not delete flag types that are already being used for class flags.</p>
 
     <form method="post">
     <input type="hidden" name="command" value="{% if flag_form.instance.id %}edit{% else %}add{% endif %}" />
@@ -164,7 +175,7 @@ function deleteRecordType() {
                         <input type="hidden" name="id" value="{{ ft.id }}" />
                         <input type="hidden" name="command" value="delete" />
                         <input type="hidden" name="object" value="flag_type" />
-                        <input type="submit" value="Delete" class="btn btn-danger" />
+                        <input type="submit" value="Delete" class="btn btn-danger" {% if ft.used_by_flags %}disabled title="This flag type is used for flags and can not be deleted"{% endif %}/>
                     </form>
                 </center>
             </td>
@@ -186,6 +197,10 @@ function deleteRecordType() {
 
     <div class="dspcont">
     {% endif %}
+
+    <p>Records allow you to mark that a user has performed some action (e.g., checked into a program or took a survey) at a specific time.
+    The following record <b>types</b> are available to use for your programs (many of which are built-in). You can add another record type or edit an existing one using the form below.
+    Note that you can not edit or delete record types that are built-in. You also can not delete record types that are already being used for user records.</p>
 
     <form method="post">
     <input type="hidden" name="command" value="{% if rec_form.instance.id %}edit{% else %}add{% endif %}" />
@@ -227,7 +242,7 @@ function deleteRecordType() {
                         <input type="hidden" name="id" value="{{ rt.id }}" />
                         <input type="hidden" name="command" value="delete" />
                         <input type="hidden" name="object" value="record_type" />
-                        <input type="submit" value="Delete" class="btn btn-danger" {% if not rt.is_custom %}disabled title="Can not delete built-in record types" {% endif %}/>
+                        <input type="submit" value="Delete" class="btn btn-danger" {% if not rt.is_custom %}disabled title="Can not delete built-in record types" {% endif %}{% if rt.used_by_records %}disabled title="This record type is used for records and can not be deleted"{% endif %}/>
                     </form>
                 </center>
             </td>
