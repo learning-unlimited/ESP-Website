@@ -79,7 +79,7 @@
     <!-- prevent forms from being submitted twice -->
     <script text="text/javascript">
       $j(function() {
-        $j('[type=submit]').click(function(){
+        $j('[type=submit]:not(.stripe-button-el)').click(function(){
           $j(this).prop('disabled', true);
           var form = $j(this).parents('form');
           <!-- this adds a hidden field in case we care what the button name/value are -->
