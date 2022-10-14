@@ -60,6 +60,7 @@ def landing(request):
     tc = ThemeController()
     context['theme_name'] = tc.get_current_theme()
     context['last_customization_name'] = tc.get_current_customization()
+    context['has_header'] = os.path.exists(settings.MEDIA_ROOT + 'images/theme/header.png')
     return render_to_response('themes/landing.html', request, context)
 
 @admin_required

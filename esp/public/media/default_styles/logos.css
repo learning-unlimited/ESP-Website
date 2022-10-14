@@ -33,3 +33,7 @@ table {
 .ui-selectmenu-button.ui-button {
     width: 80%;
 }
+
+.well img {
+    max-width: 80%;
+}
