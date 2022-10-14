@@ -123,7 +123,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                     form = SubmitForm(request.POST, program=prog)
                     if form.is_valid():
                         form.save(user, prog)
-                        self.send_confirmation_email(user)
+                        self.send_join_emails(user,prog)
                         in_lottery = True
 
             if in_lottery:
@@ -165,7 +165,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
             try:
                 group = PhaseZeroRecord.objects.get(user=join_user, program=prog)
             except PhaseZeroRecord.DoesNotExist:
-                join_error = 'Error - That student is not in a lottery group.'
+                join_error = 'Error - That student is not yet in a staple group.'
             else:
                 if in_lottery:
                     old_group = PhaseZeroRecord.objects.get(user=user, program=prog)
@@ -173,11 +173,11 @@ class StudentRegPhaseZero(ProgramModuleObj):
                 if join_user == str(user.id):
                     join_error = 'Error - You can not select yourself.'
                 elif in_lottery and old_group==group:
-                    join_error = 'Error - You are already in this lottery group.'
+                    join_error = 'Error - You are already in this staple group.'
                 elif num_users < num_allowed_users:
                     group.user.add(user)
                     group.save()
-                    self.send_confirmation_email(user)
+                    self.send_join_emails(user,prog)
                     if in_lottery:
                         old_group.user.remove(user)
                         old_group.save()
@@ -196,6 +196,40 @@ class StudentRegPhaseZero(ProgramModuleObj):
             context['lottery_group'] = PhaseZeroRecord.objects.get(user=user, program=prog)
             context['lottery_size'] = context['lottery_group'].user.count()
             return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
+
+    @aux_call
+    @needs_student
+    def leavegroup(self, request, tl, one, two, module, extra, prog, newclass = None):
+        context = {}
+        context['program'] = prog
+        context['one'] = one
+        context['two'] = two
+        user = request.user
+        lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
+        in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
+        lottery_run = Tag.getBooleanTag('student_lottery_run', prog, default=False)
+        num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog, default=4))
+        context['lottery_perm'] = lottery_perm
+        context['lottery_run'] = lottery_run
+        context['num_allowed_users'] = num_allowed_users
+
+        join_error = False
+        groups = PhaseZeroRecord.objects.filter(user=user, program=prog)
+        if not groups:
+            join_error = 'Error - You are not in a lottery group.'
+        else:
+            for group in groups:
+                group.user.remove(user)
+                group.save()
+                if not group.user.exists():
+                    group.delete()
+            self.send_leavegroup_confirmation_email(user)
+
+        context['join_error'] = join_error
+        form = SubmitForm(program=prog)
+        context['form'] = form
+        return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
+
 
     @aux_call
     @needs_student
@@ -231,8 +265,18 @@ class StudentRegPhaseZero(ProgramModuleObj):
             obj_list = []
 
         return JsonResponse(obj_list)
+    
+    def send_join_emails(self,joined_student,prog):
+        other_users=set()
+        groups = PhaseZeroRecord.objects.filter(user=joined_student, program=prog)
+        for group in groups:
+            other_users.update(group.user.all())
+        other_users.remove(joined_student)
+        self.send_joingroup_confirmation_email(joined_student)
+        for user in other_users:
+            self.send_other_joined_group_confirmation_email(user,joined_student)
 
-    def send_confirmation_email(self, student, note=None):
+    def send_joingroup_confirmation_email(self, student, note=None):
         email_title = 'Student Lottery Confirmation for %s: %s' % (self.program.niceName(), student.name())
         email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
         email_context = {'student': student,
@@ -240,7 +284,32 @@ class StudentRegPhaseZero(ProgramModuleObj):
                          'curtime': datetime.datetime.now(),
                          'note': note,
                          'DEFAULT_HOST': settings.DEFAULT_HOST}
-        email_contents = render_to_string('program/modules/studentregphasezero/confirmation_email.txt', email_context)
+        email_contents = render_to_string('program/modules/studentregphasezero/joingroup_confirmation_email.txt', email_context)
+        email_to = ['%s <%s>' % (student.name(), student.email)]
+        send_mail(email_title, email_contents, email_from, email_to, False)
+        
+    def send_other_joined_group_confirmation_email(self, student,joined_student, note=None):
+        email_title = 'Student Lottery Confirmation for %s: %s' % (self.program.niceName(), student.name())
+        email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
+        email_context = {'student': student,
+                         'joined_student': joined_student,
+                         'program': self.program,
+                         'curtime': datetime.datetime.now(),
+                         'note': note,
+                         'DEFAULT_HOST': settings.DEFAULT_HOST}
+        email_contents = render_to_string('program/modules/studentregphasezero/other_joined_group_confirmation_email.txt', email_context)
+        email_to = ['%s <%s>' % (student.name(), student.email)]
+        send_mail(email_title, email_contents, email_from, email_to, False)
+
+    def send_leavegroup_confirmation_email(self, student, note=None):
+        email_title = 'Student Lottery Confirmation for %s: %s' % (self.program.niceName(), student.name())
+        email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
+        email_context = {'student': student,
+                         'program': self.program,
+                         'curtime': datetime.datetime.now(),
+                         'note': note,
+                         'DEFAULT_HOST': settings.DEFAULT_HOST}
+        email_contents = render_to_string('program/modules/studentregphasezero/leavegroup_confirmation_email.txt', email_context)
         email_to = ['%s <%s>' % (student.name(), student.email)]
         send_mail(email_title, email_contents, email_from, email_to, False)
 
