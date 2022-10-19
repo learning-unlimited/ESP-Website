@@ -32,6 +32,19 @@ function deleteRecordType() {
     }
     return false;
 }
+
+function initialize()
+{
+    if($j(".isbuiltin").length > 0) {
+        $j("#builtin_records").on("click", function() {
+            $j(".isbuiltin").toggle();
+        });
+    } else {
+        $j("#builtin_records").hide()
+    }
+}
+
+$j(document).ready(initialize);
 </script>
 {% endblock %}
 
@@ -218,18 +231,19 @@ You will need to use the main settings page for a specific program to modify whi
     <br />
 
     <table align="center" cellpadding="0" cellspacing="0" width="100%">
-        <tr><th colspan="4">Record Types</th></tr>
-        <tr>
+        <tr><th colspan="3">Record Types</th></tr>
+        {% for rt in record_types %}
+        {% ifchanged rt.is_custom %}
+        <tr{% if not rt.is_custom %} id="builtin_records"{% endif %}><th colspan="3">{% if rt.is_custom %}Custom Record Types{% else %}Built-in Record Types (click to expand){% endif %}</th></tr>
+        <tr{% if not rt.is_custom %} class="isbuiltin" hidden{% endif %}>
             <td><b>Name</b></td>
             <td><b>Description</b></td>
-            <td><b>Custom?</b></td>
             <td><b>Options</b></td>
         </tr>
-        {% for rt in record_types %}
-        <tr>
+        {% endifchanged %}
+        <tr{% if not rt.is_custom %} class="isbuiltin" hidden{% endif %}>
             <td>{{ rt.name }}</td>
             <td>{{ rt.description }}</td>
-            <td>{{ rt.is_custom }}</td>
             <td>
                 <center>
                     <form method="post">
@@ -252,6 +266,8 @@ You will need to use the main settings page for a specific program to modify whi
     </div>
 
 </div>
+
+<br /><br /><br />
 
 <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 
