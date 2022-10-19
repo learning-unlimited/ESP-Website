@@ -2289,6 +2289,9 @@ class RecordType(models.Model):
     def is_custom(self):
         return self.name not in self.BUILTIN_TYPES
 
+    def used_by_records(self):
+        return Record.objects.filter(event=self).exists()
+
     class Meta:
         app_label = 'users'
 

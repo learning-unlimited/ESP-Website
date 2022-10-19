@@ -2061,6 +2061,9 @@ class ClassCategories(models.Model):
     symbol = models.CharField(max_length=1, default='?', blank=False, help_text='A single character to represent the category')
     seq = models.IntegerField(default=0, help_text='Categories will be ordered by this.  Smaller is earlier; the default is 0.')
 
+    def used_by_classes(self):
+        return ClassSubject.objects.filter(category=self).exists()
+
     class Meta:
         verbose_name_plural = 'Class categories'
         app_label = 'program'

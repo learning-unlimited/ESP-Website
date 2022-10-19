@@ -1018,7 +1018,8 @@ def catsflagsrecs(request, section=""):
     context['rec_form'] = rec_form
     context['categories'] = ClassCategories.objects.all().order_by('seq')
     context['flag_types'] = ClassFlagType.objects.all().order_by('seq')
-    context['record_types'] = RecordType.objects.all().order_by('id')
+    rec_types = RecordType.objects.all().order_by('id')
+    context['record_types'] = sorted(rec_types, key = lambda x:x.is_custom(), reverse=True)
 
     return render_to_response('program/categories_and_flags.html', request, context)
 
