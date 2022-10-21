@@ -37,7 +37,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
 from esp.program.models import ClassSection
 from esp.utils.web import render_to_response
 from esp.users.forms.generic_search_form import StudentSearchForm
-from esp.users.models    import ESPUser, Record
+from esp.users.models    import ESPUser, Record, RecordType
 from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
 from esp.middleware.esperrormiddleware import ESPError
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
@@ -63,7 +63,8 @@ class OnSiteCheckoutModule(ProgramModuleObj):
         if "checkoutall" in request.POST and "confirm" in request.POST:
             students = prog.currentlyCheckedInStudents()
             for student in students:
-                Record.objects.create(user=student, event="checked_out", program=prog)
+                rt = RecordType.objects.get(name="checked_out")
+                Record.objects.create(user=student, event=rt, program=prog)
             context['checkout_all_message'] = "Successfully checked out %s students" % (students.count())
 
         target_id = None
@@ -96,7 +97,8 @@ class OnSiteCheckoutModule(ProgramModuleObj):
 
             if 'checkout_student' in request.POST:
                 # Make checked_out record
-                Record.objects.create(user=student, event="checked_out", program=prog)
+                rt = RecordType.objects.get(name="checked_out")
+                Record.objects.create(user=student, event=rt, program=prog)
 
                 # Unenroll student from selected classes
                 verbs = RTC.getVisibleRegistrationTypeNames(prog)

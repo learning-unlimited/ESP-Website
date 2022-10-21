@@ -45,7 +45,7 @@ from esp.utils.web               import render_to_response
 from esp.dbmail.models           import send_mail
 from esp.middleware              import ESPError
 from django.db.models.query      import Q
-from esp.users.models            import User, ESPUser, Record, TeacherInfo
+from esp.users.models            import User, ESPUser, Record, RecordType, TeacherInfo
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.conf                 import settings
@@ -128,7 +128,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         Q_isteacher = Q(classsubject__in=classes_qs)
         Q_rejected_teacher = Q(classsubject__in=classes_qs.filter(status__lt=0)) & Q_isteacher
-        Q_approved_teacher = Q(classsubject__in=classes_qs.filter(status__gt=0)) & Q_isteacher
+        Q_approved_teacher = Q(classsubject__in=classes_qs.filter(status__gt=0, sections__status__gt=0)) & Q_isteacher
         Q_proposed_teacher = Q(classsubject__in=classes_qs.filter(status=0)) & Q_isteacher
 
         ## is_nearly_full() means at least one section is more than float(ClassSubject.get_capacity_factor()) full
@@ -272,7 +272,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                         continue
                 if student.isStudent():
                     if not prog.isCheckedIn(student):
-                        rec = Record(user=student, program=prog, event='attended')
+                        rt = RecordType.objects.get(name="attended")
+                        rec = Record(user=student, program=prog, event=rt)
                         rec.save()
                     sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
                     sr.end_date = today_max
@@ -357,7 +358,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                             json_data['message'] = '%s was not marked as attending.' % student.name()
                     else:
                         if not prog.isCheckedIn(student):
-                            rec = Record(user=student, program=prog, event='attended')
+                            rt = RecordType.objects.get(name="attended")
+                            rec = Record(user=student, program=prog, event=rt)
                             rec.save()
                             json_data['checkedin'] = True
                         sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
@@ -485,7 +487,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/MainPage")
     def class_docs(self, request, tl, one, two, module, extra, prog):
-        from esp.web.forms.fileupload_form import FileUploadForm
+        from esp.web.forms.fileupload_form import FileUploadForm, FileRenameForm
         from esp.qsdmedia.models import Media
 
         clsid = 0
@@ -500,6 +502,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         target_class = classes[0]
         context_form = FileUploadForm()
+        context_rename_form = FileRenameForm()
 
         if request.method == 'POST':
             if request.POST['command'] == 'delete':
@@ -521,8 +524,17 @@ class TeacherClassRegModule(ProgramModuleObj):
                     media.save()
                 else:
                     context_form = form
+            elif request.POST['command'] == 'rename':
+                form = FileRenameForm(request.POST, request.FILES)
+                if form.is_valid():
+                    docid = request.POST['docid']
+                    media = Media.objects.get(id = docid)
+                    media.rename(form.cleaned_data['title'])
+                    media.save()
+                else:
+                    context_rename_form = form
 
-        context = {'cls': target_class, 'uploadform': context_form, 'module': self}
+        context = {'cls': target_class, 'uploadform': context_form, 'module': self, 'renameform': context_rename_form}
 
         return render_to_response(self.baseDir()+'class_docs.html', request, context)
 

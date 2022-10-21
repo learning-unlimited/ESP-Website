@@ -225,7 +225,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @no_auth
     @cached_module_view
     def timeslots(prog):
-        timeslots = list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values('id', 'short_description', 'label', 'start', 'end'))
+        timeslots = list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy MM/DD HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values('id', 'short_description', 'label', 'start', 'end'))
         for i in range(len(timeslots)):
             timeslot_start = Event.objects.get(pk=timeslots[i]['id']).start
             timeslots_before = Event.objects.filter(start__lt=timeslot_start)
@@ -350,6 +350,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'parent_class': cls.id,
                 'category': cls.category.symbol,
                 'category_id': cls.category.id,
+                'class_style': cls.class_style,
                 'grade_max': cls.grade_max,
                 'grade_min': cls.grade_min,
                 'title': cls.title,
@@ -718,6 +719,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return_dict = {
             'id': cls.id if return_key == 'classes' else section_id,
             'status': cls.status,
+            'is_scheduled': cls.hasScheduledSections(),
             'emailcode': cls.emailcode(),
             'title': cls.title,
             'class_info': cls.class_info,
@@ -769,7 +771,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         class_num_list.append(("Total # of Class Sections Scheduled", sections.filter(meeting_times__isnull=False).distinct().count()))
         class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category = "Lunch").filter(status=10).distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=0).exclude(category__category='Lunch').distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=10).exclude(category__category='Lunch').distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=10, sections__status=10).exclude(category__category='Lunch').distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", classes.filter(status=-10).exclude(category__category='Lunch').distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", classes.filter(status=-20).exclude(category__category='Lunch').distinct().count()))
         return class_num_list
@@ -984,7 +986,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     hour_nums.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     hour_nums.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
     hour_nums.depend_on_row(StudentRegistration, lambda sr: {'prog': sr.section.parent_class.parent_program})
-    hour_nums.depend_on_row(Record, lambda rec: {'prog': rec.program}, lambda rec: rec.event == 'attended')
+    hour_nums.depend_on_row(Record, lambda rec: {'prog': rec.program}, lambda rec: rec.event and rec.event.name == 'attended')
     hour_nums = staticmethod(hour_nums)
 
     @cache_function

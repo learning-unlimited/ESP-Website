@@ -5,14 +5,12 @@
 #main {
     h1 {
         color: #444;
-        font-family: 'Patrick Hand', Helvetica, 'Helvetica Neue', sans-serif;
         font-size: 42px;
         font-weight: normal;
         margin-bottom: 0.5em;
     }
     h2 {
         color: @identity-blue;
-        font-family: 'Patrick Hand', Helvetica, 'Helvetica Neue', sans-serif;
         font-size: 32px;
         font-weight: normal;
         margin-bottom: 0.3em;
@@ -22,6 +20,7 @@
         text-decoration: underline;
     }
     .btn {
+        background: @btnBackground;
         border: 1px solid @identity-blue;
 		background-image: none;
         &:active, &:focus {
@@ -42,12 +41,12 @@
         border-color: transparent;
     }
     .btn-primary {
-        background: @identity-blue;
+        background: @btnPrimaryBackground;
 		color: white;
 		text-decoration: none;
     }
     .btn-inverse {
-        background: #333;
+        background: @btnInverseBackground;
     }
     .control-group .controls > ul {
         list-style: none;
@@ -88,7 +87,7 @@
 
 
 body {
-    background: @pale;
+    background: @bodyBackground;
     position: relative;
 }
 .container {
@@ -120,24 +119,26 @@ div.nav-collapse.collapse {
 
 .sidebar {
     & {
-        background: none;
+      color: @navbarText;
+        background: @sidebarBackground;
         margin-bottom: 2em;
     }
     .nav-header {
-        color: #666;
+        color: @sidebarHeader;
     }
     li > a:hover {
-        color: @identity-blue;
+        color: @sidebarLinkHover;
+        background-color: @sidebarHover
     }
     > .active > a {
         &, &:hover {
-            background-color: @identity-blue
-        }
+            color: @sidebarActive;
+            background-color: @sidebarActiveBackground;
+    }
     }
     > li > a {
         padding: 8px 18px;
-        color: black;
-        font-family: 'Patrick Hand', Helvetica, 'Helvetica Neue', sans-serif;
+        color: @sidebarLink;
         font-size: 17px;
     }
     .active {
@@ -164,6 +165,7 @@ div.nav-collapse.collapse {
         position: absolute;
         z-index: 2;
         right: 0;
+        color: @navbarText;
     }
     input, select, .radio, .checkbox {
         margin-top: 0;
@@ -171,29 +173,44 @@ div.nav-collapse.collapse {
     .navbar-inner {
         margin: 0;
         padding: 6px;
-        background: white;
-        background: rgba(255, 255, 255, 0.74);
+        background: @navbarBackground;
         min-height: auto;
     }
     .btn {
-        background: none;
+        background: @navbarBackgroundHighlight;
+        color: @navbarText;
         border: 1px solid gray;
         border: 1px solid rgba(0, 0, 0, 0.21);
     }
     .username {
-        color: black;
+        color: @navbarText;
         display: inline-block;
     }
     a.username {
+        color: @navbarLinkColor;
         text-decoration: none;
+    }
+    a.username:hover {
+        color: @navbarLinkColorHover;
     }
     .navbar-form > * {
         margin: 0;
         display: inline-block;
         vertical-align: middle;
+        color: @navbarText;
     }
     .navbar-form button {
         margin: 0;
+        color: @navbarText;
+    }
+    .dropdown-menu    {
+    > li > a {
+        color: @navbarLinkColor;
+        background: @navbarBackgroundHighlight
+    }
+    > li > a:hover {
+        color: @navbarLinkColorHover
+    }
     }
 }
 

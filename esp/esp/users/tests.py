@@ -15,7 +15,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
-from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission, Record
+from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission, Record, RecordType
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -512,12 +512,12 @@ class RecordTest(TestCase):
         self.past     = datetime.datetime(1970, 1, 1)
         self.future   = datetime.datetime.max
         self.user     = ESPUser.objects.create(username='RecordTest')
-        self.event    = Record.EVENT_CHOICES[0][0]
+        self.event    = "student_survey"
         self.program1 = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program1')
         self.program2 = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program2')
 
     def tearDown(self):
-        Record.filter(self.user, self.event, when=self.future).delete()
+        Record.filter(self.user, event = self.event, when=self.future).delete()
         self.user.delete()
         self.program1.delete()
         self.program2.delete()
@@ -536,7 +536,7 @@ class RecordTest(TestCase):
                 return Record.filter(self.user, self.event, program,
                                      when, only_today)
             def create(when=None):
-                kwargs = {'event'   : self.event,
+                kwargs = {'event'   : RecordType.objects.get(name=self.event),
                           'program' : program,
                           'user'    : self.user}
                 if when is not None:

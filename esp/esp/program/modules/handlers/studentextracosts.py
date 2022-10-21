@@ -43,7 +43,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models  import StudentApplication, SplashInfo
 from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, main_call, meets_cap
 from esp.program.modules.forms.splashinfo import SiblingDiscountForm
-from esp.users.models    import Record
+from esp.users.models    import Record, RecordType
 from esp.utils.web import render_to_response
 from esp.utils.widgets import ChoiceWithOtherField
 
@@ -94,7 +94,7 @@ class StudentExtraCosts(ProgramModuleObj):
         """ Return a description for each line item type that students can be filtered by. """
         student_desc = {}
         pac = ProgramAccountingController(self.program)
-        for line_item_type in pac.get_lineitemtypes():
+        for line_item_type in pac.get_lineitemtypes(include_donations=False):
             student_desc['extracosts_%d' % line_item_type.id] = """Students who have opted for '%s'""" % line_item_type.text
             for option in line_item_type.options:
                 (option_id, option_amount, option_description, has_custom_amt) = option
@@ -112,7 +112,7 @@ class StudentExtraCosts(ProgramModuleObj):
         pac = ProgramAccountingController(self.program)
 
         # Get all the line item types for this program.
-        for i in pac.get_lineitemtypes():
+        for i in pac.get_lineitemtypes(include_donations=False):
             if QObject:
                 students = pac.all_students_Q(lineitemtype_id=i.id)
                 student_lists['extracosts_%d' % i.id] = students
@@ -140,11 +140,11 @@ class StudentExtraCosts(ProgramModuleObj):
             user = self.user
         else:
             user = get_current_request().user
-        return Record.objects.filter(user=user, program=self.program, event=self.event).exists()
+        return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
 
     def lineitemtypes(self):
         pac = ProgramAccountingController(self.program)
-        return pac.get_lineitemtypes().exclude(text__in=pac.admission_items)
+        return pac.get_lineitemtypes(include_donations=False).exclude(text__in=pac.admission_items)
 
     @main_call
     @needs_student
@@ -256,7 +256,8 @@ class StudentExtraCosts(ProgramModuleObj):
             #   Redirect to main student reg page if all data was recorded properly
             #   (otherwise, the code below will reload the page)
             if forms_all_valid:
-                bit, created = Record.objects.get_or_create(user=request.user, program=self.program, event=self.event)
+                rt = RecordType.objects.get(name=self.event)
+                bit, created = Record.objects.get_or_create(user=request.user, program=self.program, event=rt)
                 return self.goToCore(tl)
 
             ### End Post

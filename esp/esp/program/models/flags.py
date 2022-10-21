@@ -42,9 +42,9 @@ from esp.users.models import ESPUser
 from esp.program.models import Program
 
 class ClassFlagType(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-    show_in_scheduler = models.BooleanField(default=False)
-    show_in_dashboard = models.BooleanField(default=False)
+    name = models.CharField(max_length=255, unique=True, help_text='The name of the flag type')
+    show_in_scheduler = models.BooleanField(default=False, help_text='Should this flag type be shown in the scheduler?')
+    show_in_dashboard = models.BooleanField(default=False, help_text='Should this flag type be shown in the dashboard?')
     seq = models.SmallIntegerField(default=0, help_text='Flag types will be ordered by this.  Smaller is earlier; the default is 0.')
     color = models.CharField(blank=True, max_length=20, help_text='A color for displaying this flag type.  Should be a valid CSS color, for example "red", "#ff0000", or "rgb(255, 0, 0)".  If blank, an arbitrary one will be chosen.')
 
@@ -82,6 +82,9 @@ class ClassFlagType(models.Model):
     get_flag_types.depend_on_model('program.ClassFlagType')
     get_flag_types.depend_on_m2m('program.Program', 'flag_types', lambda prog, flag_type: {'program': prog})
     get_flag_types = classmethod(get_flag_types)
+
+    def used_by_flags(self):
+        return ClassFlag.objects.filter(flag_type=self).exists()
 
 class ClassFlag(models.Model):
     subject = AjaxForeignKey('ClassSubject', related_name='flags')

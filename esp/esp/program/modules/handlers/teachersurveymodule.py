@@ -58,8 +58,8 @@ class TeacherSurveyModule(ProgramModuleObj):
         program=self.program
 
         if QObject:
-            return {'teacher_survey': Q(record__program=program) & Q(record__event=event)}
-        return {'teacher_survey': ESPUser.objects.filter(record__program=program, record__event=event).distinct()}
+            return {'teacher_survey': Q(record__program=program) & Q(record__event__name=event)}
+        return {'teacher_survey': ESPUser.objects.filter(record__program=program, record__event__name=event).distinct()}
 
     def teacherDesc(self):
         return {'teacher_survey': """Teachers who filled out the survey"""}

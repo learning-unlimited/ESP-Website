@@ -117,5 +117,8 @@ class Media(models.Model):
 
         super(Media, self).delete(*args, **kwargs)
 
+    def rename(self, new_name):
+        self.friendly_name = new_name
+
     def __unicode__(self):
         return unicode(self.friendly_name)

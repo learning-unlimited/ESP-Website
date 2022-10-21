@@ -83,7 +83,8 @@ var currentPrograms = [
         class_search: {% if current_program|hasModule:"ClassSearchModule" %}true{% else %}false{% endif %}
     },
 {% endfor %}
-]; 
+];
+var debug = {{ settings.DEBUG|yesno:"true,false" }};
 </script>
 <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
     <div id="page" class="{{ request.path|extract_theme }}">

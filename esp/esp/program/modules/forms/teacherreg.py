@@ -216,13 +216,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
         for field_name in custom_fields:
             self.fields[field_name] = custom_fields[field_name]
 
-        #   Modify help text on these fields if necessary.
-        #   TODO(benkraft): Is there a reason not to allow this on all fields?
-        custom_helptext_fields = [
-            'duration', 'class_size_max', 'class_size_optimal', 'num_sections',
-            'requested_room', 'message_for_directors', 'purchase_requests',
-            'class_info', 'grade_max', 'grade_min'] + custom_fields.keys()
-        for field in custom_helptext_fields:
+        #   Modify help text and labels on fields if necessary.
+        for field in self.fields.keys():
             tag_data = Tag.getProgramTag('teacherreg_label_%s' % field, prog)
             if tag_data:
                 self.fields[field].label = tag_data

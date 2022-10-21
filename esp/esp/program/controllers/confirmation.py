@@ -34,10 +34,10 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.models import Program, ClassSection, ClassSubject
-from esp.users.models import ESPUser, Record
+from esp.users.models import ESPUser, Record, RecordType
 from esp.program.modules.module_ext import DBReceipt
 
-from django.template import Template
+from django.template import Template, Context
 from django.template.loader import select_template
 from esp.dbmail.models import send_mail
 
@@ -46,16 +46,19 @@ class ConfirmationEmailController(object):
         options = program.studentclassregmoduleinfo
         ## Get or create a userbit indicating whether or not email's been sent.
         try:
-            record, created = Record.objects.get_or_create(user=user, event="conf_email", program=program)
+            rt = RecordType.objects.get(name="conf_email")
+            record, created = Record.objects.get_or_create(user=user, event=rt, program=program)
         except Exception:
             created = False
         if (created or repeat) and (options.send_confirmation or override):
             try:
                 receipt_template = Template(DBReceipt.objects.get(program=program, action='confirmemail').receipt)
+                receipt_text = receipt_template.render(Context({'user': user, 'program': program}))
             except:
-                receipt_template = select_template(['program/confemails/%s_confemail.txt' %(program.id),'program/confirm_email.txt'])
+                receipt_template = select_template(['program/confemails/%s_confemail.txt' %(program.id),'program/confemails/default.txt'])
+                receipt_text = receipt_template.render({'user': user, 'program': program})
             send_mail("Thank you for registering for %s!" %(program.niceName()), \
-                      receipt_template.render({'user': user, 'program': program}), \
+                      receipt_text, \
                       (ESPUser.email_sendto_address(program.director_email, program.niceName() + " Directors")), \
                       [user.email], True)
 
