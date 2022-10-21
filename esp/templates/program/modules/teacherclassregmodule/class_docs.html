@@ -26,20 +26,19 @@ td.instructions {
 We would like you, as a teacher, to upload all documents and other materials relating to your class.  This includes a syllabus, lesson plans, presentations, and anything else you want others to see.  The documents will be viewable by your students and anyone else interested in your subject.
 </p>
 
-<table cellpadding="4" cellspacing="0" align="center" width="550">
+<table cellpadding="3" cellspacing="0" align="center" width="90%">
 	<tr>
-		<th colspan="2" style="text-align: center;">
+		<th colspan="3" style="text-align: center;">
 		Documents for {{ cls.emailcode }}&mdash;{{ cls.title }}
 		</th>
 	</tr>
 	{% if cls.documents.exists %}
 	<tr>
 		<td class="clsmiddle"><b>Document</b></td>
-		<td class="clsmiddle"><b>Options</b></td>
 	</tr>
 	{% else %}
 	<tr>
-		<td colspan="2">There are no documents associated with this class.  Please add some below!</td>
+		<td colspan="3">There are no documents associated with this class.  Please add some below!</td>
 	</tr>
 	{% endif %}
 	{% for doc in cls.getDocuments %}
@@ -52,6 +51,14 @@ We would like you, as a teacher, to upload all documents and other materials rel
 				<input class="button" type="submit" value="Delete">
 			</form>
 		</td>
+        <td class="clsmiddle" width="60%">
+            <form method="post" action="./{{ cls.id }}" enctype="multipart/form-data">
+                <input type="hidden" name="docid" value="{{ doc.id }}">
+                <input type="hidden" name="command" value="rename">
+                {{ renameform.title }}
+                <input class="button" type="submit" value="Rename">
+            </form>
+        </td>
 	</tr>
 	{% endfor %}
 </table>
@@ -61,7 +68,7 @@ We would like you, as a teacher, to upload all documents and other materials rel
 
 <form method="post" action="./{{ cls.id }}" enctype="multipart/form-data">
 <input type="hidden" name="command" value="add">
-<table cellpadding="12" cellspacing="0" align="center" width="450">
+<table cellpadding="12" cellspacing="0" align="center" width="70%">
 	<tr>
 		<th colspan="2" style="text-align: center;">
 		Add a document for {{ cls.title }}

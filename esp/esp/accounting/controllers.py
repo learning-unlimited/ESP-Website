@@ -170,16 +170,17 @@ class ProgramAccountingController(BaseAccountingController):
     def default_admission_lineitemtype(self):
         return LineItemType.objects.filter(program=self.program, text='Program admission').order_by('-id')[0]
 
-    def get_lineitemtypes_Q(self, required_only=False, optional_only=False, payment_only=False, lineitemtype_id=None):
+    def get_lineitemtypes_Q(self, include_donations=True, required_only=False, optional_only=False, payment_only=False, lineitemtype_id=None):
         if lineitemtype_id:
             return Q(id=lineitemtype_id)
         q_object = Q(program=self.program) & ~Q(text__in=self.finaid_items) # exclude finaid grants and sibling discounts
-        # The Stripe module (or, if used, donation module) currently takes care of the donation
-        # optional line item, so ignore it in the optional costs module.
-        for module_name in ['CreditCardModule_Stripe', 'DonationModule']:
-            other_module = self.program.getModule(module_name)
-            if other_module and other_module.get_setting('offer_donation', default=True):
-                q_object &= ~Q(text=other_module.get_setting('donation_text'))
+        if not include_donations:
+            # The Stripe module (or, if used, donation module) currently takes care of the donation
+            # optional line item, so ignore it in the optional costs module.
+            for module_name in ['CreditCardModule_Stripe', 'DonationModule']:
+                other_module = self.program.getModule(module_name)
+                if other_module and other_module.get_setting('offer_donation', default=True):
+                    q_object &= ~Q(text=other_module.get_setting('donation_text'))
         if required_only:
             q_object &= Q(required=True, for_payments=False)
         elif optional_only:

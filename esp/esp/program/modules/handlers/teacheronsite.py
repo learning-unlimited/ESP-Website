@@ -71,7 +71,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         context['webapp_page'] = 'schedule'
         context['crmi'] = prog.classregmoduleinfo
         context['classes'] = classes
-        context['checked_in'] = Record.objects.filter(program=prog, event='teacher_checked_in', user=user, time__year=now.year, time__month=now.month, time__day=now.day).exists()
+        context['checked_in'] = Record.objects.filter(program=prog, event__name='teacher_checked_in', user=user, time__year=now.year, time__month=now.month, time__day=now.day).exists()
 
         return render_to_response(self.baseDir()+'schedule.html', request, context)
 

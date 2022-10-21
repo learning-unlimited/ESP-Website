@@ -118,6 +118,15 @@ function Matrix(
     this.moderatorDirectory = moderatorDirectory;
     if(has_moderator_module === "True") this.moderatorDirectory.bindMatrix(this);
 
+    /**
+     * Bind a scheduler to the matrix to access various functions
+     *
+     * @param scheduler: The scheduler to bind
+     */
+    this.bindScheduler = function(scheduler) {
+        this.scheduler = scheduler;
+    }
+
     // Set up scheduling checks
     this.updateCells = function(){
         $j.each(this.cells, function(index, room) {
@@ -387,8 +396,9 @@ function Matrix(
      * @param section: The section to validate.
      * @param room_id: The name of the room we want to put the section into.
      * @param schedule_timeslots: The array of timeslots we want to put the section into.
+     * @param ignore_sections: An optional array of sections to ignore
      */
-    this.validateAssignment = function(section, room_id, schedule_timeslots){
+    this.validateAssignment = function(section, room_id, schedule_timeslots, ignore_sections = []){
         var result = {
             valid: true,
             reason: null,
@@ -401,26 +411,26 @@ function Matrix(
             return result;
         }
 
-        var availableTimeslots = this.sections.getAvailableTimeslots(section)[0];
+        var availableTimeslots = this.sections.getAvailableTimeslots(section, ignore_sections)[0];
         var validateIndividualCell = function(index, cell) {
-            return !(cell.disabled || (cell.section && cell.section !== section) ||
-                    availableTimeslots.indexOf(schedule_timeslots[index]) == -1);
-        };
-
-        var firstCell = this.getCell(room_id, schedule_timeslots[0]);
-        if (section.length <= 1 && !validateIndividualCell(0, firstCell)) {
-            result.valid = false;
-            result.reason = "first cell is not valid"
-            return result;
-        }
+            if(cell.disabled){
+                return "Error: " + this.rooms[cell.room_id].text + " is not available during timeslot " + (this.timeslots.get_by_id(cell.timeslot_id).order + 1).toString();
+            } else if (cell.section && cell.section !== section && !ignore_sections.includes(cell.section)) {
+                return "Error: There is already a class scheduled in " + this.rooms[cell.room_id].text + " during timeslot " + (this.timeslots.get_by_id(cell.timeslot_id).order + 1).toString();
+            } else if (availableTimeslots.indexOf(schedule_timeslots[index]) == -1){
+                return "Error: The teachers of " + section.emailcode + " are not available during timeslot " + (this.timeslots.get_by_id(cell.timeslot_id).order + 1).toString();
+            } else {
+                return true;
+            }
+        }.bind(this);
 
         // Check to make sure all the cells are available
         for(var timeslot_index in schedule_timeslots){
             var cell = this.getCell(room_id, schedule_timeslots[timeslot_index]);
-            if (!validateIndividualCell(timeslot_index, cell)){
+            var valid = validateIndividualCell(timeslot_index, cell);
+            if (valid != true){
                 result.valid = false;
-                result.reason = "Error: timeslot" +  schedule_timeslots[timeslot_index] +
-                    " already has a class in " + room_id + "."
+                result.reason = valid;
                 return result;
             }
         }

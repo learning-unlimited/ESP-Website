@@ -58,9 +58,10 @@ class AdminMaterials(ProgramModuleObj):
     @main_call
     @needs_admin
     def get_materials(self, request, tl, one, two, module, extra, prog):
-        from esp.web.forms.fileupload_form import FileUploadForm_Admin
+        from esp.web.forms.fileupload_form import FileUploadForm_Admin, FileRenameForm
         from esp.qsdmedia.models import Media
         context_form = FileUploadForm_Admin()
+        context_rename_form = FileRenameForm()
         new_choices = [(a.id, a.emailcode() + ': ' + unicode(a)) for a in prog.classes()]
         new_choices.append((0, 'Document pertains to program'))
         new_choices.reverse()
@@ -96,8 +97,18 @@ class AdminMaterials(ProgramModuleObj):
                     media.save()
                 else:
                     context_form = form
+            elif request.POST['command'] == 'rename':
+                form = FileRenameForm(request.POST, request.FILES)
+                if form.is_valid():
+                    docid = request.POST['docid']
+                    media = Media.objects.get(id = docid)
+                    media.rename(form.cleaned_data['title'])
+                    media.save()
+                else:
+                    context_rename_form = form
 
-        context = {'prog': self.program, 'module': self, 'uploadform': context_form}
+
+        context = {'prog': self.program, 'module': self, 'uploadform': context_form, 'renameform': context_rename_form}
 
         classes = ClassSubject.objects.filter(parent_program = prog)
 

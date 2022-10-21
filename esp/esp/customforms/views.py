@@ -25,9 +25,15 @@ def test_func(user):
 
 @user_passes_test(test_func)
 def landing(request):
-    forms = Form.objects.all().order_by('-id')
+    forms = Form.objects.all().order_by('-link_type', '-link_id', '-id')
     if not request.user.isAdministrator():
         forms = forms.filter(created_by=request.user)
+    for form in forms:
+        if form.link_type in cf_cache.only_fkey_models.keys():
+            if form.link_id == -1:
+                form.link_obj = "User's choice"
+            else:
+                form.link_obj = cf_cache.only_fkey_models[form.link_type].objects.get(id=form.link_id)
     return render_to_response("customforms/landing.html", request, {'form_list': forms})
 
 @user_passes_test(test_func)

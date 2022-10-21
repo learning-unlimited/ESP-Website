@@ -241,6 +241,14 @@ class BaseESPUser(object):
             QObject = Q(classsubject__status__gt=0)
         return cls.ajax_autocomplete(data, QObject)
 
+    @classmethod
+    def ajax_autocomplete_student_lottery(cls, data, prog = None):
+        if prog:
+            QObject = Q(phasezerorecord__program=prog)
+        else:
+            QObject = Q(phasezerorecord__program__isnull=False)
+        return cls.ajax_autocomplete(data, QObject)
+
     def ajax_str(self):
         return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)
 
@@ -569,7 +577,7 @@ class BaseESPUser(object):
             return ESPUser.objects.filter(Q_useroftype)
 
     @cache_function
-    def getAvailableTimes(self, program, ignore_classes=False, ignore_moderation=False):
+    def getAvailableTimes(self, program, ignore_classes=False, ignore_moderation=False, ignore_sections=[]):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
         from esp.cal.models import Event, EventType
@@ -585,7 +593,7 @@ class BaseESPUser(object):
         if not ignore_classes:
             #   Subtract out the times that they are already teaching.
             other_sections = self.getTaughtSections(program)
-            other_times = [sec.meeting_times.values_list('id', flat=True) for sec in other_sections]
+            other_times = [sec.meeting_times.values_list('id', flat=True) for sec in other_sections if sec not in ignore_sections]
             for lst in other_times:
                 valid_events = valid_events.exclude(id__in=lst)
         if not ignore_moderation:
@@ -2260,41 +2268,36 @@ class DBList(object):
     def __unicode__(self):
         return self.key
 
-class Record(models.Model):
-    #To make these better to work with in the admin panel, and to have a
-    #well defined set of possibilities, we'll use a set of choices
-    #if you want to use this model for an additional thing,
-    #add it as a choice
-    EVENT_CHOICES=(
-        ("student_survey", "Completed student survey"),
-        ("teacher_survey", "Completed teacher survey"),
-        ("reg_confirmed", "Confirmed registration"),
-        ("attended", "Attended program"),
-        ("checked_out", "Checked out of program"),
-        ("conf_email","Was sent confirmation email"),
-        ("teacher_quiz_done","Completed teacher quiz"),
-        ("paid","Paid for program"),
-        ("med","Submitted medical form"),
-        ("med_bypass","Recieved medical bypass"),
-        ("liab","Submitted liability form"),
-        ("onsite","Registered for program onsite"),
-        ("schedule_printed","Printed student schedule onsite"),
-        ("teacheracknowledgement","Did teacher acknowledgement"),
-        ("studentacknowledgement", "Did student acknowledgement"),
-        ("lunch_selected","Selected a lunch block"),
-        ("student_extra_form_done","Filled out Student Custom Form"),
-        ("teacher_extra_form_done","Filled out Teacher Custom Form"),
-        ("extra_costs_done","Filled out Student Extra Costs Form"),
-        ("donation_done", "Filled out Donation Form"),
-        ("waitlist","Waitlisted for a program"),
-        ("interview","Teacher-interviewed for a program"),
-        ("teacher_training","Attended teacher-training for a program"),
-        ("teacher_checked_in", "Teacher checked in for teaching on the day of the program"),
-        ("twophase_reg_done", "Completed two-phase registration"),
-    )
+class RecordType(models.Model):
+    name = models.CharField(max_length=80, help_text = "A unique short snake_case name for the record type", unique=True)
+    description = models.CharField(max_length=255, help_text = "A unique sentence case description for the record type", unique=True)
 
-    event = models.CharField(max_length=80,choices=EVENT_CHOICES)
-    program = models.ForeignKey("program.Program",blank=True,null=True)
+    BUILTIN_TYPES = [
+        "student_survey", "teacher_survey", "reg_confirmed", "attended", "checked_out", "conf_email", "teacher_quiz_done",
+        "paid", "med", "med_bypass", "liab", "onsite", "schedule_printed", "teacheracknowledgement", "studentacknowledgement",
+        "lunch_selected", "student_extra_form_done", "teacher_extra_form_done", "extra_costs_done", "donation_done", "waitlist",
+        "interview", "teacher_training", "teacher_checked_in", "twophase_reg_done",
+    ]
+
+    @classmethod
+    def desc(cls):
+        return cls.objects.all().values_list('name', 'description')
+
+    def __unicode__(self):
+        return self.description
+
+    def is_custom(self):
+        return self.name not in self.BUILTIN_TYPES
+
+    def used_by_records(self):
+        return Record.objects.filter(event=self).exists()
+
+    class Meta:
+        app_label = 'users'
+
+class Record(models.Model):
+    event = models.ForeignKey("RecordType", blank=True, null=True)
+    program = models.ForeignKey("program.Program", blank=True, null=True)
     user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True)
 
     time = models.DateTimeField(blank=True, default = datetime.now)
@@ -2330,7 +2333,7 @@ class Record(models.Model):
         """
         if when is None:
             when = datetime.now()
-        filter = cls.objects.filter(user=user, event=event, time__lte=when)
+        filter = cls.objects.filter(user=user, event__name=event, time__lte=when)
         if program is not None:
             filter = filter.filter(program=program)
         if only_today:
@@ -2356,7 +2359,7 @@ class Record(models.Model):
             return True
 
     def __unicode__(self):
-        return unicode(self.user) + " has completed " + self.event + " for " + unicode(self.program)
+        return unicode(self.user) + " has completed " + unicode(self.event) + " for " + unicode(self.program)
 
 #helper method for designing implications
 def flatten(choices):
@@ -2739,10 +2742,10 @@ class GradeChangeRequest(TimeStampedModel):
 
     def save(self, **kwargs):
         is_new = self.id is None
-        super(GradeChangeRequest, self).save(**kwargs)
 
         if is_new:
             self.send_request_email()
+            super(GradeChangeRequest, self).save(**kwargs)
             return
 
         if self.approved is not None and not self.acknowledged_time:
@@ -2752,6 +2755,8 @@ class GradeChangeRequest(TimeStampedModel):
         #   Update the student's grade if the request has been approved
         if self.approved is True:
             self.requesting_student.set_grade(self.claimed_grade)
+
+        super(GradeChangeRequest, self).save(**kwargs)
 
     def _request_email_content(self):
         """

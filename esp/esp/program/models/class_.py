@@ -539,9 +539,12 @@ class ClassSection(models.Model):
                 return res[0].attribute_value
         return None
 
+    def isScheduled(self):
+        return len(self.get_meeting_times()) > 0
+
     def prettyrooms(self):
         """ Return the pretty name of the rooms. """
-        if self.meeting_times.count() > 0:
+        if self.isScheduled():
             return [x.name for x in self.initial_rooms()]
         else:
             return []
@@ -576,7 +579,7 @@ class ClassSection(models.Model):
             return None
 
     def start_time(self):
-        if self.meeting_times.count() > 0:
+        if self.isScheduled():
             return self.meeting_times.order_by('start')[0]
         else:
             return None
@@ -760,7 +763,7 @@ class ClassSection(models.Model):
         available_times = intersect_lists(timeslot_list)
 
         #   If the class is already scheduled, put its time in.
-        if self.meeting_times.count() > 0:
+        if self.isScheduled():
             for k in self.meeting_times.all():
                 if k not in available_times:
                     available_times.append(k)
@@ -936,7 +939,7 @@ class ClassSection(models.Model):
             return False
         # otherwise, check if all teachers are available
         for t in self.teachers:
-            available = t.getAvailableTimes(self.parent_program, ignore_classes=ignore_classes)
+            available = t.getAvailableTimes(self.parent_program, ignore_classes=ignore_classes, ignore_sections=[self])
             for e in meeting_times:
                 if e not in available:
                     return u"The teacher %s has not indicated availability during %s." % (t.name(), e.pretty_time())
@@ -985,7 +988,7 @@ class ClassSection(models.Model):
         return self.students_checked_in().count()
 
     def count_ever_checked_in_students(self):
-        return (self.students() & ESPUser.objects.filter(Q(record__event="attended", record__program=self.parent_program)).distinct()).count()
+        return (self.students() & ESPUser.objects.filter(Q(record__event__name="attended", record__program=self.parent_program)).distinct()).count()
 
     @cache_function
     def num_students_prereg(self):
@@ -1369,6 +1372,19 @@ class ClassSection(models.Model):
                (int(self.duration),
             int(round((self.duration - int(self.duration)) * 60)))
 
+
+    def save(self, *args, **kwargs):
+        super(ClassSection, self).save(*args, **kwargs)
+        # If all sibling sections are now the same status, make the class that status
+        all_match = True
+        for sec in self.parent_class.sections.all():
+            if sec.status != int(self.status):
+                all_match = False
+                break
+        if all_match:
+            self.parent_class.status = int(self.status)
+            self.parent_class.save()
+
     class Meta:
         db_table = 'program_classsection'
         app_label = 'program'
@@ -1450,14 +1466,17 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def ajax_str(self):
         return self.title
 
+    def num_sections(self):
+        return len(self.get_sections())
+
     def prettyDuration(self):
-        if len(self.get_sections()) <= 0:
+        if self.num_sections() <= 0:
             return u"N/A"
         else:
             return self.get_sections()[0].prettyDuration()
 
     def prettyrooms(self):
-        if len(self.get_sections()) <= 0:
+        if self.num_sections() <= 0:
             return u"N/A"
         else:
             rooms = []
@@ -1696,7 +1715,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         """
         sections = self.get_sections()
         for s in sections:
-            if len(s.get_meeting_times()) > 0:
+            if s.isScheduled():
                 return True
         return False
 
@@ -1845,65 +1864,50 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                 return False
         return True
 
-    def accept(self, user=None, show_message=False):
+    def accept(self):
         """ mark this class as accepted """
         if self.isAccepted():
             return False # already accepted
 
-        self.status = ACCEPTED
-        # I do not understand the following line, but it saves us from "Cannot convert float to Decimal".
-        # Also seen in /esp/program/modules/forms/management.py -ageng 2008-11-01
-        #self.duration = Decimal(str(self.duration))
-        self.save()
-        #   Accept any unreviewed sections.
-        for sec in self.sections.all():
-            if sec.status == UNREVIEWED:
-                sec.status = ACCEPTED
-                sec.save()
-
-        if not show_message:
-            return True
-
-        subject = 'Your %s class was approved!' % (self.parent_program.niceName())
-
-        content =  """Congratulations, your class,
-%s,
-was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view your class' status.
-
--esp.mit.edu Autogenerated Message""" % \
-                  (self.title, self.parent_program.getUrlBase(), self.id)
-        if user is None:
-            user = AnonymousUser()
+        self.accept_all_sections()
         return True
 
-    def set_all_sections_to_status(self, status):
+    def set_all_sections_to_status(self, status, skip_cancelled = True, skip_rejected = True):
         self.status = status
         self.save()
         for sec in self.sections.all():
+            if skip_cancelled and sec.isCancelled() and self.num_sections() > 1:
+                continue
+            if skip_rejected and sec.isRejected() and self.num_sections() > 1:
+                continue
             sec.status = status
             sec.save()
 
     def accept_all_sections(self):
-        """ Accept all sections of this class, without any of the checks or messages that are in accept() """
+        """ Accept all sections of this class that aren't already cancelled/rejected, without any of the checks or messages that are in accept() """
         self.set_all_sections_to_status(ACCEPTED)
 
     def propose(self):
-        """ Mark this class as just `proposed' """
-        self.status = UNREVIEWED
-        self.save()
+        """ Mark this class as just 'proposed' """
+        self.unreview_all_sections()
 
     def unreview_all_sections(self):
-        """ Mark all sections of this class as unreviewed """
+        """ Unreview all sections of this class that aren't already cancelled/rejected. """
         self.set_all_sections_to_status(UNREVIEWED)
 
     def reject(self):
-        """ Mark this class as rejected; also kicks out students from each section. """
+        """ Mark this class as rejected. This should only ever be used if no sections are scheduled.
+            This kicks out students from each section and unschedules all of the sections (just in case). """
         self.clearStudents()
+        self.clearRooms()
+        self.clearTimes()
         self.set_all_sections_to_status(REJECTED)
 
     def cancel(self, email_students=True, include_lottery_students=False, text_students=False, email_teachers=True, explanation=None, unschedule=False):
         """ Cancel this class by cancelling all of its sections. """
         for sec in self.sections.all():
+            if sec.isCancelled():
+                continue
             sec.cancel(email_students, include_lottery_students, text_students, email_teachers, explanation, unschedule)
         self.status = CANCELLED
         self.save()
@@ -1911,6 +1915,14 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
     def clearStudents(self):
         for sec in self.sections.all():
             sec.clearStudents()
+
+    def clearRooms(self):
+        for sec in self.sections.all():
+            sec.clearRooms()
+
+    def clearTimes(self):
+        for sec in self.sections.all():
+            sec.meeting_times.clear()
 
     @cache_function
     def docs_summary(self):
@@ -2042,12 +2054,15 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 class ClassCategories(models.Model):
     """ A list of all possible categories for an ESP class
 
-    Categories include 'Mathematics', 'Science', 'Zocial Zciences', etc.
+    Categories include 'Mathematics', 'Science', 'Social Sciences', etc.
     """
 
-    category = models.TextField(blank=False)
-    symbol = models.CharField(max_length=1, default='?', blank=False)
-    seq = models.IntegerField(default=0)
+    category = models.TextField(blank=False, help_text='The name of the category')
+    symbol = models.CharField(max_length=1, default='?', blank=False, help_text='A single character to represent the category')
+    seq = models.IntegerField(default=0, help_text='Categories will be ordered by this.  Smaller is earlier; the default is 0.')
+
+    def used_by_classes(self):
+        return ClassSubject.objects.filter(category=self).exists()
 
     class Meta:
         verbose_name_plural = 'Class categories'

@@ -120,6 +120,15 @@
     font-weight: normal;
 }
 
+#userbitforms ul.errorlist, #userbitforms ul.errorlist li
+{
+    list-style-type: none;
+    margin: 0px;
+    text-indent: 0px;
+    font-style: italic !important;
+    color: #c00 !important;
+}
+
 .hasDatepicker:disabled + .ui-datepicker-trigger {
     display: none;
 }

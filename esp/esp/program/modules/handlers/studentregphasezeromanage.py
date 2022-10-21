@@ -59,15 +59,14 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         }
 
     def lottery(self, prog, role, post):
-        messages = []
+        messages = {'success':[], 'error': []}
         winners, _ = Group.objects.get_or_create(name=role)
         students = []
 
         if post.get('mode') == 'default':
             # Get grade caps
-            grade_caps_str = prog.grade_caps()
-            if grade_caps_str:
-                grade_caps = {int(key[0]): value for key, value in grade_caps_str.iteritems()}
+            grade_caps = prog.grade_caps()
+            if grade_caps:
                 ###############################################################################
                 # The default lottery algorithm is run, with randomization and processing in order.
                 # If any one in the group doesn't get in (due to cap size), no one in that group gets in.
@@ -79,7 +78,16 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                     sibs = i.user.all()
                     newcounts = copy.copy(counts)
                     for j in sibs:
-                        newcounts[j.getGrade(prog)] += 1
+                        grade = j.getGrade(prog)
+                        grade_keys = [key for key in grade_caps if grade in key]
+                        if len(grade_keys) == 1:
+                            newcounts[grade_keys[0]] += 1
+                        elif len(grade_keys) == 0:
+                            messages['error'].append("The <i>program_size_by_grade</i> <a href='/manage/" + prog.getUrlBase() + "/tags/learn'>tag</a> does not include grade %i. Lottery not run." % (grade))
+                            break
+                        else:
+                            messages['error'].append("The <i>program_size_by_grade</i> <a href='/manage/" + prog.getUrlBase() + "/tags/learn'>tag</a> includes grade %i multiple times. Lottery not run." % (grade))
+                            break
 
                     cpass = not any(newcounts[c] > grade_caps[c] for c in counts)
 
@@ -87,7 +95,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                         students.extend(sibs)
                         counts = newcounts
             else:
-                messages.append("<i>program_size_by_grade</i> <a href='/manage/" + prog.getUrlBase() + "/tags'>tag</a> is not set. Lottery not run.")
+                messages['error'].append("<i>program_size_by_grade</i> <a href='/manage/" + prog.getUrlBase() + "/tags'>tag</a> is not set. Lottery not run.")
 
         elif post.get('mode') == 'manual':
             usernames = filter(None, re.split(r'[;,\s]\s*', post.get('usernames')))
@@ -97,7 +105,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                 try:
                     student = ESPUser.objects.get(username=username)
                 except (ValueError, ESPUser.DoesNotExist):
-                    messages.append("Could not find a user with username " + username)
+                    messages['error'].append("Could not find a user with username " + username)
                     continue
                 if student.isStudent():
                     records = PhaseZeroRecord.objects.filter(program=prog, user=student).order_by('time')
@@ -107,17 +115,17 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                         else:
                             students.append(student)
                     else:
-                        messages.append(username + " is not in the lottery")
+                        messages['error'].append(username + " is not in the lottery")
                 else:
-                    messages.append(username + " is not a student")
+                    messages['error'].append(username + " is not a student")
 
         else:
-            messages.append("Lottery mode " + post.get('mode') + " is not supported")
+            messages['error'].append("Lottery mode " + post.get('mode') + " is not supported")
 
         ###############################################################################
         # Post lottery, assign permissions to people in the lottery winners group
         # Assign OverridePhaseZero permission and Student/All permissions
-        if len(messages) == 0:
+        if len(messages['error']) == 0:
             # Add users to winners group once we are sure there were no problems
             winners.user_set.add(*students)
             override_perm = Permission(permission_type='OverridePhaseZero', role=winners, start_date=datetime.datetime.now(), program=prog)
@@ -127,7 +135,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                 studentAll_perm.save()
             # Add tag to indicate student lottery has been run
             Tag.setTag('student_lottery_run', target=prog, value='True')
-            messages.append("The student lottery has been run successfully")
+            messages['success'].append("The student lottery has been run successfully")
 
         return messages
 
@@ -135,8 +143,76 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
     @needs_admin
     def phasezero(self, request, tl, one, two, module, extra, prog):
         context = {}
-        role = str(prog) + " Winners"
+        role = str(prog) + " Winner"
         context['role'] = role
+        num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
+
+        if request.POST:
+            if request.POST.get('mode') == 'addnew':
+                add_user = ESPUser.objects.get(id=request.POST['student_selected1'])
+                in_lottery = PhaseZeroRecord.objects.filter(user=add_user, program=prog).exists()
+                if in_lottery:
+                    context['error'] = 'Error - %s is already in the lottery.' % (add_user.name())
+                else:
+                    rec = PhaseZeroRecord(program=prog)
+                    rec.save()
+                    rec.user.add(add_user)
+                    context['success'] = "%s has been added to the lottery." % (add_user.name())
+            elif request.POST.get('mode') == 'addtoexisting':
+                add_user = ESPUser.objects.get(id=request.POST['student_selected2'])
+                join_user = ESPUser.objects.get(id=request.POST['student_selected3'])
+                try:
+                    rec = PhaseZeroRecord.objects.get(user=join_user, program=prog)
+                except PhaseZeroRecord.DoesNotExist:
+                    context['error'] = 'Error - %s is not in an existing lottery group.' % (join_user.name())
+                else:
+                    in_lottery = PhaseZeroRecord.objects.filter(user=add_user, program=prog).exists()
+                    if in_lottery:
+                        old_rec = PhaseZeroRecord.objects.get(user=add_user, program=prog)
+                    num_users = rec.user.count()
+                    if num_users < num_allowed_users:
+                        rec.user.add(add_user)
+                        rec.save()
+                        if in_lottery:
+                            old_rec.user.remove(add_user)
+                            if not old_rec.user.exists():
+                                old_rec.delete()
+                            context['success'] = "%s has been moved to a different lottery group." % (add_user.name())
+                        context['success'] = "%s has been added to the lottery group." % (add_user.name())
+                    else:
+                        context['error'] = 'Error - This group already contains the maximum number of students (%s).' % (num_allowed_users)
+            elif request.POST.get('mode') == 'remove':
+                remove_user = ESPUser.objects.get(id=request.POST['student_selected4'])
+                try:
+                    rec = PhaseZeroRecord.objects.get(user=remove_user, program=prog)
+                except PhaseZeroRecord.DoesNotExist:
+                    context['error'] = 'Error - %s is not in the lottery.' % (remove_user.name())
+                else:
+                    rec.user.remove(remove_user)
+                    if not rec.user.exists():
+                        rec.delete()
+                    context['success'] = "%s has been removed from the lottery." % (remove_user.name())
+            elif Tag.getBooleanTag('student_lottery_run', prog):
+                if request.POST.get('mode') == 'undo':
+                    if "confirm" in request.POST:
+                        Group.objects.filter(name=role).delete()
+                        Tag.unSetTag('student_lottery_run', prog)
+                        context['lottery_succ_msg'] = ["The student lottery has been undone."]
+                    else:
+                        context['error'] = "You did not confirm that you would like to undo the lottery."
+                else:
+                    context['error'] = "You've already run the student lottery!"
+            # Run lottery if requested
+            else:
+                if "confirm" in request.POST:
+                    role = request.POST['rolename']
+                    context['role'] = role
+                    messages = self.lottery(prog, role, request.POST)
+                    context['lottery_succ_msg'] = messages['success']
+                    context['lottery_err_msg'] = messages['error']
+                else:
+                    context['error'] = "You did not confirm that you would like to run the lottery"
+
         q_phasezero = Q(phasezerorecord__program=self.program)
         entrants = ESPUser.objects.filter(q_phasezero).distinct()
         context['grade_caps'] = sorted(prog.grade_caps().iteritems())
@@ -150,7 +226,6 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         grades = range(prog.grade_min, prog.grade_max + 1)
         stats = {}
         invalid_grades = set()
-
         # Calculate grade counts
         for grade in grades:
             stats[grade] = {}
@@ -166,26 +241,6 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                     stats['Invalid Grade'] = {}
                     stats['Invalid Grade']['in_lottery'] = 0
                 stats['Invalid Grade']['in_lottery'] += 1
-
-        # Run lottery if requested
-        if request.POST:
-            if Tag.getBooleanTag('student_lottery_run', prog):
-                if request.POST.get('mode') == 'undo':
-                    if "confirm" in request.POST:
-                        Group.objects.filter(name=role).delete()
-                        Tag.unSetTag('student_lottery_run', prog)
-                        context['lottery_messages'] = ["The student lottery has been undone."]
-                    else:
-                        context['error'] = "You did not confirm that you would like to undo the lottery."
-                else:
-                    context['error'] = "You've already run the student lottery!"
-            else:
-                if "confirm" in request.POST:
-                    role = request.POST['rolename']
-                    context['role'] = role
-                    context['lottery_messages'] = self.lottery(prog, role, request.POST)
-                else:
-                    context['error'] = "You did not confirm that you would like to run the lottery"
 
         # If lottery has been run, calculate acceptance stats
         if Tag.getBooleanTag('student_lottery_run', prog):
@@ -211,6 +266,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                     stats[grade]['per_accepted'] = round(stats[grade]['num_accepted'],1)/stats[grade]['in_lottery']*100
         context['stats'] = stats
         context['invalid_grades'] = invalid_grades
+        context['num_allowed_users'] = num_allowed_users
         return render_to_response('program/modules/studentregphasezero/status.html', request, context)
 
     def isStep(self):

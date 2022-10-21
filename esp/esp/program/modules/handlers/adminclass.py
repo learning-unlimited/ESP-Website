@@ -158,11 +158,13 @@ class AdminClass(ProgramModuleObj):
             review_status = request.POST['review_status']
 
             if review_status == 'ACCEPT':
-                class_subject.accept_all_sections()
+                class_subject.accept()
             elif review_status == 'UNREVIEW':
-                class_subject.unreview_all_sections()
+                class_subject.propose()
             elif review_status == 'REJECT':
                 class_subject.reject()
+            elif review_status == 'CANCEL':
+                class_subject.cancel()
             else:
                 raise ESPError("Error: invalid review status")
 
@@ -203,14 +205,16 @@ class AdminClass(ProgramModuleObj):
         sections = cls.sections.all().order_by('id')
         context = {}
 
-        if cls.isCancelled():
+        if cls.isCancelled() or not cls.hasScheduledSections():
             cls_cancel_form = None
         else:
             cls_cancel_form = ClassCancellationForm(subject=cls)
         sec_cancel_forms = SectionCancellationForm(cls = cls)
 
-        action = request.GET.get('action', None)
+        cls_form = ClassManageForm(self, subject=cls)
+        sec_forms = [SectionManageForm(self, section=sec, prefix='sec'+str(sec.index())) for sec in cls.sections.all().order_by('id')]
 
+        action = request.GET.get('action', None)
         if request.method == 'POST':
             if action == 'cancel_cls':
                 cls_cancel_form.data = request.POST
@@ -218,7 +222,7 @@ class AdminClass(ProgramModuleObj):
                 if cls_cancel_form.is_valid():
                     #   Call the Class{Subject,Section}.cancel() method to email and remove students, etc.
                     cls_cancel_form.cleaned_data['target'].cancel(email_students=True, include_lottery_students=cls_cancel_form.cleaned_data['email_lottery_students'], text_students=cls_cancel_form.cleaned_data['text_students'], email_teachers = cls_cancel_form.cleaned_data['email_teachers'], explanation=cls_cancel_form.cleaned_data['explanation'], unschedule=cls_cancel_form.cleaned_data['unschedule'])
-                    cls_cancel_form = None
+                    return HttpResponseRedirect(request.get_full_path()) # Other forms may need updating, so just reload this view
             elif action == 'cancel_sec':
                 sec_cancel_forms.data = request.POST
                 sec_cancel_forms.is_bound = True
@@ -227,50 +231,29 @@ class AdminClass(ProgramModuleObj):
                     for sec in sections:
                         if not sec.isCancelled() and sec in cleaned_data['target']:
                             sec.cancel(email_students=True, include_lottery_students=cleaned_data['email_lottery_students'], text_students=cleaned_data['text_students'], email_teachers = cleaned_data['email_teachers'], explanation=cleaned_data['explanation'], unschedule=cleaned_data['unschedule'])
-                            sec_cancel_forms = SectionCancellationForm(cls = cls)
-
-        cls_form = ClassManageForm(self, subject=cls)
-        sec_forms = [SectionManageForm(self, section=sec, prefix='sec'+str(sec.index())) for sec in cls.sections.all().order_by('id')]
-
-        if request.method == 'POST' and action == 'modify':
-            cls_form.data = request.POST
-            cls_form.is_bound = True
-            valid = cls_form.is_valid()
-            for sf in sec_forms:
-                sf.data = request.POST
-                sf.is_bound = True
-                valid = (valid and sf.is_valid())
-
-            if valid:
-                verbs = RTC.getVisibleRegistrationTypeNames(prog)
-                # Leave a loophole:  You can set a class to "Unreviewed" (ie., status = 0),
-                # then cancel it, and it won't kick all the students out
-                cls_alter = ClassSubject.objects.get(id=cls_form.cleaned_data['clsid'])
-                new_status = int(cls_form.cleaned_data['status'])
-                should_cancel_sections = (int(cls_alter.status) > 0 and new_status < 0)
-
+                    return HttpResponseRedirect(request.get_full_path()) # Other forms may need updating, so just reload this view
+            elif action == 'modify_cls':
+                cls_form = ClassManageForm(self, subject=cls)
+                cls_form.data = request.POST
+                cls_form.is_bound = True
+                if cls_form.is_valid():
+                    cls_form.save_data(cls)
+                    return HttpResponseRedirect(request.get_full_path()) # Other forms may need updating, so just reload this view
+            elif action == 'modify_sec':
                 for sf in sec_forms:
-                    sec_alter = ClassSection.objects.get(id=sf.cleaned_data['secid'])
-                    orig_sec_status = sec_alter.status
-                    sf.save_data(sec_alter)
-
-                    # If the parent class was canceled, cancel the sections
-                    if should_cancel_sections and int(sec_alter.status) > 0:
-                        sec_alter.status = new_status
-                        sec_alter.save()
-
-                    # Kick all the students out of a class if it was rejected
-                    if int(sec_alter.status) < 0 and int(orig_sec_status) > 0:
-                        for student in sec_alter.students():
-                            sec_alter.unpreregister_student(student, verbs)
-
-                #   Save class info after section info so that cls_form.save_data()
-                #   can override section information if it's supposed to.
-                #   This is needed for accepting/rejecting the sections of a
-                #   class when the sections are unreviewed.
-                cls_form.save_data(cls_alter)
-
-                return HttpResponseRedirect(request.get_full_path())
+                    if 'sec'+str(sf.index)+'-secid' in request.POST:
+                        sf.data = request.POST
+                        sf.is_bound = True
+                        if sf.is_valid():
+                            sec = ClassSection.objects.get(id=sf.cleaned_data['secid'])
+                            orig_sec_status = sec.status
+                            sf.save_data(sec)
+                            verbs = RTC.getVisibleRegistrationTypeNames(prog)
+                            # Kick all the students out of a class if it was rejected
+                            if int(sec.status) < 0 and int(orig_sec_status) > 0:
+                                for student in sec.students():
+                                    sec.unpreregister_student(student, verbs)
+                            return HttpResponseRedirect(request.get_full_path()) # Other forms may need updating, so just reload this view
 
         if self.program.program_modules.filter(handler='ClassFlagModule').exists():
             context['show_flags'] = True

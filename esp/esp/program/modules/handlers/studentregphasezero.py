@@ -205,7 +205,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
 
     @aux_call
     @needs_student
-    def studentlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
+    def studentlookup(self, request, tl, one, two, module, extra, prog):
 
         # Search for students with names that start with search string
         if not 'username' in request.GET or 'username' in request.POST:

@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call
 
-from esp.users.models import ESPUser, Record
+from esp.users.models import ESPUser, Record, RecordType
 from esp.customforms.models import Form
 from esp.customforms.DynamicForm import FormHandler, ComboForm
 from esp.customforms.DynamicModel import DynamicModelHandler
@@ -53,8 +53,9 @@ class TeacherCustomComboForm(ComboForm):
 
     def done(self, form_list, **kwargs):
         # Delete old records, if any exist, and then make a new one
-        Record.objects.filter(user=self.curr_request.user, program=self.program, event=self.event).delete()
-        Record.objects.create(user=self.curr_request.user, program=self.program, event=self.event)
+        rt = RecordType.objects.get(name = self.event)
+        Record.objects.filter(user=self.curr_request.user, program=self.program, event=rt).delete()
+        Record.objects.create(user=self.curr_request.user, program=self.program, event=rt)
         return super(TeacherCustomComboForm, self).done(form_list=form_list, redirect_url = '/teach/'+self.program.getUrlBase()+'/teacherreg', **kwargs)
 
 class TeacherCustomFormModule(ProgramModuleObj):
@@ -78,7 +79,7 @@ class TeacherCustomFormModule(ProgramModuleObj):
     def teachers(self, QObject = False):
         """Returns lists of teachers who've completed the custom form."""
 
-        qo = Q(record__event=self.event, record__program=self.program)
+        qo = Q(record__event__name=self.event, record__program=self.program)
         if QObject is True:
             return {
                 'teacher_custom_form': qo,
@@ -99,7 +100,7 @@ class TeacherCustomFormModule(ProgramModuleObj):
             user = self.user
         else:
             user = get_current_request().user
-        return Record.objects.filter(user=user, program=self.program, event=self.event).exists()
+        return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
 
     @staticmethod
     def get_prev_data(form, request):
@@ -114,7 +115,10 @@ class TeacherCustomFormModule(ProgramModuleObj):
                 plain_form = form_wizard.get_form(step)
                 #   Load previous results, with a hack for multiple choice questions.
                 for field in plain_form.fields:
-                    if isinstance(plain_form.fields[field], forms.MultipleChoiceField):
+                    #   Some fields aren't saved or don't have values (e.g., instruction fields)
+                    if not hasattr(prev_results[0], field):
+                        continue
+                    elif isinstance(plain_form.fields[field], forms.MultipleChoiceField):
                         field_dict[field] = getattr(prev_results[0], field).split(';')
                     else:
                         field_dict[field] = getattr(prev_results[0], field)

@@ -42,10 +42,11 @@ from django.http import HttpResponseRedirect
 
 from esp.accounting.controllers import ProgramAccountingController
 from esp.cal.models import Event
+from esp.db.forms import AjaxForeignKeyNewformField
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call, aux_call
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.tagdict.models import Tag
-from esp.users.models import Permission
+from esp.users.models import Permission, ESPUser
 from esp.utils.web import render_to_response
 from esp.utils.widgets import DateTimeWidget
 
@@ -59,16 +60,23 @@ class EditPermissionForm(forms.Form):
     id = forms.IntegerField(required=True, widget=forms.HiddenInput)
     skip = forms.BooleanField(required=False, widget=forms.HiddenInput)
 
-class NewPermissionForm(forms.Form):
-    permission_type = forms.ChoiceField(choices=filter(lambda x: isinstance(x[1], tuple) and "Deadline" in x[0], Permission.PERMISSION_CHOICES))
+class NewDeadlineForm(forms.Form):
+    deadline_type = forms.ChoiceField(choices=filter(lambda x: "Administer" not in x[0], Permission.PERMISSION_CHOICES))
     role = forms.ChoiceField(choices = [("Student","Students"),("Teacher","Teachers"),("Volunteer","Volunteers")])
     start_date = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget(), required=False)
     end_date = forms.DateTimeField(label='Closing date/time', initial=None, widget=DateTimeWidget(), required=False)
 
     def __init__(self, *args, **kwargs):
-        extra_roles = kwargs.pop('extra_roles', [])
-        super(NewPermissionForm, self).__init__(*args, **kwargs)
-        self.fields['role'].choices = self.fields['role'].choices + [(role, role) for role in extra_roles]
+        super(NewDeadlineForm, self).__init__(*args, **kwargs)
+        self.fields['role'].choices = self.fields['role'].choices + [(role, role + "s") for role in Group.objects.exclude(name__in=["Student", "Teacher", "Volunteer"]
+                                                                                                                          ).order_by('name').values_list('name', flat = True)]
+
+class NewPermissionForm(forms.Form):
+    permission_type = forms.ChoiceField(choices=filter(lambda x: "Administer" not in x[0], Permission.PERMISSION_CHOICES))
+    user = AjaxForeignKeyNewformField(key_type=ESPUser, field_name='user', label='User',
+        help_text='Start typing a username or "Last Name, First Name", then select the user from the dropdown.')
+    perm_start_date = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget(), required=False)
+    perm_end_date = forms.DateTimeField(label='Closing date/time', initial=None, widget=DateTimeWidget(), required=False)
 
 class AdminCore(ProgramModuleObj, CoreModule):
     doc = """Includes the core views for managing a program (e.g. settings, dashboard)."""
@@ -117,13 +125,14 @@ class AdminCore(ProgramModuleObj, CoreModule):
     @aux_call
     @needs_admin
     def settings(self, request, tl, one, two, module, extra, prog):
-        from esp.program.modules.forms.admincore import ProgramSettingsForm, TeacherRegSettingsForm, StudentRegSettingsForm
+        from esp.program.modules.forms.admincore import ProgramSettingsForm, TeacherRegSettingsForm, StudentRegSettingsForm, ReceiptsForm
         context = {}
         submitted_form = ""
         crmi = ClassRegModuleInfo.objects.get(program=prog)
         scrmi = StudentClassRegModuleInfo.objects.get(program=prog)
         old_url = prog.url
         context['open_section'] = extra
+        forms = {}
 
         #If one of the forms was submitted, process it and save if valid
         if request.method == 'POST':
@@ -135,29 +144,34 @@ class AdminCore(ProgramModuleObj, CoreModule):
                         form.save()
                         #If the url for the program is now different, redirect to the new settings page
                         if prog.url is not old_url:
-                            return HttpResponseRedirect( '/manage/%s/settings' % (prog.url))
-                    prog_form = form
+                            return HttpResponseRedirect( '/manage/%s/settings/program' % (prog.url))
+                    else:
+                        forms['program'] = form
                     context['open_section'] = "program"
                 elif submitted_form == "crmi":
                     form = TeacherRegSettingsForm(request.POST, instance = crmi)
                     if form.is_valid():
                         form.save()
-                    crmi_form = form
+                    else:
+                        forms['crmi'] = form
                     context['open_section'] = "crmi"
                 elif submitted_form == "scrmi":
                     form = StudentRegSettingsForm(request.POST, instance = scrmi)
                     if form.is_valid():
                         form.save()
-                    scrmi_form = form
+                    else:
+                        forms['scrmi'] = form
                     context['open_section'] = "scrmi"
-                if form.is_valid():
-                    form.save()
-                    #If the url for the program is now different, redirect to the new settings page
-                    if prog.url is not old_url:
-                        return HttpResponseRedirect( '/manage/%s/settings/%s' % (prog.url, context['open_section']))
+                elif submitted_form == "receipts":
+                    form = ReceiptsForm(request.POST, program = prog)
+                    if form.is_valid():
+                        form.save()
+                    else:
+                        forms['receipts'] = form
+                    context['open_section'] = "receipts"
 
         #Set up any other forms on the page
-        if submitted_form != "program":
+        if "program" not in forms:
             prog_dict = {}
             prog_dict.update(model_to_dict(prog))
             #We need to populate all of these manually
@@ -168,21 +182,25 @@ class AdminCore(ProgramModuleObj, CoreModule):
             line_items = pac.get_lineitemtypes(required_only=True).filter(text="Program admission").values('amount_dec')
             prog_dict['base_cost'] = int(sum(x["amount_dec"] for x in line_items))
             prog_dict["sibling_discount"] = prog.sibling_discount
-            prog_form = ProgramSettingsForm(prog_dict, instance = prog)
+            forms['program'] = ProgramSettingsForm(prog_dict, instance = prog)
 
-        if submitted_form != "crmi":
-            crmi_form = TeacherRegSettingsForm(instance = crmi)
+        if "crmi" not in forms:
+            forms['crmi'] = TeacherRegSettingsForm(instance = crmi)
 
-        if submitted_form != "scrmi":
-            scrmi_form = StudentRegSettingsForm(instance = scrmi)
+        if "scrmi" not in forms:
+            forms['scrmi'] = StudentRegSettingsForm(instance = scrmi)
+
+        if "receipts" not in forms:
+            forms['receipts'] = ReceiptsForm(program = prog)
 
         context['one'] = one
         context['two'] = two
         context['program'] = prog
         context['forms'] = [
-                            ("Program Settings", "program", prog_form),
-                            ("Teacher Registration Settings", "crmi", crmi_form),
-                            ("Student Registration Settings", "scrmi", scrmi_form),
+                            ("Program Settings", "program", forms['program']),
+                            ("Teacher Registration Settings", "crmi", forms['crmi']),
+                            ("Student Registration Settings", "scrmi", forms['scrmi']),
+                            ("Registration Receipts", "receipts", forms['receipts'])
                            ]
 
         return render_to_response(self.baseDir()+'settings.html', request, context)
@@ -277,52 +295,88 @@ class AdminCore(ProgramModuleObj, CoreModule):
     def deadline_management(self, request, tl, one, two, module, extra, prog):
         #   Define a formset for editing multiple perms simultaneously.
         EditPermissionFormset = formset_factory(EditPermissionForm)
+        create_form = NewDeadlineForm()
+        perm_form = NewPermissionForm()
 
         #   Define good and bad status messages
         message_good = ''
         message_bad = ''
 
-        #   Handle 'open' / 'close' actions
-        if extra == 'open' and 'group' in request.GET and 'perm' in request.GET:
+        #   Handle 'open' / 'close' / 'delete' actions
+        if extra == 'open':
             #   If there are no permissions for this permission type, create one and open it now (open ended)
             #   If there are permission(s) for this type, take the most recent(?) and open it (open ended)
-            group = Group.objects.get(id = request.GET['group'])
-            perms = Permission.objects.filter(role = group, permission_type = request.GET['perm'], program = prog).order_by('-end_date')
-            if perms.count() > 0:
-                perms[0].unexpire()
-            else:
-                Permission.objects.create(role = group, permission_type = request.GET['perm'], start_date = datetime.now(), program = prog)
-            message_good = 'Deadline opened for %ss: %s.' % (group, Permission.nice_name_lookup(request.GET['perm']))
+            if 'group' in request.GET and 'perm' in request.GET:
+                group = Group.objects.get(id = request.GET['group'])
+                perms = Permission.objects.filter(role = group, permission_type = request.GET['perm'], program = prog).order_by('-end_date')
+                if perms.count() > 0:
+                    perms[0].unexpire()
+                else:
+                    Permission.objects.create(role = group, permission_type = request.GET['perm'], start_date = datetime.now(), program = prog)
+                message_good = 'Deadline opened for %ss: %s.' % (group, Permission.nice_name_lookup(request.GET['perm']))
+            elif 'perm_id' in request.GET:
+                perms = Permission.objects.filter(id=request.GET['perm_id'])
+                if perms.count() == 1:
+                    perm = perms[0]
+                    perm.unexpire()
+                    message_good = 'Permission opened for %s: %s.' % (perm.user, perm.nice_name())
+                else:
+                    message_bad = 'No permission with ID %s.' % (request.GET['perm_id'])
 
-        elif extra == 'close' and 'group' in request.GET and 'perm' in request.GET:
+        elif extra == 'close':
             #   If there are open permission(s) for this type, close them all
-            group = Group.objects.get(id = request.GET['group'])
-            perms = Permission.valid_objects().filter(permission_type = request.GET['perm'], program = prog, role = group)
-            perms.update(end_date = datetime.now())
-            message_good = 'Deadline closed for %ss: %s.' % (group, Permission.nice_name_lookup(request.GET['perm']))
+            if 'group' in request.GET and 'perm' in request.GET:
+                group = Group.objects.get(id = request.GET['group'])
+                perms = Permission.valid_objects().filter(permission_type = request.GET['perm'], program = prog, role = group)
+                perms.update(end_date = datetime.now())
+                message_good = 'Deadline closed for %ss: %s.' % (group, Permission.nice_name_lookup(request.GET['perm']))
+            if 'perm_id' in request.GET:
+                perms = Permission.objects.filter(id=request.GET['perm_id'])
+                if perms.count() == 1:
+                    perm = perms[0]
+                    perm.expire()
+                    message_good = 'Permission closed for %s: %s.' % (perm.user, perm.nice_name())
+                else:
+                    message_bad = 'No permission with ID %s.' % (request.GET['perm_id'])
 
         elif extra == 'delete' and 'perm_id' in request.GET:
             #   Delete the specified permission if it exists
             perms = Permission.objects.filter(id=request.GET['perm_id'])
             if perms.count() == 1:
                 perm = perms[0]
-                message_good = 'Deadline deleted for %ss: %s.' % (perm.role, perm.nice_name())
+                if 'deadline' in request.GET:
+                    message_good = 'Deadline deleted for %ss: %s.' % (perm.role, perm.nice_name())
+                else:
+                    message_good = 'Permission deleted for %s: %s.' % (perm.user, perm.nice_name())
                 perm.delete()
             else:
-                message_bad = 'Error while deleting permission with ID %s.' % request.GET['perm_id']
+                if 'deadline' in request.GET:
+                    message_bad = 'Error while deleting deadline with ID %s.' % request.GET['perm_id']
+                else:
+                    message_bad = 'Error while deleting permission with ID %s.' % request.GET['perm_id']
 
         #   Check incoming form data
-        if request.method == 'POST' and 'submit' in request.POST:
-            if request.POST['submit'] == 'Create Deadline':
-                create_form = NewPermissionForm(request.POST.copy())
+        if request.method == 'POST' and 'action' in request.POST:
+            if request.POST['action'] == 'add_deadline':
+                create_form = NewDeadlineForm(request.POST.copy())
                 if create_form.is_valid():
-                    perm = Permission.objects.create(user=None, permission_type=create_form.cleaned_data['permission_type'],
+                    perm = Permission.objects.create(user=None, permission_type=create_form.cleaned_data['deadline_type'],
                                                      role=Group.objects.get(name=create_form.cleaned_data['role']),program=prog,
                                                      start_date = create_form.cleaned_data['start_date'], end_date = create_form.cleaned_data['end_date'])
                     message_good = 'Deadline created for %ss: %s.' % (create_form.cleaned_data['role'], perm.nice_name())
+                    create_form = NewDeadlineForm()
                 else:
-                    message_bad = 'Error(s) while creating permission: %s' % create_form.errors
-            elif request.POST['submit'] == 'Save':
+                    message_bad = 'Error(s) while creating deadline (see below)'
+            elif request.POST['action'] == "add_permission":
+                perm_form = NewPermissionForm(request.POST.copy())
+                if perm_form.is_valid():
+                    perm = Permission.objects.create(user=perm_form.cleaned_data['user'], permission_type=perm_form.cleaned_data['permission_type'], program=prog,
+                                                     start_date = perm_form.cleaned_data['perm_start_date'], end_date = perm_form.cleaned_data['perm_end_date'])
+                    message_good = 'Permission created for %s: %s.' % (perm_form.cleaned_data['user'], perm.nice_name())
+                    perm_form = NewPermissionForm()
+                else:
+                    message_bad = 'Error(s) while creating permission (see below)'
+            elif request.POST['action'] == 'save_deadlines':
                 edit_formset = EditPermissionFormset(request.POST.copy(), prefix='edit')
                 if edit_formset.is_valid():
                     num_forms = 0
@@ -335,15 +389,28 @@ class AdminCore(ProgramModuleObj, CoreModule):
                             perm.end_date = form.cleaned_data['end_date']
                             perm.save()
                     if num_forms > 0:
-                        message_good = 'Changes saved.'
+                        message_good = 'Deadlines saved.'
+                else:
+                    message_bad = 'Error(s) while saving deadline(s): %s' % edit_formset.errors
+            elif request.POST['action'] == 'save_permissions':
+                edit_formset = EditPermissionFormset(request.POST.copy(), prefix='edit_perms')
+                if edit_formset.is_valid():
+                    num_forms = 0
+                    for form in edit_formset.forms:
+                        #   Check if the permission with the specified ID exists.
+                        if 'id' in form.cleaned_data and not form.cleaned_data['skip'] and Permission.objects.filter(id=form.cleaned_data['id']).exists():
+                            num_forms += 1
+                            perm = Permission.objects.get(id=form.cleaned_data['id'])
+                            perm.start_date = form.cleaned_data['start_date']
+                            perm.end_date = form.cleaned_data['end_date']
+                            perm.save()
+                    if num_forms > 0:
+                        message_good = 'Permissions saved.'
                 else:
                     message_bad = 'Error(s) while saving permission(s): %s' % edit_formset.errors
 
-        #   find all the existing permissions with this program
-        #   Only consider global permissions -- those that apply to all users
-        #   of a particular role.  Permissions added for individual users
-        #   should be managed in the admin interface.
-        perms = Permission.deadlines().filter(program=self.program, user__isnull=True)
+        #   find all the existing user group permissions for this program
+        perms = Permission.objects.filter(program=self.program, user__isnull=True, permission_type__in=Permission.PERMISSION_CHOICES_FLAT).exclude(permission_type="Administer")
         #   Get roles associated with those permissions, plus the normal roles (if not already selected)
         groups = list(Group.objects.filter(Q(id__in=perms.values_list('role', flat = True).distinct()) | Q(name__in=["Student", "Teacher", "Volunteer"])))
 
@@ -367,9 +434,6 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     group_perms[group].setdefault(perm_copy.permission_type, {'is_open': False, 'perms': []})['perms'].append(perm_copy)
             group_perms[group] = OrderedDict([(key, group_perms[group][key]) for key in sorted(group_perms[group].keys(), key = Permission.PERMISSION_CHOICES_FLAT.index)])
 
-        #   Populate template context to render page with forms
-        context = {}
-
         initial_data = [perm.__dict__ for group, perm_types in group_perms.items() for perm_type, details in perm_types.items() for perm in details['perms']]
         #   Supply initial data for forms
         formset = EditPermissionFormset(initial = initial_data, prefix = 'edit')
@@ -391,17 +455,107 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 # Sort by validity and start/end dates
                 group_perms[group][perm_type]['perms'].sort(key=lambda perm: (perm.is_valid(), perm.end_date or datetime.max, perm.start_date or datetime.min), reverse=True)
 
+        #   find all the existing user permissions for this program
+        ind_perms = Permission.objects.filter(program=self.program, user__isnull=False).order_by('user__username', 'permission_type')
+
+        perm_initial_data = [perm.__dict__ for perm in ind_perms]
+        perm_formset = EditPermissionFormset(initial = perm_initial_data, prefix = 'edit_perms')
+        idx = 0
+        for perm in ind_perms:
+            perm.form = perm_formset.forms[idx]
+            idx += 1
+
+        #   Populate template context to render page with forms
+        context = {}
         context['message_good'] = message_good
         context['message_bad'] = message_bad
         context['manage_form'] = formset.management_form
-        context['group_perms'] = group_perms
-        context['perms'] = perms
-        context['create_form'] = NewPermissionForm(extra_roles = [group.name for group in groups if group.name not in ["Student", "Teacher", "Volunteer"]])
+        context['deadlines'] = group_perms
+        context['perm_manage_form'] = perm_formset.management_form
+        context['permissions'] = ind_perms
+        context['create_form'] = create_form
+        context['create_perm_form'] = perm_form
 
         return render_to_response(self.baseDir()+'deadlines.html', request, context)
 
     #   Alias for deadline management
     deadlines = deadline_management
+
+    @aux_call
+    @needs_admin
+    def modules(self, request, tl, one, two, module, extra, prog):
+        context = {}
+
+        if request.method == 'POST':
+            if "default_seq" in request.POST or "default_req" in request.POST or "default_lab" in request.POST:
+                # Reset some or all values for learn and teach modules
+                print("hello")
+                for pmo in [mod for mod in prog.getModules(tl = 'learn') if mod.isStep()]:
+                    pmo = ProgramModuleObj.objects.get(id=pmo.id) # Get the uncached object to make sure we trigger the cache
+                    if "default_seq" in request.POST: # Reset module seq values
+                        pmo.seq = pmo.module.seq
+                    if "default_req" in request.POST: # Reset module required values
+                        pmo.required = pmo.module.required
+                    if "default_lab" in request.POST: # Reset module required label values
+                        pmo.required_label = ""
+                    pmo.save()
+                for pmo in [mod for mod in prog.getModules(tl = 'teach') if mod.isStep()]:
+                    pmo = ProgramModuleObj.objects.get(id=pmo.id) # Get the uncached object to make sure we trigger the cache
+                    if "default_seq" in request.POST: # Reset module seq values
+                        pmo.seq = pmo.module.seq
+                    if "default_req" in request.POST: # Reset module required values
+                        pmo.required = pmo.module.required
+                    if "default_lab" in request.POST: # Reset module required label values
+                        pmo.required_label = ""
+                    pmo.save()
+
+            # If the sequence form was submitted, process it and update program modules
+            learn_req = [mod for mod in request.POST.get("learn_req", "").split(",") if mod]
+            learn_not_req = [mod for mod in request.POST.get("learn_not_req", "").split(",") if mod]
+            teach_req = [mod for mod in request.POST.get("teach_req", "").split(",") if mod]
+            teach_not_req = [mod for mod in request.POST.get("teach_not_req", "").split(",") if mod]
+            # Set student registration module sequence and requiredness
+            # Also set requirement labels if supplied
+            seq = 12 # In case there are other modules that aren't steps and should be earlier
+            for mod_id in learn_req:
+                pmo = ProgramModuleObj.objects.get(id=mod_id)
+                pmo.seq = seq
+                seq += 1
+                pmo.required = True
+                pmo.required_label = request.POST.get("%s_label" % mod_id, "")
+                pmo.save()
+            for mod_id in learn_not_req:
+                pmo = ProgramModuleObj.objects.get(id=mod_id)
+                pmo.seq = seq
+                seq += 1
+                pmo.required = False
+                pmo.required_label = request.POST.get("%s_label" % mod_id, "")
+                pmo.save()
+            # Set teacher registration module sequence and requiredness
+            seq = 12 # In case there are other modules that aren't steps and should be earlier
+            for mod_id in teach_req:
+                pmo = ProgramModuleObj.objects.get(id=mod_id)
+                pmo.seq = seq
+                seq += 1
+                pmo.required = True
+                pmo.required_label = request.POST.get("%s_label" % mod_id, "")
+                pmo.save()
+            for mod_id in teach_not_req:
+                pmo = ProgramModuleObj.objects.get(id=mod_id)
+                pmo.seq = seq
+                seq += 1
+                pmo.required = False
+                pmo.required_label = request.POST.get("%s_label" % mod_id, "")
+                pmo.save()
+
+        # Are there any modules that we should manually exclude here? Credit card module?
+        context['learn_modules'] = [mod for mod in prog.getModules(tl = 'learn') if mod.isStep()]
+        context['teach_modules'] = [mod for mod in prog.getModules(tl = 'teach') if mod.isStep()]
+        context['one'] = one
+        context['two'] = two
+        context['program'] = prog
+
+        return render_to_response(self.baseDir()+'modules.html', request, context)
 
     def isStep(self):
         return False

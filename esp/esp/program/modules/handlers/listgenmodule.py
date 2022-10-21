@@ -38,7 +38,7 @@ from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.middleware import ESPError
-from esp.program.models import StudentRegistration, PhaseZeroRecord
+from esp.program.models import StudentRegistration, PhaseZeroRecord, SplashInfo
 from django.db.models.query      import Q
 from django import forms
 
@@ -72,11 +72,12 @@ class UserAttributeGetter(object):
                     '20_first_regdate': {'label': 'Initial Registration Date', 'usertype': {'student'}},
                     '21_last_regdate': {'label': 'Most Recent Registration Date', 'usertype': {'student'}},
                     '22_lottery_ticket_id': {'label': 'Student Lottery Ticket ID', 'usertype': {'student'}},
-                    '23_classhours': {'label': 'Number of Enrolled Class Blocks', 'usertype': {'student'}},
-                    '24_transportation': {'label': 'Plan to Get to Splash', 'usertype': {'student'}},
-                    '25_guardian_name': {'label': 'Guardian Name', 'usertype': {'student'}},
-                    '26_guardian_email': {'label': 'Guardian E-mail', 'usertype': {'student'}},
-                    '27_guardian_cellphone': {'label': 'Guardian Cell Phone', 'usertype': {'student'}},
+                    '23_sibling_name': {'label': 'Name of Sibling for Discount (if requested)', 'usertype': {'student'}},
+                    '24_classhours': {'label': 'Number of Enrolled Class Blocks', 'usertype': {'student'}},
+                    '25_transportation': {'label': 'Plan to Get to Splash', 'usertype': {'student'}},
+                    '26_guardian_name': {'label': 'Guardian Name', 'usertype': {'student'}},
+                    '27_guardian_email': {'label': 'Guardian E-mail', 'usertype': {'student'}},
+                    '28_guardian_cellphone': {'label': 'Guardian Cell Phone', 'usertype': {'student'}},
                  }
 
         last_field_index = len(fields)
@@ -236,6 +237,13 @@ class UserAttributeGetter(object):
         recs = PhaseZeroRecord.objects.filter(user = self.user, program = self.program).order_by('time')
         if recs.count() > 0:
             return recs[0].id
+        else:
+            return None
+
+    def get_sibling_name(self):
+        infos = SplashInfo.objects.filter(student = self.user, program = self.program).order_by('id')
+        if infos.count() > 0:
+            return infos[0].siblingname
         else:
             return None
 
