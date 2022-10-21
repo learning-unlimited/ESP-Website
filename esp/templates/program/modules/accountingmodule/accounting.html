@@ -20,7 +20,7 @@ table {
 {% block content %}
 <h2>Accounting{% if target_user %} for {{ target_user.name }} ({{ target_user.username }} / {{ target_user.id }}){% endif %}{% if prog_results|length_is:"1" %} for {{ prog_results.0.program.niceName }}{% endif %}</h2>
 <div id="program_form">
-<form id="accountingsearchform" name="accountingsearchform" method="POST">
+<form action="{% if program %}/manage/{{ program.getUrlBase }}/accounting{% else %}/accounting/user{% endif %}" id="accountingsearchform" name="accountingsearchform" method="POST">
 <table>
     <col width="85%">
     <col width="15%">
