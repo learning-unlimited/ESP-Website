@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 import os
 import os.path
 import shutil
+import random
 import re
 import subprocess
 import tempfile
@@ -274,6 +275,7 @@ class ThemeController(object):
         with open(output_filename, 'w') as output_file:
             output_file.write(THEME_COMPILED_WARNING + css_data)
         logger.debug('Wrote %.1f KB CSS output to %s', len(css_data) / 1000., output_filename)
+        Tag.setTag("current_theme_version", value = hex(random.getrandbits(16)))
 
     def recompile_theme(self, theme_name=None, customization_name=None, keep_files=None):
         """
@@ -357,6 +359,7 @@ class ThemeController(object):
         Tag.unSetTag('current_theme_name')
         Tag.unSetTag('current_theme_params')
         Tag.unSetTag('current_theme_palette')
+        Tag.unSetTag('current_theme_version')
         self.unset_current_customization()
 
         #   Clear the Varnish cache

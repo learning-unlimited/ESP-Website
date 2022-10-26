@@ -465,6 +465,13 @@ all_global_tags = {
         'is_setting': True,
         'field': forms.DateField(widget=forms.SelectDateWidget(years=[datetime.date.today().year]))
     },
+    'current_theme_version': {
+        'is_boolean': False,
+        'help_text': 'A random hexidecimal string to force browser refreshing of theme files',
+        'default': "8daf9a",
+        'category': 'manage',
+        'is_setting': False,
+    },
 }
 
 # Any tag used with Tag.getProgramTag()
