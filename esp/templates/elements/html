@@ -15,7 +15,7 @@
     <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap-responsive.css" rel="stylesheet"/>
-    <link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css"/>
+    <link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css?v={{ current_theme_version }}"/>
     <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet"/>
 
     <link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />

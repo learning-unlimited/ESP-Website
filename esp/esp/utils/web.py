@@ -61,6 +61,7 @@ def get_from_id(id, module, strtype = 'object', error = True):
 
 def render_to_response(template, request, context, content_type=None, use_request_context=True):
     from esp.web.views.navBar import makeNavBar
+    from esp.tagdict.models import Tag
 
     if isinstance(template, (basestring,)):
         template = [ template ]
@@ -68,6 +69,7 @@ def render_to_response(template, request, context, content_type=None, use_reques
     section = request.path.split('/')[1]
     tc = ThemeController()
     context['theme'] = tc.get_template_settings()
+    context['current_theme_version'] = Tag.getTag("current_theme_version")
     context['settings'] = settings
 
     context['current_programs'] = Program.current_programs()
