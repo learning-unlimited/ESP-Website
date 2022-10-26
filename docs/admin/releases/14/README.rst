@@ -182,6 +182,22 @@ November 2022 Patch
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
+- Add tags for help text for teacher registration fields that did not already have them
+- On the tag settings page, hide tags for help text for fields that are not in use
+- Add QSD blocks to the alerts on the student profile page
+- Allow custom record types to record various things
+- Add contact info to themes where it was missing
+- Allow more customization of themes; in particular the color/font customization options now actually have effects throughout the theme
+- New logo/favicon upload interface on the theme settings page
+- Financial aid approval page now does not approve blank requests by default
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
+- Require a cost for line items, with the default set to 0.00
+- Fix the receipt form when template overrides exist
+- Fix the request cancellation button for teachers to cancel classes
+- Skip custom form responses with no responses when loading previous responses
+- Remove tags for custom forms from tag settings page
+- Categories, record types, and flags currently in use can no longer be deleted
+- Fix user search form on accounting pages
+- Credit card payments now work with partial financial aid
