@@ -180,24 +180,31 @@ Dependency changes
 November 2022 Patch
 ===================
 
+Custom record types
+~~~~~~~~~~~~~~~~~~~
+- Admins can now create arbitrary record types which can be bulk set via the User Record Module and can be required for teacher and/or student registration via the relevant tags (see above)
+
 Minor new features
 ~~~~~~~~~~~~~~~~~~
-- Add tags for help text for teacher registration fields that did not already have them
-- On the tag settings page, hide tags for help text for fields that are not in use
-- Add QSD blocks to the alerts on the student profile page
-- Allow custom record types to record various things
-- Add contact info to themes where it was missing
-- Allow more customization of themes; in particular the color/font customization options now actually have effects throughout the theme
-- New logo/favicon upload interface on the theme settings page
+- Added tags for help text for teacher registration fields that did not already have them
+- On the tag settings page, tags for help text for fields that are not in use are now hidden
+- Added QSD blocks to the alerts on the student profile page
+- Added contact info to themes where it was missing
+- Now allow more customization of themes; in particular the color/font customization options now actually have effects throughout the theme
+- Added a new logo/favicon upload interface on the theme settings page
 - Financial aid approval page now does not approve blank requests by default
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
-- Require a cost for line items, with the default set to 0.00
-- Fix the receipt form when template overrides exist
-- Fix the request cancellation button for teachers to cancel classes
-- Skip custom form responses with no responses when loading previous responses
-- Remove tags for custom forms from tag settings page
-- Categories, record types, and flags currently in use can no longer be deleted
-- Fix user search form on accounting pages
+- Now require a cost for line items, with the default set to 0.00
+- Fixed the receipt form when template overrides exist
+- Fixed the request cancellation button for teachers to cancel classes
+- Now skip custom form responses with no responses when loading previous responses
+- Removed all tags for custom forms from tag settings page since these should no longer be set manually; custom forms can be assigned to registration modules through the custom form editor
+- Categories, record types, and flags that are currently in use can no longer be deleted
+- Added documentation to the categories, flag types, and record types page
+- Fixed user search form on accounting pages
 - Credit card payments now work with partial financial aid
+- Fixed the handling of donation line items in the credit card module (hotfixed to SR14)
+- Fixed a bug with the credit card form in the credit card module (hotfixed to SR14)
+- Fixed a bug that forced admins to hard refresh whenever they changed their website theme
