@@ -176,3 +176,12 @@ Dependency changes
 ~~~~~~~~~~~~~~~~~~
 - Upgraded jQuery (1.12.4 -> 3.6.0)
 - Upgraded jQuery UI (1.12.1 -> 1.13.0)
+
+November 2022 Patch
+===================
+
+Minor new features
+~~~~~~~~~~~~~~~~~~
+
+Minor bug fixes
+~~~~~~~~~~~~~~~
