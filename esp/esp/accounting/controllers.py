@@ -595,29 +595,31 @@ class IndividualAccountingController(ProgramAccountingController):
         payment), find all of the Transfers representing the items that were
         paid for and add a link back to the payment. """
 
-        # Filter out Transfers representing payments, financial aid grants, and
-        # purchasable items that have already been paid for.
-        outstanding_transfers = self.get_transfers().filter(
+        # Filter out Transfers representing payments, financial aid grants
+        all_transfers = self.get_transfers().filter(
             line_item__for_payments=False,
-            paid_in__isnull=True,
         ).exclude(line_item__text__in=self.finaid_items
         ).order_by('id')
 
-        # Find the paid transfers by examining Transfers in order of creation
-        # until they sum to the given amount.
         total = 0
-        target = payment.get_amount()
+        # Calculate the target including all of the user's payments, discount, and all granted fin aid
+        # I believe the user's payments include the current payment based on order of operations here
+        target_full = self.amount_paid() + self.amount_siblingdiscount() + self.amount_finaid()
 
-        for transfer in outstanding_transfers:
+        # Check that all payments and financial aid together sum to all transfers together
+        # Add the paid_in to the outstanding transfers
+        for transfer in all_transfers:
             total += transfer.get_amount()
-            transfer.paid_in = payment
-            transfer.save()
-            if total >= target:
+            # If the transfer is outstanding, mark it paid by the current payment
+            if transfer.paid_in is None:
+                transfer.paid_in = payment
+                transfer.save()
+            if total >= target_full:
                 break
 
-        if total != target:
+        if total != target_full:
             # This will cause all changes to be rolled back
-            raise ValueError("Transfers do not sum to target: %.2f" % target)
+            raise ValueError("Transfers do not sum to target: %.2f" % target_full)
 
     @staticmethod
     def updatePaid(program, user, paid=True):
