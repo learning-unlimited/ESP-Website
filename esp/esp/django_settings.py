@@ -247,6 +247,7 @@ INSTALLED_APPS = (
     'argcache.apps.ArgCacheConfig',
     'django_extensions',
     'reversion',
+    'captcha',
     'form_utils',
     'django.contrib.redirects',
     'debug_toolbar',
