@@ -165,8 +165,8 @@ This request can be (re)viewed at:
                             settings.SERVER_EMAIL,
                             [ prog.getDirectorConfidentialEmail() ] )
                 # Automatically accept apps for people with subsidized lunches
-                if app.reduced_lunch:
-                    app.approve()
+                #if app.reduced_lunch:
+                #    app.approve()
                 return self.goToCore(tl)
 
         else:
