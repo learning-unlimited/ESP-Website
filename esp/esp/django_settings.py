@@ -247,6 +247,7 @@ INSTALLED_APPS = (
     'argcache.apps.ArgCacheConfig',
     'django_extensions',
     'reversion',
+    'captcha',
     'form_utils',
     'django.contrib.redirects',
     'debug_toolbar',
@@ -410,3 +411,5 @@ ADMIN_TOOLS_INDEX_DASHBOARD = 'admintoolsdash.CustomIndexDashboard'
 ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
 
 ADMIN_TOOLS_THEMING_CSS = '/media/default_styles/admin_theme.css'
+
+SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error']
