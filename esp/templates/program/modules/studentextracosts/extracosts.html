@@ -26,6 +26,9 @@ td>ul { list-style-type: none; padding: 0px }
 <p>Food and other additional items can only be changed up until <b>1 week before the program.</b></p>
 {% end_inline_program_qsd_block %}
 
+<br /> 
+{% if paid_for %}<div class="formerror">{{ paid_for_text }}</div>{% endif %} 
+
 <br />
 
 {% if error_custom %}<div class="formerror">You selected a choice with a custom amount but did not specify an amount; please do so below. </div>

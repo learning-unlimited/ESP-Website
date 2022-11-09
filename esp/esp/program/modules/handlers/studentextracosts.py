@@ -43,6 +43,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models  import StudentApplication, SplashInfo
 from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, main_call, meets_cap
 from esp.program.modules.forms.splashinfo import SiblingDiscountForm
+from esp.tagdict.models import Tag
 from esp.users.models    import Record, RecordType
 from esp.utils.web import render_to_response
 from esp.utils.widgets import ChoiceWithOtherField
@@ -159,7 +160,16 @@ class StudentExtraCosts(ProgramModuleObj):
         """
         iac = IndividualAccountingController(self.program, request.user)
         if iac.has_paid():
-            raise ESPError("You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.", log=False)
+            if not Tag.getBooleanTag('already_paid_extracosts_allowed'):
+                raise ESPError("You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.", log=False)
+        selected_types = [t.line_item for t in iac.get_transfers().select_related('line_item')]
+        paid_types = []
+        for t in iac.get_transfers().select_related('line_item'):
+            if t.paid_in is not None:
+                paid_types.append(t.line_item)
+        # TODO: add disabled attribute to paid_types
+
+
 
         #   Determine which line item types we will be asking about
         costs_list = self.lineitemtypes().filter(max_quantity__lte=1, lineitemoptions__isnull=True)
@@ -327,7 +337,8 @@ class StudentExtraCosts(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'extracosts.html',
                                   request,
-                                  { 'errors': not forms_all_valid, 'error_custom': error_custom, 'forms': forms, 'financial_aid': request.user.hasFinancialAid(prog), 'select_qty': len(multicosts_list) > 0 })
+                                  { 'errors': not forms_all_valid, 'error_custom': error_custom, 'forms': forms, 'financial_aid': request.user.hasFinancialAid(prog), 'select_qty': len(multicosts_list) > 0, 'paid_for': iac.has_paid(),
+                                  'paid_for_text': Tag.getTag("already_paid_extracosts_text") })
 
     def isStep(self):
         return self.lineitemtypes().exists()
