@@ -290,6 +290,7 @@ def find_user(userstr):
     returns: queryset containing ESPUser instances.
     """
 
+    userstr = userstr.strip()
     userstr_parts = [part.strip() for part in userstr.split(' ') if part]
 
     if len(userstr_parts) == 2 and \
