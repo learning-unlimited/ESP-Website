@@ -1111,14 +1111,14 @@ all_program_tags = {
         'is_boolean': False,
         'help_text': 'At what time should the student onsite webapp use program attendance if available (instead of enrollment) to determine if a class is full? If blank, program attendance numbers will not be used. Format: HH:MM where HH is in 24 hour time.',
         'default': None,
-        'category': 'learn',
+        'category': 'onsite',
         'is_setting': True,
     },
     'switch_lag_class_attendance': {
         'is_boolean': False,
         'help_text': 'How many minutes into a class should the student onsite webapp use class attendance numbers if available (instead of enrollment or program attendance) to determine if a class is full? If blank, class attendance numbers will not be used.',
         'default': None,
-        'category': 'learn',
+        'category': 'onsite',
         'is_setting': True,
         'field': forms.IntegerField(min_value=0),
     },
@@ -1148,7 +1148,7 @@ all_program_tags = {
         'is_boolean': False,
         'help_text': 'The message that is shown at the top of the teacher webapp schedule when a teacher is NOT checked in.',
         'default': 'Note: Please make sure to check in before your first class today.',
-        'category': 'teach',
+        'category': 'onsite',
         'is_setting': True,
     },
     'availability_group_tolerance': {
@@ -1200,6 +1200,21 @@ all_program_tags = {
         'field': forms.ChoiceField(choices=[('all', 'All students'),
                                             ('program_attendance', 'Only students who attended the program'),
                                             ('class_attendance', 'Only students who attended at least one class')]),
+    },
+    'student_self_checkin': {
+        'is_boolean': False,
+        'help_text': 'Which student self checkin mode would you like to use? Note that, when enabled, \
+                      students must have completed all required steps of student registration before \
+                      they can check themselves in. The self checkin page is intentionally not linked \
+                      to from anywhere in student registration. If this is enabled, you will need to \
+                      provide the URL to students somehow (e.g., via a printed QR code). If unique codes \
+                      are required, these can be printed on nametags via the nametag module.',
+        'default': 'none',
+        'category': 'onsite',
+        'is_setting': True,
+        'field': forms.ChoiceField(choices=[('none', 'None (disable student self checkin'),
+                                            ('open', 'Students only need to access the self checkin page'),
+                                            ('code', 'Students must enter their unique code to check themselves in')]),
     },
 }
 

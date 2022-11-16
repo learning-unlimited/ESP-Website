@@ -33,16 +33,19 @@ Learning Unlimited, Inc.
 """
 import datetime
 
+from django import forms
+
 from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, CoreModule, main_call, aux_call, meets_cap
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
 from esp.utils.web import render_to_response
-from esp.users.models    import Record
+from esp.users.models    import Record, RecordType
 from esp.cal.models import Event
 from esp.middleware   import ESPError
 from esp.survey.views   import survey_view
 from esp.tagdict.models  import Tag
 from django.http import HttpResponseRedirect
 
+from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
 
 class StudentOnsite(ProgramModuleObj, CoreModule):
@@ -174,6 +177,55 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         else:
             return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
 
+    @aux_call
+    @needs_student
+    @meets_grade
+    def selfcheckin(self, request, tl, one, two, module, extra, prog):
+        context = self.onsitecontext(request, tl, one, two, prog)
+        mode = Tag.getProgramTag('student_self_checkin', program = prog)
+        user = request.user
+
+        # Redirect to their schedule if self checkin is not available
+        if mode == "none":
+            return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+
+        # Show message if they are already checked in
+        checked_in = prog.isCheckedIn(user)
+        context['checked_in'] = checked_in
+
+        if not checked_in:
+            # Show which modules and/or records they haven't completed
+            # This only includes the required and non-completed subset of modules/records
+            # that would normally be shown on the /studentreg page
+            context['mode'] = mode
+            context['form'] = SelfCheckinForm(program = prog, user = user)
+
+            modules = prog.getModules(user, 'learn')
+            context['completedAll'] = True
+            for module in modules:
+                # If completed all required modules so far...
+                if context['completedAll']:
+                    if not module.isCompleted() and module.isRequired():
+                        context['completedAll'] = False
+
+            records = StudentRegCore.get_reg_records(user, prog, 'learn')
+
+            context['modules'] = filter(lambda x: (x.isRequired() and not x.isCompleted()), modules)
+            context['records'] = filter(lambda x: not x['isCompleted'], records)
+
+            if request.method == 'POST':
+                form = SelfCheckinForm(request.POST, program = prog, user = user)
+                if form.is_valid():
+                    # Check in the student
+                    rt = RecordType.objects.get(name="attended")
+                    rec = Record(user=user, program=prog, event=rt)
+                    rec.save()
+                    return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+                else:
+                    context['form'] = form
+
+        return render_to_response(self.baseDir()+'selfcheckin.html', request, context)
+
     @staticmethod
     def onsitecontext(request, tl, one, two, prog):
         context = {}
@@ -193,3 +245,27 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     class Meta:
         proxy = True
         app_label = 'modules'
+
+class SelfCheckinForm(forms.Form):
+    code = forms.CharField(min_length = 6, max_length = 6, required = True)
+
+    def __init__(self, *args, **kwargs):
+        if 'program' in kwargs and 'user' in kwargs:
+            program = kwargs.pop('program')
+            user = kwargs.pop('user')
+        else:
+            raise KeyError('Need to supply program and user as named arguments to SelfCheckinForm')
+        super(SelfCheckinForm, self).__init__(*args, **kwargs)
+        mode = Tag.getProgramTag('student_self_checkin', program = program)
+        user_hash = hash(str(user.id) + str(program.id))
+        self.hash = '{0:06d}'.format(abs(user_hash))[:6]
+        print(self.hash)
+        if mode != 'code':
+            self.fields['code'].initial = self.hash
+            self.fields['code'].widget = forms.HiddenInput()
+
+    def clean_code(self):
+        data = self.cleaned_data['code']
+        if data != self.hash:
+            raise forms.ValidationError("That code is invalid")
+        return data
