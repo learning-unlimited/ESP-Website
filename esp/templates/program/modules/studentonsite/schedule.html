@@ -151,8 +151,10 @@ document.addEventListener("DOMContentLoaded", function() {
             </tr>
             <tr class="schedule_row">
                 <td class="location">
+                    {% if checked_in %}
                     {% if cls and not cls.section.initial_rooms.count == 0 %}
                         {{ cls.section.prettyrooms|join:", " }}
+                    {% endif %}
                     {% endif %}
                 </td>
             </tr>
