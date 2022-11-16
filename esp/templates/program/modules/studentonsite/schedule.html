@@ -7,7 +7,96 @@ function togglePopup() {
     var popup = document.getElementById("myPopup");
     popup.classList.toggle("show");
 }
+
+
+
+// clock on onsite page -- coxm, Jan 2022
+var LOCAL_CLOCK_OFFSET=0;
+var TIME_LAST_SYNCED_CLOCK=0;
+var CURRENT_TIMEZONE="TIMEZONE";
+var INITIAL_TIME_SYNC_STATUS="NO SYNC";
+var SYNC_CURRENTLY_OPEN=false;
+var INITIAL_TIME_SYNC_INTERVAL=null;
+
+
+function sync_with_external_clock(){
+	if (SYNC_CURRENTLY_OPEN) return;
+    SYNC_CURRENTLY_OPEN=true;
+	fetch("https://worldtimeapi.org/api/timezone/America/New_York")
+	.then(response => response.json())
+	.then(data =>
+	{
+		let internet_datetime=new Date(data.utc_datetime);
+		let local_datetime=Date.now();
+		LOCAL_CLOCK_OFFSET=local_datetime-internet_datetime;
+		TIME_LAST_SYNCED_CLOCK=local_datetime;
+		CURRENT_TIMEZONE=data.abbreviation;
+		SYNC_CURRENTLY_OPEN=false;
+	
+	})
+}
+
+
+
+function write_updated_time(){ 
+	if (INITIAL_TIME_SYNC_STATUS=="NO SYNC") // Haven't yet synced
+	{
+		sync_with_external_clock();
+		INITIAL_TIME_SYNC_STATUS="SYNC STARTED";
+		return;
+	}
+	
+	if (INITIAL_TIME_SYNC_STATUS=="SYNC STARTED")
+	{
+		if (CURRENT_TIMEZONE == "TIMEZONE") return;
+		INITIAL_TIME_SYNC_STATUS="DONE"
+		clearInterval(INITIAL_TIME_SYNC_INTERVAL);
+		
+	}
+	
+	let local_datetime=Date.now();
+	
+    if (local_datetime-TIME_LAST_SYNCED_CLOCK>60000) // refresh every minute (60000 ms)
+	{	
+	    sync_with_external_clock();
+    }
+	
+	let corrected_datetime=new Date(local_datetime-LOCAL_CLOCK_OFFSET);
+	
+	let s = corrected_datetime.getUTCSeconds();
+	let m = corrected_datetime.getUTCMinutes();
+	let h = corrected_datetime.getUTCHours();
+	
+	let utc_offset=CURRENT_TIMEZONE=="EST"?-300:-240;
+	let utc_offset_m=(utc_offset%60+60)%60;
+	let utc_offset_h=~~((utc_offset-utc_offset_m)/60)
+	
+	m=((m+utc_offset_m)%60+60)%60;
+	h=((h+utc_offset_h)%24+24)%24;
+	
+	let ampm = h >= 12 ? 'pm' : 'am';
+	h = h % 12;
+	h = h ? h : 12; // the hour '0' should be '12'
+	s=('0'+s).slice(-2);
+	m=('0'+m).slice(-2);
+	//h=('0'+h).slice(-2);
+	let timestr=h + ":" + m + ":" + s + " " + ampm + " " +CURRENT_TIMEZONE;
+	document.getElementById('eastern_time_clock').innerHTML = timestr;
+}
+
+write_updated_time();
+INITIAL_TIME_SYNC_INTERVAL=setInterval(write_updated_time,10);
+setInterval(write_updated_time,1000);
 </script>
+
+{% if just_changed_classes %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  alert("Thanks for changing your schedule - please visit Help Desk in Lobby 10 if you want a hard copy of your new schedule!");
+});
+
+</script>
+{% endif %}
 
 {% endblock %}
 
@@ -23,16 +112,17 @@ function togglePopup() {
             {% if not checked_in %}
                 <p class="checkinnote">Note: You will not be able to change any classes or see your classrooms until after your check-in has been processed by the admin team.</p>
             {% endif %}
+         <p>Current time at MIT: <span id="eastern_time_clock">loading...</span></p>
         </th>
         {% for timeslot in timeslots %}
             {% ifchanged timeslot.0.start.day %}
                 <tr>
-                    <th colspan="3" class="day">{{ timeslot.0.pretty_date }}</th>
+                    <th colspan="3" class="day">{% if program.getUrlBase == "HSSP/2022_Summer" %}Saturdays, July 9 - August 13{% else %}{{ timeslot.0.pretty_date }}{% endif %}</th>
                 </tr>
             {% endifchanged %}
             {% with timeslot.1.0 as cls %}
             <tr class="schedule_row">
-                <td rowspan="2" class="time">{{ timeslot.0.short_time }}</td>
+                <td rowspan="2" class="time">{{ timeslot.0.short_time }} ET</td>
                 <td class="cls">
                 {% if cls %}
                     <!--link to course details-->
@@ -61,8 +151,8 @@ function togglePopup() {
             </tr>
             <tr class="schedule_row">
                 <td class="location">
-                    {% if checked_in and cls and not cls.section.initial_rooms.count == 0 %}
-                        <a class="no-dec" title="Directions" href="/learn/{{one}}/{{two}}/onsitemap/{{ cls.section.initial_rooms.0.id }}">{{ cls.section.prettyrooms|join:", " }}&nbsp;<i class="material-icons md-3">directions</i></a>
+                    {% if cls and not cls.section.initial_rooms.count == 0 %}
+                        {{ cls.section.prettyrooms|join:", " }}
                     {% endif %}
                 </td>
             </tr>

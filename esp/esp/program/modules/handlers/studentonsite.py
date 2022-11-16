@@ -71,6 +71,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['webapp_page'] = 'schedule'
         context['scrmi'] = prog.studentclassregmoduleinfo
         context['checked_in'] = prog.isCheckedIn(user)
+        context['just_changed_classes']=request.GET.get('just_changed_classes','')=='true'
 
         return render_to_response(self.baseDir()+'schedule.html', request, context)
 
@@ -174,7 +175,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @meets_deadline('/Webapp')
     def onsiteaddclass(self, request, tl, one, two, module, extra, prog):
         if StudentClassRegModule.addclass_logic(request, tl, one, two, module, extra, prog, webapp=True):
-            return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+            return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite?just_changed_classes=true')
 
     @aux_call
     @needs_student
@@ -185,7 +186,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         if isinstance(result, basestring):
             raise ESPError(result, log=False)
         else:
-            return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+            return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite?just_changed_classes=true')
 
     @staticmethod
     def onsitecontext(request, tl, one, two, prog):
