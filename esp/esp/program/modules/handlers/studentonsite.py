@@ -75,6 +75,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['webapp_page'] = 'schedule'
         context['scrmi'] = prog.studentclassregmoduleinfo
         context['checked_in'] = prog.isCheckedIn(user)
+        context['checkin_note'] = Tag.getProgramTag('student_onsite_checkin_note', program = prog)
 
         return render_to_response(self.baseDir()+'schedule.html', request, context)
 

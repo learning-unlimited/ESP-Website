@@ -1151,6 +1151,13 @@ all_program_tags = {
         'category': 'onsite',
         'is_setting': True,
     },
+    'student_onsite_checkin_note': {
+        'is_boolean': False,
+        'help_text': 'The message that is shown at the top of the student webapp schedule when a student is NOT checked in.',
+        'default': 'Note: You will not be able to change any classes or see your classrooms until after your check-in has been processed by the admin team.',
+        'category': 'onsite',
+        'is_setting': True,
+    },
     'availability_group_tolerance': {
         'is_boolean': False,
         'help_text': 'Time blocks must be less than this many minutes apart to be shown as contiguous for the availability module(s). This will not impact the calculation of possible class durations (see the "Timeblock contiguous tolerance" tag below).',
