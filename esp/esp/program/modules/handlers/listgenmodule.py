@@ -62,22 +62,23 @@ class UserAttributeGetter(object):
                     '10_tshirt_size': {'label': 'T-Shirt Size', 'usertype': {'teacher', 'student'}},
                     '11_dob': {'label': 'Date of Birth', 'usertype': {'student'}},
                     '12_gender': {'label': 'Gender', 'usertype': {'student'}},
-                    '13_gradyear': {'label': 'Grad Year', 'usertype': {'teacher', 'student'}},
-                    '14_school': {'label': 'School', 'usertype': {'teacher', 'student'}},
-                    '15_affiliation': {'label': 'Affiliation', 'usertype': {'teacher'}},
-                    '16_major': {'label': 'Major', 'usertype': {'teacher'}},
-                    '17_studentrep': {'label': 'Student Rep?', 'usertype': {'student'}},
-                    '18_heard_about': {'label': 'Heard about Splash from', 'usertype': {'student'}},
-                    '19_accountdate': {'label': 'Created Date', 'usertype': {'any'}},
-                    '20_first_regdate': {'label': 'Initial Registration Date', 'usertype': {'student'}},
-                    '21_last_regdate': {'label': 'Most Recent Registration Date', 'usertype': {'student'}},
-                    '22_lottery_ticket_id': {'label': 'Student Lottery Ticket ID', 'usertype': {'student'}},
-                    '23_sibling_name': {'label': 'Name of Sibling for Discount (if requested)', 'usertype': {'student'}},
-                    '24_classhours': {'label': 'Number of Enrolled Class Blocks', 'usertype': {'student'}},
-                    '25_transportation': {'label': 'Plan to Get to Splash', 'usertype': {'student'}},
-                    '26_guardian_name': {'label': 'Guardian Name', 'usertype': {'student'}},
-                    '27_guardian_email': {'label': 'Guardian E-mail', 'usertype': {'student'}},
-                    '28_guardian_cellphone': {'label': 'Guardian Cell Phone', 'usertype': {'student'}},
+                    '13_pronoun': {'label': 'Pronouns', 'usertype': {'student'}},
+                    '14_gradyear': {'label': 'Grad Year', 'usertype': {'teacher', 'student'}},
+                    '15_school': {'label': 'School', 'usertype': {'teacher', 'student'}},
+                    '16_affiliation': {'label': 'Affiliation', 'usertype': {'teacher'}},
+                    '17_major': {'label': 'Major', 'usertype': {'teacher'}},
+                    '18_studentrep': {'label': 'Student Rep?', 'usertype': {'student'}},
+                    '19_heard_about': {'label': 'Heard about Splash from', 'usertype': {'student'}},
+                    '20_accountdate': {'label': 'Created Date', 'usertype': {'any'}},
+                    '21_first_regdate': {'label': 'Initial Registration Date', 'usertype': {'student'}},
+                    '22_last_regdate': {'label': 'Most Recent Registration Date', 'usertype': {'student'}},
+                    '23_lottery_ticket_id': {'label': 'Student Lottery Ticket ID', 'usertype': {'student'}},
+                    '24_sibling_name': {'label': 'Name of Sibling for Discount (if requested)', 'usertype': {'student'}},
+                    '25_classhours': {'label': 'Number of Enrolled Class Blocks', 'usertype': {'student'}},
+                    '26_transportation': {'label': 'Plan to Get to Splash', 'usertype': {'student'}},
+                    '27_guardian_name': {'label': 'Guardian Name', 'usertype': {'student'}},
+                    '28_guardian_email': {'label': 'Guardian E-mail', 'usertype': {'student'}},
+                    '29_guardian_cellphone': {'label': 'Guardian Cell Phone', 'usertype': {'student'}},
                  }
 
         last_field_index = len(fields)
@@ -228,6 +229,10 @@ class UserAttributeGetter(object):
     def get_gender(self):
         if self.profile.student_info:
             return self.profile.student_info.gender
+
+    def get_pronoun(self):
+        if self.profile.student_info:
+            return self.profile.student_info.pronoun
 
     #Replace this with something based on presence and number of application questions for a particular program
     def get_max_applications(self):

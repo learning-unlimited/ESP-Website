@@ -1323,6 +1323,7 @@ class StudentInfo(models.Model):
     school = models.CharField(max_length=256,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
     gender = models.CharField(max_length=32,blank=True,null=True)
+    pronoun = models.CharField(max_length=50,blank=True,null=True)
     studentrep = models.BooleanField(blank=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
     heard_about = models.TextField(blank=True, null=True)
@@ -1377,6 +1378,7 @@ class StudentInfo(models.Model):
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
         form_dict['gender']          = self.gender
+        form_dict['pronoun']         = self.pronoun
         if Tag.getBooleanTag('show_student_tshirt_size_options'):
             form_dict['shirt_size']      = self.shirt_size
         if Tag.getBooleanTag('studentinfo_shirt_type_selection'):
@@ -1423,6 +1425,7 @@ class StudentInfo(models.Model):
         studentInfo.school          = new_data.get('school') if not studentInfo.k12school else studentInfo.k12school.name
         studentInfo.dob             = new_data.get('dob')
         studentInfo.gender          = new_data.get('gender', None)
+        studentInfo.pronoun         = new_data.get('pronoun', None)
 
         studentInfo.heard_about      = new_data.get('heard_about', '')
 

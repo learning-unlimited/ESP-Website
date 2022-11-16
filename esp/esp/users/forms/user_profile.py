@@ -163,6 +163,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     from esp.users.models import ESPUser
 
     gender = forms.ChoiceField(choices=[('', ''), ('M', 'Male'), ('F', 'Female')], required=False)
+    pronoun = forms.CharField(max_length=50, required=False)
     graduation_year = forms.ChoiceField(choices=[('', '')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
     k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='school', required=False, label='School')
     unmatched_school = forms.BooleanField(required=False)
@@ -232,6 +233,9 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         if not Tag.getBooleanTag('student_profile_gender_field'):
             del self.fields['gender']
+
+        if not Tag.getBooleanTag('student_profile_pronoun_field'):
+            del self.fields['pronoun']
 
         if not Tag.getBooleanTag('ask_student_about_transportation_to_program'):
             del self.fields['transportation']

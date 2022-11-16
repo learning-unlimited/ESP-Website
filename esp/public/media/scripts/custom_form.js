@@ -50,6 +50,7 @@ var formElements={
         email:{'disp_name':'Email','ques':'Your email'},
         state:{'disp_name':'State','ques':'Your state'},
         gender:{'disp_name':'Gender','ques':'Your gender'}
+        pronoun:{'disp_name':'Pronouns','ques':'Your preferred pronouns'}
     },  
     'NotReallyFields': {
         instructions: {'disp_name': 'Instructions', 'ques': ''},
@@ -59,6 +60,7 @@ var formElements={
     /*'Personal':{
         name:{'disp_name':'Name','ques':'Your name', 'field_type':'custom', 'field_options':{}},
         gender:{'disp_name':'Gender','ques':'Gender', 'field_type':'radio', 'field_options':{'options':'Male|Female'}},
+        pronoun:{'disp_name':'Pronouns','ques':'Pronouns', 'field_type':'textField', 'field_options':{}},
         phone:{'disp_name':'Phone no.','ques':'Phone no.', 'field_type':'textField', 'field_options':{}},
         email:{'disp_name':'Email','ques':'Email', 'field_type':'textField', 'field_options':{}},
         address:{'disp_name':'Address','ques':'Address', 'field_type':'custom', 'field_options':{}},
@@ -111,6 +113,7 @@ var elemTypes = {
     'file':0,
     'name':0,
     'gender':0,
+    'pronoun':0,
     'phone':0,
     'email':0,
     'address':0,
@@ -1282,6 +1285,12 @@ var renderNormalField=function(item, field_options, data){
 				value:'Other',
 				name:'gender'
 		})).append($j('<span class="field_text"> Other</span>'));
+	}
+    else if(item=='pronoun'){
+		$new_elem=$j('<input>').attr({
+			type:"text",
+			size:"50"
+		});
 	}
     else if(item=="boolean") {
 		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
