@@ -23,28 +23,38 @@ function fetch_blob()
     xhr.open('GET', '?gen_img=blob&q=' + new Date().getTime());
     xhr.responseType = 'blob';
     xhr.onload = function () {
-        if (this.status === 200) {
+        if (this.response && this.response.size > 0) {
             var blob = new Blob([this.response], { type: 'application/pdf' });
             var url = URL.createObjectURL(blob);
             var auto_reload_blob = $j('#auto_reload_blob');
-            auto_reload_img.attr('src', url);
+            auto_reload_blob.attr('src', url);
             // The setTimeout is needed because if we try to print
             // immediately, the previous schedule is printed instead.
-            setTimeout(function () {
-                auto_reload_blob.contentWindow.print();
-                var entry = $j('<div>').text(
-                    "[" + data.time_executed + "] Executed print request #"
-                    + data.id + " for " + data.user
-                    + " (requested at " + data.time_requested + ")"
-                );
-                entry.insertAfter("#log");
-            }, 1000);
-            fetch_blob();
+            setTimeout(print_iframe, 1000);
         } else {
             reset_reload(5000);
         }
     }
     xhr.send();
+}
+
+function print_iframe()
+{
+    var auto_reload_blob = document.getElementById('auto_reload_blob');
+    if (!auto_reload_blob.contentWindow) {
+        setTimeout(print_iframe, 1000);
+        return;
+    }
+    auto_reload_blob.contentWindow.print();
+    // TODO(cjq): fix this so we get this data too
+    var entry = $j('<div>').text(
+        // "[" + data.time_executed + "] Executed print request #"
+        // + data.id + " for " + data.user
+        // + " (requested at " + data.time_requested + ")"
+        "[" + Date.now() + "] Executed print request"
+    );
+    entry.insertAfter("#log");
+    fetch_blob();
 }
 
 fetch_blob();
