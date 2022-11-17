@@ -14,45 +14,40 @@ var timer;
 function reset_reload(millis)
 {
     clearTimeout(timer);
-    timer = setTimeout(fetch_img, millis);
+    timer = setTimeout(fetch_blob, millis);
 }
 
-function fetch_img()
+function fetch_blob()
 {
-    $j.getJSON('?gen_img=json&q='+ new Date().getTime(), process_img);
-}
-
-function process_img(data)
-{
-    if (data !== null) {
-        var auto_reload_img = $j('#auto_reload_img');
-        var page_rest = $j('#page_rest');
-        page_rest.hide();
-        auto_reload_img.attr('src', data.src);
-        auto_reload_img.show();
-        // The setTimeout is needed because if we try to print
-        // immediately, the previous schedule is printed instead.
-        setTimeout(function () {
-            printself();
-
-            auto_reload_img.hide();
-            var entry = $j('<div>').text("[" + data.time_executed + "] Executed print request #" + data.id + " for " + data.user + " (requested at " + data.time_requested + ")");
-            entry.insertAfter("#log");
-            page_rest.show();
-            fetch_img();
-        }, 1000);
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '?gen_img=blob&q=' + new Date().getTime());
+    xhr.responseType = 'blob';
+    xhr.onload = function () {
+        if (this.status === 200) {
+            var blob = new Blob([this.response], { type: 'application/pdf' });
+            var url = URL.createObjectURL(blob);
+            var auto_reload_blob = $j('#auto_reload_blob');
+            auto_reload_img.attr('src', url);
+            // The setTimeout is needed because if we try to print
+            // immediately, the previous schedule is printed instead.
+            setTimeout(function () {
+                auto_reload_blob.contentWindow.print();
+                var entry = $j('<div>').text(
+                    "[" + data.time_executed + "] Executed print request #"
+                    + data.id + " for " + data.user
+                    + " (requested at " + data.time_requested + ")"
+                );
+                entry.insertAfter("#log");
+            }, 1000);
+            fetch_blob();
+        } else {
+            reset_reload(5000);
+        }
     }
-    else {
-        reset_reload(5000);
-    }
+    xhr.send();
 }
 
-function printself() {
-   self.focus();
-   window.print();
-}
-
-fetch_img();
+fetch_blob();
 
 //-->
 </script>
@@ -64,6 +59,6 @@ fetch_img();
 <div id="log">Log of print requests (view <a href="/admin/utils/printrequest/?o=-3">all print requests on the admin panel</a>):</div>
 </div>
 </div>
-<img id="auto_reload_img" src="about:blank" style="display: none" />
+<iframe id="auto_reload_blob" src="about:blank" style="visibility: hidden" />
 </body>
 </html>
