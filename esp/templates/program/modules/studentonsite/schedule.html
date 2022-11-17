@@ -89,15 +89,6 @@ INITIAL_TIME_SYNC_INTERVAL=setInterval(write_updated_time,10);
 setInterval(write_updated_time,1000);
 </script>
 
-{% if just_changed_classes %}
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-  alert("Thanks for changing your schedule - please visit Help Desk in Lobby 10 if you want a hard copy of your new schedule!");
-});
-
-</script>
-{% endif %}
-
 {% endblock %}
 
 {% block body %}
@@ -111,6 +102,9 @@ document.addEventListener("DOMContentLoaded", function() {
             <i>Classes for {{user.first_name}} {{user.last_name}} - ID: {{user.id}}</i>
             {% if not checked_in %}
                 <p class="checkinnote">Note: You will not be able to change any classes or see your classrooms until after your check-in has been processed by the admin team.</p>
+            {% endif %}
+            {% if just_changed_classes %}
+		<p class="checkinnote">Thanks for changing your schedule - please visit Help Desk in Lobby 10 if you want a hard copy of your new schedule!</p>
             {% endif %}
          <p>Current time at MIT: <span id="eastern_time_clock">loading...</span></p>
         </th>
