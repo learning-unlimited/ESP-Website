@@ -1214,12 +1214,13 @@ all_program_tags = {
                       students must have completed all required steps of student registration before \
                       they can check themselves in. The self checkin page is intentionally not linked \
                       to from anywhere in student registration. If this is enabled, you will need to \
-                      provide the URL to students somehow (e.g., via a printed QR code). If unique codes \
-                      are required, these can be printed on nametags via the nametag module.',
+                      provide the <a href="{{ program.get_learn_url }}selfcheckin">URL</a> to students somehow \
+                      (e.g., via a printed QR code). If unique codes are required, these can be printed \
+                      on nametags via the <a href="{{ program.get_manage_url }}selectidoptions">nametag module</a>.',
         'default': 'none',
         'category': 'onsite',
         'is_setting': True,
-        'field': forms.ChoiceField(choices=[('none', 'None (disable student self checkin'),
+        'field': forms.ChoiceField(choices=[('none', 'None (disable student self checkin)'),
                                             ('open', 'Students only need to access the self checkin page'),
                                             ('code', 'Students must enter their unique code to check themselves in')]),
     },

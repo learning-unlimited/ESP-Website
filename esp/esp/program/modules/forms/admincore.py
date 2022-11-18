@@ -1,6 +1,7 @@
 from decimal import Decimal
 from django import forms
 from django.contrib import admin
+from django.template import Template, Context
 from django.template.loader import select_template
 from django.utils.safestring import mark_safe
 from form_utils.forms import BetterForm, BetterModelForm
@@ -207,7 +208,12 @@ class ProgramTagSettingsForm(BetterForm):
                     self.fields[key] = forms.BooleanField()
                 else:
                     self.fields[key] = forms.CharField()
-                self.fields[key].help_text = tag_info.get('help_text', '')
+                # some help texts need to be rendered
+                if key in ['student_self_checkin']:
+                    template = Template(tag_info.get('help_text', ''))
+                    self.fields[key].help_text = template.render(Context({'program': self.program}))
+                else:
+                    self.fields[key].help_text = tag_info.get('help_text', '')
                 self.fields[key].initial = self.fields[key].default = tag_info.get('default')
                 self.fields[key].required = False
                 set_val = Tag.getBooleanTag(key, program = self.program) if tag_info.get('is_boolean', False) else Tag.getProgramTag(key, program = self.program)
