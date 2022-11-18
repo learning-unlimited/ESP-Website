@@ -1136,6 +1136,10 @@ class BaseESPUser(object):
             rank = default
         return rank
 
+    def userHash(self, program):
+        user_hash = hash(str(self.id) + str(program.id))
+        return '{0:06d}'.format(abs(user_hash))[:6]
+
 class ESPUser(User, BaseESPUser):
     """ Create a user of the ESP Website
     This user extends the auth.User of django"""

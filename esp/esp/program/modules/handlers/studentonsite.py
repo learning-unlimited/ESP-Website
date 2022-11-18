@@ -258,9 +258,7 @@ class SelfCheckinForm(forms.Form):
             raise KeyError('Need to supply program and user as named arguments to SelfCheckinForm')
         super(SelfCheckinForm, self).__init__(*args, **kwargs)
         mode = Tag.getProgramTag('student_self_checkin', program = program)
-        user_hash = hash(str(user.id) + str(program.id))
-        self.hash = '{0:06d}'.format(abs(user_hash))[:6]
-        print(self.hash)
+        self.hash = user.userHash(program)
         if mode != 'code':
             self.fields['code'].initial = self.hash
             self.fields['code'].widget = forms.HiddenInput()
