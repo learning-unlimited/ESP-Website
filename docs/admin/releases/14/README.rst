@@ -177,12 +177,18 @@ Dependency changes
 - Upgraded jQuery (1.12.4 -> 3.6.0)
 - Upgraded jQuery UI (1.12.1 -> 1.13.0)
 
-November 2022 Patch
+December 2022 Patch
 ===================
 
 Custom record types
 ~~~~~~~~~~~~~~~~~~~
 - Admins can now create arbitrary record types which can be bulk set via the User Record Module and can be required for teacher and/or student registration via the relevant tags (see above)
+
+Student self checkin
+~~~~~~~~~~~~~~~~~~~~
+- Students can now check themselves in (if the tag setting is enabled) if they have completed all required registration steps (e.g., custom forms, payment, etc)
+- If students have not completed any required registration steps, these steps are highlighted on the self checkin page
+- There are two self checkin options: 1) students just need to visit a page and click a button, or 2) students need a code that is unique to them and the program. If using codes, these can be printed on the back of nametags.
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
@@ -193,6 +199,7 @@ Minor new features
 - Now allow more customization of themes; in particular the color/font customization options now actually have effects throughout the theme
 - Added a new logo/favicon upload interface on the theme settings page
 - Financial aid approval page now does not approve blank requests by default
+- Added a Captcha field to the contact form to prevent spam
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -208,3 +215,5 @@ Minor bug fixes
 - Fixed the handling of donation line items in the credit card module (hotfixed to SR14)
 - Fixed a bug with the credit card form in the credit card module (hotfixed to SR14)
 - Fixed a bug that forced admins to hard refresh whenever they changed their website theme
+- Fixed the Onsite New Student Registration form
+- Now strip any leading or trailing whitespace in user searches
