@@ -1,0 +1,70 @@
+{% extends "program/modules/studentonsite/webapp.html" %}
+
+{% block body %}
+
+<center>
+    <div class="main">
+        <table>
+            <tr>
+                <th class="user_info">
+                    <i>Self Checkin for {{user.first_name}} {{user.last_name}} - ID: {{user.id}}</i>
+                </th>
+            </tr>
+        </table>
+        {% if checked_in %}
+        <table>
+            <tr>
+                <td>
+                    You are already checked in. <a href="/learn/{{one}}/{{two}}/studentonsite">Click here</a> to go to your class schedule.
+                </td>
+            </tr>
+        </table>
+        {% elif modules or records %}
+        <table>
+            <tr>
+                <td>
+                    <b>You must complete the following registration requirements before you can check yourself in:</b>
+                </td>
+            </tr>
+            {% for module in modules %}
+            {% if module.isStep and module.isRequired and not module.isRequired %}
+            <tr>
+                <td>
+                {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
+                {% if module.required_label %}<i>{{ module.required_label }}</i>{% endif %}
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            {% for record in records %}
+            <tr>
+                <td>{{ record.full_event }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <form method="POST">
+            {% csrf_token %}
+            <table id="checkin_form">
+                <tr>
+                    <td colspan="2">
+                        {% if mode == "code" %}
+                        Enter your self checkin code below, then hit Submit to check yourself in
+                        {% else %}
+                        Click the Submit button to check yourself in
+                        {% endif %}
+                    </td>
+                </tr>
+                {{ form.as_table }}
+                <tr>
+                    <td colspan="2">
+                        <input type="submit" value="Submit" style="font-size: xx-large;">
+                    </td>
+                </tr>
+            </table>
+        </form>
+        {% endif %}
+    </div>
+</center>
+
+{% endblock %}
