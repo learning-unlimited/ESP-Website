@@ -924,7 +924,7 @@ def catsflagsrecs(request, section=""):
     View that lets admins create/edit class categories and flag types
     """
     context = {}
-    cat_form = CategoryForm()
+    cat_form = CategoryForm(initial={'symbol': ''})
     flag_form = FlagTypeForm()
     rec_form = RecordTypeForm()
 

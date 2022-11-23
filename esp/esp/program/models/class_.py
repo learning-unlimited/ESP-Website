@@ -55,6 +55,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
+from django.core.validators import RegexValidator
 
 from django_extensions.db.fields.json import JSONField
 
@@ -2058,7 +2059,7 @@ class ClassCategories(models.Model):
     """
 
     category = models.TextField(blank=False, help_text='The name of the category')
-    symbol = models.CharField(max_length=1, default='?', blank=False, help_text='A single character to represent the category')
+    symbol = models.CharField(max_length=1, default='Z', blank=False, help_text='A single letter to represent the category', validators = [RegexValidator(r'^[A-Za-z]{1}', 'Must be a single letter.')])
     seq = models.IntegerField(default=0, help_text='Categories will be ordered by this.  Smaller is earlier; the default is 0.')
 
     def used_by_classes(self):
