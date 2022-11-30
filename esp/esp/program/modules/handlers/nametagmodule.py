@@ -37,6 +37,7 @@ from django.conf import settings
 from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.handlers.listgenmodule import ListGenModule
+from esp.program.models import RegistrationProfile
 from esp.users.controllers.usersearch import UserSearchController
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
@@ -44,6 +45,7 @@ from esp.utils.web import render_to_response
 
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
+
 
 
 class NameTagModule(ProgramModuleObj):
@@ -79,14 +81,23 @@ class NameTagModule(ProgramModuleObj):
         users_list.sort()
 
         for user in users_list:
+            prof = RegistrationProfile.getLastProfile(user)
             if user in users_list1:
                 title = user_title1
             else:
                 title = user_title2
-            users.append({'title': title,
+            if prof.student_info is not None:
+                users.append({'title': title,
+                          'name' : '%s %s' % (user.first_name, user.last_name),
+                          'id'   : user.id,
+                          'username': user.username,
+                          'pronoun': prof.student_info.pronoun})
+            else:
+                users.append({'title': title,
                           'name' : '%s %s' % (user.first_name, user.last_name),
                           'id'   : user.id,
                           'username': user.username})
+
         return users
 
     @aux_call

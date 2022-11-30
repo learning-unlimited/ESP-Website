@@ -49,7 +49,7 @@ var formElements={
         phone:{'disp_name':'Phone no.','ques':'Your phone no.'},
         email:{'disp_name':'Email','ques':'Your email'},
         state:{'disp_name':'State','ques':'Your state'},
-        gender:{'disp_name':'Gender','ques':'Your gender'}
+        gender:{'disp_name':'Gender','ques':'Your gender'},
         pronoun:{'disp_name':'Pronouns','ques':'Your preferred pronouns'}
     },  
     'NotReallyFields': {
