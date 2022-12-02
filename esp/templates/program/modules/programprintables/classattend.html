@@ -29,13 +29,14 @@ Students Email: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-students@{{ EMAIL_HOST_SEN
   <br />
   <table align="center" class="pretty" cellspacing="0" cellpadding="3px">
     <tr>
-      <th colspan="5" align="center">Students</th>
+      <th colspan="6" align="center">Students</th>
     </tr>
     <tr>
       <th>#</th>
       <th>Here?</th>
       <th>Student ID</th>
       <th>Student Name</th>
+      <th>Pronouns</th>
       <th>Grade</th>
     </tr>{% for student in sec.students %}
     <tr>
@@ -43,6 +44,7 @@ Students Email: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-students@{{ EMAIL_HOST_SEN
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
       <td>{{ student.id }}</td>
       <td>{{ student.name }}</td>
+      <td>{{ student|getPronouns }}</td>
       <td>
           {{ student|getGradeForProg:program.id }}</td>
     </tr>
@@ -50,35 +52,35 @@ Students Email: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-students@{{ EMAIL_HOST_SEN
     <tr>
       <td>&nbsp; </td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
-      <th colspan="3">  
+      <th colspan="4">  
           <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
       </th>
     </tr>
     <tr>
       <td>&nbsp; </td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
-      <th colspan="3">  
+      <th colspan="4">  
           <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
       </th>
     </tr>
     <tr>
       <td>&nbsp; </td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
-      <th colspan="3">  
+      <th colspan="4">  
           <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
       </th>
     </tr>
     <tr>
       <td>&nbsp; </td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
-      <th colspan="3">  
+      <th colspan="4">  
           <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
       </th>
     </tr>
     <tr>
       <td>&nbsp; </td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
-      <th colspan="3">  
+      <th colspan="4">  
           <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
       </th>
     </tr>

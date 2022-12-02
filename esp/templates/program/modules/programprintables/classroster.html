@@ -37,8 +37,7 @@ Students Email: <tt>{{ section.emailcode }}-students@{{ EMAIL_HOST_SENDER }}</tt
       <td align="right">{{ forloop.counter }}</td>
       <td>{{ student.id }}</td>
       <td>{{ student.name }}</td>
-      <!-- TODO: Make sure this works! -->
-      <td>{{ student.pronoun }}</td>
+      <td>{{ student|getPronouns }}</td>
       <td>
           {{ student|getGradeForProg:program.id }}</td>
     </tr>

@@ -1,6 +1,6 @@
 from django import template
 
-from esp.program.models import Program
+from esp.program.models import Program, RegistrationProfile
 from esp.users.models import Permission, Record, RecordType
 
 register = template.Library()
@@ -12,6 +12,15 @@ def getGradeForProg(user, prog_id):
         return user.getGrade()
     else:
         return user.getGrade(Program.objects.get(id=int(prog_id)))
+
+@register.filter
+def getPronouns(user):
+    """Return the pronouns for the user from the latest profile."""
+    prof = RegistrationProfile.getLastProfile(user)
+    if prof.student_info is not None:
+        return prof.student_info.pronoun
+    else:
+        return None
 
 @register.filter
 def perm_nice_name(perm):
