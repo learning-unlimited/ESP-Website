@@ -136,7 +136,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
             context['timeslot'] = ts
             classes = list(ClassSubject.objects.catalog(prog, ts))
             classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
-            context['checked_in'] = Record.objects.filter(program=prog, event='attended', user=user).exists()
+            context['checked_in'] = Record.objects.filter(program=prog, event__name='attended', user=user).exists()
 
         else:
             classes = list(ClassSubject.objects.catalog(prog))
