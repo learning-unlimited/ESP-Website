@@ -131,20 +131,6 @@ all_global_tags = {
         'category': 'learn',
         'is_setting': True,
     },
-    'already_paid_extracosts_allowed': {
-        'is_boolean': True,
-        'help_text': 'Whether students should be able to return to the extracosts page to add items or change options after they have already paid once via credit card.',
-        'default': True ,
-        'category': 'learn',
-        'is_setting': True,
-    },
-    'already_paid_extracosts_text': {
-        'is_boolean': False,
-        'help_text': 'The message that will be shown to users who have already paid by credit card and have returned to the extra costs page, if allowed.',
-        'default': 'You have already paid for some selected items via credit card and cannot remove these items using this form. If an item has multiple options, you may switch your selected option to an option of equal or greater cost; you cannot select a less expensive option using this form. You may still add items and will need to pay the extra balance.' ,
-        'category': 'learn',
-        'is_setting': True,
-    },
     'onsite_classlist_min_refresh': {
         'is_boolean': False,
         'help_text': 'Maximum refresh speed for the onsite classlist to avoid server overload (in seconds).',
@@ -1237,6 +1223,19 @@ all_program_tags = {
         'field': forms.ChoiceField(choices=[('none', 'None (disable student self checkin)'),
                                             ('open', 'Students only need to access the self checkin page'),
                                             ('code', 'Students must enter their unique code to check themselves in')]),
+    'already_paid_extracosts_allowed': {
+        'is_boolean': True,
+        'help_text': 'Whether students should be able to return to the extracosts page to add items or change options after they have already paid once via credit card.',
+        'default': True ,
+        'category': 'learn',
+        'is_setting': True,
+    },
+    'already_paid_extracosts_text': {
+        'is_boolean': False,
+        'help_text': 'The message that will be shown to users who have already paid by credit card and have returned to the extra costs page, if allowed.',
+        'default': 'You have already paid for some selected items via credit card and cannot remove these items using this form. If an item has multiple options, you may switch your selected option to an option of equal or greater cost; you cannot select a less expensive option using this form. You may still add items and will need to pay the extra balance.' ,
+        'category': 'learn',
+        'is_setting': True,
     },
 }
 
