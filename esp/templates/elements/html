@@ -87,8 +87,12 @@
               type: 'hidden',
               name: $j(this).prop('name'),
               value: $j(this).prop('value')
-          }).appendTo($j(form));
-          $j(form).submit();
+          }).appendTo(form);
+          if(form[0].reportValidity()) {
+            form.submit();
+          } else {
+            $j(this).prop('disabled', false);
+          }
         });
       });
     </script>

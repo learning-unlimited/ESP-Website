@@ -71,10 +71,11 @@ class NameTagModule(ProgramModuleObj):
         context.update(usc.prepare_context(prog, target_path='/manage/%s/generatetags' % prog.url))
         context['combo_form'] = False
         context['include_continue'] = False
+        context['self_checkin'] = Tag.getProgramTag('student_self_checkin', program = prog) == 'code'
 
         return render_to_response(self.baseDir()+'selectoptions.html', request, context)
 
-    def nametag_data(self, users_list1, user_title1, users_list2 = ESPUser.objects.none(), user_title2 = None):
+    def nametag_data(self, users_list1, user_title1, users_list2 = ESPUser.objects.none(), user_title2 = None, program = None):
         users = []
         users_list = [ user for user in users_list1 | users_list2]
         users_list = filter(lambda x: len(x.first_name+x.last_name), users_list)
@@ -87,17 +88,19 @@ class NameTagModule(ProgramModuleObj):
             else:
                 title = user_title2
             if prof.student_info is not None:
-                users.append({'title': title,
+              user_dict = {'title': title,
                           'name' : '%s %s' % (user.first_name, user.last_name),
                           'id'   : user.id,
                           'username': user.username,
                           'pronoun': prof.student_info.pronoun})
             else:
-                users.append({'title': title,
+              user_dict = {'title': title,
                           'name' : '%s %s' % (user.first_name, user.last_name),
                           'id'   : user.id,
-                          'username': user.username})
-
+                          'username': user.username}
+            if program and Tag.getProgramTag('student_self_checkin', program = program) == 'code':
+                user_dict['hash'] = user.userHash(program)
+            users.append(user_dict)
         return users
 
     @aux_call
@@ -119,7 +122,7 @@ class NameTagModule(ProgramModuleObj):
             data = ListGenModule.processPost(request)
             usc = UserSearchController()
             filterObj = usc.filter_from_postdata(prog, data)
-            users = self.nametag_data(ESPUser.objects.filter(filterObj.get_Q()).distinct(), user_title)
+            users = self.nametag_data(ESPUser.objects.filter(filterObj.get_Q()).distinct(), user_title, program = prog)
 
         elif idtype == 'students':
             user_title = "Student"
@@ -129,7 +132,7 @@ class NameTagModule(ProgramModuleObj):
             else:
                 students = ESPUser.objects.filter(student_dict['confirmed']).distinct()
 
-            users = self.nametag_data(students, user_title)
+            users = self.nametag_data(students, user_title, program = prog)
 
         elif idtype == 'teacher':
             user_title = "Teacher"
