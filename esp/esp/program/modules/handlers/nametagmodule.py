@@ -92,7 +92,7 @@ class NameTagModule(ProgramModuleObj):
                              'name' : '%s %s' % (user.first_name, user.last_name),
                              'id'   : user.id,
                              'username': user.username,
-                             'pronoun': prof.student_info.pronoun})
+                             'pronoun': prof.student_info.pronoun}
             else:
                 user_dict = {'title': title,
                              'name' : '%s %s' % (user.first_name, user.last_name),
