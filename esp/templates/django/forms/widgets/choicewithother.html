@@ -8,7 +8,10 @@
           {% endif %}
           {% for option in options %}
             {% if not forloop.parentloop.last and forloop.last %}
-            <li>{% include option.template_name with widget=option %}{{ option.label }}</li>
+            <li>
+              <label{% if option.attrs.id %} for="{{ option.attrs.id }}"{% endif %}>
+                {% include option.template_name with widget=option %}{{ option.label }}
+            </li>
             {% else %}
             <li>
               <label{% if option.attrs.id %} for="{{ option.attrs.id }}_{{ option.name }}"{% endif %}>
