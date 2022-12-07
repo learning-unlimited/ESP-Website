@@ -44,7 +44,7 @@ Students Email: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-students@{{ EMAIL_HOST_SEN
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
       <td>{{ student.id }}</td>
       <td>{{ student.name }}</td>
-      <td>{{ student|getPronouns }}</td>
+      <td>{{ student.getLastProfile.student_info.pronoun }}</td>
       <td>
           {{ student|getGradeForProg:program.id }}</td>
     </tr>
