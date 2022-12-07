@@ -12,7 +12,7 @@
             {% else %}
             <li>
               <label{% if option.attrs.id %} for="{{ option.attrs.id }}_{{ option.name }}"{% endif %}>
-                <input type="radio"{% if option.attrs.id %} id="{{ option.attrs.id }}_{{ option.name }}"{% endif %} value="{{ option.value }}" name="{{ radiowidget.name }}"{% if radiowidget.other.0 == radiowidget.value %} checked="true"{% endif %}/>
+                <input type="radio" {% if option.attrs.id %} id="{{ option.attrs.id }}_{{ option.name }}"{% endif %} value="{{ option.value }}" name="{{ radiowidget.name }}"{% if radiowidget.other.0 == radiowidget.value %} checked="true"{% endif %} {% for name, value in option.attrs.items %}{% if name != "id" and name != "checked" %}{% if value is not False %} {{ name }}{% if value is not True %}="{{ value|stringformat:'s' }}"{% endif %}{% endif %}{% endif %}{% endfor %}/>
                 {{ option.label }}
               </label>
               {% include textwidget.template_name with widget=textwidget %}

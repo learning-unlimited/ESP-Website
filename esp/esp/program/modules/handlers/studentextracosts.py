@@ -46,32 +46,35 @@ from esp.program.modules.forms.splashinfo import SiblingDiscountForm
 from esp.tagdict.models import Tag
 from esp.users.models    import Record, RecordType
 from esp.utils.web import render_to_response
-from esp.utils.widgets import ChoiceWithOtherField
+from esp.utils.widgets import ChoiceWithOtherField, RadioSelectWithData
 
 class CostItem(forms.Form):
     def __init__(self, *args, **kwargs):
         required = kwargs.pop('required', False)
+        paid = kwargs.pop('paid', False)
         super(CostItem, self).__init__(*args, **kwargs)
-        self.fields['cost'] = forms.BooleanField(required=required, label='')
+        self.fields['cost'] = forms.BooleanField(required=required, label='', widget=forms.CheckboxInput(attrs={'class': 'cost', 'data-paid': 'true' if paid else 'false'}))
 
 class MultiCostItem(forms.Form):
     def __init__(self, *args, **kwargs):
         required = kwargs.pop('required', False)
+        paid = kwargs.pop('paid', 0)
         max_quantity = kwargs.pop('max_quantity', 10)
         min_quantity = 1 if required else 0
         super(MultiCostItem, self).__init__(*args, **kwargs)
-        self.fields['count'] = forms.IntegerField(required=required, initial=min_quantity, max_value=max_quantity, min_value=min_quantity, widget=forms.NumberInput(attrs={'class': 'input-mini'}))
+        self.fields['count'] = forms.IntegerField(required=required, initial=min_quantity, max_value=max_quantity, min_value=min_quantity, widget=forms.NumberInput(attrs={'class': 'multicost input-mini', 'paid': paid}))
 
 class MultiSelectCostItem(forms.Form):
     def __init__(self, *args, **kwargs):
         choices = kwargs.pop('choices')
         required = kwargs.pop('required')
         is_custom = kwargs.pop('is_custom', False)
+        option_data = kwargs.pop('option_data', {})
         super(MultiSelectCostItem, self).__init__(*args, **kwargs)
         if is_custom:
-            self.fields['option'] = ChoiceWithOtherField(required=required, label='', choices=choices)
+            self.fields['option'] = ChoiceWithOtherField(required=required, label='', choices=choices, option_data=option_data)
         else:
-            self.fields['option'] = forms.ChoiceField(required=required, label='', choices=choices, widget=forms.RadioSelect)
+            self.fields['option'] = forms.ChoiceField(required=required, label='', choices=choices, widget=RadioSelectWithData(option_data=option_data))
 
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
@@ -160,7 +163,7 @@ class StudentExtraCosts(ProgramModuleObj):
         """
         iac = IndividualAccountingController(self.program, request.user)
         if iac.has_paid():
-            if not Tag.getBooleanTag('already_paid_extracosts_allowed'):
+            if not Tag.getBooleanTag('already_paid_extracosts_allowed', program = prog):
                 raise ESPError("You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.", log=False)
         selected_types = [t.line_item for t in iac.get_transfers().select_related('line_item')]
         paid_types = []
@@ -285,6 +288,7 @@ class StudentExtraCosts(ProgramModuleObj):
             {
                'form': preserve_items.get(x.text) or CostItem( prefix="%s" % x.id,
                                                                initial={'cost': (count_map[x.text][1] > 0) },
+                                                               paid=iac.has_paid() and count_map[x.text][1] > 0,
                                                                required=(x.required) ),
                'type': 'single',
                'LineItem': x
@@ -298,6 +302,7 @@ class StudentExtraCosts(ProgramModuleObj):
             {
                 'form': preserve_items.get(x.text) or MultiCostItem( prefix="%s" % x.id,
                                                                      initial={'count': count_map[x.text][1] },
+                                                                     paid=count_map[x.text][1] if iac.has_paid() else 0,
                                                                      required=(x.required),
                                                                      max_quantity=(x.max_quantity) ),
                 'type': 'multiple',
@@ -310,7 +315,12 @@ class StudentExtraCosts(ProgramModuleObj):
         multiselect_costitems = []
         for x in multiselect_list:
             new_entry = {'type': 'select', 'LineItem': x}
-            form_kwargs = {'prefix': "multi%s" % x.id, 'choices': x.option_choices, 'required': x.required}
+            option_data = {}
+            for option in x.lineitemoptions_set.all():
+                option_data[option.id] = {'cost': option.amount_dec_inherited,
+                                          'is_custom': 'true' if option.is_custom else 'false',
+                                          'paid': 'true' if iac.get_transfers().filter(paid_in__isnull=False, option = option).exists() else 'false'}
+            form_kwargs = {'prefix': "multi%s" % x.id, 'choices': x.option_choices, 'required': x.required, 'option_data': option_data}
             if x.has_custom_options:
                 #   Provide an initial value for a custom amount if an option has been selected
                 #   and the saved amount differs from the amount this option would normally cost.
@@ -338,7 +348,7 @@ class StudentExtraCosts(ProgramModuleObj):
         return render_to_response(self.baseDir()+'extracosts.html',
                                   request,
                                   { 'errors': not forms_all_valid, 'error_custom': error_custom, 'forms': forms, 'financial_aid': request.user.hasFinancialAid(prog), 'select_qty': len(multicosts_list) > 0, 'paid_for': iac.has_paid(),
-                                  'paid_for_text': Tag.getTag("already_paid_extracosts_text") })
+                                  'paid_for_text': Tag.getProgramTag("already_paid_extracosts_text", program = prog) })
 
     def isStep(self):
         return self.lineitemtypes().exists()

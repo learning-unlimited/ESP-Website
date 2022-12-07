@@ -316,13 +316,27 @@ $j(document).ready({{ name }}_setup);
         result = json.loads(data[name])
         return result
 
+class RadioSelectWithData(forms.RadioSelect):
+    def __init__(self, *args, **kwargs):
+        self.option_data = kwargs.pop('option_data', {})
+        super(RadioSelectWithData, self).__init__(*args, **kwargs)
+
+    # https://stackoverflow.com/a/59274893/4660582
+    def get_context(self, name, value, attrs):
+        context = super(RadioSelectWithData, self).get_context(name, value, attrs)
+        for optgroup in context['widget'].get('optgroups', []):
+            for option in optgroup[1]:
+                for k, v in self.option_data.get(option['value'], {}).iteritems():
+                    option['attrs']['data-' + k] = v
+        return context
+
 class ChoiceWithOtherWidget(forms.MultiWidget):
     """MultiWidget for use with ChoiceWithOtherField."""
     template_name = 'django/forms/widgets/choicewithother.html'
 
-    def __init__(self, choices):
+    def __init__(self, choices, option_data):
         widgets = [
-            forms.RadioSelect(choices=choices),
+            RadioSelectWithData(choices=choices, option_data=option_data),
             forms.TextInput
         ]
         super(ChoiceWithOtherWidget, self).__init__(widgets)
@@ -334,6 +348,7 @@ class ChoiceWithOtherWidget(forms.MultiWidget):
 
 class ChoiceWithOtherField(forms.MultiValueField):
     def __init__(self, *args, **kwargs):
+        option_data = kwargs.pop('option_data', {})
         fields = [
             forms.ChoiceField(widget=forms.RadioSelect(), *args, **kwargs),
             forms.CharField(required=False)
@@ -343,7 +358,7 @@ class ChoiceWithOtherField(forms.MultiValueField):
 
         if 'choices' in kwargs:
             self.choices = kwargs['choices']
-            widget = ChoiceWithOtherWidget(choices=kwargs['choices'])
+            widget = ChoiceWithOtherWidget(choices=kwargs['choices'], option_data=option_data)
             kwargs.pop('choices')
             self._was_required = kwargs.pop('required', True)
             kwargs['required'] = False
