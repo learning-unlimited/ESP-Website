@@ -153,10 +153,10 @@ class ClassRegModuleInfo(models.Model):
     class_max_duration   = models.IntegerField(blank=True, null=True, help_text='The maximum length of a class, in minutes.')
 
     #   Class size options: teachers will see [min:step:max] plus other_sizes
-    class_min_cap       = models.IntegerField(blank=True, null=True, help_text='The minimum number of students a teacher can choose as their class capacity.')
-    class_max_size       = models.IntegerField(blank=True, null=True, help_text='The maximum number of students a teacher can choose as their class capacity.')
-    class_size_step      = models.IntegerField(blank=True, null=True, help_text='The interval for class capacity choices.')
-    class_other_sizes    = models.CommaSeparatedIntegerField(blank=True, null=True, max_length=100, help_text='Force the addition of these options to teachers\' choices of class size.  (Enter a comma-separated list of integers.)')
+    class_min_cap       = models.IntegerField(default=5, null=True, help_text='The minimum number of students a teacher can choose as their class capacity.')
+    class_max_size       = models.IntegerField(default=5, null=True, help_text='The maximum number of students a teacher can choose as their class capacity.')
+    class_size_step      = models.IntegerField(default=1, null=True, help_text='The interval for class capacity choices.')
+    class_other_sizes    = models.CommaSeparatedIntegerField(default='7,10,12,15,20,30,50,75,100,150,200', null=True, max_length=100, help_text='Force the addition of these options to teachers\' choices of class size.  (Enter a comma-separated list of integers.)')
 
     #   Allowed numbers of sections and meeting days
     allowed_sections     = models.CommaSeparatedIntegerField(max_length=100, blank=True,
