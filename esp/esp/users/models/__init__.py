@@ -1513,6 +1513,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     }
 
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    pronoun = models.CharField(max_length=50,blank=True,null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
     affiliation = models.CharField(max_length=100, blank=True)
     from_here = models.NullBooleanField(null=True)
@@ -1559,11 +1560,13 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         return u'%s - %s %s' % (self.user.ajax_str(), self.college, self.graduation_year)
 
     def updateForm(self, form_dict):
+        form_dict['pronoun']         = self.pronoun
         form_dict['graduation_year'] = self.graduation_year
         form_dict['affiliation'] = self.affiliation
         form_dict['major']           = self.major
         form_dict['shirt_size']      = self.shirt_size
         form_dict['shirt_type']      = self.shirt_type
+
         return form_dict
 
     @staticmethod
@@ -1575,6 +1578,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
             teacherInfo.user = curUser
         else:
             teacherInfo = regProfile.teacher_info
+        teacherInfo.pronoun         = new_data.get('pronoun', None)
         teacherInfo.graduation_year = new_data['graduation_year']
         teacherInfo.affiliation = new_data['affiliation']
         affiliation = teacherInfo.affiliation.split(':', 1)[0]

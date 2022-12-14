@@ -345,6 +345,7 @@ class TeacherInfoForm(FormWithRequiredCss):
                              (True,  'Please mail me my reimbursement.')]
     from_here_answers = [ (True, "Yes"), (False, "No") ]
 
+    pronoun = forms.CharField(max_length=50, required=False)
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
     affiliation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=AFFILIATION_CHOICES), label ='What is your affiliation with %s?' % settings.INSTITUTION_NAME)
     major = SizedCharField(length=30, max_length=32, required=False)
@@ -362,6 +363,9 @@ class TeacherInfoForm(FormWithRequiredCss):
             del self.fields['shirt_type']
         elif not Tag.getBooleanTag('teacherinfo_shirt_type_selection'):
             del self.fields['shirt_type']
+        if not Tag.getBooleanTag('teacher_profile_pronoun_field'):
+            del self.fields['pronoun']
+
 
     def clean(self):
         super(TeacherInfoForm, self).clean()

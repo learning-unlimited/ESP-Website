@@ -62,7 +62,7 @@ class UserAttributeGetter(object):
                     '10_tshirt_size': {'label': 'T-Shirt Size', 'usertype': {'teacher', 'student'}},
                     '11_dob': {'label': 'Date of Birth', 'usertype': {'student'}},
                     '12_gender': {'label': 'Gender', 'usertype': {'student'}},
-                    '13_pronoun': {'label': 'Pronouns', 'usertype': {'student'}},
+                    '13_pronoun': {'label': 'Pronouns', 'usertype': {'teacher', 'student'}},
                     '14_gradyear': {'label': 'Grad Year', 'usertype': {'teacher', 'student'}},
                     '15_school': {'label': 'School', 'usertype': {'teacher', 'student'}},
                     '16_affiliation': {'label': 'Affiliation', 'usertype': {'teacher'}},
@@ -231,7 +231,9 @@ class UserAttributeGetter(object):
             return self.profile.student_info.gender
 
     def get_pronoun(self):
-        if self.profile.student_info:
+        if self.profile.teacher_info:
+            return self.profile.teacher_info.pronoun
+        elif self.profile.student_info:
             return self.profile.student_info.pronoun
 
     #Replace this with something based on presence and number of application questions for a particular program

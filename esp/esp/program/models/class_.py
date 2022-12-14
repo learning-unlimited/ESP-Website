@@ -73,7 +73,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media
 from esp.users.models import ESPUser, Permission, PersistentQueryFilter
 from esp.program.models import Program
-from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType
+from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType, RegistrationProfile
 from esp.program.models import ScheduleMap, ScheduleConstraint
 from esp.program.models import ArchiveClass
 from esp.resources.models         import Resource, ResourceRequest, ResourceAssignment, ResourceType
@@ -1742,6 +1742,19 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             name = teacher.name()
             if name.strip() == '':
                 name = teacher.username
+            teachers.append(name)
+        return teachers
+
+    def getTeacherNamesWithPronouns(self):
+        teachers = []
+        for teacher in self.get_teachers():
+            name = teacher.name()
+            if name.strip() == '':
+                name = teacher.username
+            prof = RegistrationProfile.getLastProfile(teacher)
+            if prof.teacher_info is not None:
+                if prof.teacher_info.pronoun is not None:
+                    name = name + ' (' + prof.teacher_info.pronoun + ')'
             teachers.append(name)
         return teachers
 

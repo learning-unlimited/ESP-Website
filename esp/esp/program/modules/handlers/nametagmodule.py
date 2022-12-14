@@ -87,17 +87,17 @@ class NameTagModule(ProgramModuleObj):
                 title = user_title1
             else:
                 title = user_title2
-            if prof.student_info is not None:
-                user_dict = {'title': title,
-                             'name' : '%s %s' % (user.first_name, user.last_name),
-                             'id'   : user.id,
-                             'username': user.username,
-                             'pronoun': prof.student_info.pronoun}
+            if prof.teacher_info is not None:
+                pronoun = prof.teacher_info.pronoun
+            elif prof.student_info is not None:
+                pronoun = prof.student_info.pronoun
             else:
-                user_dict = {'title': title,
-                             'name' : '%s %s' % (user.first_name, user.last_name),
-                             'id'   : user.id,
-                             'username': user.username}
+                pronoun = None
+            user_dict = {'title': title,
+                         'name' : '%s %s' % (user.first_name, user.last_name),
+                         'id'   : user.id,
+                         'username': user.username,
+                         'pronoun': pronoun}
             if program and Tag.getProgramTag('student_self_checkin', program = program) == 'code':
                 user_dict['hash'] = user.userHash(program)
             users.append(user_dict)
