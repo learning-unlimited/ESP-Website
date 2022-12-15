@@ -175,7 +175,7 @@ class ClassRegModuleInfo(models.Model):
     #   come to their class late.
     allow_lateness       = models.BooleanField(blank=True, default=False)
     #   Room requests
-    ask_for_room         = models.BooleanField(blank=True, default=True,
+    ask_for_room         = models.BooleanField(blank=True, default=False,
         help_text = 'If true, teachers will be asked if they have a particular classroom in mind.')
 
     # Use the maximum class size field.
