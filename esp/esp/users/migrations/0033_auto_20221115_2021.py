@@ -17,4 +17,9 @@ class Migration(migrations.Migration):
             name='pronoun',
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
+        migrations.AddField(
+            model_name='teacherinfo',
+            name='pronoun',
+            field=models.CharField(blank=True, max_length=50, null=True),
+        ),
     ]
