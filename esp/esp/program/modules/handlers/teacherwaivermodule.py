@@ -16,7 +16,7 @@ def teacherwaiverform_factory(prog):
     if label_tag is not None:
         label = str(label_tag)
     else:
-        label = u"I have completed the online liability waiver."
+        label = u"I have completed the online code of conduct."
 
     d = dict(waiver=forms.BooleanField(required=True, label=label))
     return type(name, bases, d)
