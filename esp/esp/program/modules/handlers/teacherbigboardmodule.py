@@ -171,6 +171,8 @@ class TeacherBigBoardModule(ProgramModuleObj):
     @cache_function_for(105)
     def reg_classes(self, prog, approved = False):
         class_times = ClassSubject.objects.filter(self.get_filter(prog, approved)
+        ).exclude(
+            status__lt=0 # no rejected classes
         ).exclude(category__category__iexact="Lunch"
         ).distinct().values_list('timestamp', flat=True)
         return sorted(class_times)
@@ -179,6 +181,8 @@ class TeacherBigBoardModule(ProgramModuleObj):
     def style_classes(self, prog, style, approved = False):
         class_times = ClassSubject.objects.filter(
             self.get_filter(prog, approved) & Q(class_style=style)
+        ).exclude(
+            status__lt=0 # no rejected classes
         ).exclude(category__category__iexact="Lunch"
         ).distinct().values_list('timestamp', flat=True)
         return sorted(class_times)
@@ -186,6 +190,8 @@ class TeacherBigBoardModule(ProgramModuleObj):
     @cache_function_for(105)
     def teach_times(self, prog, approved = False):
         teacher_times = dict(ClassSubject.objects.filter(self.get_filter(prog, approved)
+        ).exclude(
+            status__lt=0 # no rejected classes
         ).exclude(category__category__iexact="Lunch"
         ).exclude(teachers=None
         ).distinct().values_list('teachers').annotate(Min('timestamp')))
