@@ -53,7 +53,7 @@ class TeacherPreviewModule(ProgramModuleObj):
             "module_type": "teach",
             "inline_template": "preview.html",
             "seq": -10,
-            "choosable": 1,
+            "choosable": 0,
             }
 
     def teacherhandout(self, request, tl, one, two, module, extra, prog, template_file='teacherschedules.html'):
