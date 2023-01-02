@@ -60,8 +60,8 @@
           name: '{{series.description}}',
           pointInterval: 60 * 60 * 1000, // one hour
           pointStart: Date.UTC(
-              {{first_hour.year}}, {{first_hour.month}} - 1,
-              {{first_hour.day}}, {{first_hour.hour}}),
+              {{axis.first_hour.year}}, {{axis.first_hour.month}} - 1,
+              {{axis.first_hour.day}}, {{axis.first_hour.hour}}),
           data: {{series.data}},
         },
         {% empty %}
@@ -81,8 +81,8 @@
           name: '{{series.description}}',
           pointInterval: 60 * 60 * 1000, // one hour
           pointStart: Date.UTC(
-              {{first_hour.year}}, {{first_hour.month}} - 1,
-              {{first_hour.day}}, {{first_hour.hour}}),
+              {{axis.first_hour.year}}, {{axis.first_hour.month}} - 1,
+              {{axis.first_hour.day}}, {{axis.first_hour.hour}}),
           data: {{series.data}},
         },
         {% empty %}
