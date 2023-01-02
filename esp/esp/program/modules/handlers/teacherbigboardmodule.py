@@ -88,7 +88,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
                 ("number of teachers approved", [(1, time) for time in self.teach_times(prog, True)]),
             ]
 
-            timess_data, start = BigBoardModule.make_graph_data(timess)
+            timess_data, start_t = BigBoardModule.make_graph_data(timess)
 
             class_hours, student_hours = self.get_hours(prog)
             class_hours_approved, student_hours_approved = self.get_hours(prog, approved = True)
@@ -97,26 +97,25 @@ class TeacherBigBoardModule(ProgramModuleObj):
                 ("number of registered class-hours", class_hours),
                 ("number of approved class-hours", class_hours_approved),
             ]
-            class_hourss_data, _ = BigBoardModule.make_graph_data(class_hourss)
+            class_hourss_data, start_c = BigBoardModule.make_graph_data(class_hourss)
 
             student_hourss = [
                 ("number of registered class-student-hours", student_hours),
                 ("number of approved class-student-hours", student_hours_approved),
             ]
-            student_hourss_data, _ = BigBoardModule.make_graph_data(student_hourss)
+            student_hourss_data, start_s = BigBoardModule.make_graph_data(student_hourss)
 
         left_axis_data = [
-            {"axis_name": "#", "series_data": timess_data},
+            {"axis_name": "#", "series_data": timess_data, "first_hour": start_t},
         ]
         right_axis_data = [
-            {"axis_name": "class-hours", "series_data": class_hourss_data},
-            {"axis_name": "class-student-hours", "series_data": student_hourss_data},
+            {"axis_name": "class-hours", "series_data": class_hourss_data, "first_hour": start_c},
+            {"axis_name": "class-student-hours", "series_data": student_hourss_data, "first_hour": start_s},
         ]
 
         context = {
             "type": "Teacher",
             "numbers": numbers,
-            "first_hour": start,
             "left_axis_data": left_axis_data,
             "right_axis_data": right_axis_data,
             "loads": zip([1, 5, 15], self.load_averages()),
