@@ -69,14 +69,13 @@ class BigBoardModule(ProgramModuleObj):
         timess_data, start = self.make_graph_data(timess, 4, 0, 5)
 
         left_axis_data = [
-            {"axis_name": "#", "series_data": timess_data},
+            {"axis_name": "#", "series_data": timess_data, "first_hour": start},
         ]
 
         context = {
             "type": "Student",
             "numbers": numbers,
             "popular_classes": self.popular_classes(prog),
-            "first_hour": start,
             "left_axis_data": left_axis_data,
             "loads": zip([1, 5, 15], self.load_averages()),
         }
