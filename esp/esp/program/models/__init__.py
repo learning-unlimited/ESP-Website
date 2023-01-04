@@ -1003,9 +1003,13 @@ class Program(models.Model, CustomFormsLinkModel):
         times = Event.group_contiguous(list(self.getTimeSlots()))
         crmi = self.classregmoduleinfo
         if crmi and crmi.class_max_duration is not None:
-            max_seconds = crmi.class_max_duration * 60
+            max_seconds = (crmi.class_max_duration + 1) * 60 # adding 1 here because of rounding error in Decimal conversion
         else:
             max_seconds = None
+        if crmi and crmi.class_min_duration is not None:
+            min_seconds = (crmi.class_min_duration - 1) * 60 # subtracting 1 here because of rounding error in Decimal conversion
+        else:
+            min_seconds = None
 
         durationDict = {}
 
@@ -1021,7 +1025,7 @@ class Program(models.Model, CustomFormsLinkModel):
                         rounded_seconds = int(durationSeconds / 900.0 + 1.0) * 900
                     else:
                         rounded_seconds = durationSeconds
-                    if (max_seconds is None) or (durationSeconds <= max_seconds):
+                    if ((max_seconds is None) or (durationSeconds <= max_seconds)) and ((min_seconds is None) or (durationSeconds >= min_seconds)):
                         durationDict[(Decimal(durationSeconds) / 3600)] = \
                                         str(rounded_seconds / 3600) + ':' + \
                                         str(int(round((rounded_seconds / 60.0) % 60))).rjust(2,'0')

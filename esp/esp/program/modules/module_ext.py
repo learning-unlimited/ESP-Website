@@ -149,8 +149,9 @@ class ClassRegModuleInfo(models.Model):
     allow_coteach        = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to specify co-teachers.')
     set_prereqs          = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to enter prerequisites for each class that are displayed separately on the catalog.')
 
-    #   The maximum length of a class, in minutes.
-    class_max_duration   = models.IntegerField(blank=True, null=True, help_text='The maximum length of a class, in minutes.')
+    #   The minimum/maximum length of a class, in minutes.
+    class_min_duration   = models.IntegerField(blank=True, null=True, help_text='The minimum length of a class, in minutes. Typically set to 50 for HSSPs and left blank for Splarks.')
+    class_max_duration   = models.IntegerField(blank=True, null=True, help_text='The maximum length of a class, in minutes. Typically set to 80 for HSSPs and 170 for Splarks.')
 
     #   Class size options: teachers will see [min:step:max] plus other_sizes
     class_min_cap       = models.IntegerField(default=5, null=True, help_text='The minimum number of students a teacher can choose as their class capacity.')
@@ -187,9 +188,9 @@ class ClassRegModuleInfo(models.Model):
     # Enable teachers to specify all allowable class size ranges.
     use_allowable_class_size_ranges = models.BooleanField(blank=True, default=False)
 
-    # Have an additional registration option to register for an "open class".
+    # Have an additional registration option to register for walk-ins (which the website calls "open classes").
     open_class_registration = models.BooleanField(blank=True, default=False,
-         help_text = 'If true, teachers will be presented with an option to register for an "open class".')
+         help_text = 'If true, teachers will be presented with an option to register for walk-in classes.')
 
     #   Choose which appears on teacher reg for the modules: checkbox list, progress bar, or nothing
     #   ((0, 'None'),(1, 'Checkboxes'), (2, 'Progress Bar'))
