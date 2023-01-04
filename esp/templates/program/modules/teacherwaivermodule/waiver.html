@@ -5,7 +5,7 @@
 <br />
 {% load render_qsd %}
 {% inline_program_qsd_block program "teach:waiver_instructions" %}
-Before attending {{ prog.niceName }}, please fill out the code of conduct at the following link: <a href="/" target="_blank">LINK GOES HERE</a>. Once you have completed this code of conduct (with email confirmation), check the box below and proceed with registration. Please email us at <a href="mailto:{{ prog.director_email }}">{{ prog.director_email }}</a> if you have any questions.
+Before attending {{ prog.niceName }}, please fill out the code of conduct at the following link: <a href="LINK GOES HERE" target="_blank">LINK TEXT GOES HERE</a>. Once you have completed this code of conduct (with email confirmation), check the box below and proceed with registration. Please email us at <a href="mailto:{{ prog.director_email }}">{{ prog.director_email }}</a> if you have any questions.
 {% end_inline_program_qsd_block %}
 <br />
 <form action="waiver" method="post">

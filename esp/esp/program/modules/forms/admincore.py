@@ -86,7 +86,7 @@ class TeacherRegSettingsForm(BetterModelForm):
     class Meta:
         fieldsets = [
                      ('Teacher Settings', {'fields': ['allow_coteach', 'set_prereqs', 'num_teacher_questions']}),
-                     ('Class Duration and Size Options', {'fields': ['class_max_duration', 'class_min_cap', 'class_max_size', 'class_size_step', 'class_other_sizes']}),
+                     ('Class Duration and Size Options', {'fields': ['class_min_duration','class_max_duration', 'class_min_cap', 'class_max_size', 'class_size_step', 'class_other_sizes']}),
                      ('Section Options', {'fields': ['allowed_sections', 'session_counts']}),
                      ('Other Options', {'fields': ['allow_lateness', 'ask_for_room', 'use_class_size_max', 'use_class_size_optimal', 'use_optimal_class_size_range', 'use_allowable_class_size_ranges', 'open_class_registration']}),
                      ('Visual Options', {'fields': ['color_code', 'progress_mode']}),

@@ -79,14 +79,15 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         q_attended = Q(record__event= "attended", record__program=self.program)
         q_checked_out = Q(id__in=self.program.currentlyCheckedOutStudents())
         q_checked_in = Q(id__in=self.program.currentlyCheckedInStudents())
-        q_studentrep = Q(groups__name="StudentRep")
+        #q_studentrep = Q(groups__name="StudentRep")
 
         if QObject:
             retVal = {'confirmed': q_confirmed,
                       'attended' : q_attended,
                       'checked_out': q_checked_out,
                       'checked_in': q_checked_in,
-                      'studentrep': q_studentrep}
+                      #'studentrep': q_studentrep
+                      }
 
 
             if self.program.program_allow_waitlist:
@@ -98,7 +99,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                   'attended' : ESPUser.objects.filter(q_attended).distinct(),
                   'checked_out': ESPUser.objects.filter(q_checked_out).distinct(),
                   'checked_in': ESPUser.objects.filter(q_checked_in).distinct(),
-                  'studentrep': ESPUser.objects.filter(q_studentrep).distinct()}
+                  #'studentrep': ESPUser.objects.filter(q_studentrep).distinct()
+                  }
 
         if self.program.program_allow_waitlist:
             retVal['waitlisted_students'] = ESPUser.objects.filter(Q(record__event="waitlist",record__program=self.program)).distinct()
@@ -110,7 +112,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                   'attended' : """Students who attended %s""" % self.program.niceName(),
                   'checked_out': """Students who are currently checked out of %s""" % self.program.niceName(),
                   'checked_in': """Students who are currently checked in to %s""" % self.program.niceName(),
-                  'studentrep': """Student Representatives"""}
+                  #'studentrep': """Student Representatives"""
+                  }
 
         if self.program.program_allow_waitlist:
             retVal['waitlisted_students'] = """Students on the program's waitlist"""
