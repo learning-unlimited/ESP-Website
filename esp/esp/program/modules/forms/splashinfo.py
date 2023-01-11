@@ -34,9 +34,10 @@ Learning Unlimited, Inc.
 
 from django import forms
 from esp.program.models import Program
+from esp.utils.widgets import RadioSelectWithData
 
 class SiblingDiscountForm(forms.Form):
-    siblingdiscount = forms.TypedChoiceField(choices=[], coerce=lambda x: x == 'True', widget=forms.RadioSelect)
+    siblingdiscount = forms.TypedChoiceField(choices=[], coerce=lambda x: x == 'True')
     siblingname = forms.CharField(max_length=128, required=False)
 
     def __init__(self, *args, **kwargs):
@@ -44,10 +45,14 @@ class SiblingDiscountForm(forms.Form):
             program = kwargs.pop('program')
         else:
             raise KeyError('Need to supply program as named argument to SiblingDiscountForm')
-        self.base_fields['siblingdiscount'].choices = [(False, 'I am the first in my household enrolling in Splash (+ $' + str(program.base_cost) + ').'),
-                                                       (True, 'I have a sibling already enrolled in Splash (+ $' + str(program.base_cost - program.sibling_discount) + ').')]
-        self.base_fields['siblingdiscount'].initial = True
         super(SiblingDiscountForm, self).__init__(*args, **kwargs)
+        choices = [(False, 'I am the first in my household enrolling in Splash (+ $' + str(program.base_cost) + ').'),
+                   (True, 'I have a sibling already enrolled in Splash (+ $' + str(program.base_cost - program.sibling_discount) + ').')]
+        option_data = {False: {'cost': program.base_cost},
+                       True: {'cost': program.base_cost - program.sibling_discount}}
+        self.fields['siblingdiscount'].widget = RadioSelectWithData(option_data=option_data)
+        self.fields['siblingdiscount'].choices = choices
+        self.fields['siblingdiscount'].initial = True
 
     def clean(self):
         cleaned_data = super(SiblingDiscountForm, self).clean()

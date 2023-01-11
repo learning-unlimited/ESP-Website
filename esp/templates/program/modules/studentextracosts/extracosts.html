@@ -8,6 +8,11 @@
 <link rel="stylesheet" href="//code.jquery.com/ui/1.13.0/themes/smoothness/jquery-ui.css">
 {% endblock %}
 
+{% block xtrajs %}
+    {{ block.super }}
+    <script type="text/javascript" src="/media/scripts/program/modules/extracosts.js"></script>
+{% endblock %}
+
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
@@ -45,21 +50,18 @@ td>ul { list-style-type: none; padding: 0px }
 <tr>
     <td><b>{{ f.LineItem.text }}</b> {% if f.LineItem.required or f.type == "sibling" %}(required; please make a selection below){% else %}(optional){% endif %}</td>
 </tr>
-<tr style="border-bottom: 1px dashed grey;">
+<tr {% if f.type != "sibling" %}style="border-bottom: 1px dashed grey;"{% endif %}>
     <td>
         {% if f.type == "single" %}
             {% if f.form.cost.errors %}<div style="color: red;">{{ f.form.cost.errors|join:", " }}</div>{% endif %}
             {{ f.form.cost }} ${{ f.LineItem.amount_dec|floatformat:2 }}
-        {% endif %}
-        {% if f.type == "multiple" %}
+        {% elif f.type == "multiple" %}
             {% if f.form.count.errors %}<div style="color: red;">{{ f.form.count.errors|join:", " }}</div>{% endif %}
             {{ f.form.count }} ${{ f.LineItem.amount_dec|floatformat:2 }} each
-        {% endif %}
-        {% if f.type == "select" %}
+        {% elif f.type == "select" %}
             {% if f.form.option.errors %}<div style="color: red;">{{ f.form.option.errors|join:", " }}</div>{% endif %}
             {{ f.form.option }}
-        {% endif %}
-        {% if f.type == "sibling" %}
+        {% elif f.type == "sibling" %}
             {% if f.form.siblingdiscount.errors %}<div style="color: red;">{{ f.form.siblingdiscount.errors|join:", " }}</div>{% endif %}
             {{ f.form.siblingdiscount }}
     </td>
@@ -74,7 +76,7 @@ td>ul { list-style-type: none; padding: 0px }
                 </td>
             </tr>
             {% endif %}
-            <tr>
+            <tr style="border-bottom: 1px dashed grey;">
                 <td>{{ f.form.siblingname }}</td>
             </tr>
         {% endif %}
@@ -94,6 +96,19 @@ td>ul { list-style-type: none; padding: 0px }
     </td>
 </tr>
 {% endfor %}
+{% if paid_for %}
+<tr>
+    <td align="right">
+        <p>Total amount previously paid: $<span style="font-weight: bold;" id="amount_paid" data-total="{{ amount_paid|floatformat:2 }}">{{ amount_paid|floatformat:2 }}</span></p>
+        {% if program.sibling_discount %}
+        <p>Total amount of financial aid: $<span style="font-weight: bold;" id="amount_finaid" data-total="{{ amount_finaid|floatformat:2 }}">{{ amount_finaid|floatformat:2 }}</span></p>
+        {% endif %}
+        <p>Total cost of selected items: $<span style="font-weight: bold;" id="total_cost"></span></p>
+        <p>Total amount due: $<span style="font-weight: bold;" id="amount_due"></span></p>
+        <p id="donation_warning" hidden></p>
+    </td>
+</tr>
+{% endif %}
 <tr>
     <td align="center">
         <input type="submit" class="btn btn-primary" value="Save"/>
@@ -103,15 +118,5 @@ td>ul { list-style-type: none; padding: 0px }
 </center>
 </form>
 </div>
-
-<script type="text/javascript">
-    /*
-     * A click handler that unchecks all inputs with the same name as the
-     * button.
-     **/
-    function remove_item(button) {
-        $j("input[name="+button.name+"]").prop("checked", false);
-    }
-</script>
 
 {% endblock %}
