@@ -166,14 +166,6 @@ class StudentExtraCosts(ProgramModuleObj):
         if iac.has_paid():
             if not Tag.getBooleanTag('already_paid_extracosts_allowed', program = prog):
                 raise ESPError("You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.", log=False)
-        selected_types = [t.line_item for t in iac.get_transfers().select_related('line_item')]
-        paid_types = []
-        for t in iac.get_transfers().select_related('line_item'):
-            if t.paid_in is not None:
-                paid_types.append(t.line_item)
-        # TODO: add disabled attribute to paid_types
-
-
 
         #   Determine which line item types we will be asking about
         costs_list = self.lineitemtypes().filter(max_quantity__lte=1, lineitemoptions__isnull=True)
