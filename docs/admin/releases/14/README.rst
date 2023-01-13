@@ -217,3 +217,7 @@ Minor bug fixes
 - Fixed a bug that forced admins to hard refresh whenever they changed their website theme
 - Fixed the Onsite New Student Registration form
 - Now strip any leading or trailing whitespace in user searches
+- Fixed the volunteer CSV download
+- Fixed forms so they do browser-side validation before submitting to the server (this was broken in Stable Release 14)
+- Class category symbols can only be a single letter now (special characters previously caused issues and will be converted to "Z"s)
+- Fixed the onsite catalog
