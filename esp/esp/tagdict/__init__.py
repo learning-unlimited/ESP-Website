@@ -1223,6 +1223,7 @@ all_program_tags = {
         'field': forms.ChoiceField(choices=[('none', 'None (disable student self checkin)'),
                                             ('open', 'Students only need to access the self checkin page'),
                                             ('code', 'Students must enter their unique code to check themselves in')]),
+    },
     'already_paid_extracosts_allowed': {
         'is_boolean': True,
         'help_text': 'Whether students should be able to return to the extracosts page to add items or change options after they have already paid once via credit card.',
@@ -1233,7 +1234,11 @@ all_program_tags = {
     'already_paid_extracosts_text': {
         'is_boolean': False,
         'help_text': 'The message that will be shown to users who have already paid by credit card and have returned to the extra costs page, if allowed.',
-        'default': 'You have already paid for some selected items via credit card and cannot remove these items using this form. If an item has multiple options, you may switch your selected option to an option of equal or greater cost; you cannot select a less expensive option using this form. You may still add items and will need to pay the extra balance.' ,
+        'default': 'You have already paid for this program via credit card. You are welcome to change your \
+                    selections below. If your new balance is larger than what you have already paid, \
+                    you can pay the remaining balance via credit card. If your new balance is smaller \
+                    than what you have already paid, we will treat the negative balance as a donation \
+                    to our program (thanks!).' ,
         'category': 'learn',
         'is_setting': True,
     },

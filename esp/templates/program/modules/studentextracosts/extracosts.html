@@ -83,7 +83,7 @@ td>ul { list-style-type: none; padding: 0px }
         
         {# If num_options, radio buttons will be used for the field. In order to  #}
         {# be able to remove a selected item, we need a button. The Javascript    #}
-        {# code for the button is at the bottom.                                  #}
+        {# code for the button is in extracosts.js.                               #}
 
         {% if f.LineItem.num_options and not f.LineItem.required %}
             <button type="button"
@@ -96,19 +96,28 @@ td>ul { list-style-type: none; padding: 0px }
     </td>
 </tr>
 {% endfor %}
-{% if paid_for %}
 <tr>
     <td align="right">
-        <p>Total amount previously paid: $<span style="font-weight: bold;" id="amount_paid" data-total="{{ amount_paid|floatformat:2 }}">{{ amount_paid|floatformat:2 }}</span></p>
-        {% if program.sibling_discount %}
-        <p>Total amount of financial aid: $<span style="font-weight: bold;" id="amount_finaid" data-total="{{ amount_finaid|floatformat:2 }}">{{ amount_finaid|floatformat:2 }}</span></p>
+        {% if paid_for %}
+        <p>Total amount previously paid: <span style="font-weight: bold;" id="amount_paid" data-total="{{ amount_paid|floatformat:2 }}">${{ amount_paid|floatformat:2 }}</span></p>
+        {% else %}
+        <span style="font-weight: bold;" id="amount_paid" data-total="0"></span>
         {% endif %}
-        <p>Total cost of selected items: $<span style="font-weight: bold;" id="total_cost"></span></p>
-        <p>Total amount due: $<span style="font-weight: bold;" id="amount_due"></span></p>
-        <p id="donation_warning" hidden></p>
+        {% if not program.sibling_discount %}
+        <p>Program admission: <span style="font-weight: bold;" id="amount_cost" data-total="{{ program.base_cost|floatformat:2 }}">${{ program.base_cost|floatformat:2 }}</span></p>
+        {% endif %}
+        {% if amount_finaid > 0 %}
+        <p>Total amount of financial aid: <span style="font-weight: bold;" id="amount_finaid" data-total="{{ amount_finaid|floatformat:2 }}">${{ amount_finaid|floatformat:2 }}</span></p>
+        {% else %}
+        <span style="font-weight: bold;" id="amount_finaid" data-total="0"></span>
+        {% endif %}
+        <p>Total cost of selected items: <span style="font-weight: bold;" id="total_cost"></span></p>
+        <p id="due_warning">Total amount due: <span style="font-weight: bold;" id="amount_due"></span></p>
+        {% if paid_for %}
+        <p id="donation_warning" style="color: blue;" hidden></p>
+        {% endif %}
     </td>
 </tr>
-{% endif %}
 <tr>
     <td align="center">
         <input type="submit" class="btn btn-primary" value="Save"/>
