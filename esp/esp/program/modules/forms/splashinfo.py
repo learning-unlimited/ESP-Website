@@ -48,8 +48,8 @@ class SiblingDiscountForm(forms.Form):
         super(SiblingDiscountForm, self).__init__(*args, **kwargs)
         choices = [(False, 'I am the first in my household enrolling in Splash (+ $' + str(program.base_cost) + ').'),
                    (True, 'I have a sibling already enrolled in Splash (+ $' + str(program.base_cost - program.sibling_discount) + ').')]
-        option_data = {False: {'cost': program.base_cost},
-                       True: {'cost': program.base_cost - program.sibling_discount}}
+        option_data = {False: {'cost': program.base_cost, 'for_finaid': 'true'},
+                       True: {'cost': program.base_cost - program.sibling_discount, 'for_finaid': 'true'}}
         self.fields['siblingdiscount'].widget = RadioSelectWithData(option_data=option_data)
         self.fields['siblingdiscount'].choices = choices
         self.fields['siblingdiscount'].initial = True

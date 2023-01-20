@@ -98,20 +98,20 @@ td>ul { list-style-type: none; padding: 0px }
 {% endfor %}
 <tr>
     <td align="right">
-        {% if paid_for %}
-        <p>Total amount previously paid: <span style="font-weight: bold;" id="amount_paid" data-total="{{ amount_paid|floatformat:2 }}">${{ amount_paid|floatformat:2 }}</span></p>
-        {% else %}
-        <span style="font-weight: bold;" id="amount_paid" data-total="0"></span>
-        {% endif %}
+        <p>Total cost of selected items: <span style="font-weight: bold;" id="total_cost"></span></p>
         {% if not program.sibling_discount %}
         <p>Program admission: <span style="font-weight: bold;" id="amount_cost" data-total="{{ program.base_cost|floatformat:2 }}">${{ program.base_cost|floatformat:2 }}</span></p>
         {% endif %}
-        {% if amount_finaid > 0 %}
-        <p>Total amount of financial aid: <span style="font-weight: bold;" id="amount_finaid" data-total="{{ amount_finaid|floatformat:2 }}">${{ amount_finaid|floatformat:2 }}</span></p>
+        {% if paid_for %}
+        <p>Total amount previously paid: <span style="font-weight: bold;" id="amount_paid" data-total="{{ amount_paid|floatformat:2 }}">-${{ amount_paid|floatformat:2 }}</span></p>
+        {% else %}
+        <span style="font-weight: bold;" id="amount_paid" data-total="0"></span>
+        {% endif %}
+        {% if finaid_grant %}
+        <p>Total amount of financial aid: <span style="font-weight: bold;" id="amount_finaid" data-percent="{{ finaid_grant.percent|floatformat:2 }}" data-max_dec="{{ finaid_grant.amount_max_dec|floatformat:2 }}"></span></p>
         {% else %}
         <span style="font-weight: bold;" id="amount_finaid" data-total="0"></span>
         {% endif %}
-        <p>Total cost of selected items: <span style="font-weight: bold;" id="total_cost"></span></p>
         <p id="due_warning">Total amount due: <span style="font-weight: bold;" id="amount_due"></span></p>
         {% if paid_for %}
         <p id="donation_warning" style="color: blue;" hidden></p>
