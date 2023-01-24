@@ -37,6 +37,7 @@ import random
 from django.db import transaction
 
 from esp.cal.models import Event
+from esp.esp.program.models.class_ import ClassStatus
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.models import ClassSubject, RegistrationType
@@ -226,11 +227,11 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.assertTrue(self.other_teacher1 in d['class_approved'])
         self.assertTrue(self.other_teacher2 in d['class_proposed'])
         # Undo the statuses
-        cls1.status = 10
+        cls1.status = ClassStatus.ACCEPTED
         cls1.save()
-        cls2.status = 10
+        cls2.status = ClassStatus.ACCEPTED
         cls2.save()
-        cls3.status = 10
+        cls3.status = ClassStatus.ACCEPTED
         cls3.save()
 
         # Schedule the classes randomly

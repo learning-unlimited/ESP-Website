@@ -1,3 +1,4 @@
+from esp.esp.program.models.class_ import ClassStatus
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ClassSubject
 from esp.users.models import ESPUser
@@ -35,10 +36,10 @@ class CancelClassTest(ProgramFrameworkTest):
         self.cls = ClassSubject.objects.get(pk=self.cls.id)
 
         # Check that the class was changed to cancelled
-        self.assertTrue(self.cls.status == -20)
+        self.assertTrue(self.cls.status == ClassStatus.CANCELLED)
         # Check that the sections were cancelled
         for sec in self.cls.sections.all():
-            self.assertTrue(sec.status == -20)
+            self.assertTrue(sec.status == ClassStatus.CANCELLED)
 
         # Test that an email was sent
         directorEmail = None

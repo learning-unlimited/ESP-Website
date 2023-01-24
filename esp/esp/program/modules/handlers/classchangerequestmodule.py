@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from datetime import datetime
 from urllib import quote
+from esp.esp.program.models.class_ import ClassStatus
 
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import Program, StudentAppResponse, StudentRegistration, RegistrationType
@@ -78,7 +79,7 @@ class ClassChangeRequestModule(ProgramModuleObj):
     @meets_grade
     def classchangerequest(self, request, tl, one, two, module, extra, prog):
         timeslots = prog.getTimeSlots()
-        sections = prog.sections().filter(status=10, meeting_times__isnull=False).distinct()
+        sections = prog.sections().filter(status=ClassStatus.ACCEPTED, meeting_times__isnull=False).distinct()
 
         enrollments = {}
         for timeslot in timeslots:

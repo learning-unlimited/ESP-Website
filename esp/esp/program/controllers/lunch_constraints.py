@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from esp.esp.program.models.class_ import ClassStatus
 from esp.program.models import Program, ClassSection, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ClassCategories
 
 import datetime
@@ -138,7 +139,7 @@ class LunchConstraintGenerator(object):
             # If the program doesn't have a max size, we unfortunately still
             # need one here.  Set a really big one.
             new_subject.class_size_max = self.program.program_size_max or 10**6
-            new_subject.status = 10
+            new_subject.status = ClassStatus.ACCEPTED
             new_subject.duration = '%.4f' % timeslot_length
             new_subject.message_for_directors = day.isoformat()
             new_subject.save()
@@ -156,11 +157,11 @@ class LunchConstraintGenerator(object):
         for timeslot in self.days[day]['lunch']:
             lunch_sections = lunch_subject.sections.filter(meeting_times__id=timeslot.id)
             if lunch_sections.count() == 0:
-                new_section = lunch_subject.add_section(status=10)
+                new_section = lunch_subject.add_section(status=ClassStatus.ACCEPTED)
                 new_section.meeting_times.add(timeslot)
             else:
                 for sec in lunch_sections:
-                    sec.status = 10
+                    sec.status = ClassStatus.ACCEPTED
                     sec.save()
 
         return self.get_lunch_subject(day).get_sections()
