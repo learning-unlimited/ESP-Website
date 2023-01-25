@@ -5,10 +5,10 @@ Kick students out of their classes (or only next hour's classes, if the
 """
 
 import argparse
-from esp.esp.program.models.class_ import ClassStatus
 
 from script_setup import *
 
+from esp.program.models.class_ import ClassStatus
 from esp.program.models import Program, StudentRegistration, RegistrationType
 from esp.users.models import ESPUser
 from datetime import datetime, timedelta

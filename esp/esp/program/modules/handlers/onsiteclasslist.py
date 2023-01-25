@@ -41,11 +41,11 @@ from django.db.models.query import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
-from esp.esp.program.models.class_ import ClassStatus
 
 
 from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
 from esp.program.models import RegistrationProfile
+from esp.program.models.class_ import ClassStatus
 
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program

@@ -32,13 +32,12 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.esp.program.models.class_ import ClassStatus
 from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, User, Record, RecordType
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
 from esp.program.models  import ClassFlagType
-from esp.program.models.class_ import ACCEPTED
+from esp.program.models.class_ import ClassStatus
 from esp.users.views     import search_for_user
 from esp.users.controllers.usersearch import UserSearchController
 from esp.utils.latex  import render_to_latex
@@ -1211,7 +1210,7 @@ class ProgramPrintables(ProgramModuleObj):
             studentregistration__user__in=students,
             studentregistration__relationship__name='Enrolled',
             parent_class__parent_program=prog,
-            status=ACCEPTED,
+            status=ClassStatus.ACCEPTED,
             meeting_times__isnull=False).distinct()
         all_classes = all_classes.select_related('parent_class')
         all_classes = all_classes.prefetch_related('meeting_times')

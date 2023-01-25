@@ -1,5 +1,5 @@
-from esp.esp.program.models.class_ import ClassStatus
 from esp.program.tests import ProgramFrameworkTest
+from esp.program.models.class_ import ClassStatus
 from esp.program.models import ClassSubject
 from esp.users.models import ESPUser
 from django.core import mail

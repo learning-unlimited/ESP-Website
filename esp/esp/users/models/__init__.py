@@ -38,7 +38,6 @@ from pytz import country_names
 import json
 import logging
 
-from esp.esp.program.models.class_ import ClassStatus
 logger = logging.getLogger(__name__)
 import functools
 
@@ -79,6 +78,7 @@ from esp.utils.decorators import enable_with_setting
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.widgets import NullRadioSelect, NullCheckboxSelect
 from esp.utils.query_utils import nest_Q
+from esp.program.models.class_ import ClassStatus
 
 from urllib import quote
 
