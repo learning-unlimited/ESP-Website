@@ -6,7 +6,8 @@ from esp.middleware import ESPError
 from esp.resources.models import ResourceType, Resource
 from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 
-from esp.program.models.class_ import ClassSubject, ClassSection, ClassStatus
+from esp.program.models.class_ import ClassSubject, ClassSection
+from esp.program.models.classstatus import ClassStatus
 from decimal import Decimal
 
 """ Forms for the new class management module.  Can be used elsewhere. """

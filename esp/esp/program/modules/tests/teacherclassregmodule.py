@@ -39,7 +39,7 @@ from django.db import transaction
 from esp.cal.models import Event
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
-from esp.program.models.class_ import ClassStatus
+from esp.program.models.classstatus import ClassStatus
 from esp.program.models import ClassSubject, RegistrationType
 from esp.program.setup import prepare_program, commit_program
 from esp.program.forms import ProgramCreationForm

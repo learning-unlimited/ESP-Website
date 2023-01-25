@@ -39,7 +39,7 @@ from numpy import mean
 from django.template.loader import render_to_string
 
 from esp.program.models import Program, StudentRegistration
-from esp.program.models.class_ import ClassStatus
+from esp.program.models.classstatus import ClassStatus
 from esp.users.models import ESPUser, Record
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 from esp.program.modules.handlers.teacherbigboardmodule import TeacherBigBoardModule

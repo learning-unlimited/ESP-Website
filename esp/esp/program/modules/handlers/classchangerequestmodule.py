@@ -37,7 +37,8 @@ from urllib import quote
 
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import Program, StudentAppResponse, StudentRegistration, RegistrationType
-from esp.program.models.class_ import ClassSubject, ClassStatus
+from esp.program.models.class_ import ClassSubject
+from esp.program.models.classstatus import ClassStatus
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.modules.base import main_call, aux_call, needs_admin, needs_student, meets_grade
 from esp.utils.web import render_to_response

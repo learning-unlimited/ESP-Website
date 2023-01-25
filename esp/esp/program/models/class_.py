@@ -79,19 +79,13 @@ from esp.program.models import ArchiveClass
 from esp.resources.models         import Resource, ResourceRequest, ResourceAssignment, ResourceType
 from argcache                     import cache_function, wildcard
 from argcache.extras.derivedfield import DerivedField
+from esp.program.models.classstatus import ClassStatus
 
 from esp.middleware.threadlocalrequest import get_current_request
 
 from esp.customforms.linkfields import CustomFormsLinkModel
 
 __all__ = ['ClassSection', 'ClassSubject', 'ClassManager', 'ClassCategories', 'ClassSizeRange']
-
-class ClassStatus():
-    CANCELLED = -20
-    REJECTED = -10
-    UNREVIEWED = 0
-    HIDDEN = 5
-    ACCEPTED = 10
 
 STATUS_CHOICES = (
         (ClassStatus.CANCELLED, "cancelled"),
