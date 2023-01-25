@@ -8,7 +8,7 @@ import argparse
 
 from script_setup import *
 
-from esp.program.models.classstatus import ClassStatus
+from esp.program.class_status import ClassStatus
 from esp.program.models import Program, StudentRegistration, RegistrationType
 from esp.users.models import ESPUser
 from datetime import datetime, timedelta

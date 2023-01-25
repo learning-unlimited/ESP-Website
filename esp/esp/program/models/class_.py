@@ -79,7 +79,7 @@ from esp.program.models import ArchiveClass
 from esp.resources.models         import Resource, ResourceRequest, ResourceAssignment, ResourceType
 from argcache                     import cache_function, wildcard
 from argcache.extras.derivedfield import DerivedField
-from esp.program.models.classstatus import ClassStatus
+from esp.program.class_status import ClassStatus
 
 from esp.middleware.threadlocalrequest import get_current_request
 

@@ -39,7 +39,7 @@ from esp.program.modules import module_ext
 from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 from esp.program.models import RegistrationProfile
 from esp.program.models.class_ import ClassSubject, ClassSection
-from esp.program.models.classstatus import ClassStatus
+from esp.program.class_status import ClassStatus
 from esp.program.models.flags import ClassFlagType
 from esp.utils.web import render_to_response
 from esp.utils.decorators import json_response
