@@ -41,6 +41,7 @@ from django.db.models.query import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
+from esp.esp.program.models.class_ import ClassStatus
 
 
 from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
@@ -416,12 +417,12 @@ class OnSiteClassList(ProgramModuleObj):
             if endtime:
                 endtime = endtime[0]
                 classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
-                    status=10, parent_class__status=10,
+                    status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED,
                     begin_time__gte=curtime.start, begin_time__lte=endtime.start
                     )
             else:
                  classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
-                     status=10, parent_class__status=10,
+                     status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED,
                      begin_time__gte=curtime.start
                      )
             if sort_spec == 'unsorted':

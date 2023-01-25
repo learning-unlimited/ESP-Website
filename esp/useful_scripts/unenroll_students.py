@@ -5,6 +5,7 @@ Kick students out of their classes (or only next hour's classes, if the
 """
 
 import argparse
+from esp.esp.program.models.class_ import ClassStatus
 
 from script_setup import *
 
@@ -22,7 +23,7 @@ args = parser.parse_args()
 enrolled = RegistrationType.objects.get(name='Enrolled')
 
 prog = Program.objects.get(id=args.program_id)
-relevant_sections = prog.sections().annotate(begin_time=Min("meeting_times__start")).filter(status=10, parent_class__status=10).exclude(parent_class__category__category='Lunch')
+relevant_sections = prog.sections().annotate(begin_time=Min("meeting_times__start")).filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED).exclude(parent_class__category__category='Lunch')
 # classes that started more than 60 minutes ago
 passed_sections = relevant_sections.filter(begin_time__lt=datetime.now() - timedelta(minutes=60))
 # students who are enrolled in a class that started more than 60 minutes ago, who have not checked in

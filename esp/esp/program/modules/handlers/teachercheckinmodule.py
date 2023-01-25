@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from esp.esp.program.models.class_ import ClassStatus
 from esp.program.modules.forms.onsite import TeacherCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
@@ -277,7 +278,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             when = datetime.now()
 
         sections = prog.sections().annotate(begin_time=Min("meeting_times__start")) \
-            .filter(status=10, parent_class__status=10, begin_time__isnull=False)
+            .filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED, begin_time__isnull=False)
         if date is not None:
             # Only consider classes happening on this date.
             sections = sections.filter(meeting_times__start__year  = date.year,
@@ -398,7 +399,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         """
 
         sections = prog.sections().annotate(end_time=Max("meeting_times__end")) \
-                                  .filter(status=10, parent_class__status=10, end_time__isnull=False) \
+                                  .filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED, end_time__isnull=False) \
                                   .order_by('end_time')
         if starttime is None and date is not None:
             starttime = datetime.combine(date, time())

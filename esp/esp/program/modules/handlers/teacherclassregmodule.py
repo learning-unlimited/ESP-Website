@@ -143,7 +143,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         Q_full_teacher = Q(classsubject__in=full_classes) & Q_isteacher
 
         previous_programs = [x for x in Program.objects.all() if len(x.dates()) and x.dates()[0] < self.program.dates()[0]]
-        Q_taught_before_temp = Q(classsubject__status=10, classsubject__parent_program__in=previous_programs)
+        Q_taught_before_temp = Q(classsubject__status=ClassStatus.ACCEPTED, classsubject__parent_program__in=previous_programs)
         taught_before_users = ESPUser.objects.filter(Q_taught_before_temp).values('id').distinct()
         # For past events, we want the query to be solely user based
         # so events don't have to be BOTH current and past simultaneously for combo lists
