@@ -47,6 +47,7 @@ from argcache import cache_function
 from esp.cal.models import Event
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
+from esp.program.class_status import ClassStatus
 from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, ClassFlagType, ClassFlag, ModeratorRecord, RegistrationProfile, TeacherBio, PhaseZeroRecord, FinancialAidRequest, VolunteerOffer
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, no_auth, main_call, aux_call
 from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
@@ -769,11 +770,11 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         class_num_list.append(("Total # of Classes Scheduled", classes.filter(sections__meeting_times__isnull=False).distinct().count()))
         class_num_list.append(("Total # of Class Sections", sections.distinct().count()))
         class_num_list.append(("Total # of Class Sections Scheduled", sections.filter(meeting_times__isnull=False).distinct().count()))
-        class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category = "Lunch").filter(status=10).distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=0).exclude(category__category='Lunch').distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=10, sections__status=10).exclude(category__category='Lunch').distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", classes.filter(status=-10).exclude(category__category='Lunch').distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", classes.filter(status=-20).exclude(category__category='Lunch').distinct().count()))
+        class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category = "Lunch").filter(status=ClassStatus.ACCEPTED).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=ClassStatus.UNREVIEWED).exclude(category__category='Lunch').distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=ClassStatus.ACCEPTED, sections__status=ClassStatus.ACCEPTED).exclude(category__category='Lunch').distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", classes.filter(status=ClassStatus.REJECTED).exclude(category__category='Lunch').distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", classes.filter(status=ClassStatus.CANCELLED).exclude(category__category='Lunch').distinct().count()))
         return class_num_list
     class_nums.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_nums.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})

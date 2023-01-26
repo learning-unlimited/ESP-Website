@@ -36,6 +36,7 @@ from collections import defaultdict
 
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, user_passes_test
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
+from esp.program.class_status import ClassStatus
 from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType, RegistrationProfile, ScheduleMap
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
@@ -143,7 +144,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         Q_full_teacher = Q(classsubject__in=full_classes) & Q_isteacher
 
         previous_programs = [x for x in Program.objects.all() if len(x.dates()) and x.dates()[0] < self.program.dates()[0]]
-        Q_taught_before_temp = Q(classsubject__status=10, classsubject__parent_program__in=previous_programs)
+        Q_taught_before_temp = Q(classsubject__status=ClassStatus.ACCEPTED, classsubject__parent_program__in=previous_programs)
         taught_before_users = ESPUser.objects.filter(Q_taught_before_temp).values('id').distinct()
         # For past events, we want the query to be solely user based
         # so events don't have to be BOTH current and past simultaneously for combo lists

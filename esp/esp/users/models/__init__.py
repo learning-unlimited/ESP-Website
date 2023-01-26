@@ -37,6 +37,7 @@ from datetime import datetime, timedelta, date
 from pytz import country_names
 import json
 import logging
+
 logger = logging.getLogger(__name__)
 import functools
 
@@ -77,6 +78,7 @@ from esp.utils.decorators import enable_with_setting
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.widgets import NullRadioSelect, NullCheckboxSelect
 from esp.utils.query_utils import nest_Q
+from esp.program.class_status import ClassStatus
 
 from urllib import quote
 
@@ -407,9 +409,9 @@ class BaseESPUser(object):
         else:
             classes = self.classsubject_set.filter(parent_program = program)
             if not include_rejected:
-                classes = classes.exclude(status=-10)
+                classes = classes.exclude(status=ClassStatus.REJECTED)
             if not include_cancelled:
-                classes = classes.exclude(status=-20)
+                classes = classes.exclude(status=ClassStatus.CANCELLED)
             return classes
     getTaughtClassesFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
     getTaughtClassesFromProgram.depend_on_row('program.ClassSubject', lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
@@ -448,9 +450,9 @@ class BaseESPUser(object):
             classes = list(self.getTaughtClasses(program, include_rejected = include_rejected, include_cancelled = include_cancelled))
             sections = ClassSection.objects.filter(parent_class__in=classes)
             if not include_rejected:
-                sections = sections.exclude(status=-10)
+                sections = sections.exclude(status=ClassStatus.REJECTED)
             if not include_cancelled:
-                sections = sections.exclude(status=-20)
+                sections = sections.exclude(status=ClassStatus.CANCELLED)
             return self.moderating_sections.filter(parent_class__parent_program = program) | sections
     getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
     getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda sec, teacher: {'self': teacher})
@@ -460,9 +462,9 @@ class BaseESPUser(object):
     def getTaughtClassesAll(self, include_rejected = False, include_cancelled = True):
         classes = self.classsubject_set.all()
         if not include_rejected:
-            classes = classes.exclude(status=-10)
+            classes = classes.exclude(status=ClassStatus.REJECTED)
         if not include_cancelled:
-            classes = classes.exclude(status=-20)
+            classes = classes.exclude(status=ClassStatus.CANCELLED)
         return classes
     getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {'self': cls})
     getTaughtClassesAll.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
@@ -485,9 +487,9 @@ class BaseESPUser(object):
         classes = list(self.getTaughtClassesAll(include_rejected = include_rejected, include_cancelled = include_cancelled))
         sections = ClassSection.objects.filter(parent_class__in=classes)
         if not include_rejected:
-            sections = sections.exclude(status=-10)
+            sections = sections.exclude(status=ClassStatus.REJECTED)
         if not include_cancelled:
-            sections = sections.exclude(status=-20)
+            sections = sections.exclude(status=ClassStatus.CANCELLED)
         return sections
     getTaughtSectionsAll.depend_on_model('program.ClassSection')
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
@@ -499,9 +501,9 @@ class BaseESPUser(object):
         classes = list(self.getTaughtClasses(program, include_rejected = include_rejected, include_cancelled = include_cancelled))
         sections = ClassSection.objects.filter(parent_class__in=classes)
         if not include_rejected:
-            sections = sections.exclude(status=-10)
+            sections = sections.exclude(status=ClassStatus.REJECTED)
         if not include_cancelled:
-            sections = sections.exclude(status=-20)
+            sections = sections.exclude(status=ClassStatus.CANCELLED)
         return sections
     getTaughtSectionsFromProgram.get_or_create_token(('program',))
     getTaughtSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})

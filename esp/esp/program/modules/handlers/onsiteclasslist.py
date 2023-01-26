@@ -45,6 +45,7 @@ from django.utils.safestring import mark_safe
 
 from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
 from esp.program.models import RegistrationProfile
+from esp.program.class_status import ClassStatus
 
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program
@@ -416,12 +417,12 @@ class OnSiteClassList(ProgramModuleObj):
             if endtime:
                 endtime = endtime[0]
                 classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
-                    status=10, parent_class__status=10,
+                    status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED,
                     begin_time__gte=curtime.start, begin_time__lte=endtime.start
                     )
             else:
                  classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
-                     status=10, parent_class__status=10,
+                     status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED,
                      begin_time__gte=curtime.start
                      )
             if sort_spec == 'unsorted':

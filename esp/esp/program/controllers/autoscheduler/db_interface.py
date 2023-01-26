@@ -13,7 +13,7 @@ from django.db import transaction
 from esp.resources.models import \
     ResourceType, Resource, ResourceAssignment, ResourceRequest
 from esp.program.models import ClassSection
-from esp.program.models.class_ import ACCEPTED
+from esp.program.class_status import ClassStatus
 from esp.users.models import ESPUser, UserAvailability
 from esp.cal.models import Event
 from esp.program.modules import module_ext
@@ -79,7 +79,7 @@ def load_sections_and_teachers_and_classrooms(
             ).select_related()
 
     if require_approved:
-        sections = sections.filter(status=ACCEPTED)
+        sections = sections.filter(status=ClassStatus.ACCEPTED)
     if exclude_scheduled:
         # Exclude all already-scheduled classes
         sections = sections.annotate(
