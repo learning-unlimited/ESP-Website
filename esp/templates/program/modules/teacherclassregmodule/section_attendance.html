@@ -1,4 +1,5 @@
 {% extends "main.html" %}
+{% load getTag %}
 
 {% block title %}Section Attendance{% if section %} for {{ section }}{% endif %}{% endblock %}
 
@@ -81,8 +82,14 @@ Please select a section from the dropdown below.
         <table align="center" width="100%" class="sortable" style="border: none;">
             <tr>
                 <th width="5%" class="sorttable_nosort">#</th>
+        {% if "student_profile_pronoun_field"|getBooleanTag %}
+                <th width="14%">First Name</th>
+                <th width="14%">Last Name</th>
+                <th width="7%">Pronouns</th>
+        {% else %}
                 <th width="17.5%">First Name</th>
                 <th width="17.5%">Last Name</th>
+        {% endif %}
                 <th width="10%">ID #</th>
                 <th width="10%">Grade</th>
                 <th width="20%">School</th>
@@ -94,6 +101,9 @@ Please select a section from the dropdown below.
                         <th class="small sorttable_nosort">{{ forloop.counter }}</th>
                         <td>{{ student.first_name }}</td>
                         <td>{{ student.last_name }}</td>
+                        {% if "student_profile_pronoun_field"|getBooleanTag %}
+                            <td>{{ student.getLastProfile.student_info.pronoun }}</td>
+                        {% endif %}
                         <td align="center">{{ student.id }}</td>
                         <td align="center">{{ student|getGradeForProg:program.id }}</td>
                         <td align="center">{{ student.getLastProfile.student_info.getSchool }}</td>

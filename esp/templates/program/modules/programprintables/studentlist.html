@@ -1,5 +1,5 @@
 {% load users %}
-
+{% load getTag %}
 <html>
 <head>
 <title>Student List</title>
@@ -44,7 +44,9 @@ table.sortable thead {
 <tr>
    <th>#</th>
    <th>Name</th>
-   <th>Pronouns</th>
+   {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <th>Pronouns</th>
+   {% endif %}
    <th>Email</th>
    <th>DOB</th>
    <th>Grade</th>
@@ -58,7 +60,9 @@ table.sortable thead {
 <tr>
    <td>{{ forloop.counter }}</td>
    <td>{{ student.last_name }}, {{ student.first_name}}</td>
-   <td>{{ student.getLastProfile.student_info.pronoun }}</td>
+   {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <td>{{ student.getLastProfile.student_info.pronoun }}</td>
+   {% endif %}
    <td>{{ student.email}}</td>
    <td>{{ student.getLastProfile.student_info.dob|date:"m/d/Y" }}</td>
    <td>{{ student|getGradeForProg:program.id }}</td>
