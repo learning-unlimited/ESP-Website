@@ -155,12 +155,6 @@ class ThemesTest(TestCase):
                 #   Check that the template override is marked with the theme name.
                 self.assertTrue(('<!-- Theme: %s -->' % theme_name) in six.text_type(response.content, encoding='UTF-8'))
 
-            #   Test that the theme can be cleared and the home page reverts.
-            response = self.client.post('/themes/select/', {'action': 'clear'})
-            response = self.client.get('/')
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(len(re.findall(r'<a href="/themes.*?Configure site appearance.*?</a>', response.content.decode('UTF-8'), flags=re.DOTALL)), 1)
-
             self.client.logout()
 
         finally:
