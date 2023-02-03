@@ -13,5 +13,9 @@ def getBooleanTag(key):
     return Tag.getBooleanTag(key)
 
 @register.filter
-def getProgramTag(key, program=None, boolean=False):
-    return Tag.getBooleanTag(key)
+def getProgramTag(key, program=None):
+    return Tag.getProgramTag(key, program)
+
+@register.filter
+def getBooleanProgramTag(key, program=None):
+    return Tag.getProgramTag(key, program, boolean=True)
