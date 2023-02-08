@@ -6,7 +6,7 @@ var amount_due = 0;
 var prog_cost = 0;
 
 $j(function() { 
-    amount_paid = parseFloat($j("#amount_paid").data("total"));
+    amount_paid = parseFloat($j("#amount_paid").data("total")) || 0;
     finaid_percent = (parseFloat($j("#amount_finaid").data("percent")) || 0) * 0.01;
     finaid_max_dec = parseFloat($j("#amount_finaid").data("max_dec")) || 0;
     prog_cost = parseFloat($j("#amount_cost").data("total")) || 0;
@@ -47,7 +47,7 @@ function updateTotalCost() {
     $j("#total_cost").html("$" + Number(total_cost).toFixed(2));
     amount_finaid = Math.min(finaid_covered, finaid_max_dec);
     if (amount_finaid < finaid_covered) amount_finaid += (finaid_covered - amount_finaid) * finaid_percent;
-    $j("#amount_finaid").html("-$" + Number(amount_finaid).toFixed(2));
+    if (amount_finaid > 0) $j("#amount_finaid").html("-$" + Number(amount_finaid).toFixed(2));
     amount_due = total_cost - amount_paid - amount_finaid;
     if (amount_due < 0) {
         $j("#amount_due").html("-$" + Number(-amount_due).toFixed(2)).css("color", "red");
