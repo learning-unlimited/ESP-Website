@@ -365,6 +365,20 @@ all_global_tags = {
         'category': 'learn',
         'is_setting': True,
     },
+    'student_profile_pronoun_field': {
+        'is_boolean': True,
+        'help_text': "Ask about student's preferred pronouns in profile form (and display their pronouns in various printables)?",
+        'default': False,
+        'category': 'learn',
+        'is_setting': True,
+    },
+    'teacher_profile_pronoun_field': {
+        'is_boolean': True,
+        'help_text': "Ask about teacher's preferred pronouns in profile form (and display their pronouns in various printables)?",
+        'default': False,
+        'category': 'teach',
+        'is_setting': True,
+    },
     'ask_about_duplicate_accounts': {
         'is_boolean': True,
         'help_text': 'Before creating an account for an email address already in the database, ask if the user wants to log into an existing account instead',

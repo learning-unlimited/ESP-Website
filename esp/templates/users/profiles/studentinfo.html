@@ -61,6 +61,18 @@ Your grade level will update automatically every August.
 </div>
 {% endif %}
 
+{% if form.pronoun %}
+<div class="control-group">
+    <label for="id_pronoun"  class="control-label">Preferred pronouns:</label>
+    <div class="controls">
+    <p style="font-size: 0.8em; font-style: italic;">(Anyone with access to your account will be able to see this on your profile. Teachers and administrators will also have access to this information. This field is not required.)</p>
+    {{ form.pronoun }} {% if form.pronoun.errors %}
+    <br /><span class="form_error">{{ form.pronoun.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+</div>
+{% endif %}
+
 {% if form.k12school %}
 <div class="control-group">
     <label for="id_k12school" class="control-label">School:</label>
