@@ -97,7 +97,7 @@ class BulkCreateAccountModule(ProgramModuleObj):
         for prefix, number in prefix_dict.iteritems():
             pw = prefix + str(random.randrange(1000000))
             create_users_for_program(prog, prefix + '{}', pw, groups, number)
-            result[prefix] = pw
+            result[prefix] = {'password': pw, 'number': number}
         context = {'passwords': result}
 
         return render_to_response(self.baseDir() + 'bulk_create_response.html', request, context)
@@ -176,7 +176,7 @@ def get_group(group):
 
 
 def create_user_with_profile(username, password, program, groups):
-    print "creating", username
+    # print "creating", username
     user = ESPUser.objects.create_user(username=username, password=password)
     user.groups.add(*groups)
     return {
