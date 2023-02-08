@@ -118,7 +118,11 @@ Please select a section from the dropdown below.
                     </tr>
                 {% empty %}
                 <tr>
+                    {% if "student_profile_pronoun_field"|getBooleanTag %}
+                    <td colspan="9" align="center">
+                    {% else %}
                     <td colspan="8" align="center">
+                    {% endif %}
                         No students enrolled in this section
                     </td>
                 </tr>
@@ -126,7 +130,11 @@ Please select a section from the dropdown below.
             </tbody>
             <tfoot>
                 <tr>
-                    <th colspan="6" class="sorttable_nosort">TOTAL</th>
+                    {% if "student_profile_pronoun_field"|getBooleanTag %}
+                        <th colspan="7" class="sorttable_nosort">TOTAL</th>
+                    {% else %}
+                        <th colspan="6" class="sorttable_nosort">TOTAL</th>
+                    {% endif %}
                     <th align="center" name="checkedin_total" class="sorttable_nosort"></th>
                     <th align="center" name="attending_total" class="sorttable_nosort"></th>
                 </tr>
@@ -150,8 +158,14 @@ Please select a section from the dropdown below.
             <thead>
                 <tr>
                     <th width="5%" class="sorttable_nosort">#</th>
-                    <th width="17.5%">First Name</th>
-                    <th width="17.5%">Last Name</th>
+                    {% if "student_profile_pronoun_field"|getBooleanTag %}
+                        <th width="14%">First Name</th>
+                        <th width="14%">Last Name</th>
+                        <th width="7%">Pronouns</th>
+                    {% else %}
+                        <th width="17.5%">First Name</th>
+                        <th width="17.5%">Last Name</th>
+                    {% endif %}
                     <th width="10%">ID #</th>
                     <th width="10%">Grade</th>
                     <th width="20%">School</th>
@@ -181,7 +195,11 @@ Please select a section from the dropdown below.
             </tbody>
             <tfoot>
                 <tr>
-                    <th colspan="6" class="sorttable_nosort">TOTAL</th>
+                    {% if "student_profile_pronoun_field"|getBooleanTag %}
+                        <th colspan="7" class="sorttable_nosort">TOTAL</th>
+                    {% else %}
+                        <th colspan="6" class="sorttable_nosort">TOTAL</th>
+                    {% endif %}
                     <th align="center" name="checkedin_total" class="sorttable_nosort"></th>
                     <th align="center" name="attending_total" class="sorttable_nosort"></th>
                 </tr>
