@@ -2282,7 +2282,7 @@ class DBList(object):
         return self.key
 
 class RecordType(models.Model):
-    name = models.CharField(max_length=80, help_text = "A unique short snake_case name for the record type", unique=True)
+    name = models.CharField(max_length=80, help_text = "A unique short name for the record type", unique=True)
     description = models.CharField(max_length=255, help_text = "A unique sentence case description for the record type", unique=True)
 
     BUILTIN_TYPES = [
