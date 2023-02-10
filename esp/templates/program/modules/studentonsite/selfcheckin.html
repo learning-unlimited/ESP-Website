@@ -27,14 +27,12 @@
                 </td>
             </tr>
             {% for module in modules %}
-            {% if module.isStep and module.isRequired and not module.isRequired %}
             <tr>
                 <td>
-                {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
+                {% autoescape off %}{{ module.makeSelfCheckinLink }}{% endautoescape %}
                 {% if module.required_label %}<i>{{ module.required_label }}</i>{% endif %}
                 </td>
             </tr>
-            {% endif %}
             {% endfor %}
             {% for record in records %}
             <tr>
