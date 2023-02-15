@@ -37,12 +37,15 @@ Learning Unlimited, Inc.
 
 from django.template.loaders import base
 from django.template.base import Template
-from django.template import TemplateDoesNotExist
+from django.template import Origin, TemplateDoesNotExist
 
 from esp.utils.models import TemplateOverride
 from argcache import cache_function
 
 import hashlib
+import errno
+import io
+from os.path import join
 
 DEFAULT_ORIGIN = 'esp.utils.template cached loader'
 
@@ -99,3 +102,31 @@ class Loader(base.Loader):
         if source:
             return (source.decode(settings.FILE_CHARSET), DEFAULT_ORIGIN)
         raise TemplateDoesNotExist(template_name)
+
+class ThemeLoader(base.Loader):
+    is_usable = True
+
+    # modified from https://github.com/learning-unlimited/django-admin-tools/blob/master/admin_tools/template_loaders.py
+    def get_template_sources(self, template_name):
+        from esp.themes.controllers import ThemeController
+        tc = ThemeController()
+        template_dir = join(tc.base_dir(tc.get_current_theme()), 'templates')
+        try:
+            origin = Origin(
+                name=join(template_dir, template_name),
+                template_name=template_name,
+                loader=self,
+            )
+        except (ImportError, TypeError):
+            origin = join(template_dir, template_name)
+        return [origin]
+    
+    # copied from https://github.com/django/django/blob/stable/1.11.x/django/template/loaders/filesystem.py
+    def get_contents(self, origin):
+        try:
+            with io.open(origin.name, encoding=self.engine.file_charset) as fp:
+                return fp.read()
+        except IOError as e:
+            if e.errno == errno.ENOENT:
+                raise TemplateDoesNotExist(origin)
+            raise
