@@ -205,6 +205,14 @@ def ensure_environment():
         print "***** "
         exit(-1)
 
+    # Did `setup()` fail to create the symlinked folders?
+    fp = env.rbase + "esp/public/media/"
+    if not files.exists(fp + "images") or not files.exists(fp + "styles"):
+        print("One of the symlinks `esp/public/media/images` or ")
+        print("`.../styles` failed to be created. Try re-running with ")
+        print("escalated privileges or contact the web team for more help.")
+        exit(-1)
+
 @task
 def psql(cmd=None, *args):
     """
@@ -401,6 +409,8 @@ def runserver():
     A shortcut for 'manage.py runserver' with the appropriate settings.
     """
     ensure_environment()
+    
+    # TODO: make sure 'localhost' is in ALLOWED_HOSTS in local_settings.py or else add it
 
     manage("runserver 0.0.0.0:8000")
 
