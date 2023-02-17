@@ -1,18 +1,17 @@
 #!/bin/bash
 set -euf -o pipefail
 
-if [ $(echo "$(lsb_release -rs) > 20" | bc) -eq 1 ]; then 
-  sudo apt update
- else
-  sudo apt-get update
-fi
+sudo apt-get update
 
 # install pip
-sudo add-apt-repository universe
-if [ $(echo "$(lsb_release -rs) > 20" | bc) -eq 1 ]; then 
-  sudo apt install -y curl
- else
-  sudo apt-get install -y curl
+if [ "$PYTHON_VERSION" = "2.7" ]; then
+    sudo add-apt-repository universe
+    sudo apt-get install -y curl
+    curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
+    sudo python2 get-pip.py
+elif [ "$PYTHON_VERSION" = "3.7" ]; then
+    sudo apt-get -y install python3-pip
+else
+    echo "Unknown PYTHON_VERSION: $PYTHON_VERSION"
+    exit 1
 fi
-curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
-sudo python2 get-pip.py

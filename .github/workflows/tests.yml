@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.travis_job }}
+    name: ${{ matrix.travis_job }} (Python ${{ matrix.python-version }})
     runs-on: ubuntu-20.04
     services:
       postgres:
@@ -23,6 +23,7 @@ jobs:
         # needed because the postgres container does not provide a healthcheck
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     strategy:
+      fail-fast: false
       matrix:
         python-version: [2.7, 3.7]
         travis_job: ["lint", "test"]
@@ -38,17 +39,22 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Prepare for Installing Dependencies
       run: deploy/travis/before_install
+      env:
+        PYTHON_VERSION: ${{ matrix.python-version }}
     - name: Install Dependencies for ${{ matrix.travis_job }}
       env:
         TRAVIS_JOB: ${{ matrix.travis_job }}
+        PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/travis/install
     - name: Prepare for ${{ matrix.travis_job }}
       env:
         TRAVIS_JOB: ${{ matrix.travis_job }}
+        PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/travis/before_script
     - name: Run ${{ matrix.travis_job }}
       env:
         TRAVIS_JOB: ${{ matrix.travis_job }}
+        PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/travis/script
     - name: Upload Coverage to Codecov
       if: ${{ matrix.travis_job == 'test' }}
@@ -56,4 +62,3 @@ jobs:
       with:
         fail_ci_if_error: true
         verbose: true
-    
