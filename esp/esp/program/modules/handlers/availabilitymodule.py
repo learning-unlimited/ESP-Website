@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+from __future__ import division
+from six.moves import map
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -92,7 +95,7 @@ class AvailabilityModule(ProgramModuleObj):
         total_time = user.getTaughtTime(self.program, include_scheduled=True, round_to=0.5)
         available_time = timedelta()
         for a in available_slots:
-            available_time = available_time + timedelta( seconds = 1800 * round( a.duration().seconds / 1800.0 ) )
+            available_time = available_time + timedelta( seconds = 1800 * round( a.duration().seconds // 1800.0 ) )
 
         if (total_time > available_time) or (available_time == timedelta()):
             return False
@@ -189,7 +192,7 @@ class AvailabilityModule(ProgramModuleObj):
                 teacher.addAvailableTime(self.program, timeslot)
 
             #   Add in resources for the checked available times.
-            timeslot_ids = map(int, post_vars.getlist('timeslots'))
+            timeslot_ids = list(map(int, post_vars.getlist('timeslots')))
             timeslots = Event.objects.filter(id__in=timeslot_ids).order_by('start')
             missing_tsids = set(timeslot_ids) - set(x.id for x in timeslots)
             if missing_tsids:

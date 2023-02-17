@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -76,7 +78,7 @@ class NavBarCategory(models.Model):
     from_request = staticmethod(from_request)
 
     def __unicode__(self):
-        return u'%s' % self.name
+        return six.u('%s') % self.name
 
     class Meta:
         verbose_name_plural = 'Nav bar categories'
@@ -106,7 +108,7 @@ class NavBarEntry(models.Model):
         return user.isAdmin()
 
     def __unicode__(self):
-        return u'%s:%s (%s) [%s]' % (self.category, self.sort_rank, self.text, self.link)
+        return six.u('%s:%s (%s) [%s]') % (self.category, self.sort_rank, self.text, self.link)
 
     def makeTitle(self):
         return self.text

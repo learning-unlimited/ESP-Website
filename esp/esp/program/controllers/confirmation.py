@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -55,7 +56,7 @@ class ConfirmationEmailController(object):
                 receipt_template = Template(DBReceipt.objects.get(program=program, action='confirmemail').receipt)
                 receipt_text = receipt_template.render(Context({'user': user, 'program': program}))
             except:
-                receipt_template = select_template(['program/confemails/%s_confemail.txt' %(program.id),'program/confemails/default.txt'])
+                receipt_template = select_template(['program/confemails/%s_confemail.txt' %(program.id), 'program/confemails/default.txt'])
                 receipt_text = receipt_template.render({'user': user, 'program': program})
             send_mail("Thank you for registering for %s!" %(program.niceName()), \
                       receipt_text, \

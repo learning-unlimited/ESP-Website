@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from collections import OrderedDict
 from django import forms
 from django.forms import widgets
@@ -6,6 +7,7 @@ from decimal import Decimal
 import datetime
 
 from esp.users.forms import _states
+from six.moves import zip
 
 # Lists of all tags used anywhere in the codebase
 # Populated by hand, so don't be too surprised if something is missing
@@ -413,7 +415,7 @@ all_global_tags = {
         'default': None,
         'category': 'manage',
         'is_setting': True,
-        'field': forms.ChoiceField(required=True, choices=zip(_states,_states))
+        'field': forms.ChoiceField(required=True, choices=list(zip(_states, _states)))
     },
     'teacher_address_required': {
         'is_boolean': True,
@@ -1241,7 +1243,7 @@ all_program_tags = {
     'already_paid_extracosts_allowed': {
         'is_boolean': True,
         'help_text': 'Whether students should be able to return to the extracosts page to add items or change options after they have already paid once via credit card.',
-        'default': True ,
+        'default': True,
         'category': 'learn',
         'is_setting': True,
     },
@@ -1252,7 +1254,7 @@ all_program_tags = {
                     selections below. If your new balance is larger than what you have already paid, \
                     you can pay the remaining balance via credit card. If your new balance is smaller \
                     than what you have already paid, we will treat the negative balance as a donation \
-                    to our program (thanks!).' ,
+                    to our program (thanks!).',
         'category': 'learn',
         'is_setting': True,
     },

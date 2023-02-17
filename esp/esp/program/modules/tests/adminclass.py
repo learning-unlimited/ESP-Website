@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.class_status import ClassStatus
 from esp.program.models import ClassSubject

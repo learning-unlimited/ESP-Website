@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+import six
+from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -90,7 +93,7 @@ class MailingLabels(ProgramModuleObj):
         combine = True
 
         if extra is None or extra.strip() == '':
-            return render_to_response(self.baseDir()+'mailinglabel_index.html',request, {})
+            return render_to_response(self.baseDir()+'mailinglabel_index.html', request, {})
 
         if 'nocombine' in extra.strip().lower():
             combine = False
@@ -103,7 +106,7 @@ class MailingLabels(ProgramModuleObj):
                     A filter was passed.
                     """
                     f = PersistentQueryFilter.objects.get(id = request.POST['filter_id'])
-                    combine = (request.POST['combine'].upper() in ('TRUE','1','T'))
+                    combine = (request.POST['combine'].upper() in ('TRUE', '1', 'T'))
                     infos = f.getList(ContactInfo).distinct()
                 else:
 
@@ -226,12 +229,12 @@ class MailingLabels(ProgramModuleObj):
 
 
                 post_data.update({'address2': info.address_street.title(),
-                                  'state'   : info.address_state,
-                                  'city'    : info.address_city.title(),
-                                  'zip5'    : info.address_zip,
+                                  'state': info.address_state,
+                                  'city': info.address_city.title(),
+                                  'zip5': info.address_zip,
                                   })
 
-                post_string = '&'.join(['%s=%s' % (key, urlencode(value)) for key, value in post_data.iteritems()])
+                post_string = '&'.join(['%s=%s' % (key, urlencode(value)) for key, value in six.iteritems(post_data)])
 
                 c = pycurl.Curl()
 
@@ -249,7 +252,7 @@ class MailingLabels(ProgramModuleObj):
 
                 c.perform()
 
-                retdata = b.getvalue().replace('\n','').replace('\r','')
+                retdata = b.getvalue().replace('\n', '').replace('\r', '')
 
                 ma = regex.search(retdata)
                 try:
@@ -280,13 +283,13 @@ class MailingLabels(ProgramModuleObj):
             output = ["'Num','Name','Street','City','State','Zip'"]
         #output.append(','.join(ids_zipped))
         i = 1
-        for key, value in addresses.iteritems():
+        for key, value in six.iteritems(addresses):
             if key != False:
                 if combine:
                     if use_title:
                         output.append("'%s',%s,%s" % (i, ' and '.join(value), key))
                     else:
-                        output.append("'%s','%s',%s" % (i,' and '.join(value), key))
+                        output.append("'%s','%s',%s" % (i, ' and '.join(value), key))
                     i += 1
                 else:
                     for name in value:

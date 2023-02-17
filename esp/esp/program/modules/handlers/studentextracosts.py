@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -157,7 +159,7 @@ class StudentExtraCosts(ProgramModuleObj):
     @needs_student
     @meets_deadline('/ExtraCosts')
     @meets_cap
-    def extracosts(self,request, tl, one, two, module, extra, prog):
+    def extracosts(self, request, tl, one, two, module, extra, prog):
         """
         Query the user for any extra items they may wish to purchase for this program
 
@@ -258,7 +260,7 @@ class StudentExtraCosts(ProgramModuleObj):
             #   Merge previous and new preferences (update only if the form was valid)
             new_prefs = []
             for lineitem_name in preserve_items.keys():
-                if lineitem_name in map(lambda x: x[0], prefs):
+                if lineitem_name in [x[0] for x in prefs]:
                     new_prefs.append(prefs[map(lambda x: x[0], prefs).index(lineitem_name)])
 
             new_prefs += form_prefs

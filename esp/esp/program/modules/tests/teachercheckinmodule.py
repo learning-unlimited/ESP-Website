@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -138,6 +140,6 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
 
     def test_phone_numbers_on_checkin_page(self):
         self.assertTrue(self.client.login(username=self.admin.username, password='password'), "Couldn't log in as admin %s" % self.admin.username)
-        response = self.client.get(u'%smissingteachers' % self.program.get_onsite_url())
+        response = self.client.get(six.u('%smissingteachers') % self.program.get_onsite_url())
         phone = self.teacher.getLastProfile().contact_user.phone_cell
         self.assertIn(phone, response.content.decode('utf-8'))

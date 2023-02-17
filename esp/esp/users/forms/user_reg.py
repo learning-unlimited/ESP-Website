@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django import forms
 from django.db.models.query import Q
 from django.forms.fields import HiddenInput, TextInput
@@ -5,6 +6,7 @@ from django.forms.fields import HiddenInput, TextInput
 from esp.users.models import ESPUser, GradeChangeRequest
 from esp.utils.forms import StrippedCharField
 from localflavor.us.forms import USPhoneNumberField
+import six
 
 class ValidHostEmailField(forms.EmailField):
     """ An EmailField that runs a DNS query to make sure the host is valid. """
@@ -32,8 +34,8 @@ class ValidHostEmailField(forms.EmailField):
         return email
 
 class EmailUserRegForm(forms.Form):
-    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75)
-    confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>",max_length=75)
+    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>", max_length=75)
+    confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>", max_length=75)
 
     def clean_confirm_email(self):
         if not (('confirm_email' in self.cleaned_data) and ('email' in self.cleaned_data)) or (self.cleaned_data['confirm_email'] != self.cleaned_data['email']):
@@ -58,12 +60,12 @@ class UserRegForm(forms.Form):
     #   The choices for this field will be set later in __init__()
     initial_role = forms.ChoiceField(choices = [])
 
-    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75, widget=HiddenInput)
-    confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>",max_length=75, widget=HiddenInput)
+    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>", max_length=75, widget=HiddenInput)
+    confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>", max_length=75, widget=HiddenInput)
 
     def clean_initial_role(self):
         data = self.cleaned_data['initial_role']
-        if data == u'':
+        if data == six.u(''):
             raise forms.ValidationError('Please select an initial role')
         return data
 
@@ -135,5 +137,5 @@ class GradeChangeRequestForm(forms.ModelForm):
     """
     class Meta:
         model = GradeChangeRequest
-        exclude = ('acknowledged_by','acknowledged_time','requesting_student',
+        exclude = ('acknowledged_by', 'acknowledged_time', 'requesting_student',
                    'approved', 'grade_before_request',)

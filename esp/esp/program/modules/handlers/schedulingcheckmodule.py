@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import division
 from django.http import HttpResponse
 from esp.program.models import Program, ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
@@ -14,6 +16,9 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 import json
 import re
+import six
+from six.moves import map
+from six.moves import range
 
 
 class SchedulingCheckModule(ProgramModuleObj):
@@ -70,7 +75,7 @@ class JSONFormatter:
     def format_list(self, l, heading="", help_text=""): # needs verify
         output = {}
         output["help_text"] = help_text
-        output["headings"] = map(str, heading) # no headings
+        output["headings"] = list(map(str, heading)) # no headings
 
         # might be redundant, but it makes sure things aren't in a weird format
         output["body"] = [self._table_row([row]) for row in l]
@@ -92,7 +97,7 @@ class JSONFormatter:
     def _format_list_table(self, d, headings, help_text=""): #needs verify
         output = {}
         output["help_text"] = help_text
-        output["headings"] = map(str, headings)
+        output["headings"] = list(map(str, headings))
         output["body"] = [self._table_row([row[h] for h in headings]) for row in d]
         return output
 
@@ -100,8 +105,8 @@ class JSONFormatter:
         headings = [""] + headings[:]
         output = {}
         output["help_text"] = help_text
-        output["headings"] = map(str, headings)
-        output["body"] = [self._table_row([key] + [row[h] for h in headings if h]) for key, row in sorted(d.iteritems())]
+        output["headings"] = list(map(str, headings))
+        output["body"] = [self._table_row([key] + [row[h] for h in headings if h]) for key, row in sorted(six.iteritems(d))]
         return output
 
 class SchedulingCheckRunner:
@@ -213,7 +218,7 @@ class SchedulingCheckRunner:
                #filter out unscheduled classes
                qs = qs.exclude(resourceassignment__isnull=True)
                #filter out lunch
-               qs = qs.exclude(parent_class__category__category=u'Lunch')
+               qs = qs.exclude(parent_class__category__category=six.u('Lunch'))
                qs = qs.select_related('parent_class', 'parent_class__parent_program', 'parent_class__category')
                qs = qs.prefetch_related('meeting_times', 'resourceassignment_set', 'resourceassignment_set__resource', 'parent_class__teachers')
                if include_walkins:
@@ -281,7 +286,7 @@ class SchedulingCheckRunner:
              start_time = sec.start_time_prefetchable()
              end_time = sec.end_time_prefetchable()
              length = end_time - start_time
-             if abs(round(length.total_seconds() / 3600.0, 2) - float(sec.duration)) > 0.0:
+             if abs(round(length.total_seconds() // 3600.0, 2) - float(sec.duration)) > 0.0:
                  output.append(sec)
          return self.formatter.format_list(output, ["Classes"])
 
@@ -342,11 +347,11 @@ class SchedulingCheckRunner:
                  for block in lunch:
                      q=q.filter(classsubject__sections__meeting_times=block)
                  for t in q.distinct():
-                     classes = [ClassSection.objects.filter(parent_class__teachers=t,meeting_times=block)[0] for block in lunch]
+                     classes = [ClassSection.objects.filter(parent_class__teachers=t, meeting_times=block)[0] for block in lunch]
                      if open_class_cat.id not in [c.category.id for c in classes]:
                          #converts the list of class section objects to a single string
                          str1 = ', '
-                         classes = str1.join([unicode(c) for c in classes])
+                         classes = str1.join([six.text_type(c) for c in classes])
                          bads.append({
                              'Username': t,
                              'Teacher Name': t.name(),
@@ -554,10 +559,10 @@ class SchedulingCheckRunner:
          for teacher in teachers:
              if self.incl_unreview:
                  sections = ClassSection.objects.filter(
-                     parent_class__in=teacher.getTaughtClassesFromProgram(self.p).filter(status__gte=0).distinct(),status__gte=0).distinct().order_by('meeting_times__start')
+                     parent_class__in=teacher.getTaughtClassesFromProgram(self.p).filter(status__gte=0).distinct(), status__gte=0).distinct().order_by('meeting_times__start')
              else:
                  sections = ClassSection.objects.filter(
-                     parent_class__in=teacher.getTaughtClassesFromProgram(self.p).filter(status__gt=0).distinct(),status__gt=0).distinct().order_by('meeting_times__start')
+                     parent_class__in=teacher.getTaughtClassesFromProgram(self.p).filter(status__gt=0).distinct(), status__gt=0).distinct().order_by('meeting_times__start')
              for i in range(sections.count()-1):
                  try:
                      time1 = sections[i+1].meeting_times.all().order_by('start')[0]
@@ -579,10 +584,10 @@ class SchedulingCheckRunner:
 
      def no_overlap_classes(self):
          '''Gets a list of classes from the tag no_overlap_classes, and checks that they don't overlap.  The tag should contain a dict of {'comment': [list,of,class,ids]}.'''
-         classes = json.loads(Tag.getProgramTag('no_overlap_classes',program=self.p))
-         classes_lookup = {x.id: x for x in ClassSubject.objects.filter(id__in=sum(classes.values(),[]))}
+         classes = json.loads(Tag.getProgramTag('no_overlap_classes', program=self.p))
+         classes_lookup = {x.id: x for x in ClassSubject.objects.filter(id__in=sum(list(classes.values()), []))}
          bad_classes = []
-         for key, l in classes.iteritems():
+         for key, l in six.iteritems(classes):
              eventtuples = list(Event.objects.filter(meeting_times__parent_class__in=l).values_list('description', 'meeting_times', 'meeting_times__parent_class'))
              overlaps = {}
              for event, sec, cls in eventtuples:
@@ -621,7 +626,7 @@ class SchedulingCheckRunner:
          HEADINGS = ["Class Section", "Unfulfilled Request", "Current Room"]
          mismatches = []
 
-         for type_regex, matching_rooms in DEFAULT_CONFIG.iteritems():
+         for type_regex, matching_rooms in six.iteritems(DEFAULT_CONFIG):
              resource_requests = ResourceRequest.objects.filter(
                  res_type__program=self.p, desired_value__iregex=type_regex)
 
@@ -657,10 +662,10 @@ class SchedulingCheckRunner:
              # This will break if we ever start having class blocks
              # that aren't an hour long
              availability = len(teacher.getAvailableTimes(self.p, ignore_classes=True))
-             class_hours = teacher.getTaughtTime(program=self.p, round_to=1).seconds/3600
+             class_hours = teacher.getTaughtTime(program=self.p, round_to=1).seconds//3600
              delta = availability - class_hours
              # Arbitrary formula, seems to do a good job of catching the cases I care about
-             if (availability == 0) or (class_hours/float(availability) >= 2/float(3)):
+             if (availability == 0) or (class_hours//float(availability) >= 2//float(3)):
                  inflexible.append({'Username': teacher.username,
                                'Teacher Name': teacher.name(),
                                'Class hours': class_hours,

@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -44,9 +45,9 @@ class AnnouncementLink(models.Model):
     title = models.CharField(max_length=256)
     category = models.CharField(max_length=32) # Plaintext
     timestamp = models.DateTimeField(default=datetime.datetime.now, editable=False)
-    highlight_begin = models.DateTimeField(blank=True,null=True, help_text="When this should start being showcased.")
-    highlight_expire = models.DateTimeField(blank=True,null=True, help_text="When this should stop being showcased.")
-    section = models.CharField(max_length=32,blank=True,null=True, help_text="e.g. 'teach' or 'learn' or blank")
+    highlight_begin = models.DateTimeField(blank=True, null=True, help_text="When this should start being showcased.")
+    highlight_expire = models.DateTimeField(blank=True, null=True, help_text="When this should stop being showcased.")
+    section = models.CharField(max_length=32, blank=True, null=True, help_text="e.g. 'teach' or 'learn' or blank")
     href = models.URLField(help_text="The URL the link should point to.")
 
     def __unicode__(self):
@@ -72,17 +73,17 @@ class Entry(models.Model):
                                help_text="(will determine the URL)")
 
     timestamp = models.DateTimeField(default = datetime.datetime.now, editable=False)
-    highlight_begin = models.DateTimeField(blank=True,null=True,
+    highlight_begin = models.DateTimeField(blank=True, null=True,
                                             help_text="When this should start being showcased.")
-    highlight_expire = models.DateTimeField(blank=True,null=True,
+    highlight_expire = models.DateTimeField(blank=True, null=True,
                                             help_text="When this should stop being showcased.")
     content = models.TextField(help_text='Yes, you can use markdown.') # Markdown-encoded
     sent    = models.BooleanField(editable=False, default=False)
     email   = models.BooleanField(editable=False, default=False)
-    fromuser = AjaxForeignKey(ESPUser, blank=True, null=True,editable=False)
+    fromuser = AjaxForeignKey(ESPUser, blank=True, null=True, editable=False)
     fromemail = models.CharField(max_length=80, blank=True, null=True, editable=False)
     priority = models.IntegerField(blank=True, null=True) # Message priority (role of this field not yet well-defined -- aseering 8-10-2006)
-    section = models.CharField(max_length=32,blank=True,null=True,help_text="e.g. 'teach' or 'learn' or blank")
+    section = models.CharField(max_length=32, blank=True, null=True, help_text="e.g. 'teach' or 'learn' or blank")
 
     def __unicode__(self):
         if self.slug:

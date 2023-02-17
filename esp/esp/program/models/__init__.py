@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+from six.moves import map
+from six.moves import range
+from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -40,6 +45,7 @@ from decimal import Decimal
 import random
 import json
 import logging
+import six
 logger = logging.getLogger(__name__)
 
 from django.conf import settings
@@ -132,7 +138,7 @@ class ProgramModule(models.Model):
             super(ProgramModule.CannotGetClassException, self).__init__(msg)
 
     def __unicode__(self):
-        return u'{}'.format(self.admin_title)
+        return six.u('{}').format(self.admin_title)
 
 
 class ArchiveClass(models.Model):
@@ -223,7 +229,7 @@ class ArchiveClass(models.Model):
         Q_ClassStudent = Q(student_ids__icontains = ('|%s|' % user.id))
         #   We want to only show archive classes for teachers.  At least for now.
         Q_Class = Q_ClassTeacher #  | Q_ClassStudent
-        return ArchiveClass.objects.filter(Q_Class).order_by('-year','-date','title')
+        return ArchiveClass.objects.filter(Q_Class).order_by('-year', '-date', 'title')
 
 def _get_type_url(type):
     def _really_get_type_url(self):
@@ -320,7 +326,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def grades(self):
         """ Return an iterable list of the grades for a program. """
-        return range(self.grade_min, self.grade_max + 1)
+        return list(range(self.grade_min, self.grade_max + 1))
 
     @property
     def program_type(self):
@@ -344,7 +350,7 @@ class Program(models.Model, CustomFormsLinkModel):
             if retVal is not None and retVal.strip():
                 return retVal
 
-        return u''
+        return six.u('')
 
     @staticmethod
     def get_users_from_module(method_name):
@@ -379,7 +385,7 @@ class Program(models.Model, CustomFormsLinkModel):
         def _get_num(self):
             result = query_func(self, QObjects=False)
             result_dict = {}
-            for key, value in result.iteritems():
+            for key, value in six.iteritems(result):
                 if isinstance(value, QuerySet):
                     result_dict[key] = value.count()
                 else:
@@ -499,7 +505,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def students_union(self, QObject = False):
         import operator
-        if len(self.students().values()) == 0:
+        if len(list(self.students().values())) == 0:
             if QObject:
                 return Q(id = -1)
             else:
@@ -513,7 +519,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def teachers_union(self, QObject = False):
         import operator
-        if len(self.teachers().values()) == 0:
+        if len(list(self.teachers().values())) == 0:
             if QObject:
                 return Q(id = -1)
             else:
@@ -526,7 +532,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def volunteers_union(self, QObject = False):
         import operator
-        if len(self.volunteers().values()) == 0:
+        if len(list(self.volunteers().values())) == 0:
             if QObject:
                 return Q(id = -1)
             else:
@@ -616,7 +622,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return True
         caps = self.grade_caps()
         grade = user.getGrade(self, assume_student=True)
-        for grades, cap in caps.iteritems():
+        for grades, cap in six.iteritems(caps):
             if (grade in grades and
                     self._students_in_program_in_grades(grades) >= cap):
                 return False
@@ -634,10 +640,10 @@ class Program(models.Model, CustomFormsLinkModel):
         size_tag = Tag.getProgramTag("program_size_by_grade", self)
         size_dict = {}
         if size_tag:
-            for k, v in json.loads(size_tag).iteritems():
+            for k, v in six.iteritems(json.loads(size_tag)):
                 if '-' in k:
-                    low, high = map(int, k.split('-'))
-                    size_dict[tuple(xrange(low, high + 1))] = v
+                    low, high = list(map(int, k.split('-')))
+                    size_dict[tuple(range(low, high + 1))] = v
                 else:
                     size_dict[(int(k),)] = v
         return size_dict
@@ -711,13 +717,13 @@ class Program(models.Model, CustomFormsLinkModel):
         ResourceAssignment.objects.filter(target__parent_class__parent_program=self, lock_level__lt=lock_level).update(lock_level=lock_level)
 
     def isConfirmed(self, espuser):
-        return Record.objects.filter(event__name="reg_confirmed",user=espuser,
+        return Record.objects.filter(event__name="reg_confirmed", user=espuser,
                                      program=self).exists()
 
     def isCheckedIn(self, espuser, verbose = False):
         status = 0
         verbose_names = ["not_checked_in", "checked_in", "checked_out"]
-        recs = Record.objects.filter(event__name__in=["attended","checked_out"],user=espuser,
+        recs = Record.objects.filter(event__name__in=["attended", "checked_out"], user=espuser,
                                      program=self).order_by("-time")
         if recs.count() > 0:
             # Check if student has ever been checked_in
@@ -769,7 +775,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def getAvailableClassrooms(self, timeslot):
         #   Filters down classrooms to those that are not taken.
-        return filter(lambda x: x.is_available(), self.getClassrooms(timeslot))
+        return [x for x in self.getClassrooms(timeslot) if x.is_available()]
 
     def collapsed_dict(self, resources):
         result = {}
@@ -802,7 +808,7 @@ class Program(models.Model, CustomFormsLinkModel):
         classrooms = self.getClassrooms()
 
         result = self.collapsed_dict(classrooms)
-        key_list = result.keys()
+        key_list = list(result.keys())
         natural_key_list = self.natural_sort(key_list)
         #   Turn this into a list instead of a dictionary.
         ans = [result[key] for key in natural_key_list]
@@ -944,13 +950,13 @@ class Program(models.Model, CustomFormsLinkModel):
             if d1.year == d2.year:
                 if d1.month == d2.month:
                     if d1.day == d2.day:
-                        return u'%s' % d1.strftime('%b. %d, %Y').decode('utf-8')
+                        return six.u('%s') % d1.strftime('%b. %d, %Y').decode('utf-8')
                     else:
-                        return u'%s - %s' % (d1.strftime('%b. %d').decode('utf-8'), d2.strftime('%d, %Y').decode('utf-8'))
+                        return six.u('%s - %s') % (d1.strftime('%b. %d').decode('utf-8'), d2.strftime('%d, %Y').decode('utf-8'))
                 else:
-                    return u'%s - %s' % (d1.strftime('%b. %d').decode('utf-8'), d2.strftime('%b. %d, %Y').decode('utf-8'))
+                    return six.u('%s - %s') % (d1.strftime('%b. %d').decode('utf-8'), d2.strftime('%b. %d, %Y').decode('utf-8'))
             else:
-                return u'%s - %s' % (d1.strftime('%b. %d, %Y').decode('utf-8'), d2.strftime('%b. %d, %Y').decode('utf-8'))
+                return six.u('%s - %s') % (d1.strftime('%b. %d, %Y').decode('utf-8'), d2.strftime('%b. %d, %Y').decode('utf-8'))
         else:
             return None
 
@@ -1007,7 +1013,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def getAvailableResources(self, timeslot, queryset=False):
         #   Filters down the floating resources to those that are not taken.
-        return filter(lambda x: x.is_available(), self.getFloatingResources(timeslot=timeslot, queryset=queryset))
+        return [x for x in self.getFloatingResources(timeslot=timeslot, queryset=queryset) if x.is_available()]
 
     def getDurations(self, round_15=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
@@ -1032,15 +1038,15 @@ class Program(models.Model, CustomFormsLinkModel):
                     durationSeconds = time_option.seconds
                     #   If desired, round up to the nearest 15 minutes
                     if round_15:
-                        rounded_seconds = int(durationSeconds / 900.0 + 1.0) * 900
+                        rounded_seconds = int(durationSeconds // 900.0 + 1.0) * 900
                     else:
                         rounded_seconds = durationSeconds
                     if (max_seconds is None) or (durationSeconds <= max_seconds):
-                        durationDict[(Decimal(durationSeconds) / 3600).quantize(Decimal('.01'))] = \
-                                        str(rounded_seconds / 3600) + ':' + \
-                                        str(int(round((rounded_seconds / 60.0) % 60))).rjust(2,'0')
+                        durationDict[(Decimal(durationSeconds) // 3600).quantize(Decimal('.01'))] = \
+                                        str(rounded_seconds // 3600) + ':' + \
+                                        str(int(round((rounded_seconds // 60.0) % 60))).rjust(2, '0')
 
-        durationList = durationDict.items()
+        durationList = list(durationDict.items())
 
         return sorted(durationList, key=lambda x: x[0])
 
@@ -1332,7 +1338,7 @@ class SplashInfo(models.Model):
         db_table = 'program_splashinfo'
 
     def __unicode__(self):
-        return u'Lunch/sibling info for %s at %s' % (self.student, self.program)
+        return six.u('Lunch/sibling info for %s at %s') % (self.student, self.program)
 
     @staticmethod
     def hasForUser(user, program=None):
@@ -1423,7 +1429,7 @@ class RegistrationProfile(models.Model):
         regProf = None
 
         # check if this is an actual User, not an AnonymousUser
-        if isinstance(user.id, (int, long)):
+        if isinstance(user.id, six.integer_types):
             try:
                 regProf = RegistrationProfile.objects.filter(user__exact=user).select_related().latest('last_ts')
             except RegistrationProfile.DoesNotExist:
@@ -1486,7 +1492,7 @@ class RegistrationProfile(models.Model):
                                'user', 'program', 'contact_user',
                                'contact_guardian', 'contact_emergency',
                                'student_info', 'teacher_info', 'guardian_info',
-                               'educator_info').order_by('-last_ts','-id')[:1])
+                               'educator_info').order_by('-last_ts', '-id')[:1])
         if len(regProfList) < 1:
             regProf = RegistrationProfile.getLastProfile(user)
             # get the old program, if any
@@ -1518,9 +1524,9 @@ class RegistrationProfile(models.Model):
 
     def __unicode__(self):
         if self.program_id == None:
-            return u'<Registration for %s>' % unicode(self.user)
+            return six.u('<Registration for %s>') % six.text_type(self.user)
         if self.user is not None:
-            return u'<Registration for %s in %s>' % (unicode(self.user), unicode(self.program))
+            return six.u('<Registration for %s in %s>') % (six.text_type(self.user), six.text_type(self.program))
 
 
     def updateForm(self, form_data, specificInfo = None):
@@ -1542,7 +1548,7 @@ class RegistrationProfile(models.Model):
 
     #   Note: these functions return ClassSections, not ClassSubjects.
     def preregistered_classes(self,verbs=None):
-        return self.user.getSectionsFromProgram(self.program,verbs=verbs)
+        return self.user.getSectionsFromProgram(self.program, verbs=verbs)
 
 
 class TeacherBio(models.Model):
@@ -1552,7 +1558,7 @@ class TeacherBio(models.Model):
     user    = AjaxForeignKey(ESPUser)
     bio     = models.TextField(blank=True, null=True)
     slugbio = models.CharField(max_length=50, blank=True, null=True)
-    picture = models.ImageField(height_field = 'picture_height', width_field = 'picture_width', upload_to = "uploaded/bio_pictures/%y_%m/",blank=True, null=True)
+    picture = models.ImageField(height_field = 'picture_height', width_field = 'picture_width', upload_to = "uploaded/bio_pictures/%y_%m/", blank=True, null=True)
     picture_height = models.IntegerField(blank=True, null=True)
     picture_width  = models.IntegerField(blank=True, null=True)
     last_ts = models.DateTimeField(auto_now = True)
@@ -1564,7 +1570,7 @@ class TeacherBio(models.Model):
 
     @staticmethod
     def getLastBio(user):
-        bios = TeacherBio.objects.filter(user__exact=user).order_by('-last_ts','-id')
+        bios = TeacherBio.objects.filter(user__exact=user).order_by('-last_ts', '-id')
         if len(bios) < 1:
             lastBio = TeacherBio()
             lastBio.user = user
@@ -1585,7 +1591,7 @@ class TeacherBio(models.Model):
 
     @staticmethod
     def getLastForProgram(user, program):
-        bios = TeacherBio.objects.filter(user__exact=user, program__exact=program).order_by('-last_ts','-id')
+        bios = TeacherBio.objects.filter(user__exact=user, program__exact=program).order_by('-last_ts', '-id')
 
         if bios.count() < 1:
             lastBio         = TeacherBio()
@@ -1627,22 +1633,22 @@ class FinancialAidRequest(models.Model):
     def __unicode__(self):
         """ Represent this as a string. """
         if self.reduced_lunch:
-            reducedlunch = u"(Free Lunch)"
+            reducedlunch = six.u("(Free Lunch)")
         else:
-            reducedlunch = u''
+            reducedlunch = six.u('')
 
         explanation = self.extra_explaination
         if explanation is None:
-            explanation = u''
+            explanation = six.u('')
         elif len(explanation) > 40:
-            explanation = explanation[:40] + u"..."
+            explanation = explanation[:40] + six.u("...")
 
 
-        string = u"%s (%s@%s) for %s (%s, %s) %s"%\
+        string = six.u("%s (%s@%s) for %s (%s, %s) %s")%\
                  (self.user.name(), self.user.username, settings.DEFAULT_HOST, self.program.niceName(), self.household_income, explanation, reducedlunch)
 
         if self.done:
-            string = u"Finished: [" + string + u"]"
+            string = six.u("Finished: [") + string + six.u("]")
 
         return string
 
@@ -1715,7 +1721,7 @@ class BooleanToken(models.Model):
     expr = property(get_expr)
 
     def __unicode__(self):
-        return u'[%d] %s' % (self.seq, self.text)
+        return six.u('[%d] %s') % (self.seq, self.text)
 
     @cache_function
     def subclass_instance(self):
@@ -1782,7 +1788,7 @@ class BooleanExpression(models.Model):
     label = models.CharField(max_length=80, help_text='Description of the expression')
 
     def __unicode__(self):
-        return u'(%d tokens) %s' % (len(self.get_stack()), self.label)
+        return six.u('(%d tokens) %s') % (len(self.get_stack()), self.label)
 
     def subclass_instance(self):
         return get_subclass_instance(BooleanExpression, self)
@@ -1803,7 +1809,7 @@ class BooleanExpression(models.Model):
 
     def add_token(self, token_or_value, seq=None, duplicate=True):
         my_stack = self.get_stack()
-        if isinstance(token_or_value, basestring):
+        if isinstance(token_or_value, six.string_types):
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
@@ -1868,7 +1874,7 @@ class ScheduleMap:
         return 'ScheduleMap_%s' % hashlib.md5(pickle.dumps(self)).hexdigest()[:8]
 
     def __unicode__(self):
-        return u'%s' % self.map
+        return six.u('%s') % self.map
 
 class ScheduleConstraint(models.Model):
     """ A scheduling constraint that can be tested:
@@ -1895,7 +1901,7 @@ class ScheduleConstraint(models.Model):
         app_label = 'program'
 
     def __unicode__(self):
-        return u'%s: "%s" requires "%s"' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
+        return six.u('%s: "%s" requires "%s"') % (self.program.niceName(), six.text_type(self.condition), six.text_type(self.requirement))
 
     def evaluate(self, smap, recursive=True):
         self.schedule_map = smap
@@ -1922,10 +1928,10 @@ class ScheduleConstraint(models.Model):
         try:
             func_str = """def _f(schedule_map):
 %s""" % ('\n'.join('    %s' % l.rstrip() for l in self.on_failure.strip().split('\n')))
-            exec func_str
+            exec(func_str)
             result = _f(self.schedule_map)
             return result
-        except Exception, inst:
+        except Exception as inst:
             #   raise ESPError('Schedule constraint handler error: %s' % inst, log=False)
             pass
         #   If we got nothing from the on_failure function, just provide Nones.
@@ -2022,7 +2028,7 @@ class VolunteerRequest(models.Model):
         return self.volunteeroffer_set.all()
 
     def __unicode__(self):
-        return u'%s (%s)' % (self.timeslot.description, self.timeslot.short_time())
+        return six.u('%s (%s)') % (self.timeslot.description, self.timeslot.short_time())
 
 class VolunteerOffer(models.Model):
     request = models.ForeignKey(VolunteerRequest)
@@ -2045,7 +2051,7 @@ class VolunteerOffer(models.Model):
         app_label = 'program'
 
     def __unicode__(self):
-        return u'%s (%s, %s) for %s' % (self.name, self.email, self.phone, self.request)
+        return six.u('%s (%s, %s) for %s') % (self.name, self.email, self.phone, self.request)
 
 
 """ This class provides the information that was provided by the DataTree
@@ -2105,7 +2111,7 @@ class RegistrationType(models.Model):
     get_map = staticmethod(get_map)
 
     def __unicode__(self):
-        if self.displayName is not None and self.displayName != u"":
+        if self.displayName is not None and self.displayName != six.u(""):
             return self.displayName
         else:
             return self.name
@@ -2150,7 +2156,7 @@ class StudentRegistration(ExpirableModel):
         app_label = 'program'
 
     def __unicode__(self):
-        return u'%s %s in %s' % (self.user, self.relationship, self.section)
+        return six.u('%s %s in %s') % (self.user, self.relationship, self.section)
 
 class StudentSubjectInterest(ExpirableModel):
     """
@@ -2163,7 +2169,7 @@ class StudentSubjectInterest(ExpirableModel):
         app_label = 'program'
 
     def __unicode__(self):
-        return u'%s interest in %s' % (self.user, self.subject)
+        return six.u('%s interest in %s') % (self.user, self.subject)
 
 
 # Hooked up in program.modules.signals and formstack.signals

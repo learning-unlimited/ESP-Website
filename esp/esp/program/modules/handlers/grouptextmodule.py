@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+from __future__ import division
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -67,9 +70,9 @@ class GroupTextModule(ProgramModuleObj):
         """ Check if Twilio configuration settings are set.
             The text message module will not work without them. """
 
-        if not hasattr(settings, 'TWILIO_ACCOUNT_SID') or not isinstance(settings.TWILIO_ACCOUNT_SID, basestring):
+        if not hasattr(settings, 'TWILIO_ACCOUNT_SID') or not isinstance(settings.TWILIO_ACCOUNT_SID, six.string_types):
             return False
-        if not hasattr(settings, 'TWILIO_AUTH_TOKEN') or not isinstance(settings.TWILIO_AUTH_TOKEN, basestring):
+        if not hasattr(settings, 'TWILIO_AUTH_TOKEN') or not isinstance(settings.TWILIO_AUTH_TOKEN, six.string_types):
             return False
         if not hasattr(settings, 'TWILIO_ACCOUNT_NUMBERS') or (not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, list) and not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, tuple)):
             return False
@@ -80,7 +83,7 @@ class GroupTextModule(ProgramModuleObj):
     @needs_admin
     def grouptextfinal(self, request, tl, one, two, module, extra, prog):
         if request.method != 'POST' or 'filterid' not in request.GET or 'message' not in request.POST:
-            raise ESPError(), 'Filter or message have not been properly set'
+            raise ESPError()('Filter or message have not been properly set')
 
         if not self.is_configured():
             return render_to_response(self.baseDir() + 'not_configured.html', request, {})
@@ -112,7 +115,7 @@ class GroupTextModule(ProgramModuleObj):
 
             context['filterid'] = filterObj.id
             context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
-            context['est_time'] = float(context['num_users']) * 1.0 / len(settings.TWILIO_ACCOUNT_NUMBERS)
+            context['est_time'] = float(context['num_users']) * 1.0 // len(settings.TWILIO_ACCOUNT_NUMBERS)
             return render_to_response(self.baseDir()+'options.html', request, context)
 
         context.update(usc.prepare_context(prog, target_path='/manage/%s/grouptextpanel' % prog.url))
@@ -130,14 +133,14 @@ class GroupTextModule(ProgramModuleObj):
             pass
 
         if not users:
-            raise ESPError(), "Your query did not match any users"
+            raise ESPError()("Your query did not match any users")
 
         account_sid = settings.TWILIO_ACCOUNT_SID
         auth_token = settings.TWILIO_AUTH_TOKEN
         ourNumbers = settings.TWILIO_ACCOUNT_NUMBERS
 
         if not account_sid or not auth_token or not ourNumbers:
-          raise ESPError(), "You must configure the Twilio account settings before attempting to send texts using this module"
+          raise ESPError()("You must configure the Twilio account settings before attempting to send texts using this module")
 
         # cycle through our phone numbers to reduce sending time
         numberIndex = 0

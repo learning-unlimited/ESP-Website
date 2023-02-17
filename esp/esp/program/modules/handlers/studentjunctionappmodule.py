@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -115,7 +117,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
     @main_call
     @needs_student
     @meets_deadline('/Applications')
-    def application(self,request, tl, one, two, module, extra, prog):
+    def application(self, request, tl, one, two, module, extra, prog):
         app = request.user.getApplication(self.program)
         app.set_questions()
         form = None

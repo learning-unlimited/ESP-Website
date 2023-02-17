@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -33,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from datetime import datetime
-from urllib import quote
+from six.moves.urllib.parse import quote
 
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import Program, StudentAppResponse, StudentRegistration, RegistrationType
@@ -98,9 +99,9 @@ class ClassChangeRequestModule(ProgramModuleObj):
             context['success'] = False
 
         if request.user.isStudent():
-            sections_by_slot = dict([(timeslot,[(section, 1 == StudentRegistration.valid_objects().filter(user=context['user'], section=section, relationship__name="Request").count()) for section in sections if section.get_meeting_times()[0] == timeslot and section.parent_class.grade_min <= request.user.getGrade(prog) <= section.parent_class.grade_max and section.parent_class not in enrollments.values() and ESPUser.getRankInClass(request.user, section.parent_class) in (5,10)]) for timeslot in timeslots])
+            sections_by_slot = dict([(timeslot, [(section, 1 == StudentRegistration.valid_objects().filter(user=context['user'], section=section, relationship__name="Request").count()) for section in sections if section.get_meeting_times()[0] == timeslot and section.parent_class.grade_min <= request.user.getGrade(prog) <= section.parent_class.grade_max and section.parent_class not in list(enrollments.values()) and ESPUser.getRankInClass(request.user, section.parent_class) in (5, 10)]) for timeslot in timeslots])
         else:
-            sections_by_slot = dict([(timeslot,[(section, False) for section in sections if section.get_meeting_times()[0] == timeslot]) for timeslot in timeslots])
+            sections_by_slot = dict([(timeslot, [(section, False) for section in sections if section.get_meeting_times()[0] == timeslot]) for timeslot in timeslots])
 
         fields = {}
         for i, timeslot in enumerate(sections_by_slot.keys()):

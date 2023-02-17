@@ -1,4 +1,5 @@
 """ Django settings for ESP website. """
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -91,7 +92,7 @@ INTERNAL_IPS = (
 # Default admins #
 ##################
 ADMINS = (
-    ('LU Web Team','serverlog@learningu.org'),
+    ('LU Web Team', 'serverlog@learningu.org'),
 )
 
 #GRAPPELLI_ADMIN_TITLE = "ESP administration"
@@ -296,9 +297,9 @@ AUTHENTICATION_BACKENDS = (
     )
 
 CONTACTFORM_EMAIL_CHOICES = (
-    ('esp','Unknown'),
-    ('general','General'),
-    ('esp-web','Website Problems'),
+    ('esp', 'Unknown'),
+    ('general', 'General'),
+    ('esp-web', 'Website Problems'),
     ('relations',  'K-12 School Relations'),
     )
 
@@ -341,17 +342,17 @@ def custom_show_toolbar(request):
     return ESPDebugToolbarMiddleware.custom_show_toolbar(request)
 
 DEBUG_TOOLBAR_CONFIG = {
-    'DISABLE_PANELS': set([
+    'DISABLE_PANELS': {
         'debug_toolbar.panels.redirects.RedirectsPanel',
         'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel',
-    ]),
+    },
     'SHOW_TOOLBAR_CALLBACK': 'esp.settings.custom_show_toolbar',
     'EXTRA_SIGNALS': [
         'argcache.signals.cache_deleted',
     ],
     'SHOW_TEMPLATE_CONTEXT': True,
     'INSERT_BEFORE': '</body>',
-    'ENABLE_STACKTRACES' : True,
+    'ENABLE_STACKTRACES': True,
     'RENDER_PANELS': None,
     'SHOW_COLLAPSED': False, # Ideally would be True, but there is a bug in their code.
 }
@@ -379,17 +380,17 @@ FILEBROWSER_CUSTOM_ADMIN = 'esp.admin.admin_site'
 FILEBROWSER_DIRECTORY = ''
 
 FILEBROWSER_EXTENSIONS = {
-    'Image': ['.jpg','.jpeg','.gif','.png','.tif','.tiff','.ico'],
-    'Document': ['.pdf','.doc','.rtf','.txt','.xls','.csv'],
-    'Video': ['.mov','.wmv','.mpeg','.mpg','.avi','.rm'],
-    'Audio': ['.mp3','.mp4','.wav','.aiff','.midi','.m4p'],
+    'Image': ['.jpg', '.jpeg', '.gif', '.png', '.tif', '.tiff', '.ico'],
+    'Document': ['.pdf', '.doc', '.rtf', '.txt', '.xls', '.csv'],
+    'Video': ['.mov', '.wmv', '.mpeg', '.mpg', '.avi', '.rm'],
+    'Audio': ['.mp3', '.mp4', '.wav', '.aiff', '.midi', '.m4p'],
 }
 
 FILEBROWSER_SELECT_FORMATS = {
-    'file': ['Image','Document','Video','Audio'],
+    'file': ['Image', 'Document', 'Video', 'Audio'],
     'image': ['Image'],
     'document': ['Document'],
-    'media': ['Video','Audio'],
+    'media': ['Video', 'Audio'],
 }
 
 #   Default imports for shell_plus, for convenience.

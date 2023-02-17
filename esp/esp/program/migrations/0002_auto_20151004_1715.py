@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import models, migrations
 import esp.db.fields
 
@@ -126,7 +127,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterUniqueTogether(
             name='registrationtype',
-            unique_together=set([('name', 'category')]),
+            unique_together={('name', 'category')},
         ),
         migrations.AddField(
             model_name='registrationprofile',
@@ -328,6 +329,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterUniqueTogether(
             name='financialaidrequest',
-            unique_together=set([('program', 'user')]),
+            unique_together={('program', 'user')},
         ),
     ]

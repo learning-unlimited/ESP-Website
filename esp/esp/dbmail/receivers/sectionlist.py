@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import logging
 logger = logging.getLogger(__name__)
 
@@ -34,11 +35,11 @@ class SectionList(BaseHandler):
 
         user_type = user_type.strip().lower()
 
-        if user_type in ('teachers','class'):
+        if user_type in ('teachers', 'class'):
             self.recipients += [user.get_email_sendto_address()
                                 for user in section.parent_class.get_teachers()     ]
 
-        if user_type in ('students','class'):
+        if user_type in ('students', 'class'):
             self.recipients += [user.get_email_sendto_address()
                                 for user in section.students()     ]
 
@@ -46,7 +47,7 @@ class SectionList(BaseHandler):
             self.send = True
 
     def process_mailman(self, user, class_id, section_num, user_type):
-        if not (settings.USE_MAILMAN and 'mailman_moderator' in settings.DEFAULT_EMAIL_ADDRESSES.keys()):
+        if not (settings.USE_MAILMAN and 'mailman_moderator' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys())):
             return
         try:
             cls = ClassSubject.objects.get(id=int(class_id))

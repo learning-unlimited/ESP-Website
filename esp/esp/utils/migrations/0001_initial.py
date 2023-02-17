@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import models, migrations
 import esp.db.fields
 
@@ -42,6 +43,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterUniqueTogether(
             name='templateoverride',
-            unique_together=set([('name', 'version')]),
+            unique_together={('name', 'version')},
         ),
     ]

@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -41,7 +43,7 @@ from django.utils.datastructures import MultiValueDict
 from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 
-from Cookie import SimpleCookie
+from six.moves.http_cookies import SimpleCookie
 
 import datetime
 import re
@@ -252,10 +254,10 @@ def registration_redirect(request):
 
     if regperm:
         if user.isTeacher() or user.isVolunteer():
-            progs = list(Permission.program_by_perm(user,regperm))
+            progs = list(Permission.program_by_perm(user, regperm))
         else:
             user_grade = user.getGrade()
-            progs = list(Permission.program_by_perm(user,regperm).filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
+            progs = list(Permission.program_by_perm(user, regperm).filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
     else:
         progs = []
 
@@ -263,7 +265,7 @@ def registration_redirect(request):
     #   Most chapters will want this, but it can be disabled by a Tag.
     if len(progs) == 1 and Tag.getBooleanTag('automatic_registration_redirect'):
         ctxt['prog'] = progs[0]
-        return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
+        return HttpResponseRedirect(six.u('/%s/%s/%s') % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
     else:
         if len(progs) > 0:
             #   Sort available programs newest first

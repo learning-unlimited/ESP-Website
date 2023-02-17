@@ -2,14 +2,18 @@
 # Write student emergency contact information (name, email address and, if
 # known, cell number) to a CSV file.
 
+from __future__ import absolute_import
+from __future__ import print_function
 from script_setup import *
 
 import csv
 import re
 import sys
+from io import open
+from six.moves import input
 
-prog = Program.objects.get(url=raw_input("Program URL (e.g. Spark/2014): "))
-rawfile = open(os.path.expanduser(raw_input("Output CSV: ")), "wb")
+prog = Program.objects.get(url=input("Program URL (e.g. Spark/2014): "))
+rawfile = open(os.path.expanduser(input("Output CSV: ")), "wb")
 csvfile = csv.writer(rawfile, dialect="excel")
 
 students = prog.students()["enrolled"]
@@ -30,11 +34,11 @@ for student in students:
         sys.stdout.flush()
 
     if student.isAdmin():
-        print ("\rSkipping admin %s" + " " * 20) % student.name()
+        print(("\rSkipping admin %s" + " " * 20) % student.name())
         continue
 
     process_user(csvfile, student)
     count += 1
 
 rawfile.close()
-print "\rDone!", " " * 30
+print("\rDone!", " " * 30)

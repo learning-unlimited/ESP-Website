@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -190,12 +191,12 @@ class StudentApplication(models.Model):
     responses = models.ManyToManyField(StudentAppResponse)
     reviews = models.ManyToManyField(StudentAppReview)
 
-    done = models.BooleanField(default=False,editable = False)
+    done = models.BooleanField(default=False, editable = False)
 
     #   Legacy fields
-    teacher_score = models.PositiveIntegerField(editable=False,null=True,blank=True)
-    director_score = models.PositiveIntegerField(editable=False,null=True,blank=True)
-    rejected       = models.BooleanField(default=False,editable=False)
+    teacher_score = models.PositiveIntegerField(editable=False, null=True, blank=True)
+    director_score = models.PositiveIntegerField(editable=False, null=True, blank=True)
+    rejected       = models.BooleanField(default=False, editable=False)
 
     def __unicode__(self):
         return str(self.user)

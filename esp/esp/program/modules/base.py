@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -50,7 +52,7 @@ from argcache import cache_function
 from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.conf import settings
-from urllib import quote
+from six.moves.urllib.parse import quote
 from django.template.loader import get_template
 from django.template import TemplateDoesNotExist
 
@@ -172,7 +174,7 @@ class ProgramModuleObj(models.Model):
         """Includes only required modules"""
         prog = self.program
         module_type = self.module.module_type
-        moduleobjs = filter(lambda mod: mod.module.module_type == module_type and mod.isRequired() == True, prog.getModules())
+        moduleobjs = [mod for mod in prog.getModules() if mod.module.module_type == module_type and mod.isRequired() == True]
         moduleobjs.sort(key=lambda mod: mod.seq)
         return moduleobjs
     #   Program.getModules cache takes care of our dependencies
@@ -252,7 +254,7 @@ class ProgramModuleObj(models.Model):
             user = request.user
 
         if not user or not self.program:
-            raise ESPError(False), "There is no user or program object!"
+            raise ESPError(False)("There is no user or program object!")
 
         if self.module.module_type != 'learn' and self.module.module_type != 'teach':
             return True
@@ -274,11 +276,11 @@ class ProgramModuleObj(models.Model):
 
     def makeLink(self):
         if not self.module.module_type == 'manage':
-            link = u'<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
+            link = six.u('<a href="%s" title="%s" class="vModuleLink" >%s</a>') % \
                 (self.get_full_path(), self.module.link_title, self.module.link_title)
         else:
-            link = u'<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), self.module.link_title, self.docs().replace("'", "\\'").replace('\n','<br />\\n').replace('\r', ''), self.module.link_title)
+            link = six.u('<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>') % \
+               (self.get_full_path(), self.module.link_title, self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title)
 
         return mark_safe(link)
 
@@ -297,15 +299,15 @@ class ProgramModuleObj(models.Model):
     def makeSetupLink(self):
         title = self.get_setup_title()
         link = self.get_setup_path()
-        return mark_safe(u'<a href="%s" title="%s">%s</a>' % (link, title, title))
+        return mark_safe(six.u('<a href="%s" title="%s">%s</a>') % (link, title, title))
 
     def makeButtonLink(self):
         if not self.module.module_type == 'manage':
-            link = u'<a href="%s"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">%s</div></button></a>' % \
+            link = six.u('<a href="%s"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">%s</div></button></a>') % \
                 (self.get_full_path(), self.module.link_title)
         else:
-            link = u'<a href="%s" onmouseover="updateDocs(\'<p>%s</p>\');"></a><button type="button" class="module_link_large btn btn-default btn-lg"> <div class="module_link_main">%s%s</div></button></a>' % \
-               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n','<br />\\n').replace('\r', ''), self.module.link_title, self.module.handler)
+            link = six.u('<a href="%s" onmouseover="updateDocs(\'<p>%s</p>\');"></a><button type="button" class="module_link_large btn btn-default btn-lg"> <div class="module_link_main">%s%s</div></button></a>') % \
+               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title, self.module.handler)
 
         return mark_safe(link)
 
@@ -691,7 +693,7 @@ def meets_any_deadline(extensions=[]):
                 return response
             else:
                 return render_deadline_for_tl(tl, request,
-                        {'extension': list_extensions(tl,extensions,'and') , 'moduleObj': moduleObj})
+                        {'extension': list_extensions(tl, extensions, 'and') , 'moduleObj': moduleObj})
         return _checkDeadline
     return meets_deadline
 

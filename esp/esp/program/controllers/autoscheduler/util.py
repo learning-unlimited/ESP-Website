@@ -1,10 +1,13 @@
 """Various utility functions."""
 
+from __future__ import absolute_import
+from __future__ import division
 from datetime import timedelta, datetime
 from timeit import default_timer
 from functools import wraps
 
 from esp.program.controllers.autoscheduler import config
+import six
 
 
 TIMES = {}
@@ -90,7 +93,7 @@ def get_min_id(objects):
 
 def hours_difference(datetime1, datetime2):
     """Returns the number of hours between two datetime objects."""
-    return (datetime2 - datetime1).total_seconds() / 3600.0
+    return (datetime2 - datetime1).total_seconds() // 3600.0
 
 
 def override(dicts):
@@ -98,7 +101,7 @@ def override(dicts):
     in key has highest precedence."""
     output = {}
     for d in dicts:
-        for k, v in d.iteritems():
+        for k, v in six.iteritems(d):
             output[k] = v
     return output
 

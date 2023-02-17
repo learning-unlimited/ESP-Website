@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -56,7 +58,7 @@ class ModuleExistenceTest(ProgramFrameworkTest):
             pmo.save()
 
     def target_module_list(self, tl=None):
-        prog_mods = filter(lambda x: x.isStep(), self.program.getModules(tl=tl))
+        prog_mods = [x for x in self.program.getModules(tl=tl) if x.isStep()]
         prog_mods.sort(key=lambda x: x.id)
         return prog_mods
 

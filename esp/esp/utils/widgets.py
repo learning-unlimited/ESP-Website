@@ -2,6 +2,7 @@
 #   Modified to not force unicode
 #   - Michael P
 
+from __future__ import absolute_import
 from django import forms
 from django.conf import settings
 from django.forms import widgets
@@ -15,6 +16,9 @@ import datetime
 import time
 import json
 import logging
+import six
+from six.moves import range
+from six.moves import zip
 logger = logging.getLogger(__name__)
 
 class DateTimeWidget(forms.widgets.DateTimeInput):
@@ -40,7 +44,7 @@ class DateTimeWidget(forms.widgets.DateTimeInput):
     def get_context(self, name, value, attrs):
         context = super(DateTimeWidget, self).get_context(name, value, attrs)
         context.update({
-            'id': attrs['id'] if 'id' in attrs else u'%s_id' % (name),
+            'id': attrs['id'] if 'id' in attrs else six.u('%s_id') % (name),
             'jquerywidget': self.jquerywidget,
             'media_url': settings.MEDIA_URL,
             'date_format': self.dformat,
@@ -79,7 +83,7 @@ class ClassAttrMergingSelect(forms.Select):
         #   Merge 'class' attributes - this is the difference from Django's default implementation
         if extra_attrs:
             if 'class' in attrs and 'class' in extra_attrs \
-                    and (isinstance(extra_attrs['class'], str) or isinstance(extra_attrs['class'], unicode)):
+                    and (isinstance(extra_attrs['class'], str) or isinstance(extra_attrs['class'], six.text_type)):
                 attrs['class'] += ' ' + extra_attrs['class']
                 del extra_attrs['class']
             attrs.update(extra_attrs)
@@ -97,14 +101,14 @@ class SplitDateWidget(forms.MultiWidget):
         if max_year is None:
             max_year = datetime.now().year - 10
 
-        year_choices = range(min_year,
-                             max_year+1)
+        year_choices = list(range(min_year,
+                             max_year+1))
         year_choices.reverse()
         month_choices = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
         day_choices   = ['%02d' % x for x in range(1, 32)]
-        choices = {'year' : [('',' ')] + zip(year_choices, year_choices),
-                   'month': [('',' ')] + zip(range(1, 13), month_choices),
-                   'day'  : [('',' ')] + zip(range(1, 32), day_choices)
+        choices = {'year' : [('', ' ')] + list(zip(year_choices, year_choices)),
+                   'month': [('', ' ')] + list(zip(list(range(1, 13)), month_choices)),
+                   'day'  : [('', ' ')] + list(zip(list(range(1, 32)), day_choices))
                    }
 
         year_widget = ClassAttrMergingSelect(choices=choices['year'], attrs={'class': 'input-small'})
@@ -143,14 +147,14 @@ class BlankSelectWidget(forms.Select):
     """ A <select> widget whose first entry is blank. """
     template_name = 'django/forms/widgets/blankselect.html'
 
-    def __init__(self, blank_choice=('',''), *args, **kwargs):
+    def __init__(self, blank_choice=('', ''), *args, **kwargs):
         super(forms.Select, self).__init__(*args, **kwargs)
         self.blank_value = blank_choice[0]
         self.blank_label = blank_choice[1]
 
 class NullRadioSelect(forms.RadioSelect):
     def __init__(self, *args, **kwargs):
-        kwargs['choices'] = ((True, u'Yes'), (False, u'No'))
+        kwargs['choices'] = ((True, six.u('Yes')), (False, six.u('No')))
         super(NullRadioSelect, self).__init__(*args, **kwargs)
 
 
@@ -164,7 +168,7 @@ class NullCheckboxSelect(forms.CheckboxInput):
             return False
         value = data.get(name)
         values =  {'on': True, 'true': True, 'false': False}
-        if isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, str) or isinstance(value, six.text_type):
             value = values.get(value.lower(), value)
         logger.info('NullCheckboxSelect converted %s to %s', data.get(name), value)
         return value
@@ -176,7 +180,7 @@ class DummyWidget(widgets.Input):
         return True
 
     def render(self, name, value, attrs=None, choices=()):
-        output = u''
+        output = six.u('')
         if attrs and 'text' in attrs:
             output += attrs['text']
         return mark_safe(output)
@@ -326,7 +330,7 @@ class RadioSelectWithData(forms.RadioSelect):
         context = super(RadioSelectWithData, self).get_context(name, value, attrs)
         for optgroup in context['widget'].get('optgroups', []):
             for option in optgroup[1]:
-                for k, v in self.option_data.get(option['value'], {}).iteritems():
+                for k, v in six.iteritems(self.option_data.get(option['value'], {})):
                     option['attrs']['data-' + k] = v
         return context
 
@@ -364,12 +368,12 @@ class ChoiceWithOtherField(forms.MultiValueField):
             kwargs['required'] = False
             super(ChoiceWithOtherField, self).__init__(widget=widget, fields=fields, *args, **kwargs)
         else:
-            super(ChoiceWithOtherField, self).__init__(*args,**kwargs)
+            super(ChoiceWithOtherField, self).__init__(*args, **kwargs)
 
 
     def compress(self, value):
         if not value:
-            return [None, u'']
+            return [None, six.u('')]
 
         option_value, other_value = value
         if self._was_required and not value or option_value in (None, ''):
@@ -661,6 +665,6 @@ class NavStructureWidgetWithIcons(NavStructureWidget):
             select.append($j("<option value='%(icon)s'" +
                              (data.icon === "%(icon)s" ? " selected" : "") +
                              ">%(unicode)s (%(icon)s)</option>"));'''
-            % {'icon': icon, 'unicode': unicode}
-            for icon, unicode in _ICONS.items()),
+            % {'icon': icon, 'unicode': six.text_type}
+            for icon, six.text_type in _ICONS.items()),
     }

@@ -1,6 +1,8 @@
 from __future__ import with_statement
 
+from __future__ import absolute_import
 import logging
+import six
 logger = logging.getLogger(__name__)
 
 from django.db import models, transaction, connection
@@ -21,14 +23,14 @@ class Form(models.Model):
     success_url = models.CharField(max_length=200, blank=True)
 
     def __unicode__(self):
-        return u'%s (created by %s)' % (self.title, self.created_by.username)
+        return six.u('%s (created by %s)') % (self.title, self.created_by.username)
 
 class Page(models.Model):
     form = models.ForeignKey(Form)
     seq = models.IntegerField(default=-1)
 
     def __unicode__(self):
-        return u'Page %d of %s' % (self.seq, self.form.title)
+        return six.u('Page %d of %s') % (self.seq, self.form.title)
 
 class Section(models.Model):
     page = models.ForeignKey(Page)
@@ -37,7 +39,7 @@ class Section(models.Model):
     seq = models.IntegerField()
 
     def __unicode__(self):
-        return u'Sec. %d: %s' % (self.seq, unicode(self.title))
+        return six.u('Sec. %d: %s') % (self.seq, six.text_type(self.title))
 
 class Field(models.Model):
     form = models.ForeignKey(Form)
@@ -49,7 +51,7 @@ class Field(models.Model):
     required = models.BooleanField(default=False)
 
     def __unicode__(self):
-        return u'%s' % (self.label)
+        return six.u('%s') % (self.label)
 
     def set_attribute(self, atype, value):
         from esp.customforms.models import Attribute

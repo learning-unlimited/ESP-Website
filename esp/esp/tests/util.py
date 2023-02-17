@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from argcache.registry import dump_all_caches
 
 from django.core.cache import cache

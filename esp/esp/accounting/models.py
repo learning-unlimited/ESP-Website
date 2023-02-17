@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -67,7 +69,7 @@ class LineItemType(models.Model):
 
     @property
     def options(self):
-        return self.lineitemoptions_set.all().values_list('id', 'amount_dec', 'description','is_custom').order_by('-is_custom')
+        return self.lineitemoptions_set.all().values_list('id', 'amount_dec', 'description', 'is_custom').order_by('-is_custom')
 
     @property
     def has_custom_options(self):
@@ -107,9 +109,9 @@ class LineItemType(models.Model):
 
     def __unicode__(self):
         if self.amount_dec:
-            return u'%s for %s ($%s)' % (self.text, self.program, self.amount_dec)
+            return six.u('%s for %s ($%s)') % (self.text, self.program, self.amount_dec)
         else:
-            return u'%s for %s' % (self.text, self.program)
+            return six.u('%s for %s') % (self.text, self.program)
 
     class Meta:
         ordering = ('-program_id',)
@@ -137,7 +139,7 @@ class LineItemOptions(models.Model):
             return float(self.amount_dec)
 
     def __unicode__(self):
-        return u'%s ($%s)' % (self.description, self.amount_dec)
+        return six.u('%s ($%s)') % (self.description, self.amount_dec)
 
 class FinancialAidGrant(models.Model):
     request = AjaxForeignKey(FinancialAidRequest)
@@ -178,13 +180,13 @@ class FinancialAidGrant(models.Model):
 
     def __unicode__(self):
         if self.percent and self.amount_max_dec:
-            return u'Grant %s (max $%s, %d%% discount) at %s' % (self.user, self.amount_max_dec, self.percent, self.program)
+            return six.u('Grant %s (max $%s, %d%% discount) at %s') % (self.user, self.amount_max_dec, self.percent, self.program)
         elif self.percent:
-            return u'Grant %s (%d%% discount) at %s' % (self.user, self.percent, self.program)
+            return six.u('Grant %s (%d%% discount) at %s') % (self.user, self.percent, self.program)
         elif self.amount_max_dec:
-            return u'Grant %s (max $%s) at %s' % (self.user, self.amount_max_dec, self.program)
+            return six.u('Grant %s (max $%s) at %s') % (self.user, self.amount_max_dec, self.program)
         else:
-            return u'Grant %s (no aid specified) at %s' % (self.user, self.program)
+            return six.u('Grant %s (no aid specified) at %s') % (self.user, self.program)
 
     class Meta:
         unique_together = ('request',)
@@ -279,7 +281,7 @@ class Transfer(models.Model):
     amount = property(get_amount, set_amount)
 
     def __unicode__(self):
-        return u'Transfer $%s from %s to %s' % (self.amount_dec, self.source, self.destination)
+        return six.u('Transfer $%s from %s to %s') % (self.amount_dec, self.source, self.destination)
 
 class CybersourcePostback(models.Model):
     """ Logs every Cybersource postback to enable debugging and automated
@@ -290,7 +292,7 @@ class CybersourcePostback(models.Model):
                                  on_delete=models.SET_NULL)
 
     def __unicode__(self):
-        return u'%d' % self.id
+        return six.u('%d') % self.id
 
 def install():
     """Set up the default accounts."""

@@ -1,5 +1,6 @@
 "Memcached cache backend"
 
+from __future__ import absolute_import
 import logging
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,7 @@ from esp.utils import ascii
 import hashlib
 
 try:
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
 except:
     import pickle
 
@@ -68,9 +69,9 @@ class CacheClass(BaseCache):
     @try_multi(8)
     def get_many(self, keys, version=None):
         keys_dict = dict((self.make_key(key, version), key) for key in keys)
-        wrapped_ans = self._wrapped_cache.get_many(keys_dict.keys(), version=version)
+        wrapped_ans = self._wrapped_cache.get_many(list(keys_dict.keys()), version=version)
         ans = {}
-        for k,v in wrapped_ans.items():
+        for k, v in wrapped_ans.items():
             ans[keys_dict[k]] = v
         return ans
 

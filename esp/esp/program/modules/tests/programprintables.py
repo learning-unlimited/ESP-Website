@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -115,7 +117,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         response = self.get_response('studentschedules', 'students', 'enrolled')
 
         #   Check that the output is an actual PDF file
-        print(response['Content-Type'])
+        print((response['Content-Type']))
         self.assertTrue(response['Content-Type'].startswith('application/pdf'))
 
     def test_all_classes_spreadsheet_loads(self):
@@ -140,7 +142,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         self.assertFormError(response, 'form', 'subject_fields', 'This field is required.')
 
         #Test invalid fieldname
-        self.client.post(self.all_classes_csv_url,{'subject_fields':['invalid_field']})
+        self.client.post(self.all_classes_csv_url, {'subject_fields':['invalid_field']})
         self.assertFormError(response, 'form', 'subject_fields', 'This field is required.')
 
     def test_all_classes_spreadsheet_valid_post(self):
@@ -194,7 +196,7 @@ class TestAllClassesFieldConverter(ProgramFrameworkTest):
         An invalid field should raise a ValueError
         """
         class_subject = self.class_subjects[0]
-        self.assertRaises(ValueError,self.converter.fieldvalue,*[class_subject, 'fake_field'])
+        self.assertRaises(ValueError, self.converter.fieldvalue, *[class_subject, 'fake_field'])
 
     def test_class_subject_fields_accepted(self):
         """

@@ -7,6 +7,8 @@
 # PROGRAM_ID before running.
 #
 
+from __future__ import absolute_import
+from __future__ import print_function
 from script_setup import *
 from esp.program.models import FinancialAidRequest
 
@@ -17,7 +19,7 @@ PROGRAM = "Splash 2014"
 reqs = FinancialAidRequest.objects.filter(program__name=PROGRAM)
 tagged_reqs = {}
 
-print "Auto-Approved Requests"
+print("Auto-Approved Requests")
 
 for req in reqs:
     if not req.approved:
@@ -27,12 +29,11 @@ for req in reqs:
     lst.append(req)
     tagged_reqs[date] = lst
 
-dates = tagged_reqs.keys()
-dates.sort()
+dates = sorted(tagged_reqs.keys())
 for date in dates:
-    print "  " + str(date) + ":"
+    print("  " + str(date) + ":")
     for req in tagged_reqs[date]:
-        print "    " + req.user.get_email_sendto_address()
+        print("    " + req.user.get_email_sendto_address())
 
 if reqs.count() == 0:
-    print "  No requests"
+    print("  No requests")

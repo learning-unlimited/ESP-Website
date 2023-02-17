@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+from six.moves import map
+import six
+from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -95,7 +99,7 @@ class ProgramCreationForm(BetterModelForm):
                                                        ])
         # Include additional or new modules that haven't been added to the list
         for x in ProgramModule.objects.filter(choosable=0):
-            if x.id not in sum(self.program_module_question_ids.values(), []): # flatten list of modules
+            if x.id not in sum(list(self.program_module_question_ids.values()), []): # flatten list of modules
                 self.program_module_question_ids['Would you like to include the {} module?'.format(x.admin_title)] = [x.id]
         # Now initialize the form
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
@@ -115,11 +119,11 @@ class ProgramCreationForm(BetterModelForm):
         '''
         #   Filter out unwanted characters from program type to form URL
         ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
-        self.instance.url = u'%(type)s/%(instance)s' \
+        self.instance.url = six.u('%(type)s/%(instance)s') \
             % {'type': ptype_slug
               ,'instance': self.cleaned_data['term']
               }
-        self.instance.name = u'%(type)s %(instance)s' \
+        self.instance.name = six.u('%(type)s %(instance)s') \
             % {'type': self.cleaned_data['program_type']
               ,'instance': self.cleaned_data['term_friendly']
               }
@@ -140,11 +144,11 @@ class ProgramCreationForm(BetterModelForm):
     class Meta:
         fieldsets = [
                      ('Program Title', {'fields': ['term', 'term_friendly'] }),
-                     ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
-                     ('About Program Creator',{'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
-                     ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
-                     ('Program Internal Details' ,{'fields':['program_type','program_modules','program_module_questions','class_categories','flag_types']}),
-                     ('Registration Dates',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
+                     ('Program Constraints', {'fields':['grade_min', 'grade_max', 'program_size_max', 'program_allow_waitlist']}),
+                     ('About Program Creator', {'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
+                     ('Financial Details', {'fields':['base_cost', 'sibling_discount']}),
+                     ('Program Internal Details', {'fields':['program_type', 'program_modules', 'program_module_questions', 'class_categories', 'flag_types']}),
+                     ('Registration Dates', {'fields': ['teacher_reg_start', 'teacher_reg_end', 'student_reg_start', 'student_reg_end'],}),
         ]                      # Here You can also add description for each fieldset.
         widgets = {
             'program_modules': forms.SelectMultiple(attrs={'class': 'hidden-field'}),
@@ -212,9 +216,8 @@ class StatisticsQueryForm(forms.Form):
     @staticmethod
     def get_program_type_choices():
         programs = Program.objects.all()
-        names_url = list(set([x.program_type for x in programs]))
-        names_url.sort()
-        result = zip(names_url, names_url)
+        names_url = sorted({x.program_type for x in programs})
+        result = list(zip(names_url, names_url))
         return result
 
     @staticmethod
@@ -223,7 +226,7 @@ class StatisticsQueryForm(forms.Form):
         names_url = [x.url for x in programs]
         names_friendly = [x.name for x in programs]
         result = sorted(zip(names_url, names_friendly), key=lambda pair: pair[0])
-        result = filter(lambda x: len(x[1]) > 0, result)
+        result = [x for x in result if len(x[1]) > 0]
         return result
 
     @staticmethod
@@ -414,12 +417,12 @@ class StatisticsQueryForm(forms.Form):
 class ClassFlagForm(forms.ModelForm):
     class Meta:
         model = ClassFlag
-        fields = ['subject','flag_type','comment']
+        fields = ['subject', 'flag_type', 'comment']
 
 class FlagTypeForm(forms.ModelForm):
     class Meta:
         model = ClassFlagType
-        fields = ['name','color','seq','show_in_scheduler','show_in_dashboard']
+        fields = ['name', 'color', 'seq', 'show_in_scheduler', 'show_in_dashboard']
 
 class RecordTypeForm(forms.ModelForm):
     def clean_name(self):
@@ -430,12 +433,12 @@ class RecordTypeForm(forms.ModelForm):
             return name
     class Meta:
         model = RecordType
-        fields = ['name','description']
+        fields = ['name', 'description']
 
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = ClassCategories
-        fields = ['category','symbol','seq']
+        fields = ['category', 'symbol', 'seq']
         widgets = {
             'symbol': forms.TextInput(attrs={'pattern': '[A-Za-z]{1}', 'title': 'Single letter'})
         }

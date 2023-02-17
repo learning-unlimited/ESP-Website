@@ -1,5 +1,8 @@
 """ ESP Custom Filters for template """
 
+from __future__ import absolute_import
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -42,7 +45,7 @@ register = template.Library()
 def texescape(value):
     """ This will escape a string according to the rules of LaTeX """
 
-    value = unicode(value).strip()
+    value = six.text_type(value).strip()
 
 
 
@@ -59,20 +62,20 @@ def texescape(value):
             ('\\', r'!++ABCDEF++!'),
     ]
     for char in '&$%#_{}':
-        replacement_pairs.append((char,'\\'+char))
+        replacement_pairs.append((char, '\\'+char))
     replacement_pairs.extend([
-    ('^' , r'\textasciicircum{}'),
-    ('>' , r'\textgreater{}'),
-    ('<' , r'\textless{}'),
-    ('~' , r'\ensuremath{\sim}'),
-    (r'!++ABCDEF++!',r'\textbackslash{}'),
+    ('^', r'\textasciicircum{}'),
+    ('>', r'\textgreater{}'),
+    ('<', r'\textless{}'),
+    ('~', r'\ensuremath{\sim}'),
+    (r'!++ABCDEF++!', r'\textbackslash{}'),
     ])
 
     for i in range(len(strings)):
         if i % 2 == 1 and i < len(strings) - 1:
             continue
-        for key , val in replacement_pairs:
-            strings[i] = strings[i].replace(key,val)
+        for key, val in replacement_pairs:
+            strings[i] = strings[i].replace(key, val)
 
     value = '$'.join(strings)
 

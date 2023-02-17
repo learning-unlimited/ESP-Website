@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -186,7 +189,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         else:
             return {k: ESPUser.objects.filter(v).distinct()
-                    for k, v in qobjects.iteritems()}
+                    for k, v in six.iteritems(qobjects)}
 
     def studentDesc(self):
         #   Label these heading nicely like the user registration form
@@ -312,7 +315,7 @@ class StudentClassRegModule(ProgramModuleObj):
         context['prog'] = self.program
         context['one'] = one
         context['two'] = two
-        context['reg_open'] = bool(Permission.user_has_perm(request.user, {'learn':'Student','teach':'Teacher'}[tl]+"/Classes",prog))
+        context['reg_open'] = bool(Permission.user_has_perm(request.user, {'learn':'Student','teach':'Teacher'}[tl]+"/Classes", prog))
 
         schedule_str = render_to_string('users/student_schedule_inline.html', context)
         script_str = render_to_string('users/student_schedule_inline.js', context)
@@ -351,7 +354,7 @@ class StudentClassRegModule(ProgramModuleObj):
                 addbutton_str2 = render_to_string(self.baseDir()+'addbutton_catalog.html', button_context)
                 json_data['addbutton_fillslot_sec%d_html' % sec_id] = addbutton_str1
                 json_data['addbutton_catalog_sec%d_html' % sec_id] = addbutton_str2
-            except Exception, inst:
+            except Exception as inst:
                 raise AjaxError('Encountered an error retrieving updated buttons: %s' % inst)
 
 
@@ -376,10 +379,10 @@ class StudentClassRegModule(ProgramModuleObj):
 
         section = ClassSection.objects.get(id=sectionid)
         if not scrmi.use_priority:
-            error = section.cannotAdd(request.user,scrmi.enforce_max, webapp=webapp)
+            error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
         if scrmi.use_priority or not error:
             cobj = ClassSubject.objects.get(id=classid)
-            error = cobj.cannotAdd(request.user,scrmi.enforce_max, webapp=webapp) or section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
+            error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp) or section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
 
         if scrmi.use_priority:
             priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
@@ -408,7 +411,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @needs_student
     @meets_deadline('/Classes')
     @meets_cap
-    def ajax_addclass(self,request, tl, one, two, module, extra, prog):
+    def ajax_addclass(self, request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class and return an updated inline schedule """
         if not request.is_ajax():
             return self.addclass(request, tl, one, two, module, extra, prog)
@@ -445,7 +448,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         catalog_sort_split = catalog_sort.split('__')
         if catalog_sort_split[0] == 'category' and catalog_sort_split[1] in ['id', 'category', 'symbol']:
-            categories_sort = sorted(categories.values(), key = lambda cat: cat[catalog_sort_split[1]])
+            categories_sort = sorted(list(categories.values()), key = lambda cat: cat[catalog_sort_split[1]])
         else:
             categories_sort = None
         return categories_sort
@@ -478,10 +481,10 @@ class StudentClassRegModule(ProgramModuleObj):
         if is_onsite and not 'filter' in request.GET:
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
-            classes = filter(lambda c: c.grade_min <= user_grade and c.grade_max >= user_grade, list(ClassSubject.objects.catalog(self.program, ts)))
+            classes = [c for c in list(ClassSubject.objects.catalog(self.program, ts)) if c.grade_min <= user_grade and c.grade_max >= user_grade]
             if user_grade != 0:
-                classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
-            classes = filter(lambda c: not c.isRegClosed(), classes)
+                classes = [c for c in classes if c.grade_min <=user_grade and c.grade_max >= user_grade]
+            classes = [c for c in classes if not c.isRegClosed()]
 
         categories_sort = self.sort_categories(classes, self.program)
 
@@ -651,19 +654,19 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @aux_call
     @needs_student
-    @meets_any_deadline(['/Classes','/Removal'])
+    @meets_any_deadline(['/Classes', '/Removal'])
     def clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and go back to the same page """
         result = self.clearslot_logic(request, tl, one, two, module, extra, prog)
-        if isinstance(result, basestring):
+        if isinstance(result, six.string_types):
             raise ESPError(result, log=False)
         else:
             return self.goToCore(tl)
 
     @aux_call
     @needs_student
-    @meets_any_deadline(['/Classes','/Removal'])
-    def ajax_clearslot(self,request, tl, one, two, module, extra, prog):
+    @meets_any_deadline(['/Classes', '/Removal'])
+    def ajax_clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return an updated inline schedule """
         if not request.is_ajax():
             return self.clearslot(request, tl, one, two, module, extra, prog)

@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from __future__ import print_function
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -61,8 +63,8 @@ class EditPermissionForm(forms.Form):
     skip = forms.BooleanField(required=False, widget=forms.HiddenInput)
 
 class NewDeadlineForm(forms.Form):
-    deadline_type = forms.ChoiceField(choices=filter(lambda x: "Administer" not in x[0], Permission.PERMISSION_CHOICES))
-    role = forms.ChoiceField(choices = [("Student","Students"),("Teacher","Teachers"),("Volunteer","Volunteers")])
+    deadline_type = forms.ChoiceField(choices=[x for x in Permission.PERMISSION_CHOICES if "Administer" not in x[0]])
+    role = forms.ChoiceField(choices = [("Student", "Students"), ("Teacher", "Teachers"), ("Volunteer", "Volunteers")])
     start_date = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget(), required=False)
     end_date = forms.DateTimeField(label='Closing date/time', initial=None, widget=DateTimeWidget(), required=False)
 
@@ -72,7 +74,7 @@ class NewDeadlineForm(forms.Form):
                                                                                                                           ).order_by('name').values_list('name', flat = True)]
 
 class NewPermissionForm(forms.Form):
-    permission_type = forms.ChoiceField(choices=filter(lambda x: "Administer" not in x[0], Permission.PERMISSION_CHOICES))
+    permission_type = forms.ChoiceField(choices=[x for x in Permission.PERMISSION_CHOICES if "Administer" not in x[0]])
     user = AjaxForeignKeyNewformField(key_type=ESPUser, field_name='user', label='User',
         help_text='Start typing a username or "Last Name, First Name", then select the user from the dropdown.')
     perm_start_date = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget(), required=False)
@@ -361,7 +363,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 create_form = NewDeadlineForm(request.POST.copy())
                 if create_form.is_valid():
                     perm = Permission.objects.create(user=None, permission_type=create_form.cleaned_data['deadline_type'],
-                                                     role=Group.objects.get(name=create_form.cleaned_data['role']),program=prog,
+                                                     role=Group.objects.get(name=create_form.cleaned_data['role']), program=prog,
                                                      start_date = create_form.cleaned_data['start_date'], end_date = create_form.cleaned_data['end_date'])
                     message_good = 'Deadline created for %ss: %s.' % (create_form.cleaned_data['role'], perm.nice_name())
                     create_form = NewDeadlineForm()
@@ -432,7 +434,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     perm_copy.implied = True,
                     perm_copy.implied_by = perm
                     group_perms[group].setdefault(perm_copy.permission_type, {'is_open': False, 'perms': []})['perms'].append(perm_copy)
-            group_perms[group] = OrderedDict([(key, group_perms[group][key]) for key in sorted(group_perms[group].keys(), key = Permission.PERMISSION_CHOICES_FLAT.index)])
+            group_perms[group] = OrderedDict([(key, group_perms[group][key]) for key in sorted(list(group_perms[group].keys()), key = Permission.PERMISSION_CHOICES_FLAT.index)])
 
         initial_data = [perm.__dict__ for group, perm_types in group_perms.items() for perm_type, details in perm_types.items() for perm in details['perms']]
         #   Supply initial data for forms
@@ -451,7 +453,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     idx += 1
                 # Is this permission type implied open? (so it can't be closed with an individual permission)
                 details['implied_open'] = any([getattr(perm, "implied", False) and perm.is_valid() for perm in details['perms']])
-                details['recursive'] = perm_type in Permission.implications.keys()
+                details['recursive'] = perm_type in list(Permission.implications.keys())
                 # Sort by validity and start/end dates
                 group_perms[group][perm_type]['perms'].sort(key=lambda perm: (perm.is_valid(), perm.end_date or datetime.max, perm.start_date or datetime.min), reverse=True)
 

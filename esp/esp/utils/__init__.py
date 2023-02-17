@@ -8,8 +8,10 @@ The functions in this file are globally relevant, too annoying to inline,
     and too small to merit their own modules.
 """
 
+from __future__ import absolute_import
 import sys
-from urllib import quote_plus
+from six.moves.urllib.parse import quote_plus
+import six
 
 def force_str(x):
     """
@@ -23,7 +25,7 @@ def force_str(x):
     """
     if isinstance(x, str):
         return x
-    return unicode(x).encode('utf8')
+    return six.text_type(x).encode('utf8')
 
 def ascii(x):
     """

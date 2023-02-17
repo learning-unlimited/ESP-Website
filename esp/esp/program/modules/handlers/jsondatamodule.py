@@ -1,4 +1,9 @@
 
+from __future__ import absolute_import
+from __future__ import division
+from six.moves import range
+from six.moves import zip
+from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -522,7 +527,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             sections_merged = []
             for item, item_legacy in zip(sections, sections_legacy):
                 assert item['id'] == item_legacy['id']
-                item_merged = dict(item_legacy.items() + item.items())
+                item_merged = dict(list(item_legacy.items()) + list(item.items()))
                 sections_merged.append(item_merged)
             return {'sections': sections_merged}
 
@@ -610,7 +615,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
             'location': ", ".join(cls.prettyrooms()),
-            'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
+            'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades",
         }
 
         return {return_key: [return_dict]}
@@ -732,7 +737,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
             'location': ", ".join(cls.prettyrooms()),
-            'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
+            'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades",
             'teacher_names': cls.pretty_teachers(),
             'moderator_names': cls.pretty_moderators(),
             'resource_requests': rrequest_dict,
@@ -821,7 +826,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             if annotated_categories[i]['num_class_hours'] is None:
                 annotated_categories[i]['num_class_hours'] = 0
             annotated_categories[i]['num_class_hours'] = float(annotated_categories[i]['num_class_hours'])
-        return filter(lambda x: x['id'] in program_categories, annotated_categories)
+        return [x for x in annotated_categories if x['id'] in program_categories]
     cat_nums.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     cat_nums.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     cat_nums = staticmethod(cat_nums)
@@ -935,8 +940,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             if cls['subject_duration']:
                 hours["class-hours"] += float(cls['subject_duration'])
                 hours["class-student-hours"] += float(cls['subject_duration']) * (float(cls['class_size_max']) if cls['class_size_max'] else 0)
-                hours["class-registered-hours"] += float(cls['subject_duration']) * float(cls['subject_students']) / float(cls['num_sections'])
-                hours["class-checked-in-hours"] += float(cls['subject_duration']) * float(cls['subject_checked_in_students']) / float(cls['num_sections'])
+                hours["class-registered-hours"] += float(cls['subject_duration']) * float(cls['subject_students']) // float(cls['num_sections'])
+                hours["class-checked-in-hours"] += float(cls['subject_duration']) * float(cls['subject_checked_in_students']) // float(cls['num_sections'])
         return hours
 
     @staticmethod
@@ -981,7 +986,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         hour_num_list.append(("Total # of Class-Student-Hours (enrolled)", round(reg_hours["class-registered-hours"], 2)))
         hour_num_list.append(("Total # of Class-Student-Hours (attended program)", round(reg_hours["class-checked-in-hours"], 2)))
         if sched_hours["class-student-hours"]:
-            hour_num_list.append(("Class-Student-Hours Utilization", str(round(100 * reg_hours["class-registered-hours"] / sched_hours["class-student-hours"], 2)) + "%"))
+            hour_num_list.append(("Class-Student-Hours Utilization", str(round(100 * reg_hours["class-registered-hours"] // sched_hours["class-student-hours"], 2)) + "%"))
         return hour_num_list
     hour_nums.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     hour_nums.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})

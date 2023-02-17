@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -65,13 +66,13 @@ class ResourceModuleTest(ProgramFrameworkTest):
 
         #   Search for matching items in the response and ensure they are consistent
         results = re.findall(regexp, response.content)
-        displayed_names = set([x[index] for x in results])
+        displayed_names = {x[index] for x in results}
 
         return displayed_names
 
     def checkDisplayedClassroomList(self):
         #   Compute the list of classroom names for the program
-        program_classroom_names = set([str(x.name) for x in self.program.groupedClassrooms()])
+        program_classroom_names = {str(x.name) for x in self.program.groupedClassrooms()}
 
         #   Compare to those shown on the resources page
         self.assertEqual(program_classroom_names, self.getDisplayedList(r'<div id="classroom-([0-9]+)">(.*?)</div>', 1))
@@ -80,7 +81,7 @@ class ResourceModuleTest(ProgramFrameworkTest):
 
     def checkDisplayedResourceTypeList(self):
         #   Compute the list of resource type names for the program
-        program_restype_names = set([str(x.name) for x in self.program.getResourceTypes()])
+        program_restype_names = {str(x.name) for x in self.program.getResourceTypes()}
 
         #   Compare to those shown on the resources page
         self.assertEqual(program_restype_names, self.getDisplayedList(r'<div id="restype-([0-9]+)">(.*?)</div>', 1))
@@ -105,7 +106,7 @@ class ResourceModuleTest(ProgramFrameworkTest):
         self.assertIn('New Room', self.checkDisplayedClassroomList())   #   checks consistency and presence of new room
 
         #   Check that we can edit a classroom and have it show up
-        matching_rooms = filter(lambda x: x.name == 'New Room', self.program.groupedClassrooms())
+        matching_rooms = [x for x in self.program.groupedClassrooms() if x.name == 'New Room']
         self.assertEqual(len(matching_rooms), 1)
         target_room = matching_rooms[0]
         edit_classroom_data = {
@@ -158,7 +159,7 @@ class ResourceModuleTest(ProgramFrameworkTest):
         self.assertIn('New Resource Type 2', self.checkDisplayedResourceTypeList())
 
         #   Check that we can edit a resource type and have it show up
-        matching_restypes = filter(lambda x: x.name == 'New Resource Type', self.program.getResourceTypes())
+        matching_restypes = [x for x in self.program.getResourceTypes() if x.name == 'New Resource Type']
         self.assertEqual(len(matching_restypes), 1)
         target_restype = matching_restypes[0]
         edit_restype_data = {

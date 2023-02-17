@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+import six
+from six.moves import range
+from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -152,7 +156,7 @@ def lsr_submit(request, program = None):
     reg_interested, created = RegistrationType.objects.get_or_create(name="Interested", category="student",
                                                                      defaults={"description":"For lottery reg, a student would be interested in being placed into this class, but it isn't their first choice"})
 
-    for reg_token, reg_status in data.iteritems():
+    for reg_token, reg_status in six.iteritems(data):
         parts = reg_token.split('_')
         if parts[0] == 'flag':
             ## Flagged class
@@ -221,10 +225,10 @@ def lsr_submit(request, program = None):
 @login_required
 def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary function. will merge the two later -jmoldow 05/31
 
-    classes_flagged = [set() for i in range(0,priority_limit+1)] # 1-indexed
-    sections_by_block = [defaultdict(set) for i in range(0,priority_limit+1)] # 1-indexed - sections_by_block[i][block] is a set of classes that were given priority i in timeblock block. This should hopefully be a set of size 0 or 1.
+    classes_flagged = [set() for i in range(0, priority_limit+1)] # 1-indexed
+    sections_by_block = [defaultdict(set) for i in range(0, priority_limit+1)] # 1-indexed - sections_by_block[i][block] is a set of classes that were given priority i in timeblock block. This should hopefully be a set of size 0 or 1.
 
-    for section_id, (priority, block_id) in data.iteritems():
+    for section_id, (priority, block_id) in six.iteritems(data):
         section_id = int(section_id)
         priority = int(priority)
         block_id = int(block_id)
@@ -242,7 +246,7 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
     if len(errors):
         return HttpResponse(json.dumps(errors), content_type='application/json')
 
-    reg_priority = [(None,None)] + [RegistrationType.objects.get_or_create(name="Priority/"+str(i), category="student") for i in range(1,priority_limit+1)]
+    reg_priority = [(None, None)] + [RegistrationType.objects.get_or_create(name="Priority/"+str(i), category="student") for i in range(1, priority_limit+1)]
     reg_priority = [reg_priority[i][0] for i in range(0, priority_limit+1)]
 
     allStudentRegistrations = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=program, user=request.user)
@@ -326,7 +330,7 @@ def find_user(userstr):
         found_users = ESPUser.objects.filter(user_q).distinct()
     else:
         q_list = []
-        for i in xrange(len(userstr_parts)):
+        for i in range(len(userstr_parts)):
             q_list.append( Q( first_name__icontains = ' '.join(userstr_parts[:i]), last_name__icontains = ' '.join(userstr_parts[i:]) ) )
             q_list.append( Q( contactinfo__first_name__icontains = ' '.join(userstr_parts[:i]), contactinfo__last_name__icontains = ' '.join(userstr_parts[i:]) ) )
         # Allow any of the above permutations
@@ -355,7 +359,7 @@ def usersearch(request):
     num_users = found_users.count()
 
     if num_users == 1:
-        from urllib import urlencode
+        from six.moves.urllib.parse import urlencode
         return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users[0].username}))
     elif num_users > 1:
         found_users = found_users.all()
@@ -424,13 +428,13 @@ def userview(request):
     if 'disabled' in change_grade_form.fields['graduation_year'].widget.attrs:
         del change_grade_form.fields['graduation_year'].widget.attrs['disabled']
     change_grade_form.fields['graduation_year'].initial = user.getYOG()
-    change_grade_form.fields['graduation_year'].choices = filter(lambda choice: bool(choice[0]), change_grade_form.fields['graduation_year'].choices)
+    change_grade_form.fields['graduation_year'].choices = [choice for choice in change_grade_form.fields['graduation_year'].choices if bool(choice[0])]
 
     context = {
         'user': user,
-        'taught_classes' : user.getTaughtClasses(include_rejected = True).order_by('parent_program', 'id'),
-        'enrolled_classes' : user.getEnrolledSections().order_by('parent_class__parent_program', 'id'),
-        'taken_classes' : user.getSections().order_by('parent_class__parent_program', 'id'),
+        'taught_classes': user.getTaughtClasses(include_rejected = True).order_by('parent_program', 'id'),
+        'enrolled_classes': user.getEnrolledSections().order_by('parent_class__parent_program', 'id'),
+        'taken_classes': user.getSections().order_by('parent_class__parent_program', 'id'),
         'teacherbio': teacherbio,
         'domain': settings.SITE_INFO[1],
         'change_grade_form': change_grade_form,
@@ -588,7 +592,7 @@ def newprogram(request):
 
             manage_url = '/manage/' + new_prog.url + '/resources'
 
-            if settings.USE_MAILMAN and 'mailman_moderator' in settings.DEFAULT_EMAIL_ADDRESSES.keys():
+            if settings.USE_MAILMAN and 'mailman_moderator' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys()):
                 # While we're at it, create the program's mailing list
                 mailing_list_name = "%s_%s" % (new_prog.program_type, new_prog.program_instance)
                 teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
@@ -603,7 +607,7 @@ def newprogram(request):
                 apply_list_settings(teachers_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
                 apply_list_settings(students_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
 
-                if 'archive' in settings.DEFAULT_EMAIL_ADDRESSES.keys():
+                if 'archive' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys()):
                     add_list_members(students_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
                     add_list_members(teachers_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
 
@@ -1082,12 +1086,12 @@ def statistics(request, program=None):
                 if 'student_reg_types' in form.cleaned_data and form.cleaned_data['student_reg_types'] and not form.cleaned_data['student_reg_types']:
                     students_objects = program.students(QObjects=True)
                     for reg_type in form.cleaned_data['student_reg_types']:
-                        if reg_type in students_objects.keys():
+                        if reg_type in list(students_objects.keys()):
                             users_q = users_q | students_objects[reg_type]
                 elif 'teacher_reg_types' in form.cleaned_data and form.cleaned_data['teacher_reg_types'] and not form.cleaned_data['teacher_reg_types']:
                     teachers_objects = program.teachers(QObjects=True)
                     for reg_type in form.cleaned_data['teacher_reg_types']:
-                        if reg_type in teachers_objects.keys():
+                        if reg_type in list(teachers_objects.keys()):
                             users_q = users_q | teachers_objects[reg_type]
 
             #   Narrow down by school (perhaps not ideal results, but faster)

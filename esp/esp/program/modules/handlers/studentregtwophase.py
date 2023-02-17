@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import division
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -168,7 +171,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             star_count = 0
             if timeslot.id in star_counts:
                 star_count = star_counts[timeslot.id]
-            schedule.append((timeslot, priority_list, blockCount + 1, star_count, float(star_count)/context['num_star']*100))
+            schedule.append((timeslot, priority_list, blockCount + 1, star_count, float(star_count)//context['num_star']*100))
 
             prevTimeSlot = timeslot
 
@@ -227,7 +230,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         context['grade_choices'] = group_columns(grade_choices)
 
         catalog_context = self.catalog_context(
-            request, tl, one, two,module, extra, prog)
+            request, tl, one, two, module, extra, prog)
         context.update(catalog_context)
 
         return render_to_response(self.baseDir() + 'view_classes.html', request, context)
@@ -264,7 +267,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         context['category_choices'] = group_columns(category_choices)
 
         catalog_context = self.catalog_context(
-            request, tl, one, two,module, extra, prog)
+            request, tl, one, two, module, extra, prog)
         context.update(catalog_context)
 
         return render_to_response(self.baseDir() + 'mark_classes.html', request, context)
@@ -354,7 +357,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             context['priorities'].append((rel_index, rel))
 
         catalog_context = self.catalog_context(
-            request, tl, one, two,module, extra, prog)
+            request, tl, one, two, module, extra, prog)
         context.update(catalog_context)
 
         return render_to_response(
@@ -376,7 +379,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         except ValueError:
             return HttpResponseBadRequest('JSON data mis-formatted.')
         try:
-            [timeslot_id] = json_data.keys()
+            [timeslot_id] = list(json_data.keys())
         except ValueError:
             return HttpResponseBadRequest('JSON data mis-formatted.')
         if not isinstance(json_data[timeslot_id], dict):

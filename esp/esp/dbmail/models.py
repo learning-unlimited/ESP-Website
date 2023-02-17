@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -64,7 +66,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     from_email = from_email.strip()
     if 'Reply-To' in extra_headers:
         extra_headers['Reply-To'] = extra_headers['Reply-To'].strip()
-    if isinstance(recipient_list, basestring):
+    if isinstance(recipient_list, six.string_types):
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
@@ -172,7 +174,7 @@ class MessageRequest(models.Model):
     )
 
     id = models.AutoField(primary_key=True)
-    subject = models.TextField(null=True,blank=True)
+    subject = models.TextField(null=True, blank=True)
     msgtext = models.TextField(blank=True, null=True)
     special_headers = models.TextField(blank=True, null=True)
     recipients = models.ForeignKey(PersistentQueryFilter) # We will get the user from a query filter
@@ -201,16 +203,16 @@ class MessageRequest(models.Model):
         return '%s/email/%s' % (Site.objects.get_current().domain, self.id or "{ID will be here}")
 
     def __unicode__(self):
-        return unicode(self.subject)
+        return six.text_type(self.subject)
 
     # Access special_headers as a dictionary
     def special_headers_dict_get(self):
         if not self.special_headers:
             return {}
-        import cPickle as pickle
+        import six.moves.cPickle as pickle
         return pickle.loads(str(self.special_headers)) # We call str here because pickle hates unicode. -ageng 2008-11-18
     def special_headers_dict_set(self, value):
-        import cPickle as pickle
+        import six.moves.cPickle as pickle
         if not isinstance(value, dict):
             value = {}
         self.special_headers = pickle.dumps(value)
@@ -246,7 +248,7 @@ class MessageRequest(models.Model):
         """ Takes a text and user, and, within the confines of this message, will make it better. """
 
         # prepare variables
-        text = unicode(text)
+        text = six.text_type(text)
 
         context = MessageVars.getContext(self, user)
 
@@ -262,7 +264,7 @@ class MessageRequest(models.Model):
         """
         if sendto_fn_name == cls.SEND_TO_SELF_REAL:
             return True
-        return bool(filter(lambda fn: sendto_fn_name == fn[0], cls.SENDTO_FN_CHOICES))
+        return bool([fn for fn in cls.SENDTO_FN_CHOICES if sendto_fn_name == fn[0]])
 
     @classmethod
     def get_sendto_fn_callable(cls, sendto_fn_name):
@@ -301,7 +303,7 @@ class MessageRequest(models.Model):
             sendto_fn_name = cls.SEND_TO_SELF_REAL
         try:
             return cls.get_sendto_fn_callable(sendto_fn_name)
-        except ImproperlyConfigured, e:
+        except ImproperlyConfigured as e:
             raise ESPError(True, 'Invalid sendto function "%s". ' + \
                 'This might be a website bug. Please contact us at %s ' + \
                 'and tell us how you got this error, and we will look into it. ' + \
@@ -401,7 +403,7 @@ class TextOfEmail(models.Model):
     tries = models.IntegerField(default=0) # Number of times we attempted to send this message and failed
 
     def __unicode__(self):
-        return unicode(self.subject) + ' <' + (self.send_to) + '>'
+        return six.text_type(self.subject) + ' <' + (self.send_to) + '>'
 
     def send(self):
         """Take the email data in this TextOfEmail and send it.
@@ -472,7 +474,7 @@ class MessageVars(models.Model):
     @staticmethod
     def createVar(msgrequest, name, obj):
         """ This is used to create a variable container for a message."""
-        import cPickle as pickle
+        import six.moves.cPickle as pickle
 
 
         newMessageVar = MessageVars(messagerequest = msgrequest, provider_name = name)
@@ -483,7 +485,7 @@ class MessageVars(models.Model):
         return newMessageVar
 
     def getDict(self, user):
-        import cPickle as pickle
+        import six.moves.cPickle as pickle
         #try:
         provider = pickle.loads(str(self.pickled_provider))
         #except:
@@ -496,7 +498,7 @@ class MessageVars(models.Model):
 
     def getVar(self, key, user):
         """ Get a variable from this object. """
-        import cPickle as pickle
+        import six.moves.cPickle as pickle
 
         try:
             provider = pickle.loads(str(self.pickled_provider))
@@ -554,7 +556,7 @@ class EmailRequest(models.Model):
     textofemail = AjaxForeignKey(TextOfEmail, blank=True, null=True)
 
     def __unicode__(self):
-        return unicode(self.msgreq.subject) + ' <' + unicode(self.target.username) + '>'
+        return six.text_type(self.msgreq.subject) + ' <' + six.text_type(self.target.username) + '>'
 
 class EmailList(models.Model):
     """
@@ -569,7 +571,7 @@ class EmailList(models.Model):
 
     handler = models.CharField(max_length=128)
 
-    subject_prefix = models.CharField(max_length=64,blank=True,null=True)
+    subject_prefix = models.CharField(max_length=64, blank=True, null=True)
 
     admin_hold = models.BooleanField(default=False)
 
@@ -577,7 +579,7 @@ class EmailList(models.Model):
 
     from_email = models.CharField(help_text="If specified, the FROM header will be overwritten with this email.", blank=True, null=True, max_length=512)
 
-    description = models.TextField(blank=True,null=True)
+    description = models.TextField(blank=True, null=True)
 
     class Meta:
         ordering=('seq',)

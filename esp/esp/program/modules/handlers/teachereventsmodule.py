@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -125,7 +126,7 @@ class TeacherEventsModule(ProgramModuleObj):
             if form.is_valid():
                 data = form.cleaned_data
                 # Remove old bits
-                event_types = EventType.teacher_event_types().values()
+                event_types = list(EventType.teacher_event_types().values())
                 UserAvailability.objects.filter(user=request.user, event__event_type__in=event_types).delete()
                 # Register for interview
                 if data['interview']:
@@ -135,7 +136,7 @@ class TeacherEventsModule(ProgramModuleObj):
                         event_name = data['interview'].description
                         send_mail('['+self.program.niceName()+'] Teacher Interview for ' + request.user.first_name + ' ' + request.user.last_name + ': ' + event_name, \
                               """Teacher Interview Registration Notification\n--------------------------------- \n\nTeacher: %s %s\n\nTime: %s\n\n""" % \
-                              (request.user.first_name, request.user.last_name, event_name) , \
+                              (request.user.first_name, request.user.last_name, event_name), \
                               (request.user.get_email_sendto_address()), \
                               [self.program.getDirectorCCEmail()], True)
 
@@ -154,7 +155,7 @@ class TeacherEventsModule(ProgramModuleObj):
         return render_to_response( self.baseDir()+'event_signup.html', request, {'prog':prog, 'form': form} )
 
     def isStep(self):
-        return Event.objects.filter(program=self.program, event_type__in=EventType.teacher_event_types().values()).exists()
+        return Event.objects.filter(program=self.program, event_type__in=list(EventType.teacher_event_types().values())).exists()
 
     class Meta:
         proxy = True

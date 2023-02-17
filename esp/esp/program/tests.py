@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+from __future__ import division
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -282,11 +286,11 @@ class ProgramHappenTest(TestCase):
     """
 
     def loginAdmin(self):
-        self.assertEqual( self.client.login(username='ubbadmubbin', password='pubbasswubbord'), True, u'Oops, login failed!' )
+        self.assertEqual( self.client.login(username='ubbadmubbin', password='pubbasswubbord'), True, six.u('Oops, login failed!') )
     def loginTeacher(self):
-        self.assertEqual( self.client.login(username='tubbeachubber', password='pubbasswubbord'), True, u'Oops, login failed!' )
+        self.assertEqual( self.client.login(username='tubbeachubber', password='pubbasswubbord'), True, six.u('Oops, login failed!') )
     def loginStudent(self):
-        self.assertEqual( self.client.login(username='stubbudubbent', password='pubbasswubbord'), True, u'Oops, login failed!' )
+        self.assertEqual( self.client.login(username='stubbudubbent', password='pubbasswubbord'), True, six.u('Oops, login failed!') )
 
     def setUp(self):
         #create Groups for userroles
@@ -350,16 +354,16 @@ class ProgramHappenTest(TestCase):
         # Now test correctness...
         self.prog = Program.by_prog_inst('Prubbogrubbam', prog_dict['term'])
         # Name
-        self.assertEqual( self.prog.niceName(), u'Prubbogrubbam! Winter 3001', u'Program creation failed.' )
+        self.assertEqual( self.prog.niceName(), six.u('Prubbogrubbam! Winter 3001'), six.u('Program creation failed.') )
         # Options
         self.assertEqual(
-            [unicode(x) for x in
+            [six.text_type(x) for x in
                 [self.prog.grade_min,         self.prog.grade_max,
                  self.prog.director_email,    self.prog.program_size_max] ],
-            [unicode(x) for x in
+            [six.text_type(x) for x in
                 [prog_dict['grade_min'],      prog_dict['grade_max'],
                  prog_dict['director_email'], prog_dict['program_size_max']] ],
-            u'Program options not properly set.' )
+            six.u('Program options not properly set.') )
         # Program Cost
         self.assertEqual(
             Decimal(LineItemType.objects.get(required=True, program=self.prog).amount),
@@ -380,15 +384,15 @@ class ProgramHappenTest(TestCase):
         timeslot_type = EventType.get_from_desc('Class Time Block')
         now = datetime.now()
         self.timeslot = Event.objects.create(program=self.prog, description='Now', short_description='Right now',
-            start=now, end=now+timedelta(0,3600), event_type=timeslot_type )
+            start=now, end=now+timedelta(0, 3600), event_type=timeslot_type )
 
         # Make some other time slots
         Event.objects.create(program=self.prog, description='Never', short_description='Never Ever',
-            start=now+timedelta(0,3600), end=now+timedelta(0,2*3600), event_type=timeslot_type )
+            start=now+timedelta(0, 3600), end=now+timedelta(0, 2*3600), event_type=timeslot_type )
         Event.objects.create(program=self.prog, description='Never', short_description='Never Ever',
-            start=now+timedelta(0,2*3600), end=now+timedelta(0,3*3600), event_type=timeslot_type )
+            start=now+timedelta(0, 2*3600), end=now+timedelta(0, 3*3600), event_type=timeslot_type )
         Event.objects.create(program=self.prog, description='Never', short_description='Never Ever',
-            start=now+timedelta(0,3*3600), end=now+timedelta(0,4*3600), event_type=timeslot_type )
+            start=now+timedelta(0, 3*3600), end=now+timedelta(0, 4*3600), event_type=timeslot_type )
 
         classroom_type = ResourceType.objects.create(name='Classroom', consumable=False, priority_default=0,
             description='Each classroom or location is a resource; almost all classes need one.')
@@ -443,7 +447,7 @@ class ProgramHappenTest(TestCase):
         self.classsubject = classes[0]
 
         # check the title ise good
-        self.assertEqual( unicode(self.classsubject.title), unicode(class_dict['title']), 'Failed to save title.' )
+        self.assertEqual( six.text_type(self.classsubject.title), six.text_type(class_dict['title']), 'Failed to save title.' )
 
         # check getTaughtClasses
         getTaughtClasses = user_obj.getTaughtClasses()
@@ -597,22 +601,22 @@ class ProgramFrameworkTest(TestCase):
         self.students = []
         self.admins = []
         for i in range(settings['num_students']):
-            name = u'student%04d' % i
-            new_student, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
+            name = six.u('student%04d') % i
+            new_student, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+six.u('@learningu.org'))
             new_student.set_password('password')
             new_student.save()
             new_student.makeRole("Student")
             self.students.append(new_student)
         for i in range(settings['num_teachers']):
-            name = u'teacher%04d' % i
-            new_teacher, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
+            name = six.u('teacher%04d') % i
+            new_teacher, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+six.u('@learningu.org'))
             new_teacher.set_password('password')
             new_teacher.save()
             new_teacher.makeRole("Teacher")
             self.teachers.append(new_teacher)
         for i in range(settings['num_admins']):
-            name = u'admin%04d' % i
-            new_admin, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
+            name = six.u('admin%04d') % i
+            new_admin, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+six.u('@learningu.org'))
             new_admin.set_password('password')
             new_admin.save()
             new_admin.makeRole("Administrator")
@@ -691,7 +695,7 @@ class ProgramFrameworkTest(TestCase):
                 subject_count += 1
                 for j in range(settings['sections_per_class']):
                     if new_class.get_sections().count() <= j:
-                        new_class.add_section(duration=settings['timeslot_length']/60.0)
+                        new_class.add_section(duration=settings['timeslot_length']//60.0)
                 new_class.accept()
 
         #   Give the program its own QSD main-page
@@ -737,7 +741,7 @@ class ProgramFrameworkTest(TestCase):
             teacher_teacherinfo = TeacherInfo(user=teacher)
             teacher_teacherinfo.save()
             digit = teacher.id % 10
-            phone = (u'%d' % digit) * 10
+            phone = (six.u('%d') % digit) * 10
             teacher_contactinfo = ContactInfo(
                 user=teacher,
                 first_name=teacher.first_name,
@@ -767,7 +771,7 @@ class ProgramFrameworkTest(TestCase):
             schedule_full = False
             while not schedule_full:
                 sm = ScheduleMap(student, self.program)
-                empty_slots = filter(lambda x: x not in ignore_ts and len(sm.map[x]) == 0, sm.map.keys())
+                empty_slots = [x for x in list(sm.map.keys()) if x not in ignore_ts and len(sm.map[x]) == 0]
                 if len(empty_slots) == 0:
                     schedule_full = True
                     break
@@ -998,7 +1002,7 @@ class ScheduleMapTest(ProgramFrameworkTest):
         section2.preregister_student(student)
         sm = ScheduleMap(student, program)
         self.assertTrue(occupied_slots(sm.map) == [ts2.id], 'Schedule map did not identify double-booked timeslot.')
-        self.assertTrue(set(sm.map[ts2.id]) == set([section1, section2]), 'Schedule map contains incorrect sections in double-booked timeslot.')
+        self.assertTrue(set(sm.map[ts2.id]) == {section1, section2}, 'Schedule map contains incorrect sections in double-booked timeslot.')
 
         #   Remove the student and check that the map is empty again
         section1.unpreregister_student(student)
@@ -1297,9 +1301,9 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             priority_regs = StudentRegistration.objects.filter(user=student, relationship__in=self.priority_rts)
             enrolled_regs = StudentRegistration.objects.filter(user=student, relationship=self.enrolled_rt)
 
-            interested_classes = set([sr.section for sr in interested_regs])
-            priority_classes = set([sr.section for sr in priority_regs])
-            enrolled_classes = set([sr.section for sr in enrolled_regs])
+            interested_classes = {sr.section for sr in interested_regs}
+            priority_classes = {sr.section for sr in priority_regs}
+            enrolled_classes = {sr.section for sr in enrolled_regs}
             not_enrolled_classes = (priority_classes | interested_classes) - enrolled_classes
             incorrectly_enrolled_classes = enrolled_classes - (priority_classes | interested_classes)
 
@@ -1325,7 +1329,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
         #   Check stats for correctness
         #   - Some basic stats
-        self.assertEqual(stats['num_enrolled_students'], len(filter(lambda x: len(x.getEnrolledClasses(self.program)) > 0, self.students)))
+        self.assertEqual(stats['num_enrolled_students'], len([x for x in self.students if len(x.getEnrolledClasses(self.program)) > 0]))
         self.assertEqual(stats['num_registrations'], len(StudentRegistration.valid_objects().filter(user__in=self.students, relationship__name='Enrolled')))
         #   - 'Screwed students' list
         for student in self.students:
@@ -1344,7 +1348,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             student_utility = (hours_interested + 1.5 * hours_priority) ** 0.5
 
             student_weight = (len(sections_interested) + len(sections_priority)) ** 0.5
-            student_screwed_val = (1.0 + student_utility) / (1.0 + student_weight)
+            student_screwed_val = (1.0 + student_utility) // (1.0 + student_weight)
 
             #   Compare against the value in the stats dict (allow for floating-point error)
             self.assertAlmostEqual(student_screwed_val, stats_entry[0])

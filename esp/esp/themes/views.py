@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+import six
+from io import open
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -271,7 +275,7 @@ def editor(request):
     context['last_used_setting'] = tc.get_current_customization()
 
     #   Load a bunch of preset fonts
-    context['sans_fonts'] = themes_settings.sans_serif_fonts.iteritems()
+    context['sans_fonts'] = six.iteritems(themes_settings.sans_serif_fonts)
 
     #   Load the theme-specific options
     adv_vars = tc.find_less_variables(current_theme, theme_only=True)
@@ -279,8 +283,7 @@ def editor(request):
     for filename in adv_vars:
         category_name = os.path.basename(filename)[:-5]
         category_vars = []
-        keys = adv_vars[filename].keys()
-        keys.sort()
+        keys = sorted(adv_vars[filename].keys())
         for key in keys:
             #   Detect type of variable based on default value
             initial_val = adv_vars[filename][key]

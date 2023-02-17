@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from __future__ import division
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -100,7 +102,7 @@ class LunchConstraintGenerator(object):
             expression.add_token(operator_text)
         #   If there are more than 2 tokens in the list, divide the list in half and work recursively
         else:
-            midpoint = len(tokens) / 2
+            midpoint = len(tokens) // 2
             first_half = tokens[:midpoint]
             second_half = tokens[midpoint:]
             self.apply_binary_op_to_list(expression, operator_text, identity_value, first_half)
@@ -125,7 +127,7 @@ class LunchConstraintGenerator(object):
         lunch_subjects = ClassSubject.objects.filter(parent_program__id=self.program.id, category=self.get_lunch_category(), message_for_directors=day.isoformat())
         lunch_subject = None
         example_timeslot = self.days[day]['lunch'][0]
-        timeslot_length = (example_timeslot.duration()).total_seconds() / 3600.0
+        timeslot_length = (example_timeslot.duration()).total_seconds() // 3600.0
 
         if lunch_subjects.count() == 0:
             #   If no lunch was found, create a new subject

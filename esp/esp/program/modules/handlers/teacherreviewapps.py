@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -106,7 +108,7 @@ class TeacherReviewApps(ProgramModuleObj):
                         student.app_completed = True
 
         students = list(students)
-        students.sort(lambda x,y: cmp(x.added_class,y.added_class))
+        students.sort(lambda x, y: cmp(x.added_class, y.added_class))
 
         if 'prev' in request.GET:
             prev_id = int(request.GET.get('prev'))
@@ -197,9 +199,9 @@ class TeacherReviewApps(ProgramModuleObj):
         if not request.user.canEdit(cls):
             raise ESPError('You cannot edit class "%s"' % cls, log=False)
 
-        student = request.GET.get('student',None)
+        student = request.GET.get('student', None)
         if not student:
-            student = request.POST.get('student','')
+            student = request.POST.get('student', '')
 
         try:
             student = ESPUser.objects.get(id = int(student))

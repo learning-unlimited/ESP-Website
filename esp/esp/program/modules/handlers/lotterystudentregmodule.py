@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -114,7 +115,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
 
         open_class_category = prog.open_class_category
         # Convert the open_class_category ClassCategory object into a dictionary, only including the attributes the lottery needs or might need
-        open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id','symbol','category'] ] )
+        open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id', 'symbol', 'category'] ] )
         # Convert this into a JSON string, and mark it safe so that the Django template system doesn't try escaping it
         open_class_category = mark_safe(json.dumps(open_class_category))
 

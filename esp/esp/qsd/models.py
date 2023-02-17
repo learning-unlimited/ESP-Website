@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from six.moves import map
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -75,9 +78,9 @@ class QSDManager(models.Manager):
             # will interpret this as a code block.  To avoid this, we assume
             # that the default content will never purposely use Markdown code
             # blocks, and we strip this unintended space.
-            content = unicode(qsd_obj.content.lstrip())
+            content = six.text_type(qsd_obj.content.lstrip())
             content = content.split('\n')
-            content = map(unicode.lstrip, content)
+            content = list(map(six.text_type.lstrip, content))
             content = '\n'.join(content)
             qsd_obj.content = content
         return qsd_obj

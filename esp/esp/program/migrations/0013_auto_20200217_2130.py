@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import migrations, models
 import django.core.validators
 
@@ -9,7 +10,7 @@ def set_my_defaults(apps, schema_editor):
     for pm in ProgramModule.objects.all():
         mod = __import__("esp.program.modules.handlers.%s" % (pm.handler.lower()), (), (), [pm.handler])
         props = getattr(mod, pm.handler).module_properties()
-        if type(props) is list:
+        if isinstance(props, list):
             if len(props) > 1:
                 props = [x for x in props if x['admin_title'] == pm.admin_title]
                 if len(props) != 1:

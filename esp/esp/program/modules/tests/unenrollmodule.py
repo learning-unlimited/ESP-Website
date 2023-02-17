@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import json
 import random
 
@@ -75,7 +76,7 @@ class UnenrollModuleTest(ProgramFrameworkTest):
         self.client.login(username='admin', password='password')
         r = self.client.get('/onsite/' + self.program.url + '/unenroll_status')
         data = json.loads(r.content)
-        enrollment_ids = data['enrollments'].keys()
+        enrollment_ids = list(data['enrollments'].keys())
 
         r = self.client.post('/onsite/' + self.program.url + '/unenroll_students', {'selected_enrollments': ','.join(enrollment_ids)})
         self.assertContains(r, 'Expired %d student registrations' % len(enrollment_ids))

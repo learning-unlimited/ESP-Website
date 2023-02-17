@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import datetime
 import subprocess
 
@@ -11,6 +12,8 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.models import Record
 from esp.utils.decorators import cached_module_view
 from esp.utils.web import render_to_response
+import six
+from six.moves import zip
 
 
 class BigBoardModule(ProgramModuleObj):
@@ -80,7 +83,7 @@ class BigBoardModule(ProgramModuleObj):
             "popular_classes": self.popular_classes(prog),
             "first_hour": start,
             "left_axis_data": left_axis_data,
-            "loads": zip([1, 5, 15], self.load_averages()),
+            "loads": list(zip([1, 5, 15], self.load_averages())),
             "timeslots": prog.getTimeSlots(),
             "categories": prog.class_categories.all().order_by('category').values_list("symbol", flat = True)
         }
@@ -278,7 +281,7 @@ class BigBoardModule(ProgramModuleObj):
         for id, sr_time in sr_times:
             if id not in ssi_times_dict or sr_time < ssi_times_dict[id]:
                 ssi_times_dict[id] = sr_time
-        return sorted(ssi_times_dict.itervalues())
+        return sorted(six.itervalues(ssi_times_dict))
 
     @cache_function_for(105)
     def times_enrolled(self, prog):
