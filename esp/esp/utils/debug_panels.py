@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from debug_toolbar.panels.templates import TemplatesPanel as BaseTemplatesPanel
+from django.utils.translation import ugettext_lazy as _
 from django.core import signing
 from os.path import normpath
 

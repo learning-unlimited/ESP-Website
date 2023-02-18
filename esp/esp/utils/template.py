@@ -115,7 +115,7 @@ class ThemeLoader(base.Loader):
         except (ImportError, TypeError):
             origin = join(template_dir, template_name)
         return [origin]
-    
+
     # copied from https://github.com/django/django/blob/stable/1.11.x/django/template/loaders/filesystem.py
     def get_contents(self, origin):
         try:
