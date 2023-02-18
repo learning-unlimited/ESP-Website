@@ -333,15 +333,6 @@ class ThemeController(object):
         if theme_name is None:
             theme_name = self.get_current_theme()
 
-        #   Remove template overrides matching the theme name
-        logger.debug('Clearing theme: %s', theme_name)
-        for template_name in self.get_template_names(theme_name):
-            TemplateOverride.objects.filter(name=template_name).delete()
-            logger.debug('-- Removed template override: %s', template_name)
-
-        #   Clear template override cache
-        TemplateOverrideLoader.get_template_hash.delete_all()
-
         #   If files are to be preserved, copy them to temporary locations
         #   and return a record of those locations (backup_info).
         #   This is much easier than writing new functions for removing and
