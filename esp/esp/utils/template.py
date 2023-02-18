@@ -53,9 +53,8 @@ INVALID_CONTENTS = ''
 INVALID_HASH = hashlib.md5(INVALID_CONTENTS).hexdigest()
 
 class Loader(base.Loader):
-    is_usable = True
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, engine, *args, **kwargs):
+        super(Loader, self).__init__(engine)
         self.cache = {}
 
     """
@@ -79,33 +78,29 @@ class Loader(base.Loader):
             return qs.order_by('-version').values_list('content', flat=True)[0]
         return ''
 
-    def load_template(self, template_name, template_dirs=None):
+    def get_contents(self, origin):
+        # hack for the debug toolbar
+        if origin.template_name:
+            template_name = origin.template_name
+        else:
+            template_name = origin.name
         hash_val = Loader.get_template_hash(template_name)
         if hash_val == INVALID_HASH:
             raise TemplateDoesNotExist('Template override not found')
         if hash_val not in self.cache:
             template = Template(Loader.get_override_contents(template_name), None, template_name)
-            self.cache[hash_val] = (template, DEFAULT_ORIGIN)
+            self.cache[hash_val] = Loader.get_override_contents(template_name)
         return self.cache[hash_val]
-    load_template.is_usable = True
 
-    def load_template_source(self, template_name, template_dirs=None):
-        """
-        Returns a tuple containing the source and origin for the given template
-        name. Raises TemplateDoesNotExist Exception if the template override
-        for the given template name does not exist.
-
-        Overrides the unimplemented method from the BaseLoader base class.
-        """
-        from django.conf import settings
-        source = Loader.get_override_contents(template_name)
-        if source:
-            return (source.decode(settings.FILE_CHARSET), DEFAULT_ORIGIN)
-        raise TemplateDoesNotExist(template_name)
+    def get_template_sources(self, template_name):
+        origin = Origin(
+                name="(template override)",
+                template_name=template_name,
+                loader=self,
+            )
+        return [origin]
 
 class ThemeLoader(base.Loader):
-    is_usable = True
-
     # modified from https://github.com/learning-unlimited/django-admin-tools/blob/master/admin_tools/template_loaders.py
     def get_template_sources(self, template_name):
         from esp.themes.controllers import ThemeController
