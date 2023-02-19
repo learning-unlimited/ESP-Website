@@ -184,8 +184,8 @@ function Matrix(
                 if(cell.el.hasClass("teacher-available-cell")) {
                     var scheduleTimeslots = [timeslot.id];
                     var notEnoughSlots = false;
-                    var numBlocksInClass=Math.ceil(section.length / (Math.abs(timeslot.end[4] - timeslot.start[4]) / 60)); //COMMENT OUT THIS LINE FOR SPLARKS, KEEP IT FOR HSSPS
-                    //var numBlocksInClass=section.length //COMMENT OUT THIS LINE FOR HSSPS, KEEP IT FOR SPLARKS
+                    //var numBlocksInClass=Math.ceil(section.length / (Math.abs(timeslot.end[4] - timeslot.start[4]) / 60)); //COMMENT OUT THIS LINE FOR SPLARKS, KEEP IT FOR HSSPS
+                    var numBlocksInClass=section.length //COMMENT OUT THIS LINE FOR HSSPS, KEEP IT FOR SPLARKS
                     for(var i=1; i<numBlocksInClass; i++) {
                         var nextTimeslot = this.timeslots.get_by_order(timeslot.order+i);
                         if(nextTimeslot) {
