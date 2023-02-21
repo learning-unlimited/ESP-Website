@@ -88,9 +88,6 @@ def selector(request, keep_files=None):
             tc.save_customizations('%s-last' % tc.get_current_theme())
             backup_info = tc.clear_theme(keep_files=keep_files)
             tc.load_theme(theme_name, backup_info=backup_info)
-        elif request.POST['action'] == 'clear':
-            tc.save_customizations('%s-last' % tc.get_current_theme())
-            tc.clear_theme()
 
     context['theme_name'] = tc.get_current_theme()
     context['themes'] = tc.get_theme_names()

@@ -1,3 +1,5 @@
+{% load getTag %}
+
 <div class="singleid">
 <div class="marginator">
   <div class="bottomdiv">
@@ -8,9 +10,11 @@
             <img src="/media/images/my-logo-small.png" class="logo" />
         -->
      </td>
-     <td class="right url">{% if user.id %}
+     <td class="right url">
+    {% if user.id %}
       <span class="studentid">{{ user.username }} (ID: {{ user.id }})</span> <br />
-      {% endif  %} http://{{ request.META.HTTP_HOST }}
+      {% endif  %} 
+      http://{{ request.META.HTTP_HOST }}
      </td>
   </tr>
   </table>
@@ -29,7 +33,9 @@
     <div class="title">{{ user.title }}</div>
     <hr />
     {% if user.name %}
-        <div class="name">{{ user.name }}</div>
+        <div class="name">{{ user.name }} {% if user.title == "Teacher" and "teacher_profile_pronoun_field"|getBooleanTag or user.title == "Student" and "student_profile_pronoun_field"|getBooleanTag %} {% if user.pronoun %}
+            <div class="pronoun">({{ user.pronoun }})</div>
+        {% endif %} {% endif %}</div>
     {% endif %}
   </div>
 </div>

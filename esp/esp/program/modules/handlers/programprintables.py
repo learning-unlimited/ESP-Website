@@ -37,7 +37,7 @@ from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, User, Record, RecordType
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
 from esp.program.models  import ClassFlagType
-from esp.program.models.class_ import ACCEPTED
+from esp.program.class_status import ClassStatus
 from esp.users.views     import search_for_user
 from esp.users.controllers.usersearch import UserSearchController
 from esp.utils.latex  import render_to_latex
@@ -588,7 +588,7 @@ class ProgramPrintables(ProgramModuleObj):
         if extra and 'secondday' in extra:
             from django.db.models import Min
 
-            allclasses = prog.sections().filter(status=10, parent_class__status=10, meeting_times__isnull=False)
+            allclasses = prog.sections().filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED, meeting_times__isnull=False)
             first_timeblock_dict = allclasses.aggregate(Min('meeting_times__start'))
 
         scheditems = []
@@ -1210,7 +1210,7 @@ class ProgramPrintables(ProgramModuleObj):
             studentregistration__user__in=students,
             studentregistration__relationship__name='Enrolled',
             parent_class__parent_program=prog,
-            status=ACCEPTED,
+            status=ClassStatus.ACCEPTED,
             meeting_times__isnull=False).distinct()
         all_classes = all_classes.select_related('parent_class')
         all_classes = all_classes.prefetch_related('meeting_times')
@@ -1362,7 +1362,7 @@ class ProgramPrintables(ProgramModuleObj):
         """ generate class room rosters"""
         from esp.cal.models import Event
 
-        classes = self.program.sections().filter(status=10, parent_class__status=10)
+        classes = self.program.sections().filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED)
 
         context = {}
 
@@ -1769,7 +1769,7 @@ class ProgramPrintables(ProgramModuleObj):
         # get only the unscheduled sections, rather than all of them
         # also, only approved classes in the spreadsheet; can be changed
         if extra == "unscheduled":
-            sections = sections.filter(meeting_times__isnull=True, status=10)
+            sections = sections.filter(meeting_times__isnull=True, status=ClassStatus.ACCEPTED)
 
         times = prog.getTimeSlots()
         if extra == "unscheduled":
@@ -1850,7 +1850,7 @@ class ProgramPrintables(ProgramModuleObj):
         # get only the unscheduled sections, rather than all of them
         # also, only approved classes in the spreadsheet; can be changed
         #if extra == "unscheduled":
-        #    sections = sections.filter(meeting_times__isnull=True, status=10)
+        #    sections = sections.filter(meeting_times__isnull=True, status=ClassStatus.ACCEPTED)
 
         times = prog.getTimeSlots()
         if extra == "unscheduled":
@@ -1910,7 +1910,7 @@ class ProgramPrintables(ProgramModuleObj):
         response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
 
-        sections = list(self.program.sections().filter(status=10, parent_class__status=10))
+        sections = list(self.program.sections().filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED))
         sections.sort()
 
         rooms = {}

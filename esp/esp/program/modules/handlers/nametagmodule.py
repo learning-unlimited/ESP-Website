@@ -37,6 +37,7 @@ from django.conf import settings
 from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.handlers.listgenmodule import ListGenModule
+from esp.program.models import RegistrationProfile
 from esp.users.controllers.usersearch import UserSearchController
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
@@ -44,6 +45,7 @@ from esp.utils.web import render_to_response
 
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
+
 
 
 class NameTagModule(ProgramModuleObj):
@@ -80,14 +82,22 @@ class NameTagModule(ProgramModuleObj):
         users_list.sort()
 
         for user in users_list:
+            prof = RegistrationProfile.getLastProfile(user)
             if user in users_list1:
                 title = user_title1
             else:
                 title = user_title2
+            if prof.teacher_info is not None:
+                pronoun = prof.teacher_info.pronoun
+            elif prof.student_info is not None:
+                pronoun = prof.student_info.pronoun
+            else:
+                pronoun = None
             user_dict = {'title': title,
                          'name' : '%s %s' % (user.first_name, user.last_name),
                          'id'   : user.id,
-                         'username': user.username}
+                         'username': user.username,
+                         'pronoun': pronoun}
             if program and Tag.getProgramTag('student_self_checkin', program = program) == 'code':
                 user_dict['hash'] = user.userHash(program)
             users.append(user_dict)
