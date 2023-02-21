@@ -409,7 +409,7 @@ def runserver():
     A shortcut for 'manage.py runserver' with the appropriate settings.
     """
     ensure_environment()
-    
+
     # TODO: make sure 'localhost' is in ALLOWED_HOSTS in local_settings.py or else add it
 
     manage("runserver 0.0.0.0:8000")
