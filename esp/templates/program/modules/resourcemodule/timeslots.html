@@ -43,13 +43,15 @@
         <td><b>Options</b></td>
     </tr>
     {% for h in timeslots %}
-    {% ifchanged h.selections.0.start.date %}
-    <th colspan="5" align="center">{{ h.selections.0.pretty_date }}</th>
-    {% endifchanged %}
     <tr>
-        <th class="small" colspan="5" align="center"><b>Block {{ forloop.counter }}</b></th>
+        <th colspan="5" align="center"><b>Block {{ forloop.counter }}</b></th>
     </tr>
         {% for t in h.selections %}
+        {% ifchanged t.start.date %}
+        <tr>
+            <th colspan="5" align="center">{{ t.pretty_date }}</th>
+        </tr>
+        {% endifchanged %}
         <tr>
             <td>{{ t.short_description }}</td>
             <td>{{ t.event_type }}</td>
