@@ -228,7 +228,7 @@ class AS_Classroom(object):
         This is mostly for testing purposes."""
         for roomslot in self.availability:
             roomslot.index()
-            next(roomslot)
+            roomslot.next()
 
     def flush_roomslot_caches(self):
         """Flush each roomslot's caches for their next_roomslot and index
