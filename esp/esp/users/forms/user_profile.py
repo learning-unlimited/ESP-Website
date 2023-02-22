@@ -5,7 +5,7 @@ from esp.tagdict.models import Tag
 from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser, FormWithTagInitialValues, StrippedCharField
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import SplitDateWidget
-from esp.users.models import K12School, StudentInfo, AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC, AFFILIATION_OTHER, AFFILIATION_NONE
+from esp.users.models import ESPUser, K12School, StudentInfo, AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC, AFFILIATION_OTHER, AFFILIATION_NONE
 from datetime import datetime
 from esp.program.models import RegistrationProfile
 from django.conf import settings
@@ -164,7 +164,6 @@ HOW_TO_GET_TO_PROGRAM = (
 
 class StudentInfoForm(FormUnrestrictedOtherUser):
     """ Extra student-specific information """
-    from esp.users.models import ESPUser
 
     gender = forms.ChoiceField(choices=[('', ''), ('M', 'Male'), ('F', 'Female')], required=False)
     pronoun = forms.CharField(max_length=50, required=False)
