@@ -16,11 +16,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='recordtype',
             name='description',
-            field=models.CharField(help_text=b'A unique sentence case description for the record type', max_length=255, unique=True),
+            field=models.CharField(help_text='A unique sentence case description for the record type', max_length=255, unique=True),
         ),
         migrations.AlterField(
             model_name='recordtype',
             name='name',
-            field=models.CharField(help_text=b'A unique short snake_case name for the record type', max_length=80, unique=True),
+            field=models.CharField(help_text='A unique short snake_case name for the record type', max_length=80, unique=True),
         ),
     ]

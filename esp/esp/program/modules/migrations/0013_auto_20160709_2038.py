@@ -23,6 +23,6 @@ class Migration(migrations.Migration):
         ),
         migrations.RemoveField(
             model_name='studentclassregmoduleinfo',
-            name='signup_verb',
+            name='signup_ver',
         ),
     ]

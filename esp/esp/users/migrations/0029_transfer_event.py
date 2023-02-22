@@ -14,7 +14,7 @@ def link_event(apps, schema_editor):
                 rec.event = "med"
                 rec.save()
             if rec.event == "liability":
-                rec.event = "liab"
+                rec.event = "lia"
                 rec.save()
             event = RecordType.objects.get(name=rec.event)
             rec.event_link = event

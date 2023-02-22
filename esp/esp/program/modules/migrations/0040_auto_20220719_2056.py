@@ -16,11 +16,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='studentclassregmoduleinfo',
             name='priority_limit',
-            field=models.IntegerField(default=3, help_text=b'The maximum number of choices a student can make per timeslot when priority registration is enabled. Also, the                                                                      number of priority slots listed in the rank classes interface for the two-phase student registration module.'),
+            field=models.IntegerField(default=3, help_text='The maximum number of choices a student can make per timeslot when priority registration is enabled. Also, the                                                                      number of priority slots listed in the rank classes interface for the two-phase student registration module.'),
         ),
         migrations.AlterField(
             model_name='studentclassregmoduleinfo',
             name='use_priority',
-            field=models.BooleanField(default=False, help_text=b'Check this box to enable priority registration. Note, this is NOT for the two-phase student registration module. This will remove                                                                          the ability for students to enroll in classes during normal student registration (i.e., first-come first-served).'),
+            field=models.BooleanField(default=False, help_text='Check this box to enable priority registration. Note, this is NOT for the two-phase student registration module. This will remove                                                                          the ability for students to enroll in classes during normal student registration (i.e., first-come first-served).'),
         ),
     ]

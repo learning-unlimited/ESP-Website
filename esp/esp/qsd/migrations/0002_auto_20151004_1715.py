@@ -12,14 +12,14 @@ class Migration(migrations.Migration):
     dependencies = [
         ('users', '0001_initial'),
         ('qsd', '0001_initial'),
-        ('web', '0001_initial'),
+        ('we', '0001_initial'),
     ]
 
     operations = [
         migrations.AddField(
             model_name='quasistaticdata',
             name='author',
-            field=esp.db.fields.AjaxForeignKey(verbose_name=b'last modifed by', to='users.ESPUser'),
+            field=esp.db.fields.AjaxForeignKey(verbose_name='last modifed by', to='users.ESPUser'),
         ),
         migrations.AddField(
             model_name='quasistaticdata',

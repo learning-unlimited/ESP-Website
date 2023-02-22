@@ -16,6 +16,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='lineitemtype',
             name='amount_dec',
-            field=models.DecimalField(decimal_places=2, default=0, help_text=b'The cost of this line item.', max_digits=9),
+            field=models.DecimalField(decimal_places=2, default=0, help_text='The cost of this line item.', max_digits=9),
         ),
     ]

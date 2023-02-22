@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             name='Printer',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('name', models.CharField(help_text=b'Name to display in onsite interface', max_length=255)),
+                ('name', models.CharField(help_text='Name to display in onsite interface', max_length=255)),
                 ('printer_type', models.CharField(max_length=255, blank=True)),
                 ('notes', models.TextField(blank=True)),
             ],
@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
             name='TemplateOverride',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('name', models.CharField(help_text=b'The filename (relative path) of the template to override.', max_length=255)),
+                ('name', models.CharField(help_text='The filename (relative path) of the template to override.', max_length=255)),
                 ('content', models.TextField()),
                 ('version', models.IntegerField()),
             ],

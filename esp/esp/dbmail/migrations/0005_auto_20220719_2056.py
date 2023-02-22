@@ -16,11 +16,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='plainredirect',
             name='destination',
-            field=models.CharField(help_text=b'A comma-seperated list of one or more real email address(es) that will receive the redirected email(s)', max_length=512),
+            field=models.CharField(help_text='A comma-seperated list of one or more real email address(es) that will receive the redirected email(s)', max_length=512),
         ),
         migrations.AlterField(
             model_name='plainredirect',
             name='original',
-            field=models.CharField(help_text=b'A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@&lt;yourdomain&gt; will be redirected to the destination email address(es).', max_length=512),
+            field=models.CharField(help_text='A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@&lt;yourdomain&gt; will be redirected to the destination email address(es).', max_length=512),
         ),
     ]

@@ -16,11 +16,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='financialaidgrant',
             name='percent',
-            field=models.PositiveIntegerField(blank=True, help_text=b'Enter an integer between 0 and 100 here to grant a certain percentage discount after the above dollar credit is applied.  0 means no additional discount, 100 means no payment is required for items that are covered by financial aid.', null=True),
+            field=models.PositiveIntegerField(blank=True, help_text='Enter an integer between 0 and 100 here to grant a certain percentage discount after the above dollar credit is applied.  0 means no additional discount, 100 means no payment is required for items that are covered by financial aid.', null=True),
         ),
         migrations.AlterField(
             model_name='lineitemtype',
             name='for_finaid',
-            field=models.BooleanField(default=False, help_text=b'Should financial aid cover this line item?'),
+            field=models.BooleanField(default=False, help_text='Should financial aid cover this line item?'),
         ),
     ]

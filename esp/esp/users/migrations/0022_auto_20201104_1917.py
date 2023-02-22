@@ -16,6 +16,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='contactinfo',
             name='address_state',
-            field=models.CharField(blank=True, max_length=32, null=True, verbose_name=b'State'),
+            field=models.CharField(blank=True, max_length=32, null=True, verbose_name='State'),
         ),
     ]

@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('friendly_name', models.TextField()),
-                ('target_file', models.FileField(upload_to=b'uploaded')),
+                ('target_file', models.FileField(upload_to='uploaded')),
                 ('size', models.IntegerField(null=True, editable=False, blank=True)),
                 ('format', models.TextField(null=True, blank=True)),
                 ('mime_type', models.CharField(max_length=256, null=True, editable=False, blank=True)),

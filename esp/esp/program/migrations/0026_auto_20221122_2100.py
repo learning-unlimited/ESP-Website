@@ -18,6 +18,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='classcategories',
             name='symbol',
-            field=models.CharField(default=b'Z', help_text=b'A single letter to represent the category', max_length=1, validators=[django.core.validators.RegexValidator(b'^[A-Za-z]{1}', b'Must be a single letter.')]),
+            field=models.CharField(default='Z', help_text='A single letter to represent the category', max_length=1, validators=[django.core.validators.RegexValidator('^[A-Za-z]{1}', 'Must be a single letter.')]),
         ),
     ]
