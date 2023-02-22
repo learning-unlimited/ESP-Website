@@ -383,7 +383,7 @@ class ThemeController(object):
                 result += self.get_file_summaries(full_filename)
             else:
                 file_data = open(full_filename, 'rb').read()
-                result.append((full_filename, os.path.getsize(full_filename), hashlib.sha1(file_data).hexdigest()))
+                result.append((full_filename, os.path.getsize(full_filename), hashlib.sha1(file_data.encode("UTF-8")).hexdigest()))
         return result
 
     def get_directory_differences(self, src_dir, dest_dir):
@@ -409,7 +409,7 @@ class ThemeController(object):
                 if hash_src != hash_dest:
                     differences.append({
                         'filename': rel_filename_dest,
-                        'filename_hash': hashlib.sha1(rel_filename_dest).hexdigest(),
+                        'filename_hash': hashlib.sha1(rel_filename_dest.encode("UTF-8")).hexdigest(),
                         'source_size': filesize_src,
                         'dest_size': filesize_dest,
                     })

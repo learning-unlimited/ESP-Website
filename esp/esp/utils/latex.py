@@ -217,9 +217,9 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
 
 
 def get_rand_file_base():
-    rand = hashlib.md5(str(random())).hexdigest()
+    rand = hashlib.md5(str(random()).encode("UTF-8")).hexdigest()
 
     while os.path.exists(os.path.join(TEX_TEMP, rand+TEX_EXT)):
-        rand = hashlib.md5(str(random())).hexdigest()
+        rand = hashlib.md5(str(random()).encode("UTF-8")).hexdigest()
 
     return rand

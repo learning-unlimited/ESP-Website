@@ -259,7 +259,7 @@ class ViewUserInfoTest(TestCase):
 class ProfileTest(TestCase):
 
     def setUp(self):
-        self.salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
+        self.salt = hashlib.sha1(str(random.random()).encode("UTF-8")).hexdigest()[:5]
 
     def testAcctCreate(self):
         self.u=ESPUser.objects.create_user(
