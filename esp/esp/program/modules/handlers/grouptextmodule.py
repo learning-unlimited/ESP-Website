@@ -45,8 +45,8 @@ from esp.middleware import ESPError
 
 from django.conf import settings
 
-from twilio import TwilioRestException
-from twilio.rest import TwilioRestClient
+from twilio.rest import Client
+from twilio.base.exceptions import TwilioRestException
 
 class GroupTextModule(ProgramModuleObj):
     doc = """Text users that match specific search criteria."""
@@ -166,7 +166,7 @@ class GroupTextModule(ProgramModuleObj):
             if not contactInfo.receive_txt_message and not override:
                 send_log.append(str(user)+" does not want text messages, fine")
                 continue
-            client = TwilioRestClient(account_sid, auth_token)
+            client = Client(account_sid, auth_token)
 
             # format the number for Twilio
             formattedNumber = contactInfo.phone_cell.replace("-", "").replace(" ", "")
@@ -177,7 +177,7 @@ class GroupTextModule(ProgramModuleObj):
 
                 send_log.append("Sending text message to "+formattedNumber)
                 try:
-                    client.sms.messages.create(body=body,
+                    client.messages.create(body=body,
                                            to=formattedNumber,
                                            from_=ourNumbers[numberIndex])
                 except TwilioRestException as error:
