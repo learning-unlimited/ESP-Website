@@ -9,6 +9,7 @@ django-filebrowser-no-grappelli==3.8.0 # Provides admin panel interface for file
 django-form-utils==1.0.3 # Provides BetterForm (used in customforms) and BetterModelForm (used in program creation)
 django-formtools==2.1 # Used once in customforms
 django-localflavor==1.1 # Provides address and phone number fields
+django-recaptcha==2.0.6 # Provides support for Google reCAPTCHA
 django-reversion==1.10.0 # Handles versioning, currently for QSD and TemplateOverrides
 django-sendgrid-v5==0.9.0 # Provides support for using SendGrid as the EmailBackend
 django-vanilla-views==1.0.4 # Provides simpler generic views, currently used only for grade change requests
