@@ -833,6 +833,26 @@ class Program(models.Model, CustomFormsLinkModel):
             qs = qs.filter(event_type__description='Class Time Block')
         return qs.select_related('event_type').order_by('start')
 
+    def getTimeGroups(self, types=None, exclude_types=None):
+        timeslots = self.getTimeSlots(types=types, exclude_types=exclude_types)
+        time_groups = []
+
+        w_group = timeslots.filter(group__isnull=False)
+        groups = sorted(list(w_group.values_list('group', flat=True)))
+
+        for grp in groups:
+            time_groups.append(list(w_group.filter(group=grp)))
+
+        wo_groups = timeslots.filter(group__isnull=True)
+        if wo_groups.exists():
+            if not Tag.getBooleanTag('availability_group_timeslots'):
+                time_groups.append(list(wo_groups))
+            else:
+                time_groups.extend(Event.group_contiguous(list(wo_groups), int(Tag.getProgramTag('availability_group_tolerance', program = self))))
+        # sort by first timeslot within each group
+        time_groups.sort(key = lambda x:x[0].start)
+        return time_groups
+
     def num_timeslots(self):
         return len(self.getTimeSlots())
 

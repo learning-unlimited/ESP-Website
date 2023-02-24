@@ -19,6 +19,7 @@ class TimeslotForm(forms.Form):
     hours = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     minutes = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     openclass = forms.BooleanField(required=False, label='Open Class Time Block', help_text="Check this if the time block should be used for open classes only. If in doubt, don't check this.")
+    group = forms.IntegerField(required=False, label='Group', help_text="All timeslots with this value will always be included in the same timeslot group.")
 
     def load_timeslot(self, slot):
         self.fields['name'].initial = slot.short_description
@@ -28,6 +29,7 @@ class TimeslotForm(forms.Form):
         length = (slot.end - slot.start).seconds
         self.fields['hours'].initial = int(length / 3600)
         self.fields['minutes'].initial = int(length / 60 - 60 * self.fields['hours'].initial)
+        self.fields['group'].initial = slot.group
 
     def save_timeslot(self, program, slot):
         slot.short_description = self.cleaned_data['name']
@@ -38,6 +40,7 @@ class TimeslotForm(forms.Form):
             slot.event_type = EventType.get_from_desc("Open Class Time Block")
         else:
             slot.event_type = EventType.get_from_desc("Class Time Block")    # default event type for now
+        slot.group = self.cleaned_data['group']
         slot.program = program
         slot.save()
 
