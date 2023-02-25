@@ -665,6 +665,6 @@ class NavStructureWidgetWithIcons(NavStructureWidget):
             select.append($j("<option value='%(icon)s'" +
                              (data.icon === "%(icon)s" ? " selected" : "") +
                              ">%(unicode)s (%(icon)s)</option>"));'''
-            % {'icon': icon, 'unicode': six.text_type}
-            for icon, six.text_type in _ICONS.items()),
+            % {'icon': icon, 'unicode': text_unicode}
+            for icon, text_unicode in _ICONS.items()),
     }
