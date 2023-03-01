@@ -9,7 +9,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('we', '0001_initial'),
+        ('web', '0001_initial'),
     ]
 
     operations = [

@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('users', '0001_initial'),
         ('qsd', '0001_initial'),
-        ('we', '0001_initial'),
+        ('web', '0001_initial'),
     ]
 
     operations = [
