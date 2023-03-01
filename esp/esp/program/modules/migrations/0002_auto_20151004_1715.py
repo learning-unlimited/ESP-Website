@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='studentclassregmoduleinfo',
-            name='signup_ver',
+            name='signup_verb',
             field=models.ForeignKey(to='program.RegistrationType', help_text='Which verb to grant a student when they sign up for a class.', null=True),
         ),
         migrations.AddField(

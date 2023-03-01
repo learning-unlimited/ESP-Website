@@ -16,7 +16,7 @@ EVENT_CHOICES=(
     ("paid", "Paid for program"),
     ("med", "Submitted medical form"),
     ("med_bypass", "Recieved medical bypass"),
-    ("lia", "Submitted liability form"),
+    ("liab", "Submitted liability form"),
     ("onsite", "Registered for program onsite"),
     ("schedule_printed", "Printed student schedule onsite"),
     ("teacheracknowledgement", "Did teacher acknowledgement"),
