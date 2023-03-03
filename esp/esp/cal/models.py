@@ -120,7 +120,7 @@ class Event(models.Model):
             start_ampm = self.start.strftime(' %p').decode('utf-8')
 
         return six.u('%d%s%s to %d%s %s') % ( (self.start.hour % 12) or 12, start_minutes, start_ampm,
-            (self.end.hour % 12) or 12, end_minutes, self.end.strftime('%p').decode('utf-8') )
+            (self.end.hour % 12) or 12, end_minutes, self.end.strftime('%p') )
 
     @staticmethod
     def total_length(event_list):
@@ -186,8 +186,8 @@ class Event(models.Model):
         return grouped_list
 
     def pretty_time(self, include_date = False): # if include_date is True, display the date as well (e.g., display "Sun, July 10" instead of just "Sun")
-        s = self.start.strftime('%a').decode('utf-8')
-        s2 = self.end.strftime('%a').decode('utf-8')
+        s = self.start.strftime('%a')
+        s2 = self.end.strftime('%a')
         # The two days of the week are different
         if include_date:
             s += self.start.strftime(', %b %d,').decode('utf-8')
