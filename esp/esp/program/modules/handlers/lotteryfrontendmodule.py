@@ -71,9 +71,11 @@ class LotteryFrontendModule(ProgramModuleObj):
             logging.exception(e)
             return {'response': [{'error_msg': str(e)}]}
 
-        stats = lotteryObj.extract_stats(lotteryObj.compute_stats())
+        stats = lotteryObj.compute_stats()
+        display_stats = lotteryObj.extract_stats(stats)
+        display_charts = lotteryObj.extract_chart_stats(stats)
         lottery_data = lotteryObj.export_assignments()
-        return {'response': [{'stats': stats, 'lottery_data': lottery_data}]}
+        return {'response': [{'stats': display_stats, 'charts': display_charts, 'lottery_data': lottery_data}]}
 
     @aux_call
     @json_response()
