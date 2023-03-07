@@ -586,6 +586,20 @@ class LotteryAssignmentController(object):
                 hist_interest[key] = 0
             hist_interest[key] += 1
         stats['hist_interest'] = hist_interest
+        
+
+        # section_filledness={}
+        # for n, sec_id in enumerate(self.section_ids):
+        #     sec=ClassSection.objects.get(id=sec_id)
+        #     pref_array=numpy.zeros((self.num_students,), dtype=numpy.bool)
+        #     pref_array=numpy.logical_or(pref_array,self.interest[:,n])
+        #     
+        #     for rank_level in self.priority:
+        #         pref_array=numpy.logical_or(pref_array,rank_level[:,n])
+        #     num_prefs=numpy.sum(pref_array)
+        #     section_filledness[sec.emailcode()]=(sec.capacity,num_prefs)
+        # stats['section_filledness']=section_filledness  
+
 
         # Compute the overall utility of the current run.
         # 1. Each student has a utility of sqrt(#hours of interested + 1.5 #hours of priority).
@@ -615,6 +629,7 @@ class LotteryAssignmentController(object):
 
         stats['overall_utility'] = overall_utility
         stats['students_by_screwedness'] = screwed_students
+
 
         if self.options['stats_display'] or display:
             self.display_stats(stats)
@@ -646,11 +661,16 @@ class LotteryAssignmentController(object):
     def extract_stats(self, stats):
         sections = []
 
-        distribution = []
+        student_distribution = []
         for i, count in stats['hist_timeslots_filled'].items():
-            distribution.append('%6d students got a schedule with %d filled slots' % (count, i))
-        sections.append(('distribution', distribution))
-
+            student_distribution.append('%6d students got a schedule with %d filled slots' % (count, i))
+        sections.append(('student schedule-filledness distribution', student_distribution))
+        
+        # section_distribution=[]
+        # for section, capacity in stats['section_filledness'].items():
+        #     section_distribution.append('%s has capacity %s'%(section,str(capacity)))
+        # sections.append(('section-filledness distribution',section_distribution))
+        
         sections.append(('counts', [
             '%6d students applied to the lottery' % stats['num_lottery_students'],
             '%6d students were enrolled in at least 1 class' % stats['num_enrolled_students'],
