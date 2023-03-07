@@ -68,7 +68,6 @@ $j(document).ready(function() {
 					});
 					data['charts'].forEach(function (el, index) {
 						canvas_id='chart'+index;
-						//set canvas size to 300x300 and style size to 200x200 for 2/3 scale
 						stats_div.append('<canvas id="'+canvas_id+'" height="300" width="500" style="height:300px; width:500px;"></canvas>');
 						new Chart(document.getElementById(canvas_id),el);
 					});
