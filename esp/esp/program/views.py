@@ -541,7 +541,7 @@ def newprogram(request):
     if 'checked' in request.GET:
         # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
         # Don't bother trying to fix the form; just re-set the anchor when we're done.
-        context = pickle.loads(request.session['context_str'])
+        context = json.loads(request.session['context_str'])
         pcf = ProgramCreationForm(context['prog_form_raw'])
         if pcf.is_valid():
 
@@ -629,7 +629,7 @@ def newprogram(request):
             #   Unpacking of the data happens at the next step.
 
             context_pickled = pickle.dumps({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost'], 'sibling_discount': form.cleaned_data['sibling_discount']})
-            request.session['context_str'] = context_pickled.encode()
+            request.session['context_str'] = str({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost'], 'sibling_discount': form.cleaned_data['sibling_discount']})
 
             return render_to_response('program/newprogram_review.html', request, {'prog': temp_prog, 'perms': perms, 'modules': modules})
 
