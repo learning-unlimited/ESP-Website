@@ -629,7 +629,7 @@ def newprogram(request):
             #   Unpacking of the data happens at the next step.
 
             context_pickled = pickle.dumps({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost'], 'sibling_discount': form.cleaned_data['sibling_discount']})
-            request.session['context_str'] = context_pickled.decode()
+            request.session['context_str'] = context_pickled.encode()
 
             return render_to_response('program/newprogram_review.html', request, {'prog': temp_prog, 'perms': perms, 'modules': modules})
 
