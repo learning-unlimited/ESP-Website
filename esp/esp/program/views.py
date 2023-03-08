@@ -502,8 +502,7 @@ def manage_programs(request):
 def newprogram(request):
     template_prog = None
     template_prog_id = None
-    if 'template_prog' in request.GET and (int(request.GET["template_prog"])) != 0:       # if user selects None which value is 0,so we need to check for 0.
-       #try:
+    if 'template_prog' in request.GET and (int(request.GET["template_prog"])) != 0:  # user might select `None` whose value is 0, we need to check for 0.
         template_prog_id = int(request.GET["template_prog"])
         tprogram = Program.objects.get(id=template_prog_id)
         request.session['template_prog'] = template_prog_id
@@ -630,9 +629,9 @@ def newprogram(request):
             #   Unpacking of the data happens at the next step.
 
             context_pickled = pickle.dumps({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost'], 'sibling_discount': form.cleaned_data['sibling_discount']})
-            request.session['context_str'] = context_pickled
+            request.session['context_str'] = context_pickled.decode()
 
-            return render_to_response('program/newprogram_review.html', request, {'prog': temp_prog, 'perms':perms, 'modules': modules})
+            return render_to_response('program/newprogram_review.html', request, {'prog': temp_prog, 'perms': perms, 'modules': modules})
 
     else:
         #   Otherwise, the default view is a blank form.
@@ -641,7 +640,7 @@ def newprogram(request):
         else:
             form = ProgramCreationForm()
 
-    return render_to_response('program/newprogram.html', request, {'form': form, 'programs': Program.objects.all().order_by('-id'),'template_prog_id':template_prog_id})
+    return render_to_response('program/newprogram.html', request, {'form': form, 'programs': Program.objects.all().order_by('-id'), 'template_prog_id': template_prog_id})
 
 @csrf_exempt
 @transaction.non_atomic_requests
