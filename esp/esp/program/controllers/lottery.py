@@ -586,6 +586,36 @@ class LotteryAssignmentController(object):
                 hist_interest[key] = 0
             hist_interest[key] += 1
         stats['hist_interest'] = hist_interest
+        
+
+        section_filledness=[]
+        for n, sec_id in enumerate(self.section_ids):
+            sec=ClassSection.objects.get(id=sec_id)
+            
+            pref_array=numpy.zeros((self.num_students,), dtype=numpy.bool)
+            pref_array=numpy.logical_or(pref_array,self.interest[:,n])
+            for rank_level in self.priority:
+                pref_array=numpy.logical_or(pref_array,rank_level[:,n])
+            num_prefs=numpy.sum(pref_array)
+            
+            max_capacity=min(sec.capacity,num_prefs)
+            if max_capacity==0:
+                continue
+            
+            # consider a class to be "as filled as it will reasonably get" if
+            # it reaches capacity or if 1/2 of the people who ranked/starred it 
+            # get the class:
+            target_capacity=min(sec.capacity, num_prefs//2)
+
+            enrolled_array=self.student_sections[:,n]
+            num_enrolled=numpy.sum(enrolled_array)
+            # num_first_prefs_enrolled=numpy.sum(numpy.logical_and(enrolled_array, self.priority[1][:,n]))
+            
+            enrollment_percentage=100*num_enrolled/target_capacity
+            
+            section_filledness.append((sec.emailcode(),enrollment_percentage))
+        stats['section_filledness']=section_filledness  
+
 
         # Compute the overall utility of the current run.
         # 1. Each student has a utility of sqrt(#hours of interested + 1.5 #hours of priority).
@@ -615,6 +645,7 @@ class LotteryAssignmentController(object):
 
         stats['overall_utility'] = overall_utility
         stats['students_by_screwedness'] = screwed_students
+
 
         if self.options['stats_display'] or display:
             self.display_stats(stats)
@@ -646,11 +677,29 @@ class LotteryAssignmentController(object):
     def extract_stats(self, stats):
         sections = []
 
-        distribution = []
+        student_distribution = []
         for i, count in stats['hist_timeslots_filled'].items():
-            distribution.append('%6d students got a schedule with %d filled slots' % (count, i))
-        sections.append(('distribution', distribution))
-
+            student_distribution.append('%6d students got a schedule with %d filled slots' % (count, i))
+        sections.append(('student schedule-filledness distribution', student_distribution))
+        
+        section_distribution=[]
+        section_filledness_percentage_bin_step=10
+        for filledness_percentage_bin in range(0,100,section_filledness_percentage_bin_step):
+            num_secs=0
+            next_bin_step=filledness_percentage_bin+section_filledness_percentage_bin_step
+            is_last_bin=next_bin_step>=100
+            for section, filledness_percentage in stats['section_filledness']:
+                if filledness_percentage_bin<=filledness_percentage and (filledness_percentage<next_bin_step or is_last_bin):
+                    num_secs+=1
+            if is_last_bin:
+                section_distribution.append('%6d sections at %d%% or more of expected capacity'%(num_secs,filledness_percentage_bin))
+            else:
+                section_distribution.append('%6d sections at %d%%-%d%% of expected capacity'%(num_secs,filledness_percentage_bin,next_bin_step))
+        section_distribution.append('Note: \"expected capacity\" means either the max capacity of the class, '
+                                    'or 1/2 the number of ranks/stars, whichever is lower. It\'s a metric '
+                                    'for \"how filled do we think this class will reasonably get\".')
+        sections.append(('section-filledness distribution',section_distribution))
+        
         sections.append(('counts', [
             '%6d students applied to the lottery' % stats['num_lottery_students'],
             '%6d students were enrolled in at least 1 class' % stats['num_enrolled_students'],
@@ -667,9 +716,81 @@ class LotteryAssignmentController(object):
             ratios.append('%2.2f%% of priority classes were enrolled' % (stats['overall_priority_ratio'] * 100.0))
         ratios.append('%2.2f%% of interested classes were enrolled' % (stats['overall_interest_ratio'] * 100.0))
         sections.append(('ratios', ratios))
-
+        
         return sections
 
+    def chart_constructor(self, labels, values, xaxis_label, yaxis_label, title):
+        # Constructs a dict to be converted to json and used to make a chart.js chart
+    
+        return {
+            'type':'bar',
+            'data':{
+                'labels': labels,
+                'datasets':[
+                    {
+                        'data': values,
+                        'label': yaxis_label,
+                        'backgroundColor':'#456900',
+                    },
+                ],
+            },
+            'options': {
+                'responsive': False,
+                'animation': False,
+                'events': [],
+                'plugins': {
+                    'legend': {'display': False},
+                    'title': {
+                        'display': True,
+                        'text': title
+                    },
+                },
+                'scales': {
+                    'x': {
+                        'title': {
+                            'text': xaxis_label,
+                            'display': True
+                        },
+                    },
+                    'y': {
+                        'title': {
+                            'text': yaxis_label,
+                            'display': True
+                        },
+                    },
+                },
+            },
+        }
+
+    def extract_chart_stats(self, stats):
+        charts=[]
+        
+        student_distribution_labels = []
+        student_distribution_values = []
+        for i, count in stats['hist_timeslots_filled'].items():
+            student_distribution_labels.append(i)
+            student_distribution_values.append(count)
+        charts.append(self.chart_constructor(student_distribution_labels,student_distribution_values,'num filled slots in schedule','num students w/ this many filled slots', 'student schedule-filledness distribution'))
+        
+        section_distribution_labels=[]
+        section_distribution_values=[]
+        section_filledness_percentage_bin_step=10
+        for filledness_percentage_bin in range(0,100,section_filledness_percentage_bin_step):
+            num_secs=0
+            next_bin_step=filledness_percentage_bin+section_filledness_percentage_bin_step
+            is_last_bin=next_bin_step>=100
+            for section, filledness_percentage in stats['section_filledness']:
+                if filledness_percentage_bin<=filledness_percentage and (filledness_percentage<next_bin_step or is_last_bin):
+                    num_secs+=1
+            section_distribution_values.append(num_secs)
+            if is_last_bin:
+                section_distribution_labels.append('%d%% or more'%filledness_percentage_bin)
+            else:
+                section_distribution_labels.append('%d%%-%d%%'%(filledness_percentage_bin,next_bin_step))
+        charts.append(self.chart_constructor(section_distribution_labels,section_distribution_values,'percentage filled of section\'s estimated capacity','num sections w/ this filledness', 'section-filledness distribution'))
+        
+        return charts
+    
     def get_computed_schedule(self, student_id, mode='assigned'):
         #   mode can be 'assigned', 'interested', or 'priority'
         if mode == 'assigned':

@@ -66,6 +66,11 @@ $j(document).ready(function() {
 						});
 						stats_div.append(bullets);
 					});
+					data['charts'].forEach(function (el, index) {
+						canvas_id='chart'+index;
+						stats_div.append('<canvas id="'+canvas_id+'" height="300" width="500" style="height:300px; width:500px;"></canvas>');
+						new Chart(document.getElementById(canvas_id),el);
+					});
 					$j('.lotterySave').prop('disabled', false);
 				}
 			},
