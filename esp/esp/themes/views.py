@@ -265,6 +265,7 @@ def editor(request):
     context = tc.find_less_variables(flat=True)
     context.update(tc.get_current_params())
     context['palette'] = tc.get_palette()
+    context['theme_name'] = current_theme
 
     #   Get list of available customizations
     context['available_themes'] = tc.get_customization_names()

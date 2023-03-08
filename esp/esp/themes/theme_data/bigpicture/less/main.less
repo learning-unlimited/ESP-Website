@@ -1,39 +1,36 @@
-@identity-blue: #1C1953;
-@highlight-orange: #FF8000;
-@pale: #f8f8f8;
 
 #main {
     h1 {
-        color: #444;
+        color: @identityBlue;
         font-size: 42px;
         font-weight: normal;
         margin-bottom: 0.5em;
     }
     h2 {
-        color: @identity-blue;
+        color: @identityBlue;
         font-size: 32px;
         font-weight: normal;
         margin-bottom: 0.3em;
     }
     a {
-        color: @identity-blue;
+        color: @identityBlue;
         text-decoration: underline;
     }
     .btn {
         background: @btnBackground;
-        border: 1px solid @identity-blue;
+        border: 1px solid @identityBlue;
 		background-image: none;
         &:active, &:focus {
             outline: none;
-            border-color: @highlight-orange;
+            border-color: @highlightOrange;
         }
     }
 	.module_link_large {
-        border: 1px solid @identity-blue;
+        border: 1px solid @identityBlue;
         background: @pale;
         &:active, &:focus {
             outline: none;
-            border-color: @highlight-orange;
+            border-color: @highlightOrange;
         }
     }
     .btn-primary,
@@ -64,9 +61,9 @@
         -webkit-appearance: none;
         color: black;
         background-color: #fdfdfd;
-        border: 1px solid @identity-blue;
+        border: 1px solid @identityBlue;
         &:focus {
-            border-color: @highlight-orange;
+            border-color: @highlightOrange;
             outline: none;
             -webkit-box-shadow: none;
                -moz-box-shadow: none;
