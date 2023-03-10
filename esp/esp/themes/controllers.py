@@ -277,7 +277,7 @@ class ThemeController(object):
             raise ESPError('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.<br />LESS compile command was: <pre>%s</pre>' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support'], ' '.join(lessc_args)), log=True)
 
         with open(output_filename, 'w') as output_file:
-            output_file.write(THEME_COMPILED_WARNING + css_data)
+            output_file.write(six.text_type(THEME_COMPILED_WARNING + css_data))
         logger.debug('Wrote %.1f KB CSS output to %s', len(css_data) // 1000., output_filename)
         Tag.setTag("current_theme_version", value = hex(random.getrandbits(16)))
 
