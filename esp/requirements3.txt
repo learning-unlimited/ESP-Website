@@ -35,6 +35,7 @@ selenium==2.44.0 # Runs selenium tests which probably don't work anymore
 shortuuid==0.4.2 # django-extensions dependency
 stripe==2.60.0 # Required for credit card processing
 twilio==6.63.2 # Required for text messaging support
+wheel==0.38.4  # For building modern packages
 werkzeug # Required for runserver_plus (alternative to runserver provided by django-extensions)
 xlwt==1.3.0 # Does form and survey exporting
 
