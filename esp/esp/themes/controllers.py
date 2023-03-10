@@ -333,15 +333,6 @@ class ThemeController(object):
         if theme_name is None:
             theme_name = self.get_current_theme()
 
-        #   Remove template overrides matching the theme name
-        logger.debug('Clearing theme: %s', theme_name)
-        for template_name in self.get_template_names(theme_name):
-            TemplateOverride.objects.filter(name=template_name).delete()
-            logger.debug('-- Removed template override: %s', template_name)
-
-        #   Clear template override cache
-        TemplateOverrideLoader.get_template_hash.delete_all()
-
         #   If files are to be preserved, copy them to temporary locations
         #   and return a record of those locations (backup_info).
         #   This is much easier than writing new functions for removing and
@@ -443,22 +434,6 @@ class ThemeController(object):
 
         #   Create template overrides using data provided (our models handle versioning)
         logger.debug('Loading theme: %s', theme_name)
-        for template_name in self.get_template_names(theme_name):
-            #   Read default template override contents provided by theme
-            to = TemplateOverride(name=template_name)
-            template_filename = os.path.join(self.base_dir(theme_name), 'templates', template_name)
-            template_file = open(template_filename, 'r')
-            to.content = template_file.read()
-
-            #   Add a Django template comment tag indicating theme type to the main.html override (for tests)
-            if to.name == 'main.html':
-                to.content += ('\n{%% comment %%} Theme: %s {%% endcomment %%}\n' % theme_name)
-
-            to.save()
-            logger.debug('-- Created template override: %s', template_name)
-
-        #   Clear template override cache
-        TemplateOverrideLoader.get_template_hash.delete_all()
 
         #   Collect LESS files from appropriate sources and compile CSS
         self.compile_css(theme_name, {}, self.css_filename)
