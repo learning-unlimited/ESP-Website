@@ -163,6 +163,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     from esp.users.models import ESPUser
 
     gender = forms.ChoiceField(choices=[('', ''), ('M', 'Male'), ('F', 'Female')], required=False)
+    pronoun = forms.CharField(max_length=50, required=False)
     graduation_year = forms.ChoiceField(choices=[('', '')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
     k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='school', required=False, label='School')
     unmatched_school = forms.BooleanField(required=False)
@@ -232,6 +233,9 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         if not Tag.getBooleanTag('student_profile_gender_field'):
             del self.fields['gender']
+
+        if not Tag.getBooleanTag('student_profile_pronoun_field'):
+            del self.fields['pronoun']
 
         if not Tag.getBooleanTag('ask_student_about_transportation_to_program'):
             del self.fields['transportation']
@@ -341,6 +345,7 @@ class TeacherInfoForm(FormWithRequiredCss):
                              (True,  'Please mail me my reimbursement.')]
     from_here_answers = [ (True, "Yes"), (False, "No") ]
 
+    pronoun = forms.CharField(max_length=50, required=False)
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
     affiliation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=AFFILIATION_CHOICES), label ='What is your affiliation with %s?' % settings.INSTITUTION_NAME)
     major = SizedCharField(length=30, max_length=32, required=False)
@@ -358,6 +363,9 @@ class TeacherInfoForm(FormWithRequiredCss):
             del self.fields['shirt_type']
         elif not Tag.getBooleanTag('teacherinfo_shirt_type_selection'):
             del self.fields['shirt_type']
+        if not Tag.getBooleanTag('teacher_profile_pronoun_field'):
+            del self.fields['pronoun']
+
 
     def clean(self):
         super(TeacherInfoForm, self).clean()

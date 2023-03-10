@@ -268,9 +268,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         else:
             tag_data = Tag.getProgramTag('teacher_reg_records', prog)
         if tag_data:
-            event_dict = dict(RecordType.desc())
-            for event in [x.strip().lower() for x in tag_data.split(',') if RecordType.objects.filter(name = x.strip().lower()).exists()]:
-                records.append({'event': event, 'full_event': event_dict[event], 'isCompleted': Record.user_completed(event = event, user = user, program = prog)})
+            for rt in RecordType.objects.filter(name__in=tag_data.split(',')):
+                records.append({'event': rt.name, 'full_event': rt.description, 'isCompleted': Record.user_completed(event = rt, user = user, program = prog)})
             records.sort(key=lambda rec: not rec['isCompleted'])
         return records
 
