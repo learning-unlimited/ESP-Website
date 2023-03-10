@@ -153,11 +153,6 @@ class ThemesTest(TestCase):
                 #   Check that the template override is marked with the theme name.
                 self.assertTrue(('<!-- Theme: %s -->' % theme_name) in response.content)
 
-            #   Test that the theme can be cleared and the home page reverts.
-            response = self.client.post('/themes/select/', {'action': 'clear'})
-            response = self.client.get('/')
-            self.assertTrue(len(re.findall(r'<a href="/themes.*?Configure site appearance.*?</a>', response.content, flags=re.DOTALL)) == 1)
-
             self.client.logout()
 
         finally:

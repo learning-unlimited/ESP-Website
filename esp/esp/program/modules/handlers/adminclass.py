@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+from esp.program.class_status import ClassStatus
 from esp.program.modules.base import ProgramModuleObj, needs_admin, aux_call
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
@@ -72,7 +73,7 @@ class AdminClass(ProgramModuleObj):
         management forms. """
 
         if field_str == 'status':
-            return ((-20, 'Cancelled'), (-10, 'Rejected'), (0, 'Unreviewed'), (5, 'Accepted but hidden'), (10, 'Accepted'))
+            return ((ClassStatus.CANCELLED, 'Cancelled'), (ClassStatus.REJECTED, 'Rejected'), (ClassStatus.UNREVIEWED, 'Unreviewed'), (ClassStatus.HIDDEN, 'Accepted but hidden'), (ClassStatus.ACCEPTED, 'Accepted'))
         if field_str == 'reg_status':
             return (('', 'Leave unchanged'), (0, 'Open'), (10, 'Closed'))
         if field_str == 'room':
