@@ -7,6 +7,7 @@ from esp.resources.models import ResourceType, Resource
 from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 
 from esp.program.models.class_ import ClassSubject, ClassSection
+from esp.program.class_status import ClassStatus
 from decimal import Decimal
 
 """ Forms for the new class management module.  Can be used elsewhere. """
@@ -48,14 +49,14 @@ class ClassManageForm(ManagementForm):
             initial_dict = self.load_data(self.cls, prefix)
             super(ClassManageForm, self).__init__(data=initial_dict, *args, **kwargs)
             if self.cls.hasScheduledSections():
-                self.fields['status'].choices.remove((-10, 'Rejected'))
+                self.fields['status'].choices.remove((ClassStatus.REJECTED, 'Rejected'))
                 self.fields['duration'].widget.attrs['disabled'] = True
                 self.fields['duration'].widget.attrs['title'] = "At least one section of this class has already been scheduled"
                 self.fields['duration'].required = False
             elif self.cls.isCancelled():
-                self.fields['status'].choices.remove((-10, 'Rejected'))
+                self.fields['status'].choices.remove((ClassStatus.REJECTED, 'Rejected'))
             else:
-                self.fields['status'].choices.remove((-20, 'Cancelled'))
+                self.fields['status'].choices.remove((ClassStatus.CANCELLED, 'Cancelled'))
             self.fields['status'].widget.attrs['data-cls-status'] = self.cls.status
         else:
             super(ClassManageForm, self).__init__(*args, **kwargs)
@@ -125,11 +126,11 @@ class SectionManageForm(ManagementForm):
             initial_dict = self.load_data(self.sec, prefix)
             super(SectionManageForm, self).__init__(data=initial_dict, *args, **kwargs)
             if self.sec.isScheduled():
-                self.fields['status'].choices.remove((-10, 'Rejected'))
+                self.fields['status'].choices.remove((ClassStatus.REJECTED, 'Rejected'))
             elif self.sec.isCancelled():
-                self.fields['status'].choices.remove((-10, 'Rejected'))
+                self.fields['status'].choices.remove((ClassStatus.REJECTED, 'Rejected'))
             else:
-                self.fields['status'].choices.remove((-20, 'Cancelled'))
+                self.fields['status'].choices.remove((ClassStatus.CANCELLED, 'Cancelled'))
             self.fields['status'].widget.attrs['data-sec-status'] = self.sec.status
             self.fields['status'].widget.attrs['data-cls-status'] = self.sec.parent_class.status
         else:

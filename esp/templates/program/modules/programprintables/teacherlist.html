@@ -37,6 +37,7 @@ table.sortable thead {
 
 </head>
 {% load users %}
+{% load getTag %}
 <body>
 
 <table class="sortable" style="border: 1px solid black; border-collapse: collapse;">
@@ -45,6 +46,9 @@ table.sortable thead {
  <th>#</th>
  <th>ID</th>
  <th>Name</th>
+ {% if "teacher_profile_pronoun_field"|getBooleanTag %}
+ <th>Pronouns</th>
+ {% endif %}
  <th>Email</th>
  <th>Home Phone #</th>
  <th>Cell Phone #</th>
@@ -64,6 +68,9 @@ table.sortable thead {
  <td>{{forloop.counter}}</td>
  <td>{{ scheditem.user.id }}</td>
  <td>{{ scheditem.user.last_name }}, {{ scheditem.user.first_name}}</td>
+ {% if "teacher_profile_pronoun_field"|getBooleanTag %}
+ <td>{{ scheditem.user.getLastProfile.teacher_info.pronoun }}</td>
+ {% endif %}
  <td>{{ scheditem.user.email }}</td>
  <td>{{ scheditem.phone_day }}</td>
  <td>{{ scheditem.phone_cell }}</td>

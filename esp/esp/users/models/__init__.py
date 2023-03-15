@@ -37,6 +37,7 @@ from datetime import datetime, timedelta, date
 from pytz import country_names
 import json
 import logging
+
 logger = logging.getLogger(__name__)
 import functools
 
@@ -77,6 +78,7 @@ from esp.utils.decorators import enable_with_setting
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.widgets import NullRadioSelect, NullCheckboxSelect
 from esp.utils.query_utils import nest_Q
+from esp.program.class_status import ClassStatus
 
 from urllib import quote
 
@@ -407,9 +409,9 @@ class BaseESPUser(object):
         else:
             classes = self.classsubject_set.filter(parent_program = program)
             if not include_rejected:
-                classes = classes.exclude(status=-10)
+                classes = classes.exclude(status=ClassStatus.REJECTED)
             if not include_cancelled:
-                classes = classes.exclude(status=-20)
+                classes = classes.exclude(status=ClassStatus.CANCELLED)
             return classes
     getTaughtClassesFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
     getTaughtClassesFromProgram.depend_on_row('program.ClassSubject', lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
@@ -448,9 +450,9 @@ class BaseESPUser(object):
             classes = list(self.getTaughtClasses(program, include_rejected = include_rejected, include_cancelled = include_cancelled))
             sections = ClassSection.objects.filter(parent_class__in=classes)
             if not include_rejected:
-                sections = sections.exclude(status=-10)
+                sections = sections.exclude(status=ClassStatus.REJECTED)
             if not include_cancelled:
-                sections = sections.exclude(status=-20)
+                sections = sections.exclude(status=ClassStatus.CANCELLED)
             return self.moderating_sections.filter(parent_class__parent_program = program) | sections
     getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
     getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda sec, teacher: {'self': teacher})
@@ -460,9 +462,9 @@ class BaseESPUser(object):
     def getTaughtClassesAll(self, include_rejected = False, include_cancelled = True):
         classes = self.classsubject_set.all()
         if not include_rejected:
-            classes = classes.exclude(status=-10)
+            classes = classes.exclude(status=ClassStatus.REJECTED)
         if not include_cancelled:
-            classes = classes.exclude(status=-20)
+            classes = classes.exclude(status=ClassStatus.CANCELLED)
         return classes
     getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {'self': cls})
     getTaughtClassesAll.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
@@ -485,9 +487,9 @@ class BaseESPUser(object):
         classes = list(self.getTaughtClassesAll(include_rejected = include_rejected, include_cancelled = include_cancelled))
         sections = ClassSection.objects.filter(parent_class__in=classes)
         if not include_rejected:
-            sections = sections.exclude(status=-10)
+            sections = sections.exclude(status=ClassStatus.REJECTED)
         if not include_cancelled:
-            sections = sections.exclude(status=-20)
+            sections = sections.exclude(status=ClassStatus.CANCELLED)
         return sections
     getTaughtSectionsAll.depend_on_model('program.ClassSection')
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
@@ -499,9 +501,9 @@ class BaseESPUser(object):
         classes = list(self.getTaughtClasses(program, include_rejected = include_rejected, include_cancelled = include_cancelled))
         sections = ClassSection.objects.filter(parent_class__in=classes)
         if not include_rejected:
-            sections = sections.exclude(status=-10)
+            sections = sections.exclude(status=ClassStatus.REJECTED)
         if not include_cancelled:
-            sections = sections.exclude(status=-20)
+            sections = sections.exclude(status=ClassStatus.CANCELLED)
         return sections
     getTaughtSectionsFromProgram.get_or_create_token(('program',))
     getTaughtSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
@@ -1327,6 +1329,7 @@ class StudentInfo(models.Model):
     school = models.CharField(max_length=256,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
     gender = models.CharField(max_length=32,blank=True,null=True)
+    pronoun = models.CharField(max_length=50,blank=True,null=True)
     studentrep = models.BooleanField(blank=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
     heard_about = models.TextField(blank=True, null=True)
@@ -1381,6 +1384,7 @@ class StudentInfo(models.Model):
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
         form_dict['gender']          = self.gender
+        form_dict['pronoun']         = self.pronoun
         if Tag.getBooleanTag('show_student_tshirt_size_options'):
             form_dict['shirt_size']      = self.shirt_size
         if Tag.getBooleanTag('studentinfo_shirt_type_selection'):
@@ -1427,6 +1431,7 @@ class StudentInfo(models.Model):
         studentInfo.school          = new_data.get('school') if not studentInfo.k12school else studentInfo.k12school.name
         studentInfo.dob             = new_data.get('dob')
         studentInfo.gender          = new_data.get('gender', None)
+        studentInfo.pronoun         = new_data.get('pronoun', None)
 
         studentInfo.heard_about      = new_data.get('heard_about', '')
 
@@ -1510,6 +1515,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     }
 
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    pronoun = models.CharField(max_length=50,blank=True,null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
     affiliation = models.CharField(max_length=100, blank=True)
     from_here = models.NullBooleanField(null=True)
@@ -1556,11 +1562,13 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         return u'%s - %s %s' % (self.user.ajax_str(), self.college, self.graduation_year)
 
     def updateForm(self, form_dict):
+        form_dict['pronoun']         = self.pronoun
         form_dict['graduation_year'] = self.graduation_year
         form_dict['affiliation'] = self.affiliation
         form_dict['major']           = self.major
         form_dict['shirt_size']      = self.shirt_size
         form_dict['shirt_type']      = self.shirt_type
+
         return form_dict
 
     @staticmethod
@@ -1572,6 +1580,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
             teacherInfo.user = curUser
         else:
             teacherInfo = regProfile.teacher_info
+        teacherInfo.pronoun         = new_data.get('pronoun', None)
         teacherInfo.graduation_year = new_data['graduation_year']
         teacherInfo.affiliation = new_data['affiliation']
         affiliation = teacherInfo.affiliation.split(':', 1)[0]
@@ -2273,7 +2282,7 @@ class DBList(object):
         return self.key
 
 class RecordType(models.Model):
-    name = models.CharField(max_length=80, help_text = "A unique short snake_case name for the record type", unique=True)
+    name = models.CharField(max_length=80, help_text = "A unique short name for the record type", unique=True)
     description = models.CharField(max_length=255, help_text = "A unique sentence case description for the record type", unique=True)
 
     BUILTIN_TYPES = [

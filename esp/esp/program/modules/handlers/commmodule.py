@@ -197,17 +197,17 @@ class CommModule(ProgramModuleObj):
         # now we're going to process everything
         # nah, we'll do this later.
         #newmsg_request.process()
+        # old code that prints out an estimated time
+        # numusers = self.approx_num_of_recipients(filterobj, sendto_fn)
 
-        numusers = self.approx_num_of_recipients(filterobj, sendto_fn)
-
-        from django.conf import settings
-        if hasattr(settings, 'EMAILTIMEOUT') and \
-               settings.EMAILTIMEOUT is not None:
-            est_time = settings.EMAILTIMEOUT * numusers
-        else:
-            est_time = 1.5 * numusers
-
-        context = {'time': est_time}
+        # from django.conf import settings
+        # if hasattr(settings, 'EMAILTIMEOUT') and \
+        #        settings.EMAILTIMEOUT is not None:
+        #     est_time = settings.EMAILTIMEOUT * numusers
+        # else:
+        #     est_time = 1.5 * numusers
+        # context = {'time': est_time}
+        context = {}
         if public_view:
             context['req_id'] = newmsg_request.id
         return render_to_response(self.baseDir()+'finished.html', request, context)
