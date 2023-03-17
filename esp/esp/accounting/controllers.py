@@ -156,19 +156,34 @@ class ProgramAccountingController(BaseAccountingController):
         return result
 
     def default_program_account(self):
-        return Account.objects.filter(program=self.program).order_by('id')[0]
+        accounts = Account.objects.filter(program=self.program).order_by('id')
+        if accounts.exists():
+            return accounts[0]
+        return None
 
     def default_payments_lineitemtype(self):
-        return LineItemType.objects.filter(program=self.program, for_payments=True).order_by('-id')[0]
+        lineitems = LineItemType.objects.filter(program=self.program, for_payments=True).order_by('-id')
+        if lineitems.exists():
+            return lineitems[0]
+        return None
 
     def default_finaid_lineitemtype(self):
-        return LineItemType.objects.filter(program=self.program, text='Financial aid grant').order_by('-id')[0]
+        lineitems =  LineItemType.objects.filter(program=self.program, text='Financial aid grant').order_by('-id')
+        if lineitems.exists():
+            return lineitems[0]
+        return None
 
     def default_siblingdiscount_lineitemtype(self):
-        return LineItemType.objects.filter(program=self.program, text='Sibling discount').order_by('-id')[0]
+        lineitems =  LineItemType.objects.filter(program=self.program, text='Sibling discount').order_by('-id')
+        if lineitems.exists():
+            return lineitems[0]
+        return None
 
     def default_admission_lineitemtype(self):
-        return LineItemType.objects.filter(program=self.program, text='Program admission').order_by('-id')[0]
+        lineitems =  LineItemType.objects.filter(program=self.program, text='Program admission').order_by('-id')
+        if lineitems.exists():
+            return lineitems[0]
+        return None
 
     def get_lineitemtypes_Q(self, include_donations=True, required_only=False, optional_only=False, payment_only=False, lineitemtype_id=None):
         if lineitemtype_id:
