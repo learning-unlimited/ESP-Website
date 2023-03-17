@@ -186,7 +186,8 @@ TEMPLATES = [
             ],
             'loaders': [
                 'admin_tools.template_loaders.Loader',
-                'esp.utils.template.Loader',
+                'esp.utils.template.Loader', # for template overrides
+                'esp.utils.template.ThemeLoader', # theme templates
                 ('django.template.loaders.cached.Loader',
                     (
                      'django.template.loaders.filesystem.Loader',
@@ -330,7 +331,7 @@ DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.signals.SignalsPanel',
     'debug_toolbar.panels.sql.SQLPanel',
     'debug_toolbar.panels.staticfiles.StaticFilesPanel',
-    'debug_toolbar.panels.templates.TemplatesPanel',
+    'esp.utils.debug_panels.TemplatesPanel',
     'debug_toolbar.panels.timer.TimerPanel',
     'debug_toolbar.panels.versions.VersionsPanel',
     'debug_toolbar.panels.redirects.RedirectsPanel',

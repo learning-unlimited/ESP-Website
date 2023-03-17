@@ -10,6 +10,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = 'ubuntu-20.04'
   config.vm.box_url = 'https://s3.amazonaws.com/learningu-static/ubuntu-20.04.box'
   config.vm.hostname = 'ludev'
+  config.ssh.forward_agent = true
+  config.ssh.forward_x11 = true
 
   # Forward port for Django dev server
   config.vm.network :forwarded_port, guest: 8000, host: 8000

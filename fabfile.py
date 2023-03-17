@@ -205,6 +205,14 @@ def ensure_environment():
         print "***** "
         exit(-1)
 
+    # Did `setup()` fail to create the symlinked folders?
+    fp = env.rbase + "esp/public/media/"
+    if not files.exists(fp + "images") or not files.exists(fp + "styles"):
+        print("One of the symlinks `esp/public/media/images` or ")
+        print("`.../styles` failed to be created. Try re-running with ")
+        print("escalated privileges or contact the web team for more help.")
+        exit(-1)
+
 @task
 def psql(cmd=None, *args):
     """

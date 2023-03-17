@@ -41,6 +41,7 @@ from django.db.models.query import Q
 from django.forms.formsets import formset_factory
 from django.forms.models import model_to_dict
 from django.http import HttpResponseRedirect
+from django.utils import timezone  # add timezone from local_settings.py in labels
 
 from esp.accounting.controllers import ProgramAccountingController
 from esp.cal.models import Event
@@ -56,6 +57,11 @@ from datetime import datetime
 from copy import copy
 from collections import OrderedDict
 
+
+TZINFO = timezone.get_current_timezone()  # get timezone set in local_settings.py
+FTIMEZONE = " (" + datetime.now(tz=TZINFO).strftime("%Z") + ")"  # formatted timezone
+
+
 class EditPermissionForm(forms.Form):
     start_date = forms.DateTimeField(widget=DateTimeWidget(), required=False)
     end_date = forms.DateTimeField(widget=DateTimeWidget(), required=False)
@@ -65,8 +71,8 @@ class EditPermissionForm(forms.Form):
 class NewDeadlineForm(forms.Form):
     deadline_type = forms.ChoiceField(choices=[x for x in Permission.PERMISSION_CHOICES if "Administer" not in x[0]])
     role = forms.ChoiceField(choices = [("Student", "Students"), ("Teacher", "Teachers"), ("Volunteer", "Volunteers")])
-    start_date = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget(), required=False)
-    end_date = forms.DateTimeField(label='Closing date/time', initial=None, widget=DateTimeWidget(), required=False)
+    start_date = forms.DateTimeField(label='Opening date/time' + FTIMEZONE, initial=datetime.now, widget=DateTimeWidget(), required=False)
+    end_date = forms.DateTimeField(label='Closing date/time' + FTIMEZONE, initial=None, widget=DateTimeWidget(), required=False)
 
     def __init__(self, *args, **kwargs):
         super(NewDeadlineForm, self).__init__(*args, **kwargs)
@@ -77,8 +83,8 @@ class NewPermissionForm(forms.Form):
     permission_type = forms.ChoiceField(choices=[x for x in Permission.PERMISSION_CHOICES if "Administer" not in x[0]])
     user = AjaxForeignKeyNewformField(key_type=ESPUser, field_name='user', label='User',
         help_text='Start typing a username or "Last Name, First Name", then select the user from the dropdown.')
-    perm_start_date = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget(), required=False)
-    perm_end_date = forms.DateTimeField(label='Closing date/time', initial=None, widget=DateTimeWidget(), required=False)
+    perm_start_date = forms.DateTimeField(label='Opening date/time' + FTIMEZONE, initial=datetime.now, widget=DateTimeWidget(), required=False)
+    perm_end_date = forms.DateTimeField(label='Closing date/time' + FTIMEZONE, initial=None, widget=DateTimeWidget(), required=False)
 
 class AdminCore(ProgramModuleObj, CoreModule):
     doc = """Includes the core views for managing a program (e.g. settings, dashboard)."""
