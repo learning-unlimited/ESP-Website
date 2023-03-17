@@ -1283,12 +1283,10 @@ class Program(models.Model, CustomFormsLinkModel):
         from esp.accounting.models import LineItemType
         if value is not None:
             self._sibling_discount = Decimal(value)
-            Tag.setTag('sibling_discount', target=self, value=self._sibling_discount)
-            LineItemType.objects.get_or_create(text='Sibling discount', program=self, amount_dec = self._sibling_discount)
         else:
             self._sibling_discount = Decimal('0.00')
-            Tag.objects.filter(key='sibling_discount', object_id=self.id).delete()
-            LineItemType.objects.filter(text='Sibling discount', program=self).delete()
+        Tag.setTag('sibling_discount', target=self, value=self._sibling_discount)
+        LineItemType.objects.get_or_create(text='Sibling discount', program=self, amount_dec = self._sibling_discount)
 
     sibling_discount = property(_sibling_discount_get, _sibling_discount_set)
 
