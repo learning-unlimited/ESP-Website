@@ -222,7 +222,7 @@ class StudentRegTest(ProgramFrameworkTest):
         fg.amount_max_dec = None
         fg.percent = 50
         fg.save()
-        self.assertEqual(iac.amount_due(), program_cost // 2)
+        self.assertEqual(iac.amount_due(), program_cost / 2)
 
         #   Check that deleting the financial aid grant restores original program cost
         fg.delete()
