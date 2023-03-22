@@ -209,7 +209,7 @@ class StudentClassRegModule(ProgramModuleObj):
         return (len(user.getSectionsFromProgram(self.program)[:1]) > 0)
 
     def makeSelfCheckinLink(self):
-        link = u'<a href="%sstudentreg" title="%s" class="vModuleLink" >%s</a>' % \
+        link = u'<a href="%sstudentonsite" title="%s" class="vModuleLink" >%s</a>' % \
             (self.program.get_learn_url(), self.module.link_title, self.module.link_title)
         return mark_safe(link)
 
