@@ -1337,7 +1337,6 @@ class ProgramPrintables(ProgramModuleObj):
         basedir = 'program/modules/programprintables/'
         schedule_format = json.loads(Tag.getProgramTag("student_schedule_format", prog))
         if schedule_format:
-            print("hello")
             context["schedule_format"] = {x: True for x in schedule_format}
         else:
             context["schedule_format"] = {choice[0]: True for choice in StudentScheduleFormatForm(program = prog).fields['schedule_fields'].choices}
@@ -2084,7 +2083,8 @@ class StudentScheduleFormatForm(forms.Form):
                                                            ("codes", "Class Codes"),
                                                           ],
                                                 widget = forms.widgets.CheckboxSelectMultiple,
-                                                label = "Select the fields that you would like to include in the schedule")
+                                                label = "Select the fields that you would like to include in the schedule",
+                                                required = False)
     pretext = forms.CharField(required = False, widget = forms.widgets.Textarea, label = mark_safe("Text to be placed just <u>above</u> the schedule, if any (supports LaTeX)"))
     posttext = forms.CharField(required = False, widget = forms.widgets.Textarea, label = mark_safe("Text to be placed just <u>below</u> the schedule, if any (supports LaTeX)"))
     def __init__(self, program, *args, **kwargs):
