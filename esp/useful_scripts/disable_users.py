@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # Given a list of email addresses, disable the corresponding user accounts.
 
 from __future__ import absolute_import

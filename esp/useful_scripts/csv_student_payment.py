@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 #
 # Add accounting records for students that have already paid (e.g. on an external website).
 # Assumes that a student has paid for the entirety of their amount due.

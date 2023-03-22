@@ -80,10 +80,8 @@ then
     source "$VIRTUALENV_DIR/bin/activate"
 fi
 
-sudo curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
-python2 get-pip.py
+sudo apt install python-pip
 
 # Install/upgrade pip, setuptools, wheel, and application dependencies.
-pip2 install -U pip
-pip2 install -U setuptools wheel
-pip2 install -U -r "$BASEDIR/esp/requirements.txt"
+pip install -U pip
+pip install -U -r "$BASEDIR/esp/requirements.txt"

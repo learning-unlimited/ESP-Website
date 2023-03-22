@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # Find classes which capacity below the room capacity, and send the teacher an email asking if
 # they want to increase their class capacity to the room capacity

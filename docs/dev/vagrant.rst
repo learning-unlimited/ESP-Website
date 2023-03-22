@@ -38,7 +38,7 @@ This setup procedure does have some prerequisites of its own, which you will nee
 * `Python 2.7 <https://www.python.org/downloads/>`_
 * Python libraries ``fabric`` and ``fabtools`` (can be installed using pip, which comes with Python; make sure to install version 1, not version 2 of fabric, so run ``pip install "fabric<2"``)
 
-If you are on a **Linux** system, it's likely that everything can be installed using a package manager on the command line, e.g. by running ``sudo apt-get install git virtualbox vagrant python2 python-pip && sudo pip install fabric fabtools``.
+If you are on a **Linux** system, it's likely that everything can be installed using a package manager on the command line, e.g. by running ``sudo apt -y install git virtualbox vagrant python python-pip && sudo pip install "fabric<2" fabtools``.
 
 If you are on a **Windows** system, it's easiest if you install the `PyCrypto binaries <http://www.voidspace.org.uk/python/modules.shtml#pycrypto>`_ before trying to install Fabric. In addition, you should modify the PATH environment variable (the system one, not the user one) in Control Panel -> System -> Environment Variables... by append ``C:\Python27`` and ``C:\Python27\Scripts``, in order to put ``python``, ``pip`` and ``fab`` on your PATH. (You may also want to append the path to the ``bin`` folder in your git installation for an SSH client.) You will need to restart Command Prompt after making this change. To append items to PATH, in Windows 10 you can edit Path and hit New to add new entries. In previous versions of Windows, you should add them to the end of your PATH, separated by semicolons. Finally, you may find that the Git Bash shell does not interact well with Fabric. The Windows Command Prompt works much better.
 
