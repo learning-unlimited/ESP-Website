@@ -11,6 +11,8 @@ Profiles
 ~~~~~~~~
 - Added a preferred pronouns field to student and teacher profiles (which can disabled with the `student_profile_pronoun_field` and `teacher_profile_pronoun_field` tags)
   - These pronouns are shown on various printables (including nametags) and pages across the website (including attendance)
+- Now strip any leading or trailing whitespace in user searches
+- Added QSD blocks to the alerts on the student profile page
 
 Accounting
 ~~~~~~~~~~
@@ -43,13 +45,16 @@ Themes
 - Added a new logo/favicon upload interface on the theme settings page
 - Removed the "Clear theme" option to promote the use of built-in themes instead of custom themes
 - Fixed a bug that forced admins to hard refresh whenever they changed their website theme
+- Added a new theme template loader that will help keep theme templates up-to-date across website releases
+  - This does not affect template overrides for theme templates
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
 - Added tags for help text for teacher registration fields that did not already have them
 - On the tag settings page, tags for help text for fields that are not in use are now hidden
-- Added QSD blocks to the alerts on the student profile page
 - Added a Captcha field to the contact form to prevent spam
+- Added a link to the LU wiki Feature Requests page on the "manage all programs" page
+- Removed the time estimate from the comm panel results page and added a link to the email monitoring page
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -60,10 +65,10 @@ Minor bug fixes
 - Categories, record types, and flags that are currently in use can no longer be deleted
 - Added documentation to the categories, flag types, and record types page
 - Fixed the Onsite New Student Registration form
-- Now strip any leading or trailing whitespace in user searches
 - Fixed the volunteer CSV download
 - Fixed forms so they do browser-side validation before submitting to the server (this was broken in Stable Release 14)
 - Class category symbols can only be a single letter now (special characters previously caused issues and will be converted to "Z"s)
 - Fixed the onsite catalog
 - Changed the survey category field to a dropdown menu
 - Fixed a bug related to record type names that weren't snake_case
+- Fixed an error related to using the bulk account module multiple times with the same prefix
