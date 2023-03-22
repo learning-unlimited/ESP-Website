@@ -44,7 +44,7 @@
     </tr>
     {% for h in timeslots %}
     <tr>
-        <th colspan="5" align="center"><b>{% if h.selections.0.group %}Block {{ h.selections.0.group }}{% else %}Unnumbered Block{% endif %}</b></th>
+        <th colspan="5" align="center"><b>{% if h.selections.0.group %}Group {{ h.selections.0.group }}{% else %}Unnumbered Group{% endif %}</b></th>
     </tr>
         {% for t in h.selections %}
         {% ifchanged t.start.date %}
