@@ -34,7 +34,7 @@ User ID: {{ student.id }} \\{% endif %}
 {% if schedule_format.amount_owed %}
 \textbf{Amount Owed: \fbox{\${{ student.itemizedcosttotal|floatformat:"-2" }} } }
 {% endif %}
-{% if schedule_format.extra_costs %}
+{% if schedule_format.required_costs and student.required %}
 \vspace{.5ex}
 \textbf{Required Choices: } \\
 \vspace{.5ex}
@@ -44,7 +44,7 @@ $\Box$  {{item.line_item.text|texescape}}{% if item.option.description %} -- {{ 
 {% endfor %}\hline	
 \end{tabular}
 {% endif %}
-{% if schedule_format.extra_costs %}
+{% if schedule_format.optional_costs and student.meals %}
 \vspace{1ex}
 \textbf{Optional Purchases: } \\
 \vspace{.5ex}
