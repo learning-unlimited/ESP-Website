@@ -1,5 +1,6 @@
 
 {% extends "main.html" %}
+{% load getTag %}
 
 {% block title %}{{program.niceName}}{% endblock %}
 
@@ -34,16 +35,36 @@ Viewing classes for: {{ timeslot.friendly_name }}
 {% endif %}
 
 <div id="catalog">
-
-<br>
-<div align="right">
-<b>Filter Catalog by Grade:</b><br>
-<select id = "grade_filter" style="width:auto !important">
-  <option value="all" selected="selected">All Grades</option>
-  {% for grade in program.grades %}
-    <option value="{{ grade }}">Grade {{ grade }}</option>
-  {% endfor %}
-</select>
+<div style="display: flex;justify-content: space-between">
+    <div>
+        <b>Filter by Grade:</b><br>
+        <select id = "grade_filter" style="width:auto !important">
+        <option value="all" selected="selected">Any Grades</option>
+        {% for grade in program.grades %}
+            <option value="{{ grade }}">Grade {{ grade }}</option>
+        {% endfor %}
+        </select>
+    </div>
+    <div>
+        <b>Filter by Class Length:</b><br>
+        <select id = "duration_filter" style="width:auto !important">
+            <option value="all" selected="selected">Any Durations</option>
+        </select>
+    </div>
+    <div>
+        <b>Filter by Difficulty:</b><br>
+        <select id = "difficulty_filter" style="width:auto !important">
+            <option value="all" selected="selected">Any Difficulties</option>
+        </select>
+    </div>
+    <div>
+        <b>Filter by Open/Closed Status:</b><br>
+        <select id = "status_filter" style="width:auto !important">
+            <option value="all" selected="selected">Any Statuses</option>
+            <option value="open">Open</option>
+            <option value="closed">Closed</option>
+        </select>
+    </div>
 </div>
 <br>
 
@@ -88,35 +109,136 @@ if (document.getElementById("student_schedule")) {
 </div>
 
 <script type="text/javascript">
-function hideOtherGrades(grade){
-    if(grade == "all"){
-        $j('.show_class').show();
-        //Show all line breaks
-        $j('.show_class').next().next().show();
-    }else{
-    	$j('.show_class').hide();
-        //Hide all line breaks
-        $j('.show_class').next().next().hide();
-        $j('.grade_' + grade).show();
-        //Show the line breaks associated with the classes we are showing
-        $j('.grade_' + grade).next().next().show();
+
+// Inject difficulty data from the tag to support custom difficulties
+const DIFFICULTIES = JSON.parse("{{ "teacherreg_difficulty_choices" | getTag | escapejs }}")
+
+const MODIFIED_COLOR = "#0066ff22"
+
+/**
+    Converts from hours to a formatted duration (eg. "0.05" -> "5 mins", "1.5" -> "1 hour 30 mins")
+    @param {string} numString - a duration as a float in a string (eg. "0.05")
+    @returns {string} the formatted time (eg. "1 hour 30 mins")
+*/
+function floatToFormattedTime(numString) {
+    let float = Number(numString)
+    let result = ""
+    if (Math.floor(float) >= 1) {
+        result += `${Math.floor(float)} hrs`
+    }
+    if (float - Math.floor(float) > 0.01) {
+        result += ` ${Math.round((float - Math.floor(float))*60)} mins`
+    }
+    return result
+}
+
+function hideClass(cls) {
+    cls.style.display = "none"
+}
+
+function showClass(cls) {
+    cls.style.display = ""
+}
+
+// Filters for the different pieces of class information. Each of these returns a predicate
+// which returns true if the class matches the filter passed to the parent function.
+
+function gradeFilter(grade) {
+    return cls => grade === "all" || cls.classList.contains(`grade_${grade}`)
+}
+
+function difficultyFilter(difficulty) {
+    return cls => difficulty === "all" || cls.getAttribute("data-difficulty") === difficulty
+}
+
+function durationFilter(duration) {
+    return cls => duration === "all" || cls.getAttribute("data-duration") === duration
+}
+
+function openFilter(status) {
+    return cls => {
+        return status === "all" ||
+        (status === "closed" && cls.getAttribute("data-is-closed") === "True") || 
+        (status === "open" && cls.getAttribute("data-is-closed") === "False")
     }
 }
 
-$j(document).ready(function() {
-    var student_grade = esp_user.cur_grade;
-    if (student_grade != "" && student_grade != null) {
-        student_grade = parseInt(student_grade);
-        if($j("#grade_filter").find('option[value="'+student_grade +'"]').length > 0){
-            $j("#grade_filter").val(student_grade);
-        }
-    }
-    hideOtherGrades($j("#grade_filter").find('option:selected').val());
-});
+function applyCurrentFilters() {
+    applyFilters(getOptions())
+}
 
-$j("#grade_filter").change(function(){
-	hideOtherGrades($j(this).find('option:selected').val());
-});
+function applyFilters({grade, difficulty, status, duration}) {
+    let classes = Array.from(document.getElementsByClassName("show_class"))
+    let shownClasses = classes
+        .filter(gradeFilter(grade))
+        .filter(difficultyFilter(difficulty))
+        .filter(openFilter(status))
+        .filter(durationFilter(duration))
+
+    classes.forEach(hideClass)
+    shownClasses.forEach(showClass)
+}
+
+function getOptions() {
+    return {
+        grade: document.getElementById("grade_filter").value,
+        difficulty: document.getElementById("difficulty_filter").value,
+        status: document.getElementById("status_filter").value,
+        duration: document.getElementById("duration_filter").value,
+    }
+}
+
+var student_grade = esp_user.cur_grade;
+if (student_grade != "" && student_grade != null) {
+    student_grade = parseInt(student_grade);
+    const gradeFilterElem = document.getElementById("grade_filter")
+    if (gradeFilterElem.querySelector(`option[value="${student_grade}"]`)) {
+        gradeFilterElem.value = student_grade
+        gradeFilterElem.style.background = student_grade
+    }
+}
+
+applyCurrentFilters()
+
+// Set up duration options by finding all unique durations from the classes in the catalog
+const durationFilter = document.getElementById("duration_filter")
+let uniqueLengths = [
+        // Convert to and back from a Set to keep only unique values
+        ...new Set(
+            Array.from(document.getElementsByClassName("show_class"))
+                .map(cls=>cls.getAttribute("data-duration"))
+        )
+    ]
+    .sort((a,b)=>a-b) // least to greatest
+    .map((val)=>[val, floatToFormattedTime(val)])
+    .forEach(([raw, formatted])=>{
+        let option = document.createElement("option")
+        option.setAttribute("value", raw)
+        option.textContent = formatted
+        durationFilter.append(option)
+    })
+
+// Set up difficulties by getting them from tag data (injected further up)
+const difficultyFilter = document.getElementById("difficulty_filter")
+
+DIFFICULTIES.forEach(([difficulty])=>{
+    let option = document.createElement("option")
+    option.setAttribute("value", difficulty)
+    option.textContent = difficulty
+    difficultyFilter.append(option)
+})
+
+["grade_filter", "difficulty_filter", "status_filter", "duration_filter"].forEach((id)=>{
+    document.getElementById(id).addEventListener("change", (e)=>{
+        console.log(e)
+        if (e.target.value !== "all") {
+            e.target.style.background = MODIFIED_COLOR
+        } else {
+            e.target.style.background = ""
+        }
+        applyCurrentFilters()
+    })
+})
 </script>
 
 
