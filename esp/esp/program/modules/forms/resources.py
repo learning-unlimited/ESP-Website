@@ -20,7 +20,7 @@ class TimeslotForm(forms.Form):
     minutes = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     openclass = forms.BooleanField(required=False, label='Open Class Time Block', help_text="Check this if the time block should be used for open classes only. If in doubt, don't check this.")
     group = forms.IntegerField(required=False, label='Group')
-    
+
     def __init__(self, program, *args, **kwargs):
         super(TimeslotForm, self).__init__(*args, **kwargs)
         self.fields['group'].help_text=mark_safe("""All timeslots with this value will always be included in the same timeslot group.
