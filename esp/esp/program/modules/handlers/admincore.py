@@ -103,7 +103,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                          ] # (handler, setup title, setup path, isCompleted)
         extra_steps = [step for step in required_steps if prog.hasModule(step[0])]
         optional_steps = [
-                          ('ProgramPrintables', "Format printable student schedules", '/manage/' + self.program.url + '/studentscheduleform', Tag.getProgramTag('student_schedule_format', self.program, default = False)),
+                          ('ProgramPrintables', "Format printable student schedules", '/manage/' + self.program.url + '/studentscheduleform', Tag.getProgramTag('student_schedule_format', self.program)),
                           ('StudentSurveyModule', "Set up the student post-program survey", '/manage/' + self.program.url + '/surveys', self.program.getSurveys().filter(category = "learn").exists()),
                           ('TeacherSurveyModule', "Set up the teacher post-program survey", '/manage/' + self.program.url + '/surveys', self.program.getSurveys().filter(category = "teach").exists()),
                           ('VolunteerSignup', "Set up volunteer signup", '/manage/' + self.program.url + '/volunteering', self.program.getVolunteerRequests().exists()),

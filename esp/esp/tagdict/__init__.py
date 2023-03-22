@@ -1259,7 +1259,7 @@ all_program_tags = {
     'student_schedule_format': {
         'is_boolean': False,
         'help_text': 'The formatting settings for PDF student schedules (in json format).',
-        'default': '[]',
+        'default': None,
         'category': 'manage',
         'is_setting': False,
     },

@@ -1335,9 +1335,8 @@ class ProgramPrintables(ProgramModuleObj):
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT.rstrip('/') + '/'
 
         basedir = 'program/modules/programprintables/'
-        schedule_format = json.loads(Tag.getProgramTag("student_schedule_format", prog))
-        if schedule_format:
-            context["schedule_format"] = {x: True for x in schedule_format}
+        if Tag.getProgramTag("student_schedule_format", prog):
+            context["schedule_format"] = {x: True for x in json.loads(Tag.getProgramTag("student_schedule_format", prog))}
         else:
             context["schedule_format"] = {choice[0]: True for choice in StudentScheduleFormatForm(program = prog).fields['schedule_fields'].choices}
         context["pretext"] = Tag.getProgramTag("student_schedule_pretext", prog)
@@ -2074,7 +2073,8 @@ class AllClassesSelectionForm(forms.Form):
         self.fields['subject_fields'].choices = self.converter.field_choices
 
 class StudentScheduleFormatForm(forms.Form):
-    schedule_fields = forms.MultipleChoiceField(choices = [("username", "Student's Username"),
+    schedule_fields = forms.MultipleChoiceField(choices = [
+                                                           ("username", "Student's Username"),
                                                            ("userid", "Student's ID"),
                                                            ("barcode", "Barcode"),
                                                            ("amount_owed", "Amount Owed"),
@@ -2089,9 +2089,8 @@ class StudentScheduleFormatForm(forms.Form):
     posttext = forms.CharField(required = False, widget = forms.widgets.Textarea, label = mark_safe("Text to be placed just <u>below</u> the schedule, if any (supports LaTeX)"))
     def __init__(self, program, *args, **kwargs):
         super(StudentScheduleFormatForm, self).__init__(*args, **kwargs)
-        schedule_format = json.loads(Tag.getProgramTag("student_schedule_format", program))
-        if schedule_format:
-            self.fields['schedule_fields'].initial = schedule_format
+        if Tag.getProgramTag("student_schedule_format", program):
+            self.fields['schedule_fields'].initial = json.loads(Tag.getProgramTag("student_schedule_format", program))
         else:
             self.fields['schedule_fields'].initial = [choice[0] for choice in self.fields['schedule_fields'].choices]
         self.fields['pretext'].initial = Tag.getProgramTag("student_schedule_pretext", program)
