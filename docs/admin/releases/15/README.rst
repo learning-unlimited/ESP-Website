@@ -13,6 +13,7 @@ Profiles
   - These pronouns are shown on various printables (including nametags) and pages across the website (including attendance)
 - Now strip any leading or trailing whitespace in user searches
 - Added QSD blocks to the alerts on the student profile page
+- Fixed a rare bug in the profile form when the `allow_change_grade_level` tag was set to True
 
 Accounting
 ~~~~~~~~~~
@@ -55,6 +56,7 @@ Minor new features
 - Added a Captcha field to the contact form to prevent spam
 - Added a link to the LU wiki Feature Requests page on the "manage all programs" page
 - Removed the time estimate from the comm panel results page and added a link to the email monitoring page
+- Added timezones to the manage deadlines page
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -72,3 +74,4 @@ Minor bug fixes
 - Changed the survey category field to a dropdown menu
 - Fixed a bug related to record type names that weren't snake_case
 - Fixed an error related to using the bulk account module multiple times with the same prefix
+- Fixed a bug related to a missing sibling discount line item
