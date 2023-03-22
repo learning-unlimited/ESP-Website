@@ -70,7 +70,9 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         """ Display the landing page for the student onsite webapp """
         context = self.onsitecontext(request, tl, one, two, prog)
         user = request.user
-        context.update(StudentClassRegModule.prepare_static(user, prog))
+        scrm = prog.getModule("StudentClassRegModule")
+        context.update(StudentClassRegModule.prepare_static(user, prog, scrm = scrm))
+        context['deadline_met'] = scrm.deadline_met()
 
         context['webapp_page'] = 'schedule'
         context['scrmi'] = prog.studentclassregmoduleinfo
