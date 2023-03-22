@@ -115,6 +115,8 @@ const DIFFICULTIES = JSON.parse("{{ "teacherreg_difficulty_choices" | getTag | e
 
 const MODIFIED_COLOR = "#0066ff22"
 
+const FILTER_IDS = ["grade_filter", "difficulty_filter", "status_filter", "duration_filter"]
+
 /**
     Converts from hours to a formatted duration (eg. "0.05" -> "5 mins", "1.5" -> "1 hour 30 mins")
     @param {string} numString - a duration as a float in a string (eg. "0.05")
@@ -194,14 +196,13 @@ if (student_grade != "" && student_grade != null) {
     const gradeFilterElem = document.getElementById("grade_filter")
     if (gradeFilterElem.querySelector(`option[value="${student_grade}"]`)) {
         gradeFilterElem.value = student_grade
-        gradeFilterElem.style.background = student_grade
     }
 }
 
 applyCurrentFilters()
 
 // Set up duration options by finding all unique durations from the classes in the catalog
-const durationFilter = document.getElementById("duration_filter")
+const durationFilterElem = document.getElementById("duration_filter")
 let uniqueLengths = [
         // Convert to and back from a Set to keep only unique values
         ...new Set(
@@ -215,27 +216,35 @@ let uniqueLengths = [
         let option = document.createElement("option")
         option.setAttribute("value", raw)
         option.textContent = formatted
-        durationFilter.append(option)
+        durationFilterElem.append(option)
     })
 
 // Set up difficulties by getting them from tag data (injected further up)
-const difficultyFilter = document.getElementById("difficulty_filter")
+const difficultyFilterElem = document.getElementById("difficulty_filter")
 
 DIFFICULTIES.forEach(([difficulty])=>{
     let option = document.createElement("option")
     option.setAttribute("value", difficulty)
     option.textContent = difficulty
-    difficultyFilter.append(option)
+    difficultyFilterElem.append(option)
 })
 
-["grade_filter", "difficulty_filter", "status_filter", "duration_filter"].forEach((id)=>{
-    document.getElementById(id).addEventListener("change", (e)=>{
-        console.log(e)
-        if (e.target.value !== "all") {
-            e.target.style.background = MODIFIED_COLOR
-        } else {
-            e.target.style.background = ""
-        }
+function setModifiedColor(selectElem) {
+    if (selectElem.value !== "all") {
+        selectElem.style.background = MODIFIED_COLOR
+    } else {
+        selectElem.style.background = ""
+    }
+}
+
+FILTER_IDS.forEach((id)=>{
+    const filterElem = document.getElementById(id)
+    // Covers the case when a page refresh has preserved form values
+    // or the grade is automatically set.
+    setModifiedColor(filterElem)
+
+    filterElem.addEventListener("change", ()=>{
+        setModifiedColor(filterElem)
         applyCurrentFilters()
     })
 })
