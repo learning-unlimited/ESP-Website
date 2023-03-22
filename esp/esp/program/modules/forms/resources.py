@@ -19,7 +19,15 @@ class TimeslotForm(forms.Form):
     hours = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     minutes = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     openclass = forms.BooleanField(required=False, label='Open Class Time Block', help_text="Check this if the time block should be used for open classes only. If in doubt, don't check this.")
-    group = forms.IntegerField(required=False, label='Group', help_text="All timeslots with this value will always be included in the same timeslot group.")
+    group = forms.IntegerField(required=False, label='Group')
+    
+    def __init__(self, program, *args, **kwargs):
+        super(TimeslotForm, self).__init__(*args, **kwargs)
+        self.fields['group'].help_text=mark_safe("""All timeslots with this value will always be included in the same timeslot group.
+                                                    Note that the assigned value is solely for grouping purposes; the blocks displayed on
+                                                    availability forms will be numbered consecutively based on the first timeslot in the block.
+                                                    Any timeslots with no value indicated will be grouped together based on the
+                                                    <a href = '%stags/teach' target='_blank'>'Availability group tolerance' tag</a>.""" % program.get_manage_url())
 
     def load_timeslot(self, slot):
         self.fields['name'].initial = slot.short_description
