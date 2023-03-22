@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 #
 # Check a program for duplicate identical classroom Resources (same name
 # and time).

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # Write student emergency contact information (name, email address and, if
 # known, cell number) to a CSV file.
 

@@ -41,10 +41,10 @@
 # adding it to requirements.txt, use:
 #
 # $ source /path/to/ESP-Website/env/bin/activate
-# $ pip install $package
+# $ python -m pip install $package
 #
 # You can generate a new requirements file from your currently
-# installed packages using `pip freeze`, which is an alternative way
+# installed packages using `python -m pip freeze`, which is an alternative way
 # of updating requirements.txt (but be careful about adding spurious
 # dependencies this way).
 #
@@ -65,6 +65,6 @@ fi
 
 echo "Creating Virtualenv in $VENVDIR"
 
-sudo pip2 install "virtualenv>=1.10"
+sudo python3.7 -m pip install "virtualenv>=1.10"
 
 virtualenv "$VENVDIR"

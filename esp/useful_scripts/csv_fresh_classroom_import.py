@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 #
 # Import classrooms from two csv files: one from schedules, and one we make
 # with furnishings.

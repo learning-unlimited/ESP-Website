@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 #
 # Import classrooms from a CSV file. Columns should be:
 #   Date: 11/22/2014

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # Adds lunches in an empty block for users who don't have one.  Chooses the
 # lunch randomly for users with both lunch blocks free.

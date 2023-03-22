@@ -51,7 +51,7 @@ then
     fi
 fi
 
-# Install pip
+# Install universe and curl 
 # How we add the repository depends on the version of Ubuntu
 if [ $((${UBUNTU_VERSION%.*}+0)) -gt 12 ]
 then
@@ -80,10 +80,7 @@ then
     source "$VIRTUALENV_DIR/bin/activate"
 fi
 
-sudo curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
-python2 get-pip.py
+# Install/upgrade pip and Python dependencies.
+python3.7 -m pip install -U pip
+python3.7 -m pip install -U -r "$BASEDIR/esp/requirements.txt"
 
-# Install/upgrade pip, setuptools, wheel, and application dependencies.
-pip2 install -U pip
-pip2 install -U setuptools wheel
-pip2 install -U -r "$BASEDIR/esp/requirements.txt"

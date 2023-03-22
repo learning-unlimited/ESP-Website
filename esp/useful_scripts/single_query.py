@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # Run a query against a site in a given directory.
 # usage e.g. $0 /lu/sites/smith "print Program.objects.count()"

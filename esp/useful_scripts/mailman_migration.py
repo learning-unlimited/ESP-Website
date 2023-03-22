@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 """Fix the subscription state of mailman.
 
 This script attempts to fix the subscription set of mailman to somewhat better

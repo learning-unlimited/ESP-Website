@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 """Script to dump zip code data to CSV.
 
 Writes a CSV with a column for each of various sets of students, and a row for
