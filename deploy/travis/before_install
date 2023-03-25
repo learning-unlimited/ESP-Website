@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euf -o pipefail
 
+sudo apt sudo add-apt-repository ppa:deadsnakes/ppa
+
 sudo apt update
 
 # install pip
