@@ -46,16 +46,18 @@
                 Required
             </h3>
             <ol id="sortable1" class="connectedSortable">
-            {% for mod in learn_modules %}
-                {% ifchanged mod.required %}
-                    {% if not mod.required %}
-                        </ol>
-                        <h3>
-                            Not Required
-                        </h3>
-                        <ol id="sortable2" class="connectedSortable">
-                    {% endif %}
-                {% endifchanged %}
+            {% for mod in learn_modules.required %}
+                <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
+                    {{ mod.module.admin_title }}<br/>
+                    <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
+                </li>
+            {% endfor %}
+            </ol>
+            <h3>
+                Not Required
+            </h3>
+            <ol id="sortable2" class="connectedSortable">
+            {% for mod in learn_modules.not_required %}
                 <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
                     {{ mod.module.admin_title }}<br/>
                     <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
@@ -73,16 +75,18 @@
                 Required
             </h3>
             <ol id="sortable3" class="connectedSortable">
-            {% for mod in teach_modules %}
-                {% ifchanged mod.required %}
-                    {% if not mod.required %}
-                        </ol>
-                        <h3>
-                            Not Required
-                        </h3>
-                        <ol id="sortable4" class="connectedSortable">
-                    {% endif %}
-                {% endifchanged %}
+            {% for mod in teach_modules.required %}
+                <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
+                    {{ mod.module.admin_title }}<br/>
+                    <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
+                </li>
+            {% endfor %}
+            </ol>
+            <h3>
+                Not Required
+            </h3>
+            <ol id="sortable4" class="connectedSortable">
+            {% for mod in teach_modules.not_required %}
                 <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
                     {{ mod.module.admin_title }}<br/>
                     <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>

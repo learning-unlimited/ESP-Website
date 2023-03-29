@@ -555,8 +555,12 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 pmo.save()
 
         # Are there any modules that we should manually exclude here? Credit card module?
-        context['learn_modules'] = [mod for mod in prog.getModules(tl = 'learn') if mod.isStep()]
-        context['teach_modules'] = [mod for mod in prog.getModules(tl = 'teach') if mod.isStep()]
+        learn_modules = [mod for mod in prog.getModules(tl = 'learn') if mod.isStep()]
+        context['learn_modules'] = {'required': filter(lambda mod: mod.required, learn_modules),
+                                    'not_required': filter(lambda mod: not mod.required, learn_modules)}
+        teach_modules = [mod for mod in prog.getModules(tl = 'teach') if mod.isStep()]
+        context['teach_modules'] = {'required': filter(lambda mod: mod.required, teach_modules),
+                                    'not_required': filter(lambda mod: not mod.required, teach_modules)}
         context['one'] = one
         context['two'] = two
         context['program'] = prog
