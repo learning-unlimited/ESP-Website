@@ -495,8 +495,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         if request.method == 'POST':
             if "default_seq" in request.POST or "default_req" in request.POST or "default_lab" in request.POST:
                 # Reset some or all values for learn and teach modules
-                print("hello")
-                for pmo in [mod for mod in prog.getModules(tl = 'learn') if mod.isStep()]:
+                for pmo in [mod for mod in prog.getModules(tl = 'learn') if mod.inModulesList()]:
                     pmo = ProgramModuleObj.objects.get(id=pmo.id) # Get the uncached object to make sure we trigger the cache
                     if "default_seq" in request.POST: # Reset module seq values
                         pmo.seq = pmo.module.seq
@@ -505,7 +504,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     if "default_lab" in request.POST: # Reset module required label values
                         pmo.required_label = ""
                     pmo.save()
-                for pmo in [mod for mod in prog.getModules(tl = 'teach') if mod.isStep()]:
+                for pmo in [mod for mod in prog.getModules(tl = 'teach') if mod.inModulesList()]:
                     pmo = ProgramModuleObj.objects.get(id=pmo.id) # Get the uncached object to make sure we trigger the cache
                     if "default_seq" in request.POST: # Reset module seq values
                         pmo.seq = pmo.module.seq
@@ -555,10 +554,10 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 pmo.save()
 
         # Are there any modules that we should manually exclude here? Credit card module?
-        learn_modules = [mod for mod in prog.getModules(tl = 'learn') if mod.isStep()]
+        learn_modules = [mod for mod in prog.getModules(tl = 'learn') if mod.inModulesList()]
         context['learn_modules'] = {'required': filter(lambda mod: mod.required, learn_modules),
                                     'not_required': filter(lambda mod: not mod.required, learn_modules)}
-        teach_modules = [mod for mod in prog.getModules(tl = 'teach') if mod.isStep()]
+        teach_modules = [mod for mod in prog.getModules(tl = 'teach') if mod.inModulesList()]
         context['teach_modules'] = {'required': filter(lambda mod: mod.required, teach_modules),
                                     'not_required': filter(lambda mod: not mod.required, teach_modules)}
         context['one'] = one
