@@ -25,7 +25,7 @@ numpy==1.16.6 # Used mainly in the lottery and class change controller
 pillow==8.3.2 # Required for ImageField, which we use in teacher bios
 psycopg2==2.8.6 # Talks to postgres
 pycurl==7.19.5.1 # Used only in mailing labels and a formstack script which I think is outdated
-py3dns=3.2.1 # Used for validating email addresses; imports as "DNS" (case matters), not "py3dns"
+py3dns==3.2.1 # Used for validating email addresses; imports as "DNS" (case matters), not "py3dns"
 Pygments==2.10.0 # django-extensions dependency
 pyinotify # Makes dev servers auto-reload
 pylibmc==1.5.0 # Talks to memcached
