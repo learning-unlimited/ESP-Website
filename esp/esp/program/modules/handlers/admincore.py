@@ -552,8 +552,40 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 pmo.required = False
                 pmo.required_label = request.POST.get("%s_label" % mod_id, "")
                 pmo.save()
+            # Override some settings that shouldn't be changed
+            # Profile modules should always be required and always first
+            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "RegProfileModule")
+            for pmo in pmos:
+                pmo.seq = 0
+                pmo.required = True
+                pmo.save()
+            # Credit card modules should never be required and always last
+            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler__contains = "CreditCardModule_")
+            for pmo in pmos:
+                pmo.seq = 10000
+                pmo.required = False
+                pmo.save()
+            # The confirm reg module should never be required
+            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "StudentRegConfirm")
+            for pmo in pmos:
+                pmo.required = False
+                pmo.save()
+            # The availability module should always be required
+            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "AvailabilityModule")
+            for pmo in pmos:
+                pmo.required = True
+                pmo.save()
+            # The acknowledgment modules should always be required
+            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler__contains = "AcknowledgementModule")
+            for pmo in pmos:
+                pmo.required = True
+                pmo.save()
+            # The two phase lottery module should always be required
+            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "StudentRegTwoPhase")
+            for pmo in pmos:
+                pmo.required = True
+                pmo.save()
 
-        # Are there any modules that we should manually exclude here? Credit card module?
         learn_modules = [mod for mod in prog.getModules(tl = 'learn') if mod.inModulesList()]
         context['learn_modules'] = {'required': filter(lambda mod: mod.required, learn_modules),
                                     'not_required': filter(lambda mod: not mod.required, learn_modules)}
