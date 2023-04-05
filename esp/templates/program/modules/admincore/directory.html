@@ -216,7 +216,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     <div class="module_group_body">
     <ul>
         {% if manage_catalog %}<li><a href="/manage/{{ program.getUrlBase }}/catalog">PDF Catalog</a></li>{% endif %}
-        {% if manage_studentschedules %}<li><a href="/manage/{{ program.getUrlBase }}/studentschedules">Student Schedules</a></li>{% endif %}
+        {% if manage_studentschedules %}<li><a href="/manage/{{ program.getUrlBase }}/studentschedules">Student Schedules</a> (<a href="/manage/{{ program.getUrlBase }}/studentscheduleform">Schedule Formatter</a>)</li>{% endif %}
         {% if manage_selectidoptions %}<li><a href="/manage/{{ program.getUrlBase }}/selectidoptions">Nametags</a></li>{% endif %}
         {% if manage_selectList %}<li><a href="/manage/{{ program.getUrlBase }}/selectList">Arbitrary User List</a></li>{% endif %}
         {% if manage_printoptions %}<li><a href="/manage/{{ program.getUrlBase }}/printoptions">All Printables</a></li>{% endif %}
