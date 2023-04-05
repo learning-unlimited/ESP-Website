@@ -1256,6 +1256,37 @@ all_program_tags = {
         'category': 'learn',
         'is_setting': True,
     },
+    'student_schedule_format': {
+        'is_boolean': False,
+        'help_text': 'The formatting settings for PDF student schedules (in json format).',
+        'default': None,
+        'category': 'manage',
+        'is_setting': False,
+    },
+    'student_schedule_pretext': {
+        'is_boolean': False,
+        'help_text': 'The text that is included right above the schedule in PDF student schedules (LaTeX is supported).',
+        'default': '' ,
+        'category': 'manage',
+        'is_setting': False,
+    },
+    'student_schedule_posttext': {
+        'is_boolean': False,
+        'help_text': 'The text that is included right below the schedule in PDF student schedules (LaTeX is supported).',
+        'default': r"""\begin{center}
+\begin{tabularx}{17cm}{X c}
+\multicolumn{2}{c}{\small
+\textit{Please see your map for building directions, or ask anyone for help.}
+\normalsize } \\
+\multicolumn{2}{c}{\small
+\textit{If you are not signed up for a full day of classes, we encourage you to add more!}
+\normalsize } \\
+~ & ~
+\end{tabularx}
+\end{center}""",
+        'category': 'manage',
+        'is_setting': False,
+    },
 }
 
 # Dictionary of categories that tags fall into (for grouping on the tag settings page)
