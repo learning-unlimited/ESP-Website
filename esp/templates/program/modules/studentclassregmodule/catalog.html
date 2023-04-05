@@ -111,7 +111,15 @@ if (document.getElementById("student_schedule")) {
 <script type="text/javascript">
 
 // Inject difficulty data from the tag to support custom difficulties
-const DIFFICULTIES = JSON.parse("{{ "teacherreg_difficulty_choices" | getTag | escapejs }}")
+const INJECTED_DIFFICULTIES = "{{ "teacherreg_difficulty_choices" | getTag | escapejs }}"
+const DIFFICULTIES = INJECTED_DIFFICULTIES !== "None" 
+    ? JSON.parse(INJECTED_DIFFICULTIES)
+    : [
+        ["*", "This Shouldn't Appear!"],
+        ["**", "This Shouldn't Appear!"],
+        ["***", "This Shouldn't Appear!"],
+        ["****", "This Shouldn't Appear!"]
+    ]
 
 const MODIFIED_COLOR = "#0066ff22"
 
