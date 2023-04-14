@@ -378,7 +378,7 @@ This module allows teachers to register and view classes.  They can upload files
 The class creation/editing form requires that you have set up time slots for the program (see ResourceModule) in order to establish the possible lengths of classes.  It can be customized using the following Tags:
 
 * teacherreg_difficulty_label - This controls the name of the 'Difficulty' field on the class creation/editing form.
-* teacherreg_difficulty_choices - This controls the choices of the 'Difficulty' field on the class creation/editing form.  This should be a JSON-formatted list of 2-element lists.  Example: '[[1, "Easy"], [2, "Medium"], [3, "Hard"], [4, "David Roe"]]'
+* teacherreg_difficulty_choices - This controls the choices of the 'Difficulty' field on the class creation/editing form.  This should be a JSON-formatted list of 2-element lists.  Example: '[[1, "Easy"], [2, "Medium"], [3, "Hard"], [4, "David Roe"]]'. The left items in the pair will appear in the course catalog and the right items will appear to teachers as they're choosing a difficulty for their class.
 
 Teacher Training and Interview Signups (TeacherEventsModule)
 ------------------------------------------------------------

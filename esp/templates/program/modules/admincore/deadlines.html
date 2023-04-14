@@ -71,8 +71,8 @@
             {% if forloop.counter0|divisibleby:"5" %}
             <tr>
                 <th>Deadline</th>
-                <th>Start</th>
-                <th>End</th>
+                <th>Start {% now "(T)" %}</th>
+                <th>End {% now "(T)" %} </th>
                 <th></th>
             </tr>
             {% endif %}
@@ -164,7 +164,7 @@
     <tr>
         <th>User</th>
         <th>Permission</th>
-        <th>Timing</th>
+        <th>Timing {% now "(T)" %}</th>
         <th></th>
     </tr>
     {% endif %}

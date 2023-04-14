@@ -833,6 +833,26 @@ class Program(models.Model, CustomFormsLinkModel):
             qs = qs.filter(event_type__description='Class Time Block')
         return qs.select_related('event_type').order_by('start')
 
+    def getTimeGroups(self, types=None, exclude_types=None):
+        timeslots = self.getTimeSlots(types=types, exclude_types=exclude_types)
+        time_groups = []
+
+        w_group = timeslots.filter(group__isnull=False)
+        groups = sorted(list(w_group.values_list('group', flat=True)))
+
+        for grp in groups:
+            time_groups.append(list(w_group.filter(group=grp)))
+
+        wo_groups = timeslots.filter(group__isnull=True)
+        if wo_groups.exists():
+            if not Tag.getBooleanTag('availability_group_timeslots'):
+                time_groups.append(list(wo_groups))
+            else:
+                time_groups.extend(Event.group_contiguous(list(wo_groups), int(Tag.getProgramTag('availability_group_tolerance', program = self))))
+        # sort by first timeslot within each group
+        time_groups.sort(key = lambda x:x[0].start)
+        return time_groups
+
     def num_timeslots(self):
         return len(self.getTimeSlots())
 
@@ -1283,12 +1303,10 @@ class Program(models.Model, CustomFormsLinkModel):
         from esp.accounting.models import LineItemType
         if value is not None:
             self._sibling_discount = Decimal(value)
-            Tag.setTag('sibling_discount', target=self, value=self._sibling_discount)
-            LineItemType.objects.get_or_create(text='Sibling discount', program=self, amount_dec = self._sibling_discount)
         else:
             self._sibling_discount = Decimal('0.00')
-            Tag.objects.filter(key='sibling_discount', object_id=self.id).delete()
-            LineItemType.objects.filter(text='Sibling discount', program=self).delete()
+        Tag.setTag('sibling_discount', target=self, value=self._sibling_discount)
+        LineItemType.objects.get_or_create(text='Sibling discount', program=self, amount_dec = self._sibling_discount)
 
     sibling_discount = property(_sibling_discount_get, _sibling_discount_set)
 
