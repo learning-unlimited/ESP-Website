@@ -23,6 +23,4 @@ libev4
 git
 libfreetype6-dev
 python3.7-distutils
-python3-pip # Might need to do get-pip.py for older versions of python if
-# there's already a version of pip installed, for instance via the following
-# curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py; python3.7 get-pip.py
+python3-pip
