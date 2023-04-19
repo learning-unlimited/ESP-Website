@@ -146,7 +146,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                 return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def joingroup(self, request, tl, one, two, module, extra, prog, newclass = None):
         context = {}
         context['program'] = prog
@@ -203,7 +203,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
             return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def studentlookup(self, request, tl, one, two, module, extra, prog):
 
         # Search for students with names that start with search string

@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from argcache            import cache_function
-from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, CoreModule, main_call, aux_call, _checkDeadline_helper, meets_cap
+from esp.program.modules.base import ProgramModuleObj, needs_student, needs_student_in_grade, meets_deadline, meets_grade, CoreModule, main_call, aux_call, _checkDeadline_helper, meets_cap
 from esp.program.modules import module_ext
 from esp.program.models  import Program
 from esp.program.controllers.confirmation import ConfirmationEmailController
@@ -123,7 +123,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         return retVal
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def waitlist_subscribe(self, request, tl, one, two, module, extra, prog):
         """ Add this user to the waitlist """
         self.request = request
@@ -145,7 +145,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         return render_to_response(self.baseDir()+'waitlist.html', request, { 'already_on_list': already_on_list })
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def confirmreg(self, request, tl, one, two, module, extra, prog):
         if Record.objects.filter(user=request.user, event__name="reg_confirmed",program=prog).count() > 0:
             return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=False)
@@ -217,7 +217,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             return HttpResponse( receipt.render( AutoRequestContext(context, autoescape=False) ) )
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/Cancel')
     def cancelreg(self, request, tl, one, two, module, extra, prog):
         self.request = request
@@ -271,7 +271,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         return records
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/MainPage')
     @meets_cap
     def studentreg(self, request, tl, one, two, module, extra, prog):

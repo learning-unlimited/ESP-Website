@@ -102,7 +102,7 @@ class StudentCustomFormModule(ProgramModuleObj):
         return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     def extraform(self, request, tl, one, two, module, extra, prog):
         custom_form_id = Tag.getProgramTag('learn_extraform_id', prog)
         if custom_form_id:
