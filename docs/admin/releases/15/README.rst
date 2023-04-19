@@ -24,6 +24,7 @@ Accounting
 - Fixed the handling of donation line items in the credit card module (hotfixed to SR14)
 - Fixed a bug with the credit card form in the credit card module (hotfixed to SR14)
 - Extra cost selections (e.g., lunch, t-shirts) can now be modified after paying
+
   - If the total cost becomes greater than the previous total, an additional payment can be made
   - We do not handle refunds, so any reduction in total is treated as a donation
   - Supports partial and full financial aid
@@ -47,6 +48,7 @@ Themes
 - Removed the "Clear theme" option to promote the use of built-in themes instead of custom themes
 - Fixed a bug that forced admins to hard refresh whenever they changed their website theme
 - Added a new theme template loader that will help keep theme templates up-to-date across website releases
+
   - This does not affect template overrides for theme templates
 - index.html pages will now highlight the proper nav bar tab
 
