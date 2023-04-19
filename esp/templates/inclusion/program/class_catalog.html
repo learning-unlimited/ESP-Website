@@ -88,13 +88,11 @@
   if (document.getElementById("student_schedule")) {
     setTimeout(initialize_prereg_{{ class.id }}, Math.random()*1000);
   }
-  </script>
   {% if collapse_full %}
   {% if class.isFullOrClosed %}
   <!-- This class is already full; hide any buttons -->
-  <script type="text/javascript">
   swap_visible('class_{{ class.id }}_regbuttons');
+  {% endif %}
+  {% endif %}
   </script>
-  {% endif %}
-  {% endif %}
 {% endif %}
