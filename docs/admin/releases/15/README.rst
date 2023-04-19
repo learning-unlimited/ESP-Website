@@ -48,6 +48,7 @@ Themes
 - Fixed a bug that forced admins to hard refresh whenever they changed their website theme
 - Added a new theme template loader that will help keep theme templates up-to-date across website releases
   - This does not affect template overrides for theme templates
+- index.html pages will now highlight the proper nav bar tab
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
@@ -57,6 +58,9 @@ Minor new features
 - Added a link to the LU wiki Feature Requests page on the "manage all programs" page
 - Removed the time estimate from the comm panel results page and added a link to the email monitoring page
 - Added timezones to the manage deadlines page
+- Added a user interface to modify the formatting of printable student schedules
+- Added class length, difficulty, and status filters to the course catalog
+- Added the ability to group timeslots into arbitrary custom timeslot groups
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -75,3 +79,6 @@ Minor bug fixes
 - Fixed a bug related to record type names that weren't snake_case
 - Fixed an error related to using the bulk account module multiple times with the same prefix
 - Fixed a bug related to a missing sibling discount line item
+- Fixed the formatting of the availability page for various edge cases
+- Fixed various bugs with the module settings user interface
+- Fixed a bug where javascript was being displayed as text in the course catalog
