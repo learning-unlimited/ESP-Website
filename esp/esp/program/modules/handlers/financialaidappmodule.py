@@ -134,7 +134,7 @@ Here is their form data:
 ========================================
 Program:  %s
 User:  %s %s <%s>
-Approved:  %s
+Applied:  %s
 Has Reduced Lunch:  %s
 Household Income:  $%s
 Form Was Filled Out by Non-Student:  %s
