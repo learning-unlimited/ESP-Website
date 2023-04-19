@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 
 from esp.utils.web import render_to_response
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap, no_auth, needs_admin
+from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, needs_student_in_grade, meets_grade, meets_cap, no_auth, needs_admin
 from esp.users.models import Record, ESPUser, Permission
 from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import SubmitForm
@@ -83,8 +83,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
         }
 
     @main_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     def studentregphasezero(self, request, tl, one, two, module, extra, prog):
         """
         Serves the Phase Zero student reg page. The initial page includes a button

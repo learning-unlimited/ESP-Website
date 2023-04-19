@@ -124,7 +124,6 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
     @aux_call
     @needs_student
-    @meets_grade
     def waitlist_subscribe(self, request, tl, one, two, module, extra, prog):
         """ Add this user to the waitlist """
         self.request = request
@@ -147,7 +146,6 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
     @aux_call
     @needs_student
-    @meets_grade
     def confirmreg(self, request, tl, one, two, module, extra, prog):
         if Record.objects.filter(user=request.user, event__name="reg_confirmed",program=prog).count() > 0:
             return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=False)
@@ -220,7 +218,6 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
     @aux_call
     @needs_student
-    @meets_grade
     @meets_deadline('/Cancel')
     def cancelreg(self, request, tl, one, two, module, extra, prog):
         self.request = request
@@ -275,7 +272,6 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
     @main_call
     @needs_student
-    @meets_grade
     @meets_deadline('/MainPage')
     @meets_cap
     def studentreg(self, request, tl, one, two, module, extra, prog):

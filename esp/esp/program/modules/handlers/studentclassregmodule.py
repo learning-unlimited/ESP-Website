@@ -50,7 +50,7 @@ from django.views.decorators.vary import vary_on_cookie
 from django.core.cache import cache
 from django.utils.safestring import mark_safe
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call, meets_cap, no_auth
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_student_in_grade, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call, meets_cap, no_auth
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
@@ -314,7 +314,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def ajax_schedule(self, request, tl, one, two, module, extra, prog):
         import json as json
         from django.template.loader import render_to_string
@@ -406,7 +406,7 @@ class StudentClassRegModule(ProgramModuleObj):
             raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/Classes')
     @meets_cap
     def addclass(self, request, tl, one, two, module, extra, prog):
@@ -415,7 +415,7 @@ class StudentClassRegModule(ProgramModuleObj):
             return self.goToCore(tl)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/Classes')
     @meets_cap
     def ajax_addclass(self,request, tl, one, two, module, extra, prog):
@@ -461,7 +461,7 @@ class StudentClassRegModule(ProgramModuleObj):
         return categories_sort
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/Classes')
     @meets_cap
     def fillslot(self, request, tl, one, two, module, extra, prog):
@@ -585,7 +585,7 @@ class StudentClassRegModule(ProgramModuleObj):
         return resp
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     @vary_on_cookie
     def catalog_registered_classes_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         reg_bits = StudentRegistration.valid_objects().filter(user=request.user, section__parent_class__parent_program=prog).select_related()
@@ -622,7 +622,7 @@ class StudentClassRegModule(ProgramModuleObj):
         raise ESPError('Unable to generate a PDF catalog because the ProgramPrintables module is not installed for this program.', log=False)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def class_docs(self, request, tl, one, two, module, extra, prog):
         from esp.qsdmedia.models import Media
 
@@ -660,7 +660,7 @@ class StudentClassRegModule(ProgramModuleObj):
         return oldclasses.values_list('id', flat=True)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     @meets_any_deadline(['/Classes','/Removal'])
     def clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and go back to the same page """
@@ -671,7 +671,7 @@ class StudentClassRegModule(ProgramModuleObj):
             return self.goToCore(tl)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     @meets_any_deadline(['/Classes','/Removal'])
     def ajax_clearslot(self,request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return an updated inline schedule """
