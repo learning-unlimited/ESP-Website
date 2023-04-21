@@ -555,8 +555,6 @@ def newprogram(request):
             if 'template_prog' in request.session:
                 # Force all ProgramModuleObjs and their extensions to be created now
                 old_prog = Program.objects.get(id=request.session['template_prog'])
-                # Copy any manually enabled modules
-                new_prog.program_modules.add(*old_prog.program_modules.filter(choosable=2))
                 # If we are using another program as a template, let's copy the seq and required values from that program.
                 new_prog.getModules(old_prog=old_prog)
                 # Copy CRMI settings from old program
