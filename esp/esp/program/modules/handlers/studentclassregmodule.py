@@ -209,8 +209,12 @@ class StudentClassRegModule(ProgramModuleObj):
         return (len(user.getSectionsFromProgram(self.program)[:1]) > 0)
 
     def makeSelfCheckinLink(self):
+        if self.deadline_met():
+            text = self.module.link_title
+        else:
+            text = "Class changes is currently closed, please contact the admin team to register for classes"
         link = u'<a href="%sstudentonsite" title="%s" class="vModuleLink" >%s</a>' % \
-            (self.program.get_learn_url(), self.module.link_title, self.module.link_title)
+            (self.program.get_learn_url(), text, text)
         return mark_safe(link)
 
     def deadline_met(self, extension=None):
