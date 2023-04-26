@@ -1168,7 +1168,7 @@ all_program_tags = {
     'student_onsite_checkin_note': {
         'is_boolean': False,
         'help_text': 'The message that is shown at the top of the student webapp schedule when a student is NOT checked in.',
-        'default': 'Note: You will not be able to change any classes or see your classrooms until after your check-in has been processed by the admin team.',
+        'default': 'Note: You will not be able to see your classrooms until after your check-in has been processed by the admin team.',
         'category': 'onsite',
         'is_setting': True,
     },
