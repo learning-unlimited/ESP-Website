@@ -61,14 +61,14 @@ if not env.hosts:
         from fabtools.vagrant import vagrant
         vagrant()
     except SystemExit:
-        print ""
-        print "***** "
-        print "***** Fabric encountered a fatal exception when loading the Vagrant configuration!"
-        print "***** Make sure that Vagrant is running:"
-        print "*****"
-        print "*****   $ vagrant status"
-        print "*****   $ vagrant up"
-        print "***** "
+        print("")
+        print("***** ")
+        print("***** Fabric encountered a fatal exception when loading the Vagrant configuration!")
+        print("***** Make sure that Vagrant is running:")
+        print("*****")
+        print("*****   $ vagrant status")
+        print("*****   $ vagrant up")
+        print("***** ")
 
         raise
 
@@ -88,10 +88,10 @@ def setup():
     from fabtools import require
     require.deb.package("cryptsetup")
 
-    print "***** "
-    print "***** Creating the encrypted partition for data storage."
-    print "***** Please choose a passphrase and type it at the prompts."
-    print "***** "
+    print("***** ")
+    print("***** Creating the encrypted partition for data storage.")
+    print("***** Please choose a passphrase and type it at the prompts.")
+    print("***** ")
 
     sudo("cryptsetup luksFormat -q /dev/mapper/%s" % env.encvg)
     sudo("cryptsetup luksOpen /dev/mapper/%s encrypted" % env.encvg)
@@ -156,28 +156,28 @@ def ensure_environment():
 
     # Has setup() been run?
     if not files.exists("/fab-setup-done"):
-        print ""
-        print "***** "
-        print "***** The Vagrant VM has not been configured. Please run:"
-        print "***** "
-        print "*****   $ fab setup"
-        print "***** "
+        print("")
+        print("***** ")
+        print("***** The Vagrant VM has not been configured. Please run:")
+        print("***** ")
+        print("*****   $ fab setup")
+        print("***** ")
         exit(-1)
 
     # Ensure that the encrypted partition has been mounted (must be done after
     # every boot, and can't be done automatically by Vagrant :/)
     if sudo("df | grep encrypted | wc -l").strip() != "1":
         if sudo("ls -l /dev/mapper/encrypted &> /dev/null ; echo $?").strip() != "0":
-            print "***** "
-            print "***** Opening the encrypted partition for data storage."
-            print "***** Please enter your passphrase when prompted."
-            print "***** "
+            print("***** ")
+            print("***** Opening the encrypted partition for data storage.")
+            print("***** Please enter your passphrase when prompted.")
+            print("***** ")
             sudo("cryptsetup luksOpen /dev/mapper/%s encrypted" % env.encvg)
             sudo("mount /dev/mapper/encrypted /mnt/encrypted")
         else:
-            print "***** "
-            print "***** Something went wrong when mounting the encrypted partition."
-            print "***** Aborting."
+            print("***** ")
+            print("***** Something went wrong when mounting the encrypted partition.")
+            print("***** Aborting.")
             exit(-1)
 
     # Are we running emptydb() or loaddb() right now? If so, skip the database
@@ -191,18 +191,18 @@ def ensure_environment():
     # Has some database been loaded?
     dbs = int(psql("SELECT COUNT(*) FROM pg_stat_database;").strip())
     if dbs < 4:
-        print ""
-        print "***** "
-        print "***** A database has not been loaded. Please run either:"
-        print "***** "
-        print "*****   $ fab emptydb"
-        print "***** "
-        print "***** to install an empty database, or:"
-        print "***** "
-        print "*****   $ fab loaddb"
-        print "***** "
-        print "***** to load a database dump."
-        print "***** "
+        print("")
+        print("***** ")
+        print("***** A database has not been loaded. Please run either:")
+        print("***** ")
+        print("*****   $ fab emptydb")
+        print("***** ")
+        print("***** to install an empty database, or:")
+        print("***** ")
+        print("*****   $ fab loaddb")
+        print("***** ")
+        print("***** to load a database dump.")
+        print("***** ")
         exit(-1)
 
     # Did `setup()` fail to create the symlinked folders?
@@ -265,10 +265,10 @@ def emptydb(owner="esp", interactive=True):
     # Run Django migrations, etc. (unless being called from loaddb, below)
     if interactive:
         refresh()
-        print "***** "
-        print "***** Creating the first admin account on the website."
-        print "***** Please configure credentials when prompted."
-        print "***** "
+        print("***** ")
+        print("***** Creating the first admin account on the website.")
+        print("***** Please configure credentials when prompted.")
+        print("***** ")
         manage("createsuperuser")
 
 @task
@@ -398,8 +398,8 @@ def manage(cmd):
         interactive(env.rbase + "esp/manage.py " + cmd)
     else:
         if basecmd.startswith("runserver") and cmd == basecmd:
-            print "*** WARNING: 'fab manage:runserver' won't work right. ***"
-            print "***            use 'fab runserver' instead.           ***"
+            print("*** WARNING: 'fab manage:runserver' won't work right. ***")
+            print("***            use 'fab runserver' instead.           ***")
         with cd(env.rbase + "esp"):
             run("python manage.py " + cmd)
 
