@@ -220,8 +220,8 @@ function Matrix(
         addClassToSections = function(sections, className) {
             $j.each(sections, function(j, section) {
                 var assignment = this.sections.scheduleAssignments[section];
-                if(assignment) {
-                    var roomID = assignment.room_id
+                if(assignment.room_id) {
+                    var roomID = assignment.room_id;
                     $j.each(assignment.timeslots, function(k, timeslot) {
                         var cell = this.getCell(roomID, timeslot);
                         if(!cell.disabled) {
@@ -312,14 +312,16 @@ function Matrix(
          */
         removeClassFromSections = function(sections, className) {
             $j.each(sections, function(j, section) {
-                var assignments = this.sections.scheduleAssignments[section];
-                var roomID = assignments.room_id
-                $j.each(assignments.timeslots, function(k, timeslot) {
-                    var cell = this.getCell(roomID, timeslot);
-                    if(!cell.disabled) {
-                        cell.el.removeClass(className);
-                    }
-                }.bind(this));
+                var assignment = this.sections.scheduleAssignments[section];
+                if(assignment.room_id) {
+                    var roomID = assignment.room_id;
+                    $j.each(assignment.timeslots, function(k, timeslot) {
+                        var cell = this.getCell(roomID, timeslot);
+                        if(!cell.disabled) {
+                            cell.el.removeClass(className);
+                        }
+                    }.bind(this));
+                }
             }.bind(this));
         }.bind(this);
 
