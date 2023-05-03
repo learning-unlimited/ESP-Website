@@ -55,7 +55,7 @@ fi
 # How we add the repository depends on the version of Ubuntu
 if [ $((${UBUNTU_VERSION%.*}+0)) -gt 12 ]
 then
-sudo add-apt-repository universe
+sudo add-apt-repository -y universe
 else
 sudo add-apt-repository "deb http://old-releases.ubuntu.com/ubuntu $(lsb_release -sc) universe"
 fi
@@ -81,6 +81,6 @@ then
 fi
 
 # Install/upgrade pip and Python dependencies.
-python3.7 -m pip install -U pip
-python3.7 -m pip install -U -r "$BASEDIR/esp/requirements.txt"
+python -m pip install -U pip
+python -m pip install -U -r "$BASEDIR/esp/requirements.txt"
 

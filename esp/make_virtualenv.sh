@@ -67,4 +67,4 @@ echo "Creating Virtualenv in $VENVDIR"
 
 sudo python3.7 -m pip install "virtualenv>=1.10"
 
-virtualenv "$VENVDIR"
+virtualenv "$VENVDIR" --always-copy
