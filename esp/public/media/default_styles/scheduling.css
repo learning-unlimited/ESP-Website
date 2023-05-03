@@ -99,7 +99,7 @@ td.moderator-unavailable-cell {
     color: white !important;
 }
 
-td .selected-section {
+td.selected-section {
     outline: 1px solid yellow;
 }
 
@@ -211,4 +211,25 @@ button.sidetoolbar {
 #message-div strong {
     font-family: Courier New;
     font-size: large;
+}
+
+#legend {
+    display: none;
+    border: #555 6px solid;
+    background-color: white;
+    color: black;
+    text-align: center;
+    border-radius: 6px;
+    padding: 1.5vh;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2.5vh;
+    font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
+    box-shadow: 0.5vh 0.5vh #888888;
+}
+
+#legend td {
+    padding: 1vh;
 }

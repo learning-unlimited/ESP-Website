@@ -303,6 +303,53 @@
   </form>
 </div>
 
+<div id="legend">
+  <table>
+    <tr>
+      <td class="available-cell matrix-cell"></td><td>Classroom is available</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell disabled-cell"></td><td>Classroom is not available</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell locked-cell"></td><td>Locked section</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell selected-section"></td><td>Selected section</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell teacher-available-cell"></td><td>All teachers available</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell teacher-available-not-first-cell"></td><td>All teachers available, but class can not start in this block</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell teacher-teaching-cell"></td><td>At least one teacher teaching</td>
+    </tr>
+  </table>
+  {% if has_moderator_module %}
+  
+  <table>
+    <tr>
+      <td class="matrix-cell moderator-available-not-first-cell"></td><td>All moderators available, but class can not start in this block</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell moderator-unavailable-cell"></td><td>{{ program.getModeratorTitle }} unavailable</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell moderator-available-cell"></td><td>{{ program.getModeratorTitle }} available</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell moderator-teaching-cell"></td><td>{{ program.getModeratorTitle }} teaching</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell moderator-moderating-or-teaching-cell"></td><td>Moderator already busy</td>
+    </tr>
+  </table>
+  {% endif %}
+</div>
+
+
 <script>
 $j("#info-panel").resizable({
   handles: {s: '#separator'},
