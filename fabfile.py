@@ -18,6 +18,7 @@
 #     local files, since fab may be invoked from anywhere in the source tree.
 #
 
+from __future__ import absolute_import
 from fabric.api import *
 from fabric.contrib import files
 
@@ -350,7 +351,7 @@ def dumpdb(filename="devsite_django.sql"):
     ensure_environment()
 
     sys.path.insert(0, 'esp/esp/')
-    from local_settings import DATABASES
+    from settings import DATABASES
     default_db = DATABASES['default']
 
     sudo("PGHOST=%s PGPORT=%s PGDATABASE=%s PGUSER=%s PGPASSWORD=%s pg_dump > %s%s" %
