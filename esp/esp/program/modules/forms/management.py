@@ -7,6 +7,7 @@ from esp.resources.models import ResourceType, Resource
 from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 
 from esp.program.models.class_ import ClassSubject, ClassSection
+from esp.program.class_status import ClassStatus
 from decimal import Decimal
 
 """ Forms for the new class management module.  Can be used elsewhere. """
@@ -48,9 +49,15 @@ class ClassManageForm(ManagementForm):
             initial_dict = self.load_data(self.cls, prefix)
             super(ClassManageForm, self).__init__(data=initial_dict, *args, **kwargs)
             if self.cls.hasScheduledSections():
+                self.fields['status'].choices.remove((ClassStatus.REJECTED, 'Rejected'))
                 self.fields['duration'].widget.attrs['disabled'] = True
                 self.fields['duration'].widget.attrs['title'] = "At least one section of this class has already been scheduled"
                 self.fields['duration'].required = False
+            elif self.cls.isCancelled():
+                self.fields['status'].choices.remove((ClassStatus.REJECTED, 'Rejected'))
+            else:
+                self.fields['status'].choices.remove((ClassStatus.CANCELLED, 'Cancelled'))
+            self.fields['status'].widget.attrs['data-cls-status'] = self.cls.status
         else:
             super(ClassManageForm, self).__init__(*args, **kwargs)
 
@@ -73,6 +80,7 @@ class ClassManageForm(ManagementForm):
         return self.initial
 
     def save_data(self, cls):
+        old_status = cls.status
         cls.status = self.cleaned_data['status']
         cls.grade_min = self.cleaned_data['min_grade']
         cls.grade_max = self.cleaned_data['max_grade']
@@ -81,11 +89,12 @@ class ClassManageForm(ManagementForm):
         cls.class_size_max = self.cleaned_data['class_size']
         cls.directors_notes = self.cleaned_data['notes']
 
+        if self.cleaned_data['status'] != old_status:
+            # Update sections; don't override sections that are already cancelled/rejected
+            cls.set_all_sections_to_status(self.cleaned_data['status'])
+
         for sec in cls.sections.all():
             sec.duration = cls.duration
-            #   If the section's status has not already been marked, apply the subject's status.
-            if sec.status == 0:
-                sec.status = self.cleaned_data['status']
             if self.cleaned_data['reg_status']:
                 sec.registration_status = self.cleaned_data['reg_status']
             #   Give the section a new capacity if the size of the class has been changed on the form.
@@ -116,6 +125,14 @@ class SectionManageForm(ManagementForm):
                 prefix = kwargs['prefix'] + '-'
             initial_dict = self.load_data(self.sec, prefix)
             super(SectionManageForm, self).__init__(data=initial_dict, *args, **kwargs)
+            if self.sec.isScheduled():
+                self.fields['status'].choices.remove((ClassStatus.REJECTED, 'Rejected'))
+            elif self.sec.isCancelled():
+                self.fields['status'].choices.remove((ClassStatus.REJECTED, 'Rejected'))
+            else:
+                self.fields['status'].choices.remove((ClassStatus.CANCELLED, 'Cancelled'))
+            self.fields['status'].widget.attrs['data-sec-status'] = self.sec.status
+            self.fields['status'].widget.attrs['data-cls-status'] = self.sec.parent_class.status
         else:
             super(SectionManageForm, self).__init__(*args, **kwargs)
 
@@ -180,8 +197,13 @@ class ClassCancellationForm(forms.Form):
         if not initial['target'].parent_program.hasModule('GroupTextModule') or not GroupTextModule.is_configured():
             self.fields['text_students'].widget = forms.HiddenInput()
 
+class SectionMultipleChoiceField(forms.ModelMultipleChoiceField):
+    """ Custom field to customize the section labels """
+    def label_from_instance(self, sec):
+        return u'%s: %s (%s)' % (sec.emailcode(), sec.title(), ', '.join(sec.friendly_times(include_date = True)))
+
 class SectionCancellationForm(forms.Form):
-    target = forms.ModelChoiceField(queryset=ClassSection.objects.all(), widget=forms.HiddenInput)
+    target = SectionMultipleChoiceField(label = "Section(s)", queryset=ClassSection.objects.all(), widget = forms.CheckboxSelectMultiple(), required=False)
     explanation = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 60}), required=False, help_text='Optional but recommended')
     unschedule = forms.BooleanField(help_text='Check this box to unschedule this section in order to free up space for others.  This will delete the original time and location and you won\'t be able to recover them.', required=False)
     email_lottery_students = forms.BooleanField(help_text='Check this box to email students who applied for this section in a lottery, in addition to those that are actually enrolled.', required=False)
@@ -191,8 +213,9 @@ class SectionCancellationForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         initial = kwargs.pop('initial', {})
-        initial['target'] = kwargs.pop('section', None)
+        cls = kwargs.pop('cls', None)
         kwargs['initial'] = initial
         super(SectionCancellationForm, self).__init__(*args, **kwargs)
-        if not initial['target'].parent_program.hasModule('GroupTextModule') or not GroupTextModule.is_configured():
+        self.fields['target'].queryset = cls.sections.filter(status__gte = 0)
+        if not cls.parent_program.hasModule('GroupTextModule') or not GroupTextModule.is_configured():
             self.fields['text_students'].widget = forms.HiddenInput()

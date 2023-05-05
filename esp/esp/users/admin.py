@@ -1,9 +1,10 @@
 from django.contrib import admin
+from django.utils.translation import ugettext_lazy as _
 from esp.admin import admin_site
 from django import forms
 from django.db import models
 from esp.users.models.forwarder import UserForwarder
-from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, Record, Permission, GradeChangeRequest
+from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, RecordType, Record, Permission, GradeChangeRequest
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from esp.utils.admin_user_search import default_user_search
@@ -51,6 +52,11 @@ class ESPUserAdmin(UserAdmin):
         )
 admin_site.register(ESPUser, ESPUserAdmin)
 
+class RecordTypeAdmin(admin.ModelAdmin):
+    list_display = ['id', 'name', 'description']
+    search_fields = ['name', 'description']
+admin_site.register(RecordType, RecordTypeAdmin)
+
 class RecordAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'event', 'program', 'time',]
     list_filter = ['event', 'program', 'time']
@@ -58,10 +64,26 @@ class RecordAdmin(admin.ModelAdmin):
     date_hierarchy = 'time'
 admin_site.register(Record, RecordAdmin)
 
+class ExpiredListFilter(admin.SimpleListFilter):
+    title = _('expiration status')
+    parameter_name = 'status'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('unexpired', _('Not expired')),
+            ('expired', _('Expired')),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'unexpired':
+            return queryset.filter(end_date=None) | queryset.filter(end_date__gt=datetime.datetime.now())
+        elif self.value() == 'expired':
+            return queryset.filter(end_date__lte=datetime.datetime.now())
+
 class PermissionAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'role', 'permission_type','program','start_date','end_date']
     search_fields = default_user_search() + ['permission_type', 'program__url']
-    list_filter = ['permission_type', 'program', 'role']
+    list_filter = ['permission_type', 'program', 'role', ExpiredListFilter]
     date_hierarchy = 'start_date'
     actions = [ 'expire', 'renew' ]
 

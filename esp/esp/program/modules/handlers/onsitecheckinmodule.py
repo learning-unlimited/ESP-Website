@@ -40,7 +40,7 @@ from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.forms.generic_search_form import StudentSearchForm
-from esp.users.models    import ESPUser, User, Record
+from esp.users.models    import ESPUser, User, Record, RecordType
 from django              import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string, select_template
@@ -50,6 +50,8 @@ import json
 
 
 class OnSiteCheckinModule(ProgramModuleObj):
+    doc = """Check in students for a program (including for payments and forms)."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -61,42 +63,38 @@ class OnSiteCheckinModule(ProgramModuleObj):
             }
 
     def updatePaid(self, paid=True):
-        """ Close off the student's invoice and, if paid is True, create a receipt showing
-        that they have paid all of the money they owe for the program. """
-        if not self.hasPaid():
-            iac = IndividualAccountingController(self.program, self.student)
-            iac.ensure_required_transfers()
-            if paid:
-                iac.submit_payment(iac.amount_due())
+        IndividualAccountingController.updatePaid(self.program, self.student, paid)
 
     def create_record(self, event):
         created = False
         if event=="attended":
             if not self.program.isCheckedIn(self.student):
-                rec = Record(user=self.student, event="attended", program=self.program)
+                rt = RecordType.objects.get(name="attended")
+                rec = Record(user=self.student, event=rt, program=self.program)
                 rec.save()
                 created = True
+        elif event=="paid":
+            self.updatePaid(True)
         else:
-            if event=="paid":
-                self.updatePaid(True)
-
+            rt = RecordType.objects.get(name=event)
             recs, created = Record.objects.get_or_create(user=self.student,
-                                                         event=event,
+                                                         event=rt,
                                                          program=self.program)
         return created
 
     def delete_record(self, event):
         if event=="attended":
             if self.program.isCheckedIn(self.student):
-                rec = Record(user=self.student, event="checked_out", program=self.program)
+                rt = RecordType.objects.get(name="checked_out")
+                rec = Record(user=self.student, event=rt, program=self.program)
                 rec.save()
+        elif event=="paid":
+            self.updatePaid(False)
         else:
-            if event=="paid":
-                self.updatePaid(False)
-
+            rt = RecordType.objects.get(name=event)
             recs, created = Record.objects.get_or_create(user=self.student,
-                                                event=event,
-                                                program=self.program)
+                                                         event=rt,
+                                                         program=self.program)
             recs.delete()
         return True
 
@@ -108,8 +106,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
     def hasPaid(self):
         iac = IndividualAccountingController(self.program, self.student)
-        return Record.user_completed(self.student, "paid", self.program) or \
-            iac.has_paid(in_full=True)
+        return iac.has_paid(in_full=True)
 
     def hasMedical(self):
         return Record.user_completed(self.student, "med", self.program)
@@ -118,23 +115,23 @@ class OnSiteCheckinModule(ProgramModuleObj):
         return Record.user_completed(self.student, "liab", self.program)
 
     def timeCheckedIn(self):
-        u = Record.objects.filter(event="attended",program=self.program, user=self.student).order_by("time")
+        u = Record.objects.filter(event__name="attended",program=self.program, user=self.student).order_by("time")
         return str(u[0].time.strftime("%H:%M %m/%d/%y"))
 
     def lastCheckedIn(self):
-        u = Record.objects.filter(event="attended",program=self.program, user=self.student).order_by("-time")
+        u = Record.objects.filter(event__name="attended",program=self.program, user=self.student).order_by("-time")
         return str(u[0].time.strftime("%H:%M %m/%d/%y"))
 
     def checkinPairs(self):
-        recs = Record.objects.filter(program = self.program, user = self.student, event__in=["attended", "checked_out"]).order_by('time')
+        recs = Record.objects.filter(program = self.program, user = self.student, event__name__in=["attended", "checked_out"]).order_by('time')
         pairs = []
         checked_in = False
         ind = 0
         for rec in recs:
-            if not checked_in and rec.event == "attended":
+            if not checked_in and rec.event.name == "attended":
                 pairs.append([rec])
                 checked_in = True
-            elif checked_in and rec.event == "checked_out":
+            elif checked_in and rec.event.name == "checked_out":
                 pairs[ind].append(rec)
                 checked_in = False
                 ind += 1
@@ -196,7 +193,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 #   Check that this is a student user who is not also teaching (e.g. an admin)
                 if student.isStudent() and student not in self.program.teachers()['class_approved']:
                     if not prog.isCheckedIn(student):
-                        rec = Record(user=student, event="attended", program=prog)
+                        rec = Record(user=student, event__name="attended", program=prog)
                         rec.save()
                     context['message'] = '%s %s marked as attended.' % (student.first_name, student.last_name)
                     if request.is_ajax():
@@ -233,7 +230,8 @@ class OnSiteCheckinModule(ProgramModuleObj):
                         if prog.isCheckedIn(student):
                             results['existing'].append(code)
                         else:
-                            new = Record(user=student, program=prog, event='attended')
+                            rt = RecordType.objects.get(name="attended")
+                            new = Record(user=student, program=prog, event=rt)
                             new.save()
                             results['new'].append(code)
                     else:
@@ -267,7 +265,8 @@ class OnSiteCheckinModule(ProgramModuleObj):
                     if prog.isCheckedIn(student):
                         json_data['message'] = '%s is already checked in!' % info_string
                     else:
-                        new = Record(user=student, program=prog, event='attended')
+                        rt = RecordType.objects.get(name="attended")
+                        new = Record(user=student, program=prog, event=rt)
                         new.save()
                         json_data['message'] = '%s is now checked in!' % info_string
                 else:
@@ -289,18 +288,18 @@ class OnSiteCheckinModule(ProgramModuleObj):
                     else:
                         self.delete_record(key)
                 if "undocheckin" in request.POST:
-                    Record.objects.filter(event="attended",program=self.program, user=self.student).order_by("-time")[0].delete()
+                    Record.objects.filter(event__name="attended",program=self.program, user=self.student).order_by("-time")[0].delete()
                 if "undocheckout" in request.POST:
-                    Record.objects.filter(event="checked_out",program=self.program, user=self.student).order_by("-time")[0].delete()
+                    Record.objects.filter(event__name="checked_out",program=self.program, user=self.student).order_by("-time")[0].delete()
                 message = "Check-in updated for " + user.username
             else:
                 error = True
 
-            context = {'error': error, 'message': message}
+            context = {'error': error, 'message': message, 'module': self.module.link_title}
             return render_to_response('users/usersearch.html', request, context)
 
         else:
-            user, found = search_for_user(request, self.program.students_union())
+            user, found = search_for_user(request, self.program.students_union(), add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
             if not found:
                 return user
 

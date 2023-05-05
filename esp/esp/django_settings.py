@@ -39,7 +39,7 @@ Learning Unlimited, Inc.
 #                       Edit local_settings.py instead                         #
 #                                                                              #
 ################################################################################
-
+import os
 
 ###############################################
 # Default site identification                 #
@@ -117,7 +117,7 @@ DATABASES = {'default':
 ##########################
 EMAIL_HOST   = 'localhost'
 EMAIL_PORT   = '25'
-SERVER_EMAIL = 'server@diogenes.learningu.org'
+SERVER_EMAIL = 'server@{}'.format(os.uname()[1])
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 EMAIL_HOST_SENDER = EMAIL_HOST
 EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
@@ -185,7 +185,8 @@ TEMPLATES = [
             ],
             'loaders': [
                 'admin_tools.template_loaders.Loader',
-                'esp.utils.template.Loader',
+                'esp.utils.template.Loader', # for template overrides
+                'esp.utils.template.ThemeLoader', # theme templates
                 ('django.template.loaders.cached.Loader',
                     (
                      'django.template.loaders.filesystem.Loader',
@@ -247,6 +248,7 @@ INSTALLED_APPS = (
     'argcache.apps.ArgCacheConfig',
     'django_extensions',
     'reversion',
+    'captcha',
     'form_utils',
     'django.contrib.redirects',
     'debug_toolbar',
@@ -261,7 +263,6 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
 )
 
-import os
 for app in ('django_evolution', 'django_command_extensions'):
     if os.path.exists(app):
         INSTALLED_APPS += (app,)
@@ -309,13 +310,16 @@ CONTACTFORM_EMAIL_ADDRESSES = {}
 #   It can be overridden by setting CDN_ADDRESS in local_settings.py.
 CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
 
+JQUERY_VERSION = '3.6.0'
+JQUERY_HASH = 'sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=='
+
+JQUERY_UI_VERSION = '1.13.0'
+
 # allow configuration of additional Javascript to be placed on website
 # configuration should include <script></script> tags
 ADDITIONAL_TEMPLATE_SCRIPTS = ''
 
 DEBUG_TOOLBAR = True # set to False in local_settings to globally disable the debug toolbar
-
-DEBUG_TOOLBAR_PATCH_SETTINGS = False
 
 DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.cache.CachePanel',
@@ -326,7 +330,7 @@ DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.signals.SignalsPanel',
     'debug_toolbar.panels.sql.SQLPanel',
     'debug_toolbar.panels.staticfiles.StaticFilesPanel',
-    'debug_toolbar.panels.templates.TemplatesPanel',
+    'esp.utils.debug_panels.TemplatesPanel',
     'debug_toolbar.panels.timer.TimerPanel',
     'debug_toolbar.panels.versions.VersionsPanel',
     'debug_toolbar.panels.redirects.RedirectsPanel',
@@ -347,7 +351,7 @@ DEBUG_TOOLBAR_CONFIG = {
         'argcache.signals.cache_deleted',
     ],
     'SHOW_TEMPLATE_CONTEXT': True,
-    'INSERT_BEFORE': '</div>',
+    'INSERT_BEFORE': '</body>',
     'ENABLE_STACKTRACES' : True,
     'RENDER_PANELS': None,
     'SHOW_COLLAPSED': False, # Ideally would be True, but there is a bug in their code.
@@ -408,3 +412,5 @@ ADMIN_TOOLS_INDEX_DASHBOARD = 'admintoolsdash.CustomIndexDashboard'
 ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
 
 ADMIN_TOOLS_THEMING_CSS = '/media/default_styles/admin_theme.css'
+
+SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error']

@@ -1,35 +1,73 @@
+<p>{{ num_users }} users were matched by the query.</p>
 <h2>Aggregrate Demographic Info</h2>
 
 <p>Ages and grades are reported as birth years and graduation years to allow aggregating results from multiple programs.</p>
 
-<ul>
-<li>{{ num_students }} students selected by query</li>
-<li>Program stats (from all registered students)
-    <ul>
-    <li>{{ num_classes }} class subjects; total of {{ num_sections }} class sections</li>
-    <li>{{ num_class_hours }} class-hours</li>
-    <li>{{ num_student_class_hours }} student-class-hours (based on registration)</li>
-    </ul>
-</li>
-<li>Age distribution
-    <ul>
-    {% for pair in birthyear_data %}
-        <li>Born in {{ pair.0 }}: {{ pair.1 }} students
-    {% endfor %}
-    </ul>
-</li>
-<li>Grade distribution
-    <ul>
-    {% for pair in gradyear_data %}
-        <li>Graduating in {{ pair.0 }}: {{ pair.1 }} students
-    {% endfor %}
-    </ul>
-</li>
-<li>Financial aid information
-    <ul>
-        <li>{{ finaid_applied }} applications for financial aid</li>
-        <li>{{ finaid_lunch }} students claimed free/reduced lunch</li>
-        <li>{{ finaid_approved }} students received financial aid</li>
-    </ul>
-</li>
-</ul>
+<h3>Program stats (from all registered students)</h3>
+<table>
+<tr>
+<th width="50%"></th>
+<th>#</th>
+</tr>
+<tr>
+    <td>Class subjects</td>
+    <td>{{ num_classes }}</td>
+</tr>
+<tr>
+    <td>Class sections</td>
+    <td>{{ num_sections }}</td>
+</tr>
+<tr>
+    <td>Class-hours</td>
+    <td>{{ num_class_hours }}</td>
+</tr>
+<tr>
+    <td>Student-class-hours registered</td>
+    <td>{{ num_student_class_hours }}</td>
+</tr>
+</table>
+<h3>Age distribution</h3>
+<table>
+<tr>
+<th width="50%">Birth Year</th>
+<th># of Students</th>
+</tr>
+{% for birth_year, num in birthyear_data %}
+<tr>
+    <td>{{ birth_year }}</td>
+    <td>{{ num }}</td>
+</tr>
+{% endfor %}
+</table>
+<h3>Grade distribution</h3>
+<table>
+<tr>
+<th width="50%">Graduation Year</th>
+<th># of Students</th>
+</tr>
+{% for grad_year, num in gradyear_data %}
+<tr>
+    <td>{{ grad_year }}</td>
+    <td>{{ num }}</td>
+</tr>
+{% endfor %}
+</table>
+<h3>Financial aid information</h3>
+<table>
+<tr>
+<th width="50%"></th>
+<th># of Students</th>
+</tr>
+<tr>
+    <td>Applied for financial aid</td>
+    <td>{{ finaid_applied }}</td>
+</tr>
+<tr>
+    <td>Claimed free/reduced lunch</td>
+    <td>{{ finaid_lunch }}</td>
+</tr>
+<tr>
+    <td>Received financial aid</td>
+    <td>{{ finaid_approved }}</td>
+</tr>
+</table>

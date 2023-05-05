@@ -27,6 +27,20 @@
       <a href="/">
           <img src="/media/images/theme/logo.png" alt="{{theme.full_group_name}}" class="logo">
       </a>
+       <div id="contact_info">
+        <span class="title accentcolor">{{ theme.full_group_name }}</span></br>
+        <span class="normal">{{ theme.contact_info|linebreaksbr }}</span></br>
+        <span class="normal">Email: <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></span></br>
+        <span class="normal">
+          {% if theme.faq_link %}
+            <a href="{{theme.faq_link}}">FAQ</a> |
+          {% endif %}
+          <a href="/contact.html">contact us</a>
+          {% if theme.facebook_link %}
+            | <a href="{{ theme.facebook_link }}">facebook</a>
+          {% endif %}
+        </span>
+      </div>
     </div>
     <div class="header-cell jumbotron-announcements">
       {% load render_qsd %}
@@ -74,6 +88,24 @@
     {% endblock %}
 
     <div id="main" class="span9 resizable">
+      {% if request.mod_required %}
+      <div class="alert alert-danger">
+          <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+          This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
+      </div>
+      {% endif %}
+      {% if request.show_perm_info %}
+      <div class="alert alert-info">
+          <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+          <a href="/manage/{{ request.one }}/{{ request.two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
+          <br />
+          {% if request.roles_with_perm %}
+              Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
+          {% else %}
+              <strong>No (non-admin) roles have permission to view this page!</strong>
+          {% endif %}
+      </div>
+      {% endif %}
       {% block content %}
       {% endblock content %}
     </div>

@@ -1,0 +1,21 @@
+<p>{{ num_users }} users were matched by the query.</p>
+<h2>Teacher Registration Stats</h2>
+<p>The number of teachers that registered for each program are shown below (using several metrics).</p>
+<table>
+<tr>
+<th></th>
+{% for stat in stat_names %}
+<th>{{ stat }}</th>
+{% endfor %}
+</tr>
+{% for prog, stats in prog_data %}
+<tr>
+    <td>{{ prog }}</td>
+    {% for stat in stats %}
+    <td>{{ stat }}</td>
+    {% endfor %}
+</tr>
+{% endfor %}
+</table>
+
+{% include "program/modules/bigboardmodule/bigboard_graph.html" %}

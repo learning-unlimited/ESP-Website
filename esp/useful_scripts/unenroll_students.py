@@ -8,6 +8,7 @@ import argparse
 
 from script_setup import *
 
+from esp.program.class_status import ClassStatus
 from esp.program.models import Program, StudentRegistration, RegistrationType
 from esp.users.models import ESPUser
 from datetime import datetime, timedelta
@@ -22,11 +23,11 @@ args = parser.parse_args()
 enrolled = RegistrationType.objects.get(name='Enrolled')
 
 prog = Program.objects.get(id=args.program_id)
-relevant_sections = prog.sections().annotate(begin_time=Min("meeting_times__start")).filter(status=10, parent_class__status=10).exclude(parent_class__category__category='Lunch')
+relevant_sections = prog.sections().annotate(begin_time=Min("meeting_times__start")).filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED).exclude(parent_class__category__category='Lunch')
 # classes that started more than 60 minutes ago
 passed_sections = relevant_sections.filter(begin_time__lt=datetime.now() - timedelta(minutes=60))
 # students who are enrolled in a class that started more than 60 minutes ago, who have not checked in
-students = ESPUser.objects.filter(studentregistration__in=StudentRegistration.valid_objects(), studentregistration__relationship=enrolled, studentregistration__section__in=passed_sections).distinct().exclude(record__program=prog, record__event='attended')
+students = ESPUser.objects.filter(studentregistration__in=StudentRegistration.valid_objects(), studentregistration__relationship=enrolled, studentregistration__section__in=passed_sections).distinct().exclude(record__program=prog, record__event__name='attended')
 # classes that start in the next 60 minutes
 upcoming_sections = relevant_sections.filter(begin_time__gt=datetime.now())
 if args.per_hour:

@@ -1,18 +1,25 @@
 #!/bin/bash -e
 
 # This script will install the package dependencies for this website install
-# that cannot be installed via apt-get.
+# that cannot be installed via apt.
 
-sudo apt-get install -y python-software-properties
-sudo add-apt-repository -y ppa:chris-lea/node.js
-sudo apt-get update
-sudo apt-get install -y nodejs
+if [ $(echo "$(lsb_release -rs) >= 20" | bc) -eq 1 ]; then 
+  sudo apt install -y curl
+ else
+  sudo apt-get install -y curl
+fi
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+if [ $(echo "$(lsb_release -rs) >= 20" | bc) -eq 1 ]; then 
+  sudo apt install -y nodejs
+ else
+  sudo apt-get install -y nodejs
+fi
 
 if [[ ":$PATH:" == *":/usr/bin:"* ]]
 then
     # explicitly pass --prefix /usr to npm
-    sudo -H npm install -g --prefix /usr less@1.3.1
+    sudo -H npm install --prefix /usr less@1.7.5 -g
 else
     # no /usr/bin? hopefully this doesn't happen, let npm guess
-    sudo -H npm install -g less@1.3.1
+    sudo -H npm install less@1.7.5 -g
 fi

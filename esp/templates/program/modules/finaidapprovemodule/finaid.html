@@ -18,6 +18,12 @@
     #finaid_table {
       width: 100% !important;
       margin: 0px !important;
+      position: relative;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 10000;
     }
     </style>
 {% endblock %}
@@ -58,7 +64,7 @@ function toggle(source) {
             <i align="center" class="glyphicon glyphicon-minus-sign" style="color:firebrick; width:100%; font-size:1.5em;" />
             {% endif %}
           </td>
-          <td align="center" style="max-width: 70px; overflow-wrap:break-word;">{{ req.user.name }}</td>
+          <td align="center" style="max-width: 70px; overflow-wrap:break-word;"><a href="/manage/userview?username={{ req.user.username|urlencode }}&program={{ program.id }}">{{ req.user.name }}</a></td>
           <td align="center">
             {% if req.reduced_lunch %}
             <i align="center" class="glyphicon glyphicon-ok-sign" style="color:green; width:100%; font-size:1.5em;" />
@@ -87,7 +93,7 @@ function toggle(source) {
     <input name="percent" type="number" min="0" step="1" max="100" value="100" required>
     <br />
     <input type="submit" value="Approve Requests" class="btn btn-primary" >
-    <input type="checkbox" id="approve_blanks_checkbox" name="approve_blanks" checked> Approve blank requests?
+    <input type="checkbox" id="approve_blanks_checkbox" name="approve_blanks"> Approve blank requests?
   </form>
 
   {% if error %}
@@ -111,4 +117,5 @@ function toggle(source) {
   {% endif %}
 </div>
 
+{% include "program/modules/admincore/returnlink.html" %}
 {% endblock %}

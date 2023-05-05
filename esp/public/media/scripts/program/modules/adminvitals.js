@@ -23,7 +23,6 @@ function fillStats(data)
     categories = stats.categories;
     grades = stats.grades;
     shirtnum = stats.shirtnum;
-    splashinfo = stats.splashinfo;
     accounting = stats.accounting;
 
     // Fill in student num data
@@ -34,6 +33,11 @@ function fillStats(data)
 
     // Fill in the volunteer num data
     fillData("#stats_volunteers", vitals.volunteernum)
+
+    if (has_moderator_module === "True") {
+        // Fill in the moderator num data
+        fillData("#stats_moderators", vitals.moderatornum)
+    }
 
     // Fill in the classes num data
     fillData("#stats_classes", vitals.classnum)
@@ -116,39 +120,6 @@ function fillStats(data)
         html_string = html_string.concat("</table><br>");
     }
     $tshirts.html(html_string);
-    
-    //  Fill in the lunch/sibling discount table
-    $splashinfo = $j("#stats_splashinfo > .module_group_body");
-    if (splashinfo)
-    {
-        $splashinfo.html("<p><ul>    \
-            <li>Saturday Lunch    \
-                <ul id=\"splashinfo_lunchsat_list\">    \
-                </ul>    \
-            </li>    \
-            <li>Sunday Lunch    \
-                <ul id=\"splashinfo_lunchsun_list\">    \
-                </ul>    \
-            </li>    \
-            <li>Sibling Discount    \
-                <ul id=\"splashinfo_siblings_list\">    \
-                </ul>    \
-            </li>    \
-            </ul>    \
-            </p>");
-        var splashinfo_keys = ["lunchsat", "lunchsun", "siblings"];
-        for (var i = 0; i < splashinfo_keys.length; i++)
-        {
-            var ul_top = $j("#splashinfo_" + splashinfo_keys[i] + "_list");
-            for (var key in splashinfo.data[splashinfo_keys[i]])
-            {
-                console.log(splashinfo_keys[i] + ": " + key + " -> " + splashinfo.data[splashinfo_keys[i]][key]);
-                ul_top.append("<li><b>" + key + "</b>: " + splashinfo.data[splashinfo_keys[i]][key]);
-            }
-        }
-    }
-    else
-        $splashinfo.html("SplashInfo module is not enabled -- no statistics");
     
     //  Fill in the accounting table
     $accounting = $j("#stats_accounting > .module_group_body");

@@ -1,3 +1,4 @@
+<div id="filter_accordion">
 <h4 class="any"><a href="#">User ID</a></h4>
 <div>Enter ID number: <input type="text" size="6" name="userid" id="userid" /> <br />
 <small>(Can be a comma-separated list)</small></div>
@@ -34,8 +35,8 @@
 
 <h4 class="student"><a href="#">Grade</a></h4>
 <div>
-Min Grade: <input type="text" size="3" name="grade_min" value="" /><br />
-Max Grade: <input type="text" size="3" name="grade_max" value="" />
+Min Grade: <input type="text" size="3" name="grade_min" value="{{ program.grade_min }}" /><br />
+Max Grade: <input type="text" size="3" name="grade_max" value="{{ program.grade_max }}" />
 </div>
 
 <h4 class="teacher"><a href="#">Graduation year</a></h4>
@@ -96,4 +97,5 @@ Max number: <input type="text" size="3" name="hours_max" value="" />
 <form id="student_in_class" name="student_in_class" method="POST" action="{{ request.path }}">
     {{ student_search_form }}
 </form>
+</div>
 </div>

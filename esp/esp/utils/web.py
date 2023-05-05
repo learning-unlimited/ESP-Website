@@ -32,7 +32,10 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import os
 import re
+import zipfile
+from io import BytesIO as StringIO
 from django.template import Template, loader, RequestContext
 from django.conf import settings
 from django import http
@@ -58,6 +61,7 @@ def get_from_id(id, module, strtype = 'object', error = True):
 
 def render_to_response(template, request, context, content_type=None, use_request_context=True):
     from esp.web.views.navBar import makeNavBar
+    from esp.tagdict.models import Tag
 
     if isinstance(template, (basestring,)):
         template = [ template ]
@@ -65,6 +69,7 @@ def render_to_response(template, request, context, content_type=None, use_reques
     section = request.path.split('/')[1]
     tc = ThemeController()
     context['theme'] = tc.get_template_settings()
+    context['current_theme_version'] = Tag.getTag("current_theme_version")
     context['settings'] = settings
 
     context['current_programs'] = Program.current_programs()
@@ -133,3 +138,16 @@ def secure_required(view_fn):
         return view_fn(request, *args, **kwargs)
     return _wrapped_view
 
+def zip_download(files = [], zipname = 'files'):
+    """
+    Zips a list of files together and returns it as a download
+    """
+    file_like = StringIO()
+    zf = zipfile.ZipFile(file_like, 'w')
+    for file in files:
+        if file:
+            zf.write(file, os.path.basename(os.path.normpath(file)))
+    zf.close()
+    response = HttpResponse(file_like.getvalue(), content_type='application/zip')
+    response['Content-Disposition']='attachment; filename=%s.zip' % zipname
+    return response

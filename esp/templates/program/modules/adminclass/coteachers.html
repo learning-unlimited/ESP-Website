@@ -27,26 +27,34 @@
 <p>Please list all teachers that will be helping teach this class.  They will need to create accounts and mark their available times through the teacher registration page (for scheduling purposes).</p>
 
 {% if conflict %}
-    <p>
-    <b><font color="red">{% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ conflict.username }}">{{ conflict.name }}</a>{% else %}{{ conflict.name }}{% endif %} has a conflicting schedule.</b></font><br />
-    </p>
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ conflict.username }}">{{ conflict.name }}</a>{% else %}{{ conflict.name }}{% endif %} has a conflicting schedule.</b></font><br />
+    </div>
+{% elif unavailableuser %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ unavailableuser.username }}">{{ unavailableuser.name }}</a>{% else %}{{ unavailableuser.name }}{% endif %} is not available when this class is scheduled ({{ unavailabletimes|join:", " }}).</b></font><br />
+    </div>
 {% endif %}
 
 {% if error %}
-<p style="color:red; font-weight: bold;">
-{{ error }}
-</p>
+<div class="alert alert-danger">
+    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        {{ error }}
+</div>
 {% endif %}
+
 <div id="program_form">
-{% if not coteachers|length %}
-There are currently no teachers associated with this class.
-{% else %}
 <form action="{{request.path}}" method="post" name="manage_coteachers">
 <table align="center" width="400">
     <tr>
         <th colspan="2">Current Teachers</th>
     </tr>
     <tr>
+    {% if not coteachers|length %}
+        <td colspan="2">There are currently no teachers associated with this class.</td>
+    {% else %}
         <td width="50%">
             <input type="hidden" name="op" value="del" />
             <input type="hidden" name="clsid" value="{{ class.id }}" />
@@ -66,11 +74,11 @@ There are currently no teachers associated with this class.
         <td>
             <input type="submit" class="button" value="Delete Selected" /><br />
         </td>
+    {% endif %}
     </tr>
 </table>
 </form>
-{% endif %}
-<form action="{{request.path}}" method="post" name="addteacher" onsubmit="cleanTeacherSubmit($j(this))">
+<form action="{{request.path}}" method="post" name="addteacher">
 <table align="center" width="400">
     <tr>
         <th colspan="2">Add a coteacher</th>
@@ -93,8 +101,72 @@ There are currently no teachers associated with this class.
     </tr>
 </table>
 </form>
+
+{% if program|hasModule:"TeacherModeratorModule" %}
+{% for section in class.get_sections %}
+<br>
+<form action="{{ request.path }}" method="post" name="manage_coteachers">
+<table align="center" width="400">
+    <tr>
+        <th colspan="2">Current {{ program.getModeratorTitle }}s for Section {{ section.index }}</th>
+    </tr>
+    <tr>
+    {% if not section.get_moderators|length %}
+        <td colspan="2">There are currently no {{ program.getModeratorTitle|lower }}s associated with this section.</td>
+    {% else %}
+        <td width="50%">
+            <input type="hidden" name="op" value="delmod" />
+            <input type="hidden" name="clsid" value="{{ class.id }}" />
+            <input type="hidden" name="secid" value="{{ section.id }}" />
+            <input type="hidden" name="moderators" value="{% for moderator in section.get_moderators %}{{ moderator.id }}{% if not forloop.last %},{% endif %}{% endfor %}" />
+
+            <select id="current_moderators_{{ section.id }}"
+                    class="moderators" name="delete_moderators" 
+                    size="5" multiple="multiple">
+            {% for moderator in section.get_moderators %}
+                <option value="{{ moderator.id }}">{{ moderator.last_name }}, 
+                    {{ moderator.first_name }} ({{ moderator.username }})</option>
+            {% endfor %}
+            </select>
+            <br />
+            
+        </td>
+        <td>
+            <input type="submit" class="button" value="Delete Selected" /><br />
+        </td>
+    {% endif %}
+    </tr>
+</table>
+</form>
+<form action="{{request.path}}" method="post" name="addmoderator">
+<table align="center" width="400">
+    <tr>
+        <th colspan="2">Add a {{ program.getModeratorTitle|lower }}</th>
+    </tr>
+    <tr>
+        <td colspan="2">Begin typing the {{ program.getModeratorTitle|lower }}'s name in `Last, First' format to find them.</td>
+    </tr>
+    <tr>
+        <td width="50%">
+            <input type="hidden" name="clsid" value="{{ class.id }}" />
+            <input type="hidden" name="secid" value="{{ section.id }}" />
+            <input type="hidden" name="op" value="addmod" />
+            <input type="hidden" name="moderators" value="{% for moderator in section.get_moderators %}{{ moderator.id }}{% if not forloop.last %},{% endif %}{% endfor %}" />
+
+	    <input type="text" name="moderator_name" id="moderator_name_{{ section.id }}" data-secid="{{ section.id }}"/>
+	    <input type="hidden" name="moderator_selected" id="moderator_id_{{ section.id }}"/>
+        </td>
+        <td>
+            <input type="submit" class="button" value="Add {{ program.getModeratorTitle }}" />
+        </td>
+    </tr>
+</table>
+</form>
+{% endfor %}
+{% endif %}
 </div>
 
+<br>
 <a class="btn" href="/manage/{{ program.getUrlBase }}/classavailability/{{ class.id }}">Check the class availability</a>
 
 {% include "program/modules/adminclass/returnlink.html" %}

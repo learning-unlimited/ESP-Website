@@ -50,6 +50,8 @@ from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegMo
 import datetime
 
 class OnSiteAttendance(ProgramModuleObj):
+    doc = """Provides statistics on program attendance and allows admins to take attendance for classes."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -90,9 +92,9 @@ class OnSiteAttendance(ProgramModuleObj):
                 #Checked-out students
                 checked_out = prog.checkedOutStudents(time_max)
                 #Students that have been checked in for the program at any time before the end of this timeslot on the specified day, excluding students that have been checked out
-                checked_in = ESPUser.objects.filter(Q(record__event='attended', record__program=prog, record__time__lt=time_max)).exclude(id__in=checked_out).distinct()
+                checked_in = ESPUser.objects.filter(Q(record__event__name='attended', record__program=prog, record__time__lt=time_max)).exclude(id__in=checked_out).distinct()
                 #Students that have been checked in for the program during this timeslot on the specified day
-                checked_in_during_ts = ESPUser.objects.filter(Q(record__event='attended', record__program=prog, record__time__range=(time_min, time_max))).distinct()
+                checked_in_during_ts = ESPUser.objects.filter(Q(record__event__name='attended', record__program=prog, record__time__range=(time_min, time_max))).distinct()
                 #Students that have been checked in for the program at any time before the end of this timeslot on the specified day (and are not checked out) but are not attending a class during this timeslot on the specified day
                 not_attending = checked_in.exclude(id__in=attended)
                 #Get the classes that they aren't attending (if any)
@@ -120,7 +122,7 @@ class OnSiteAttendance(ProgramModuleObj):
                             student.enrolled_class = enrolled_section
                             onsite.append(student)
                 #Sections during this timeslot with no attendance recorded on the specified day
-                no_attendance = ClassSection.objects.filter(meeting_times=timeslot, status__gt=0).exclude(id__in=StudentRegistration.valid_objects(when).filter(section__meeting_times=timeslot, relationship__name="Attended").values_list('section__id', flat = True))
+                no_attendance = ClassSection.objects.filter(meeting_times=timeslot, status__gt=0).exclude(id__in=StudentRegistration.objects.filter(start_date__date=when.date(), section__meeting_times=timeslot, relationship__name="Attended").values_list('section__id', flat = True))
                 context.update({
                                 'attended': attended,
                                 'checked_in': checked_in,
@@ -147,7 +149,7 @@ class OnSiteAttendance(ProgramModuleObj):
     def times_checked_in(self, prog):
         return list(
             Record.objects
-            .filter(program=prog, event='attended')
+            .filter(program=prog, event__name='attended')
             .values('user').annotate(Min('time'))
             .order_by('time__min').values_list('time__min', flat=True))
 

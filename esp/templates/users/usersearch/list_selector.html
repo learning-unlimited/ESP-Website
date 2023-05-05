@@ -4,6 +4,20 @@ $j(document).ready(function() {
 });
 </script>
 
+{% if include_common %}
+<h3>Commonly used searches:</h3>
+<div id="common_searches">
+    <ul>
+        <li><a href="?recipient_type=Student&base_list=all_Student&grade_min={{ program.grade_min }}&grade_max={{ program.grade_max }}">All students within the age range of the program</a></li>
+        <li><a href="?recipient_type=Student&base_list=enrolled">All students enrolled in at least one class</a></li>
+        <li><a href="?recipient_type=Teacher&base_list=all_Teacher&gradyear_min={% now 'Y' %}">All teachers who have not graduated</a></li>
+        <li><a href="?recipient_type=Teacher&base_list=class_approved">All teachers teaching at least one approved class</a></li>
+        <li><a href="?recipient_type=Volunteer&base_list=all_Volunteer">All volunteers in the database</a></li>
+        <li><a href="?recipient_type=Volunteer&base_list=volunteer_all">All volunteers signed up for this program</a></li>
+    </ul>
+</div>
+{% endif %}
+
 <div id="list_descriptions" class="commpanel_hidden">
 {% for kv in lists.items %}{% for item in kv.1 %}
 <div id="list_description_{{ item.name }}">{{ item.description }}</div>
@@ -35,16 +49,16 @@ $j(document).ready(function() {
                 {% if include_prev_list %}
                 <div class="sendto_fn_select Student">
                     <div>
-                        <input type="checkbox" name="student_sendto_self" value="1" checked="checked" />
-                        <label for="student_sendto_self">Email the students</label>
+                        <input type="checkbox" id="student_sendto_self_basic" name="student_sendto_self" value="1" checked="checked" />
+                        <label for="student_sendto_self_basic">Email the students</label>
                     </div>
                     <div>
-                        <input type="checkbox" name="student_sendto_guardian" value="1" />
-                        <label for="student_sendto_guardian">Email the students' guardians</label>
+                        <input type="checkbox" id="student_sendto_guardian_basic" name="student_sendto_guardian" value="1" />
+                        <label for="student_sendto_guardian_basic">Email the students' guardians</label>
                     </div>
                     <div>
-                        <input type="checkbox" name="student_sendto_emergency" value="1" />
-                        <label for="student_sendto_emergency">Email the students' emergency contacts</label>
+                        <input type="checkbox" id="student_sendto_emergency_basic" name="student_sendto_emergency" value="1" />
+                        <label for="student_sendto_emergency_basic">Email the students' emergency contacts</label>
                     </div>
                 </div>
                 {% endif %}
@@ -76,7 +90,7 @@ $j(document).ready(function() {
             <div class="step_header"><span class="step_label">Step 3:</span> <span class="step_text">Do you need to filter this list down?</span></div>
             <div class="step_instructions">(For any criteria you don't need, just leave them blank.)</div>
             <div class="step_instructions step_highlight">Currently selected: <span id="filter_current_list"></span></div>
-            <div id="filter_accordion">
+            <div id="base_filter_accordion">
                 {% include "users/usersearch/filter_accordion.html" %}
             </div>
 
@@ -95,7 +109,7 @@ $j(document).ready(function() {
     </div>
 
     <div id="tab_combo">
-        <form id="form_combo_list" method="POST" action="{{ action_path }}" autocomplete="off">
+        {% if combo_form %}<form id="form_combo_list" method="POST" action="{{ action_path }}" autocomplete="off">{% endif %}
         <div id="combo_step_container">
 
         <div id="starting_list_select">
@@ -108,16 +122,16 @@ $j(document).ready(function() {
             </select>
             <div class="sendto_fn_select Student">
                 <div>
-                    <input type="checkbox" name="student_sendto_self" value="1" checked="checked" />
-                    <label for="student_sendto_self">Email the students</label>
+                    <input type="checkbox" id="student_sendto_self_combo" name="student_sendto_self" value="1" checked="checked" />
+                    <label for="student_sendto_self_combo">Email the students</label>
                 </div>
                 <div>
-                    <input type="checkbox" name="student_sendto_guardian" value="1" />
-                    <label for="student_sendto_guardian">Email the students' guardians</label>
+                    <input type="checkbox" id="student_sendto_guardian_combo" name="student_sendto_guardian" value="1" />
+                    <label for="student_sendto_guardian_combo">Email the students' guardians</label>
                 </div>
                 <div>
-                    <input type="checkbox" name="student_sendto_emergency" value="1" />
-                    <label for="student_sendto_emergency">Email the students' emergency contacts</label>
+                    <input type="checkbox" id="student_sendto_emergency_combo" name="student_sendto_emergency" value="1" />
+                    <label for="student_sendto_emergency_combo">Email the students' emergency contacts</label>
                 </div>
             </div>
             <p>&nbsp;</p>
@@ -134,12 +148,12 @@ $j(document).ready(function() {
             {% for item in kv.1 %}{% if not item.all_flag %}
             {% ifchanged kv.0 %}<li><div class="combo_list_separator">Category: {{ kv.0 }}</div></li>{% endifchanged %}
             <li>
-                <span id="bool_options_{{ item.name }}">
+                <span class="checkbox_wrapper" id="bool_options_{{ item.name }}">
                 <input type="checkbox" id="checkbox_and_{{ item.name }}" name="checkbox_and_{{ item.name }}" /><label for="checkbox_and_{{ item.name }}">AND</label>
                 <input type="checkbox" id="checkbox_or_{{ item.name }}" name="checkbox_or_{{ item.name }}" /><label for="checkbox_or_{{ item.name }}">OR</label>
                 <input type="checkbox" id="checkbox_not_{{ item.name }}"  name="checkbox_not_{{ item.name }}"/><label for="checkbox_not_{{ item.name }}">NOT</label>
                 </span>
-                {{ item.description }}
+                <span class="checkbox_label">{{ item.description }}</span>
             </li>
             {% endif %}{% endfor %}{% endfor %}
             </ul>
@@ -147,26 +161,28 @@ $j(document).ready(function() {
             <p>&nbsp;</p>
             <button type="button" class="btn btn-default recipient_step_button" id="combo_options_back">Go back</button>
             <button type="button" class="btn btn-default recipient_step_button" id="combo_options_next">Add filters</button>
+            {% if include_continue %}
             <button type="button" class="btn btn-primary recipient_step_button" id="combo_options_done">Continue</button>
+            {% endif %}
         </div>
 
         <div id="combo_filter_select" class="commpanel_hidden">
             <div class="step_header"><span class="step_label">Step 3:</span> <span class="step_text">Do you need to filter this list down?</span></div>
             <div class="step_instructions">(For any criteria you don't need, just leave them blank.)</div>
-            <div id="combo_filter_accordion">
-                {% include "users/usersearch/filter_accordion.html" %}
-            </div>
+            <div id="combo_filter_accordion"></div>
 
             <button type="button" class="btn btn-default recipient_step_button" id="combo_filter_back">Go back</button>
             <input type="hidden" name="use_checklist" value="0" />
             {% if include_checklist %}
             <button type="button" class="btn btn-default recipient_step_button" id="combo_filter_checklist">Recipient checklist</button>
             {% endif %}
+            {% if include_continue %}
             <button type="button" class="btn btn-primary recipient_step_button" id="combo_filter_done">Continue</button>
+            {% endif %}
         </div>
 
         </div>
-        </form>
+        {% if combo_form %}</form>{% endif %}
     </div>
 
     {% if include_prev_list %}

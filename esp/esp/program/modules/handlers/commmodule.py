@@ -38,7 +38,6 @@ from esp.utils.web import render_to_response
 from esp.dbmail.models import MessageRequest
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
-from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.users.views.usersearch import get_user_checklist
 from django.db.models.query   import Q
 from esp.dbmail.models import ActionHandler
@@ -48,6 +47,7 @@ from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.middleware import ESPError
 
 class CommModule(ProgramModuleObj):
+    doc = """Email users that match specific search criteria."""
     """ Want to email all ESP students within a 60 mile radius of NYC?
     How about emailing all esp users within a 30 mile radius of New Hampshire whose last name contains 'e' and 'a'?
     Do that and even more useful things in the communication panel.
@@ -112,7 +112,8 @@ class CommModule(ProgramModuleObj):
             body = '<html>' + body + '</html>'
 
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
-                       'program': ActionHandler(self.program, firstuser) }
+                       'program': ActionHandler(self.program, firstuser),
+                       'request': ActionHandler(MessageRequest(), firstuser)}
 
         renderedtext = Template(body).render(DjangoContext(contextdict))
 
@@ -196,17 +197,17 @@ class CommModule(ProgramModuleObj):
         # now we're going to process everything
         # nah, we'll do this later.
         #newmsg_request.process()
+        # old code that prints out an estimated time
+        # numusers = self.approx_num_of_recipients(filterobj, sendto_fn)
 
-        numusers = self.approx_num_of_recipients(filterobj, sendto_fn)
-
-        from django.conf import settings
-        if hasattr(settings, 'EMAILTIMEOUT') and \
-               settings.EMAILTIMEOUT is not None:
-            est_time = settings.EMAILTIMEOUT * numusers
-        else:
-            est_time = 1.5 * numusers
-
-        context = {'time': est_time}
+        # from django.conf import settings
+        # if hasattr(settings, 'EMAILTIMEOUT') and \
+        #        settings.EMAILTIMEOUT is not None:
+        #     est_time = settings.EMAILTIMEOUT * numusers
+        # else:
+        #     est_time = 1.5 * numusers
+        # context = {'time': est_time}
+        context = {}
         if public_view:
             context['req_id'] = newmsg_request.id
         return render_to_response(self.baseDir()+'finished.html', request, context)
@@ -253,7 +254,7 @@ class CommModule(ProgramModuleObj):
                 sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
                 if data['use_checklist'] == '1':
-                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/commpanel_old' % prog.getUrlBase())
+                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/commpanel_old' % prog.getUrlBase(), extra_context = {'module': "Communications Portal"})
                     return response
 
                 context['filterid'] = filterObj.id
@@ -277,10 +278,7 @@ class CommModule(ProgramModuleObj):
 
             else:
                 raise ESPError('What do I do without knowing what kind of users to look for?', log=True)
-        else:
-            student_search_form = StudentSearchForm()
 
-        context['student_search_form'] = student_search_form
         #   Otherwise, render a page that shows the list selection options
         context.update(usc.prepare_context(prog))
 
@@ -311,6 +309,9 @@ class CommModule(ProgramModuleObj):
                                                'subject': subject,
                                                'body': body,
                                                'public_view': public_view})
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

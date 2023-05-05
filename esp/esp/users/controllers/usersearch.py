@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 from collections import defaultdict
 from esp.users.models import ESPUser, ZipCode, PersistentQueryFilter, Record
+from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.middleware import ESPError
 from esp.utils.web import render_to_response
 from esp.program.models import Program, RegistrationType, StudentRegistration
@@ -175,19 +176,19 @@ class UserSearchController(object):
                     Q_include &= Q(registrationprofile__contact_user__address_state__in = state_codes, registrationprofile__most_recent_profile=True)
                 self.updated = True
 
-            if 'grade_min' in criteria:
+            if criteria.get('grade_min', '').strip():
                 yog = ESPUser.YOGFromGrade(criteria['grade_min'])
                 if yog != 0:
                     Q_include &= Q(registrationprofile__student_info__graduation_year__lte = yog, registrationprofile__most_recent_profile=True)
                     self.updated = True
 
-            if 'grade_max' in criteria:
+            if criteria.get('grade_max', '').strip():
                 yog = ESPUser.YOGFromGrade(criteria['grade_max'])
                 if yog != 0:
                     Q_include &= Q(registrationprofile__student_info__graduation_year__gte = yog, registrationprofile__most_recent_profile=True)
                     self.updated = True
 
-            if 'school' in criteria:
+            if criteria.get('school', '').strip():
                 school = criteria['school']
                 if school:
                     Q_include &= (Q(studentinfo__school__icontains=school) | Q(studentinfo__k12school__name__icontains=school))
@@ -207,11 +208,11 @@ class UserSearchController(object):
                 except:
                     raise ESPError('Please enter a 4-digit integer for graduation year limits.', log=False)
                 possible_gradyears = filter(lambda x: x <= gradyear_max, possible_gradyears)
-            if criteria.get('gradyear_min', None) or criteria.get('gradyear_max', None):
+            if criteria.get('gradyear_min', '').strip() or criteria.get('gradyear_max', '').strip():
                 Q_include &= Q(registrationprofile__teacher_info__graduation_year__in = map(str, possible_gradyears), registrationprofile__most_recent_profile=True)
                 self.updated = True
 
-            if 'hours_min' in criteria or 'hours_max' in criteria:
+            if criteria.get('hours_min', '').strip() or criteria.get('hours_max', '').strip():
                 current_Q = Q_base & (Q_include & ~Q_exclude)
                 user_hours = {user.id: (sum([section.meeting_times.count() for section in user.getEnrolledSections(program)])) for user in ESPUser.objects.filter(current_Q)}
                 exclude_user_list = []
@@ -230,7 +231,7 @@ class UserSearchController(object):
                 Q_exclude |= Q(id__in=exclude_user_list)
                 self.updated = True
 
-            if 'target_user' in criteria:
+            if criteria.get('target_user', '').strip():
                 student_id = criteria['target_user']
                 if student_id == "invalid":
                     raise ESPError('Please select a valid student whose teachers to email.', log=False)
@@ -311,15 +312,16 @@ class UserSearchController(object):
                     if and_list_name in not_keys:
                         q_program = q_program & ~qobject
                     else:
-                        qobject_child = qobject.children[1]
                         needs_subquery = False
+                        if len(qobject.children) > 1:
+                            qobject_child = qobject.children[1]
 
-                        if isinstance(qobject_child, (list, tuple)):
-                            field_name, field_value = qobject.children[1]
-                            needs_subquery = field_name in subqry_fieldmap
+                            if isinstance(qobject_child, (list, tuple)):
+                                field_name, field_value = qobject.children[1]
+                                needs_subquery = field_name in subqry_fieldmap
 
-                            if needs_subquery:
-                                subqry_fieldmap[field_name].append(field_value)
+                                if needs_subquery:
+                                    subqry_fieldmap[field_name].append(field_value)
                         if not needs_subquery:
                             q_program = q_program & qobject
 
@@ -334,7 +336,7 @@ class UserSearchController(object):
                 subquery = (
                               Record
                               .objects
-                              .filter(program=program,event__in=event_fields)
+                              .filter(program=program,event__name__in=event_fields)
                               .annotate(numusers=Count('user__id'))
                               .filter(numusers=len(event_fields))
                               .values_list('user_id',flat=True)
@@ -403,9 +405,12 @@ class UserSearchController(object):
         else:
             return MessageRequest.SEND_TO_SELF_REAL
 
-    def prepare_context(self, program, target_path=None):
-        context = {}
+    def prepare_context(self, program, target_path=None, add_to_context={}):
+        context = add_to_context
         context['program'] = program
+        context['student_search_form'] = StudentSearchForm()
+        context['combo_form'] = True
+        context['include_continue'] = True
         context['user_types'] = ESPUser.getTypes()
         category_lists = {}
         list_descriptions = program.getListDescriptions()
@@ -444,7 +449,8 @@ class UserSearchController(object):
 
         return context
 
-    def create_filter(self, request, program, template=None, target_path=None):
+    def create_filter(self, request, program, template=None, target_path=None, add_to_context={}):
+        from esp.program.modules.handlers.listgenmodule import ListGenModule
         """ Function to obtain a list of users, possibly requiring multiple requests.
             Similar to the old get_user_list function.
         """
@@ -453,10 +459,7 @@ class UserSearchController(object):
             template = 'users/usersearch/usersearch_default.html'
 
         if request.method == 'POST':
-            #   Turn multi-valued QueryDict into standard dictionary
-            data = {}
-            for key in request.POST:
-                data[key] = request.POST[key]
+            data = ListGenModule.processPost(request)
 
             #   Look for signs that this request contains user search options and act accordingly
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
@@ -466,7 +469,7 @@ class UserSearchController(object):
         if target_path is None:
             target_path = request.path
 
-        return (render_to_response(template, request, self.prepare_context(program, target_path)), False)
+        return (render_to_response(template, request, self.prepare_context(program, target_path, add_to_context = add_to_context)), False)
 
     def selected_list_from_postdata(self, data):
         selected = []

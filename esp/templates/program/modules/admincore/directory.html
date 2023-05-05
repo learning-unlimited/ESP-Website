@@ -17,6 +17,13 @@
 function initialize()
 {
     $j("div.module_link_large").button();
+    if($j(".iscompleted").length > 0) {
+        $j("#completed_steps").on("click", function() {
+            $j(".iscompleted").toggle();
+        });
+    } else {
+        $j("#completed_steps").hide()
+    }
 }
 
 $j(document).ready(initialize);
@@ -43,6 +50,64 @@ $j(document).ready(initialize);
 Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="http://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
 {% end_inline_program_qsd_block %}
 
+<div class="row-fluid">
+    <div class="span10 offset1">
+        <table class="table table-condensed" align="center" width="400">
+            <tr class="well"><th width="85%">Steps to Set Up This Program</th><th>Done?</th></tr>
+            {% for module in modules %}
+            {% if module.isStep and not module.isCompleted %}
+            <tr>
+                <td>{{ module.makeSetupLink }}</td>
+                <td><i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i></td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            {% for step in extra_steps %}
+            {% if not step.3 %}
+            <tr>
+                <td><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a></td>
+                <td><i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i></td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            {% for step in extra_steps_optional %}
+            {% if not step.3 %}
+            <tr>
+                <td><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a> (optional)</td>
+                <td><i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i></td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            <tr class="well" id="completed_steps"><th colspan="2">Completed Steps (click to expand)</th></tr>
+            {% for module in modules %}
+            {% if module.isStep and module.isCompleted %}
+            <tr class="iscompleted" hidden>
+                <td>{{ module.makeSetupLink }}</td>
+                <td><i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i></td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            {% for step in extra_steps %}
+            {% if step.3 %}
+            <tr class="iscompleted" hidden>
+                <td><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a></td>
+                <td><i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i></td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            {% for step in extra_steps_optional %}
+            {% if step.3 %}
+            <tr class="iscompleted" hidden>
+                <td><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a> (optional)</td>
+                <td><i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i></td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </table>
+
+    </div>
+</div>
+
 <div class="module_group" id="module_group_1">
     <div class="module_group_header">
         Configure Your Program
@@ -67,7 +132,8 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
             {% if manage_lunch_constraints %}<li><a href="/manage/{{ program.getUrlBase }}/lunch_constraints">Lunch Constraints</a>: Rules for your students' schedules</li>{% endif %}
             {% if manage_registrationtype_management %}<li><a href="/manage/{{ program.getUrlBase }}/registrationtype_management">Student Registration Types</a>: What students see on their schedule after a lottery</li>{% endif %}
             {% if manage_surveys %}<li><a href="/manage/{{ program.getUrlBase }}/surveys">View and Manage Surveys</a>: Create new surveys, edit existing surveys, and review survey results</li>{% endif %}
-            {% if manage_settings %}<li><a href="/manage/{{ program.getUrlBase }}/settings/">Modify Settings for This Program</a>: Emails, program caps and modules, class categories, and flag types</li>{% endif %}
+            {% if manage_settings %}<li><a href="/manage/{{ program.getUrlBase }}/settings/">Modify Settings for This Program</a>: Emails, program caps and modules, class categories, flag types, and registration receipts</li>{% endif %}
+            {% if manage_modules %}<li><a href="/manage/{{ program.getUrlBase }}/modules/">Manage Registration Modules for This Program</a>: Sequence and requiredness of student and teacher modules</li>{% endif %}
             {% if manage_tags %}<li><a href="/manage/{{ program.getUrlBase }}/tags">Modify Tag Settings for This Program</a>: Generic miscellaneous settings, for experts only</li>{% endif %}
         </ul>
     </div>
@@ -126,7 +192,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
 </div>
 <table width="100%">
 <tr>
-<td width="50%">
+<td width="50%" style="vertical-align: top;">
 <div class="module_group" id="module_group_4">
     <div class="module_group_header_half">
         Quick Links
@@ -142,7 +208,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     </div>
 </div>
 </td>
-<td width="50%">
+<td width="50%" style="vertical-align: top;">
 <div class="module_group" id="module_group_5">
     <div class="module_group_header_half">
         Generate Printables
@@ -150,7 +216,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     <div class="module_group_body">
     <ul>
         {% if manage_catalog %}<li><a href="/manage/{{ program.getUrlBase }}/catalog">PDF Catalog</a></li>{% endif %}
-        {% if manage_studentschedules %}<li><a href="/manage/{{ program.getUrlBase }}/studentschedules">Student Schedules</a></li>{% endif %}
+        {% if manage_studentschedules %}<li><a href="/manage/{{ program.getUrlBase }}/studentschedules">Student Schedules</a> (<a href="/manage/{{ program.getUrlBase }}/studentscheduleform">Schedule Formatter</a>)</li>{% endif %}
         {% if manage_selectidoptions %}<li><a href="/manage/{{ program.getUrlBase }}/selectidoptions">Nametags</a></li>{% endif %}
         {% if manage_selectList %}<li><a href="/manage/{{ program.getUrlBase }}/selectList">Arbitrary User List</a></li>{% endif %}
         {% if manage_printoptions %}<li><a href="/manage/{{ program.getUrlBase }}/printoptions">All Printables</a></li>{% endif %}
@@ -167,14 +233,12 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
 <tr>
  <td width="50%">
 <ul>
-{% for module in modules %}
-{% if module.isStep %}
+{% for module in modules_alph %}
     {% if not module.isAdminPortalFeatured %}
       {% if not module.useTemplate %}
         <li>{% autoescape off %}{{ module.makeLink }}{% endautoescape %}</li>
       {% endif %}
     {% endif %}
-{% endif %}
 {% endfor %}
 </ul>
 </td>

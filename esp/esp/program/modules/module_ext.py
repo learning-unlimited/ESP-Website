@@ -79,9 +79,11 @@ class StudentClassRegModuleInfo(models.Model):
     apply_multiplier_to_room_cap = models.BooleanField(default=False, help_text='Apply class cap multipler and offset to room capacity instead of class capacity.')
 
     #   Whether to use priority
-    use_priority         = models.BooleanField(default=False, help_text='Check this box to enable priority registration.')
+    use_priority         = models.BooleanField(default=False, help_text='Check this box to enable priority registration. Note, this is NOT for the two-phase student registration module. This will remove \
+                                                                         the ability for students to enroll in classes during normal student registration (i.e., first-come first-served).')
     #   Number of choices a student can make for each time block (1st choice, 2nd choice, ...Nth choice.)
-    priority_limit       = models.IntegerField(default=3, help_text='The maximum number of choices a student can make per timeslot when priority registration is enabled.')
+    priority_limit       = models.IntegerField(default=3, help_text='The maximum number of choices a student can make per timeslot when priority registration is enabled. Also, the \
+                                                                     number of priority slots listed in the rank classes interface for the two-phase student registration module.')
     #   Whether to use grade range exceptions
     use_grade_range_exceptions = models.BooleanField(default=False, help_text='Check this box to enable grade range exceptions.')
 
@@ -255,14 +257,24 @@ class AJAXChangeLogEntry(models.Model):
     # unique index in change_log of this entry
     index = models.IntegerField()
 
-    # whether this is a scheduling entry (or comment entry)
+    # if neither of the following are true, this is a comment entry
+    # whether this is a scheduling entry
     is_scheduling = models.BooleanField(default=True)
+
+    # whether this is a moderator entry
+    is_moderator = models.BooleanField(default=False)
 
     # scheduling entry: comma-separated list of integer timeslots
     timeslots = models.CharField(max_length=256)
 
     # scheduling entry: name of the room involved in scheduling update
     room_name = models.CharField(max_length=256)
+
+    # moderator entry: ID of moderator
+    moderator = models.IntegerField(blank=True, null=True)
+
+    # moderator entry: add or remove moderator?
+    assigned = models.NullBooleanField()
 
     # comment entry: comment text
     comment = models.CharField(max_length=256)
@@ -285,8 +297,16 @@ class AJAXChangeLogEntry(models.Model):
         self.room_name = room_name
         self.cls_id = cls_id
 
+    def setModerator(self, moderator, cls_id, assigned = True):
+        self.is_scheduling = False
+        self.is_moderator = True
+        self.assigned = assigned
+        self.moderator = moderator
+        self.cls_id = cls_id
+
     def setComment(self, comment, lock, cls_id):
         self.is_scheduling = False
+        self.is_moderator = False
         self.comment = comment
         self.locked = lock
         self.cls_id = cls_id
@@ -312,9 +332,13 @@ class AJAXChangeLogEntry(models.Model):
         d['id'] = self.cls_id
         d['user'] = self.getUserName()
         d['is_scheduling'] = self.is_scheduling
+        d['is_moderator'] = self.is_moderator
         if self.is_scheduling:
             d['room_name'] = self.room_name
             d['timeslots'] = self.getTimeslots()
+        elif self.is_moderator:
+            d['assigned'] = self.assigned
+            d['moderator'] = self.moderator
         else:
             d['comment'] = self.comment
             d['locked'] = self.locked
@@ -357,6 +381,11 @@ class AJAXChangeLog(models.Model):
     def appendComment(self, comment, lock, cls_id, user=None):
         entry = AJAXChangeLogEntry()
         entry.setComment(comment, lock, cls_id)
+        self.append(entry, user)
+
+    def appendModerator(self, moderator, cls_id, assigned = True, user=None):
+        entry = AJAXChangeLogEntry()
+        entry.setModerator(moderator, cls_id, assigned = assigned)
         self.append(entry, user)
 
     def get_latest_index(self):

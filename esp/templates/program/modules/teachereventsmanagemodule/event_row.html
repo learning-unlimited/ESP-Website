@@ -1,0 +1,30 @@
+{% for timeslot in timeslots %}
+    <tr class="trs">
+        <td class="desc" style="width:25%">{{ timeslot.description }}</td>
+        <td style="width:18%">{{ timeslot.start|date:"D, M j f A" }}</td>
+        <td style="width:7%">{{ timeslot.end|date:"f A" }}</td>
+        <td style="width:45%">
+            {% if timeslot.teachers %}
+                {% for teacher in timeslot.teachers %}
+                    <a href="/manage/userview?username={{ teacher.user.username|urlencode }}&program={{ program.id }}">{{ teacher.user.first_name }} {{ teacher.user.last_name }}</a> (<a href="mailto:{{ teacher.user.email }}" target="_blank">{{ teacher.user.email }}</a>) <br />
+                {% endfor %}
+            {% else %}
+                <em>(None)</em>
+            {% endif %}
+        </td>
+        <td style="width:10%">
+            <center>
+                <form method="post" action="teacher_events">
+                    <input type="hidden" name="id" value="{{ timeslot.id }}" />
+                    <input type="hidden" name="command" value="load" />
+                    <input type="submit" value="Edit" class="btn btn-primary" />
+                </form>
+                <form method="post" action="teacher_events" onsubmit="return deleteEvent()">
+                    <input type="hidden" name="id" value="{{ timeslot.id }}" />
+                    <input type="hidden" name="command" value="delete" />
+                    <input type="submit" value="Delete" class="btn btn-danger" />
+                </form>
+            </center>
+        </td>
+    </tr>
+{% endfor %}

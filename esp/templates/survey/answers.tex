@@ -3,12 +3,13 @@
 {% load latex %}
 
 {% if q.question.question_type.is_countable %}
-    \begin{minipage}[b]{3in}
+    \begin{paracol}{2}
+        \raggedright
+        \normalsize
         \vspace*{0.1in}
-        \textbf{ {{ q.question.name|texescape }}:} \\
+        \hspace{-\the\fontdimen2\font\space}\textbf{ {{q.question.name|texescape}}: } \\
         (Numerical responses)
-        \vspace*{0.1in}
-        
+        \vspace*{0.1in}       
         \textbf{Number of responses:} {{ q.answers|length }}/{{ num_participants }} \\
         {% if q.question.question_type.is_numeric %}
             \textbf{Average:} {{ q.answers|unpack_answers|average }} \\
@@ -43,7 +44,7 @@
                 {% endif %}
             {% endwith %}
         {% endif %}
-    \end{minipage} & 
+    \switchcolumn 
     {% if not q.answers|length_is:0 %}
         {% with q.question.get_params as params %}
             {% if q.question.question_type.is_numeric and params.number_of_ratings %}
@@ -67,16 +68,16 @@
     {% else %} There are no responses to this question.
     {% endif %}
     \vspace*{0.1in}
-    \\ \hline
+    \end{paracol} % \\ \hline
 {% else %}
-    \begin{minipage}{3in}
+    \begin{paracol}{2}
+        \raggedright
+        \normalsize
         \vspace*{0.1in}
-        \textbf{ {{ q.question.name|texescape }} }
-        \vspace*{0.1in}
-        
+        \hspace{-\the\fontdimen2\font\space}\textbf{ {{q.question.name|texescape}} }
+        \vspace*{0.1in}       
         \textbf{Number of responses:} {{ q.answers|length }}/{{ num_participants }} \\
-    \end{minipage} &
-    \begin{minipage}{3in}
+    \switchcolumn
     {% ifequal q.question.question_type.name "Favorite Class" %}
         \vspace*{0.1in} \small
         \begin{enumerate}
@@ -102,5 +103,8 @@
         {% endif %}
         \vspace*{0.1in}
     {% endifequal %}
-    \end{minipage} \\ \hline
+    \end{paracol} %\\ \hline
 {% endif %}
+\vspace{6pt}
+\hrule
+\vspace{6pt}

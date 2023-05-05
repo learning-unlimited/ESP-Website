@@ -41,7 +41,7 @@ from esp.program.modules.handlers.availabilitymodule import AvailabilityModule
 
 
 class CheckAvailabilityModule(ProgramModuleObj):
-    """ This program module allows admins to check a teacher's availability for the program. """
+    doc = """Check a teacher's availability for the program."""
 
     @classmethod
     def module_properties(cls):
@@ -82,6 +82,9 @@ class CheckAvailabilityModule(ProgramModuleObj):
                 raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
         availability = AvailabilityModule(program = prog)
         return availability.availabilityForm(request, tl, one, two, prog, teacher, True)
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

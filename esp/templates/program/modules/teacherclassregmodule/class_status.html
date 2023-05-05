@@ -34,6 +34,12 @@ Here is some important information regarding your class:<br />
  <th>Teachers:</th>
  <td>{{cls.getTeacherNames|join:", "}}</td>
 </tr>
+{% if cls.moderators %}
+<tr>
+ <th>{{program.getModeratorTitle}}s:</th>
+ <td>{{cls.pretty_moderators}}</td>
+</tr>
+{% endif %}
 <tr>
  <th>Reviewing Status:<br />
   <small>(Not reviewed, Accepted, or Rejected)</small>

@@ -1,0 +1,130 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Module Management{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/module_management.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
+{% endblock %}
+
+{% block xtrajs %}
+    {{block.super }}
+    <script type="text/javascript" src="/media/scripts/program/modules/module_management.js"></script>
+{% endblock %}
+
+{% block }
+
+{% block content %}
+
+{% load render_qsd %}
+
+<h1>Module Management for {{ program.niceName }}</h1>
+
+<p>Welcome to the module management page for {{ program.niceName }}. This page lists the modules that students and teachers will encounter during registration. You can drag individual modules to reorder them and change whether they are required or not. You can also click on a module name to edit the requirement label that will be shown in parentheses next to the module title in the student/teacher registration to-do list. To add or remove modules, you will need to enable/disable them in the <a href="/manage/{{ program.getUrlBase }}/settings/program">program settings</a>.</p>
+{% inline_program_qsd_block program "manage:modules" %}
+{% end_inline_program_qsd_block %}
+
+<div class="alert alert-danger">
+  <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+  Please be aware that some modules require other modules to have been completed already (e.g., teacher class registration usually requires a teacher to have already set their availability). Please use common sense and make sure to test everything whenever you change any of these settings! Feel free to contact <a href="mailto:websupport@learningu.org">websupport</a> with any questions. Furthermore, the following settings will always be enforced regardless of how you move the modules below (if they are enabled for your program):
+  <ul>
+    <li>Profile Editor Modules must always be first <i>and</i> required</li>
+    <li>The Availability Module must always be required</li>
+    <li>Acknowledgment Modules must always be required</li>
+    <li>The Two Phase Lottery Module must always be required</li>
+    <li>The Credit Card Module must always be last <i>and</i> cannot be required</li>
+    <li>The Confirm Registration Module cannot be required</li>
+  </ul>
+</div>
+
+<form action="/manage/{{ program.getUrlBase }}/modules/" method="post">
+    <input type='hidden' name='learn_req' id='learn_req'>
+    <input type='hidden' name='learn_not_req' id='learn_not_req'>
+    <input type='hidden' name='teach_req' id='teach_req'>
+    <input type='hidden' name='teach_not_req' id='teach_not_req'>
+    <div style="float: left; width: 100%;">
+        <div class="wrapper">
+            <h2>
+              Student Registration
+            </h2>
+            <div id="learn_mods" class="column">
+                <h3>
+                    Required
+                </h3>
+                <ol id="sortable1" class="connectedSortable">
+                {% for mod in learn_modules.required %}
+                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
+                        {{ mod.module.admin_title }}<br/>
+                        <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
+                    </li>
+                {% endfor %}
+                </ol>
+                <h3>
+                    Not Required
+                </h3>
+                <ol id="sortable2" class="connectedSortable">
+                {% for mod in learn_modules.not_required %}
+                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
+                        {{ mod.module.admin_title }}<br/>
+                        <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
+                    </li>
+                {% endfor %}
+                </ol>
+            </div>
+        </div>
+        <div class="wrapper">
+            <h2>
+              Teacher Registration
+            </h2>
+            <div id="teach_mods" class="column">
+                <h3>
+                    Required
+                </h3>
+                <ol id="sortable3" class="connectedSortable">
+                {% for mod in teach_modules.required %}
+                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
+                        {{ mod.module.admin_title }}<br/>
+                        <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
+                    </li>
+                {% endfor %}
+                </ol>
+                <h3>
+                    Not Required
+                </h3>
+                <ol id="sortable4" class="connectedSortable">
+                {% for mod in teach_modules.not_required %}
+                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
+                        {{ mod.module.admin_title }}<br/>
+                        <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
+                    </li>
+                {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+    <center><input class="fancybutton" type="submit" value="Save Modules"/></center>
+</form>
+
+<br/>
+<button class="dsphead">
+   <b>Reset Modules to Defaults</b> (click to expand/collapse)
+</button>
+
+<div class="dspcont">
+<form action="/manage/{{ program.getUrlBase }}/modules/" method="post">
+    <center>
+        <input type='checkbox' name='default_seq' id='default_seq' checked><label for="default_seq">Reset the sequence values of all modules to their defaults</label><br/>
+        <input type='checkbox' name='default_req' id='default_req' checked><label for="default_req">Reset the required status of all modules to their defaults</label><br/>
+        <input type='checkbox' name='default_lab' id='default_lab' checked><label for="default_lab">Reset the requirement labels of all modules to their defaults</label><br/><br/>
+        <input class="fancybutton" type="submit" value="Reset Modules"/>
+    </center>
+</form>
+</div>
+
+<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

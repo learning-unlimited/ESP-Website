@@ -95,22 +95,6 @@
     </div>
     </div>
     </div>
-    
-    {% if class.media_count %}
-    <div class="class_footer_row">
-    <div id="{{ cls.id }}_media" class="class_doclist">
-       <b>Materials for this class include:</b>
-        <span class="doclist">
-        {% for doc in class.docs_summary %}
-        <a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a>{% if not forloop.last %},{% endif %}
-        {% endfor %}
-        {% if class.media_count > class.docs_summary|length %}
-        <b><a href="{{ class.parent_program.get_learn_url }}class_docs/{{ class.id }}">(view all {{ class.media_count }})</a></b>
-        {% endif %}
-        </span>
-    </div>
-    </div>
-    {% endif %}
 
     {% with class.numStudentAppQuestions as num_questions %}
     {% if num_questions %}
@@ -122,6 +106,22 @@
     {% endif %}
     {% endwith %}
     </div>
+    
+    {% if class.media_count %}
+    <div class="class_footer_row">
+    <div id="{{ cls.id }}_media" class="class_doclist">
+       <b>Materials for this class include:</b>
+        <span class="doclist">
+        {% for doc in class.docs_summary %}
+        <a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a>{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        {% if class.media_count > class.docs_summary|length %}
+        <b><a href="{{ class.parent_program.get_learn_url }}class_docs/{{ class.id }}">(view all {{ class.media_count }})</a></b>
+        {% endif %}
+        </span>
+    </div>
+    </div>
+    {% endif %}
     
 {% if collapse_full %}
 {% if class.isFullOrClosed %}

@@ -47,6 +47,9 @@
     <a id="morphlink" class="sidelink" href="/myesp/morph?morph_user={{user.id}}">Morph into this user</a>
     <a class="sidelink" href="/admin/users/espuser/{{user.id}}/">View on admin panel</a>
     <a class="sidelink" href="/admin/program/registrationprofile/?user__id={{user.id}}">View registration profiles</a>
+    {% if "Student" in user.getUserTypes %}
+        <a id="biolink" class="sidelink" href="/accounting/user?target_user={{user.id}}">View accounting info</a>
+    {% endif %}
     {% if "Teacher" in user.getUserTypes %}
         <a id="biolink" class="sidelink" href="/teach/teachers/{{user.username}}/bio.html">Go to teacher bio</a>
     {% endif %}
@@ -89,13 +92,45 @@
                         <a class="sidelink" onclick="$j(this).parent().submit();return false;" href="">Unenroll from all classes</a>
                     </form>
                 </div>
+                <table class="table-condensed modules">
+                {% for module in learn_modules %}
+                    {% if module.isStep %}
+                    <tr>
+                        <td>
+                            {% if module.isCompleted %}
+                                <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                            {% else %}
+                                <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                            {% endif %}
+                            {{ module.module.link_title }}
+                        </td>
+                    </tr>
+                    {% endif %}
+                {% endfor %}
+                </table>
+                {% if learn_records %}
+                    <table class="table-condensed modules">
+                    {% for record in learn_records %}
+                        <tr>
+                            <td>
+                                {% if record.isCompleted %}
+                                    <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                                {% else %}
+                                    <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                                {% endif %}
+                                {{ record.full_event }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </table>
+                {% endif %}
             {% else %}
                 (Student has no profile for this program)
             {% endif %}
         {% endif %}
         {% if "Teacher" in user.getUserTypes or profile.teacher_info %}
             <h2>
-                Teacher links<br/>
+                Teacher {% if program|hasModule:"TeacherModeratorModule" %}and {{program.getModeratorTitle|lower}} {% endif %}links<br/>
                 (for {{program.niceName}})
             </h2>
             {% if program|hasModule:"CheckAvailabilityModule" %}
@@ -104,8 +139,48 @@
             {% endif %}
             {% if profile.teacher_info and profile.id %}
                 <div id="print-teacher-schedule">
-                    <a id="getteacherschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/teacherschedule?user={{user.id}}" target="_new">Print schedule locally</a>
+                    <a id="getteacherschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/teacherschedule?user={{user.id}}" target="_new">Print teacher schedule locally</a>
                 </div>
+                {% if program|hasModule:"TeacherModeratorModule" %}
+                    <div id="print-teachermoderator-schedule">
+                        <a id="getteachermoderatorschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/teachermoderatorschedule?user={{user.id}}" target="_new">Print combined teacher and {{program.getModeratorTitle|lower}} schedule locally</a>
+                    </div>
+                    <div id="print-moderator-schedule">
+                        <a id="getmoderatorschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/moderatorschedule?user={{user.id}}" target="_new">Print {{program.getModeratorTitle|lower}} schedule locally</a>
+                    </div>
+                {% endif %}
+                <table class="table-condensed modules">
+                {% for module in teach_modules %}
+                    {% if module.isStep %}
+                    <tr>
+                        <td>
+                            {% if module.isCompleted %}
+                                <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                            {% else %}
+                                <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                            {% endif %}
+                            {{ module.module.link_title }}
+                        </td>
+                    </tr>
+                    {% endif %}
+                {% endfor %}
+                </table>
+                {% if teach_records %}
+                    <table class="table-condensed modules">
+                    {% for record in teach_records %}
+                        <tr>
+                            <td>
+                                {% if record.isCompleted %}
+                                    <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                                {% else %}
+                                    <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                                {% endif %}
+                                {{ record.full_event }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </table>
+                {% endif %}
             {% else %}
                 (Teacher has no profile for this program)
             {% endif %}
@@ -125,15 +200,15 @@
 <table class="dottedtable">
 <tr><td class="key">Name</td><td>{{ user.first_name }} {{ user.last_name }}</td></tr>
 <tr><td class="key">Gender</td><td>{% if profile.student_info.gender %}{{ profile.student_info.gender }}{% else %}Not specified{% endif %}</td></tr>
+<tr><td class="key">Pronouns</td><td>{% if profile.teacher_info.pronoun %}{{ profile.teacher_info.pronoun }}{% elif profile.student_info.pronoun %}{{ profile.student_info.pronoun }}{% else %}Not specified{% endif %}</td></tr>
 <tr><td class="key">Username</td><td>{{ user.username }}</td></tr>
 <tr><td class="key">User ID</td><td>{{ user.id }}</td></tr>
+<tr><td class="key">Email</td><td>{{ user.email }}</td></tr>
 {% if profile.contact_user %}
-    <tr><td class="key">Email</td><td><a href="mailto:{{ profile.contact_user.e_mail }}" target="_blank">{{ profile.contact_user.e_mail }}</a></td></tr>
     <tr><td class="key">Day Phone</td><td>{{ profile.contact_user.phone_day }}</td></tr>
     <tr><td class="key">Cell Phone</td><td>{{ profile.contact_user.phone_cell }}</td></tr>
     <tr><td class="key">Address</td><td>{{ profile.contact_user.address_street }}<br />{{ profile.contact_user.address_city }}, {{ profile.contact_user.address_state }} {{ profile.contact_user.address_zip }}{% if profile.contact_user.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td></tr>
 {% else %}
-    <tr><td class="key">Email</td><td>{{ user.email }}</td></tr>
     <tr><td colspan="2"><font color="red">User account not fully created; please fill out a profile!</font></td></tr>
 {% endif %}
 </table>
@@ -145,12 +220,12 @@
         <table class="dottedtable">
             <tr><td class="key">Affiliation</td><td>{{ profile.teacher_info.affiliation }}</td></tr>
             <tr><td class="key">Graduation Year</td><td>{{ profile.teacher_info.graduation_year }}</td></tr>
-        <tr><td class="key">College/Employer</td><td>{{ profile.teacher_info.college }}</td></tr>
-        <tr><td class="key">Major</td><td>{{ profile.teacher_info.major }}</td></tr>
-        <tr><td class="key">Shirt Size/Type</td><td>{{ profile.teacher_info.shirt_size }} {{ profile.teacher_info.shirt_type }}</td></tr>
-        {% if profile.teacher_info.bio %}
+            <tr><td class="key">College/Employer</td><td>{{ profile.teacher_info.college }}</td></tr>
+            <tr><td class="key">Major</td><td>{{ profile.teacher_info.major }}</td></tr>
+            <tr><td class="key">Shirt Size/Type</td><td>{{ profile.teacher_info.shirt_size }} {{ profile.teacher_info.shirt_type }}</td></tr>
+            {% if profile.teacher_info.bio %}
             <tr><td class="key">Bio</td><td>{{ profile.teacher_info.bio }}</td></tr>
-        {% endif %}
+            {% endif %}
         </table>
     {% else %}
         <em>(None specified)</em>
@@ -166,8 +241,39 @@
         <form action="/manage/userview/" method="get" name="change_grade">
         {{ change_grade_form.graduation_year }}
         <input type="hidden" name="username" value="{{ user.username }}" />
+        {% if program %}
+        <input type="hidden" name="program" value="{{ program.id }}" />
+        {% endif %}
         <input type="submit" value="Change" class="btn btn-default" />
         </form></td></tr>
+        {% if grade_change_requests %}
+        <tr><td colspan="2">
+            {% for gcr in grade_change_requests %}
+            <div class="alert alert-danger">
+                <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                {{ gcr }}{% if gcr.reason %} ({{ gcr.reason }}){% endif %}<br />
+                <center>
+                    <form action="/manage/userview/" method="get" name="approve_grade_request">
+                        <input type="hidden" name="approve_request" value="{{ gcr.id }}" />
+                        <input type="hidden" name="username" value="{{ user.username }}" />
+                        {% if program %}
+                        <input type="hidden" name="program" value="{{ program.id }}" />
+                        {% endif %}
+                        <input type="submit" value="Approve" class="btn btn-default" />
+                    </form>
+                    <form action="/manage/userview/" method="get" name="reject_grade_request">
+                        <input type="hidden" name="reject_request" value="{{ gcr.id }}" />
+                        <input type="hidden" name="username" value="{{ user.username }}" />
+                        {% if program %}
+                        <input type="hidden" name="program" value="{{ program.id }}" />
+                        {% endif %}
+                        <input type="submit" value="Reject" class="btn btn-default" />
+                    </form>
+                </center>
+            </div>
+            {% endfor%}
+        </td></tr>
+        {% endif %}
         <tr><td class="key">Date of Birth</td><td>{{ profile.student_info.dob|date }}</td></tr>
         <tr><td class="key">Applied to be Student Rep?</td><td>{% if profile.student_info.studentrep %}<span class="yes"><a class="tooltip">Yes<span>{{ profile.student_info.studentrep_expl }}</span></a></span>{% else %}<span class="no">No</span>{% endif %}</td></tr>
         <tr><td class="key">How Heard About {{ settings.ORGANIZATION_SHORT_NAME }}?</td><td>{% ifnotequal profile.student_info.heard_about "" %}<span>{{ profile.student_info.heard_about }}</span>{% else %}(blank){% endifnotequal %}</td><tr>

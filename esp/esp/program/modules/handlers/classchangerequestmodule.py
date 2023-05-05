@@ -38,6 +38,7 @@ from urllib import quote
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import Program, StudentAppResponse, StudentRegistration, RegistrationType
 from esp.program.models.class_ import ClassSubject
+from esp.program.class_status import ClassStatus
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.modules.base import main_call, aux_call, needs_admin, needs_student, meets_grade
 from esp.utils.web import render_to_response
@@ -59,7 +60,7 @@ class ClassChangeRequestModule(ProgramModuleObj):
             "link_title": "Class Change Request",
             "module_type": "learn",
             "required": False,
-            "choosable": 1,
+            "choosable": 0,
         }
 
     class Meta:
@@ -67,15 +68,18 @@ class ClassChangeRequestModule(ProgramModuleObj):
         app_label = 'modules'
 
     def isCompleted(self):
-        return StudentRegistration.valid_objects().filter(user=get_current_request().user,
-                                                          relationship__name="Request").exists()
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return StudentRegistration.valid_objects().filter(user=user, relationship__name="Request").exists()
 
     @main_call
     @needs_student
     @meets_grade
     def classchangerequest(self, request, tl, one, two, module, extra, prog):
         timeslots = prog.getTimeSlots()
-        sections = prog.sections().filter(status=10, meeting_times__isnull=False).distinct()
+        sections = prog.sections().filter(status=ClassStatus.ACCEPTED, meeting_times__isnull=False).distinct()
 
         enrollments = {}
         for timeslot in timeslots:

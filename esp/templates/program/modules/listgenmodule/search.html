@@ -15,7 +15,9 @@ Then you will select which information to display about each user and generate a
 
 <p><a href="/manage/{{ program.getUrlBase }}/selectList_old">Click here</a> to use the old style user list selector instead.</p>
 
+{% with include_common="True" %}
 {% include "users/usersearch/list_selector.html" %}
+{% endwith %}
 
 {% include "program/modules/admincore/returnlink.html" %}
 

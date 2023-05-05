@@ -193,6 +193,9 @@ def ensure_environment():
     if env.get("db_running", False):
         return
 
+    # Make sure the postgresql service is running
+    sudo("service postgresql start")
+
     # Has some database been loaded?
     dbs = int(psql("SELECT COUNT(*) FROM pg_stat_database;").strip())
     if dbs < 4:
@@ -208,6 +211,14 @@ def ensure_environment():
         print "***** "
         print "***** to load a database dump."
         print "***** "
+        exit(-1)
+
+    # Did `setup()` fail to create the symlinked folders?
+    fp = env.rbase + "esp/public/media/"
+    if not files.exists(fp + "images") or not files.exists(fp + "styles"):
+        print("One of the symlinks `esp/public/media/images` or ")
+        print("`.../styles` failed to be created. Try re-running with ")
+        print("escalated privileges or contact the web team for more help.")
         exit(-1)
 
 @task

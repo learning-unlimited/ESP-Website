@@ -61,13 +61,14 @@ class ResourceModule(ProgramModuleObj):
     doc = """ Manage the resources used by a program.  This includes classrooms and LCD equipment.
     Also use this module to set up the time blocks for classes.
     """
+
     @classmethod
     def module_properties(cls):
         return {
             "admin_title": "Resource Management",
             "link_title": "Manage Times and Rooms",
             "module_type": "manage",
-            "seq": 10,
+            "seq": -99999,
             "choosable": 1,
             }
 
@@ -87,7 +88,7 @@ class ResourceModule(ProgramModuleObj):
         if request.GET.get('op') == 'edit':
             #   pre-fill form
             current_slot = Event.objects.get(id=request.GET['id'])
-            context['timeslot_form'] = TimeslotForm()
+            context['timeslot_form'] = TimeslotForm(auto_id="timeslot_%s", program = prog)
             context['timeslot_form'].load_timeslot(current_slot)
 
         if request.GET.get('op') == 'delete':
@@ -104,7 +105,7 @@ class ResourceModule(ProgramModuleObj):
 
             elif data['command'] == 'addedit':
                 #   add/edit timeslot
-                form = TimeslotForm(data)
+                form = TimeslotForm(data, auto_id="timeslot_%s", program = prog)
                 if form.is_valid():
                     controller.add_or_edit_timeslot(form)
                 else:
@@ -121,7 +122,7 @@ class ResourceModule(ProgramModuleObj):
         if request.GET.get('op') == 'edit':
             #   pre-fill form
             current_slot = ResourceType.objects.get(id=request.GET['id'])
-            context['restype_form'] = ResourceTypeForm()
+            context['restype_form'] = ResourceTypeForm(auto_id="restype_%s")
             context['restype_form'].load_restype(current_slot)
             choices = [{'choice': choice} for choice in current_slot.choices]
             ResourceChoiceSet = formset_factory(ResourceChoiceForm, max_num = 10, extra = 0 if len(choices) else 1)
@@ -141,7 +142,7 @@ class ResourceModule(ProgramModuleObj):
 
             elif data['command'] == 'addedit':
                 #   add/edit restype
-                form = ResourceTypeForm(data)
+                form = ResourceTypeForm(data, auto_id="restype_%s")
                 num_choices = int(data.get('resourcechoices-TOTAL_FORMS', '0'))
                 ResourceChoiceSet = formset_factory(ResourceChoiceForm, max_num = 10, extra = 0 if num_choices else 1)
                 choices, choices_list = [],[]
@@ -166,7 +167,7 @@ class ResourceModule(ProgramModuleObj):
         if request.GET.get('op') == 'edit':
             #   pre-fill form
             current_room = Resource.objects.get(id=request.GET['id'])
-            context['classroom_form'] = ClassroomForm(self.program)
+            context['classroom_form'] = ClassroomForm(self.program, auto_id="classroom_%s")
             context['classroom_form'].load_classroom(self.program, current_room)
             furnishings = [{'furnishing': furnishing.res_type.id, 'choice': furnishing.attribute_value} for furnishing in current_room.associated_resources()]
             FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0)
@@ -190,7 +191,7 @@ class ResourceModule(ProgramModuleObj):
                 controller.delete_classroom(data['id'])
 
             elif data['command'] == 'addedit':
-                form = ClassroomForm(self.program, data)
+                form = ClassroomForm(self.program, data, auto_id="classroom_%s")
                 num_forms = int(data.get('furnishings-TOTAL_FORMS', '0'))
                 FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0)
                 furnishings = []
@@ -223,7 +224,7 @@ class ResourceModule(ProgramModuleObj):
             import_mode = 'save'
             to_import = request.POST.getlist('to_import')
 
-        import_form = TimeslotImportForm(request.POST, cur_prog = prog)
+        import_form = TimeslotImportForm(request.POST, cur_prog = prog, auto_id="timeslot_import_%s")
         if not import_form.is_valid():
             context['import_timeslot_form'] = import_form
         else:
@@ -278,7 +279,7 @@ class ResourceModule(ProgramModuleObj):
             import_mode = 'save'
             to_import = request.POST.getlist('to_import')
 
-        import_form = ResTypeImportForm(request.POST, cur_prog = prog)
+        import_form = ResTypeImportForm(request.POST, cur_prog = prog, auto_id="restype_import_%s")
         if not import_form.is_valid():
             context['import_restype_form'] = import_form
         else:
@@ -323,7 +324,7 @@ class ResourceModule(ProgramModuleObj):
             import_mode = 'save'
             to_import = request.POST.getlist('to_import')
 
-        import_form = ClassroomImportForm(request.POST, cur_prog = prog)
+        import_form = ClassroomImportForm(request.POST, cur_prog = prog, auto_id="classroom_import_%s")
         if not import_form.is_valid():
             context['import_classroom_form'] = import_form
         else:
@@ -393,8 +394,7 @@ class ResourceModule(ProgramModuleObj):
             if import_mode == 'preview':
                 context['prog'] = self.program
                 result = self.program.collapsed_dict(resource_list)
-                key_list = result.keys()
-                key_list.sort()
+                key_list = self.program.natural_sort(result.keys())
                 new_rooms = []
                 for key in key_list:
                     room = result[key]
@@ -454,7 +454,7 @@ class ResourceModule(ProgramModuleObj):
         if request.GET.get('op') == 'edit':
             #   pre-fill form
             equip = Resource.objects.get(id=request.GET['id'])
-            context['equipment_form'] = EquipmentForm(self.program)
+            context['equipment_form'] = EquipmentForm(self.program, auto_id="equipment_%s")
             context['equipment_form'].load_equipment(self.program, equip)
 
         if request.GET.get('op') == 'delete':
@@ -471,7 +471,7 @@ class ResourceModule(ProgramModuleObj):
 
             elif data['command'] == 'addedit':
                 #   add/edit restype
-                form = EquipmentForm(self.program, data)
+                form = EquipmentForm(self.program, data, auto_id="equipment_%s")
 
                 if form.is_valid():
                     form.save_equipment(self.program)
@@ -490,7 +490,7 @@ class ResourceModule(ProgramModuleObj):
             import_mode = 'save'
             to_import = request.POST.getlist('to_import')
 
-        import_form = EquipmentImportForm(request.POST, cur_prog = prog)
+        import_form = EquipmentImportForm(request.POST, cur_prog = prog, auto_id="equipment_import_%s")
         if not import_form.is_valid():
             context['import_equipment_form'] = import_form
         else:
@@ -632,14 +632,13 @@ class ResourceModule(ProgramModuleObj):
             return response
 
         #   Group contiguous blocks of time for the program
-        time_options = self.program.getTimeSlots(types=['Class Time Block','Open Class Time Block'])
-        time_groups = Event.group_contiguous(list(time_options))
+        time_groups = self.program.getTimeGroups(types=['Class Time Block','Open Class Time Block'])
 
         #   Retrieve remaining context information
         context['timeslots'] = [{'selections': group} for group in time_groups]
 
         if 'timeslot_form' not in context:
-            context['timeslot_form'] = TimeslotForm()
+            context['timeslot_form'] = TimeslotForm(auto_id="timeslot_%s", program = prog)
 
         res_types = self.program.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes'))
         context['resource_types'] = sorted(res_types, key = lambda x: (not x.hidden, x.priority_default), reverse = True)
@@ -650,27 +649,27 @@ class ResourceModule(ProgramModuleObj):
         if 'restype_form' not in context:
             ResourceChoiceSet = formset_factory(ResourceChoiceForm, max_num = 10)
             context['reschoice_formset'] = ResourceChoiceSet(prefix='resourcechoices')
-            context['restype_form'] = ResourceTypeForm()
+            context['restype_form'] = ResourceTypeForm(auto_id="restype_%s")
 
         if 'classroom_form' not in context:
             FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0)
             context['furnishing_formset'] = FurnishingFormSet(prefix='furnishings')
-            context['classroom_form'] = ClassroomForm(self.program)
+            context['classroom_form'] = ClassroomForm(self.program, auto_id="classroom_%s")
 
         if 'equipment_form' not in context:
-            context['equipment_form'] = EquipmentForm(self.program)
+            context['equipment_form'] = EquipmentForm(self.program, auto_id="equipment_%s")
 
         if 'import_classroom_form' not in context:
-            context['import_classroom_form'] = ClassroomImportForm(cur_prog = prog)
+            context['import_classroom_form'] = ClassroomImportForm(cur_prog = prog, auto_id="classroom_import_%s")
 
         if 'import_timeslot_form' not in context:
-            context['import_timeslot_form'] = TimeslotImportForm(cur_prog = prog)
+            context['import_timeslot_form'] = TimeslotImportForm(cur_prog = prog, auto_id="timeslot_import_%s")
 
         if 'import_restype_form' not in context:
-            context['import_restype_form'] = ResTypeImportForm(cur_prog = prog)
+            context['import_restype_form'] = ResTypeImportForm(cur_prog = prog, auto_id="restype_import_%s")
 
         if 'import_equipment_form' not in context:
-            context['import_equipment_form'] = EquipmentImportForm(cur_prog = prog)
+            context['import_equipment_form'] = EquipmentImportForm(cur_prog = prog, auto_id="equipment_import_%s")
 
         context['open_section'] = extra
         context['prog'] = self.program
@@ -752,6 +751,14 @@ class ResourceModule(ProgramModuleObj):
             return HttpResponseBadRequest('')
         ResourceAssignment.objects.filter(assignment_group = results[0].assignment_group).delete()
         return HttpResponse('')
+
+    def isStep(self):
+        return True
+
+    setup_title = "Set up timeslots, resources, and classrooms"
+
+    def isCompleted(self):
+        return self.program.getTimeSlots().exists() and self.program.getResourceTypes().exists() and self.program.getClassrooms().exists()
 
     class Meta:
         proxy = True

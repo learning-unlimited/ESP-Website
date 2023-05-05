@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.models import FinancialAidRequest
+from esp.program.models import FinancialAidRequest, SplashInfo
 from esp.accounting.models import FinancialAidGrant, LineItemType
 
 from esp.program.modules.base import ProgramModuleObj
@@ -51,7 +51,7 @@ class StudentRegTest(ProgramFrameworkTest):
         kwargs.update( {
             'num_timeslots': 3, 'timeslot_length': 50, 'timeslot_gap': 10,
             'num_teachers': 6, 'classes_per_teacher': 1, 'sections_per_class': 2,
-            'num_rooms': 6,
+            'num_rooms': 6, 'sibling_discount': 20,
             } )
         super(StudentRegTest, self).setUp(*args, **kwargs)
 
@@ -98,7 +98,7 @@ class StudentRegTest(ProgramFrameworkTest):
             response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
             for cls in self.program.classes():
                 #   Find the portion of the catalog corresponding to this class
-                pattern = r"""<div id="class_%d" class=".*?show_class">.*?</div>\s*?</div>\s*?</div>""" % cls.id
+                pattern = r"""<div id="class_%d" class=".*?show_class" data-difficulty=".*" data-duration=".+" data-is-closed=".+">.*?</div>\s*?</div>\s*?</div>""" % cls.id
                 cls_fragment = re.search(pattern, response.content, re.DOTALL).group(0)
 
                 pat2 = r"""<div.*?class="class_title">(?P<title>.*?)</div>.*?<div class="class_content">(?P<description>.*?)</div>.*?<strong>Enrollment</strong>(?P<enrollment>.*?)</div>"""
@@ -248,6 +248,8 @@ class StudentRegTest(ProgramFrameworkTest):
         pac.clear_all_data()
         pac.setup_accounts()
         pac.setup_lineitemtypes(program_cost, [('Item1', 10, 1), ('Item2', 5, 10)], [('Food', [('Small', 3), ('Large', 7)])])
+        LineItemType.objects.filter(text='Food', program=self.program).update(for_finaid=True) # Food should be covered by financial aid
+        sd_lit = pac.default_siblingdiscount_lineitemtype() # Get the sibling discount line item type
 
         #   Choose a random student and check that the extracosts page loads
         student = random.choice(self.students)
@@ -262,18 +264,18 @@ class StudentRegTest(ProgramFrameworkTest):
         #   Check that selecting one of the "buy-one" extra items works
         lit1 = LineItemType.objects.get(program=self.program, text='Item1')
         lit2 = LineItemType.objects.get(program=self.program, text='Item2')
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-cost' % lit1.id: 'checked', '%d-count' % lit2.id: '0'})
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-cost' % lit1.id: 'checked', '%d-count' % lit2.id: '0', '%d-siblingdiscount' % sd_lit.id: 'False'})
         self.assertEqual(response.status_code, 302)
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), program_cost + 10)
 
         #   Check that selecting one or more than one of the "buy many" extra items works
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '1'})
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '1', '%d-siblingdiscount' % sd_lit.id: 'False'})
         self.assertEqual(response.status_code, 302)
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), program_cost + 5)
 
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '3'})
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '3', '%d-siblingdiscount' % sd_lit.id: 'False'})
         self.assertEqual(response.status_code, 302)
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), program_cost + 15)
@@ -281,7 +283,7 @@ class StudentRegTest(ProgramFrameworkTest):
         #   Check that selecting an option for a "multiple choice" extra item works
         lit3 = LineItemType.objects.get(program=self.program, text='Food')
         lio = filter(lambda x: x[2] == 'Large', lit3.options)[0]
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '0', 'multi%d-option' % lit3.id: str(lio[0])})
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '0', 'multi%d-option' % lit3.id: str(lio[0]), '%d-siblingdiscount' % sd_lit.id: 'False'})
         self.assertEqual(response.status_code, 302)
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), program_cost + 7)
@@ -290,12 +292,25 @@ class StudentRegTest(ProgramFrameworkTest):
         #   (e.g. we are not forcing financial aid students to pay for food)
         request = FinancialAidRequest.objects.create(user=student, program=self.program)
         (fg, created) = FinancialAidGrant.objects.get_or_create(request=request, percent=100)
-        self.assertEqual(iac.amount_due(), 0.0)
+        self.assertEqual(iac.amount_due(), 0)
+
+        #   Check that financial aid only covers items marked as "for_finaid"
+        LineItemType.objects.filter(text='Food', program=self.program).update(for_finaid=False)
+        self.assertEqual(iac.amount_due(), 7)
+
         fg.delete()
 
         #   Check that removing items on the form removes their cost for the student
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '0'})
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '0', '%d-siblingdiscount' % sd_lit.id: 'False'})
         self.assertEqual(response.status_code, 302)
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), program_cost)
+
+        #   Check that the sibling discount works
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-siblingdiscount' % sd_lit.id: 'True', '%d-siblingname' % sd_lit.id: 'Test Name'})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertEqual(iac.amount_due(), program_cost - 20)
+        spi = SplashInfo.getForUser(student, self.program)
+        self.assertEqual(spi.siblingname, 'Test Name')
 

@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from django import forms
 from django.forms import widgets
 from django.core.validators import RegexValidator
@@ -307,42 +308,38 @@ all_global_tags = {
         'category': 'teach',
         'is_setting': True,
     },
-    # TODO: For the next five, we probably want to pull the fields from the forms (e.g. TeacherProfileForm.declared_fields.keys())
-    # and then use those values in a MultipleChoiceField, but I see two problems:
-    # 1) How do we handle the conversion of the list of selected values to a comma-separated string (and back)?
-    #    We could maybe check if the field is a MultipleChoiceField, then use getlist on the cleaned_data?
-    # 2) We'll probably run into import loops when we try to import the forms
+    # For the next five, we populate the widgets as MultipleChoiceFields when initializing the form to avoid import loops
     'teacher_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'Comma-separated list of fields to hide in the teacher profile form',
+        'help_text': 'Select the field(s) to hide in the teacher profile form (only fields that are not required may be hidden)',
         'default': '',
         'category': 'teach',
         'is_setting': True,
     },
     'student_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'Comma-separated list of fields to hide in the student profile form',
+        'help_text': 'Select the field(s) to hide in the student profile form (only fields that are not required may be hidden)',
         'default': '',
         'category': 'learn',
         'is_setting': True,
     },
     'volunteer_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'Comma-separated list of fields to hide in the volunteer profile form',
+        'help_text': 'Select the field(s) to hide in the volunteer profile form (only fields that are not required may be hidden)',
         'default': '',
         'category': 'volunteer',
         'is_setting': True,
     },
     'educator_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'Comma-separated list of fields to hide in the educator profile form',
+        'help_text': 'Select the field(s) to hide in the educator profile form (only fields that are not required may be hidden)',
         'default': '',
         'category': 'teach',
         'is_setting': True,
     },
     'guardian_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'Comma-separated list of fields to hide in the guardian profile form',
+        'help_text': 'Select the field(s) to hide in the guardian profile form (only fields that are not required may be hidden)',
         'default': '',
         'category': 'learn',
         'is_setting': True,
@@ -366,6 +363,20 @@ all_global_tags = {
         'help_text': 'Ask about student gender in profile form?',
         'default': False,
         'category': 'learn',
+        'is_setting': True,
+    },
+    'student_profile_pronoun_field': {
+        'is_boolean': True,
+        'help_text': "Ask about student's preferred pronouns in profile form (and display their pronouns in various printables)?",
+        'default': False,
+        'category': 'learn',
+        'is_setting': True,
+    },
+    'teacher_profile_pronoun_field': {
+        'is_boolean': True,
+        'help_text': "Ask about teacher's preferred pronouns in profile form (and display their pronouns in various printables)?",
+        'default': False,
+        'category': 'teach',
         'is_setting': True,
     },
     'ask_about_duplicate_accounts': {
@@ -425,6 +436,20 @@ all_global_tags = {
         'category': 'manage',
         'is_setting': True,
     },
+    'teacher_home_page': {
+        'is_boolean': False,
+        'help_text': 'The page to which teachers get redirected after logging in (can be a relative or absolute page)',
+        'default': "/teach/index.html",
+        'category': 'teach',
+        'is_setting': True,
+    },
+    'student_home_page': {
+        'is_boolean': False,
+        'help_text': 'The page to which students get redirected after logging in (can be a relative or absolute page)',
+        'default': "/learn/index.html",
+        'category': 'learn',
+        'is_setting': True,
+    },
     'default_restypes': {
         'is_boolean': False,
         'help_text': 'A JSON list of the resource types (by name) to create when making a new program',
@@ -434,7 +459,7 @@ all_global_tags = {
     },
     'google_cloud_api_key': {
         'is_boolean': False,
-        'help_text': 'An API key for use with the Google Cloud Platform. Used for the student and teacher onsite webapps.',
+        'help_text': 'An API key for use with the Google Cloud Platform. Used for the maps in the student and teacher onsite webapps. The embedded map is entirely free but requires an API key. If not set, the map tab will be hidden.',
         'default': '',
         'category': 'manage',
         'is_setting': True,
@@ -453,6 +478,13 @@ all_global_tags = {
         'category': 'learn',
         'is_setting': True,
         'field': forms.DateField(widget=forms.SelectDateWidget(years=[datetime.date.today().year]))
+    },
+    'current_theme_version': {
+        'is_boolean': False,
+        'help_text': 'A random hexidecimal string to force browser refreshing of theme files',
+        'default': "8daf9a",
+        'category': 'manage',
+        'is_setting': False,
     },
 }
 
@@ -479,43 +511,8 @@ all_program_tags = {
         'help_text': 'The monitary value of the sibling discount',
         'default': Decimal(0.00),
         'category': 'learn',
-        'is_setting': True,
+        'is_setting': False, # This is already included in the program settings
         'field': forms.DecimalField(min_value=Decimal(0.00), decimal_places=2),
-    },
-    'splashinfo_costs': {
-        'is_boolean': False,
-        'help_text': 'A JSON structure of food costs for the \'lunchsat\' and \'lunchsun\' keys (must be consistent with all of the options specified in splashinfo_choices)',
-        'default': '{}',
-        'category': 'learn',
-        'is_setting': True,
-    },
-    'splashinfo_choices': {
-        'is_boolean': False,
-        'help_text': 'A JSON structure of food options for the \'lunchsat\' and \'lunchsun\' keys (for the SplashInfoModule)',
-        'default': None,
-        'category': 'learn',
-        'is_setting': True,
-    },
-    'splashinfo_siblingdiscount': {
-        'is_boolean': True,
-        'help_text': 'Should the sibling discount and sibling name fields be shown in the SplashInfoModule?',
-        'default': True,
-        'category': 'learn',
-        'is_setting': True,
-    },
-    'splashinfo_lunchsat': {
-        'is_boolean': True,
-        'help_text': 'Should the Saturday lunch field be shown in the SplashInfoModule?',
-        'default': True,
-        'category': 'learn',
-        'is_setting': True,
-    },
-    'splashinfo_lunchsun': {
-        'is_boolean': True,
-        'help_text': 'Should the Sunday lunch field be shown in the SplashInfoModule?',
-        'default': True,
-        'category': 'learn',
-        'is_setting': True,
     },
     'catalog_sort_fields': {
         'is_boolean': False,
@@ -524,158 +521,315 @@ all_program_tags = {
         'category': 'manage',
         'is_setting': True,
     },
-    'teacherreg_help_text_duration': {
+    # These help_text tags are in order of the fields in TeacherClassRegForm
+    'teacherreg_help_text_title': {
         'is_boolean': False,
-        'help_text': 'If set, overrides the help text for the class registration duration field',
+        'help_text': 'If set, overrides the help text for the class registration title field',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
     },
-    'teacherreg_help_text_num_sections': {
+    'teacherreg_help_text_category': {
         'is_boolean': False,
-        'help_text': 'If set, overrides the help text for the class registration number of sections field',
+        'help_text': 'If set, overrides the help text for the class registration category field',
         'default': None,
-        'category': 'teach',
-        'is_setting': True,
-    },
-    'teacherreg_help_text_requested_room': {
-        'is_boolean': False,
-        'help_text': 'If set, overrides the help text for the class registration requested room field',
-        'default': None,
-        'category': 'teach',
-        'is_setting': True,
-    },
-    'teacherreg_help_text_message_for_directors': {
-        'is_boolean': False,
-        'help_text': 'If set, overrides the help text for the class registration message for directors field',
-        'default': None,
-        'category': 'teach',
-        'is_setting': True,
-    },
-    'teacherreg_help_text_purchase_requests': {
-        'is_boolean': False,
-        'help_text': 'If set, overrides the help text for the class registration purchase requests field',
-        'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
     },
     'teacherreg_help_text_class_info': {
         'is_boolean': False,
         'help_text': 'If set, overrides the help text for the class registration class info field',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_help_text_prereqs': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the class registration prerequisites field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_help_text_duration': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the class registration duration field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_help_text_num_sections': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the class registration number of sections field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_help_text_session_count': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the class registration session count field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_help_text_grade_range': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the class registration grade range field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_help_text_grade_min': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the class registration minimum grade field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_help_text_grade_max': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the class registration maximum grade field',
+        'default': None,
+        'category': 'class',
         'is_setting': True,
     },
     'teacherreg_help_text_class_size_max': {
         'is_boolean': False,
         'help_text': 'If set, overrides the help text for the class registration class size max field',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
     },
     'teacherreg_help_text_class_size_optimal': {
         'is_boolean': False,
         'help_text': 'If set, overrides the help text for the class registration class size optimal field',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
     },
-    'teacherreg_help_text_grade_max': {
+    'teacherreg_help_text_optimal_class_size_range': {
         'is_boolean': False,
-        'help_text': 'If set, overrides the help text for the class registration max grade field',
+        'help_text': 'If set, overrides the help text for the class registration optimal class size range field',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
     },
-    'teacherreg_help_text_grade_min': {
+    'teacherreg_help_text_allowable_class_size_ranges': {
         'is_boolean': False,
-        'help_text': 'If set, overrides the help text for the class registration min grade field',
+        'help_text': 'If set, overrides the help text for the class registration allowable class size ranges field',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_help_text_class_style': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the class registration class style field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_help_text_hardness_rating': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the class registration difficulty field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_help_text_allow_lateness': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the class registration punctuality field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_help_text_requested_room': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the class registration requested room field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_help_text_requested_special_resources': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the class registration special requests field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_help_text_purchase_requests': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the class registration purchase requests field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_help_text_message_for_directors': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the class registration message for directors field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    # These label tags are in order of the fields in TeacherClassRegForm
+    'teacherreg_label_title': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the class registration title field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_label_category': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the class registration category field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_label_class_info': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the class registration description field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_label_prereqs': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the class registration prerequisites field',
+        'default': None,
+        'category': 'class',
         'is_setting': True,
     },
     'teacherreg_label_duration': {
         'is_boolean': False,
         'help_text': 'If set, overrides the label for the class registration duration field',
         'default': None,
-        'category': 'teach',
-        'is_setting': True,
-    },
-    'teacherreg_label_class_size_max': {
-        'is_boolean': False,
-        'help_text': 'If set, overrides the label for the class registration class size max field',
-        'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
     },
     'teacherreg_label_num_sections': {
         'is_boolean': False,
         'help_text': 'If set, overrides the label for the class registration number of sections field',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
     },
-    'teacherreg_label_requested_room': {
+    'teacherreg_label_session_count': {
         'is_boolean': False,
-        'help_text': 'If set, overrides the label for the class registration requested room field',
+        'help_text': 'If set, overrides the label for the class registration session count field',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
     },
-    'teacherreg_label_message_for_directors': {
+    'teacherreg_label_grade_range': {
         'is_boolean': False,
-        'help_text': 'If set, overrides the label for the class registration message for directors field',
+        'help_text': 'If set, overrides the label for the class registration grade range field',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
     },
-    'teacherreg_label_purchase_requests': {
+    'teacherreg_label_grade_min': {
         'is_boolean': False,
-        'help_text': 'If set, overrides the label for the class registration purchase requests field',
+        'help_text': 'If set, overrides the label for the class registration minimum grade field',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
     },
-    'teacherreg_label_class_info': {
+    'teacherreg_label_grade_max': {
         'is_boolean': False,
-        'help_text': 'If set, overrides the label for the class registration class info field',
+        'help_text': 'If set, overrides the label for the class registration maximum grade field',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_label_class_size_max': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the class registration class size max field',
+        'default': None,
+        'category': 'class',
         'is_setting': True,
     },
     'teacherreg_label_class_size_optimal': {
         'is_boolean': False,
         'help_text': 'If set, overrides the label for the class registration class size optimal field',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
     },
-    'teacherreg_label_grade_max': {
+    'teacherreg_label_optimal_class_size_range': {
         'is_boolean': False,
-        'help_text': 'If set, overrides the label for the class registration max grade field',
+        'help_text': 'If set, overrides the label for the class registration optimal class size range field',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
     },
-    'teacherreg_label_grade_min': {
+    'teacherreg_label_allowable_class_size_ranges': {
         'is_boolean': False,
-        'help_text': 'If set, overrides the label for the class registration min grade field',
+        'help_text': 'If set, overrides the label for the class registration allowable class size ranges field',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
     },
+    'teacherreg_label_class_style': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the class registration class style field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_label_hardness_rating': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the class registration difficulty field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_label_allow_lateness': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the class registration punctuality field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_label_requested_room': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the class registration room request field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_label_requested_special_resources': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the class registration special requests field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_label_purchase_requests': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the class registration purchase requests field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_label_message_for_directors': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the class registration message for directors field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    # We populate the next widget as a MultipleChoiceField when initializing the form to avoid import loops
     'teacherreg_hide_fields': {
         'is_boolean': False,
-        'help_text': 'A comma seperated list of what fields (e.g. \'purchase_requests\') you want to hide from teachers during teacher registration',
+        'help_text': 'Select the field(s) you want to hide from teachers during teacher registration (only fields that are not required may be hidden)',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
     },
     'teacherreg_default_min_grade': {
         'is_boolean': False,
         'help_text': 'The default minimum grade selected in the class creation/editing form',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
         'field': forms.IntegerField(min_value=1),
     },
@@ -683,7 +837,7 @@ all_program_tags = {
         'is_boolean': False,
         'help_text': 'The default maximum grade selected in the class creation/editing form',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
         'field': forms.IntegerField(min_value=1),
     },
@@ -691,9 +845,65 @@ all_program_tags = {
         'is_boolean': False,
         'help_text': 'The default class size max in the class creation/editing form',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
         'field': forms.IntegerField(min_value=1),
+    },
+    'moderatorreg_help_text_will_moderate': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the "Will you moderate?" field for the moderator registration form',
+        'default': None,
+        'category': 'moderate',
+        'is_setting': True,
+    },
+    'moderatorreg_help_text_num_slots': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the "Number of timeslots?" field for the moderator registration form',
+        'default': None,
+        'category': 'moderate',
+        'is_setting': True,
+    },
+    'moderatorreg_help_text_class_categories': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the class categories field for the moderator registration form',
+        'default': None,
+        'category': 'moderate',
+        'is_setting': True,
+    },
+    'moderatorreg_help_text_comments': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the comments field for the moderator registration form',
+        'default': None,
+        'category': 'moderate',
+        'is_setting': True,
+    },
+    'moderatorreg_label_will_moderate': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the "Will you moderate?" field for the moderator registration form',
+        'default': None,
+        'category': 'moderate',
+        'is_setting': True,
+    },
+    'moderatorreg_label_num_slots': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the "Number of timeslots?" field for the moderator registration form',
+        'default': None,
+        'category': 'moderate',
+        'is_setting': True,
+    },
+    'moderatorreg_label_class_categories': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the class categories field for the moderator registration form',
+        'default': None,
+        'category': 'moderate',
+        'is_setting': True,
+    },
+    'moderatorreg_label_comments': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the comments field for the moderator registration form',
+        'default': None,
+        'category': 'moderate',
+        'is_setting': True,
     },
     'stripe_settings': {
         'is_boolean': False,
@@ -707,7 +917,7 @@ all_program_tags = {
         'help_text': 'Form ID of the custom form used for student registration',
         'default': None,
         'category': 'learn',
-        'is_setting': True,
+        'is_setting': False,
         'field': forms.IntegerField(min_value=1),
     },
     'teach_extraform_id': {
@@ -715,7 +925,7 @@ all_program_tags = {
         'help_text': 'Form ID of the custom form used for teacher registration',
         'default': None,
         'category': 'teach',
-        'is_setting': True,
+        'is_setting': False,
         'field': forms.IntegerField(min_value=1),
     },
     'donation_settings': {
@@ -757,7 +967,7 @@ all_program_tags = {
         'is_boolean': True,
         'help_text': 'If selected grade min and grade max are at least 4 grades apart, show a popup for teachers',
         'default': True,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
     },
     'quiz_form_id': {
@@ -765,7 +975,7 @@ all_program_tags = {
         'help_text': 'The ID of the customform to associate with the Teacher Quiz Module',
         'default': None,
         'category': 'teach',
-        'is_setting': True,
+        'is_setting': False,
         'field': forms.IntegerField(min_value=1),
     },
     'display_registration_names': {
@@ -786,7 +996,7 @@ all_program_tags = {
         'is_boolean': False,
         'help_text': 'JSON list of grade ranges that replace min and max grade options in teacher class reg (e.g. "[[7,9],[9,10],[9,12],[10,12],[11,12]]")',
         'default': None,
-        'category': 'teach',
+        'category': 'class',
         'is_setting': True,
     },
     'studentschedule_show_empty_blocks': {
@@ -883,10 +1093,19 @@ all_program_tags = {
     },
     'program_center': {
         'is_boolean': False,
-        'help_text': 'The geographic center for a program, following the form {lat: 37.427490, lng: -122.170267}. Used for the teacher and student onsite webapps.',
-        'default': '{lat: 37.427490, lng: -122.170267}',
+        'help_text': 'The geographic center for a program, following the form "lat, long". Used for the maps in the teacher and student onsite webapps.',
+        'default': '37.427490, -122.170267',
         'category': 'manage',
         'is_setting': True,
+        'field': forms.CharField(validators=[RegexValidator(r'^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$', 'Enter a valid location.')])
+    },
+    'program_center_zoom': {
+        'is_boolean': False,
+        'help_text': 'The initial zoom level of the map in the teacher and student onsite webapps.',
+        'default': '17',
+        'category': 'manage',
+        'is_setting': True,
+        'field': forms.IntegerField(min_value=0, max_value=21),
     },
     'student_webapp_isstep': {
         'is_boolean': True,
@@ -906,14 +1125,14 @@ all_program_tags = {
         'is_boolean': False,
         'help_text': 'At what time should the student onsite webapp use program attendance if available (instead of enrollment) to determine if a class is full? If blank, program attendance numbers will not be used. Format: HH:MM where HH is in 24 hour time.',
         'default': None,
-        'category': 'learn',
+        'category': 'onsite',
         'is_setting': True,
     },
     'switch_lag_class_attendance': {
         'is_boolean': False,
         'help_text': 'How many minutes into a class should the student onsite webapp use class attendance numbers if available (instead of enrollment or program attendance) to determine if a class is full? If blank, class attendance numbers will not be used.',
         'default': None,
-        'category': 'learn',
+        'category': 'onsite',
         'is_setting': True,
         'field': forms.IntegerField(min_value=0),
     },
@@ -943,18 +1162,142 @@ all_program_tags = {
         'is_boolean': False,
         'help_text': 'The message that is shown at the top of the teacher webapp schedule when a teacher is NOT checked in.',
         'default': 'Note: Please make sure to check in before your first class today.',
+        'category': 'onsite',
+        'is_setting': True,
+    },
+    'student_onsite_checkin_note': {
+        'is_boolean': False,
+        'help_text': 'The message that is shown at the top of the student webapp schedule when a student is NOT checked in.',
+        'default': 'Note: You will not be able to change any classes or see your classrooms until after your check-in has been processed by the admin team.',
+        'category': 'onsite',
+        'is_setting': True,
+    },
+    'availability_group_tolerance': {
+        'is_boolean': False,
+        'help_text': 'Time blocks must be less than this many minutes apart to be shown as contiguous for the availability module(s). This will not impact the calculation of possible class durations (see the "Timeblock contiguous tolerance" tag below).',
+        'default': '20',
         'category': 'teach',
         'is_setting': True,
+        'field': forms.IntegerField(min_value=0),
+    },
+    'timeblock_contiguous_tolerance': {
+        'is_boolean': False,
+        'help_text': 'Time blocks must be less than this many minutes apart to be considered contiguous for a single class.',
+        'default': '20',
+        'category': 'teach',
+        'is_setting': True,
+        'field': forms.IntegerField(min_value=0),
+    },
+    'moderator_title': {
+        'is_boolean': False,
+        'help_text': 'The name used to refer to a section moderator throughout the website.',
+        'default': 'Moderator',
+        'category': 'moderate',
+        'is_setting': True,
+    },
+    # For the next two, we populate the widgets as MultipleChoiceFields when initializing the form to avoid import loops
+    'student_reg_records': {
+        'is_boolean': False,
+        'help_text': 'Additional records that must be completed for student registration (e.g., if a form must be submitted via email).',
+        'default': '',
+        'category': 'learn',
+        'is_setting': True,
+    },
+    'teacher_reg_records': {
+        'is_boolean': False,
+        'help_text': 'Additional records that must be completed for teacher registration (e.g., if a form must be submitted via email).',
+        'default': '',
+        'category': 'teach',
+        'is_setting': True,
+    },
+    'student_certificate': {
+        'is_boolean': False,
+        'help_text': 'Which students will be offered a completion certificate via the student certificate module \
+                      following the end of the program? If based on class attendance, the certificate will be filtered to \
+                      only attended classes (as will the program printable version).',
+        'default': 'program_attendance',
+        'category': 'learn',
+        'is_setting': True,
+        'field': forms.ChoiceField(choices=[('all', 'All students'),
+                                            ('program_attendance', 'Only students who attended the program'),
+                                            ('class_attendance', 'Only students who attended at least one class')]),
+    },
+    'student_self_checkin': {
+        'is_boolean': False,
+        'help_text': 'Which student self checkin mode would you like to use? Note that, when enabled, \
+                      students must have completed all required steps of student registration before \
+                      they can check themselves in. The self checkin page is intentionally not linked \
+                      to from anywhere in student registration. If this is enabled, you will need to \
+                      provide the <a href="{{ program.get_learn_url }}selfcheckin">URL</a> to students somehow \
+                      (e.g., via a printed QR code). If unique codes are required, these can be printed \
+                      on nametags via the <a href="{{ program.get_manage_url }}selectidoptions">nametag module</a>.',
+        'default': 'none',
+        'category': 'onsite',
+        'is_setting': True,
+        'field': forms.ChoiceField(choices=[('none', 'None (disable student self checkin)'),
+                                            ('open', 'Students only need to access the self checkin page'),
+                                            ('code', 'Students must enter their unique code to check themselves in')]),
+    },
+    'already_paid_extracosts_allowed': {
+        'is_boolean': True,
+        'help_text': 'Whether students should be able to return to the extracosts page to add items or change options after they have already paid once via credit card.',
+        'default': True ,
+        'category': 'learn',
+        'is_setting': True,
+    },
+    'already_paid_extracosts_text': {
+        'is_boolean': False,
+        'help_text': 'The message that will be shown to users who have already paid by credit card and have returned to the extra costs page, if allowed.',
+        'default': 'You have already paid for this program via credit card. You are welcome to change your \
+                    selections below. If your new balance is larger than what you have already paid, \
+                    you can pay the remaining balance via credit card. If your new balance is smaller \
+                    than what you have already paid, we will treat the negative balance as a donation \
+                    to our program (thanks!).' ,
+        'category': 'learn',
+        'is_setting': True,
+    },
+    'student_schedule_format': {
+        'is_boolean': False,
+        'help_text': 'The formatting settings for PDF student schedules (in json format).',
+        'default': None,
+        'category': 'manage',
+        'is_setting': False,
+    },
+    'student_schedule_pretext': {
+        'is_boolean': False,
+        'help_text': 'The text that is included right above the schedule in PDF student schedules (LaTeX is supported).',
+        'default': '' ,
+        'category': 'manage',
+        'is_setting': False,
+    },
+    'student_schedule_posttext': {
+        'is_boolean': False,
+        'help_text': 'The text that is included right below the schedule in PDF student schedules (LaTeX is supported).',
+        'default': r"""\begin{center}
+\begin{tabularx}{17cm}{X c}
+\multicolumn{2}{c}{\small
+\textit{Please see your map for building directions, or ask anyone for help.}
+\normalsize } \\
+\multicolumn{2}{c}{\small
+\textit{If you are not signed up for a full day of classes, we encourage you to add more!}
+\normalsize } \\
+~ & ~
+\end{tabularx}
+\end{center}""",
+        'category': 'manage',
+        'is_setting': False,
     },
 }
 
 # Dictionary of categories that tags fall into (for grouping on the tag settings page)
 # Each key is the string in the tuples above, each value is the human-readable string that will be shown in the template/form
-tag_categories = {
-    'teach': 'Teacher Registration Settings',
-    'learn': 'Student Registration Settings',
-    'manage': 'General Management Settings',
-    'onsite': 'Onsite Settings',
-    'volunteer': 'Volunteer Registration Settings',
-    'theme': 'Theme Settings',
-}
+tag_categories = OrderedDict([
+    ('theme', 'Theme Settings'),
+    ('manage', 'General Management Settings'),
+    ('teach', 'Teacher Registration Settings'),
+    ('class', 'Class Registration Settings'),
+    ('moderate', 'Moderator Settings'),
+    ('learn', 'Student Registration Settings'),
+    ('volunteer', 'Volunteer Registration Settings'),
+    ('onsite', 'Onsite Settings')
+])

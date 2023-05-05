@@ -32,17 +32,12 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter, ContactInfo
 from esp.users.controllers.usersearch import UserSearchController
-from esp.users.forms.generic_search_form import StudentSearchForm
-from esp.users.views.usersearch import get_user_checklist
 from django.db.models.query   import Q
-from esp.dbmail.models import ActionHandler
-from django.template import Template
-from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.middleware import ESPError
 
 from django.conf import settings
@@ -51,6 +46,7 @@ from twilio import TwilioRestException
 from twilio.rest import TwilioRestClient
 
 class GroupTextModule(ProgramModuleObj):
+    doc = """Text users that match specific search criteria."""
     """ Want to tell all enrolled students about a last-minute lunch location
         change? Want to inform students about a cancelled class? The Group Text
         Panel is your friend!
@@ -118,10 +114,7 @@ class GroupTextModule(ProgramModuleObj):
             context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
             context['est_time'] = float(context['num_users']) * 1.0 / len(settings.TWILIO_ACCOUNT_NUMBERS)
             return render_to_response(self.baseDir()+'options.html', request, context)
-        else:
-            student_search_form = StudentSearchForm()
 
-        context['student_search_form'] = student_search_form
         context.update(usc.prepare_context(prog, target_path='/manage/%s/grouptextpanel' % prog.url))
         return render_to_response(self.baseDir()+'search.html', request, context)
 
@@ -189,6 +182,9 @@ class GroupTextModule(ProgramModuleObj):
                 numberIndex = (numberIndex + 1) % len(ourNumbers)
 
         return "\n".join(send_log)
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

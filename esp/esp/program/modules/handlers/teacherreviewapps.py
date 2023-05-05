@@ -47,6 +47,8 @@ from esp.middleware.threadlocalrequest import get_current_request
 __all__ = ['TeacherReviewApps']
 
 class TeacherReviewApps(ProgramModuleObj):
+    doc = """Allows teachers to review student applications for their classes."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -183,6 +185,9 @@ class TeacherReviewApps(ProgramModuleObj):
     def review_student(self, request, tl, one, two, module, extra, prog):
         scrmi = prog.studentclassregmoduleinfo
         reg_nodes = scrmi.reg_verbs()
+
+        if not extra:
+            return self.goToCore(tl)
 
         try:
             cls = ClassSubject.objects.get(id = extra)

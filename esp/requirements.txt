@@ -3,12 +3,13 @@ Django==1.11.29
 
 # Django-specific packages
 git+https://github.com/learning-unlimited/django-argcache.git@django-1.9 # Handles caching
-django-debug-toolbar==1.5 # Provides the debug toolbar
+django-debug-toolbar==1.11.1 # Provides the debug toolbar
 django-extensions==1.8.1 # Provides shell_plus, runserver_plus, and other utilities
 django-filebrowser-no-grappelli==3.8.0 # Provides admin panel interface for files
 django-form-utils==1.0.3 # Provides BetterForm (used in customforms) and BetterModelForm (used in program creation)
 django-formtools==2.1 # Used once in customforms
 django-localflavor==1.1 # Provides address and phone number fields
+django-recaptcha==2.0.6 # Provides support for Google reCAPTCHA
 django-reversion==1.10.0 # Handles versioning, currently for QSD and TemplateOverrides
 django-selenium==0.9.8 # Runs selenium tests which probably don't work anymore
 django-sendgrid-v5==0.9.0 # Provides support for using SendGrid as the EmailBackend

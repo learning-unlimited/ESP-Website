@@ -38,8 +38,7 @@ class KeyDoesNotExist(Exception):
     pass
 
 class AdminVitals(ProgramModuleObj):
-    doc = """ This allows you to view the major numbers for your program on the main page.
-        This will present itself below the options in a neat little table. """
+    doc = """This allows you to view the major numbers for your program on the dashboard."""
 
     @classmethod
     def module_properties(cls):
@@ -55,7 +54,8 @@ class AdminVitals(ProgramModuleObj):
     def prepare(self, context=None):
         return context
 
-
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

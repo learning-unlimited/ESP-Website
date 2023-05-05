@@ -41,7 +41,7 @@ from esp.survey.views   import survey_view
 import datetime
 
 class StudentSurveyModule(ProgramModuleObj):
-    """ A module for people to take surveys. """
+    doc = """A module for students to take surveys about the program and/or classes."""
 
     @classmethod
     def module_properties(cls):
@@ -58,8 +58,8 @@ class StudentSurveyModule(ProgramModuleObj):
         program=self.program
 
         if QObject:
-            return {'student_survey': Q(record__program=program) & Q(record__event=event)}
-        return {'student_survey': ESPUser.objects.filter(record__program=program, record__event=event).distinct()}
+            return {'student_survey': Q(record__program=program) & Q(record__event__name=event)}
+        return {'student_survey': ESPUser.objects.filter(record__program=program, record__event__name=event).distinct()}
 
     def studentDesc(self):
         return {'student_survey': """Students who filled out the survey"""}
@@ -75,8 +75,6 @@ class StudentSurveyModule(ProgramModuleObj):
     @meets_deadline('/Survey')
     def survey(self, request, tl, one, two, module, extra, prog):
         return survey_view(request, tl, one, two)
-
-    surveys = survey
 
     class Meta:
         proxy = True

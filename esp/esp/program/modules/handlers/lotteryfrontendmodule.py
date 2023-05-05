@@ -8,6 +8,7 @@ from esp.users.models import ESPUser
 from esp.utils.decorators import json_response
 
 class LotteryFrontendModule(ProgramModuleObj):
+    doc = """Run the class lottery and assign students to classes."""
 
     @classmethod
     def module_properties(cls):
@@ -85,6 +86,9 @@ class LotteryFrontendModule(ProgramModuleObj):
         lotteryObj.import_assignments(request.POST['lottery_data'])
         lotteryObj.save_assignments()
         return {'response': [{'success': 'yes'}]};
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

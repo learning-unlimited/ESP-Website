@@ -1,26 +1,28 @@
 {% extends "inclusion/program/class_teacher_list_row.html" %}
 
 {% block cls_title %}
-    <span title="{{cls}}">
-      {{ cls.parent_program.niceName }} -- 
-      {{ cls|truncatewords:6 }}
-      <a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">&raquo;</a>
-    </span>
+    <td title="{{cls}}" colspan="5">
+        {{ cls.parent_program.niceName }} -- 
+        {{ cls|truncatewords:6 }}
+        <a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">&raquo;</a>
+    </td>
+    <td>
+        <form action="{{ prog.get_teach_url }}copyaclass" request="GET">
+            <input type="hidden" name="cls" value="{{ cls.id }}">
+            <input type="submit" class="btn btn-primary" value="Import">
+        </form>
+    </td>
+    <td>
+        {% if cls.got_index_qsd %}
+        <form action="/learn/{{cls.getUrlBase}}/index.html">
+            <input type="submit" class="btn btn-primary" value="Visit web page">
+        </form>
+        {% endif %}
+    </td>
 {% endblock %}
 
 {% block cls_row_1_buttons %}
-  <td class="clsmiddle bordertop2" colspan="1">
-    <a class="abutton" href="{{ prog.get_teach_url }}copyaclass?cls={{ cls.id }}"
-       title="Import {{ cls }}">Import</a>
-  </td>
-
-  <td class="clsmiddle bordertop2">
-    {% if cls.got_index_qsd %}
-    <a class="abutton" href="/learn/{{cls.getUrlBase}}/index.html"
-       title="{{ cls }}...">Visit web page</a>
-    {% endif %}
-  </td>
-  <td class="clsright bordertop2" colspan="2">&nbsp;</td>
+    <td colspan="2"></td>
 {% endblock %}
 
 {% block cls_row_2_buttons %}&nbsp;{% endblock %}

@@ -31,27 +31,24 @@ td.instructions {
 From this page, you can view documents related to the program (in the first section of the table below).  Teachers of your classes have also provided materials, which you can review and delete if necessary (in the second section of the table below).  Finally, you may upload new documents using the form at the bottom of the page.
 </p>
 
-{% include "program/modules/admincore/returnlink.html" %}
-
-<table cellpadding="2" cellspacing="0" align="center" width="550">
+<table cellpadding="3" cellspacing="0" align="center" width="90%">
 <tr>
-		<th colspan="2" style="text-align: center;">
+		<th colspan="3" style="text-align: center;">
 		Program documents for {{ prog.niceName }}
 		</th>
 	</tr>
 	{% if prog.documents.exists %}
 	<tr>
 		<td class="clsmiddle" style="text-indent: 20px"><b>Document</b></td>
-		<td class="clsmiddle"><b>Options</b></td>
 	</tr>
 	{% else %}
 	<tr>
-		<td colspan="2">There are no documents associated with this program.  You may add some below!</td>
+		<td colspan="3">There are no documents associated with this program.  You may add some below!</td>
 	</tr>
 	{% endif %}
 	{% for doc in prog.getDocuments %}
 	<tr>
-            <td class="class_stuff"><a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a></td>
+        <td class="class_stuff"><a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a></td>
 		<td class="clsmiddle">
 			<form method="post" action="/manage/{{ prog.url }}/get_materials" onsubmit="return confirm('Are you sure that you want to delete {{ doc.friendly_name|escapejs|escape }}?');">
 				<input type="hidden" name="docid" value="{{ doc.id }}">
@@ -59,11 +56,19 @@ From this page, you can view documents related to the program (in the first sect
 				<input class="button" type="submit" value="Delete">
 			</form>
 		</td>
+        <td class="clsmiddle" width="60%">
+            <form method="post" action="/manage/{{ prog.url }}/get_materials" enctype="multipart/form-data">
+                <input type="hidden" name="docid" value="{{ doc.id }}">
+                <input type="hidden" name="command" value="rename">
+                {{ renameform.title }}
+                <input class="button" type="submit" value="Rename">
+            </form>
+        </td>
 	</tr>
 	{% endfor %}
-	<tr>	<td colspan="2" height="10"> &nbsp; </td> </tr>	
+	<tr>	<td colspan="3" height="10"> &nbsp; </td> </tr>	
 	<tr>
-		<th colspan="2" style="text-align: center;">
+		<th colspan="3" style="text-align: center;">
 		Documents for classes in {{ prog.niceName }}
 		</th>
 	</tr>
@@ -71,20 +76,28 @@ From this page, you can view documents related to the program (in the first sect
 
 		{% if cls.documents.exists %}
 		<tr>
-			<td colspan="2" class="clshead">
+			<td colspan="3" class="clshead">
 			{{ cls.emailcode }}&mdash;{{ cls.title }}
 			</td>
 		</tr>
 			{% for doc in cls.getDocuments %}
 			<tr>
-				<td class="class_stuff"><a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a></td>
-				<td class="clsmiddle">
-					<form method="post" action="/manage/{{ program.url }}/get_materials" onsubmit="return confirm('Are you sure that you want to delete {{ doc.friendly_name|escapejs|escape }}?');">
+				<td class="class_stuff"><a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a></td>
+                <td class="clsmiddle">
+					<form method="post" action="/manage/{{ prog.url }}/get_materials" onsubmit="return confirm('Are you sure that you want to delete {{ doc.friendly_name|escapejs|escape }}?');">
 						<input type="hidden" name="docid" value="{{ doc.id }}">
 						<input type="hidden" name="command" value="delete">
 						<input class="button" type="submit" value="Delete">
 					</form>
 				</td>
+                <td class="clsmiddle" width="60%">
+                    <form method="post" action="/manage/{{ prog.url }}/get_materials" enctype="multipart/form-data">
+                        <input type="hidden" name="docid" value="{{ doc.id }}">
+                        <input type="hidden" name="command" value="rename">
+                        {{ renameform.title }}
+                        <input class="button" type="submit" value="Rename">
+                    </form>
+                </td>
 			</tr>
 			{% endfor %}
 		{% endif %}
@@ -96,7 +109,7 @@ From this page, you can view documents related to the program (in the first sect
 
 <form method="post" action="/manage/{{ prog.url }}/get_materials" enctype="multipart/form-data">
 <input type="hidden" name="command" value="add">
-<table cellpadding="12" cellspacing="0" align="center" width="450">
+<table cellpadding="12" cellspacing="0" align="center" width="70%">
 	<tr>
 		<th colspan="2" style="text-align: center;">
 		Add a document for {{ prog.niceName }}
@@ -128,5 +141,7 @@ From this page, you can view documents related to the program (in the first sect
 
 
 </div>
+
+{% include "program/modules/admincore/returnlink.html" %}
 
 {% endblock %}

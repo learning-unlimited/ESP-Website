@@ -33,20 +33,24 @@ Learning Unlimited, Inc.
 """
 import datetime
 
+from django import forms
+
 from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, CoreModule, main_call, aux_call, meets_cap
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
-from esp.resources.models import Resource
 from esp.utils.web import render_to_response
-from esp.users.models    import Record
+from esp.users.models    import Record, RecordType
 from esp.cal.models import Event
 from esp.middleware   import ESPError
 from esp.survey.views   import survey_view
 from esp.tagdict.models  import Tag
 from django.http import HttpResponseRedirect
 
+from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
 
 class StudentOnsite(ProgramModuleObj, CoreModule):
+    doc = """Serves a mobile-friendly interface for common onsite functions for students."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -71,10 +75,11 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['webapp_page'] = 'schedule'
         context['scrmi'] = prog.studentclassregmoduleinfo
         context['checked_in'] = prog.isCheckedIn(user)
+        context['checkin_note'] = Tag.getProgramTag('student_onsite_checkin_note', program = prog)
 
         return render_to_response(self.baseDir()+'schedule.html', request, context)
 
-    @main_call
+    @aux_call
     @needs_student
     @meets_grade
     @meets_deadline('/Webapp')
@@ -108,23 +113,9 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context = self.onsitecontext(request, tl, one, two, prog)
         context['webapp_page'] = 'map'
         context['center'] = Tag.getProgramTag('program_center', program = prog)
+        context['zoom'] = Tag.getProgramTag('program_center_zoom', program = prog)
         context['API_key'] = Tag.getTag('google_cloud_api_key')
 
-        #extra should be a classroom id
-        if extra:
-            #gets lat/long of classroom and adds it to context
-            try:
-                classroom = Resource.objects.get(id=extra)
-            except:
-                res = None
-            else:
-                try:
-                    res = classroom.associated_resources().get(res_type__name='Lat/Long')
-                except:
-                    res = None
-            if res and res.attribute_value:
-                classroom = res.attribute_value.split(",")
-                context['classroom'] = '{lat: ' + classroom[0].strip() + ', lng: ' + classroom[1].strip() + '}'
         return render_to_response(self.baseDir()+'map.html', request, context)
 
     @aux_call
@@ -145,7 +136,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
             context['timeslot'] = ts
             classes = list(ClassSubject.objects.catalog(prog, ts))
             classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
-            context['checked_in'] = Record.objects.filter(program=prog, event='attended', user=user).exists()
+            context['checked_in'] = Record.objects.filter(program=prog, event__name='attended', user=user).exists()
 
         else:
             classes = list(ClassSubject.objects.catalog(prog))
@@ -187,6 +178,55 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         else:
             return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
 
+    @aux_call
+    @needs_student
+    @meets_grade
+    def selfcheckin(self, request, tl, one, two, module, extra, prog):
+        context = self.onsitecontext(request, tl, one, two, prog)
+        mode = Tag.getProgramTag('student_self_checkin', program = prog)
+        user = request.user
+
+        # Redirect to their schedule if self checkin is not available
+        if mode == "none":
+            return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+
+        # Show message if they are already checked in
+        checked_in = prog.isCheckedIn(user)
+        context['checked_in'] = checked_in
+
+        if not checked_in:
+            # Show which modules and/or records they haven't completed
+            # This only includes the required and non-completed subset of modules/records
+            # that would normally be shown on the /studentreg page
+            context['mode'] = mode
+            context['form'] = SelfCheckinForm(program = prog, user = user)
+
+            modules = prog.getModules(user, 'learn')
+            context['completedAll'] = True
+            for module in modules:
+                # If completed all required modules so far...
+                if context['completedAll']:
+                    if not module.isCompleted() and module.isRequired():
+                        context['completedAll'] = False
+
+            records = StudentRegCore.get_reg_records(user, prog, 'learn')
+
+            context['modules'] = filter(lambda x: (x.isRequired() and not x.isCompleted()), modules)
+            context['records'] = filter(lambda x: not x['isCompleted'], records)
+
+            if request.method == 'POST':
+                form = SelfCheckinForm(request.POST, program = prog, user = user)
+                if form.is_valid():
+                    # Check in the student
+                    rt = RecordType.objects.get(name="attended")
+                    rec = Record(user=user, program=prog, event=rt)
+                    rec.save()
+                    return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+                else:
+                    context['form'] = form
+
+        return render_to_response(self.baseDir()+'selfcheckin.html', request, context)
+
     @staticmethod
     def onsitecontext(request, tl, one, two, prog):
         context = {}
@@ -197,6 +237,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['program'] = prog
         context['one'] = one
         context['two'] = two
+        context['map_tab'] = bool(Tag.getTag('google_cloud_api_key').strip())
         return context
 
     def isStep(self):
@@ -205,3 +246,25 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     class Meta:
         proxy = True
         app_label = 'modules'
+
+class SelfCheckinForm(forms.Form):
+    code = forms.CharField(min_length = 6, max_length = 6, required = True)
+
+    def __init__(self, *args, **kwargs):
+        if 'program' in kwargs and 'user' in kwargs:
+            program = kwargs.pop('program')
+            user = kwargs.pop('user')
+        else:
+            raise KeyError('Need to supply program and user as named arguments to SelfCheckinForm')
+        super(SelfCheckinForm, self).__init__(*args, **kwargs)
+        mode = Tag.getProgramTag('student_self_checkin', program = program)
+        self.hash = user.userHash(program)
+        if mode != 'code':
+            self.fields['code'].initial = self.hash
+            self.fields['code'].widget = forms.HiddenInput()
+
+    def clean_code(self):
+        data = self.cleaned_data['code']
+        if data != self.hash:
+            raise forms.ValidationError("That code is invalid")
+        return data

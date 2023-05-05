@@ -22,6 +22,10 @@ var Availability = (function () {
         return $j(td).hasClass("canDo");
     }
     
+    function isTD(td) {
+        return $j(td).is("td");
+    }
+    
     //Activate checkbox
     function checkbox_on(td) {
         var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
@@ -72,14 +76,16 @@ var Availability = (function () {
         var block = document.getElementById("block_" + col);
         for (var i = 1; i < block.rows.length; i++) {
             var td = block.rows[i].cells[0];
-            if (!isSet(td)) somethingToSet = true;
+            if (!isSet(td) && isTD(td)) somethingToSet = true;
         }
         for (var i = 1; i < block.rows.length; i++) {
             var td = block.rows[i].cells[0];
-            if (somethingToSet) {
-                checkbox_on(td);
-            } else {
-                checkbox_off(td);
+            if (isTD(td)) {
+                if (somethingToSet) {
+                    checkbox_on(td);
+                } else {
+                    checkbox_off(td);
+                }
             }
         }
     }
@@ -121,21 +127,21 @@ var Availability = (function () {
             }
         });
 
-        //Populate the right sidebar
+        //Populate the legend in the right sidebar
         $j(document).ready(function () {
-            $j(".wrap").append($j(".right"));
-            $j(".right").show();
+            $j(".side.left").append($j(".summary_div"));
+            $j(".summary_div").show();
         });
 
         //If there is hover text, show it when hovering over the timeslot
         $j(".group td").mouseover(function() {
             var hover_text = $j('input[value='+parseInt($j(this).attr('name'))+']').data('hover')
             if (hover_text) {
-                $j(".left .summary").html(hover_text);
-                $j(".left .summary").css("display", "block");
+                $j(".right .details").html(hover_text);
+                $j(".right .details").css("display", "block");
             }
         }).mouseout(function() {
-            $j(".left .summary").css("display", "none");
+            $j(".right .details").css("display", "none");
         });
     }
 

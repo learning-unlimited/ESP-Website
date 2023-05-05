@@ -1,6 +1,6 @@
 {% load users %}
+{% load getTag %}
 
-{% for sec in item.cls.sections.all %} 
 <div style="page-break-after: always;">&nbsp;</div>
 <div class="classroster">
   <div class="classtitle">Attendance for <br />
@@ -21,7 +21,7 @@
   </tr>
   </table>
   <br />
-  <div class="teachername"><span>Teacher:  {{ item.teacher.name }}</span></div>
+  <div class="teachername"><span>{% if bymoderator %}{{ program.getModeratorTitle }}{% else %}Teacher{% endif %}:  {{ item.teacher.name }}</span></div>
   <br />
   <div class="teachername">Class Email: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-class@{{ EMAIL_HOST_SENDER }}</tt><br />
 Students Email: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-students@{{ EMAIL_HOST_SENDER }}</tt>
@@ -30,13 +30,20 @@ Students Email: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-students@{{ EMAIL_HOST_SEN
   <br />
   <table align="center" class="pretty" cellspacing="0" cellpadding="3px">
     <tr>
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <th colspan="6" align="center">Students</th>
+      {% else %}
       <th colspan="5" align="center">Students</th>
+      {% endif %}
     </tr>
     <tr>
       <th>#</th>
       <th>Here?</th>
       <th>Student ID</th>
       <th>Student Name</th>
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <th>Pronouns</th>
+      {% endif %}
       <th>Grade</th>
     </tr>{% for student in sec.students %}
     <tr>
@@ -44,6 +51,9 @@ Students Email: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-students@{{ EMAIL_HOST_SEN
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
       <td>{{ student.id }}</td>
       <td>{{ student.name }}</td>
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <td>{{ student.getLastProfile.student_info.pronoun }}</td>
+      {% endif %}
       <td>
           {{ student|getGradeForProg:program.id }}</td>
     </tr>
@@ -51,36 +61,56 @@ Students Email: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-students@{{ EMAIL_HOST_SEN
     <tr>
       <td>&nbsp; </td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
-      <th colspan="3">  
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <th colspan="4">
+      {% else %}
+      <th colspan="3">
+      {% endif %}      
           <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
       </th>
     </tr>
     <tr>
       <td>&nbsp; </td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
-      <th colspan="3">  
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <th colspan="4">
+      {% else %}
+      <th colspan="3">
+      {% endif %} 
+         <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
+      </th>
+    </tr>
+    <tr>
+      <td>&nbsp; </td>
+      <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <th colspan="4">
+      {% else %}
+      <th colspan="3">
+      {% endif %}  
           <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
       </th>
     </tr>
     <tr>
       <td>&nbsp; </td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
-      <th colspan="3">  
-          <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <th colspan="4">
+      {% else %}
+      <th colspan="3">
+      {% endif %} 
+         <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
       </th>
     </tr>
     <tr>
       <td>&nbsp; </td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
-      <th colspan="3">  
-          <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
-      </th>
-    </tr>
-    <tr>
-      <td>&nbsp; </td>
-      <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
-      <th colspan="3">  
-          <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <th colspan="4">
+      {% else %}
+      <th colspan="3">
+      {% endif %} 
+         <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
       </th>
     </tr>
   </table>
@@ -88,4 +118,3 @@ Students Email: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-students@{{ EMAIL_HOST_SEN
 </div>
 
 <br />
-{% endfor %}

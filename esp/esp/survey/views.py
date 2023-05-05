@@ -41,7 +41,7 @@ import re
 from cStringIO import StringIO
 from django.db import models
 from django.db.models import Q
-from esp.users.models import ESPUser, Record, admin_required
+from esp.users.models import ESPUser, Record, RecordType, admin_required
 from esp.program.models import Program, ClassCategories, StudentRegistration, RegistrationType, ClassSection
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
 from esp.utils.web import render_to_response
@@ -144,7 +144,8 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
                 response.save()
 
                 # Set record to mark general survey as completed
-                r = Record(user=user, event=event, program=prog, time=datetime.datetime.now())
+                rt = RecordType.objects.get(name=event)
+                r = Record(user=user, event=rt, program=prog, time=datetime.datetime.now())
                 r.save()
 
                 response.set_answers(request.POST, save=True)
@@ -162,7 +163,7 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
         completed_sections = ClassSection.objects.filter(parent_class__parent_program=prog, studentregistration__user=user, studentregistration__relationship__name="SurveyCompleted")
         if tl == 'learn':
             # Get a student's enrolled sections
-            sections = ClassSection.objects.filter(id__in=[sec.id for sec in user.getEnrolledSections(prog)], status__gt=0).annotate(start=Min('meeting_times__start')).order_by('start')
+            sections = ClassSection.objects.filter(id__in=[sec.id for sec in user.getEnrolledSections(prog)], status__gt=0, meeting_times__isnull=False).annotate(start=Min('meeting_times__start')).order_by('start')
         else:
             # Get a teacher's taught sections
             sections = user.getTaughtSections(prog).filter(status__gt=0).annotate(start=Min('meeting_times__start')).order_by('start')
@@ -204,7 +205,7 @@ def get_survey_info(request, tl, program, instance):
 
     user = request.user
 
-    if (tl == 'teach' and user.isTeacher()):
+    if (tl == 'teach' and (user.isTeacher() or user.isAdmin(prog))):
         surveys = prog.getSurveys().filter(category = 'learn').select_related()
     elif (tl == 'manage' and user.isAdmin(prog)):
         #   Meerp, no problem... I took care of it.   -Michael
@@ -267,40 +268,28 @@ def display_survey(user, prog, surveys, request, tl, format, template = 'survey/
     else:
         teacher = getByIdOrNone(ESPUser, 'teacher_id')
 
-    survey_list = []
-    perclass_data = []
-    subject_ct=ContentType.objects.get(app_label="program",model="classsubject")
-    section_ct=ContentType.objects.get(app_label="program",model="classsection")
+    context.update({'user': user, 'teacher': teacher, 'program': prog, 'tl': tl})
+    # since this requires a lot of processing/rendering, we cache the display with inclusion_tags in the template
+    # therefore, all we need is a list of surveys and a list of sections
     if tl == 'manage' and teacher is None and sec is None and cls is None:
-        #   In the manage category, pack the data in as extra attributes to the surveys
-        survey_list = list(surveys)
-        for s in survey_list:
-            questions = s.questions.filter(per_class=False).order_by('-question_type__is_numeric', 'seq')
-            s.display_data = {'questions': [ { 'question': y, 'answers': y.answer_set.all() } for y in questions ]}
-            classes = prog.sections().order_by('parent_class', 'id')
-            perclass_questions = s.questions.filter(per_class=True).order_by('-question_type__is_numeric', 'seq')
-            s.perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(Q(content_type=section_ct,object_id=x.id) | Q(content_type=subject_ct,object_id=x.parent_class.id)) } for y in perclass_questions ] } for x in classes ]
+        context.update({'surveys': list(surveys), 'sections': prog.sections().order_by('parent_class', 'id'), 'survey': None})
     else:
-        perclass_questions = surveys[0].questions.filter(per_class=True).order_by('-question_type__is_numeric', 'seq')
-        classes = []
         if sec is not None:
-            classes = [ sec ]
+            section_list = [ sec ]
         elif cls is not None:
-            classes = cls.get_sections()
+            section_list = cls.get_sections()
         elif teacher is not None:
-            classes = teacher.getTaughtSections(prog).order_by('parent_class', 'id')
+            section_list = teacher.getTaughtSections(prog).order_by('parent_class', 'id')
         elif tl == 'teach':
             #   In the teach category, show only class-specific questions
-            classes = user.getTaughtSections(prog).order_by('parent_class', 'id')
-        perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(Q(content_type=section_ct,object_id=x.id) | Q(content_type=subject_ct,object_id=x.parent_class.id)) } for y in perclass_questions ] } for x in classes ]
-
+            section_list = user.getTaughtSections(prog).order_by('parent_class', 'id')
+        context.update({'surveys': [], 'sections': section_list, 'survey': surveys[0]})
     if tl == 'manage':
         if teacher:
             teacher_form = ApprovedTeacherSearchForm(initial={'target_user': teacher.id}, prog = prog)
         elif teacher_form is None:
             teacher_form = ApprovedTeacherSearchForm(prog = prog)
     context['teacher_form'] = teacher_form
-    context.update({'user': user, 'teacher': teacher, 'surveys': survey_list, 'program': prog, 'perclass_data': perclass_data, 'tl': tl})
 
     #   Choose+use appropriate output format
     if format == 'html':

@@ -38,7 +38,7 @@ from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.middleware import ESPError
-from esp.program.models import StudentRegistration, PhaseZeroRecord
+from esp.program.models import StudentRegistration, PhaseZeroRecord, SplashInfo
 from django.db.models.query      import Q
 from django import forms
 
@@ -62,21 +62,23 @@ class UserAttributeGetter(object):
                     '10_tshirt_size': {'label': 'T-Shirt Size', 'usertype': {'teacher', 'student'}},
                     '11_dob': {'label': 'Date of Birth', 'usertype': {'student'}},
                     '12_gender': {'label': 'Gender', 'usertype': {'student'}},
-                    '13_gradyear': {'label': 'Grad Year', 'usertype': {'teacher', 'student'}},
-                    '14_school': {'label': 'School', 'usertype': {'teacher', 'student'}},
-                    '15_affiliation': {'label': 'Affiliation', 'usertype': {'teacher'}},
-                    '16_major': {'label': 'Major', 'usertype': {'teacher'}},
-                    '17_studentrep': {'label': 'Student Rep?', 'usertype': {'student'}},
-                    '18_heard_about': {'label': 'Heard about Splash from', 'usertype': {'student'}},
-                    '19_accountdate': {'label': 'Created Date', 'usertype': {'any'}},
-                    '20_first_regdate': {'label': 'Initial Registration Date', 'usertype': {'student'}},
-                    '21_last_regdate': {'label': 'Most Recent Registration Date', 'usertype': {'student'}},
-                    '22_lottery_ticket_id': {'label': 'Student Lottery Ticket ID', 'usertype': {'student'}},
-                    '23_classhours': {'label': 'Number of Enrolled Class Blocks', 'usertype': {'student'}},
-                    '24_transportation': {'label': 'Plan to Get to Splash', 'usertype': {'student'}},
-                    '25_guardian_name': {'label': 'Guardian Name', 'usertype': {'student'}},
-                    '26_guardian_email': {'label': 'Guardian E-mail', 'usertype': {'student'}},
-                    '27_guardian_cellphone': {'label': 'Guardian Cell Phone', 'usertype': {'student'}},
+                    '13_pronoun': {'label': 'Pronouns', 'usertype': {'teacher', 'student'}},
+                    '14_gradyear': {'label': 'Grad Year', 'usertype': {'teacher', 'student'}},
+                    '15_school': {'label': 'School', 'usertype': {'teacher', 'student'}},
+                    '16_affiliation': {'label': 'Affiliation', 'usertype': {'teacher'}},
+                    '17_major': {'label': 'Major', 'usertype': {'teacher'}},
+                    '18_studentrep': {'label': 'Student Rep?', 'usertype': {'student'}},
+                    '19_heard_about': {'label': 'Heard about Splash from', 'usertype': {'student'}},
+                    '20_accountdate': {'label': 'Created Date', 'usertype': {'any'}},
+                    '21_first_regdate': {'label': 'Initial Registration Date', 'usertype': {'student'}},
+                    '22_last_regdate': {'label': 'Most Recent Registration Date', 'usertype': {'student'}},
+                    '23_lottery_ticket_id': {'label': 'Student Lottery Ticket ID', 'usertype': {'student'}},
+                    '24_sibling_name': {'label': 'Name of Sibling for Discount (if requested)', 'usertype': {'student'}},
+                    '25_classhours': {'label': 'Number of Enrolled Class Blocks', 'usertype': {'student'}},
+                    '26_transportation': {'label': 'Plan to Get to Splash', 'usertype': {'student'}},
+                    '27_guardian_name': {'label': 'Guardian Name', 'usertype': {'student'}},
+                    '28_guardian_email': {'label': 'Guardian E-mail', 'usertype': {'student'}},
+                    '29_guardian_cellphone': {'label': 'Guardian Cell Phone', 'usertype': {'student'}},
                  }
 
         last_field_index = len(fields)
@@ -228,6 +230,12 @@ class UserAttributeGetter(object):
         if self.profile.student_info:
             return self.profile.student_info.gender
 
+    def get_pronoun(self):
+        if self.profile.teacher_info:
+            return self.profile.teacher_info.pronoun
+        elif self.profile.student_info:
+            return self.profile.student_info.pronoun
+
     #Replace this with something based on presence and number of application questions for a particular program
     def get_max_applications(self):
         return 3
@@ -236,6 +244,13 @@ class UserAttributeGetter(object):
         recs = PhaseZeroRecord.objects.filter(user = self.user, program = self.program).order_by('time')
         if recs.count() > 0:
             return recs[0].id
+        else:
+            return None
+
+    def get_sibling_name(self):
+        infos = SplashInfo.objects.filter(student = self.user, program = self.program).order_by('id')
+        if infos.count() > 0:
+            return infos[0].siblingname
         else:
             return None
 
@@ -279,6 +294,7 @@ class ListGenForm(forms.Form):
         self.fields['fields'].initial = ['02_username','04_firstname','05_lastname','06_email']
 
 class ListGenModule(ProgramModuleObj):
+    doc = """Get information for users that match specific search criteria."""
     """ While far from complete, this will allow you to just generate a simple list of users matching a criteria (criteria very similar to the communications panel)."""
     @classmethod
     def module_properties(cls):
@@ -425,10 +441,6 @@ class ListGenModule(ProgramModuleObj):
             })
             return render_to_response(self.baseDir()+'options.html', request, context)
 
-        else:
-            student_search_form = StudentSearchForm()
-
-        context['student_search_form'] = student_search_form
         #   Otherwise, render a page that shows the list selection options
         context.update(usc.prepare_context(prog, target_path='/manage/%s/selectList' % prog.url))
         return render_to_response(self.baseDir()+'search.html', request, context)
@@ -452,6 +464,9 @@ class ListGenModule(ProgramModuleObj):
             return filterObj
 
         return self.generateList(request, tl, one, two, module, extra, prog, filterObj=filterObj)
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

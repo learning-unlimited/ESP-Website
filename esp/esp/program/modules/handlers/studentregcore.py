@@ -36,8 +36,10 @@ from esp.program.modules.base import ProgramModuleObj, needs_student, meets_dead
 from esp.program.modules import module_ext
 from esp.program.models  import Program
 from esp.program.controllers.confirmation import ConfirmationEmailController
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
-from esp.users.models    import ESPUser, Record
+from esp.users.models    import ESPUser, Record, RecordType
 from esp.utils.models import Printer
 from esp.accounting.controllers import IndividualAccountingController
 from django.db.models.query import Q
@@ -46,13 +48,15 @@ from decimal import Decimal
 from datetime import datetime
 from django.db import models
 from django.contrib import admin
-from django.template import Template
-from esp.middleware.threadlocalrequest import AutoRequestContext as Context
+from django.template import Template, Context
+from esp.middleware.threadlocalrequest import AutoRequestContext
 from django.http import HttpResponse
 from django.template.loader import render_to_string, get_template, select_template
 import operator
 
 class StudentRegCore(ProgramModuleObj, CoreModule):
+    doc = """Serves the main page for student registration."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -75,8 +79,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     def students(self, QObject = False):
         now = datetime.now()
 
-        q_confirmed = Q(record__event = "reg_confirmed", record__program=self.program)
-        q_attended = Q(record__event= "attended", record__program=self.program)
+        q_confirmed = Q(record__event__name = "reg_confirmed", record__program=self.program)
+        q_attended = Q(record__event__name= "attended", record__program=self.program)
         # if we don't do list(values_list()), it breaks downstream queries for some weird reason I don't understand -WG
         q_checked_out = Q(id__in=list(self.program.currentlyCheckedOutStudents().values_list('id', flat = True)))
         q_checked_in = Q(id__in=list(self.program.currentlyCheckedInStudents().values_list('id', flat = True)))
@@ -91,7 +95,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
 
             if self.program.program_allow_waitlist:
-                retVal['waitlisted_students'] = Q(record__event="waitlist",record__program=self.program)
+                retVal['waitlisted_students'] = Q(record__event__name="waitlist",record__program=self.program)
 
             return retVal
 
@@ -102,7 +106,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                   'studentrep': ESPUser.objects.filter(q_studentrep).distinct()}
 
         if self.program.program_allow_waitlist:
-            retVal['waitlisted_students'] = ESPUser.objects.filter(Q(record__event="waitlist",record__program=self.program)).distinct()
+            retVal['waitlisted_students'] = ESPUser.objects.filter(Q(record__event__name="waitlist",record__program=self.program)).distinct()
 
         return retVal
 
@@ -126,14 +130,14 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         self.request = request
 
         if prog.user_can_join(request.user):
-            raise ESPError("You can't subscribe to the waitlist of a program that isn't full yet!  Please click 'Back' and refresh the page to see the button to confirm your registration.", log=False)
+            return self.goToCore(tl)
 
-        waitlist = Record.objects.filter(event="waitlist",
+        waitlist = Record.objects.filter(event__name="waitlist",
                                          user=request.user,
                                          program=prog)
 
         if waitlist.count() <= 0:
-            Record.objects.create(event="waitlist", user=request.user,
+            Record.objects.create(event__name="waitlist", user=request.user,
                                   program=prog)
             already_on_list = False
         else:
@@ -145,7 +149,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @needs_student
     @meets_grade
     def confirmreg(self, request, tl, one, two, module, extra, prog):
-        if Record.objects.filter(user=request.user, event="reg_confirmed",program=prog).count() > 0:
+        if Record.objects.filter(user=request.user, event__name="reg_confirmed",program=prog).count() > 0:
             return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=False)
         return self.confirmreg_new(request, tl, one, two, module, extra, prog)
 
@@ -189,13 +193,14 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         for module in modules:
             if hasattr(module, 'onConfirm'):
                 module.onConfirm(request)
-            if not module.isCompleted() and module.required:
+            if not module.isCompleted() and module.isRequired():
                 completedAll = False
             context = module.prepare(context)
 
         if completedAll:
             if new_reg:
-                rec = Record.objects.create(user=user, event="reg_confirmed",
+                rt = RecordType.objects.get(name="reg_confirmed")
+                rec = Record.objects.create(user=user, event=rt,
                                             program=prog)
         else:
             raise ESPError("You must finish all the necessary steps first, then click on the Save button to finish registration.", log=False)
@@ -203,18 +208,15 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         cfe = ConfirmationEmailController()
         cfe.send_confirmation_email(request.user, self.program)
 
+        context["request"] = request
+        context["program"] = prog
+
         try:
             receipt_text = DBReceipt.objects.get(program=self.program, action='confirm').receipt
-            context["request"] = request
-            context["program"] = prog
-            return HttpResponse( Template(receipt_text).render( Context(context, autoescape=False) ) )
+            return HttpResponse( Template(receipt_text).render( Context(context) ) )
         except DBReceipt.DoesNotExist:
-            try:
-                receipt = 'program/receipts/'+str(prog.id)+'_custom_receipt.html'
-                return render_to_response(receipt, request, context)
-            except:
-                receipt = 'program/receipts/default.html'
-                return render_to_response(receipt, request, context)
+            receipt = select_template(['program/receipts/%s_custom_receipt.html' %(prog.id), 'program/receipts/default.html'])
+            return HttpResponse( receipt.render( AutoRequestContext(context, autoescape=False) ) )
 
     @aux_call
     @needs_student
@@ -229,17 +231,18 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             raise ESPError("You have already paid for this program!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund.", log=False)
 
         recs = Record.objects.filter(user=request.user,
-                                     event="reg_confirmed",
+                                     event__name="reg_confirmed",
                                      program=prog)
         for rec in recs:
             rec.delete()
 
         #   If the appropriate flag is set, remove the student from their classes.
         scrmi = prog.studentclassregmoduleinfo
+        verbs = RTC.getVisibleRegistrationTypeNames(prog)
         if scrmi.cancel_button_dereg:
             sections = request.user.getSections()
             for sec in sections:
-                sec.unpreregister_student(request.user)
+                sec.unpreregister_student(request.user, verbs)
 
         #   If a cancel receipt template is there, use it.  Otherwise, return to the main studentreg page.
         try:
@@ -247,7 +250,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             context = {}
             context["request"] = request
             context["program"] = prog
-            return HttpResponse( Template(receipt_text).render( Context(context, autoescape=False) ) )
+            return HttpResponse( Template(receipt_text).render( Context(context) ) )
         except:
             return self.goToCore(tl)
 
@@ -256,6 +259,19 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         return Printer.objects.all().values_list('name', flat=True)
     printer_names.depend_on_model('utils.Printer')
     printer_names = staticmethod(printer_names) # stolen from program.models.getLastProfile, not sure if this is actually the right way to do this?
+
+    @staticmethod
+    def get_reg_records(user, prog, tl):
+        records = []
+        if tl == 'learn':
+            tag_data = Tag.getProgramTag('student_reg_records', prog)
+        else:
+            tag_data = Tag.getProgramTag('teacher_reg_records', prog)
+        if tag_data:
+            for rt in RecordType.objects.filter(name__in=tag_data.split(',')):
+                records.append({'event': rt.name, 'full_event': rt.description, 'isCompleted': Record.user_completed(event = rt, user = user, program = prog)})
+            records.sort(key=lambda rec: not rec['isCompleted'])
+        return records
 
     @main_call
     @needs_student
@@ -272,18 +288,17 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         for module in modules:
             # If completed all required modules so far...
             if context['completedAll']:
-                if module.isCompleted():
-                    module.fillProgressBar = True
-                else:
-                    if module.required:
-                        context['completedAll'] = False
+                if not module.isCompleted() and module.isRequired():
+                    context['completedAll'] = False
 
             context = module.prepare(context)
 
+        records = self.get_reg_records(request.user, prog, 'learn')
+
         context['canRegToFullProgram'] = request.user.canRegToFullProgram(prog)
 
-
         context['modules'] = modules
+        context['records'] = records
         context['one'] = one
         context['two'] = two
         context['coremodule'] = self

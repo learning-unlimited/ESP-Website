@@ -1,20 +1,33 @@
 import datetime
 import subprocess
 
-from django.db.models.aggregates import Min, Sum
+from django.db.models.aggregates import Min
 from django.db.models.query import Q
-from django.db.models import Count
+from django.db.models import Count, Sum
 
 from argcache import cache_function_for
-from esp.program.models import ClassSubject, ClassSection
+from esp.program.models import ClassSubject, ClassSection, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.models import Record
 from esp.utils.decorators import cached_module_view
 from esp.utils.web import render_to_response
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 
+def get_filter(prog, approved = False, scheduled = False, teachers = None):
+    filt = Q(parent_program=prog)
+    if approved:
+        filt &= Q(status__gt=0, sections__status__gt=0)
+    if scheduled:
+        filt &= Q(sections__meeting_times__isnull=False)
+    if teachers:
+        filt &= Q(teachers__in=teachers)
+    return filt
+
+# this is the date we added timestamps
+mindate = datetime.datetime(2016, 1, 30)
 
 class TeacherBigBoardModule(ProgramModuleObj):
+    doc = """Shows lots of statistics for teacher registration that are updated automatically."""
 
     @classmethod
     def module_properties(cls):
@@ -65,6 +78,13 @@ class TeacherBigBoardModule(ProgramModuleObj):
             ("teachers checked in today",
              self.num_checked_in_teachers(prog)),
         ]
+        if prog.hasModule("TeacherModeratorModule"):
+            numbers.extend([
+                ("moderators registered",
+                 self.num_moderators(prog)),
+                ("moderator blocks offered",
+                 self.num_moderator_blocks(prog)),
+            ])
 
         numbers = [(desc, num) for desc, num in numbers if num]
 
@@ -73,7 +93,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
             timess_data = []
             class_hourss_data = []
             student_hourss_data = []
-            start = self.mindate
+            start = mindate
         else:
             timess = [
                 ("number of registered classes", [(1, time) for time in self.reg_classes(prog)], True),
@@ -123,17 +143,25 @@ class TeacherBigBoardModule(ProgramModuleObj):
     # bunch if multiple admins are loading the page, but short enough that each
     # time the page refreshes for the same admin, they will get new numbers
 
-    # this is the date we added timestamps
-    mindate = datetime.datetime(2016, 1, 30)
-
     @cache_function_for(105)
-    def num_teachers_teaching(self, prog, approved = False):
+    def num_teachers_teaching(prog, approved = False, scheduled = False, teachers = None):
         # Querying for SRs and then extracting the users saves us joining the
         # users table.
-        return ClassSubject.objects.filter(self.get_filter(prog, approved)
-        ).exclude(category__category__iexact="Lunch"
-        ).exclude(teachers=None
-        ).values_list('teachers').distinct().count()
+        return ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled, teachers = teachers)
+            ).exclude(category__category__iexact="Lunch"
+            ).exclude(teachers=None
+            ).values_list('teachers', flat = True).distinct().count()
+    num_teachers_teaching = staticmethod(num_teachers_teaching)
+
+    @cache_function_for(105)
+    def num_moderators(prog):
+        return prog.teachers()['will_moderate'].count()
+    num_moderators = staticmethod(num_moderators)
+
+    @cache_function_for(105)
+    def num_moderator_blocks(prog):
+        return ModeratorRecord.objects.filter(program=prog).aggregate(Sum('num_slots'))['num_slots__sum']
+    num_moderator_blocks = staticmethod(num_moderator_blocks)
 
     @cache_function_for(105)
     def num_active_users(self, prog, minutes=10):
@@ -146,58 +174,61 @@ class TeacherBigBoardModule(ProgramModuleObj):
     @cache_function_for(105)
     def num_checked_in_teachers(self, prog):
         now = datetime.datetime.now()
-        return Record.objects.filter(program=prog, event='teacher_checked_in',
+        return Record.objects.filter(program=prog, event__name='teacher_checked_in',
             time__year=now.year,
             time__month=now.month,
             time__day=now.day).count()
 
     @cache_function_for(105)
-    def num_class_reg(self, prog, approved = False):
-        return ClassSubject.objects.filter(self.get_filter(prog, approved)
+    def num_class_reg(prog, approved = False, scheduled = False, teachers = None):
+        return ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled, teachers = teachers)
         ).exclude(category__category__iexact="Lunch").distinct().count()
+    num_class_reg = staticmethod(num_class_reg)
 
     @cache_function_for(105)
-    def reg_classes(self, prog, approved = False):
-        class_times = ClassSubject.objects.filter(self.get_filter(prog, approved)
+    def reg_classes(self, prog, approved = False, scheduled = False):
+        class_times = ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled)
         ).exclude(category__category__iexact="Lunch"
         ).distinct().values_list('timestamp', flat=True)
         return sorted(class_times)
 
     @cache_function_for(105)
-    def teach_times(self, prog, approved = False):
-        teacher_times = dict(ClassSubject.objects.filter(self.get_filter(prog, approved)
+    def teach_times(self, prog, approved = False, scheduled = False):
+        teacher_times = dict(ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled)
         ).exclude(category__category__iexact="Lunch"
         ).exclude(teachers=None
         ).distinct().values_list('teachers').annotate(Min('timestamp')))
         return sorted(teacher_times.itervalues())
 
     @cache_function_for(105)
-    def get_hours(self, prog, approved = False):
-        hours = ClassSubject.objects.filter(self.get_filter(prog, approved)
+    def get_hours(prog, approved = False, scheduled = False, teachers = None):
+        classes = ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled, teachers = teachers)
         ).annotate(num_sections=Count('sections')).filter(num_sections__gt=0
-        ).exclude(category__category__iexact="Lunch"
-        ).values_list('timestamp','class_size_max'
-        ).annotate(duration=Sum('sections__duration'))
+        ).exclude(category__category__iexact="Lunch")
+        for cls in classes:
+            cls.section_sum = 0
+            for sec in cls.get_sections():
+                if approved and not sec.isAccepted():
+                    pass
+                if scheduled and sec.meeting_times.count() == 0:
+                    pass
+                cls.section_sum += sec.duration
+        hours = [[cls.timestamp, cls.class_size_max, cls.section_sum] for cls in classes]
         # use mindate if a class is missing a timestamp so we can still calculate static stats
-        sorted_hours = sorted(hours, key=lambda x:x[0] or self.mindate)
+        sorted_hours = sorted(hours, key=lambda x:x[0] or mindate)
         class_hours = [(hour[2],hour[0]) for hour in sorted_hours]
         student_hours = [(hour[2]*hour[1], hour[0]) for hour in sorted_hours]
         return class_hours, student_hours
+    get_hours = staticmethod(get_hours)
 
     @cache_function_for(105)
-    def static_hours(self, prog, approved = False):
-        hours = self.get_hours(prog, approved)
+    def static_hours(prog, approved = False, scheduled = False, teachers = None):
+        hours = TeacherBigBoardModule.get_hours(prog, approved = approved, scheduled = scheduled, teachers = teachers)
         if hours[0]:
             return [sum(zip(*j)[0]) for j in hours]
         else:
             return [0,0]
-
-    @staticmethod
-    def get_filter(prog, approved):
-        filt = Q(parent_program=prog)
-        if approved:
-            filt &= Q(status__gt=0, sections__status__gt=0)
-        return filt
+    static_hours = staticmethod(static_hours)
 
     # runs in 9ms, so don't bother caching
     def load_averages(self):
@@ -207,3 +238,6 @@ class TeacherBigBoardModule(ProgramModuleObj):
             return [float(x.strip(',')) for x in uptime.strip().split()[-3:]]
         except:
             return []
+
+    def isStep(self):
+        return False

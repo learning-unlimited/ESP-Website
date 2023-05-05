@@ -96,7 +96,10 @@ The directors have been notified that you are no longer able to volunteer at {{ 
     <center>
       <p>{% if request.user.email %}Since you are logged in, your information is pre-filled but you can change it for the purposes of contacting you about volunteering.{% else %}If you have an account, please <a href="/myesp/login?next={{ request.path }}">click here</a> to log in and return to this page.{% endif %}</p>
       {% if form.errors %}
-      <p><span style="color: red;">Please correct the errors in the form.</span></p>
+        <div class="alert alert-danger">
+            <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                Please correct the errors in the form.
+        </div>
       {% endif %}
       <div class="noclick">
         {{ form.name.label_tag }}
@@ -149,7 +152,7 @@ The directors have been notified that you are no longer able to volunteer at {{ 
 </div>
 <div id="confirm_cancellation_dialog" title="Confirm Cancellation">You have unchecked all volunteer shifts.  If you must cancel your volunteer commitments, please click "Confirm" to notify the directors.  Otherwise, click "Cancel".</div>
 
-<div class="side right" hidden>
+<div class="summary_div" hidden>
   <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
   <span class="summary" style="background-color: #00FF00;">Available</span>
 </div>

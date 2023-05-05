@@ -20,7 +20,7 @@ padding-bottom: 2px;
 }
 
 #battlescreen .class_stuff {
-text-indent: 20px;
+padding-left: 24px;
 font-family: Arial;
 font-size: 12px;
 }
@@ -207,6 +207,21 @@ color: #006600;
 
 .clsmiddle {
     vertical-align: middle;
+}
+
+.add-class-cell {
+    text-align: center;
+}
+
+.create-class-link {
+    font-size: large;
+    padding: 5px;
+    display: inline-block;
+    background-color: inherit;
+}
+
+.create-class-link:hover {
+    background-color: inherit;
 }
 
 .teachbutton {

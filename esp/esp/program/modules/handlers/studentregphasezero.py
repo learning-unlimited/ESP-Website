@@ -51,6 +51,8 @@ from django.db.models.query import Q
 import random, copy, datetime, re
 
 class StudentRegPhaseZero(ProgramModuleObj):
+    doc = """Allows students to enter a lottery for admission to the program."""
+
     def students(self, QObject = False):
         q_phasezero = Q(phasezerorecord__program=self.program)
 
@@ -63,7 +65,11 @@ class StudentRegPhaseZero(ProgramModuleObj):
         return {'phasezero': """Students who have entered the Student Lottery"""}
 
     def isCompleted(self):
-        return get_current_request().user.can_skip_phase_zero(self.program)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return user.can_skip_phase_zero(self.program)
 
     @classmethod
     def module_properties(cls):
@@ -98,7 +104,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
         else:
             #Student must win the lottery to progress
             #Figure out if lottery is open/closed, if it has already been run, and if student has entered yet
-            lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
+            lottery_perm = Permission.user_has_perm(user, 'Student/PhaseZero', program=prog)
             in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
             lottery_run = Tag.getBooleanTag('student_lottery_run', prog)
             num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
@@ -115,7 +121,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                     #Lottery hasn't opened yet
                     #Show generic deadline error page
                     context['moduleObj'] = self
-                    context['extension'] = ('the deadline Student/Classes/PhaseZero was')
+                    context['extension'] = ('the deadline Student/PhaseZero was')
                     return render_to_response('errors/program/deadline-learn.html', request, context)
                 elif request.method == 'POST':
                     #Lottery is open, student just entered
@@ -148,7 +154,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
         context['one'] = one
         context['two'] = two
         user = request.user
-        lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
+        lottery_perm = Permission.user_has_perm(user, 'Student/PhaseZero', program=prog)
         in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
         lottery_run = Tag.getBooleanTag('student_lottery_run', prog)
         num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
@@ -199,7 +205,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
 
     @aux_call
     @needs_student
-    def studentlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
+    def studentlookup(self, request, tl, one, two, module, extra, prog):
 
         # Search for students with names that start with search string
         if not 'username' in request.GET or 'username' in request.POST:
@@ -241,11 +247,14 @@ class StudentRegPhaseZero(ProgramModuleObj):
                          'note': note,
                          'DEFAULT_HOST': settings.DEFAULT_HOST}
         email_contents = render_to_string('program/modules/studentregphasezero/confirmation_email.txt', email_context)
-        email_to = ['%s <%s>' % (student.name(), student.email)]
+        email_to = [student.get_email_sendto_address()]
         send_mail(email_title, email_contents, email_from, email_to, False)
 
     def isStep(self):
         return False
+
+    def inModulesList(self):
+        return True
 
     class Meta:
         proxy = True

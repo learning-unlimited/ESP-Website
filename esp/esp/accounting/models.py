@@ -47,12 +47,12 @@ from decimal import Decimal
 
 class LineItemType(models.Model):
     text = models.TextField(help_text='A description of this line item.')
-    amount_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='The cost of this line item.')
+    amount_dec = models.DecimalField(default=0, max_digits=9, decimal_places=2, help_text='The cost of this line item.')
     program = models.ForeignKey(Program)
     required = models.BooleanField(default=False)
     max_quantity = models.PositiveIntegerField(default=1)
     for_payments = models.BooleanField(default=False)
-    for_finaid = models.BooleanField(default=False)
+    for_finaid = models.BooleanField(default=False, help_text='Should financial aid cover this line item?')
 
     @property
     def amount(self):
@@ -142,7 +142,7 @@ class LineItemOptions(models.Model):
 class FinancialAidGrant(models.Model):
     request = AjaxForeignKey(FinancialAidRequest)
     amount_max_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='Enter a number here to grant a dollar value of financial aid.  The grant will cover this amount or the full cost, whichever is less.')
-    percent = models.PositiveIntegerField(blank=True, null=True, help_text='Enter an integer between 0 and 100 here to grant a certain percentage discount after the above dollar credit is applied.  0 means no additional discount, 100 means no payment required.')
+    percent = models.PositiveIntegerField(blank=True, null=True, help_text='Enter an integer between 0 and 100 here to grant a certain percentage discount after the above dollar credit is applied.  0 means no additional discount, 100 means no payment is required for items that are covered by financial aid.')
     timestamp = models.DateTimeField(auto_now=True)
     finalized = models.BooleanField(default=False, editable=False)
 

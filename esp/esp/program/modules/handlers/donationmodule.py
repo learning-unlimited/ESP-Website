@@ -36,10 +36,10 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
 from esp.utils.web import render_to_response
 from esp.dbmail.models import send_mail
-from esp.users.models import ESPUser, Record
+from esp.users.models import ESPUser, Record, RecordType
 from esp.tagdict.models import Tag
 from esp.accounting.models import LineItemType
-from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.accounting.controllers import IndividualAccountingController
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -87,6 +87,7 @@ class DonationForm(forms.Form):
 
 
 class DonationModule(ProgramModuleObj):
+    doc = """Solicit donations from students."""
 
     event = "donation_done"
 
@@ -118,13 +119,16 @@ class DonationModule(ProgramModuleObj):
         return self.apply_settings().get(name, default)
 
     def line_item_type(self):
-        pac = ProgramAccountingController(self.program)
-        (donate_type, created) = pac.get_lineitemtypes().get_or_create(program=self.program, text=self.get_setting('donation_text'))
+        (donate_type, created) = LineItemType.objects.get_or_create(program=self.program, text=self.get_setting('donation_text'))
         return donate_type
 
     def isCompleted(self):
         """Whether the user made a decision about donating to LU."""
-        return Record.objects.filter(user=get_current_request().user, program=self.program, event=self.event).exists()
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
 
     def students(self, QObject = False):
         QObj = Q(transfer__line_item=self.line_item_type())
@@ -210,7 +214,8 @@ class DonationModule(ProgramModuleObj):
         # this page to not use AJAX but instead use a normal form submission,
         # we can then switch to granting the Record after the user is done with
         # the page.
-        Record.objects.get_or_create(user=user, program=self.program, event=self.event)
+        rt = RecordType.objects.get(name=self.event)
+        Record.objects.get_or_create(user=user, program=self.program, event=rt)
 
 
         #   Load donation amount separately, since the client-side code needs to know about it separately.

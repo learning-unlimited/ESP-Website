@@ -47,6 +47,8 @@ from collections import OrderedDict
 import json
 
 class SurveyManagement(ProgramModuleObj):
+    doc = """Manage the post-program/class surveys that are served to students/teachers during registration."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -56,9 +58,6 @@ class SurveyManagement(ProgramModuleObj):
             "seq": 25,
             'choosable': 1,
             }
-
-    def isStep(self):
-        return False
 
     @needs_admin
     def survey_manage(self, request, tl, one, two, module, extra, prog):
@@ -193,7 +192,8 @@ class SurveyManagement(ProgramModuleObj):
         elif extra == 'top_classes':
             return top_classes(request, tl, one, two)
 
-    survey = surveys
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

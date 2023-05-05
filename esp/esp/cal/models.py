@@ -56,6 +56,13 @@ class EventType(models.Model):
     get_from_desc.depend_on_model('cal.EventType')
     get_from_desc = classmethod(get_from_desc)
 
+    @classmethod
+    def teacher_event_types(cls):
+        return {
+            'interview': cls.get_from_desc('Teacher Interview'),
+            'training': cls.get_from_desc('Teacher Training'),
+        }
+
 class Event(models.Model):
     """ A unit calendar entry.
 
@@ -68,6 +75,7 @@ class Event(models.Model):
     program = models.ForeignKey('program.Program',blank=True, null=True)
     event_type = models.ForeignKey(EventType) # The type of event.  This implies, though does not require, the types of data that are keyed to this event.
     priority = models.IntegerField(blank=True, null=True) # Priority of this event
+    group = models.IntegerField(blank=True, null=True) # Event group
 
     def title(self):
         return self.name
@@ -141,9 +149,9 @@ class Event(models.Model):
         return newList
 
     @staticmethod
-    def contiguous(event1, event2):
-        """ Returns true if the second argument is less than 20 minutes apart from the first one. """
-        tol = timedelta(minutes=20)
+    def contiguous(event1, event2, tol = 20):
+        """ Returns true if the second argument is less than <tol> minutes apart from the first one. """
+        tol = timedelta(minutes=tol)
 
         if (event2.start - event1.end) < tol:
             return True
@@ -151,7 +159,7 @@ class Event(models.Model):
             return False
 
     @staticmethod
-    def group_contiguous(event_list):
+    def group_contiguous(event_list, tol = 20):
         """ Takes a list of events and returns a list of lists where each sublist is a contiguous group. """
         from copy import copy
         sorted_list = copy(event_list)
@@ -163,7 +171,7 @@ class Event(models.Model):
 
         for event in sorted_list:
 
-            if last_event is None or Event.contiguous(last_event, event):
+            if last_event is None or Event.contiguous(last_event, event, tol):
                 current_group.append(event)
             else:
                 grouped_list.append(copy(current_group))

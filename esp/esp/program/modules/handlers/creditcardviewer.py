@@ -38,6 +38,8 @@ from esp.accounting.controllers import ProgramAccountingController, IndividualAc
 from argcache            import cache_function
 
 class CreditCardViewer(ProgramModuleObj):
+    doc = """Lists the credit card payments for the program."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -82,6 +84,15 @@ class CreditCardViewer(ProgramModuleObj):
     _payment_table_row_cached.__func__.depend_on_model('accounting.FinancialAidGrant')
     _payment_table_row_cached.__func__.depend_on_model('accounting.Account')
     _payment_table_row_cached.__func__.depend_on_model('accounting.Transfer')
+
+    def isStep(self):
+        return self.program.hasModule('CreditCardModule_Stripe')
+
+    setup_title = "Set up the 'stripe settings' tag for credit card payments"
+    setup_path = "tags/learn"
+
+    def isCompleted(self):
+        return self.program.getModule('CreditCardModule_Stripe').check_setup()
 
     class Meta:
         proxy = True

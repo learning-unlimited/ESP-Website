@@ -16,6 +16,7 @@
 <h1>Generate Nametags for {{program.niceName}} </h1>
 
 {% load render_qsd %}
+{% load modules %}
 {% inline_program_qsd_block program "manage:nametags" %}
 <p style="text-align: center">
 Using this tool you can generate nametags for your program.<br />
@@ -53,13 +54,21 @@ To have good quality IDs:<br />
 <br />
 <ul>
   <li><input type="radio" name="type" value="students" id="students" checked="checked" />
-      <label for="students">Students</label>
+      <label for="students">Students that have registered for a class</label>
   </li>
   <li><input type="radio" name="type" value="teacher" id="teachers" />
-      <label for="teachers">Teachers</label>
+      <label for="teachers">Teachers with an approved class</label>
   </li>
+    {% if program|hasModule:"TeacherModeratorModule" %}
+      <li><input type="radio" name="type" value="teachermoderators" id="teachermoderators" />
+        <label for="teachermoderators">Teachers with an approved class and {{ program.getModeratorTitle|lower }}s assigned to a class</label>
+      </li>
+      <li><input type="radio" name="type" value="moderators" id="moderators" />
+        <label for="moderators">{{ program.getModeratorTitle }}s assigned to a class</label>
+      </li>
+    {% endif %}
   <li><input type="radio" name="type" value="other" id="other" />
-      <label for="other">Other Group</label>&nbsp;&nbsp;&nbsp;
+      <label for="other">Other group</label>&nbsp;&nbsp;&nbsp;
       <select name="group" id="group" disabled>
         {% for group in groups %}
         <option value="{{ group.id }}">{{ group.name }}</option>
@@ -68,10 +77,10 @@ To have good quality IDs:<br />
       </select>
   </li>
   <li><input type="radio" name="type" value="volunteers" id="volunt" />
-      <label for="volunt">Volunteers</label>
+      <label for="volunt">Volunteers for the program</label>
   </li>
   <li><input type="radio" name="type" value="aul" id="aul" />
-      <label for="aul">Arbitrary User List (select users below)</label>
+      <label for="aul">Arbitrary user list (select users below)</label>
   </li>
   <li><input type="radio" name="type" value="misc" id="misc" />
       <label for="misc">Miscellaneous (enter info below)</label>
@@ -84,7 +93,9 @@ To have good quality IDs:<br />
 <div id="aul_wrapper" hidden>
 <label for="aul"><strong>Arbitrary User List:</strong></label>
 <br />
+{% with include_common="True" %}
 {% include "users/usersearch/list_selector.html" %}
+{% endwith %}
 <br />
 <br />
 </div>
@@ -119,7 +130,7 @@ To have good quality IDs:<br />
 <br />
 <br />
 <input type="checkbox" name="barcodes" id="barcodes" />
-<label for="barcodes"> Display barcodes for user ID numbers on back of nametags</label>
+<label for="barcodes"> Display barcodes for user ID numbers{% if self_checkin %} and self checkin codes{% endif %} on back of nametags</label>
 <br />
 <br />
 </div>
@@ -156,7 +167,12 @@ $j('input:radio[name="type"]').change( function(e){
         $old_this = $j(this);
     }
 });
+$j(function() {
+    var items = location.search.substr(1).split("&").filter(Boolean);
+    if(items.length > 0){
+        $j("#aul").trigger("click");
+    }
+});
 </script>
-
 
 {% endblock %}

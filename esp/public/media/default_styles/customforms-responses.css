@@ -1,0 +1,16 @@
+.ViewTable .CaptionTD, .ViewTable .DataTD {
+    white-space: normal;
+}
+
+.searchFilter .columns select {
+    width: 150px;
+    text-overflow: ellipsis;
+}
+
+.ui-jqgrid .ui-jqgrid-htable .ui-th-div {
+    white-space: normal;
+    height: auto !important;
+    max-height: 60px;
+    margin-bottom: 5px;
+    overflow: visible;
+}

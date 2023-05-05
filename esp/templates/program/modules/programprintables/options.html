@@ -44,6 +44,8 @@
 {% endblock %}
 
 {% block content %}
+{% load modules %}
+
 <h1>Printables for {{program.niceName}}</h1>
 
 <p style="text-align: center">
@@ -55,17 +57,29 @@ Please select from options below.
 
 <h3>Schedules</h3>
 <ul>
-<li><a href="./studentschedules" title="Student Schedules">Student Schedules</a> (by students) -- multiple formats available: 
-    <a href="./studentschedules/tex/">TEX</a>
-    <a href="./studentschedules/ps/">PS</a>
-    <a href="./studentschedules/pdf/">PDF</a>
-    <a href="./studentschedules/svg/">SVG (1 schedule max)</a> 
-    <a href="./studentschedules/png/">PNG (1 schedule max)</a>
+<li><a href="./studentschedules?recipient_type=Student&base_list=enrolled" title="Student Schedules">Student Schedules</a> (by students) -- multiple formats available: 
+    <a href="./studentschedules/tex/?recipient_type=Student&base_list=enrolled">TEX</a>
+    <a href="./studentschedules/ps/?recipient_type=Student&base_list=enrolled">PS</a>
+    <a href="./studentschedules/pdf/?recipient_type=Student&base_list=enrolled">PDF</a>
+    <a href="./studentschedules/svg/?recipient_type=Student&base_list=enrolled">SVG (1 schedule max)</a> 
+    <a href="./studentschedules/png/?recipient_type=Student&base_list=enrolled">PNG (1 schedule max)</a>
+    <ul>
+        <li>
+            <a href="/manage/{{ program.getUrlBase }}/studentscheduleform">PDF Schedule Formatter</a>
+        </li>
+    </ul>
 </li>
-<li><a href="./flatstudentschedules" title="Student Schedules">Flat Student Schedules</a> (by students)</li>
-<li><a href="./teacherschedules" title="Teacher Schedules">Teacher Schedules</a> (by teachers)</li>
-<li><a href="./volunteerschedules" title="Volunteer Schedules">Volunteer Schedules</a> (by volunteers)</li>
-<li><a href="./roomschedules" title="Room Schedules">Room Schedules</a></li>
+<li><a href="./flatstudentschedules?recipient_type=Student&base_list=enrolled" title="Student Schedules">Flat Student Schedules</a> (by students)</li>
+<li><a href="./teacherschedules?recipient_type=Teacher&base_list=class_approved" title="Teacher Schedules">Teacher Schedules</a> (by teachers)</li>
+{% if program|hasModule:"TeacherModeratorModule" %}
+    <li><a href="./teachermoderatorschedules?combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo" title="Teacher and Moderator Schedules">Combined Teacher and {{ program.getModeratorTitle }} Schedules</a> (by teachers)</li>
+    <li><a href="./moderatorschedules?recipient_type=Teacher&base_list=assigned_moderator" title="Moderator Schedules">{{ program.getModeratorTitle }} Schedules</a> (by teachers)</li>
+{% endif %}
+<li><a href="./volunteerschedules?recipient_type=Volunteer&base_list=volunteer_all" title="Volunteer Schedules">Volunteer Schedules</a> (by volunteers)</li>
+<li><a href="./roomschedules" title="Room Schedules">Room Schedules</a> (<a href="./roomschedules/all_blocks" title="Room Schedules with All Blocks">with all blocks</a>)</li>
+{% if program|hasModule:"TeacherModeratorModule" %}
+    <li><a href="./moderator_rooms_spr" title="Complete Moderator Schedule by Room">Complete Moderator Schedule by Room</a> (CSV format)</li>
+{% endif %}
 </ul>
 
 <h3>Nametags</h3>
@@ -75,33 +89,59 @@ Please select from options below.
 
 <h3>Student Lists</h3>
 <ul>
-<li><a href="./classrosters" title="Class Rosters">Class Rosters</a> (by teachers)</li>
-<li><a href="./classrosters/attendance" title="Attendance Sheets">Attendance Sheets</a> (by teachers)</li>
+{% if program|hasModule:"TeacherModeratorModule" %}
+    <li>Class Rosters</li>
+    <ul>
+        <li><a href="./classrosters?recipient_type=Teacher&base_list=class_approved" title="Class Rosters">By teachers</a></li>
+        <li><a href="./classrostersbymoderator?recipient_type=Teacher&base_list=assigned_moderator" title="Class Rosters">By {{ program.getModeratorTitle|lower }}s</a></li>
+    </ul>
+    <li>Attendance Sheets</li>
+    <ul>
+        <li><a href="./classrosters/attendance?recipient_type=Teacher&base_list=class_approved" title="Attendance Sheets">By teachers</a></li>
+        <li><a href="./classrostersbymoderator/attendance?recipient_type=Teacher&base_list=assigned_moderator" title="Attendance Sheets">By {{ program.getModeratorTitle|lower }}s</a></li>
+    </ul>
+{% else %}
+    <li><a href="./classrosters?recipient_type=Teacher&base_list=class_approved" title="Class Rosters">Class Rosters</a> (by teachers)</li>
+    <li><a href="./classrosters/attendance?recipient_type=Teacher&base_list=class_approved" title="Attendance Sheets">Attendance Sheets</a> (by teachers)</li>
+{% endif %}
 <li><a href="./classchecklists" title="Class Checlists">Class Checklists</a> (all confirmed students)</li>
-<li><a href="./studentchecklist" title="Student Checklist">Student Checklist</a> (by students)</li>
-<li><a href="./student_financial_spreadsheet">Student Financial Spreadsheet</a> (used by the check-scanning app)</li>
-<li><a href="./studentsbyname" title="Student List">Students by Name</a> (by students)</li>
-<li><a href="./emergencycontacts" title="Student List">Students' Emergency Contact Info</a> (by students)</li>
+<li><a href="./studentchecklist?recipient_type=Student&base_list=enrolled" title="Student Checklist">Student Checklist</a> (by students)</li>
+<li><a href="./student_financial_spreadsheet?recipient_type=Student&base_list=enrolled">Student Financial Spreadsheet</a> (used by the check-scanning app)</li>
+<li><a href="./studentsbyname?recipient_type=Student&base_list=enrolled" title="Student List">Students by Name</a> (by students)</li>
+<li><a href="./emergencycontacts?recipient_type=Student&base_list=enrolled" title="Student List">Students' Emergency Contact Info</a> (by students)</li>
 {% if not li_types|length_is:0 %}
 <li>Students who have ordered/reserved line items:
     <ul>
     {% for li_type in li_types %}
-        <li><a href="./students_lineitem?id={{ li_type.id }}">{{ li_type.text }}</a></li>
+        <li><a href="./students_lineitem?id={{ li_type.id }}&recipient_type=Student&base_list=all_Student">{{ li_type.text }}</a></li>
     {% endfor %}
     </ul>
 </li>
 {% endif %}
 </ul>
 
-<h3>Teacher Lists</h3>
+<br>
+<h3 style="line-height:normal;">Teacher{% if program|hasModule:"TeacherModeratorModule" %} and/or {{ program.getModeratorTitle }}{% endif %} Check-in Sheets</h3>
+<h4 style="line-height:normal;">(filtered to Teachers{% if program|hasModule:"TeacherModeratorModule" %}/{{ program.getModeratorTitle }}s{% endif %} of approved and scheduled classes)</h4>
+<br>
 <ul>
-<li><a href="./teachersbyname" title="Teacher List">Teacher List</a> (can be sorted by name, class, or start time) (<a href="./teachersbyname/csv">CSV</a>)
-<ul><li><a href="./teachersbyname/secondday">Teachers for second day of classes only</a> (<a href="./teachersbyname/seconddaycsv">CSV</a>)</li></ul></li>
+<li><a href="./teachersbyname?recipient_type=Teacher&base_list=class_approved" title="Teacher List">Teacher List</a> (can be sorted by name, class, or start time) (<a href="./teachersbyname/csv?recipient_type=Teacher&base_list=class_approved">CSV</a>)
+<ul><li><a href="./teachersbyname/secondday?recipient_type=Teacher&base_list=class_approved">Teachers for second day of classes only</a> (<a href="./teachersbyname/seconddaycsv?recipient_type=Teacher&base_list=class_approved">CSV</a>)</li></ul></li>
 </ul>
+{% if program|hasModule:"TeacherModeratorModule" %}
+    <ul>
+    <li><a href="./teachermoderatorsbyname?combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo" title="Teacher and Moderator List">Combined Teacher and {{ program.getModeratorTitle }} List</a> (can be sorted by name, class, or start time) (<a href="./teachermoderatorsbyname/csv?combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo">CSV</a>)
+    <ul><li><a href="./teachermoderatorsbyname/secondday?combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo">{{ program.getModeratorTitle }}s and teachers for second day of classes only</a> (<a href="./teachermoderatorsbyname/seconddaycsv?combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo">CSV</a>)</li></ul></li>
+    </ul>
+    <ul>
+    <li><a href="./moderatorsbyname?recipient_type=Teacher&base_list=assigned_moderator" title="Moderator List">{{ program.getModeratorTitle }} List</a> (can be sorted by name, class, or start time) (<a href="./moderatorsbyname/csv?recipient_type=Teacher&base_list=assigned_moderator">CSV</a>)
+    <ul><li><a href="./moderatorsbyname/secondday?recipient_type=Teacher&base_list=assigned_moderator">{{ program.getModeratorTitle }}s for second day of classes only</a> (<a href="./moderatorsbyname/seconddaycsv?recipient_type=Teacher&base_list=assigned_moderator">CSV</a>)</li></ul></li>
+    </ul>
+{% endif %}
 
 <h3>Receipts</h3>
 <ul>
-<li><a href="./certificate" title="Completion Certificate">Completion Certificate</a> (by students)</li>
+<li><a href="./certificate?recipient_type=Student&base_list=enrolled" title="Completion Certificate">Completion Certificate</a> (by students)</li>
 <li><a href="./paid_list_filter" title="Purchase Lists">Lists of Purchased Items</a></li>
 </ul>
 

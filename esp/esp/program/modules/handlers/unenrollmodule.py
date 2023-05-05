@@ -44,7 +44,7 @@ from esp.utils.web import render_to_response
 logger = logging.getLogger(__name__)
 
 class UnenrollModule(ProgramModuleObj):
-    """ Frontend to kick students from classes. """
+    doc = """Frontend to unenroll students from classes."""
 
     @classmethod
     def module_properties(cls):
@@ -132,7 +132,7 @@ class UnenrollModule(ProgramModuleObj):
         students = ESPUser.objects.filter(
             id__in=enrollments.values('user'))
         students = students.exclude(
-            record__program=prog, record__event='attended')
+            record__program=prog, record__event__name='attended')
 
         # enrollments for those students
         relevant = enrollments.filter(user__in=students).values_list(
@@ -164,7 +164,7 @@ class UnenrollModule(ProgramModuleObj):
         lambda sr: {'prog': sr.section.parent_class.parent_program})
     cache.depend_on_row('users.Record',
         lambda record: {'prog': record.program},
-        lambda record: record.event == 'attended')
+        lambda record: record.event and record.event.name == 'attended')
     cache.depend_on_model('program.ClassSection')
     cache.depend_on_model('program.ClassSubject')
     cache.depend_on_model('cal.Event')

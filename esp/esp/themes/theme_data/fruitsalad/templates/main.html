@@ -69,7 +69,7 @@
 {% endblock %}
 
 {% block body %}
-
+<link rel="stylesheet" type="text/css" href="/media/default_styles/admin_bar.css">
 <div id="adminbar" class="admin hidden" style="position: fixed !important">
   <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
   <div id="adminbar_content"></div>
@@ -83,7 +83,8 @@ var currentPrograms = [
         class_search: {% if current_program|hasModule:"ClassSearchModule" %}true{% else %}false{% endif %}
     },
 {% endfor %}
-]; 
+];
+var debug = {{ settings.DEBUG|yesno:"true,false" }};
 </script>
 <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
     <div id="page" class="{{ request.path|extract_theme }}">
@@ -210,10 +211,16 @@ var currentPrograms = [
 {% endblock %}
 
       <div id="content">
+          {% if request.mod_required %}
+          <div class="alert alert-danger">
+              <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+              This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
+          </div>
+          {% endif %}
           {% if request.show_perm_info %}
           <div class="alert alert-info">
               <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-              <a href="/manage/{{ one }}/{{ two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
+              <a href="/manage/{{ request.one }}/{{ request.two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
               <br />
               {% if request.roles_with_perm %}
                   Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
