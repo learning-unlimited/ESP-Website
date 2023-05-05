@@ -304,46 +304,52 @@
 </div>
 
 <div id="legend">
-  <table>
+  <table width="100%">
     <tr>
-      <td class="available-cell matrix-cell"></td><td>Classroom is available</td>
+      <td class="matrix-cell available-cell"></td><td>Classroom is available</td>
     </tr>
     <tr>
       <td class="matrix-cell disabled-cell"></td><td>Classroom is not available</td>
     </tr>
     <tr>
-      <td class="matrix-cell locked-cell"></td><td>Locked section</td>
+      <td class="locked-cell"></td><td>Locked section</td>
+    </tr>
+  </table>
+  <h3>When scheduling sections:</h3>
+  <table width="100%">
+    <tr>
+      <td class="selected-section"></td><td>Selected section</td>
     </tr>
     <tr>
-      <td class="matrix-cell selected-section"></td><td>Selected section</td>
+      <td class="matrix-cell teacher-available-cell"></td><td>All teachers{% if has_moderator_module %}/{{ program.getModeratorTitle|lower }}s{% endif %} available</td>
     </tr>
     <tr>
-      <td class="matrix-cell teacher-available-cell"></td><td>All teachers available</td>
+      <td class="matrix-cell teacher-available-not-first-cell"></td><td>All teachers{% if has_moderator_module %}/{{ program.getModeratorTitle|lower }}s{% endif %} available, but class can not start in this block</td>
     </tr>
     <tr>
-      <td class="matrix-cell teacher-available-not-first-cell"></td><td>All teachers available, but class can not start in this block</td>
+      <td class="matrix-cell teacher-teaching-cell"></td><td>At least one teacher{% if has_moderator_module %}/{{ program.getModeratorTitle|lower }}{% endif %} already busy</td>
     </tr>
     <tr>
-      <td class="matrix-cell teacher-teaching-cell"></td><td>At least one teacher teaching</td>
+      <td class="matrix-cell available-cell"></td><td>At least one teacher{% if has_moderator_module %}/{{ program.getModeratorTitle|lower }}{% endif %} unavailable</td>
     </tr>
   </table>
   {% if has_moderator_module %}
-  
-  <table>
-    <tr>
-      <td class="matrix-cell moderator-available-not-first-cell"></td><td>All moderators available, but class can not start in this block</td>
-    </tr>
-    <tr>
-      <td class="matrix-cell moderator-unavailable-cell"></td><td>{{ program.getModeratorTitle }} unavailable</td>
-    </tr>
+  <h3>When assigning moderators:</h3>
+  <table width="100%">
     <tr>
       <td class="matrix-cell moderator-available-cell"></td><td>{{ program.getModeratorTitle }} available</td>
     </tr>
     <tr>
-      <td class="matrix-cell moderator-teaching-cell"></td><td>{{ program.getModeratorTitle }} teaching</td>
+      <td class="matrix-cell moderator-moderating-or-teaching-cell"></td><td>Moderator already assigned during this block</td>
     </tr>
     <tr>
-      <td class="matrix-cell moderator-moderating-or-teaching-cell"></td><td>Moderator already busy</td>
+      <td class="matrix-cell moderator-moderating-or-teaching-cell moderator-is-moderating-this-cell"></td><td>Moderator is assigned to this section</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell moderator-teaching-cell"></td><td>Moderator already teaching</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell moderator-unavailable-cell"></td><td>{{ program.getModeratorTitle }} unavailable</td>
     </tr>
   </table>
   {% endif %}

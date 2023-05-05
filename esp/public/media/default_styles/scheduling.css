@@ -43,6 +43,8 @@ table.sortable thead th:not(.sorttable_sorted):not(.sorttable_sorted_reverse):no
 
 .locked-cell{
     outline: 4px #FF0000 solid !important;
+    position: relative;
+    z-index: 1000;
 }
 
 .ghost-section {
@@ -87,12 +89,6 @@ td.moderator-available-not-first-cell {
     opacity: .9 !important;
 }
 
-td.moderator-teaching-cell {
-    background: yellow !important;
-    opacity: .9 !important;
-    color: black !important;
-}
-
 td.moderator-unavailable-cell {
     background: #555555 !important;
     opacity: .9 !important;
@@ -100,7 +96,9 @@ td.moderator-unavailable-cell {
 }
 
 td.selected-section {
-    outline: 1px solid yellow;
+    outline: 4px solid yellow;
+    position: relative;
+    z-index: 1000;
 }
 
 td.matrix-cell > a {
@@ -126,6 +124,18 @@ td.moderator-moderating-or-teaching-cell {
     background: #42b3f4 !important;
     opacity: .9 !important;
     color: black !important;
+}
+
+td.moderator-teaching-cell {
+    background: yellow !important;
+    opacity: .9 !important;
+    color: black !important;
+}
+
+td.moderator-is-moderating-this-cell {
+    outline: 4px magenta solid !important;
+    position: relative;
+    z-index: 1000;
 }
 
 .component-div {
@@ -214,6 +224,8 @@ button.sidetoolbar {
 }
 
 #legend {
+    z-index: 100000;
+    max-width: 600px;
     display: none;
     border: #555 6px solid;
     background-color: white;
@@ -230,6 +242,9 @@ button.sidetoolbar {
     box-shadow: 0.5vh 0.5vh #888888;
 }
 
+
+
 #legend td {
-    padding: 1vh;
+    height: 30px;
+    padding: .5vh;
 }
