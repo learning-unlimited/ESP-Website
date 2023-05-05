@@ -92,7 +92,7 @@ class ResourceModule(ProgramModuleObj):
         if request.GET.get('op') == 'edit':
             #   pre-fill form
             current_slot = Event.objects.get(id=request.GET['id'])
-            context['timeslot_form'] = TimeslotForm(auto_id="timeslot_%s")
+            context['timeslot_form'] = TimeslotForm(auto_id="timeslot_%s", program = prog)
             context['timeslot_form'].load_timeslot(current_slot)
 
         if request.GET.get('op') == 'delete':
@@ -109,7 +109,7 @@ class ResourceModule(ProgramModuleObj):
 
             elif data['command'] == 'addedit':
                 #   add/edit timeslot
-                form = TimeslotForm(data, auto_id="timeslot_%s")
+                form = TimeslotForm(data, auto_id="timeslot_%s", program = prog)
                 if form.is_valid():
                     controller.add_or_edit_timeslot(form)
                 else:
@@ -637,13 +637,13 @@ class ResourceModule(ProgramModuleObj):
 
         #   Group contiguous blocks of time for the program
         time_options = self.program.getTimeSlots(types=['Class Time Block', 'Open Class Time Block'])
-        time_groups = Event.group_contiguous(list(time_options), int(Tag.getProgramTag('availability_group_tolerance', program = prog)))
+        time_groups = self.program.getTimeGroups(types=['Class Time Block','Open Class Time Block'])
 
         #   Retrieve remaining context information
         context['timeslots'] = [{'selections': group} for group in time_groups]
 
         if 'timeslot_form' not in context:
-            context['timeslot_form'] = TimeslotForm(auto_id="timeslot_%s")
+            context['timeslot_form'] = TimeslotForm(auto_id="timeslot_%s", program = prog)
 
         res_types = self.program.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes'))
         context['resource_types'] = sorted(res_types, key = lambda x: (not x.hidden, x.priority_default), reverse = True)

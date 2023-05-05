@@ -1,0 +1,42 @@
+{% extends "main.html" %} 
+{% block title %}{{ program.niceName }} Printables{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<style type="text/css">
+#id_schedule_fields li {
+    list-style: none;
+}
+#id_pretext, #id_posttext {
+    width: unset;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" type="text/css" href="/media/styles/multiselect.css" />
+<script src="/media/scripts/jquery.multi-select.js" type="text/javascript"></script>
+<h1>Student Schedule Formatter for {{ program.niceName }}</h1>
+<h2>
+You can use this form to change the appearance of your PDF student schedules.
+</h2>
+
+{% if form.errors %}
+<div class="alert alert-error">
+    Please select at least one field.
+</div>
+{% endif %}
+<form method="post" action="studentscheduleform">
+    {{ form }}
+    <br />
+    <br />
+    <center>
+        <button type="submit" name="save" class="btn btn-large btn-primary" style="margin-right:10px;">Save Settings</button>
+        <button type="submit" name="reset" class="btn btn-large btn-danger" style="margin-left:10px;">Reset to Defaults</button>
+    </center>
+</form>
+<br />
+<a class="btn btn-primary" href="/manage/{{ program.getUrlBase }}/printoptions">Return to the main printables page</a>
+<br />
+<br />
+{% endblock %}

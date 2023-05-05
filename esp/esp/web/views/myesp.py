@@ -209,13 +209,13 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             except:
                 pass
             form = FormClass(curUser, replacement_data)
+            if prog_input is None:
+                regProf = RegistrationProfile.getLastProfile(curUser)
+            else:
+                regProf = RegistrationProfile.getLastForProgram(curUser, prog)
+            if regProf.id is None:
+                regProf = RegistrationProfile.getLastProfile(curUser)
             if not Tag.getBooleanTag('allow_change_grade_level'):
-                if prog_input is None:
-                    regProf = RegistrationProfile.getLastProfile(curUser)
-                else:
-                    regProf = RegistrationProfile.getLastForProgram(curUser, prog)
-                if regProf.id is None:
-                    regProf = RegistrationProfile.getLastProfile(curUser)
                 if regProf.student_info:
                     if regProf.student_info.dob and 'dob' in form.fields:
                         form.data['dob'] = regProf.student_info.dob

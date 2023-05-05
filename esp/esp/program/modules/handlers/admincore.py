@@ -111,6 +111,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                          ] # (handler, setup title, setup path, isCompleted)
         extra_steps = [step for step in required_steps if prog.hasModule(step[0])]
         optional_steps = [
+                          ('ProgramPrintables', "Format printable student schedules", '/manage/' + self.program.url + '/studentscheduleform', Tag.getProgramTag('student_schedule_format', self.program)),
                           ('StudentSurveyModule', "Set up the student post-program survey", '/manage/' + self.program.url + '/surveys', self.program.getSurveys().filter(category = "learn").exists()),
                           ('TeacherSurveyModule', "Set up the teacher post-program survey", '/manage/' + self.program.url + '/surveys', self.program.getSurveys().filter(category = "teach").exists()),
                           ('VolunteerSignup', "Set up volunteer signup", '/manage/' + self.program.url + '/volunteering', self.program.getVolunteerRequests().exists()),
@@ -497,8 +498,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         if request.method == 'POST':
             if "default_seq" in request.POST or "default_req" in request.POST or "default_lab" in request.POST:
                 # Reset some or all values for learn and teach modules
-                print("hello")
-                for pmo in [mod for mod in prog.getModules(tl = 'learn') if mod.isStep()]:
+                for pmo in [mod for mod in prog.getModules(tl = 'learn') if mod.inModulesList()]:
                     pmo = ProgramModuleObj.objects.get(id=pmo.id) # Get the uncached object to make sure we trigger the cache
                     if "default_seq" in request.POST: # Reset module seq values
                         pmo.seq = pmo.module.seq
@@ -507,7 +507,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     if "default_lab" in request.POST: # Reset module required label values
                         pmo.required_label = ""
                     pmo.save()
-                for pmo in [mod for mod in prog.getModules(tl = 'teach') if mod.isStep()]:
+                for pmo in [mod for mod in prog.getModules(tl = 'teach') if mod.inModulesList()]:
                     pmo = ProgramModuleObj.objects.get(id=pmo.id) # Get the uncached object to make sure we trigger the cache
                     if "default_seq" in request.POST: # Reset module seq values
                         pmo.seq = pmo.module.seq
@@ -555,10 +555,46 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 pmo.required = False
                 pmo.required_label = request.POST.get("%s_label" % mod_id, "")
                 pmo.save()
+            # Override some settings that shouldn't be changed
+            # Profile modules should always be required and always first
+            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "RegProfileModule")
+            for pmo in pmos:
+                pmo.seq = 0
+                pmo.required = True
+                pmo.save()
+            # Credit card modules should never be required and always last
+            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler__contains = "CreditCardModule_")
+            for pmo in pmos:
+                pmo.seq = 10000
+                pmo.required = False
+                pmo.save()
+            # The confirm reg module should never be required
+            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "StudentRegConfirm")
+            for pmo in pmos:
+                pmo.required = False
+                pmo.save()
+            # The availability module should always be required
+            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "AvailabilityModule")
+            for pmo in pmos:
+                pmo.required = True
+                pmo.save()
+            # The acknowledgment modules should always be required
+            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler__contains = "AcknowledgementModule")
+            for pmo in pmos:
+                pmo.required = True
+                pmo.save()
+            # The two phase lottery module should always be required
+            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "StudentRegTwoPhase")
+            for pmo in pmos:
+                pmo.required = True
+                pmo.save()
 
-        # Are there any modules that we should manually exclude here? Credit card module?
-        context['learn_modules'] = [mod for mod in prog.getModules(tl = 'learn') if mod.isStep()]
-        context['teach_modules'] = [mod for mod in prog.getModules(tl = 'teach') if mod.isStep()]
+        learn_modules = [mod for mod in prog.getModules(tl = 'learn') if mod.inModulesList()]
+        context['learn_modules'] = {'required': filter(lambda mod: mod.required, learn_modules),
+                                    'not_required': filter(lambda mod: not mod.required, learn_modules)}
+        teach_modules = [mod for mod in prog.getModules(tl = 'teach') if mod.inModulesList()]
+        context['teach_modules'] = {'required': filter(lambda mod: mod.required, teach_modules),
+                                    'not_required': filter(lambda mod: not mod.required, teach_modules)}
         context['one'] = one
         context['two'] = two
         context['program'] = prog

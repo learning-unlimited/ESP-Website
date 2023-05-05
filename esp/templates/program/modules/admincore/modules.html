@@ -28,7 +28,15 @@
 
 <div class="alert alert-danger">
   <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-  Please be aware that some modules require other modules (e.g., teacher class registration usually requires a teacher to have already set their availability), some modules should always be required (e.g., the two-phase student registration module), and some modules should always be last (e.g., the credit card payment module). Please use common sense and make sure to test everything whenever you change any of these settings! Feel free to contact <a href="mailto:websupport@learningu.org">websupport</a> with any questions.
+  Please be aware that some modules require other modules to have been completed already (e.g., teacher class registration usually requires a teacher to have already set their availability). Please use common sense and make sure to test everything whenever you change any of these settings! Feel free to contact <a href="mailto:websupport@learningu.org">websupport</a> with any questions. Furthermore, the following settings will always be enforced regardless of how you move the modules below (if they are enabled for your program):
+  <ul>
+    <li>Profile Editor Modules must always be first <i>and</i> required</li>
+    <li>The Availability Module must always be required</li>
+    <li>Acknowledgment Modules must always be required</li>
+    <li>The Two Phase Lottery Module must always be required</li>
+    <li>The Credit Card Module must always be last <i>and</i> cannot be required</li>
+    <li>The Confirm Registration Module cannot be required</li>
+  </ul>
 </div>
 
 <form action="/manage/{{ program.getUrlBase }}/modules/" method="post">
@@ -36,62 +44,66 @@
     <input type='hidden' name='learn_not_req' id='learn_not_req'>
     <input type='hidden' name='teach_req' id='teach_req'>
     <input type='hidden' name='teach_not_req' id='teach_not_req'>
-    
-    <div class="wrapper">
-        <h2>
-          Student Registration
-        </h2>
-        <div id="learn_mods" class="column">
-            <h3>
-                Required
-            </h3>
-            <ol id="sortable1" class="connectedSortable">
-            {% for mod in learn_modules %}
-                {% ifchanged mod.required %}
-                    {% if not mod.required %}
-                        </ol>
-                        <h3>
-                            Not Required
-                        </h3>
-                        <ol id="sortable2" class="connectedSortable">
-                    {% endif %}
-                {% endifchanged %}
-                <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
-                    {{ mod.module.admin_title }}<br/>
-                    <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
-                </li>
-            {% endfor %}
-            </ol>
+    <div style="float: left; width: 100%;">
+        <div class="wrapper">
+            <h2>
+              Student Registration
+            </h2>
+            <div id="learn_mods" class="column">
+                <h3>
+                    Required
+                </h3>
+                <ol id="sortable1" class="connectedSortable">
+                {% for mod in learn_modules.required %}
+                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
+                        {{ mod.module.admin_title }}<br/>
+                        <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
+                    </li>
+                {% endfor %}
+                </ol>
+                <h3>
+                    Not Required
+                </h3>
+                <ol id="sortable2" class="connectedSortable">
+                {% for mod in learn_modules.not_required %}
+                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
+                        {{ mod.module.admin_title }}<br/>
+                        <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
+                    </li>
+                {% endfor %}
+                </ol>
+            </div>
+        </div>
+        <div class="wrapper">
+            <h2>
+              Teacher Registration
+            </h2>
+            <div id="teach_mods" class="column">
+                <h3>
+                    Required
+                </h3>
+                <ol id="sortable3" class="connectedSortable">
+                {% for mod in teach_modules.required %}
+                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
+                        {{ mod.module.admin_title }}<br/>
+                        <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
+                    </li>
+                {% endfor %}
+                </ol>
+                <h3>
+                    Not Required
+                </h3>
+                <ol id="sortable4" class="connectedSortable">
+                {% for mod in teach_modules.not_required %}
+                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
+                        {{ mod.module.admin_title }}<br/>
+                        <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
+                    </li>
+                {% endfor %}
+                </ol>
+            </div>
         </div>
     </div>
-    <div class="wrapper">
-        <h2>
-          Teacher Registration
-        </h2>
-        <div id="teach_mods" class="column">
-            <h3>
-                Required
-            </h3>
-            <ol id="sortable3" class="connectedSortable">
-            {% for mod in teach_modules %}
-                {% ifchanged mod.required %}
-                    {% if not mod.required %}
-                        </ol>
-                        <h3>
-                            Not Required
-                        </h3>
-                        <ol id="sortable4" class="connectedSortable">
-                    {% endif %}
-                {% endifchanged %}
-                <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
-                    {{ mod.module.admin_title }}<br/>
-                    <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
-                </li>
-            {% endfor %}
-            </ol>
-        </div>
-    </div>
-    
     <center><input class="fancybutton" type="submit" value="Save Modules"/></center>
 </form>
 

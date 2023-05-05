@@ -83,6 +83,7 @@ class Event(models.Model):
     program = models.ForeignKey('program.Program', blank=True, null=True)
     event_type = models.ForeignKey(EventType) # The type of event.  This implies, though does not require, the types of data that are keyed to this event.
     priority = models.IntegerField(blank=True, null=True) # Priority of this event
+    group = models.IntegerField(blank=True, null=True) # Event group
 
     def title(self):
         return self.name

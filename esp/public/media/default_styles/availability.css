@@ -4,6 +4,10 @@
   align-items: center;
 }
 
+.container1 {
+  flex-grow: 2;
+}
+
 .side {
   width: 280px;
 }
@@ -17,14 +21,14 @@
   font-family: sans-serif;
 }
 
-.left span {
+.details {
   background-color: #dbe3e7;
   border-radius: 4px;
   -moz-border-radius: 4px;
   -webkit-border-radius: 4px;
   padding: 5px 5px;
   font-size: small;
-  width: 160px;
+  width: 100%;
   display: none;
 }
 
@@ -43,6 +47,8 @@ td.group, table.group {
   vertical-align: top !important;
   border-spacing: 0px 2px !important;
   padding: 0 !important;
+  margin-left: 20px;
+  margin-right: 20px;
 }
 
 .wrap table {
@@ -56,8 +62,8 @@ td.group, table.group {
   font-weight: bold !important;
   background: #CCCCCC !important;
   padding: 3px !important;
-  height: 80px !important;
-  width: 75px !important;
+  height: 25px !important;
+  width: 90px !important;
 }
 
 .label {
@@ -68,6 +74,7 @@ td.group, table.group {
 }
 
 .proposed, .canDo, .teaching {
+  padding: 6px !important;
   font-size: 16px !important;
   text-align: center !important;
 }
@@ -90,6 +97,10 @@ td.group, table.group {
 
 .headerText {
   font-size: 18px;
+}
+
+.subheaderText {
+  font-size: 16px;
 }
 
 form {

@@ -403,6 +403,9 @@ class ProgramModuleObj(models.Model):
     def isStep(self):
         return True
 
+    def inModulesList(self):
+        return self.isStep()
+
     @classmethod
     def module_properties(cls):
         """
