@@ -1238,6 +1238,13 @@ all_program_tags = {
                                             ('open', 'Students only need to access the self checkin page'),
                                             ('code', 'Students must enter their unique code to check themselves in')]),
     },
+    'student_self_checkin_paid': {
+        'is_boolean': True,
+        'help_text': 'Whether students must have already paid their entire balance before they can check themselves in.',
+        'default': True,
+        'category': 'onsite',
+        'is_setting': True,
+    },
     'already_paid_extracosts_allowed': {
         'is_boolean': True,
         'help_text': 'Whether students should be able to return to the extracosts page to add items or change options after they have already paid once via credit card.',
