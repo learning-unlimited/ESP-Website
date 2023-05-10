@@ -1168,7 +1168,7 @@ all_program_tags = {
     'student_onsite_checkin_note': {
         'is_boolean': False,
         'help_text': 'The message that is shown at the top of the student webapp schedule when a student is NOT checked in.',
-        'default': 'Note: You will not be able to change any classes or see your classrooms until after your check-in has been processed by the admin team.',
+        'default': 'Note: You will not be able to see your classrooms until after your check-in has been processed by the admin team.',
         'category': 'onsite',
         'is_setting': True,
     },
@@ -1237,6 +1237,13 @@ all_program_tags = {
         'field': forms.ChoiceField(choices=[('none', 'None (disable student self checkin)'),
                                             ('open', 'Students only need to access the self checkin page'),
                                             ('code', 'Students must enter their unique code to check themselves in')]),
+    },
+    'student_self_checkin_paid': {
+        'is_boolean': True,
+        'help_text': 'Whether students must have already paid their entire balance before they can check themselves in.',
+        'default': True,
+        'category': 'onsite',
+        'is_setting': True,
     },
     'already_paid_extracosts_allowed': {
         'is_boolean': True,
