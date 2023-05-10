@@ -217,7 +217,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
             context['modules'] = filter(lambda x: (x.isRequired() and not x.isCompleted()), modules)
             context['records'] = filter(lambda x: not x['isCompleted'], records)
 
-            if Tag.getProgramTag('student_self_checkin_paid', program = prog):
+            if Tag.getBooleanTag('student_self_checkin_paid', program = prog):
                 iac = IndividualAccountingController(prog, user)
                 context['owes_money'] = iac.amount_due() > 0
                 if context['owes_money']:
