@@ -811,25 +811,6 @@ class ProgramPrintables(ProgramModuleObj):
 
     @aux_call
     @needs_admin
-    def students_lineitem(self, request, tl, one, two, module, extra, prog):
-        from esp.accounting.models import Transfer, LineItemType
-        #   Determine line item
-        student_ids = []
-        if 'id' in request.GET:
-            lit_id = request.GET['id']
-            request.session['li_type_id'] = lit_id
-        else:
-            lit_id = request.session['li_type_id']
-
-        lit = LineItemType.objects.get(id = lit_id)
-        line_items = Transfer.objects.filter(line_item__id=lit_id)
-        for l in line_items:
-            student_ids.append(l.user_id)
-
-        return self.studentsbyFOO(request, tl, one, two, module, extra, prog, filt_exp = lambda x: x.id in student_ids, display_name = 'Student List for %s' % (lit.text))
-
-    @aux_call
-    @needs_admin
     def teachermoderatorschedules(self, request, tl, one, two, module, extra, prog):
         """ generate teacher/moderator schedules """
 
