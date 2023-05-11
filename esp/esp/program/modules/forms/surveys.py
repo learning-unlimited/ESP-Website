@@ -16,9 +16,6 @@ class SurveyForm(forms.ModelForm):
     class Meta:
         model = Survey
         exclude = ['program']
-        help_texts = {
-            'category': ('e.g. teach or learn'),
-        }
 
 class QuestionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):

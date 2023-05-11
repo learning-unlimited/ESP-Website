@@ -1,4 +1,4 @@
-{% autoescape off %} {% load latex %} {% load main %}
+{% autoescape off %} {% load latex %} {% load main %} {% load getTag %}
 \documentclass[letterpaper,12pt]{article}
 \usepackage[left=.75in,top=1in,bottom=.75in,right=.75in]{geometry}
 \usepackage[utf8]{inputenc}
@@ -18,27 +18,52 @@
 \fancyfoot{}
 
 \newcommand{\nameblock}{}
+\newcommand{\costsblock}{}
 \newcommand{\barcodeblock}{}
 
 \begin{document}
 {% for student in students %}
 \renewcommand{\nameblock}{
-\textbf{Name: {{ student.name|texescape }} \\
-Username: {{ student.username|texescape }} \\
-User ID: {{ student.id }} \\
+\textbf{Name: {{ student.name|texescape }} \\{% if schedule_format.username %}
+Username: {{ student.username|texescape }} \\{% endif %}{% if schedule_format.userid %}
+User ID: {{ student.id }} \\{% endif %}
 }
 }
 
+\renewcommand{\costsblock}{
+{% if schedule_format.amount_owed %}
+\textbf{Amount Owed: \fbox{\${{ student.itemizedcosttotal|floatformat:"-2" }} } }
+{% endif %}
+{% if schedule_format.required_costs and student.required %}
+\vspace{.5ex}
+\textbf{Required Choices: } \\
+\vspace{.5ex}
+\begin{tabular}{ | l | }	
+{% for item in student.required %}\hline	
+$\Box$  {{item.line_item.text|texescape}}{% if item.option.description %} -- {{ item.option.description|texescape }}{% endif %} \\	
+{% endfor %}\hline	
+\end{tabular}
+{% endif %}
+{% if schedule_format.optional_costs and student.meals %}
+\vspace{1ex}
+\textbf{Optional Purchases: } \\
+\vspace{.5ex}
+\begin{tabular}{ | l | }	
+{% for item in student.meals %}\hline	
+$\Box$  {{item.line_item.text|texescape}}{% if item.option.description %} -- {{ item.option.description|texescape }}{% endif %} \\	
+{% endfor %}\hline	
+\end{tabular}
+{% endif %}
+}
+
 \renewcommand{\barcodeblock}{
-\barcode{% templatetag openbrace %}{{ student.id }}{% templatetag closebrace %}
+{% if schedule_format.barcode %}\barcode{% templatetag openbrace %}{{ student.id }}{% templatetag closebrace %}{% endif %}
 }
 
 \begin{multicols}{3}
 
 \begin{flushleft}
-\nameblock
-\vspace{1ex} \hrule \vspace{1ex}
-\textbf{Amount Owed: \fbox{\${{ student.itemizedcosttotal|floatformat:"-2" }} } }
+\costsblock
 \end{flushleft}
 
 \columnbreak
@@ -54,6 +79,8 @@ Student Schedule for \\
 \columnbreak
 
 \begin{flushright}
+\nameblock
+\vspace{1ex}
 \barcodeblock
 \end{flushright}
 
@@ -61,35 +88,31 @@ Student Schedule for \\
 
 \renewcommand\tabularxcolumn[1]{m{#1}}
 
+{{ pretext }}
+
 \begin{center}
 {\large \textbf{Class Schedule} \\}
 \vspace{0.25cm}
-\begin{tabularx}{\textwidth}{|m{1.7in}|X|m{0.55in}|}
+\begin{tabularx}{\textwidth}{|m{1.7in}|X|{% if schedule_format.codes %}m{0.55in}|{% endif %}{% templatetag closebrace %}
 \hline
-\textbf{Time and Room} & \textbf{Class and Teacher} & \textbf{Code} \\
+\textbf{Time and Room} & \textbf{Class and Teacher}{% if schedule_format.codes %} & \textbf{Code}{% endif %} \\
 {% for cls in student.classes %}\hline
 {% if cls.friendly_times|length_is:"0" %}N/A{% endif %}{{ cls.friendly_times|join:", " }} \newline
 \footnotesize{ {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms.0|texescape }}{% endif %} } &
 {% if cls.event_type.description == "Compulsory" %}{{ cls.description }}{% elif cls.title|length_is:"0" %}N/A{% else %}{{ cls.title|truncatewords_char:45|texescape }}{% endif %} \newline
-\footnotesize{ {{ cls.parent_class.getTeacherNames|join:", "|truncatewords_char:50|texescape }} }  &
-\texttt{% templatetag openbrace %}{{ cls.emailcode }}{% templatetag closebrace %} \\
+{% if "teacher_profile_pronoun_field"|getBooleanTag %}
+\footnotesize{ {{ cls.parent_class.getTeacherNamesWithPronouns|join:", "|truncatewords_char:50|texescape }} }
+{% else %}
+\footnotesize{ {{ cls.parent_class.getTeacherNames|join:", "|truncatewords_char:50|texescape }} }
+{% endif %}{% if schedule_format.codes %}  &
+\texttt{% templatetag openbrace %}{{ cls.emailcode }}{% templatetag closebrace %}
+{% endif %} \\
 {% endfor %}\hline
 \end{tabularx}
 
 \end{center}
 
-\begin{center}
-\begin{tabularx}{17cm}{X c}
-\multicolumn{2}{c}{\small
-\textit{Please see your map for building directions, or ask anyone for help.}
-\normalsize } \\
-\multicolumn{2}{c}{\small
-\textit{If you are not signed up for a full day of classes, we encourage you to add more!}
-\normalsize } \\
-~ & ~
-\end{tabularx}
-\end{center}
-
+{{ posttext }}
 
 {% if not forloop.last %}\pagebreak{% endif %}
 {% endfor %}

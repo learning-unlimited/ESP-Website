@@ -253,6 +253,9 @@ class StudentRegPhaseZero(ProgramModuleObj):
     def isStep(self):
         return False
 
+    def inModulesList(self):
+        return True
+
     class Meta:
         proxy = True
         app_label = 'modules'

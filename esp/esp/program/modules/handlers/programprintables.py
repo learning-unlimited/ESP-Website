@@ -34,10 +34,11 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
 from esp.utils.web import render_to_response
+from esp.utils.templatetags.latex import texescape
 from esp.users.models    import ESPUser, User, Record, RecordType
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
 from esp.program.models  import ClassFlagType
-from esp.program.models.class_ import ACCEPTED
+from esp.program.class_status import ClassStatus
 from esp.users.views     import search_for_user
 from esp.users.controllers.usersearch import UserSearchController
 from esp.utils.latex  import render_to_latex
@@ -588,7 +589,7 @@ class ProgramPrintables(ProgramModuleObj):
         if extra and 'secondday' in extra:
             from django.db.models import Min
 
-            allclasses = prog.sections().filter(status=10, parent_class__status=10, meeting_times__isnull=False)
+            allclasses = prog.sections().filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED, meeting_times__isnull=False)
             first_timeblock_dict = allclasses.aggregate(Min('meeting_times__start'))
 
         scheditems = []
@@ -1156,6 +1157,31 @@ class ProgramPrintables(ProgramModuleObj):
         return response
 
     @aux_call
+    @needs_admin
+    def studentscheduleform(self, request, tl, one, two, module, extra, prog):
+        context = {}
+
+        # handle submission of the form
+        if request.method == 'POST':
+            if 'save' in request.POST:
+                form = StudentScheduleFormatForm(program = prog, data = request.POST)
+                if form.is_valid():
+                    Tag.setTag(key = "student_schedule_format", value = json.dumps(form.cleaned_data['schedule_fields']), target = prog)
+                    Tag.setTag(key = "student_schedule_pretext", value = form.cleaned_data['pretext'], target = prog)
+                    Tag.setTag(key = "student_schedule_posttext", value = form.cleaned_data['posttext'], target = prog)
+            elif 'reset' in request.POST:
+                Tag.unSetTag(key = "student_schedule_format", target = prog)
+                Tag.unSetTag(key = "student_schedule_pretext", target = prog)
+                Tag.unSetTag(key = "student_schedule_posttext", target = prog)
+                form = StudentScheduleFormatForm(program = prog)
+        else:
+            form = StudentScheduleFormatForm(program = prog)
+
+        context['form'] = form
+
+        return render_to_response(self.baseDir()+'studentscheduleform.html', request, context)
+
+    @aux_call
     @needs_onsite_no_switchback
     def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
 
@@ -1210,7 +1236,7 @@ class ProgramPrintables(ProgramModuleObj):
             studentregistration__user__in=students,
             studentregistration__relationship__name='Enrolled',
             parent_class__parent_program=prog,
-            status=ACCEPTED,
+            status=ClassStatus.ACCEPTED,
             meeting_times__isnull=False).distinct()
         all_classes = all_classes.select_related('parent_class')
         all_classes = all_classes.prefetch_related('meeting_times')
@@ -1290,7 +1316,8 @@ class ProgramPrintables(ProgramModuleObj):
             student.invoice_id = iac.get_id()
             student.itemizedcosts = iac.get_transfers()
             student.meals = iac.get_transfers(optional_only=True)  # catch everything that's not admission to the program.
-            student.admission = iac.get_transfers(required_only=True)  # Program admission
+            student.required = iac.get_transfers(required_only=True).exclude(line_item=iac.default_admission_lineitemtype())
+            student.admission = iac.get_transfers(line_items = [iac.default_admission_lineitemtype()])  # Program admission
             student.paid_online = iac.has_paid()
             student.amount_finaid = iac.amount_finaid()
             student.amount_siblingdiscount = iac.amount_siblingdiscount()
@@ -1308,6 +1335,12 @@ class ProgramPrintables(ProgramModuleObj):
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT.rstrip('/') + '/'
 
         basedir = 'program/modules/programprintables/'
+        if Tag.getProgramTag("student_schedule_format", prog):
+            context["schedule_format"] = {x: True for x in json.loads(Tag.getProgramTag("student_schedule_format", prog))}
+        else:
+            context["schedule_format"] = {choice[0]: True for choice in StudentScheduleFormatForm(program = prog).fields['schedule_fields'].choices}
+        context["pretext"] = Tag.getProgramTag("student_schedule_pretext", prog)
+        context["posttext"] = Tag.getProgramTag("student_schedule_posttext", prog)
         if file_type == 'html':
             return render_to_response(basedir+'studentschedule.html', request, context)
         elif file_type == 'pdf':
@@ -1362,7 +1395,7 @@ class ProgramPrintables(ProgramModuleObj):
         """ generate class room rosters"""
         from esp.cal.models import Event
 
-        classes = self.program.sections().filter(status=10, parent_class__status=10)
+        classes = self.program.sections().filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED)
 
         context = {}
 
@@ -1769,7 +1802,7 @@ class ProgramPrintables(ProgramModuleObj):
         # get only the unscheduled sections, rather than all of them
         # also, only approved classes in the spreadsheet; can be changed
         if extra == "unscheduled":
-            sections = sections.filter(meeting_times__isnull=True, status=10)
+            sections = sections.filter(meeting_times__isnull=True, status=ClassStatus.ACCEPTED)
 
         times = prog.getTimeSlots()
         if extra == "unscheduled":
@@ -1850,7 +1883,7 @@ class ProgramPrintables(ProgramModuleObj):
         # get only the unscheduled sections, rather than all of them
         # also, only approved classes in the spreadsheet; can be changed
         #if extra == "unscheduled":
-        #    sections = sections.filter(meeting_times__isnull=True, status=10)
+        #    sections = sections.filter(meeting_times__isnull=True, status=ClassStatus.ACCEPTED)
 
         times = prog.getTimeSlots()
         if extra == "unscheduled":
@@ -1910,7 +1943,7 @@ class ProgramPrintables(ProgramModuleObj):
         response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
 
-        sections = list(self.program.sections().filter(status=10, parent_class__status=10))
+        sections = list(self.program.sections().filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED))
         sections.sort()
 
         rooms = {}
@@ -2038,3 +2071,27 @@ class AllClassesSelectionForm(forms.Form):
 
         self.converter = AllClassesFieldConverter(program)
         self.fields['subject_fields'].choices = self.converter.field_choices
+
+class StudentScheduleFormatForm(forms.Form):
+    schedule_fields = forms.MultipleChoiceField(choices = [
+                                                           ("username", "Student's Username"),
+                                                           ("userid", "Student's ID"),
+                                                           ("barcode", "Barcode"),
+                                                           ("amount_owed", "Amount Owed"),
+                                                           ("required_costs", "Required Choices"),
+                                                           ("optional_costs", "Optional Purchases"),
+                                                           ("codes", "Class Codes"),
+                                                          ],
+                                                widget = forms.widgets.CheckboxSelectMultiple,
+                                                label = "Select the fields that you would like to include in the schedule",
+                                                required = False)
+    pretext = forms.CharField(required = False, widget = forms.widgets.Textarea, label = mark_safe("Text to be placed just <u>above</u> the schedule, if any (supports LaTeX)"))
+    posttext = forms.CharField(required = False, widget = forms.widgets.Textarea, label = mark_safe("Text to be placed just <u>below</u> the schedule, if any (supports LaTeX)"))
+    def __init__(self, program, *args, **kwargs):
+        super(StudentScheduleFormatForm, self).__init__(*args, **kwargs)
+        if Tag.getProgramTag("student_schedule_format", program):
+            self.fields['schedule_fields'].initial = json.loads(Tag.getProgramTag("student_schedule_format", program))
+        else:
+            self.fields['schedule_fields'].initial = [choice[0] for choice in self.fields['schedule_fields'].choices]
+        self.fields['pretext'].initial = Tag.getProgramTag("student_schedule_pretext", program)
+        self.fields['posttext'].initial = Tag.getProgramTag("student_schedule_posttext", program)

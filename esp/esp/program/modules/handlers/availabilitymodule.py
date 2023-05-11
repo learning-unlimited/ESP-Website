@@ -126,12 +126,7 @@ class AvailabilityModule(ProgramModuleObj):
             return self.availabilityForm(request, tl, one, two, prog, request.user, False)
 
     def availabilityForm(self, request, tl, one, two, prog, teacher, isAdmin=False):
-        time_options = self.program.getTimeSlots(types=[self.event_type()])
-        #   Group contiguous blocks
-        if not Tag.getBooleanTag('availability_group_timeslots'):
-            time_groups = [list(time_options)]
-        else:
-            time_groups = Event.group_contiguous(list(time_options), int(Tag.getProgramTag('availability_group_tolerance', program = prog)))
+        time_groups = self.program.getTimeGroups(types=[self.event_type()])
 
         blank = False
 

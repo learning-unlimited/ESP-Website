@@ -55,6 +55,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
+from django.core.validators import RegexValidator
 
 from django_extensions.db.fields.json import JSONField
 
@@ -72,12 +73,13 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media
 from esp.users.models import ESPUser, Permission, PersistentQueryFilter
 from esp.program.models import Program
-from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType
+from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType, RegistrationProfile
 from esp.program.models import ScheduleMap, ScheduleConstraint
 from esp.program.models import ArchiveClass
 from esp.resources.models         import Resource, ResourceRequest, ResourceAssignment, ResourceType
 from argcache                     import cache_function, wildcard
 from argcache.extras.derivedfield import DerivedField
+from esp.program.class_status import ClassStatus
 
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -85,18 +87,12 @@ from esp.customforms.linkfields import CustomFormsLinkModel
 
 __all__ = ['ClassSection', 'ClassSubject', 'ClassManager', 'ClassCategories', 'ClassSizeRange']
 
-CANCELLED = -20
-REJECTED = -10
-UNREVIEWED = 0
-HIDDEN = 5
-ACCEPTED = 10
-
 STATUS_CHOICES = (
-        (CANCELLED, "cancelled"),
-        (REJECTED, "rejected"),
-        (UNREVIEWED, "unreviewed"),
-        (HIDDEN, "accepted but hidden"),
-        (ACCEPTED, "accepted"),
+        (ClassStatus.CANCELLED, "cancelled"),
+        (ClassStatus.REJECTED, "rejected"),
+        (ClassStatus.UNREVIEWED, "unreviewed"),
+        (ClassStatus.HIDDEN, "accepted but hidden"),
+        (ClassStatus.ACCEPTED, "accepted"),
         )
 
 STATUS_CHOICES_DICT = dict(STATUS_CHOICES)
@@ -108,8 +104,6 @@ REGISTRATION_CHOICES = (
             (OPEN, "open"),
             (CLOSED, "closed"),
             )
-
-
 
 class ClassSizeRange(models.Model):
     range_min = models.IntegerField(null=False)
@@ -146,9 +140,9 @@ class ClassManager(Manager):
 
     def approved(self, return_q_obj=False):
         if return_q_obj:
-            return Q(status = ACCEPTED)
+            return Q(status = ClassStatus.ACCEPTED)
 
-        return self.filter(status = ACCEPTED)
+        return self.filter(status = ClassStatus.ACCEPTED)
 
     def catalog(self, program, ts=None, force_all=False, initial_queryset=None, use_cache=True, cache_only=False, order_args_override=None):
         # Try getting the catalog straight from cache
@@ -298,7 +292,7 @@ class ClassSection(models.Model):
     """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
     parallel sections for a course being taught more than once at Splash or Spark. """
 
-    status = models.IntegerField(choices=STATUS_CHOICES, default=UNREVIEWED)                 #As the choices are shared with ClassSubject, they're at the top of the file
+    status = models.IntegerField(choices=STATUS_CHOICES, default=ClassStatus.UNREVIEWED)                 #As the choices are shared with ClassSubject, they're at the top of the file
     registration_status = models.IntegerField(choices=REGISTRATION_CHOICES, default=OPEN)    #Ditto.
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
@@ -892,7 +886,7 @@ class ClassSection(models.Model):
                 timeslot_ids = sec.timeslot_ids()
             for tid in timeslot_ids:
                 if tid in my_timeslots:
-                    if self.parent_class.sections.filter(resourceassignment__isnull=False, meeting_times__isnull=False, status=10).exclude(id=self.id):
+                    if self.parent_class.sections.filter(resourceassignment__isnull=False, meeting_times__isnull=False, status=ClassStatus.ACCEPTED).exclude(id=self.id):
                         return u'This section conflicts with your schedule--check out the other sections!'
                     else:
                         return u'This class conflicts with your schedule!'
@@ -1102,7 +1096,7 @@ class ClassSection(models.Model):
             self.clearRooms()
             self.meeting_times.clear()
 
-        self.status = CANCELLED
+        self.status = ClassStatus.CANCELLED
         self.save()
 
     def clearStudents(self):
@@ -1247,10 +1241,10 @@ class ClassSection(models.Model):
         return self.friendly_times(raw=raw, include_date=True)
 
     def isAccepted(self): return self.status > 0
-    def isHidden(self): return self.status == HIDDEN
-    def isReviewed(self): return self.status != UNREVIEWED
-    def isRejected(self): return self.status == REJECTED
-    def isCancelled(self): return self.status == CANCELLED
+    def isHidden(self): return self.status == ClassStatus.HIDDEN
+    def isReviewed(self): return self.status != ClassStatus.UNREVIEWED
+    def isRejected(self): return self.status == ClassStatus.REJECTED
+    def isCancelled(self): return self.status == ClassStatus.CANCELLED
     isCanceled = isCancelled
     def isRegOpen(self): return self.registration_status == OPEN
     def isRegClosed(self): return self.registration_status == CLOSED
@@ -1426,7 +1420,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     objects = ClassManager()
 
-    status = models.IntegerField(choices = STATUS_CHOICES, default=UNREVIEWED)
+    status = models.IntegerField(choices = STATUS_CHOICES, default=ClassStatus.UNREVIEWED)
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
 
@@ -1566,13 +1560,13 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         return new_section
 
-    def add_default_section(self, duration=0.0, status=UNREVIEWED):
+    def add_default_section(self, duration=0.0, status=ClassStatus.UNREVIEWED):
         """ Make sure this class has a section associated with it.  This should be called
         at least once on every class.  Afterwards, additional sections can be created using
         add_section. """
 
         #   Support migration from currently existing classes.
-        if self.status != UNREVIEWED:
+        if self.status != ClassStatus.UNREVIEWED:
             status = self.status
         if self.duration is not None and self.duration > 0:
             duration = self.duration
@@ -1744,6 +1738,19 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             teachers.append(name)
         return teachers
 
+    def getTeacherNamesWithPronouns(self):
+        teachers = []
+        for teacher in self.get_teachers():
+            name = teacher.name()
+            if name.strip() == '':
+                name = teacher.username
+            prof = RegistrationProfile.getLastProfile(teacher)
+            if prof.teacher_info is not None:
+                if prof.teacher_info.pronoun is not None:
+                    name = name + ' (' + prof.teacher_info.pronoun + ')'
+            teachers.append(name)
+        return teachers
+
     def getTeacherNamesLast(self):
         teachers = []
         for teacher in self.get_teachers():
@@ -1838,10 +1845,10 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return False
 
     def isAccepted(self): return self.status > 0
-    def isHidden(self): return self.status == HIDDEN
-    def isReviewed(self): return self.status != UNREVIEWED
-    def isRejected(self): return self.status == REJECTED
-    def isCancelled(self): return self.status == CANCELLED
+    def isHidden(self): return self.status == ClassStatus.HIDDEN
+    def isReviewed(self): return self.status != ClassStatus.UNREVIEWED
+    def isRejected(self): return self.status == ClassStatus.REJECTED
+    def isCancelled(self): return self.status == ClassStatus.CANCELLED
     isCanceled = isCancelled    # Yay alternative spellings
 
     def status_str(self): return STATUS_CHOICES_DICT[self.status]
@@ -1885,7 +1892,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def accept_all_sections(self):
         """ Accept all sections of this class that aren't already cancelled/rejected, without any of the checks or messages that are in accept() """
-        self.set_all_sections_to_status(ACCEPTED)
+        self.set_all_sections_to_status(ClassStatus.ACCEPTED)
 
     def propose(self):
         """ Mark this class as just 'proposed' """
@@ -1893,7 +1900,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def unreview_all_sections(self):
         """ Unreview all sections of this class that aren't already cancelled/rejected. """
-        self.set_all_sections_to_status(UNREVIEWED)
+        self.set_all_sections_to_status(ClassStatus.UNREVIEWED)
 
     def reject(self):
         """ Mark this class as rejected. This should only ever be used if no sections are scheduled.
@@ -1901,7 +1908,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         self.clearStudents()
         self.clearRooms()
         self.clearTimes()
-        self.set_all_sections_to_status(REJECTED)
+        self.set_all_sections_to_status(ClassStatus.REJECTED)
 
     def cancel(self, email_students=True, include_lottery_students=False, text_students=False, email_teachers=True, explanation=None, unschedule=False):
         """ Cancel this class by cancelling all of its sections. """
@@ -1909,7 +1916,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             if sec.isCancelled():
                 continue
             sec.cancel(email_students, include_lottery_students, text_students, email_teachers, explanation, unschedule)
-        self.status = CANCELLED
+        self.status = ClassStatus.CANCELLED
         self.save()
 
     def clearStudents(self):
@@ -2037,7 +2044,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def save(self, *args, **kwargs):
         super(ClassSubject, self).save(*args, **kwargs)
-        if self.status < UNREVIEWED: #ie, all rejected or cancelled classes.
+        if self.status < ClassStatus.UNREVIEWED: #ie, all rejected or cancelled classes.
             # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
             teachers = self.get_teachers()
             for t in teachers:
@@ -2058,7 +2065,7 @@ class ClassCategories(models.Model):
     """
 
     category = models.TextField(blank=False, help_text='The name of the category')
-    symbol = models.CharField(max_length=1, default='?', blank=False, help_text='A single character to represent the category')
+    symbol = models.CharField(max_length=1, default='Z', blank=False, help_text='A single letter to represent the category', validators = [RegexValidator(r'^[A-Za-z]{1}', 'Must be a single letter.')])
     seq = models.IntegerField(default=0, help_text='Categories will be ordered by this.  Smaller is earlier; the default is 0.')
 
     def used_by_classes(self):

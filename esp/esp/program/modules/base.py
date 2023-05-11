@@ -282,6 +282,9 @@ class ProgramModuleObj(models.Model):
 
         return mark_safe(link)
 
+    def makeSelfCheckinLink(self):
+        return self.makeLink()
+
     def get_setup_title(self):
         if hasattr(self, 'setup_title') and self.setup_title is not None and str(self.setup_title).strip() != '':
             return self.setup_title
@@ -397,6 +400,9 @@ class ProgramModuleObj(models.Model):
 
     def isStep(self):
         return True
+
+    def inModulesList(self):
+        return self.isStep()
 
     @classmethod
     def module_properties(cls):

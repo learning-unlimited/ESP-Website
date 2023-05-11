@@ -365,6 +365,20 @@ all_global_tags = {
         'category': 'learn',
         'is_setting': True,
     },
+    'student_profile_pronoun_field': {
+        'is_boolean': True,
+        'help_text': "Ask about student's preferred pronouns in profile form (and display their pronouns in various printables)?",
+        'default': False,
+        'category': 'learn',
+        'is_setting': True,
+    },
+    'teacher_profile_pronoun_field': {
+        'is_boolean': True,
+        'help_text': "Ask about teacher's preferred pronouns in profile form (and display their pronouns in various printables)?",
+        'default': False,
+        'category': 'teach',
+        'is_setting': True,
+    },
     'ask_about_duplicate_accounts': {
         'is_boolean': True,
         'help_text': 'Before creating an account for an email address already in the database, ask if the user wants to log into an existing account instead',
@@ -1154,7 +1168,7 @@ all_program_tags = {
     'student_onsite_checkin_note': {
         'is_boolean': False,
         'help_text': 'The message that is shown at the top of the student webapp schedule when a student is NOT checked in.',
-        'default': 'Note: You will not be able to change any classes or see your classrooms until after your check-in has been processed by the admin team.',
+        'default': 'Note: You will not be able to see your classrooms until after your check-in has been processed by the admin team.',
         'category': 'onsite',
         'is_setting': True,
     },
@@ -1223,6 +1237,62 @@ all_program_tags = {
         'field': forms.ChoiceField(choices=[('none', 'None (disable student self checkin)'),
                                             ('open', 'Students only need to access the self checkin page'),
                                             ('code', 'Students must enter their unique code to check themselves in')]),
+    },
+    'student_self_checkin_paid': {
+        'is_boolean': True,
+        'help_text': 'Whether students must have already paid their entire balance before they can check themselves in.',
+        'default': True,
+        'category': 'onsite',
+        'is_setting': True,
+    },
+    'already_paid_extracosts_allowed': {
+        'is_boolean': True,
+        'help_text': 'Whether students should be able to return to the extracosts page to add items or change options after they have already paid once via credit card.',
+        'default': True ,
+        'category': 'learn',
+        'is_setting': True,
+    },
+    'already_paid_extracosts_text': {
+        'is_boolean': False,
+        'help_text': 'The message that will be shown to users who have already paid by credit card and have returned to the extra costs page, if allowed.',
+        'default': 'You have already paid for this program via credit card. You are welcome to change your \
+                    selections below. If your new balance is larger than what you have already paid, \
+                    you can pay the remaining balance via credit card. If your new balance is smaller \
+                    than what you have already paid, we will treat the negative balance as a donation \
+                    to our program (thanks!).' ,
+        'category': 'learn',
+        'is_setting': True,
+    },
+    'student_schedule_format': {
+        'is_boolean': False,
+        'help_text': 'The formatting settings for PDF student schedules (in json format).',
+        'default': None,
+        'category': 'manage',
+        'is_setting': False,
+    },
+    'student_schedule_pretext': {
+        'is_boolean': False,
+        'help_text': 'The text that is included right above the schedule in PDF student schedules (LaTeX is supported).',
+        'default': '' ,
+        'category': 'manage',
+        'is_setting': False,
+    },
+    'student_schedule_posttext': {
+        'is_boolean': False,
+        'help_text': 'The text that is included right below the schedule in PDF student schedules (LaTeX is supported).',
+        'default': r"""\begin{center}
+\begin{tabularx}{17cm}{X c}
+\multicolumn{2}{c}{\small
+\textit{Please see your map for building directions, or ask anyone for help.}
+\normalsize } \\
+\multicolumn{2}{c}{\small
+\textit{If you are not signed up for a full day of classes, we encourage you to add more!}
+\normalsize } \\
+~ & ~
+\end{tabularx}
+\end{center}""",
+        'category': 'manage',
+        'is_setting': False,
     },
 }
 

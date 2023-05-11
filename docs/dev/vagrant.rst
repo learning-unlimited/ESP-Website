@@ -160,7 +160,7 @@ Creating a new dev VM
 
 Changes to the base VM should be needed very rarely, but you can't stay on the same Ubuntu version forever. Outline of steps used for the most recent upgrade:
 
-1. Find a Vagrant .box file for Virtualbox with the version of Ubuntu that you want. You might do this by downloading a publicly available one or by running ``sudo do-release-upgrade`` from an older base VM. Be sure to start from a base VM, not your current dev server with a database on it.
+1. Find a Vagrant .box file for Virtualbox with the version of Ubuntu that you want. You might do this by downloading a publicly available one or by running ``sudo do-release-upgrade`` from an older base VM. Be sure to start from a base VM, not your current dev server with a database on it. If you start from a publicly available image, make sure to set the hostname to ``ludev`` and the username to ``vagrant``.
 
 2. Run ``esp/update_deps.sh`` on the VM from step 1. This isn't strictly required but will make dev setup easier in the future, especially dev setup testing.
 
