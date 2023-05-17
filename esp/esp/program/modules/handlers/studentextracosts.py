@@ -47,6 +47,8 @@ from esp.tagdict.models import Tag
 from esp.users.models    import Record, RecordType
 from esp.utils.web import render_to_response
 from esp.utils.widgets import ChoiceWithOtherField, RadioSelectWithData
+from esp.utils.query_utils import nest_Q
+
 
 class CostItem(forms.Form):
     def __init__(self, *args, **kwargs):
@@ -120,11 +122,15 @@ class StudentExtraCosts(ProgramModuleObj):
 
         # Get all the line item types for this program.
         for i in pac.get_lineitemtypes(include_donations=False):
+            q_object = pac.all_transfers_Q(lineitemtype_id=i.id)
+            students_q = nest_Q(q_object, 'transfer')
             if QObject:
-                students = pac.all_students_Q(lineitemtype_id=i.id)
+                students = students_q
+                # students = pac.all_students_Q(lineitemtype_id=i.id)              
                 student_lists['extracosts_%d' % i.id] = students
             else:
-                students = pac.all_students(lineitemtype_id=i.id).distinct()
+                students = ESPUser.objects.filter(students_q).distinct()
+                # students = pac.all_students(lineitemtype_id=i.id).distinct()
                 student_lists['extracosts_%d' % i.id] = students
             for option in i.options:
                 key = 'extracosts_%d_%d' % (i.id, option[0])
