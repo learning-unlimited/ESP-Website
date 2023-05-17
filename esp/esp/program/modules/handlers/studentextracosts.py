@@ -44,7 +44,7 @@ from esp.program.models  import StudentApplication, SplashInfo
 from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, main_call, meets_cap
 from esp.program.modules.forms.splashinfo import SiblingDiscountForm
 from esp.tagdict.models import Tag
-from esp.users.models    import Record, RecordType
+from esp.users.models    import Record, RecordType, ESPUser
 from esp.utils.web import render_to_response
 from esp.utils.widgets import ChoiceWithOtherField, RadioSelectWithData
 from esp.utils.query_utils import nest_Q
