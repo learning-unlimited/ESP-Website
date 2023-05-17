@@ -522,6 +522,12 @@ function Matrix(
         table.appendTo(this.el);
         table.fxdHdrCol({fixedCols: 1, colModal: colModal, width: "100%", height: "100%"});
 
+        // Get both sets of headers
+        $j.each(this.timeslots.timeslots_sorted, function(index, timeslot){
+            var timeslotHeader = $j("th:contains('" + timeslot.label + "')");
+            this.timeslotHeaders[timeslot.id] = timeslotHeader;
+        }.bind(this));
+
         // Hack to make tooltips work
         var that = this;
         this.el.tooltip({
