@@ -138,6 +138,12 @@ td.moderator-is-moderating-this-cell {
     z-index: 1000;
 }
 
+td.teacher-is-teaching-this-cell {
+    outline: 4px magenta solid !important;
+    position: relative;
+    z-index: 1000;
+}
+
 .component-div {
     overflow-y: scroll;
 }

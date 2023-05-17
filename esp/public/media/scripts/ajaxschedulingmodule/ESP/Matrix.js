@@ -275,6 +275,9 @@ function Matrix(
                     }
                 }.bind(this));
             }.bind(this));
+            for(var teacher of section.teacher_data) {
+                addClassToSections(_.difference(teacher.sections, [section.id]), "teacher-is-teaching-this-cell");
+            }
         }
     }
 
@@ -333,6 +336,7 @@ function Matrix(
         } else {
             removeClassFromTimeslots(available_timeslots, "teacher-available-cell teacher-available-not-first-cell");
             removeClassFromTimeslots(teaching_timeslots, "teacher-teaching-cell");
+            removeClassFromSections(Object.keys(this.sections.scheduleAssignments), "teacher-is-teaching-this-cell");
         }
     };
 

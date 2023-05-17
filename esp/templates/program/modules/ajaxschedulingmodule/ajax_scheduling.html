@@ -330,6 +330,9 @@
       <td class="matrix-cell teacher-teaching-cell"></td><td>At least one teacher{% if has_moderator_module %}/{{ program.getModeratorTitle|lower }}{% endif %} already busy</td>
     </tr>
     <tr>
+      <td class="teacher-is-teaching-this-cell"></td><td>At least one teacher is teaching this section</td>
+    </tr>
+    <tr>
       <td class="matrix-cell available-cell"></td><td>At least one teacher{% if has_moderator_module %}/{{ program.getModeratorTitle|lower }}{% endif %} unavailable</td>
     </tr>
   </table>
