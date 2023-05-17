@@ -216,6 +216,10 @@ button.sidetoolbar {
     border: 0px;
 }
 
+.room {
+    font-weight: bold;
+}
+
 .room-description {
 	font-size: .7em;
 }
@@ -247,8 +251,6 @@ button.sidetoolbar {
     font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
     box-shadow: 0.5vh 0.5vh #888888;
 }
-
-
 
 #legend td {
     height: 30px;

@@ -480,6 +480,7 @@ function Matrix(
      */
     this.render = function(){
         var table = $j("<table/>");
+        var tbody = $j("<tbody/>");
         var colModal = [{width: 140, align: "center"}];
 
         //Time headers
@@ -521,8 +522,9 @@ function Matrix(
             for(i = 0; i < this.timeslots.timeslots_sorted.length; i++){
                 cells[room_id][i].el.appendTo(row);
             }
-            row.appendTo(table);
+            row.appendTo(tbody);
         }.bind(this));
+        tbody.appendTo(table);
         table.appendTo(this.el);
         table.fxdHdrCol({fixedCols: 1, colModal: colModal, width: "100%", height: "100%"});
 
