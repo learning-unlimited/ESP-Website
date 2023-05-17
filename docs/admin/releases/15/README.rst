@@ -39,6 +39,7 @@ Student self checkin
 - Students can now check themselves in (if the tag setting is enabled) if they have completed all required registration steps (e.g., custom forms, payment, etc)
 - If students have not completed any required registration steps, these steps are highlighted on the self checkin page
 - There are two self checkin options: 1) students just need to visit a page and click a button, or 2) students need a code that is unique to them and the program. If using codes, these can be printed on the back of nametags.
+- There is also a tag (enabled by default) to require full payment before allowing self checkin. If a credit card module is enabled, students will be directed there. If no module is enabled, students will be instructed to see an admin team member.
 
 Themes
 ~~~~~~
@@ -63,6 +64,9 @@ Minor new features
 - Added a user interface to modify the formatting of printable student schedules
 - Added class length, difficulty, and status filters to the course catalog
 - Added the ability to group timeslots into arbitrary custom timeslot groups
+- If the class changes deadline is still open (i.e., students can make class changes on the normal website), then students can now make class changes on the webapp, even if they aren't checked in. The default checkin note at the top of the webapp has been updated to reflect that only classrooms are now hidden until a student is checked in (this text can be modified with a tag).
+- Modules that have been manually enabled will now be copied when using a template program to make a new program. All aspects of a template program that are copied to the new program are now listed on the new program form.
+- If there are no costs to cover for a program, the financial aid module is now hidden, even if it is enabled
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
