@@ -125,18 +125,15 @@ class StudentExtraCosts(ProgramModuleObj):
             q_object = pac.all_transfers_Q(lineitemtype_id=i.id)
             students_q = nest_Q(q_object, 'transfer')
             if QObject:
-                students = students_q
-                # students = pac.all_students_Q(lineitemtype_id=i.id)              
-                student_lists['extracosts_%d' % i.id] = students
+                student_lists['extracosts_%d' % i.id] = students_q
             else:
                 students = ESPUser.objects.filter(students_q).distinct()
-                # students = pac.all_students(lineitemtype_id=i.id).distinct()
                 student_lists['extracosts_%d' % i.id] = students
             for option in i.options:
                 key = 'extracosts_%d_%d' % (i.id, option[0])
                 filter_qobject = Q(transfer__option=option[0])
                 if QObject:
-                    student_lists[key] = students & filter_qobject
+                    student_lists[key] = students_q & filter_qobject
                 else:
                     student_lists[key] = students.filter(filter_qobject).distinct()
         if self.program.sibling_discount:
