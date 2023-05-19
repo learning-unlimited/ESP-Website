@@ -114,6 +114,11 @@ table {
 	padding-top: 8px;
 }
 
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
 input[name="refresh_interval"] {
     width: 40px;
     float: right;
