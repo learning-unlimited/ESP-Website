@@ -15,6 +15,7 @@
 
 {% block content %}
 
+{% load main %}
 {% load render_qsd %}
 
 <h1>{% if program %}Tag Settings for {{ program.niceName }} (ID: {{ program.id }}){% else %}Global Tag Settings{% endif %}</h1>
@@ -35,7 +36,17 @@
 
 <form action="/manage/{% if program %}{{ program.getUrlBase }}/{% endif %}tags/" method="post">
 {% autoescape off %}
-{% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+{% if form.errors %}
+<div class="alert alert-danger">
+  <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+  Encountered the following errors while processing the form (fix and resubmit):
+  <ul class="errorlist">
+      {% for tag, error in form.errors.items %}
+        <li>{{ tag|as_form_label }}{{ error }}</li>
+      {% endfor %}
+  </ul>
+</div>
+{% endif %}
 {% endautoescape %}
 {% for fieldset in form.fieldsets %}
 {% if fieldset.name in categories %}
