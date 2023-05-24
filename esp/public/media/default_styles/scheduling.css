@@ -72,7 +72,7 @@ table.sortable thead th:not(.sorttable_sorted):not(.sorttable_sorted_reverse):no
     opacity: .9;
 }
 
-td.moderator-available-cell {
+td.moderator-available-cell, th.moderator-available-cell {
     background: #32cd32 !important;
     opacity: .9 !important;
     color: white !important;
@@ -89,7 +89,7 @@ td.moderator-available-not-first-cell {
     opacity: .9 !important;
 }
 
-td.moderator-unavailable-cell {
+td.moderator-unavailable-cell, th.moderator-unavailable-cell {
     background: #555555 !important;
     opacity: .9 !important;
     color: white !important;
@@ -126,7 +126,7 @@ td.moderator-moderating-or-teaching-cell {
     color: black !important;
 }
 
-td.moderator-teaching-cell {
+td.moderator-teaching-cell, th.moderator-teaching-cell {
     background: yellow !important;
     opacity: .9 !important;
     color: black !important;

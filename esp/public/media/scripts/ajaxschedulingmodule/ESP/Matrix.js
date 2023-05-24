@@ -238,13 +238,13 @@ function Matrix(
             addClassToTimeslots(teaching_timeslots, "moderator-teaching-cell", moderator);
             var not_first_sections = [];
             var not_available_sections = []
-            for(var section in this.sections.scheduleAssignments) {
-                for(var timeslot of this.sections.scheduleAssignments[section].timeslots) {
-                    if(teaching_timeslots.includes(timeslot) && !(not_first_sections.includes(section))){
-                        not_first_sections.push(section);
+            for(var sec in this.sections.scheduleAssignments) {
+                for(var timeslot of this.sections.scheduleAssignments[sec].timeslots) {
+                    if(teaching_timeslots.includes(timeslot) && !(not_first_sections.includes(sec))){
+                        not_first_sections.push(sec);
                     }
-                    if(!(available_timeslots.includes(timeslot) || teaching_timeslots.includes(timeslot)) && !(not_available_sections.includes(section))){
-                        not_available_sections.push(section);
+                    if(!(available_timeslots.includes(timeslot) || teaching_timeslots.includes(timeslot)) && !(not_available_sections.includes(sec))){
+                        not_available_sections.push(sec);
                     }
                 }
             }
@@ -332,6 +332,9 @@ function Matrix(
         var available_timeslots = timeslots[0];
         var teaching_timeslots = timeslots[1];
         if(moderator) {
+            removeClassFromTimeslots(available_timeslots, "moderator-available-cell");
+            removeClassFromTimeslots(teaching_timeslots, "moderator-teaching-cell");
+            removeClassFromTimeslots(Object.values(this.timeslots.timeslots).map(el => el.id).filter(el => !(available_timeslots.includes(el) || teaching_timeslots.includes(el))), "moderator-unavailable-cell");
             removeClassFromSections(Object.keys(this.sections.scheduleAssignments), "moderator-is-moderating-this-cell moderator-teaching-cell moderator-unavailable-cell moderator-available-cell moderator-moderating-or-teaching-cell moderator-available-not-first-cell lowOpacity hiddenCell");
         } else {
             removeClassFromTimeslots(available_timeslots, "teacher-available-cell teacher-available-not-first-cell");
@@ -542,7 +545,7 @@ function Matrix(
                 var tooltipParts = [
                     "<b>" + room.text + "</b>",
                     "Capacity: " + room.num_students + " students",
-                    "Resources: " + "<ul><li>"+ room.resource_lines.join("</li><li>") + "</li></ul>",
+                    "Resources: " + ((room.resource_lines.length > 0) ? "<ul><li>"+ room.resource_lines.join("</li><li>") + "</li></ul>" : "None"),
                 ];
                 return tooltipParts.join("</br>");
             },
