@@ -518,7 +518,6 @@ class ProgramHappenTest(TestCase):
         self.makeprogram()
         self.teacherreg()
         self.studentreg()
-        self.teacherreg_delete_classes()
 
 class ProgramFrameworkTest(TestCase):
     """ A test case that initializes a program with the parameters passed to setUp().
