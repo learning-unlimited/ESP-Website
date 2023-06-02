@@ -213,8 +213,22 @@ function Scheduler(
                 css: ["/media/default_styles/scheduling.css", "/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.css", "https://ajax.aspnetcdn.com/ajax/jquery.ui/" + jqueryui_version + "/themes/base/jquery-ui.css"],
                 targetStyles: ['*'],
                 maxWidth: 5000,
-                ignoreElements: ['print_button']
+                ignoreElements: ['print_button', 'legend_button']
             });
+        });
+
+        // set up handler for legend button
+        $j("body").on("click", "#legend_button", function(evt, ui) {
+            $j("#legend").toggle();
+            if ($j("#legend_button").html() == "Show Legend") {
+                $j("#legend_button").html("Hide Legend");
+            } else {
+                $j("#legend_button").html("Show Legend");
+            }
+        });
+        $j("body").on("click", "#legend", function(evt, ui) {
+            $j("#legend").hide();
+            $j("#legend_button").html("Show Legend");
         });
     };
 

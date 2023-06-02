@@ -43,6 +43,8 @@ table.sortable thead th:not(.sorttable_sorted):not(.sorttable_sorted_reverse):no
 
 .locked-cell{
     outline: 4px #FF0000 solid !important;
+    position: relative;
+    z-index: 1000;
 }
 
 .ghost-section {
@@ -70,7 +72,7 @@ table.sortable thead th:not(.sorttable_sorted):not(.sorttable_sorted_reverse):no
     opacity: .9;
 }
 
-td.moderator-available-cell {
+td.moderator-available-cell, th.moderator-available-cell {
     background: #32cd32 !important;
     opacity: .9 !important;
     color: white !important;
@@ -87,20 +89,16 @@ td.moderator-available-not-first-cell {
     opacity: .9 !important;
 }
 
-td.moderator-teaching-cell {
-    background: yellow !important;
-    opacity: .9 !important;
-    color: black !important;
-}
-
-td.moderator-unavailable-cell {
+td.moderator-unavailable-cell, th.moderator-unavailable-cell {
     background: #555555 !important;
     opacity: .9 !important;
     color: white !important;
 }
 
-td .selected-section {
-    outline: 1px solid yellow;
+td.selected-section {
+    outline: 4px solid yellow;
+    position: relative;
+    z-index: 1000;
 }
 
 td.matrix-cell > a {
@@ -126,6 +124,24 @@ td.moderator-moderating-or-teaching-cell {
     background: #42b3f4 !important;
     opacity: .9 !important;
     color: black !important;
+}
+
+td.moderator-teaching-cell, th.moderator-teaching-cell {
+    background: yellow !important;
+    opacity: .9 !important;
+    color: black !important;
+}
+
+td.moderator-is-moderating-this-cell {
+    outline: 4px magenta solid !important;
+    position: relative;
+    z-index: 1000;
+}
+
+td.teacher-is-teaching-this-cell {
+    outline: 4px magenta solid !important;
+    position: relative;
+    z-index: 1000;
 }
 
 .component-div {
@@ -200,6 +216,10 @@ button.sidetoolbar {
     border: 0px;
 }
 
+.room {
+    font-weight: bold;
+}
+
 .room-description {
 	font-size: .7em;
 }
@@ -211,4 +231,28 @@ button.sidetoolbar {
 #message-div strong {
     font-family: Courier New;
     font-size: large;
+}
+
+#legend {
+    z-index: 100000;
+    max-width: 600px;
+    display: none;
+    border: #555 6px solid;
+    background-color: white;
+    color: black;
+    text-align: center;
+    border-radius: 6px;
+    padding: 1.5vh;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2.5vh;
+    font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
+    box-shadow: 0.5vh 0.5vh #888888;
+}
+
+#legend td {
+    height: 30px;
+    padding: .5vh;
 }
