@@ -37,8 +37,9 @@ from django import forms
 
 from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, CoreModule, main_call, aux_call, meets_cap
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
+from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
-from esp.users.models    import Record, RecordType
+from esp.users.models    import Record, RecordType, Permission
 from esp.cal.models import Event
 from esp.middleware   import ESPError
 from esp.survey.views   import survey_view
@@ -70,7 +71,9 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         """ Display the landing page for the student onsite webapp """
         context = self.onsitecontext(request, tl, one, two, prog)
         user = request.user
-        context.update(StudentClassRegModule.prepare_static(user, prog))
+        scrm = prog.getModule("StudentClassRegModule")
+        context.update(StudentClassRegModule.prepare_static(user, prog, scrm = scrm))
+        context['deadline_met'] = scrm.deadline_met()
 
         context['webapp_page'] = 'schedule'
         context['scrmi'] = prog.studentclassregmoduleinfo
@@ -213,6 +216,16 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
 
             context['modules'] = filter(lambda x: (x.isRequired() and not x.isCompleted()), modules)
             context['records'] = filter(lambda x: not x['isCompleted'], records)
+
+            if Tag.getBooleanTag('student_self_checkin_paid', program = prog):
+                iac = IndividualAccountingController(prog, user)
+                context['owes_money'] = iac.amount_due() > 0
+                if context['owes_money']:
+                    if Permission.user_has_perm(user, 'Student/Payment', prog):
+                        if prog.hasModule("CreditCardModule_Stripe"):
+                            context['payment_url'] = "payonline"
+                        elif prog.hasModule("CreditCardModule_Cybersource"):
+                            context['payment_url'] = "cybersource"
 
             if request.method == 'POST':
                 form = SelfCheckinForm(request.POST, program = prog, user = user)

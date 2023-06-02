@@ -48,6 +48,7 @@ from django.http import HttpResponse, Http404
 from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from django.core.cache import cache
+from django.utils.safestring import mark_safe
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call, meets_cap, no_auth
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
@@ -206,6 +207,15 @@ class StudentClassRegModule(ProgramModuleObj):
         else:
             user = get_current_request().user
         return (len(user.getSectionsFromProgram(self.program)[:1]) > 0)
+
+    def makeSelfCheckinLink(self):
+        if self.deadline_met():
+            text = self.module.link_title
+        else:
+            text = "Class changes is currently closed, please contact the admin team to register for classes"
+        link = u'<a href="%sstudentonsite" title="%s" class="vModuleLink" >%s</a>' % \
+            (self.program.get_learn_url(), text, text)
+        return mark_safe(link)
 
     def deadline_met(self, extension=None):
         #   Allow default extension to be overridden if necessary

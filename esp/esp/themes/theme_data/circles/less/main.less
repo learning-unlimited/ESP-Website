@@ -9,25 +9,25 @@ a img {
 }
 
 a:link {
-  color: #497CCA;
+  color: @linkColor;
   text-decoration: none;
 }
 
 a:visited {
-  color: #497CCA
+  color: @linkColor;
 }
 
 a:hover {
-  color: #CC66FF
+  color: @linkColorHover;
 }
 
 a:active {
-  color: #497CCA
+  color: @linkColor;
 }
 
 h1, h2 {
   font-size: 18pt;
-  color: #00003C;
+  color: @headingsColor;
   font-style: bold;
 }
 h2 {
@@ -43,12 +43,12 @@ body {
   width: 800px;
   margin-left: auto;
   margin-right: auto;
-  background: #141414;
+  background: @contentBackground;
 /*  overflow: hidden; */
 }
 
 #topleft {
-  background: #141414;
+  background: @sidebarBackground;
   width: 200px;
   height: 180px;
   float: left;
@@ -77,7 +77,7 @@ div.nav_button_spacer {
 }
 
 div.nav_button :hover {
-    background: white;
+    background: @circle_hover_color;
 }
 
 .nav_button_text {
@@ -164,7 +164,7 @@ div.nav_button :hover {
   float: right;
   width: 600px;
   min-height: 30px;
-  color: #FFFFFF;
+  color: @headingsColor;
   font-style: italic;
   font-size: 11pt;
   text-align: center;
@@ -213,29 +213,27 @@ div.nav_button :hover {
 }
 
 #chicago_main_content {
+  background: @contentBackground;
   clear: both;
   margin: 15px;
 }
 
 .announcementlink_title {
   color: @sidebarActive;
+  background: @sidebarActiveBackground;
   font-size: 11pt;
   line-height: 140%;
   font-weight: bold;
 }
 
 #navbar {
-// This should have its own sidebarText color 
-// but none of the other themes do so using navbarText color for now
-  color: @navbarText;
+  color: @sidebarText;
   font-size: 90%;
   line-height: 130%;
 }
 
 #navbar p {
-// This should have its own sidebarText color 
-// but none of the other themes do so using navbarText color for now
-  color: @navbarText;
+  color: @sidebarText;
   margin: 0pt;
 //  margin-bottom: pt;
 }
@@ -348,6 +346,6 @@ div .error
 }
 
 #user_data {
-    color: #444;
+    color: @navbarText;
     font-style: italic;
 }

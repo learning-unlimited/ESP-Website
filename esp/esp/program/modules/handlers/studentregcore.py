@@ -269,7 +269,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             tag_data = Tag.getProgramTag('teacher_reg_records', prog)
         if tag_data:
             for rt in RecordType.objects.filter(name__in=tag_data.split(',')):
-                records.append({'event': rt.name, 'full_event': rt.description, 'isCompleted': Record.user_completed(event = rt, user = user, program = prog)})
+                records.append({'event': rt.name, 'full_event': rt.description, 'isCompleted': Record.user_completed(event = rt.name, user = user, program = prog)})
             records.sort(key=lambda rec: not rec['isCompleted'])
         return records
 

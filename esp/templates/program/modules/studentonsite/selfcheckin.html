@@ -2,6 +2,8 @@
 
 {% block body %}
 
+{% load modules %}
+
 <center>
     <div class="main">
         <table>
@@ -19,7 +21,7 @@
                 </td>
             </tr>
         </table>
-        {% elif modules or records %}
+        {% elif modules or records or owes_money %}
         <table>
             <tr>
                 <td>
@@ -27,20 +29,23 @@
                 </td>
             </tr>
             {% for module in modules %}
-            {% if module.isStep and module.isRequired and not module.isRequired %}
             <tr>
                 <td>
-                {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
+                {% autoescape off %}{{ module.makeSelfCheckinLink }}{% endautoescape %}
                 {% if module.required_label %}<i>{{ module.required_label }}</i>{% endif %}
                 </td>
             </tr>
-            {% endif %}
             {% endfor %}
             {% for record in records %}
             <tr>
                 <td>{{ record.full_event }}</td>
             </tr>
             {% endfor %}
+            {% if owes_money %}
+            <tr>
+                <td>{% if payment_url %}<a title="Pay your balance" class="vModuleLink" href="/learn/{{one}}/{{two}}/{{ payment_url }}">Pay your balance</a>{% else %}See an admin team member to pay your balance{% endif %}</td>
+            </tr>
+            {% endif %}
         </table>
         {% else %}
         <form method="POST">

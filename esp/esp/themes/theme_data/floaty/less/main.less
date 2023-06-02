@@ -1,6 +1,7 @@
 
 body
 {
+    background: @bodyBackground;
     margin: 0px;
     padding-top: 0px;
 }
@@ -16,7 +17,21 @@ body
 {
     position: relative;
     float: left;
+    color: @navbarBackground;
+}
 
+#nav_area p
+{
+    color: @navbarText;
+}
+#nav_area a
+{
+    color: @navbarLinkColor;
+}
+
+#nav_area a:hover
+{
+    color: @navbarLinkColorHover;
 }
 
 #nav_buffer
@@ -31,7 +46,7 @@ body
 {
     text-align: center;
     font-size: 1.1em;
-    color: @box_border_color;
+    color: @accent_text_color;
 }
 
 #nav_buffer_background
@@ -39,7 +54,7 @@ body
     text-align: center;
     font-size: 2.5em;
     line-height: 1.2em;
-    color: @heading_background_color;
+    color: @accent_text_color;
     padding-top: 35px;
 }
 
@@ -48,12 +63,17 @@ body
     vertical-align: bottom;
 }
 
+#primary_nav a
+{
+    text-decoration: none;
+}
+
 #secondary_nav
 {
     width: 680px;   /*  match width of #content_area    */
     float: left;
     vertical-align: bottom;
-    
+    background: @navbarBackgroundHighlight;
     border: 1px solid @content_border_color;
 
     margin: 0px;
@@ -65,6 +85,11 @@ body
     border-top-left-radius: 0px;
     border-bottom-left-radius: 0px;
     border-bottom-right-radius: 0px;
+}
+
+#secondary_nav a
+{
+    text-decoration: none;
 }
 
 #bottom_area
@@ -88,6 +113,16 @@ body
 #login_box
 {
     font-size: 0.9em;
+}
+
+#login_box .content_box
+{
+    background: @sidebarBackground;
+}
+
+#login_box p
+{
+    color: @navbarText;
 }
 
 #login_box label
@@ -134,6 +169,7 @@ body
 
 #content_area
 {
+    background: @contentBackground;
     float: left;
     margin: 0px;
     padding: 0px;
@@ -247,7 +283,7 @@ a:hover
     width: 130px;
     font-size: 1.0em;
     border: 1px solid @content_border_color;
-    background-color: #FFFFFF;
+    background-color: @navbarBackground;
     border-radius: @content_border_radius;
     border-bottom-left-radius: 0px;
     border-bottom-right-radius: 0px;
