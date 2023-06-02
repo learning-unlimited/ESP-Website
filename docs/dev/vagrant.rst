@@ -175,7 +175,7 @@ Upgrading your personal dev VM
 
 If the base VM has been changed (see above), you will want to upgrade your development server. However, upgrading Ubuntu within a virtual machine can cause problems with your database. Therefore, you'll need to export your database, create a new virtual machine, then import your database:
 
-1. Make a copy of `esp/esp/local_settings.py` somewhere with a different name (e.g. on your desktop as "old_local_settings.py"). The `local_settings.py` file will get overwitten by the end of this process and you will want to restore some of the settings from your previous VM setup.
+1. Make a copy of `esp/esp/local_settings.py` somewhere with a different name (e.g. on your desktop as "old_local_settings.py"). The original `local_settings.py` file will get overwitten by the end of this process and you will want to restore some of the settings from your previous VM setup.
 
 2. From within the "devsite" folder, run ``fab dumpdb``. This action will save your database as a dump file in the `devsite` folder called `devsite_django.sql`. You can also specify a filename if you would like with ``fab dumpdb:filename``.
 
