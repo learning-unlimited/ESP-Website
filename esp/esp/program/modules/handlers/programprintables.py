@@ -85,7 +85,6 @@ class ProgramPrintables(ProgramModuleObj):
     def paid_list_filter(self, request, tl, one, two, module, extra, prog):
         exclude_line_items = ["Sibling discount", "Program admission", "Financial aid grant", "Student payment"]
         pac = ProgramAccountingController(prog)
-#        lineitemtypes = pac.get_lineitemtypes(optional_only=True)
         lineitemtypes = pac.get_lineitemtypes().exclude(text__in=exclude_line_items)
         context = { 'lineitemtypes': lineitemtypes }
         return render_to_response(self.baseDir()+'paid_list_filter.html', request, context)
@@ -104,14 +103,11 @@ class ProgramPrintables(ProgramModuleObj):
                 single_select = False
 
             if ids == None:
-#                transfers = pac.all_transfers(optional_only=True).order_by('line_item','user').select_related()
                 transfers = pac.all_transfers().exclude(line_item__text__in=exclude_line_items).order_by('line_item','user').select_related()
             else:
- #               lineitems = pac.all_transfers(optional_only=True).filter(line_item__id__in=ids).order_by('line_item','user').select_related()
                 lineitems = pac.all_transfers().filter(line_item__id__in=ids).order_by('line_item','user').select_related()
         else:
             single_select = False
- #           lineitems = pac.all_transfers(optional_only=True).order_by('line_item','user').select_related()
             lineitems = pac.all_transfers().exclude(line_item__text__in=exclude_line_items).order_by('line_item','user').select_related()
 
         for lineitem in lineitems:
