@@ -77,8 +77,8 @@ try:
                  "12.04": "ubuntu--12--vg-keep_1"}[ubuntu_version]
 except KeyError:
     raise ValueError("Unrecognized version of Ubuntu: " + ubuntu_version +
-                     "Web Team needs to update fabfile.py to add the "
-                     "partition name for this VM")
+                     ". Web Team needs to update fabfile.py to add the "
+                     "partition name for this VM.")
 
 @task
 def setup():
