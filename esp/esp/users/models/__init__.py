@@ -2434,7 +2434,6 @@ class Permission(ExpirableModel):
             ("Teacher/Quiz", "Teacher quiz"),
             ("Teacher/Catalog", "Catalog"),
             ("Teacher/Classes/All", "All classes deadlines"),
-            ("Teacher/Classes", "Classes"),
             ("Teacher/Classes/View", "View registered classes"),
             ("Teacher/Classes/Edit", "Edit registered classes"),
             ("Teacher/Classes/CancelReq", "Request class cancellation"),
