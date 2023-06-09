@@ -121,6 +121,10 @@ function Timeslots(timeslots_data, lunch_timeslots){
         return (start - end)/60000;
     };
 
+    // the minimum time difference between timeslots
+    // defined by the "timeblock_contiguous_tolerance" program tag
+    this.minimumDifference = parseInt(contiguous_tolerance);    
+
     /**
      * Returns a guess of whether the specified timeslots are contiguous in time
      */
@@ -146,20 +150,4 @@ function Timeslots(timeslots_data, lunch_timeslots){
         }
         return true;
     };
-
-    // compute the minimum time difference between timeslots
-    //  (this is used in this.are_timeslots_contiguous)
-    var minimumDifference = false;
-    for(var i = 0; i < this.timeslots_sorted.length - 1; i++) {
-        var currentTimeslot = this.timeslots_sorted[i];
-        var nextTimeslot = this.timeslots_sorted[i + 1];
-        if (!this.on_same_day(currentTimeslot, nextTimeslot)){
-            continue;
-        }
-        var difference = this.get_minutes_between(currentTimeslot.id, nextTimeslot.id);
-        if (minimumDifference === false || difference < minimumDifference){
-            minimumDifference = difference;
-        }
-    }
-    this.minimumDifference = minimumDifference;
 };

@@ -421,20 +421,6 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     @aux_call
     @needs_teacher
-    @meets_deadline('/Classes')
-    def deleteclass(self, request, tl, one, two, module, extra, prog):
-        classes = ClassSubject.objects.filter(id = extra)
-        if len(classes) != 1 or not request.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
-        cls = classes[0]
-        if cls.num_students() > 0:
-            return render_to_response(self.baseDir()+'toomanystudents.html', request, {})
-
-        cls.delete()
-        return self.goToCore(tl)
-
-    @aux_call
-    @needs_teacher
     def cancelrequest(self, request, tl, one, two, module, extra, prog):
         if request.method == "POST" and 'reason' in request.POST:
             cls = ClassSubject.objects.get(id=request.POST['cls'])
