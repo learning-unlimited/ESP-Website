@@ -181,7 +181,7 @@ If the base VM has been changed (see above), you will want to upgrade your devel
 
 3. Run ``vagrant destroy`` (note: this destroys your virtual machine. Only do it once you are sure your database has been backed up and you are ready to continue).
 
-4. Now follow the `VM installation instructions above <https://github.com/learning-unlimited/ESP-Website/blob/main/docs/dev/vagrant.rst#installation>`_, starting at ``vagrant up``.
+4. Now follow the `VM installation instructions above <#installation>`_, starting at ``vagrant up``.
 
 5. After running ``fab setup``, run ``fab loaddb:devsite_django.sql``. If you specified a different filename when you dumped your database, use that name instead.
 
