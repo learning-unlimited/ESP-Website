@@ -141,6 +141,7 @@ Problems
     * If you have an older computer running a 32-bit operating system, then you might be out of luck since the VM runs 64-bit Ubuntu. Also check that you didn't install the 32-bit version of Vagrant.
     * Check that hardware virtualization is enabled in your BIOS, particularly if you're running a Lenovo computer.
 
+
 2. When running ``fab emptydb`` or ``fab loaddb``, it fails with an error ``Operation now in progress`` or with error ``Error 47 from memcached_mget: SERVER HAS FAILED AND IS DISABLED UNTIL TIMED RETRY``.
 
     You need to restart memcached.  First ssh into the VM with the command ``vagrant ssh``, then run
@@ -148,6 +149,7 @@ Problems
         ``sudo service memcached restart``
 
     Log out of the ssh session with ``exit``. Now try your ``fab`` command again.
+
 
 3. I forgot the passphrase for the encrypted partition.
 
@@ -158,65 +160,87 @@ Some other common dev setup issues are discussed `here <https://github.com/learn
 Creating a new dev VM
 ---------------------
 
-Changes to the base VM should be needed rarely, but you can't stay on the same Ubuntu version forever. (Trust us &ndash; we've tried.)
+Changes to the base VM should be needed rarely, but you can't stay on the same Ubuntu version forever. (Trust us; we've tried.)
 Follow the following steps to upgrade the base VM for everyone to use.
 
-# Download a new Ubuntu vagrant box. Historically, we've used bento machines, which are browsable at https://app.vagrantup.com/boxes/search?utf8=%E2%9C%93&sort=downloads&provider=virtualbox&q=bento%2Fubuntu.
+1. 
+
+	Download a new Ubuntu vagrant box. Historically, we've used bento machines, which are browsable `here <https://app.vagrantup.com/boxes/search?utf8=%E2%9C%93&sort=downloads&provider=virtualbox&q=bento%2Fubuntu>`_.
+
 	a. Make sure you have no local changes or commits on your branch.
 	b. From your ``devsite`` folder, run ``rm Vagrantfile``.
 	c. Then run ``vagrant init bento/ubuntu-*``, but replace the asterisk with your desired version number. (Typically the most recent will be `XX.04` where the `XX` is the last two digits of the last even year.)
 	d. Restore the vagrantfile by running ``git restore Vagrantfile``.
 
-#. Edit the Vagrantfile so that ``config.vm.box = 'ubuntu-*'``, again replacing the asterisk with the version number.
-Also make sure the line ``config.ssh.insert_key = false`` is present in the Vagrantfile. ([See here](https://stackoverflow.com/a/28524909) for an explanation.)
+2. 
 
-#. Start the VM with ``vagrant up`` then SSH to the VM by running ``vagrant ssh``.
-Now run the following code to install Python, pip, and friends as well as set the host name. ::
-
-	sudo add-apt-repository ppa:deadsnakes/ppa
-	sudo apt update && sudo apt -y upgrade
-	sudo apt install -y python3.7 python3.7-dev python3.7-distutils python3.7-venv
-	curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-	sudo python3.7 get-pip.py
-	echo alias python=$(which python3.7) >> ~/.bashrc
-	sudo hostnamectl set-hostname ludev
+	Edit the Vagrantfile so that ``config.vm.box = 'ubuntu-*'``, again replacing the asterisk with the version number. Also make sure the line ``config.ssh.insert_key = false`` is present in the Vagrantfile. (`See here <https://stackoverflow.com/a/28524909>`_ for an explanation.)
 
 
-4. Create an encrypted partition. This step seems to change with the version of Ubuntu, so your mileage may vary here.
-See [this comment](https://github.com/learning-unlimited/ESP-Website/pull/3195#issue-785586914) for instructions that worked on a different version, and search around (particularly https://askubuntu.com and https://devconnected.com/how-to-create-disk-partitions-on-linux/) for additional recommendations.
+3. 
+
+	Start the VM with ``vagrant up`` then SSH to the VM by running ``vagrant ssh``. Then run the following code to install Python, pip, and friends as well as set the host name::
+
+		sudo add-apt-repository ppa:deadsnakes/ppa
+		sudo apt update && sudo apt -y upgrade
+		sudo apt install -y python3.7 python3.7-dev python3.7-distutils python3.7-venv
+		curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+		sudo python3.7 get-pip.py
+		echo alias python=$(which python3.7) >> ~/.bashrc
+		sudo hostnamectl set-hostname ludev
+
+4. 
+
+	Create an encrypted partition. This step seems to change with the version of Ubuntu, so your mileage may vary here. See `this comment <https://github.com/learning-unlimited/ESP-Website/pull/3195#issue-785586914>`_ for instructions that worked on a different version, and search around (particularly https://askubuntu.com and https://devconnected.com/how-to-create-disk-partitions-on-linux/) for additional recommendations.
+
 	a. Shut off the VM with ``vagrant halt``.
-	b. Download the Ubuntu install .iso here: https://ubuntu.com/download/desktop. Choose the version that matches your VM's.
-	c. Open VirtualBox, and click on the VM that you just installed. Then click on the "Settings" button. Click "Storage", then, next to "Controller: IDE Controller", click the "Add optical drive" button. Click "Add" and browse to the Ubuntu install .iso file you just downloaded. Then click "Choose". Now click on the "System" tab on the left and move the "Optical" drive to the top of the boot order by clicking it and clicking the up button (and make sure the "Optical" drive has a checkmark). Click "OK."
-	d. Run the virtual machine the VirtualBox "Run" button, *not* ``vagrant up`` (the username should be ubuntu with no password).
-	e. Once the VM comes up, open the terminal and run the following commands to get the volume name. ::
 
+	b. Download the Ubuntu install .iso here: https://ubuntu.com/download/desktop. Choose the version that matches your VM's.
+
+	c. Open VirtualBox, and click on the VM that you just installed. Then click on the "Settings" button. Click "Storage", then, next to "Controller: IDE Controller", click the "Add optical drive" button. Click "Add" and browse to the Ubuntu install .iso file you just downloaded. Then click "Choose". Now click on the "System" tab on the left and move the "Optical" drive to the top of the boot order by clicking it and clicking the up button (and make sure the "Optical" drive has a checkmark). Click "OK."
+
+	d. Run the virtual machine the VirtualBox "Run" button, *not* ``vagrant up`` (the username should be ubuntu with no password).
+
+	e. Once the VM comes up, open the terminal and run the following commands to get the volume name::
+    
 		sudo apt install lvm2
 		sudo lvs
 
-	f. Run ``sudo resize2fs -s 32G /dev/mapper/VOLUME_NAME`` where ``VOLUME_NAME`` is the volume name you found by running `lvs` in the previous step.
-	You may need to do ``e2fsck -f /dev/yourVolumeGroup/yourLogicalVolume`` first, but it should yell at you when you try to resize if this step is needed.
+	f. Run ``sudo resize2fs -s 32G /dev/mapper/VOLUME_NAME`` where ``VOLUME_NAME`` is the volume name you found by running `lvs` in the previous step. You may need to do ``e2fsck -f /dev/yourVolumeGroup/yourLogicalVolume`` first, but it should yell at you when you try to resize if this step is needed.
+
 	g. Run ``vgscan`` to find the volumegroup name.
+
 	h. Run ``sudo lvcreate -l 100%FREE -n keep_1 vgvagrant VOLUMEGROUP_NAME``.
 
-5. SSH back into the machine from your shell (``vagrant ssh``) to install dev server dependencies.
-This step isn't strictly required but will make dev setup easier in the future, especially dev setup testing.
-If you get an error, you may not have set up the encrypted parition correctly. ::
+5. 
 
-	git clone https://github.com/learning-unlimited/ESP-Website.git
-	cd ESP-Website/
-	git checkout migration-to-python3
-	esp/update_deps.sh
-	cd ..
-	rm -rf ESP-Website/
+	SSH back into the machine from your shell (``vagrant ssh``) to install dev server dependencies.
+	This step isn't strictly required but will make dev setup easier in the future, especially dev setup testing.
+	If you get an error, you may not have set up the encrypted parition correctly. ::
 
-6. Export the box you have to a .box file by running ``vagrant package --base ludev --output ./ubuntu-22.04.2.box``.
+		git clone https://github.com/learning-unlimited/ESP-Website.git
+		cd ESP-Website/
+		git checkout migration-to-python3
+		esp/update_deps.sh
+		cd ..
+		rm -rf ESP-Website/
 
-7. Upload the .box file to AWS S3. If you don't have access, ask someone on the LU Web Team.
-When you upload it, choose "Choose from predefined ACLs" and "Grant public-read access" under "Permissions."
+6. 
 
-8. Update the Vagrantfile so that the ``config.vm.box_url`` points to the new VM's URL (which you can copy from AWS).
+	Export the box you have to a .box file by running ``vagrant package --base ludev --output ./ubuntu-22.04.2.box``.
 
-9. TEST that the new setup works. Run ``vagrant destroy && vagrant up && fab setup && fab emptydb``.
+7. 
+
+	Upload the .box file to AWS S3. If you don't have access, ask someone on the LU Web Team.
+	When you upload it, choose "Choose from predefined ACLs" and "Grant public-read access" under "Permissions."
+
+8. 
+
+	Update the Vagrantfile so that the ``config.vm.box_url`` points to the new VM's URL (which you can copy from AWS).
+
+9. 
+
+	TEST that the new setup works. Run ``vagrant destroy && vagrant up && fab setup && fab emptydb``.
 
 Upgrading your personal dev VM
 ------------------------------
