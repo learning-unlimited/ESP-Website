@@ -45,6 +45,7 @@
 
 {% block content %}
 {% load modules %}
+{% load line_item_option %}
 
 <h1>Printables for {{program.niceName}}</h1>
 
@@ -113,7 +114,8 @@ Please select from options below.
 <li>Students who have ordered/reserved line items:
     <ul>
     {% for li_type in li_types %}
-        <li><a href="./students_lineitem?id={{ li_type.id }}&recipient_type=Student&base_list=all_Student">{{ li_type.text }}</a></li>
+        <li><a href="./selectList?recipient_type=Student&base_list=extracosts_{{ li_type.id }}">{{ li_type.text }}</a>{% if li_type.options %}:{% for option in li_type.options %} <a href="./selectList?recipient_type=Student&base_list=extracosts_{{ li_type.id }}_{{ option|id }}">{{ option|description }}</a>{% endfor %}
+        {% endif %}</li>
     {% endfor %}
     </ul>
 </li>
