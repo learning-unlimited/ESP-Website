@@ -54,6 +54,7 @@ Teacher Registration
 ~~~~~~~~~~~~~~~~~~~~
 - Fixed the request cancellation button for teachers to cancel classes
 - Fixed the formatting of the availability page for various edge cases
+- Fixed the "import class" text in teacher registration to be clearer that classes of the current program can be imported (e.g., as a duplicate for different grades)
 
 Onsite
 ~~~~~~
@@ -98,6 +99,7 @@ Minor new features
 - Added the ability to group timeslots into arbitrary custom timeslot groups
 - Modules that have been manually enabled will now be copied when using a template program to make a new program. All aspects of a template program that are copied to the new program are now listed on the new program form.
 - Any/all tag form errors are now shown at the top of the tag settings page
+- Added new printables for each line item
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -115,3 +117,7 @@ Minor bug fixes
 - Fixed a bug related to a missing sibling discount line item
 - Fixed various bugs with the module settings user interface
 - Fixed the record checking in the student/teacher reg required record interface
+- Fixed overflowing scheduling checks
+- Removed an unused view (and the associated permission "Teacher/Classes") that allowed teachers to delete their classes
+- Removed the "use_grade_range_exceptions" option from the Student Class Registration settings form
+- Fixed the boolean logic of the line item user search controller filters
