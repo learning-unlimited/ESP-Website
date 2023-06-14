@@ -64,6 +64,15 @@ Custom record types
 ~~~~~~~~~~~~~~~~~~~
 - Admins can now create arbitrary record types which can be bulk set via the User Record Module and can be required for teacher and/or student registration via the relevant tags (see above)
 
+AJAX Scheduler
+~~~~~~~~~~~~~~
+- Added a legend to the AJAX scheduler
+- Fixed various bugs related to moderator assignment and scheduling classes with moderators
+- Fixed the highlighting of the timeslot headers
+- Sections taught by teachers of the selected section are now highlighted
+- Fixed classroom tooltips
+- Switched to using the "timeblock_contiguous_tolerance" tag to define whether timeblocks are contiguous
+
 Themes
 ~~~~~~
 - Added contact info to themes where it was missing
@@ -75,6 +84,7 @@ Themes
 
   - This does not affect template overrides for theme templates
 - index.html pages will now highlight the proper nav bar tab
+- Added the ability to modify most of the colors of every theme via the theme editor
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
@@ -87,6 +97,7 @@ Minor new features
 - Added a user interface to modify the formatting of printable student schedules
 - Added the ability to group timeslots into arbitrary custom timeslot groups
 - Modules that have been manually enabled will now be copied when using a template program to make a new program. All aspects of a template program that are copied to the new program are now listed on the new program form.
+- Any/all tag form errors are now shown at the top of the tag settings page
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -103,3 +114,4 @@ Minor bug fixes
 - Fixed an error related to using the bulk account module multiple times with the same prefix
 - Fixed a bug related to a missing sibling discount line item
 - Fixed various bugs with the module settings user interface
+- Fixed the record checking in the student/teacher reg required record interface
