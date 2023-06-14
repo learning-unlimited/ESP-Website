@@ -9,11 +9,12 @@ Changelog
 
 Profiles
 ~~~~~~~~
-- Added a preferred pronouns field to student and teacher profiles (which can be disabled with the `student_profile_pronoun_field` and `teacher_profile_pronoun_field` tags)
+- Added a preferred pronouns field to student and teacher profiles (which can be disabled with the ``student_profile_pronoun_field`` and ``teacher_profile_pronoun_field`` tags)
+
   - These pronouns are shown on various printables (including nametags) and pages across the website (including attendance)
 - Now strip any leading or trailing whitespace in user searches
 - Added QSD blocks to the alerts on the student profile page
-- Fixed a rare bug in the profile form when the `allow_change_grade_level` tag was set to True
+- Fixed a rare bug in the profile form when the ``allow_change_grade_level`` tag was set to True
 
 Accounting
 ~~~~~~~~~~
@@ -30,15 +31,17 @@ Credit Card Payment Changes
   - This page now has a running tally of the costs and will account for previous payments, program admission fees, and/or financial aid grants
   - We do not handle refunds, so any reduction in total is treated as a donation
   - Supports partial and full financial aid
-  - Can be disabled with the `already_paid_extracosts_allowed` tag
-  - Please use this to get lunch orders from your students!
+  - Can be disabled with the ``already_paid_extracosts_allowed`` tag
+  - Use this functionality to get lunch orders from your students!
 
 Student Registration
 ~~~~~~~~~~~~~~~~~~~~
 - Fixed the handling of donation line items in the credit card module (hotfixed to SR14)
 - Fixed a bug with the credit card form in the credit card module (hotfixed to SR14)
 - If there are no costs to cover for a program, the financial aid module is now hidden, even if it is enabled
-- If the class changes deadline is still open (i.e., students can make class changes on the normal website), then students can now make class changes on the webapp, even if they aren't checked in. The default checkin note at the top of the webapp has been updated to reflect that only classrooms are now hidden until a student is checked in (this text can be modified with a tag).
+- If the class changes deadline is still open (i.e., students can make class changes on the normal website), then students can now make class changes on the webapp, even if they aren't checked in
+
+  - The default checkin note at the top of the webapp has been updated to reflect that only classrooms are now hidden until a student is checked in (this text can be modified with a tag)
 - Fixed a bug where javascript was being displayed as text in the course catalog
 - Added class length, difficulty, and status filters to the course catalog
 
@@ -55,6 +58,7 @@ Teacher Registration
 - Fixed the request cancellation button for teachers to cancel classes
 - Fixed the formatting of the availability page for various edge cases
 - Fixed the "import class" text in teacher registration to be clearer that classes of the current program can be imported (e.g., as a duplicate for different grades)
+- Removed an unused view (and the associated permission "Teacher/Classes") that allowed teachers to delete their classes
 
 Onsite
 ~~~~~~
@@ -72,7 +76,7 @@ AJAX Scheduler
 - Fixed the highlighting of the timeslot headers
 - Sections taught by teachers of the selected section are now highlighted
 - Fixed classroom tooltips
-- Switched to using the "timeblock_contiguous_tolerance" tag to define whether timeblocks are contiguous
+- Switched to using the ``timeblock_contiguous_tolerance`` tag to define whether timeblocks are contiguous
 
 Themes
 ~~~~~~
@@ -118,6 +122,5 @@ Minor bug fixes
 - Fixed various bugs with the module settings user interface
 - Fixed the record checking in the student/teacher reg required record interface
 - Fixed overflowing scheduling checks
-- Removed an unused view (and the associated permission "Teacher/Classes") that allowed teachers to delete their classes
-- Removed the "use_grade_range_exceptions" option from the Student Class Registration settings form
+- Removed the ``use_grade_range_exceptions`` option from the Student Class Registration settings form
 - Fixed the boolean logic of the line item user search controller filters
