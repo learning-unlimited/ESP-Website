@@ -13,7 +13,7 @@ Profiles
 
   - These pronouns are shown on various printables (including nametags) and pages across the website (including attendance)
 - Now strip any leading or trailing whitespace in user searches
-- Added QSD blocks to the alerts on the student profile page
+- Added Editable blocks to the alerts on the student profile page
 - Fixed a rare bug in the profile form when the ``allow_change_grade_level`` tag was set to True
 
 Accounting
@@ -44,6 +44,7 @@ Student Registration
   - The default checkin note at the top of the webapp has been updated to reflect that only classrooms are now hidden until a student is checked in (this text can be modified with a tag)
 - Fixed a bug where javascript was being displayed as text in the course catalog
 - Added class length, difficulty, and status filters to the course catalog
+- Fixed the ability for students to register for classes from the onsitecatalog page
 
 Student self checkin
 ~~~~~~~~~~~~~~~~~~~~
@@ -55,19 +56,14 @@ Student self checkin
 
 Teacher Registration
 ~~~~~~~~~~~~~~~~~~~~
-- Fixed the request cancellation button for teachers to cancel classes
+- Fixed the "Request Cancellation" button for teachers to cancel classes
 - Fixed the formatting of the availability page for various edge cases
 - Fixed the "import class" text in teacher registration to be clearer that classes of the current program can be imported (e.g., as a duplicate for different grades)
 - Removed an unused view (and the associated permission "Teacher/Classes") that allowed teachers to delete their classes
 
-Onsite
-~~~~~~
-- Fixed the Onsite New Student Registration form
-- Fixed the onsite catalog
-
 Custom record types
 ~~~~~~~~~~~~~~~~~~~
-- Admins can now create arbitrary record types which can be bulk set via the User Record Module and can be required for teacher and/or student registration via the relevant tags (see above)
+- Admins can now create arbitrary record types which can be bulk set via the User Record Module and can be required for teacher and/or student registration via the relevant tags
 
 AJAX Scheduler
 ~~~~~~~~~~~~~~
@@ -101,7 +97,9 @@ Minor new features
 - Added timezones to the manage deadlines page
 - Added a user interface to modify the formatting of printable student schedules
 - Added the ability to group timeslots into arbitrary custom timeslot groups
-- Modules that have been manually enabled will now be copied when using a template program to make a new program. All aspects of a template program that are copied to the new program are now listed on the new program form.
+- Modules that have been manually enabled will now be copied when using a template program to make a new program
+
+  - All aspects of a template program that are copied to the new program are now listed on the new program form.
 - Any/all tag form errors are now shown at the top of the tag settings page
 - Added new printables for each line item
 
@@ -124,3 +122,4 @@ Minor bug fixes
 - Fixed overflowing scheduling checks
 - Removed the ``use_grade_range_exceptions`` option from the Student Class Registration settings form
 - Fixed the boolean logic of the line item user search controller filters
+- Fixed the Onsite New Student Registration form
