@@ -838,7 +838,7 @@ class Program(models.Model, CustomFormsLinkModel):
         time_groups = []
 
         w_group = timeslots.filter(group__isnull=False)
-        groups = sorted(list(w_group.values_list('group', flat=True)))
+        groups = sorted(set(w_group.values_list('group', flat=True)))
 
         for grp in groups:
             time_groups.append(list(w_group.filter(group=grp)))
