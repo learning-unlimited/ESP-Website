@@ -47,6 +47,7 @@ class ConfigForm(ThemeConfigurationForm):
     nav_structure = forms.Field(widget=NavStructureWidget)
     # TODO(benkraft): Make all the contact info links fully editable, like the
     # navbar links.
+    instagram_link = forms.URLField(required=False, help_text='Leave blank to omit an Instagram link.')
     facebook_link = forms.URLField(required=False, help_text='Leave blank to omit a Facebook link.')
     # URLField requires an absolute URL, here we probably want relative.
     faq_link = forms.CharField(required=False, initial='/faq.html',
