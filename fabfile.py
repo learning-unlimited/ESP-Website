@@ -69,17 +69,6 @@ if not env.hosts:
 
         raise
 
-# Name of the encrypted volume group in the Vagrant VM based on which VM is loaded
-ubuntu_version = run("lsb_release -r | awk '{print $2}'")
-try:
-    env.encvg = {"22.04": "ubuntu--vg-vgvagrant--keep_1",
-                 "20.04": "vgvagrant-keep_1",
-                 "12.04": "ubuntu--12--vg-keep_1"}[ubuntu_version]
-except KeyError:
-    raise ValueError("Unrecognized version of Ubuntu: " + ubuntu_version +
-                     ". Web Team needs to update fabfile.py to add the "
-                     "partition name for this VM.")
-
 @task
 def setup():
     """
@@ -100,6 +89,17 @@ def setup():
     print "***** Creating the encrypted partition for data storage."
     print "***** Please choose a passphrase and type it at the prompts."
     print "***** "
+
+    # Name of the encrypted volume group in the Vagrant VM based on which VM is loaded
+    ubuntu_version = run("lsb_release -r | awk '{print $2}'")
+    try:
+        env.encvg = {"22.04": "ubuntu--vg-vgvagrant--keep_1",
+                     "20.04": "vgvagrant-keep_1",
+                     "12.04": "ubuntu--12--vg-keep_1"}[ubuntu_version]
+    except KeyError:
+        raise ValueError("Unrecognized version of Ubuntu: " + ubuntu_version +
+                         ". Web Team needs to update fabfile.py to add the "
+                         "partition name for this VM.")
 
     sudo("cryptsetup luksFormat -q /dev/mapper/%s" % env.encvg)
     sudo("cryptsetup luksOpen /dev/mapper/%s encrypted" % env.encvg)
@@ -171,6 +171,17 @@ def ensure_environment():
         print "*****   $ fab setup"
         print "***** "
         exit(-1)
+
+    # Name of the encrypted volume group in the Vagrant VM based on which VM is loaded
+    ubuntu_version = run("lsb_release -r | awk '{print $2}'")
+    try:
+        env.encvg = {"22.04": "ubuntu--vg-vgvagrant--keep_1",
+                     "20.04": "vgvagrant-keep_1",
+                     "12.04": "ubuntu--12--vg-keep_1"}[ubuntu_version]
+    except KeyError:
+        raise ValueError("Unrecognized version of Ubuntu: " + ubuntu_version +
+                         ". Web Team needs to update fabfile.py to add the "
+                         "partition name for this VM.")
 
     # Ensure that the encrypted partition has been mounted (must be done after
     # every boot, and can't be done automatically by Vagrant :/)
