@@ -36,9 +36,6 @@ jobs:
       uses: MatteoH2O1999/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
-        allow-build: info
-        cache-build: true
-        cache: pip
     - name: Prepare for Installing Dependencies
       run: deploy/travis/before_install
     - name: Install Dependencies for ${{ matrix.travis_job }}
