@@ -11,8 +11,6 @@ jobs:
   build:
     name: ${{ matrix.travis_job }}
     runs-on: ubuntu-20.04
-    container:
-      image: python:2.7.18-buster
     services:
       postgres:
         image: postgres:10.8
@@ -34,6 +32,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: niden/actions-memcached@v7
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: MatteoH2O1999/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+        allow-build: info
+        cache-build: true
+        cache: pip
     - name: Prepare for Installing Dependencies
       run: deploy/travis/before_install
     - name: Install Dependencies for ${{ matrix.travis_job }}
@@ -54,4 +59,3 @@ jobs:
       with:
         fail_ci_if_error: true
         verbose: true
-    
