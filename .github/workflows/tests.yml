@@ -33,7 +33,7 @@ jobs:
     - uses: actions/checkout@v2
     - uses: niden/actions-memcached@v7
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: MatteoH2O1999/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
     - name: Prepare for Installing Dependencies
@@ -56,4 +56,3 @@ jobs:
       with:
         fail_ci_if_error: true
         verbose: true
-    
