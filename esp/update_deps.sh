@@ -32,6 +32,12 @@ done
 BASEDIR=$(dirname $(dirname $(readlink -e $0)))
 
 sudo apt update
+if ! find /etc/apt/ -name *.list | xargs cat | grep  '^[[:space:]]*deb' | grep -q 'deadsnakes'
+then
+    sudo add-apt-repository ppa:deadsnakes/ppa
+    sudo apt update
+fi
+
 xargs sudo apt install -y < $BASEDIR/esp/packages_base.txt
 
 # This nodejs/less installation only works on Ubuntu 16+
