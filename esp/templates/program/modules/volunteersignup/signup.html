@@ -21,7 +21,7 @@ label.required:after {
 function confirm_cancellation() {
     $j("input[name=clear_requests]").val("True");
     $j("#confirm_cancellation_dialog").dialog("close");
-    $j("#volunteer_shift_form").submit();
+    $j("#volunteer_shift_form").trigger("submit");
 }
 
 function decline_cancellation() {
@@ -39,7 +39,7 @@ $j(document).ready(function () {
         //  Check if the user has previous requests and is asking to clear all of them
         var checkboxes_checked = $j("input[name=requests]:checked");
         if (($j("input[name=has_previous_requests]").val() == "True") &&
-            (checkboxes_checked.size() == 0)) {
+            (checkboxes_checked.length == 0)) {
             //  If so, prevent the form from being submitted - we want a confirmation
             event.preventDefault();
             
@@ -145,7 +145,7 @@ The directors have been notified that you are no longer able to volunteer at {{ 
         </div>
         {{ form.non_field_errors }}
         <br><br>
-        <input style="display: block" id="volunteer_form_submit" type="submit" value="Submit" class="btn btn-primary" />
+        <input style="display: block" id="volunteer_form_submit" type="button" value="Submit" class="btn btn-primary" />
       </div>
     </center>
   </form>
