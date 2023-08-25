@@ -79,7 +79,12 @@
     <!-- prevent forms from being submitted twice -->
     <script text="text/javascript">
       $j(function() {
-        $j('[type=submit]:not(.stripe-button-el)').click(function(){
+        $j('[type=submit]:not(.stripe-button-el)').on('click', function(event){
+          <!-- prevent any other behaviors -->
+          event.preventDefault();
+          event.stopPropagation();
+          
+          <!-- disable the submit button -->
           $j(this).prop('disabled', true);
           var form = $j(this).parents('form');
           <!-- this adds a hidden field in case we care what the button name/value are -->
@@ -88,9 +93,24 @@
               name: $j(this).prop('name'),
               value: $j(this).prop('value')
           }).appendTo(form);
+          <!-- check csrf cookie in form (we prevented this above) -->
+          check_csrf_cookie(form[0]);
+          var submitted = false;
+          <!-- check form validity -->
           if(form[0].reportValidity()) {
-            form.submit();
-          } else {
+            <!-- run form's onsubmit if it has one -->
+            if(form[0].hasAttribute("onsubmit")) {
+              if(form[0].onsubmit()) {
+                form[0].submit();
+                submitted = true;
+              }
+            } else {
+              form[0].submit();
+              submitted = true;
+            }
+          }
+          <!-- if we didn't end up submitting the form, reenable the submit button -->
+          if(!submitted) {
             $j(this).prop('disabled', false);
           }
         });
