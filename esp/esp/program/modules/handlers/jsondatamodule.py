@@ -735,6 +735,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
             'teacher_names': cls.pretty_teachers(),
             'moderator_names': cls.pretty_moderators(),
+            'moderator_title': Tag.getProgramTag("moderator_title", prog).capitalize() + "s",
             'resource_requests': rrequest_dict,
             'comments': cls.message_for_directors,
             'special_requests': cls.requested_special_resources,
@@ -805,6 +806,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return moderator_list
     mod_nums.depend_on_row(ModeratorRecord, lambda mr: {'prog': mr.program})
     mod_nums.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
+    mod_nums.depend_on_model(Tag)
     mod_nums = staticmethod(mod_nums)
 
     @cache_function
