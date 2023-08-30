@@ -21,6 +21,12 @@ table.sortable thead th:not(.sorttable_sorted):not(.sorttable_sorted_reverse):no
     cursor: pointer;
 }
 
+td.selected-moderator {
+    outline: 4px solid yellow;
+    position: relative;
+    z-index: 1000;
+}
+
 .matrix-cell{
     height: 40px;
     min-width: 80px;
