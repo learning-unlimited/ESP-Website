@@ -233,6 +233,8 @@
                         <br />
                         <input type="radio" name="scheduling-checks" value="num_both" id="scheduling-checks-num_both"></input><label for="scheduling-checks-num_both"> Number of Teachers and {{ program.getModeratorTitle }}s</label>
                         <br />
+                        <input type="radio" name="scheduling-checks" value="mod_unavailable" id="scheduling-checks-mod_unavailable"></input><label for="scheduling-checks-mod_unavailable"> Unavailable {{ program.getModeratorTitle }}s</label>
+                        <br />
                         <input type="radio" name="scheduling-checks" value="mod_cats" id="scheduling-checks-mod_cats"></input><label for="scheduling-checks-mod_cats"> {{ program.getModeratorTitle }}s with Mismatched Categories</label>
                         <br />
                         {% endif %}
