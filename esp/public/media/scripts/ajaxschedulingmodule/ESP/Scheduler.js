@@ -150,6 +150,7 @@ function Scheduler(
         // set up handler for selecting moderators
         $j("body").on("click", "td.moderator-cell", function(evt, ui) {
             var moderatorCell = $j(evt.currentTarget).data("moderatorCell");
+            this.moderatorDirectory.selectedModeratorCell = moderatorCell;
             this.moderatorDirectory.selectModerator(moderatorCell.moderator);
         }.bind(this));
 

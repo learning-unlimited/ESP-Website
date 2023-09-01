@@ -313,14 +313,14 @@
       <td class="matrix-cell disabled-cell"></td><td>Classroom is not available</td>
     </tr>
     <tr>
+      <td class="selected-section"></td><td>Selected section{% if has_moderator_module %}/{{ program.getModeratorTitle|lower }}{% endif %}</td>
+    </tr>
+    <tr>
       <td class="locked-cell"></td><td>Locked section</td>
     </tr>
   </table>
   <h3>When scheduling sections:</h3>
   <table width="100%">
-    <tr>
-      <td class="selected-section"></td><td>Selected section</td>
-    </tr>
     <tr>
       <td class="matrix-cell teacher-available-cell"></td><td>All teachers{% if has_moderator_module %}/{{ program.getModeratorTitle|lower }}s{% endif %} available</td>
     </tr>
