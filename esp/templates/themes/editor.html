@@ -152,6 +152,13 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                 <input type="text" class="color" id="headingsColor" name="headingsColor" value="{{ headingsColor }}"/>
                             </div>
                         </div>
+                        
+                        <div class="control-group">
+                            <label class="control-label" for="titleColor">Content Titles:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="titleColor" name="titleColor" value="{{ titleColor }}"/>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -356,6 +363,12 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                 <input type="text" class="color" id="btnBackground" name="btnBackground" value="{{ btnBackground }}"/>
                             </div>
                         </div>
+                        <div class="control-group">
+                            <label class="control-label" for="btnLinkColor">Button text:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="btnLinkColor" name="btnLinkColor" value="{{ btnLinkColor }}"/>
+                            </div>
+                        </div>
 
                         <div class="control-group">
                             <label class="control-label" for="btnPrimaryBackground">Primary Buttons:</label>
@@ -363,11 +376,23 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                 <input type="text" class="color" id="btnPrimaryBackground" name="btnPrimaryBackground" value="{{ btnPrimaryBackground }}"/>
                             </div>
                         </div>
+                        <div class="control-group">
+                            <label class="control-label" for="btnPrimaryLinkColor">Primary button text:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="btnPrimaryLinkColor" name="btnPrimaryLinkColor" value="{{ btnPrimaryLinkColor }}"/>
+                            </div>
+                        </div>
 
                         <div class="control-group">
                             <label class="control-label" for="btnInverseBackground">Inverse Buttons:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="btnInverseBackground" name="btnInverseBackground" value="{{ btnInverseBackground }}"/>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label" for="btnInverseLinkColor">Inverse button text:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="btnInverseLinkColor" name="btnInverseLinkColor" value="{{ btnInverseLinkColor }}"/>
                             </div>
                         </div>
                     </div>
@@ -384,6 +409,13 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                             <h3>Category: {{ category }}<hr/></h3>
                             <!-- Dropdown box for adding an optional variable override that is not yet defined -->
                             <div class="control-group opt_var_div hidden">
+                                <div> Accent 1 for each side tab refers to the accent on the left part of the side tab, the background color of the heading bar, and the unselected top tabs when the specified number side tab is selected.
+                                </div>
+                                </br>
+                                <div>
+                                Accent 2 for each side tab refers to the text color in the side and top tabs and the link color in the frame when the specified number side tab is selected. 
+                                </div>
+                                </br>
                                 <label class="control-label" for="new_opt_var_{{ forloop.counter0 }}">Add a variable:</label>
                                 <div class="controls">
                                     <select id="new_opt_var_{{ forloop.counter0 }}" name="new_opt_var_{{ forloop.counter0 }}" class="select_opt_var">
