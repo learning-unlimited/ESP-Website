@@ -141,7 +141,7 @@ class SchedulingCheckRunner:
             d = date(ts.start.year, ts.start.month, ts.start.day)
             lunch_by_day[dates.index(d)].append(ts)
         return lunch_by_day
-        
+
     def run_diagnostics(self, diagnostics=None):
         if diagnostics is None:
              diagnostics = self.all_diagnostics()
@@ -692,4 +692,3 @@ class SchedulingCheckRunner:
                     if e not in available:
                         l.append({self.p.getModeratorTitle(): m, "Time": e, "Section": s})
         return self.formatter.format_table(l, {"headings": ["Section", self.p.getModeratorTitle(), "Time"]})
-
