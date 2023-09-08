@@ -176,9 +176,13 @@ class SchedulingCheckRunner:
             ('classes_by_grade', 'Number of classes in each block by grade'),
             ('capacity_by_grade', 'Total capacity in each block by grade'),
             ('admins_teaching_per_timeblock', 'Admins teaching per timeslot'),
-            ('mismatched_moderators', self.p.getModeratorTitle() + 's with mismatched assignments'),
             ('multiple_classes_same_resource_same_time', 'Double-booked resources')
         ]
+        if self.p.hasModule("TeacherModeratorModule"):
+            diags.extend([
+                ('unavailable_moderators', self.p.getModeratorTitle() + "s helping when they aren't available"),
+                ('mismatched_moderators', self.p.getModeratorTitle() + 's with category mismatches'),
+            ])
         return diags
 
     #################################################
@@ -215,7 +219,7 @@ class SchedulingCheckRunner:
             #filter out lunch
             qs = qs.exclude(parent_class__category__category=u'Lunch')
             qs = qs.select_related('parent_class', 'parent_class__parent_program', 'parent_class__category')
-            qs = qs.prefetch_related('meeting_times', 'resourceassignment_set', 'resourceassignment_set__resource', 'parent_class__teachers')
+            qs = qs.prefetch_related('meeting_times', 'resourceassignment_set', 'resourceassignment_set__resource', 'parent_class__teachers', 'moderators')
             if include_walkins:
                 self.all_sections = list(qs)
                 self.listed_sections = True
@@ -497,7 +501,7 @@ class SchedulingCheckRunner:
                    if not mod_recs_text:
                        mod_recs_text.append("No Selection")
                    mod_recs_list = ", ".join(mod_recs_text)
-                   l_mod.append({ "Section": s, "Section Time": first_hour, "Requested Category": mod_recs_list, "Moderator": moderator })
+                   l_mod.append({ "Section": s, "Section Time": first_hour, "Requested Category": mod_recs_list, self.p.getModeratorTitle(): moderator })
         self.l_wrong_classroom_type = l_classrooms
         self.l_missing_resources = l_resources
         self.l_mod_missing = l_mod
@@ -675,3 +679,17 @@ class SchedulingCheckRunner:
         """
         self._calculate_classes_missing_resources()
         return self.formatter.format_table(self.l_mod_missing, {"headings": ["Section", "Section Time", "Requested Category", self.p.getModeratorTitle()]})
+
+    def unavailable_moderators(self):
+        """
+        Moderators who are moderating at a time at which they are not available.
+        """
+        l = []
+        for s in self._all_class_sections():
+            for m in s.get_moderators():
+                available = m.getAvailableTimes(s.parent_program, ignore_classes=True, ignore_moderation=True)
+                for e in s.get_meeting_times():
+                    if e not in available:
+                        l.append({self.p.getModeratorTitle(): m, "Time": e, "Section": s})
+        return self.formatter.format_table(l, {"headings": ["Section", self.p.getModeratorTitle(), "Time"]})
+
