@@ -486,6 +486,27 @@ all_global_tags = {
         'category': 'manage',
         'is_setting': False,
     },
+    'current_logo_version': {
+        'is_boolean': False,
+        'help_text': 'A random hexidecimal string to force browser refreshing of the logo file',
+        'default': "8daf9a",
+        'category': 'manage',
+        'is_setting': False,
+    },
+    'current_header_version': {
+        'is_boolean': False,
+        'help_text': 'A random hexidecimal string to force browser refreshing of the header file',
+        'default': "8daf9a",
+        'category': 'manage',
+        'is_setting': False,
+    },
+    'current_favicon_version': {
+        'is_boolean': False,
+        'help_text': 'A random hexidecimal string to force browser refreshing of the favicon file',
+        'default': "8daf9a",
+        'category': 'manage',
+        'is_setting': False,
+    },
 }
 
 # Any tag used with Tag.getProgramTag()

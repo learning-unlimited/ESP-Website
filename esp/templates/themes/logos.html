@@ -57,7 +57,7 @@
     <div class="well">
         <center>
             <h3>Current logo:</h3>
-            <img src="/media/images/theme/logo.png" alt="No logo selected/uploaded">
+            <img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="No logo selected/uploaded">
             <br /><br />
             <form method="post" action="/themes/logos/" enctype="multipart/form-data">
                 <table>
@@ -93,7 +93,7 @@
     <div class="well">
         <center>
             <h3>Current header:</h3>
-            <img src="/media/images/theme/header.png" alt="No header selected/uploaded">
+            <img src="/media/images/theme/header.png?v={{ current_header_version }}" alt="No header selected/uploaded">
             <br /><br />
             <form method="post" action="/themes/logos/" enctype="multipart/form-data">
                 <table>
@@ -129,7 +129,7 @@
     <div class="well">
         <center>
             <h3>Current favicon:</h3>
-            <img src="/media/images/favicon.ico" alt="No favicon selected">
+            <img src="/media/images/favicon.ico?v={{ current_favicon_version }}" alt="No favicon selected">
             <br /><br />
             <form method="post" action="/themes/logos/" enctype="multipart/form-data">
                 <table>
