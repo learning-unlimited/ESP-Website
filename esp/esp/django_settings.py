@@ -313,7 +313,7 @@ CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
 JQUERY_VERSION = '3.6.0'
 JQUERY_HASH = 'sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=='
 
-JQUERY_UI_VERSION = '1.13.0'
+JQUERY_UI_VERSION = '1.13.2'
 
 # allow configuration of additional Javascript to be placed on website
 # configuration should include <script></script> tags
