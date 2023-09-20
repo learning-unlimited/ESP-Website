@@ -180,8 +180,8 @@ class SchedulingCheckRunner:
         ]
         if self.p.hasModule("TeacherModeratorModule"):
             diags.extend([
-                ('unavailable_moderators', self.p.getModeratorTitle() + "s helping when they aren't available"),
-                ('mismatched_moderators', self.p.getModeratorTitle() + 's with category mismatches'),
+                ('unavailable_moderators', self.p.getModeratorTitle().capitalize() + "s helping when they aren't available"),
+                ('mismatched_moderators', self.p.getModeratorTitle().capitalize() + 's with category mismatches'),
             ])
         return diags
 
