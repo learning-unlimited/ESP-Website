@@ -149,6 +149,10 @@ class SchedulingCheckRunner:
 
     # Update this to add a scheduling check.
     def all_diagnostics(self):
+        if self.p.hasModule("TeacherModeratorModule"):
+            two_classes_name = 'Teachers/' + self.p.getModeratorTitle().capitalize() + 's handling two classes at once'
+        else:
+            two_classes_name = 'Teachers teaching two classes at once'
         diags = [
             #Block Diagnostics
             ('lunch_blocks_setup', 'Lunch blocks'),
@@ -166,7 +170,7 @@ class SchedulingCheckRunner:
             ('unapproved_scheduled_classes', 'Classes which are scheduled but not approved'),
             #Teacher Diagnostics
             ('teachers_unavailable', "Teachers teaching when they aren't available"),
-            ('teachers_teaching_two_classes_same_time', 'Teachers teaching two classes at once'),
+            ('teachers_teaching_two_classes_same_time', two_classes_name),
             ('teachers_who_like_running', 'Teachers who like running'),
             ('hungry_teachers', 'Hungry teachers'),
             ('inflexible_teachers', 'Teachers with limited flexibility'),
@@ -296,6 +300,10 @@ class SchedulingCheckRunner:
         return self.formatter.format_list(output, ["Classes"])
 
     def teachers_teaching_two_classes_same_time(self):
+        if self.p.hasModule("TeacherModeratorModule"):
+            name_heading = 'Teacher/' + self.p.getModeratorTitle().capitalize() + "'s Name"
+        else:
+            name_heading = "Teacher's Name"
         d = self._timeslot_dict(slot=lambda: {})
         l = []
         for s in self._all_class_sections():
@@ -303,10 +311,17 @@ class SchedulingCheckRunner:
             for t in mt:
                 for teach in s.teachers:
                     if not teach in d[t]:
-                        d[t][teach] = s
+                        d[t][teach] = str(s) + (" (Teacher)" if self.p.hasModule("TeacherModeratorModule") else "")
                     else:
-                        l.append({"Username": teach, "Teacher Name": teach.name(), "Timeslot":t, "Section 1": s, "Section 2": d[t][teach]})
-        return self.formatter.format_table(l, {'headings': ["Username", "Teacher Name", "Timeslot", "Section 1", "Section 2"]})
+                        l.append({"Username": teach, name_heading: teach.name(), "Timeslot": t,
+                                  "Section 1": str(s) + (" (Teacher)" if self.p.hasModule("TeacherModeratorModule") else ""), "Section 2": d[t][teach]})
+                for mod in s.get_moderators():
+                    if not mod in d[t]:
+                        d[t][mod] = str(s) + " (" + str(self.p.getModeratorTitle().capitalize()) + ")"
+                    else:
+                        l.append({"Username": mod, name_heading: mod.name(), "Timeslot": t,
+                                  "Section 1": str(s) + " (" + str(self.p.getModeratorTitle().capitalize()) + ")", "Section 2": d[t][mod]})
+        return self.formatter.format_table(l, {'headings': ["Username", name_heading, "Timeslot", "Section 1", "Section 2"]})
 
     def multiple_classes_same_resource_same_time(self):
         d = self._timeslot_dict(slot=lambda: {})
@@ -544,7 +559,7 @@ class SchedulingCheckRunner:
         l = []
         for s in self._all_class_sections():
             for t in s.teachers:
-                available = t.getAvailableTimes(s.parent_program, ignore_classes=True)
+                available = t.getAvailableTimes(s.parent_program, ignore_classes=True, ignore_moderation=True)
                 for e in s.get_meeting_times():
                     if e not in available:
                         l.append({"Teacher": t, "Time": e, "Section": s})
