@@ -12,6 +12,7 @@
   {% endblock meta %}
 
     {% block stylesheets %}
+    <link rel="shortcut icon" href="/media/images/favicon.ico?v={{ current_favicon_version }}">
     <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap-responsive.css" rel="stylesheet"/>
