@@ -229,11 +229,13 @@
                         <input type="radio" name="scheduling-checks" value="num_teachers" id="scheduling-checks-num_teachers"></input><label for="scheduling-checks-num_teachers"> Number of Teachers</label>
                         <br />
                         {% if has_moderator_module %}
-                        <input type="radio" name="scheduling-checks" value="num_moderators" id="scheduling-checks-num_moderators"></input><label for="scheduling-checks-num_moderators"> Number of {{ program.getModeratorTitle }}s</label>
+                        <input type="radio" name="scheduling-checks" value="num_moderators" id="scheduling-checks-num_moderators"></input><label for="scheduling-checks-num_moderators"> Number of {{ program.getModeratorTitle|capfirst }}s</label>
                         <br />
-                        <input type="radio" name="scheduling-checks" value="num_both" id="scheduling-checks-num_both"></input><label for="scheduling-checks-num_both"> Number of Teachers and {{ program.getModeratorTitle }}s</label>
+                        <input type="radio" name="scheduling-checks" value="num_both" id="scheduling-checks-num_both"></input><label for="scheduling-checks-num_both"> Number of Teachers and {{ program.getModeratorTitle|capfirst }}s</label>
                         <br />
-                        <input type="radio" name="scheduling-checks" value="mod_cats" id="scheduling-checks-mod_cats"></input><label for="scheduling-checks-mod_cats"> {{ program.getModeratorTitle }}s with Mismatched Categories</label>
+                        <input type="radio" name="scheduling-checks" value="mod_unavailable" id="scheduling-checks-mod_unavailable"></input><label for="scheduling-checks-mod_unavailable"> Unavailable {{ program.getModeratorTitle|capfirst }}s</label>
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="mod_cats" id="scheduling-checks-mod_cats"></input><label for="scheduling-checks-mod_cats"> {{ program.getModeratorTitle|capfirst }}s with Mismatched Categories</label>
                         <br />
                         {% endif %}
                     </div>
