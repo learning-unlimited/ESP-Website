@@ -89,7 +89,7 @@ def load_sections_and_teachers_and_classrooms(
     if exclude_lunch:
         sections = sections.exclude(
                 parent_class__category__category="Lunch")
-    if exclude_walkins:
+    if exclude_walkins and schedule.program.open_class_registration:
         sections = sections.exclude(
                 parent_class__category=schedule.program.open_class_category)
     if exclude_locked:
