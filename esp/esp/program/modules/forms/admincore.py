@@ -126,10 +126,10 @@ class StudentRegSettingsForm(BetterModelForm):
 
 def get_template_source(template_list):
     template = select_template(template_list)
-    if template.origin.loader: # source is from a file
-        return open(template.origin.name, 'r').read().strip()
-    else: # source is from a template override
+    if template.origin.name == "(template override)": # source is from a template override
         return TemplateOverride.objects.get(name=template.template.name).content.replace('\r\n', '\n').strip() # Use unix line endings and strip whitespace just in case
+    else: # source is from a file
+        return open(template.origin.name, 'r').read().strip()
 
 class ReceiptsForm(BetterForm):
     confirm = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),
