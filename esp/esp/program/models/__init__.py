@@ -675,6 +675,8 @@ class Program(models.Model, CustomFormsLinkModel):
         Returns:
           A ClassCategories object if one was found, or None.
         """
+        if not self.open_class_registration:
+            return ClassCategories()
         pk = Tag.getProgramTag('open_class_category', self)
         cc = None
         if pk is not None:
@@ -688,6 +690,7 @@ class Program(models.Model, CustomFormsLinkModel):
         return cc
     open_class_category.depend_on_model('tagdict.Tag')
     open_class_category.depend_on_model('program.ClassCategories')
+    open_class_category.depend_on_row('modules.ClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
     open_class_category = property(open_class_category)
 
     @cache_function
