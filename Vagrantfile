@@ -7,7 +7,7 @@ VAGRANTFILE_API_VERSION = '2'
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Build off the basic Ubuntu 64-bit VM.
-  config.vm.box = 'ubuntu-22.04'
+  config.vm.box = 'ubuntu-22.04.2'
   config.vm.box_url = 'https://learningu-static.s3.amazonaws.com/ubuntu-22.04.box'
   config.vm.hostname = 'ludev'
   config.ssh.forward_agent = true
