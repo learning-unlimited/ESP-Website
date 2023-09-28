@@ -125,7 +125,11 @@ var currentPrograms = [
           {% if theme.faq_link %}
             <a href="{{theme.faq_link}}">FAQ</a> |
           {% endif %}
-          <a href="/contact.html">contact us</a>
+          <a href="/contact.html">contact us</a> | 
+	  <a href="/about/donate.html">donate</a>
+          {% if theme.instagram_link %}
+            | <a href="{{ theme.instagram_link }}">instagram</a>
+          {% endif %}
           {% if theme.facebook_link %}
             | <a href="{{ theme.facebook_link }}">facebook</a>
           {% endif %}
