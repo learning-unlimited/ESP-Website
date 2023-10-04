@@ -8,7 +8,6 @@ if [ $(echo "$(lsb_release -rs) >= 20" | bc) -eq 1 ]; then
  else
   sudo apt-get install -y curl
 fi
-curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
 if [ $(echo "$(lsb_release -rs) >= 20" | bc) -eq 1 ]; then 
   sudo apt install -y nodejs
  else
