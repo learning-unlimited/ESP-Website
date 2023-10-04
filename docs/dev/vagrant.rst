@@ -165,29 +165,33 @@ Follow the following steps to upgrade the base VM for everyone to use.
 
 1. 
 
-	Download a new Ubuntu vagrant box. Historically, we've used bento machines, which are browsable `here <https://app.vagrantup.com/boxes/search?utf8=%E2%9C%93&sort=downloads&provider=virtualbox&q=bento%2Fubuntu>`_.
+	Download a new Ubuntu vagrant box by following steps a-d below. Historically, we've used bento machines, which are browsable `here <https://app.vagrantup.com/boxes/search?utf8=%E2%9C%93&sort=downloads&provider=virtualbox&q=bento%2Fubuntu>`_.
 
 	a. Make sure you have no local changes or commits on your branch.
-	b. From your ``devsite`` folder, run ``rm Vagrantfile``.
-	c. Then run ``vagrant init bento/ubuntu-*``, but replace the asterisk with your desired version number. (Typically the most recent will be `XX.04` where the `XX` is the last two digits of the last even year.)
-	d. Restore the vagrantfile by running ``git restore Vagrantfile``.
+	b. Clone this repository into a folder called ``devsite``. Navigate to that folder in a terminal.
+	c. From your ``devsite`` folder, run ``rm Vagrantfile``.
+	d. Then run ``vagrant init bento/ubuntu-*``, but replace the asterisk with your desired version number. (Typically the most recent will be `XX.04` where the `XX` is the last two digits of the last even year.) If you choose to use something other than bento ubuntu, other steps in this process may require changes.
 
 2. 
 
-	Edit the Vagrantfile so that ``config.vm.box = 'ubuntu-*'``, again replacing the asterisk with the version number. Also make sure the line ``config.ssh.insert_key = false`` is present in the Vagrantfile. (`See here <https://stackoverflow.com/a/28524909>`_ for an explanation.)
+	Insert the line ``config.ssh.insert_key = false`` into the Vagrantfile after the ``config.vm.box`` line.
+	(`See here <https://stackoverflow.com/a/28524909>`_ for an explanation.)
 
 
 3. 
 
-	Start the VM with ``vagrant up`` then SSH to the VM by running ``vagrant ssh``. Then run the following code to install Python, pip, and friends as well as set the host name::
+	Start the VM with ``vagrant up`` then SSH to the VM by running ``vagrant ssh``.
+	You should not need a password to SSH in.
+	Then run the following code to install Python, pip, and friends as well as set the host name::
 
-		sudo add-apt-repository ppa:deadsnakes/ppa
+		sudo add-apt-repository -y ppa:deadsnakes/ppa
 		sudo apt update && sudo apt -y upgrade
 		sudo apt install -y python3.7 python3.7-dev python3.7-distutils python3.7-venv
 		curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 		sudo python3.7 get-pip.py
 		echo alias python=$(which python3.7) >> ~/.bashrc
 		sudo hostnamectl set-hostname ludev
+		logout
 
 4. 
 
@@ -197,25 +201,43 @@ Follow the following steps to upgrade the base VM for everyone to use.
 
 	b. Download the Ubuntu install .iso here: https://ubuntu.com/download/desktop. Choose the version that matches your VM's.
 
-	c. Open VirtualBox, and click on the VM that you just installed. Then click on the "Settings" button. Click "Storage", then, next to "Controller: IDE Controller", click the "Add optical drive" button. Click "Add" and browse to the Ubuntu install .iso file you just downloaded. Then click "Choose". Now click on the "System" tab on the left and move the "Optical" drive to the top of the boot order by clicking it and clicking the up button (and make sure the "Optical" drive has a checkmark). Click "OK."
+	c. Open VirtualBox, and click on the Vagrant VM that you just created.
+	Then click on the "Settings" button, and click "Storage" on the left-hand menu.
+	Next to "Controller: IDE Controller" line, click the "Adds optical drive" button (the icon looks like a blue circle with a green plus sign).
+	Click the "Add" icon in the upper left, and browse to and select the ISO file you just downloaded.
+	Then click "Choose" to close the pop-up window.
+	Now click on the "System" tab on the left-hand menu, and move the "Optical" drive to the top of the "Boot Order" list by clicking it and clicking the up button.
+	(Make sure the "Optical" drive has a checkmark).
+	Finally, click "OK."
 
-	d. Run the virtual machine the VirtualBox "Run" button, *not* ``vagrant up`` (the username should be ubuntu with no password).
+	d. Run the virtual machine using the VirtualBox "Run" button, *not* ``vagrant up`` in a terminal.
+	If you are prompted, the username should be ubuntu with no password.
+	If there is an option to try/install Ubuntu, choose try.
 
-	e. Once the VM comes up, open the terminal and run the following commands to get the volume name::
+	e. Once the desktop comes up, open a terminal window (should be in "Applications" in the bottom left corner).
+	Run the following commands to get the names of the volume group (VG) and logical volume (LV)::
     
 		sudo apt install lvm2
 		sudo lvs
 
-	f. Run ``sudo resize2fs -s 32G /dev/mapper/VOLUME_NAME`` where ``VOLUME_NAME`` is the volume name you found by running `lvs` in the previous step. You may need to do ``e2fsck -f /dev/yourVolumeGroup/yourLogicalVolume`` first, but it should yell at you when you try to resize if this step is needed.
+	f. Create space for an encrypted partition by running the following commands, replacing ``$VOLUME_GROUP`` and ``$LOGICAL_VOLUME`` with the names you found in the previous step.
+	You may need to do ``e2fsck -f /dev/$VOLUME_GROUP/$LOGICAL_VOLUME`` first, but it should yell at you when you try to resize if this step is needed.
 
-	g. Run ``vgscan`` to find the volumegroup name.
+		sudo lvreduce --resizefs --size -10G /dev/$VOLUME_GROUP/$LOGICAL_VOLUME
+		sudo lvcreate -l 100%FREE -n keep_1 $VOLUME_GROUP
+		exit
 
-	h. Run ``sudo lvcreate -l 100%FREE -n keep_1 vgvagrant VOLUMEGROUP_NAME``.
+	g. Close and power off the VM
+	
+	h. Open Settings again and change the Boot Order (in the System menu) so that the hard disk is above the optical disk.
+	You can now close VirtualBox and delete the ISO file from your machine.
 
 5. 
 
-	SSH back into the machine from your shell (``vagrant ssh``) to install dev server dependencies.
+	Back in a terminal window in the ``devsite`` folder, run ``vagrant up``.
+	Now SSH back into the machine from your shell (``vagrant ssh``) to install dev server dependencies.
 	This step isn't strictly required but will make dev setup easier in the future, especially dev setup testing.
+	If we've been sloppy and haven't updated this file recently enough, you may need to check out a different branch in the third line (such as `main`).
 	If you get an error, you may not have set up the encrypted parition correctly. ::
 
 		git clone https://github.com/learning-unlimited/ESP-Website.git
@@ -224,23 +246,27 @@ Follow the following steps to upgrade the base VM for everyone to use.
 		esp/update_deps.sh
 		cd ..
 		rm -rf ESP-Website/
+		logout
 
 6. 
 
-	Export the box you have to a .box file by running ``vagrant package --base ludev --output ./ubuntu-22.04.2.box``.
+	Stop the VM by running ``vagrant halt`` in the terminal.
+	Export the box you have to a .box file by running ``vagrant package --base ludev --output ./ubuntu-*.box``, once again replacing the start with the correct version.
 
 7. 
 
-	Upload the .box file to AWS S3. If you don't have access, ask someone on the LU Web Team.
+	Upload the .box file to the LU AWS S3 bucket.
+	If you don't have access, ask someone on the LU Web Team.
 	When you upload it, choose "Choose from predefined ACLs" and "Grant public-read access" under "Permissions."
 
 8. 
 
-	Update the Vagrantfile so that the ``config.vm.box_url`` points to the new VM's URL (which you can copy from AWS).
+	Restore the vagrantfile by running ``git restore Vagrantfile``, and update it so that ``config.vm.box`` matches the box name (probably ``'ubuntu-*'``) and ``config.vm.box_url`` points to the new VM's URL (which you can copy from AWS).
+	Make sure to commit your changes to GitHub!
 
 9. 
 
-	TEST that the new setup works. Run ``vagrant destroy && vagrant up && fab setup && fab emptydb``.
+	TEST that the new setup works. Run ``vagrant destroy -f && vagrant up && fab setup && fab emptydb``.
 
 Upgrading your personal dev VM
 ------------------------------
@@ -253,7 +279,7 @@ If the base VM has been changed (see above), you will want to upgrade your devel
 
 3. Run ``vagrant up`` to start the virtual machine.
 
-4. Run ``fab dumpdb``. This will save your database as a dump file in the "devsite" folder ("devsite_django.sql"). You can also specify a filename if you would like with ``fab dumpdb:filename``.
+4. Run ``fab dumpdb`` to save your database as a dump file in the "devsite" folder ("devsite_django.sql"). You can also specify a filename if you would like with ``fab dumpdb:filename``.
 
 5. Run ``vagrant destroy`` (note, this destroys your virtual machine. Only do it once you are sure your database has been backed up and you are ready to continue).
 
