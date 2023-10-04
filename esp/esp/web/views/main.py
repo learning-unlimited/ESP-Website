@@ -32,16 +32,13 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.qsd.views import qsd
-from django.core.exceptions import PermissionDenied
 from django.contrib.sites.models import Site
 from esp.users.models import ESPUser, Permission
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.utils.datastructures import MultiValueDict
 from django.template import loader
+from django.views.generic.base import TemplateView
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
-
-from Cookie import SimpleCookie
 
 import datetime
 import re
@@ -49,22 +46,15 @@ import json
 
 from esp.dbmail.models import MessageRequest
 from esp.web.models import NavBarCategory
-from esp.utils.web import render_to_response
+from esp.utils.web import render_to_response, esp_context_stuff
 from esp.web.views.navBar import makeNavBar
 from esp.web.views.archives import archive_handlers
 from esp.middleware import ESPError
 from esp.web.forms.contact_form import ContactForm
 from esp.tagdict.models import Tag
 from esp.utils.no_autocookie import disable_csrf_cookie_update
-from esp.utils.query_utils import nest_Q
 
 from django.views.decorators.cache import cache_control
-from django.core.mail import mail_admins
-from django.conf import settings
-
-from django.views.decorators.csrf import csrf_exempt
-
-from pprint import pprint
 
 try:
     from cStringIO import StringIO
@@ -134,11 +124,24 @@ def archives(request, selection, category = None, options = None):
 
     return render_to_response('users/construction', request, {})
 
+class DefaultQSDView(TemplateView):
+    def get_context_data(self, **kwargs):
+        return esp_context_stuff()
+
+class FAQView(DefaultQSDView):
+    template_name = "faq.html"
+
+class ContactUsView(DefaultQSDView):
+    template_name = "contact_qsd.html"
+
 def contact(request, section='esp'):
     """
     This view should take an email and post to those people.
     """
     from esp.dbmail.models import send_mail
+    # if not set up, immediately redirect
+    if not Tag.getTag('contact_form_enabled'):
+        return HttpResponseRedirect("/contact.html")
 
     if 'success' in request.GET:
         return render_to_response('contact_success.html', request, {})

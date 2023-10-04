@@ -1,0 +1,18 @@
+{% extends "main.html" %}
+
+{% block title %}Contact Us{% endblock %}
+{% block content_title %}Contact Us{% endblock %}
+
+{% block content %}
+
+{% load render_qsd %}
+
+{% inline_qsd_block "contact" %}
+
+<p>
+For general communication, please email us at <b><a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></b>.
+Before contacting us with a question or concern, please check our <b><a href="/faq.html">FAQ page</a></b>.
+</p>
+
+{% end_inline_qsd_block %}
+{% endblock %}
