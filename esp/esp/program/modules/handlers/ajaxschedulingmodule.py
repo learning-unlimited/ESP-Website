@@ -44,12 +44,13 @@ from esp.cal.models              import Event
 from esp.users.models            import User, ESPUser, UserAvailability
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
+from esp.tagdict.models          import Tag
 from datetime                    import timedelta, time
 import json
 from collections                 import defaultdict
 from argcache                    import cache_function
 from uuid                        import uuid4 as get_uuid
-from esp.utils.decorators         import json_response
+from esp.utils.decorators        import json_response
 import calendar, time, datetime
 
 class AJAXSchedulingModule(ProgramModuleObj):
@@ -88,7 +89,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
         #actually return the page
         context = {
             "has_autoscheduler_frontend": prog.hasModule("AutoschedulerFrontendModule"),
-            "has_moderator_module": prog.hasModule("TeacherModeratorModule")
+            "has_moderator_module": prog.hasModule("TeacherModeratorModule"),
+            "contiguous_tolerance": Tag.getProgramTag('timeblock_contiguous_tolerance', program = prog)
             }
 
         return render_to_response(self.baseDir()+'ajax_scheduling.html', request, context)

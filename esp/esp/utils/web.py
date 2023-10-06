@@ -72,6 +72,9 @@ def render_to_response(template, request, context, content_type=None, use_reques
     tc = ThemeController()
     context['theme'] = tc.get_template_settings()
     context['current_theme_version'] = Tag.getTag("current_theme_version")
+    context['current_logo_version'] = Tag.getTag("current_logo_version")
+    context['current_header_version'] = Tag.getTag("current_header_version")
+    context['current_favicon_version'] = Tag.getTag("current_favicon_version")
     context['settings'] = settings
 
     context['current_programs'] = Program.current_programs()

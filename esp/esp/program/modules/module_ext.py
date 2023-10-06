@@ -90,7 +90,7 @@ class StudentClassRegModuleInfo(models.Model):
     priority_limit       = models.IntegerField(default=3, help_text='The maximum number of choices a student can make per timeslot when priority registration is enabled. Also, the \
                                                                      number of priority slots listed in the rank classes interface for the two-phase student registration module.')
     #   Whether to use grade range exceptions
-    use_grade_range_exceptions = models.BooleanField(default=False, help_text='Check this box to enable grade range exceptions.')
+    use_grade_range_exceptions = models.BooleanField(default=False, help_text='Check this box to enable grade range exceptions for the two-phase class lottery.')
 
     #   Set to true to allow classes to be added (via Ajax) using buttons on the catalog
     register_from_catalog = models.BooleanField(default=False, help_text='Check this box to allow students to add classes from the catalog page if they are logged in.')

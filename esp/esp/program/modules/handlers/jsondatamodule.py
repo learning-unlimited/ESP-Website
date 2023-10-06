@@ -740,6 +740,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades",
             'teacher_names': cls.pretty_teachers(),
             'moderator_names': cls.pretty_moderators(),
+            'moderator_title': Tag.getProgramTag("moderator_title", prog).capitalize() + "s",
             'resource_requests': rrequest_dict,
             'comments': cls.message_for_directors,
             'special_requests': cls.requested_special_resources,
@@ -801,15 +802,16 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         teachers = prog.teachers()
         moderator_list = []
         if 'will_moderate' in teachers:
-            moderator_list.append(("Teachers who have offered to moderate", teachers['will_moderate'].count()))
+            moderator_list.append(("Teachers who have offered to be a " + Tag.getProgramTag("moderator_title", prog).lower(), teachers['will_moderate'].count()))
         if 'assigned_moderator' in teachers:
-            moderator_list.append(("Moderators who have been assigned to sections", teachers['assigned_moderator'].count()))
-        moderator_list.append(("Total number of time blocks offered by moderators", ModeratorRecord.objects.filter(program=prog).aggregate(Sum('num_slots'))['num_slots__sum'] or 0))
-        moderator_list.append(("Total number of time blocks assigned moderators", ClassSection.objects.filter(parent_class__parent_program=prog, moderators__isnull=False).distinct().aggregate(Count('meeting_times'))['meeting_times__count']))
-        moderator_list.append(("Total number of sections assigned moderators", ClassSection.objects.filter(parent_class__parent_program=prog, moderators__isnull=False).distinct().count()))
+            moderator_list.append((Tag.getProgramTag("moderator_title", prog).capitalize() + "s who have been assigned to sections", teachers['assigned_moderator'].count()))
+        moderator_list.append(("Total number of time blocks offered by " + Tag.getProgramTag("moderator_title", prog).lower() + "s", ModeratorRecord.objects.filter(program=prog).aggregate(Sum('num_slots'))['num_slots__sum'] or 0))
+        moderator_list.append(("Total number of time blocks assigned " + Tag.getProgramTag("moderator_title", prog).lower() + "s", ClassSection.objects.filter(parent_class__parent_program=prog, moderators__isnull=False).distinct().aggregate(Count('meeting_times'))['meeting_times__count']))
+        moderator_list.append(("Total number of sections assigned " + Tag.getProgramTag("moderator_title", prog).lower() + "s", ClassSection.objects.filter(parent_class__parent_program=prog, moderators__isnull=False).distinct().count()))
         return moderator_list
     mod_nums.depend_on_row(ModeratorRecord, lambda mr: {'prog': mr.program})
     mod_nums.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
+    mod_nums.depend_on_model(Tag)
     mod_nums = staticmethod(mod_nums)
 
     @cache_function
@@ -1063,6 +1065,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         dictOut["stats"].append(vitals)
 
         shirt_data = {"id": "shirtnum"};
+        shirt_data["moderator_title"] = Tag.getProgramTag("moderator_title", prog).capitalize();
         adminvitals_shirt = prog.getShirtInfo()
         shirt_data["types"] = adminvitals_shirt['shirt_types'];
         shirt_data["data"] = adminvitals_shirt['shirts'];

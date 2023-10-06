@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from esp.program.models import ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, meets_deadline, needs_admin, aux_call
 from esp.program.modules.forms.moderate import ModeratorForm
+from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 from django.db.models.query import Q
@@ -69,8 +70,8 @@ class TeacherModeratorModule(ProgramModuleObj):
                 'assigned_moderator': assigned_list}
 
     def teacherDesc(self):
-        return {'will_moderate': """Teachers who have also offered to moderate""",
-                'assigned_moderator': """Teachers who are assigned as moderators"""}
+        return {'will_moderate': """Teachers who have also offered to be a """ + Tag.getProgramTag("moderator_title", self.program).lower(),
+                'assigned_moderator': """Teachers who are assigned as """ + Tag.getProgramTag("moderator_title", self.program).lower() + """s"""}
 
     @aux_call
     @needs_admin

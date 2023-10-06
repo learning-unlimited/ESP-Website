@@ -469,25 +469,6 @@ class ProgramHappenTest(TestCase):
         for section in getTaughtSections:
             self.assertEqual( section.parent_class, self.classsubject, "Created section has incorrect parent_class." )
 
-    def teacherreg_delete_classes(self):
-        #   Check that teacher can delete the classes
-        self.loginTeacher()
-        user_obj = self.teacher
-        target_classes = list(user_obj.getTaughtClasses())
-        self.assertTrue(len(target_classes) > 0, 'Expected at least 1 class remaining to test deletion')
-        while len(user_obj.getTaughtClasses()) > 0:
-            class_to_delete = target_classes[0]
-            del target_classes[0]
-
-            #   Test that you can't delete a class with students in it.
-            if class_to_delete.num_students() > 0:
-                response = self.client.get('/teach/%s/deleteclass/%d' % (self.prog.getUrlBase(), class_to_delete.id))
-                self.assertTrue('toomanystudents.html' in response.template.name)
-                class_to_delete.clearStudents()
-
-            response = self.client.get('/teach/%s/deleteclass/%d' % (self.prog.getUrlBase(), class_to_delete.id))
-            self.assertTrue(set(user_obj.getTaughtClasses()) == set(target_classes), 'Could not delete class; expected to have %s, got %s' % (target_classes, user_obj.getTaughtClasses()))
-
     def studentreg(self):
         # Check that you're in no classes
         self.assertEqual( self.student.getEnrolledClasses().count(), 0, "Student incorrectly enrolled in a class" )
@@ -541,7 +522,6 @@ class ProgramHappenTest(TestCase):
         self.makeprogram()
         self.teacherreg()
         self.studentreg()
-        self.teacherreg_delete_classes()
 
 class ProgramFrameworkTest(TestCase):
     """ A test case that initializes a program with the parameters passed to setUp().

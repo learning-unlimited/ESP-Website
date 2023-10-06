@@ -268,10 +268,10 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                                 continue teacher_loop;
                             }
                         }
-                        if(n_teachers == 5) break teacher_loop;
                     }
                 if(n_teachers == 0) return grey;
-                return this.cellColors.HSLToRGB(0,100,100 - 10 * n_teachers); // Color red based on number of teachers
+                // Color red based on proportion of unavailable teachers
+                return this.cellColors.HSLToRGB(0,100,100 - (n_teachers / section.teacher_data.length) * 50);
             case "num_teachers":
                 // Color cell based on the number of teachers for the section
                 var n_teachers = Math.min(section.teachers.length, 5)
@@ -284,6 +284,20 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 // Color cell based on the number of teachers and/or moderators for the section
                 var n_moderators = Math.min(section.moderators.length + section.teachers.length, 5)
                 return this.cellColors.HSLToRGB(120,100,100 - 10 * n_moderators);
+            case "mod_unavailable":
+                var n_mods = 0;
+                mod_loop:
+                    for(var moderator of section.moderator_data){
+                        for(var ts of scheduleAssignment.timeslots){
+                            if(!moderator.availability.includes(ts)){
+                                n_mods += 1;
+                                continue mod_loop;
+                            }
+                        }
+                    }
+                if(n_mods == 0) return grey;
+                // Color red based on proportion of unavailable moderators
+                return this.cellColors.HSLToRGB(0,100,100 - (n_mods / section.moderator_data.length) * 50);
             case "mod_cats":
                 // Color cell based on the number of moderators for the section that have not specified this section's category in the moderator form
                 var n_moderators = 0;

@@ -116,7 +116,8 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
     var getModeratorLinks = function(section) {
         var moderator_links_list = []
             $j.each(section.moderator_data, function(index, moderator) {
-                moderator_links_list.push("<a href='#' class='moderator-link' data-moderator='" + moderator.id + "'>" + moderator.first_name + " " + moderator.last_name + "</a>");
+                moderator_links_list.push("<a href='#' class='moderator-link' data-moderator='" + moderator.id + "'>" + moderator.first_name + " " + moderator.last_name +
+                                          "</a> <button class='moderator-remove' data-moderator='" + moderator.id + "' data-section='" + section.id + "'>Remove</button>");
             });
         var moderator_links = moderator_links_list.join(", ");
         return $j(moderator_links);
@@ -184,6 +185,14 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         this.el.append(getHeader(section));
         this.el.append(getToolbar(section));
         this.el.append(getContent(section));
+        if(has_moderator_module === "True") {
+            $j(".moderator-remove").on("click", function(evt) {
+                var mod = this.sections.matrix.moderatorDirectory.getById($j(evt.target).data("moderator"));
+                var sec = this.sections.getById($j(evt.target).data("section"));
+                this.sections.matrix.moderatorDirectory.selectedModerator = mod;
+                this.sections.matrix.moderatorDirectory.unassignModerator(sec);
+            }.bind(this));
+        }
     };
 
     var getModeratorHeader = function(moderator) {

@@ -42,16 +42,6 @@ function requestCancel(cls) {
     });
 }
 
-<!--
-
-function deleteClass() {
-    if (confirm('Are you sure you would like to delete this class?')) {
-       return true;
-    }
-    return false;
-}
-
-//-->
 </script>
 {% endblock %}
 
@@ -130,7 +120,7 @@ Popup div for class cancellation request
     </a>
     <br />
     <a class="create-class-link" href="/teach/{{ one }}/{{ two }}/copyclasses" title="Teach your existing class for {{ settings.ORGANIZATION_SHORT_NAME }}!">
-      Teach a class from a previous program for {{ program.niceName }}!
+      Copy a registered class (including from a previous program) for {{ program.niceName }}!
     </a>
     {% endif %}
     {% if can_create_open_class %}<br />

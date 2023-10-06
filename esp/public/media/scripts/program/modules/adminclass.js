@@ -131,7 +131,7 @@ function fill_class_popup(clsid, classes_data) {
     .html('')
     .append(make_attrib_para("Status", status_string))
     .append(make_attrib_para("Teachers", class_info.teacher_names))
-  if (class_info.moderator_names.length) class_desc_popup.append(make_attrib_para("Moderators", class_info.moderator_names));
+  if (class_info.moderator_names.length) class_desc_popup.append(make_attrib_para(class_info.moderator_title, class_info.moderator_names));
   class_desc_popup
     .append(make_attrib_para("Sections", class_info.sections.length))
     .append(sections_list)

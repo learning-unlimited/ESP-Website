@@ -60,7 +60,7 @@ function togglePopup() {
                     </td>
                 {% endif %}
                 <td class="edit">
-                    {% if checked_in %}
+                    {% if deadline_met or checked_in %}
                         <!--link to filtered course catalog like the fillslot page-->
                         <a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog/{{timeslot.0.id}}" title="{% if cls %}View other classes{% else %}Add a class{% endif %}"><i class="material-icons md-4">{% if cls %}create{% else %}add{% endif %}</i></a>
                         {% if cls and cls.first_meeting_time %}
@@ -85,7 +85,7 @@ function togglePopup() {
   </div>
 
   <div class="popup" onclick="togglePopup()">
-      <span class="popuptext" id="myPopup">Not checked in yet!</span>
+      <span class="popuptext" id="myPopup">You must be checked in to make class changes right now!</span>
   </div>
 
 </center>

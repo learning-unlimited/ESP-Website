@@ -1829,6 +1829,19 @@ var rebuild=function(metadata) {
     $j(".section:empty").parent('.outline').remove();
     // Reset add field form
 	$j("#cat_selector").val('Generic').trigger("change");
+    // Set up permissions if needed
+    if(metadata['perms']!=""){
+        clearPermsArea();
+        var meta_perms = metadata['perms'].split(",");
+        $j('#id_main_perm').val(meta_perms[0]).change();
+        if(meta_perms.length >= 2){
+            $j('#id_prog_belong').prop('checked', true).change();
+            $j('#id_perm_program').val(meta_perms[1]).change();
+            if(meta_perms.length == 3){
+                $j('#id_sub_perm').val(meta_perms[2]).change();
+            }
+        }
+    }
     //Open the information panel if not already open
     $j("#header_information.ui-accordion-header-collapsed").trigger("click");
 };

@@ -280,7 +280,7 @@ class AdminClass(ProgramModuleObj):
         cls.accept()
         if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
-        return self.goToCore(tl)
+        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
 
     @aux_call
     @needs_admin
@@ -289,7 +289,7 @@ class AdminClass(ProgramModuleObj):
         cls.reject()
         if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
-        return self.goToCore(tl)
+        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
 
     @aux_call
     @needs_admin
@@ -298,7 +298,7 @@ class AdminClass(ProgramModuleObj):
         cls.propose()
         if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
-        return self.goToCore(tl)
+        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
 
     @aux_call
     @needs_admin
@@ -309,7 +309,7 @@ class AdminClass(ProgramModuleObj):
         cls = classes[0]
 
         cls.delete(True)
-        return self.goToCore(tl)
+        return HttpResponseRedirect(prog.get_manage_url() + 'dashboard')
 
     @aux_call
     @needs_admin

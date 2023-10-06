@@ -119,7 +119,7 @@ class StudentRegSettingsForm(BetterModelForm):
         fieldsets = [
                      ('Capacity Settings', {'fields': ['enforce_max', 'class_cap_multiplier', 'class_cap_offset', 'apply_multiplier_to_room_cap']}),
                      ('Priority Registration Settings', {'fields': ['priority_limit']}), # use_priority is not included here to prevent confusion; to my knowledge, only HSSP uses this setting - WG
-                     ('Enrollment Settings', {'fields': ['use_grade_range_exceptions', 'register_from_catalog', 'visible_enrollments', 'visible_meeting_times', 'show_emailcodes']}),
+                     ('Enrollment Settings', {'fields': ['register_from_catalog', 'visible_enrollments', 'visible_meeting_times', 'show_emailcodes']}), # use_grade_range_exceptions is excluded until there is an interface for it - WG 5/25/23
                      ('Button Settings', {'fields': ['confirm_button_text', 'view_button_text', 'cancel_button_text', 'temporarily_full_text', 'cancel_button_dereg', 'send_confirmation']}),
                      ('Visual Options', {'fields': ['progress_mode', 'force_show_required_modules']}),
                     ]# Here you can also add description for each fieldset.
@@ -127,10 +127,10 @@ class StudentRegSettingsForm(BetterModelForm):
 
 def get_template_source(template_list):
     template = select_template(template_list)
-    if template.origin.loader: # source is from a file
-        return open(template.origin.name, 'r').read().strip()
-    else: # source is from a template override
+    if template.origin.name == "(template override)": # source is from a template override
         return TemplateOverride.objects.get(name=template.template.name).content.replace('\r\n', '\n').strip() # Use unix line endings and strip whitespace just in case
+    else: # source is from a file
+        return open(template.origin.name, 'r').read().strip()
 
 class ReceiptsForm(BetterForm):
     confirm = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),

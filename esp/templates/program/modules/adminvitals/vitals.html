@@ -60,7 +60,7 @@ var has_moderator_module = "{{ program|hasModule:"TeacherModeratorModule" }}"
       </div>
       {% if program|hasModule:"TeacherModeratorModule" %}
       <div class="module_group" id="stats_moderators">
-        <div class="module_group_header module_group_expandable">Moderators <span class="expand_collapse_text">(click to expand)</span></div>
+        <div class="module_group_header module_group_expandable"> {{ program.getModeratorTitle|capfirst }}s <span class="expand_collapse_text">(click to expand)</span></div>
         <div class="module_group_body" style="display:none">
           Loading data...
         </div>
