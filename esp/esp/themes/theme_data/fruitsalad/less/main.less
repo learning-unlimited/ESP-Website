@@ -268,7 +268,6 @@ position: relative;
 
 #footer {
 text-align: center;
-color: white;
 padding-top: 10px;
 padding-bottom: 10px;
 clear: both;
@@ -317,7 +316,6 @@ background-position: left top;
 background-repeat: no-repeat;
 
 line-height: 35px;
-color: #fff;
 font-weight: bold;
 text-decoration: none;
 
@@ -362,7 +360,6 @@ margin-bottom: 10px;
     border-top-right-radius: @rounding_radius;
     text-decoration: none;
     background-repeat: no-repeat;
-    color: #fff;
     font-weight: bold;
     font-variant: small-caps;
 }
@@ -393,7 +390,6 @@ text-decoration: underline;
 }
 /*#cross_link .inactive,
 #cross_link .inactive a {
-color: #999;
 }*/
 
 #contact_info {
@@ -411,10 +407,6 @@ font-weight: bold;
 }
 #contact_info .normal {
 font-size: 8pt;
-color: white;
-}
-#contact_info .normal a {
-/*color: @tabcolor0_accent2_color;*/
 }
 
 
@@ -489,7 +481,6 @@ height: 21px; width: 45px;
 font-size: 10.5px;
 text-decoration: none;
 border-radius: 0px;
-color: white;
 border: none;
 cursor: pointer;
 z-index: 0;
@@ -518,7 +509,6 @@ z-index: 1;
 position: absolute;
 top: 9px; right: 8px;
 height: 17px; width: 40px; padding-top: 4px;
-color: white;
 font-size: 10.5px;
 text-decoration: none;
 border: none;
@@ -543,7 +533,7 @@ text-decoration: underline;
 width: 600px;
 margin: 0px auto;
 position: relative;
-background: #fff;
+background: @contentBackground;
 border-radius: @rounding_radius;
 }
 
@@ -563,7 +553,7 @@ border-top-left-radius: @rounding_radius;
 #content_header h1.title {
 margin: 0;
 padding: 6px 15px 4px;
-color: #fff;
+color: @titleColor;
 font-variant: small-caps;
 }
 
@@ -588,12 +578,10 @@ display: inline-block;
 height: 100%;
 padding: 0px 2px;
 text-decoration: none;
-color: #fff;
 }
 
 #submenu li + li:before {
 content: '*';
-color: #fff;
 }
 
 #submenu li.navbar-manage {
@@ -606,17 +594,14 @@ color: #fff;
   content: '';
 }
 #submenu li.navbar-manage a, #submenu li.navbar-manage .navbar-manage-expander {
-  color: white;
   display: block;
   padding: 2px 5px 5px;
-  background-color: rgba(0, 0, 0, 75%);
 }
 #submenu li.navbar-manage .navbar-manage-expander {
   font-weight: bold;
   cursor: pointer;
 }
 #submenu li.navbar-manage a:hover, #submenu li.navbar-manage .navbar-manage-expander:hover {
-  background-color: #000;
 }
 
 /* ANNOUNCEMENTS */
@@ -636,13 +621,13 @@ color: #fff;
   padding: 10px;
 }
 #divannouncements h1 {
-  color: #fff;
+  color: @headingsColor;
   margin: 0;
   padding: 0;
   font-size: 12pt;
 }
 #divannouncements a {
-  color: #CBF57F;
+  color: @linkColor;
   font-size: 12pt;
   text-decoration: none;
 }
@@ -717,33 +702,31 @@ background: #bbb;
 
 #content p {
   line-height: 160%;
-  color: #000000;
   margin-top: 0px;
 }
 
 #content li {
   line-height: 140%;
-  color: #000000;
   margin-top: 0px;
 }
 
 #content h1 {
   font-size: 1.2em;
   font-weight: bold;
-  color: #3366cc;
+  color: @headingsColor;
   margin-top: 0px;
 }
 #content h2 {
   font-size: 1.1em;
   font-weight: bold;
-  color: #000000;
+  color: @headingsColor;
   margin-top: 0px;
   margin-bottom: 0px;
 }
 #content h3 {
   font-size: 1.0em;
   font-weight: bold;
-  color: #000000;
+  color: @headingsColor;
   margin-top: 0px;
   margin-bottom: 0px;
 }
@@ -751,24 +734,36 @@ background: #bbb;
   font-size: 0.9em;
   font-weight: bold;
   font-style: italic;
-  color: #000000;
+  color: @headingsColor;
   margin-top: 0px;
   margin-bottom: 0px;
 }
 #content a,
 #content a:link {
-  color: #3366cc;
+  color: @linkColor;
   text-decoration: underline;
 }
 #content a:visited {
-  color: #993399;
+  color: @linkColor;
   text-decoration: underline;
 }
 #content a:active,
 #content a:hover,
 #content a:focus {
-  color: #3366cc;
+  color: @linkColorHover;
   text-decoration: underline;
+}
+#content .btn {
+  background: @btnBackground;
+  color: @btnLinkColor;
+}
+#content .btn-primary {
+  background: @btnPrimaryBackground;
+  color: @btnPrimaryLinkColor;
+}
+#content .btn-inverse {
+  background: @btnInverseBackground;
+  color: @btnInverseLinkColor;
 }
 
 #admin_link {
@@ -801,7 +796,6 @@ table.plaintable th {
 .statistics { font-size: .6em; font-style: italic; text-align: center; color: #999; }
 
 #content p.attribution {
-  color: #666;
   font-style: italic;
 }
 
@@ -820,7 +814,6 @@ table.plaintable th {
 .divformcol1, .divformcol2, .divformcol3, .divformcol4, .divformcol5 {
   padding: 0px 6px 10px 0px;
 
-  color: #000000;
   line-height: 100%;
   margin: 0px;
   white-space: nowrap;
@@ -923,12 +916,12 @@ div.question {
   top: -10px; margin: 0 0 0 -7px;
   left: 100px;
   background: white;
-  color: #f8e403;
+  color: @headingsColor;
   padding: 0 7px 0 7px;
 
 } 
 .helpbox h4 span {
-     color: #d8c303;
+     color: @headingsColor;
      font-size: 1.2em	
 }
 
@@ -941,7 +934,6 @@ div .adminbar_user {
 }
 
 #user_data {
-    color: #444;
     font-style: italic;
 }
 

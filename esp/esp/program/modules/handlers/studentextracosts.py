@@ -46,9 +46,11 @@ from esp.program.models  import StudentApplication, SplashInfo
 from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, main_call, meets_cap
 from esp.program.modules.forms.splashinfo import SiblingDiscountForm
 from esp.tagdict.models import Tag
-from esp.users.models    import Record, RecordType
+from esp.users.models    import Record, RecordType, ESPUser
 from esp.utils.web import render_to_response
 from esp.utils.widgets import ChoiceWithOtherField, RadioSelectWithData
+from esp.utils.query_utils import nest_Q
+
 
 class CostItem(forms.Form):
     def __init__(self, *args, **kwargs):
@@ -122,17 +124,18 @@ class StudentExtraCosts(ProgramModuleObj):
 
         # Get all the line item types for this program.
         for i in pac.get_lineitemtypes(include_donations=False):
+            q_object = pac.all_transfers_Q(lineitemtype_id=i.id)
+            students_q = nest_Q(q_object, 'transfer')
             if QObject:
-                students = pac.all_students_Q(lineitemtype_id=i.id)
-                student_lists['extracosts_%d' % i.id] = students
+                student_lists['extracosts_%d' % i.id] = students_q
             else:
-                students = pac.all_students(lineitemtype_id=i.id).distinct()
+                students = ESPUser.objects.filter(students_q).distinct()
                 student_lists['extracosts_%d' % i.id] = students
             for option in i.options:
                 key = 'extracosts_%d_%d' % (i.id, option[0])
                 filter_qobject = Q(transfer__option=option[0])
                 if QObject:
-                    student_lists[key] = students & filter_qobject
+                    student_lists[key] = students_q & filter_qobject
                 else:
                     student_lists[key] = students.filter(filter_qobject).distinct()
         if self.program.sibling_discount:

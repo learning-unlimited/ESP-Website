@@ -39,6 +39,7 @@ Learning Unlimited, Inc.
 
 from esp.middleware import ESPError
 from esp.users.models import admin_required
+from esp.tagdict.models import Tag
 from esp.themes import settings as themes_settings
 from esp.themes.controllers import ThemeController
 
@@ -101,43 +102,69 @@ def selector(request, keep_files=None):
 def logos(request):
     context = {}
     tc = ThemeController()
+    if not os.path.exists(settings.MEDIA_ROOT + 'images/backups'):
+        os.makedirs(settings.MEDIA_ROOT + 'images/backups')
 
     if request.POST:
         if 'new_logo' in request.FILES:
             f = request.FILES['new_logo']
+            # Overwrite existing logo file
             with open(settings.MEDIA_ROOT + 'images/theme/logo.png', 'wb+') as destination:
                 for chunk in f.chunks():
                     destination.write(chunk)
-            with open(settings.MEDIA_ROOT + 'images/theme/logo.' + datetime.now().strftime("%Y%m%d-%H%M%S") + '.png', 'wb+') as destination:
+            # Update logo version
+            Tag.setTag("current_logo_version", value = hex(random.getrandbits(16)))
+            # Backup the new logo file
+            with open(settings.MEDIA_ROOT + 'images/backups/logo.' + datetime.now().strftime("%Y%m%d-%H%M%S") + '.png', 'wb+') as destination:
                 for chunk in f.chunks():
                     destination.write(chunk)
         elif 'new_header' in request.FILES:
             f = request.FILES['new_header']
+            # Overwrite existing header file
             with open(settings.MEDIA_ROOT + 'images/theme/header.png', 'wb+') as destination:
                 for chunk in f.chunks():
                     destination.write(chunk)
-            with open(settings.MEDIA_ROOT + 'images/theme/header.' + datetime.now().strftime("%Y%m%d-%H%M%S") + '.png', 'wb+') as destination:
+            # Update header version
+            Tag.setTag("current_header_version", value = hex(random.getrandbits(16)))
+            # Backup the new header file
+            with open(settings.MEDIA_ROOT + 'images/backups/header.' + datetime.now().strftime("%Y%m%d-%H%M%S") + '.png', 'wb+') as destination:
                 for chunk in f.chunks():
                     destination.write(chunk)
         elif 'new_favicon' in request.FILES:
             f = request.FILES['new_favicon']
+            # Overwrite existing logo file
             with open(settings.MEDIA_ROOT + 'images/favicon.ico', 'wb+') as destination:
                 for chunk in f.chunks():
                     destination.write(chunk)
-            with open(settings.MEDIA_ROOT + 'images/favicon.' + datetime.now().strftime("%Y%m%d-%H%M%S") + '.ico', 'wb+') as destination:
+            # Update favicon version
+            Tag.setTag("current_favicon_version", value = hex(random.getrandbits(16)))
+            # Backup the new favicon file
+            with open(settings.MEDIA_ROOT + 'images/backups/favicon.' + datetime.now().strftime("%Y%m%d-%H%M%S") + '.ico', 'wb+') as destination:
                 for chunk in f.chunks():
                     destination.write(chunk)
         elif 'logo_select' in request.POST:
-            shutil.copyfile(settings.MEDIA_ROOT + 'images/theme/' + request.POST['logo_select'], settings.MEDIA_ROOT + 'images/theme/logo.png')
+            # Overwrite existing logo file
+            shutil.copyfile(settings.MEDIA_ROOT + 'images/backups/' + request.POST['logo_select'], settings.MEDIA_ROOT + 'images/theme/logo.png')
+            # Update logo version
+            Tag.setTag("current_logo_version", value = hex(random.getrandbits(16)))
         elif 'header_select' in request.POST:
-            shutil.copyfile(settings.MEDIA_ROOT + 'images/theme/' + request.POST['header_select'], settings.MEDIA_ROOT + 'images/theme/header.png')
+            # Overwrite existing header file
+            shutil.copyfile(settings.MEDIA_ROOT + 'images/backups/' + request.POST['header_select'], settings.MEDIA_ROOT + 'images/theme/header.png')
+            # Update header version
+            Tag.setTag("current_header_version", value = hex(random.getrandbits(16)))
         elif 'favicon_select' in request.POST:
-            shutil.copyfile(settings.MEDIA_ROOT + 'images/' + request.POST['favicon_select'], settings.MEDIA_ROOT + 'images/favicon.ico')
+            # Update favicon version
+            shutil.copyfile(settings.MEDIA_ROOT + 'images/backups/' + request.POST['favicon_select'], settings.MEDIA_ROOT + 'images/favicon.ico')
+            # Update favicon version
+            Tag.setTag("current_favicon_version", value = hex(random.getrandbits(16)))
 
-    context['logo_files'] = [(path.split('public')[1], path.split('images/theme/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/theme', "logo\..*\.png")]
-    context['header_files'] = [(path.split('public')[1], path.split('images/theme/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/theme', "header\..*\.png")]
-    context['favicon_files'] = [(path.split('public')[1], path.split('images/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images', "favicon\..*\.ico")]
+    context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "logo\..*\.png")]
+    context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "header\..*\.png")]
+    context['favicon_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "favicon\..*\.ico")]
     context['has_header'] = os.path.exists(settings.MEDIA_ROOT + 'images/theme/header.png')
+    context['current_logo_version'] = Tag.getTag("current_logo_version")
+    context['current_header_version'] = Tag.getTag("current_header_version")
+    context['current_favicon_version'] = Tag.getTag("current_favicon_version")
 
     return render_to_response('themes/logos.html', request, context)
 
@@ -269,6 +296,7 @@ def editor(request):
     context = tc.find_less_variables(flat=True)
     context.update(tc.get_current_params())
     context['palette'] = tc.get_palette()
+    context['theme_name'] = current_theme
 
     #   Get list of available customizations
     context['available_themes'] = tc.get_customization_names()

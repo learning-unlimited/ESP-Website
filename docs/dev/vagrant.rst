@@ -275,13 +275,13 @@ If the base VM has been changed (see above), you will want to upgrade your devel
 
 1. Make a copy of `esp/esp/local_settings.py` somewhere with a different name (e.g., on your desktop as "old_local_settings.py"). The `local_settings.py` file will get overwritten by the end of this process and you will want to restore the settings from your previous VM setup.
 
-2. From within the "devsite" folder, run ``git checkout dumpdb``. This branch has the proper code to interact with your current database and create the dump file.
+2. From within the "devsite" folder, run ``fab dumpdb``. This action will save your database as a dump file in the `devsite` folder called `devsite_django.sql`. You can also specify a filename if you would like with ``fab dumpdb:filename``.
 
-3. Run ``vagrant up`` to start the virtual machine.
+3. Run ``vagrant destroy`` (note: this destroys your virtual machine. Only do it once you are sure your database has been backed up and you are ready to continue).
 
-4. Run ``fab dumpdb`` to save your database as a dump file in the "devsite" folder ("devsite_django.sql"). You can also specify a filename if you would like with ``fab dumpdb:filename``.
+4. Now follow the `VM installation instructions above <#installation>`_, starting at ``vagrant up``.
 
-5. Run ``vagrant destroy`` (note, this destroys your virtual machine. Only do it once you are sure your database has been backed up and you are ready to continue).
+5. After running ``fab setup``, run ``fab loaddb:devsite_django.sql``. If you specified a different filename when you dumped your database, use that name instead.
 
 6. Run ``git checkout main`` to check out the main branch. If you are upgrading your VM as part of a pull request, replace "main" with the name of the PR branch.
 
@@ -289,4 +289,4 @@ If the base VM has been changed (see above), you will want to upgrade your devel
 
 8. After running ``fab setup``, run ``fab loaddb:devsite_django.sql``. If you specified a different filename, use that instead.
 
-9. Open your old local_settings.py file and your new local_settings.py file with a text editor. You will likely want to copy over most of your old local settings. The ONLY thing that MUST remain from the NEW version is the NEW DATABASE PASSWORD.
+9. Open your old local_settings.py file and your new local_settings.py file with a text editor. You will likely want to copy over most of your old local settings. The ONLY thing that MUST remain from the new version is the NEW DATABASE PASSWORD.

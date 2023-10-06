@@ -121,24 +121,42 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                             </div>
                         </div>
 
+                    {% if theme_name != "bigpicture" and theme_name != "barebones" %}
                         <div class="control-group">
-                            <label class="control-label" for="wellbg">Well Background:</label>
+                            <label class="control-label" for="contentbg">Content Background:</label>
                             <div class="controls">
-                                <input type="text" id="wellbg" name="wellBackground" class="color" value="{{wellBackground}}"/>
+                                <input type="text" id="contentbg" name="contentBackground" class="color" value="{{contentBackground}}"/>
                             </div>
                         </div>
+                    {% endif %}
 
+                    {% if theme_name == "barebones" %}
                         <div class="control-group">
                             <label class="control-label" for="heroUnitBackground">Hero Unit Background:</label>
                             <div class="controls">
                                 <input type="text" id="heroUnitBackground" name="heroUnitBackground" class="color" value="{{heroUnitBackground}}"/>
                             </div>
                         </div>
+                    {% endif %}
 
                         <div class="control-group">
                             <label class="control-label" for="textColor">Text:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="textColor" name="textColor" value="{{ textColor }}"/>
+                            </div>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label class="control-label" for="headingsColor">Headings:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="headingsColor" name="headingsColor" value="{{ headingsColor }}"/>
+                            </div>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label class="control-label" for="titleColor">Content Titles:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="titleColor" name="titleColor" value="{{ titleColor }}"/>
                             </div>
                         </div>
                     </div>
@@ -202,9 +220,10 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     </div>
                 </div>
 
+                {% if theme_name != "fruitsalad" %}
                 <div class="accordion-group">
                     <div class="accordion-heading">
-                        <h3 class="accordion-toggle" data-toggle="collapse" href="#navbar_edit_group" rel="popover" data-original-title="Navbar" data-content="Use this section to control the colors for the various elements of the navigation bar. The background fades into the highlight.">Navbar</h3>
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#navbar_edit_group" rel="popover" data-original-title="Navbar" {% if theme_name == "bigpicture" %}data-content="Use this section to control the colors for the various elements of the navigation bar in the upper right hand corner."{% else %}data-content="Use this section to control the colors for the various elements of the navigation bar. The background fades into the highlight."{% endif %}>Navbar</h3>
                     </div>
                     <div class="collapse" id="navbar_edit_group">
                         <div class="control-group">
@@ -214,12 +233,14 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                             </div>
                         </div>
 
+                {% if theme_name != "circles" %}
                         <div class="control-group">
                             <label class="control-label" for="navbarBackgroundHighlight">Highlight:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="navbarBackgroundHighlight" name="navbarBackgroundHighlight" value="{{ navbarBackgroundHighlight }}"/>
                             </div>
                         </div>
+                {% endif %}
 
                         <div class="control-group">
                             <label class="control-label" for="navbarText">Text:</label>
@@ -249,6 +270,16 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         <h3 class="accordion-toggle" data-toggle="collapse" href="#sidebar_theme" rel="popover" data-original-title="Sidebar" data-content="Use this section to control the colors used in the sidebar elements. A link is active in the sidebar when it points to the currently loaded page.">Sidebar</h3>
                     </div>
                     <div class="collapse" id="sidebar_theme">
+
+                    {% if theme_name == "circles" %}
+                        <div class="control-group">
+                            <label class="control-label" for="sidebarText">Text:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="sidebarText" name="sidebarText" value="{{ sidebarText }}"/>
+                            </div>
+                        </div>
+                    {% endif %}
+
                         <div class="control-group">
                             <label class="control-label" for="sidebarLink">Links:</label>
                             <div class="controls">
@@ -277,13 +308,15 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                 <input type="text" class="color" id="sidebarLinkHover" name="sidebarLinkHover" value="{{ sidebarLinkHover }}"/>
                             </div>
                         </div>
-	      
+
+                    {% if theme_name != "circles" %}
                         <div class="control-group">
                             <label class="control-label" for="sidebarHover">Background:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="sidebarHover" name="sidebarHover" value="{{ sidebarHover }}"/>
                             </div>
                         </div>
+                    {% endif %}
 
                         <h5>Active</h5>
                         <div class="control-group">
@@ -317,6 +350,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         {% endcomment %}
                     </div>
                 </div>
+                {% endif %}
 
                 <div class="accordion-group">
                     <div class="accordion-heading">
@@ -329,11 +363,23 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                 <input type="text" class="color" id="btnBackground" name="btnBackground" value="{{ btnBackground }}"/>
                             </div>
                         </div>
+                        <div class="control-group">
+                            <label class="control-label" for="btnLinkColor">Button text:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="btnLinkColor" name="btnLinkColor" value="{{ btnLinkColor }}"/>
+                            </div>
+                        </div>
 
                         <div class="control-group">
                             <label class="control-label" for="btnPrimaryBackground">Primary Buttons:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="btnPrimaryBackground" name="btnPrimaryBackground" value="{{ btnPrimaryBackground }}"/>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label" for="btnPrimaryLinkColor">Primary button text:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="btnPrimaryLinkColor" name="btnPrimaryLinkColor" value="{{ btnPrimaryLinkColor }}"/>
                             </div>
                         </div>
 
@@ -343,12 +389,19 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                 <input type="text" class="color" id="btnInverseBackground" name="btnInverseBackground" value="{{ btnInverseBackground }}"/>
                             </div>
                         </div>
+                        <div class="control-group">
+                            <label class="control-label" for="btnInverseLinkColor">Inverse button text:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="btnInverseLinkColor" name="btnInverseLinkColor" value="{{ btnInverseLinkColor }}"/>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
+                {% if theme_name != "barebones" %}
                 <div class="accordion-group">
                     <div class="accordion-heading">
-                        <h3 class="accordion-toggle" data-toggle="collapse" href="#advanced" rel="popover" data-original-title="Advanced" data-content="These are additional parameters specific to the currently selected theme.">Advanced</h3>
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#advanced" rel="popover" data-original-title="Advanced" data-content="These are additional parameters specific to the currently selected theme.">{% if theme_name == "fruitsalad" %}Fruitsalad Tabs{% else %}Advanced{% endif %}</h3>
                     </div>
                     <div class="collapse" id="advanced">
                         {% for category, data in adv_vars.items %}{% if not data|length_is:0 %}
@@ -356,6 +409,13 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                             <h3>Category: {{ category }}<hr/></h3>
                             <!-- Dropdown box for adding an optional variable override that is not yet defined -->
                             <div class="control-group opt_var_div hidden">
+                                <div> Accent 1 for each side tab refers to the accent on the left part of the side tab, the background color of the heading bar, and the unselected top tabs when the specified number side tab is selected.
+                                </div>
+                                </br>
+                                <div>
+                                Accent 2 for each side tab refers to the text color in the side and top tabs and the link color in the frame when the specified number side tab is selected. 
+                                </div>
+                                </br>
                                 <label class="control-label" for="new_opt_var_{{ forloop.counter0 }}">Add a variable:</label>
                                 <div class="controls">
                                     <select id="new_opt_var_{{ forloop.counter0 }}" name="new_opt_var_{{ forloop.counter0 }}" class="select_opt_var">
@@ -378,6 +438,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         {% endif %}{% endfor %}
                     </div>
                 </div>
+                {% endif %}
 
                 <div class="accordion-group">
                     <div class="accordion-heading">

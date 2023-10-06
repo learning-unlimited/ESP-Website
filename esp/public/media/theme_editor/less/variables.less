@@ -39,6 +39,7 @@
 // Scaffolding
 // -------------------------
 //@bodyBackground:        @white;
+//@contentBackground:     @white;
 //@textColor:             @grayDark;
 
 
@@ -61,7 +62,8 @@
 
 @headingsFontFamily:    inherit; // empty to use BS default, @baseFontFamily
 @headingsFontWeight:    bold;    // instead of browser default, bold
-@headingsColor:         inherit; // empty to use BS default, @textColor
+//@headingsColor:         inherit; // empty to use BS default, @textColor
+//@titleColor:         inherit; // empty to use BS default, @textColor
 
 
 // Component sizing
@@ -93,9 +95,11 @@
 //@btnBackground:                     @white;
 @btnBackgroundHighlight:            darken(@white, 10%);
 @btnBorder:                         #ccc;
+//@btnLinkColor:                    @linkColor;
 
 //@btnPrimaryBackground:              @linkColor;
 @btnPrimaryBackgroundHighlight:     spin(@btnPrimaryBackground, 20%);
+//@btnPrimaryLinkColor:             @white;
 
 @btnInfoBackground:                 #5bc0de;
 @btnInfoBackgroundHighlight:        #2f96b4;
@@ -111,6 +115,7 @@
 
 //@btnInverseBackground:              #444;
 @btnInverseBackgroundHighlight:     @grayDarker;
+//@btnInverseLinkColor:             @white;
 
 @btnApproveBackground:              #def7c6;
 @btnApproveBackgroundHighlight:     darken(@btnApproveBackground, 15%);
@@ -198,7 +203,7 @@
 
 // Wells
 // -------------------------
-//@wellBackground:                  #f5f5f5;
+@wellBackground:                  #f5f5f5;
 
 
 // Navbar
@@ -238,6 +243,18 @@
 @navbarInverseSearchPlaceholderColor:    #ccc;
 
 @navbarInverseBrandColor:                @navbarInverseLinkColor;
+
+
+// Sidebar
+// -------------------------
+//@sidebarText:               #777;
+//@sidebarLink:               #08c;
+//@sidebarHeader:             #651818;
+//@sidebarBackground:         #eee;
+//@sidebarLinkHover:          #07a;
+//@sidebarHover:              #fff;
+//@sidebarActive:             #fff;
+//@sidebarActiveBackground:   #07a;
 
 
 // Pagination
