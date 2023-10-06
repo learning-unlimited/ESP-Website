@@ -275,26 +275,26 @@ class SchedulingCheckRunner:
         return self.formatter.format_table(output,
             {"headings": ["Section", "Resource events", "Meeting times"]})
 
-     def classes_which_cover_lunch(self):
-          l = []
-          for s in self._all_class_sections(include_walkins=False):
-               mt =  s.get_meeting_times()
-               for lunch in self.lunch_blocks:
-                    if len(lunch) == 0:
-                        pass
-                    elif not (False in [b in mt for b in lunch]):
-                         l.append(s)
-          return self.formatter.format_list(l, ["Classes"])
+    def classes_which_cover_lunch(self):
+        l = []
+        for s in self._all_class_sections(include_walkins=False):
+            mt =  s.get_meeting_times()
+            for lunch in self.lunch_blocks:
+                if len(lunch) == 0:
+                    pass
+                elif not (False in [b in mt for b in lunch]):
+                    l.append(s)
+        return self.formatter.format_list(l, ["Classes"])
 
-     def classes_wrong_length(self):
-         output = []
-         for sec in self._all_class_sections():
-             start_time = sec.start_time_prefetchable()
-             end_time = sec.end_time_prefetchable()
-             length = end_time - start_time
-             if abs(round(length.total_seconds() / 3600.0, 2) - float(sec.duration)) > 0.0:
-                 output.append(sec)
-         return self.formatter.format_list(output, ["Classes"])
+    def classes_wrong_length(self):
+        output = []
+        for sec in self._all_class_sections():
+            start_time = sec.start_time_prefetchable()
+            end_time = sec.end_time_prefetchable()
+            length = end_time - start_time
+            if abs(round(length.total_seconds() / 3600.0, 2) - float(sec.duration)) > 0.0:
+                output.append(sec)
+        return self.formatter.format_list(output, ["Classes"])
 
     def unavailable_moderators(self):
         """
