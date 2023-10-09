@@ -23,7 +23,7 @@ from esp.dbmail.models import send_mail
 from esp.middleware.esperrormiddleware import ESPError
 from esp.tagdict.models import Tag
 from esp.users.forms.user_reg import UserRegForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, ESPUserData
 from esp.utils.web import render_to_response
 
 
@@ -60,6 +60,13 @@ This function is overloaded to handle either one or two phase reg"""
         user.last_name  = form.cleaned_data['last_name']
         user.first_name = form.cleaned_data['first_name']
         user.set_password(form.cleaned_data['password'])
+
+        user_data = ESPUserData(
+            user=user,
+            referral_source=form.cleaned_data['referral_source'],
+            referral_source_other=form.cleaned_data['referral_source_other'],
+        )
+        user_data.save()
 
         #   Append key to password and disable until activation if desired
         if Tag.getBooleanTag('require_email_validation', default=False):

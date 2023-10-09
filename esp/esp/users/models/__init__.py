@@ -384,6 +384,15 @@ class BaseESPUser(object):
         else:
             return self.getTaughtClassesFromProgram(program, include_rejected = include_rejected)
 
+    def getReferralSource(self):
+        user_data = ESPUserData.objects.filter(user=self).first()
+        if user_data == None:
+            return None
+        if user_data.referral_source == 'other' and user_data.referral_source_other:
+            return user_data.referral_source_other
+        else:
+            return user_data.referral_source
+
     @cache_function
     def getTaughtClassesFromProgram(self, program, include_rejected = False):
         from esp.program.models import Program # Need the Class object.
@@ -1239,6 +1248,21 @@ def update_email(**kwargs):
         if not other_users.exists():
             for l in lists:
                 mailman.remove_list_member(l, old_email)
+
+
+class ESPUserData(models.Model):
+    """ Table for new features for `ESPUser via BaseESPUser. It seems
+    that you can't add features to BaseESPUser because it's not a model,
+    and you can't add to ESPUser because it's a proxy model for the django User """
+
+    user = AjaxForeignKey(ESPUser)
+    username = models.CharField(max_length=150)
+    referral_source = models.CharField(max_length=150, null=True)
+    referral_source_other = models.CharField(max_length=150, null=True)
+
+    class Meta:
+        app_label = 'users'
+        db_table = 'users_espuserdata'
 
 
 class StudentInfo(models.Model):
