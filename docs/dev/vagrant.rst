@@ -191,6 +191,7 @@ Follow the following steps to upgrade the base VM for everyone to use.
 		sudo python3.7 get-pip.py
 		echo alias python=$(which python3.7) >> ~/.bashrc
 		sudo hostnamectl set-hostname ludev
+		sudo chmod -R 777 /home/vagrant
 		logout
 
 4. 
@@ -251,7 +252,7 @@ Follow the following steps to upgrade the base VM for everyone to use.
 6. 
 
 	Stop the VM by running ``vagrant halt`` in the terminal.
-	Export the box you have to a .box file by running ``vagrant package --base ludev --output ./ubuntu-*.box``, once again replacing the start with the correct version.
+	Export the box you have to a .box file by running ``vagrant package --output ./ubuntu-*.box``, once again replacing the star with the correct version.
 
 7. 
 

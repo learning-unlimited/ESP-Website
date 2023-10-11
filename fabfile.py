@@ -102,17 +102,6 @@ def setup():
                          ". Web Team needs to update fabfile.py to add the "
                          "partition name for this VM.")
 
-    # Name of the encrypted volume group in the Vagrant VM based on which VM is loaded
-    ubuntu_version = run("lsb_release -r | awk '{print $2}'")
-    try:
-        env.encvg = {"22.04": "ubuntu--vg-keep_1",
-                     "20.04": "vgvagrant-keep_1",
-                     "12.04": "ubuntu--12--vg-keep_1"}[ubuntu_version]
-    except KeyError:
-        raise ValueError("Unrecognized version of Ubuntu: " + ubuntu_version +
-                         ". Web Team needs to update fabfile.py to add the "
-                         "partition name for this VM.")
-
     sudo("cryptsetup luksFormat -q /dev/mapper/%s" % env.encvg)
     sudo("cryptsetup luksOpen /dev/mapper/%s encrypted" % env.encvg)
     sudo("mkfs.ext4 /dev/mapper/encrypted")
@@ -215,6 +204,8 @@ def ensure_environment():
     # check.
     if env.get("db_running", False):
         return
+
+    sudo('chmod -R 777 /home/vagrant')
 
     # Make sure the postgresql service is running
     sudo("service postgresql start")
