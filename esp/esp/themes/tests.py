@@ -202,7 +202,8 @@ class ThemesTest(TestCase):
         def verify_linkcolor(color_str):
             css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
             regexp = r'\n\s*?a\s*?{.*?color:\s*?%s;.*?}' % color_str
-            self.assertTrue(len(re.findall(regexp, open(css_filename).read(), flags=(re.DOTALL | re.I))) == 1)
+            self.assertTrue(len(re.findall(regexp, six.text_type(open(css_filename).read(), encoding='utf8'),
+                                           flags=(re.DOTALL | re.I))) == 1)
 
         color_str1 = '#%06X' % random.randint(0, 1 << 24)
         config_dict = {'apply': True, 'linkColor': color_str1}
