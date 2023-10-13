@@ -92,7 +92,7 @@ def setup():
     print("***** ")
 
     # Name of the encrypted volume group in the Vagrant VM based on which VM is loaded
-    ubuntu_version = run("lsb_release -r | awk '{print $2}'")
+    ubuntu_version = run("lsb_release -r | awk '{print $2}'", warn_only=True)
     try:
         env.encvg = {"22.04": "ubuntu--vg-keep_1",
                      "20.04": "vgvagrant-keep_1",
@@ -186,7 +186,7 @@ def ensure_environment():
 
     # Ensure that the encrypted partition has been mounted (must be done after
     # every boot, and can't be done automatically by Vagrant :/)
-    if sudo("df | grep encrypted | wc -l").strip() != "1":
+    if sudo("df | grep encrypted | wc -l", warn_only=True).strip() != "1":
         if sudo("ls -l /dev/mapper/encrypted &> /dev/null ; echo $?").strip() != "0":
             print("***** ")
             print("***** Opening the encrypted partition for data storage.")
