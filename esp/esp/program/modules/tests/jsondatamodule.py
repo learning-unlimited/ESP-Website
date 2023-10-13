@@ -122,7 +122,7 @@ class JSONDataModuleTest(ProgramFrameworkTest):
 
     def testClasses(self):
         ## Make sure all classes are listed
-        json_classes = json.loads(str(self.classes_response.content))
+        json_classes = self.classes_response.json()
         classes = ClassSubject.objects.filter(parent_program=self.program)
         self.assertEquals(len(json_classes["classes"]), classes.count())
 
@@ -133,3 +133,4 @@ class JSONDataModuleTest(ProgramFrameworkTest):
             # Very basic check that we're getting the data correctly
             self.assertTrue(cls.id in json_classes_dict)
             self.assertEquals(json_classes_dict[cls.id]['emailcode'], cls.emailcode())
+
