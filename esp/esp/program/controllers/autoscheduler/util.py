@@ -93,7 +93,7 @@ def get_min_id(objects):
 
 def hours_difference(datetime1, datetime2):
     """Returns the number of hours between two datetime objects."""
-    return (datetime2 - datetime1).total_seconds() // 3600.0
+    return (datetime2 - datetime1).total_seconds() / 3600.0
 
 
 def override(dicts):
