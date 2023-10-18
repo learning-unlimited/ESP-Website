@@ -174,7 +174,7 @@ def ensure_environment():
         exit(-1)
 
     # Name of the encrypted volume group in the Vagrant VM based on which VM is loaded
-    ubuntu_version = run("lsb_release -r | awk '{print $2}'")
+    ubuntu_version = run("lsb_release -r | awk '{print $2}'", warn_only=True)
     try:
         env.encvg = {"22.04": "ubuntu--vg-keep_1",
                      "20.04": "vgvagrant-keep_1",
@@ -205,13 +205,13 @@ def ensure_environment():
     if env.get("db_running", False):
         return
 
-    sudo('chmod -R 777 /home/vagrant')
+    sudo('chmod -R 777 /home/vagrant', warn_only=True)
 
     # Make sure the postgresql service is running
     sudo("service postgresql start")
 
     # Has some database been loaded?
-    dbs = int(psql("SELECT COUNT(*) FROM pg_stat_database;").strip())
+    dbs = int(psql("SELECT COUNT(*) FROM pg_stat_database;", warn_only=True).strip())
     if dbs < 4:
         print("")
         print("***** ")
@@ -236,7 +236,7 @@ def ensure_environment():
         exit(-1)
 
 @task
-def psql(cmd=None, *args):
+def psql(cmd=None, *args, **kwargs):
     """
     Run the given Postgres command as user postgres. If no command is
     specified, open an interactive psql shell.
@@ -246,7 +246,7 @@ def psql(cmd=None, *args):
     """
     ensure_environment()
     if cmd:
-        return sudo("psql -AXqt -c " + pipes.quote(cmd % args), user="postgres")
+        return sudo("psql -AXqt -c " + pipes.quote(cmd % args), user="postgres", **kwargs)
     else:
         interactive("sudo -u postgres psql; exit")
 
