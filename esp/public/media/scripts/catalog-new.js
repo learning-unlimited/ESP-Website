@@ -180,7 +180,7 @@ var CatalogViewModel = function () {
     self.filterCategory = ko.observableArray();
     self.filterCategory.subscribe(searchSpinnerOn);
 
-    self.filterStarred = ko.observable(catalog_type == 'phase2');
+    self.filterStarred = ko.observable(false);
     self.filterStarred.subscribe(searchSpinnerOn);
 
     self.filterGrade = ko.observable("ALL");
