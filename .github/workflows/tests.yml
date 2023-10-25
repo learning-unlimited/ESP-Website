@@ -30,7 +30,7 @@ jobs:
       DJANGO_SETTINGS_MODULE: esp.settings
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - uses: niden/actions-memcached@v7
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
