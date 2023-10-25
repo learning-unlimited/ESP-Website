@@ -933,10 +933,10 @@ class ScheduleMapTest(ProgramFrameworkTest):
         properly reflected in their schedule map.
     """
     def runTest(self):
-        def occupied_slots(map):
+        def occupied_slots(smap):
             result = []
-            for key in map:
-                if len(map[key]) > 0:
+            for key in smap:
+                if len(smap[key]) > 0:
                     result.append(key)
             return result
 
@@ -963,7 +963,9 @@ class ScheduleMapTest(ProgramFrameworkTest):
         self.assertEqual(section1.num_students(), 1, "Cache error, didn't correctly update the number of students in the class")
         self.assertEqual(section1.num_students(), ClassSection.objects.get(id=section1.id).enrolled_students, "Triggers error, didn't update enrolled_students with the new enrollee")
         sm = ScheduleMap(student, program)
-        self.assertTrue(occupied_slots(sm.map) == [ts1.id], 'Schedule map not occupied at specified timeslot.')
+
+        self.assertTrue(occupied_slots(sm.map) == [ts1.id], 'Schedule map is not occupied at (only) the specified ' +
+                'timeslot ({}). Occupied slot(s) is/are {}'.format(ts1.id, occupied_slots(sm.map)))
         self.assertTrue(sm.map[ts1.id] == [section1], 'Schedule map contains incorrect value at specified timeslot.')
 
         #   Reschedule the section and check
