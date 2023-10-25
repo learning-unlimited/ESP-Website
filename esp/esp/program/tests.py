@@ -672,7 +672,7 @@ class ProgramFrameworkTest(TestCase):
                 subject_count += 1
                 for j in range(settings['sections_per_class']):
                     if new_class.get_sections().count() <= j:
-                        new_class.add_section(duration=settings['timeslot_length']//60.0)
+                        new_class.add_section(duration=settings['timeslot_length']/60.0)
                 new_class.accept()
 
         #   Give the program its own QSD main-page
