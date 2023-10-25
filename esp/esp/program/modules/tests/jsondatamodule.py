@@ -107,8 +107,15 @@ class JSONDataModuleTest(ProgramFrameworkTest):
                                               "num_subjects": 10,
                                               "num_sections": 10,
                                               "num_students": 10 if g==10 else 0})
-        json_str = json.dumps(expected_response)
-        self.assertContains(self.stats_response, json_str)
+        self.assertContains(self.stats_response, 'stats', status_code=200)
+        self.assertIn('stats', self.stats_response.json().keys())
+        grades_count = 0
+        for res in self.stats_response.json()['stats']:
+            self.assertIn('id', res.keys())
+            if res['id'] == 'grades':
+                grades_count += 1
+                self.assertJSONEqual(json.dumps(res), expected_response)
+        self.assertEqual(grades_count, 1)
 
     def testClasses(self):
         ## Make sure all classes are listed
