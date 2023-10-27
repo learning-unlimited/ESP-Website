@@ -3,6 +3,7 @@
 {% block fulltitle %}Form responses{% endblock %}
 
 {% block stylesheets %}
+    {{ block.super }}
 	<link href="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
     <link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/ui.jqgrid.css" />
     <link rel="stylesheet" type="text/css" href="/media/styles/customforms-responses.css" />
@@ -24,6 +25,7 @@
 			<div id="jqGridPager"></div>
 		</div>
 		<br/><br/>
+        <p id="download-legend" hidden><span style="font-size: 14px;" class="glyphicon glyphicon-download-alt"></span>: Download Files as Zip Folder</p>
 		<p><a href="/customforms/exceldata/{{form.id}}/">Download as Excel</a></p>
 		<script type="text/javascript" src="/media/scripts/customforms_response.js"></script>	
 {% endblock %}
