@@ -18,7 +18,7 @@ class ValidHostEmailField(forms.EmailField):
         if len(email_parts) != 2:
             raise forms.ValidationError('Email addresses must be of the form "name@host"')
 
-        email_host = email_parts[1].encode('ascii')
+        email_host = email_parts[1]
 
         try:
             import DNS
