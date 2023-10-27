@@ -273,7 +273,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         # Create a class for the teacher
         new_class, created = ClassSubject.objects.get_or_create(category=self.categories[0], grade_min=7, grade_max=12, parent_program=self.new_prog, class_size_max=30, class_info='Previous class!')
         new_class.makeTeacher(self.teacher)
-        new_class.add_section(duration=50.0//60.0)
+        new_class.add_section(duration=50.0/60.0)
         new_class.accept()
         # Check taught_before
         d = self.moduleobj.teachers()

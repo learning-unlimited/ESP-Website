@@ -491,7 +491,7 @@ class LotteryAssignmentController(object):
             #   Sort sections in increasing order of number of interesting students
             #   TODO: Check with Alex that this is the desired algorithm
             interested_counts = numpy.sum(self.interest, 0)
-            sorted_section_indices = numpy.argsort(interested_counts.astype(numpy.float) // self.section_capacities)
+            sorted_section_indices = numpy.argsort(interested_counts.astype(numpy.float) / self.section_capacities)
             if self.options['stats_display']:
                 logger.info('\n== Assigning interested students%s',
                             ' with rank %s' % rank if self.options['use_student_apps'] else '')
@@ -540,23 +540,23 @@ class LotteryAssignmentController(object):
 
         for i in range(1, self.effective_priority_limit+1):
             with numpy.errstate(divide=np_errstate, invalid=np_errstate):
-                priority_fractions[i] = numpy.nan_to_num(priority_assigned[i].astype(numpy.float) // priority_requested[i])
+                priority_fractions[i] = numpy.nan_to_num(priority_assigned[i].astype(numpy.float) / priority_requested[i])
 
         interest_matches = self.student_sections * self.interest
         interest_assigned = numpy.sum(interest_matches, 1)
         interest_requested = numpy.sum(self.interest, 1)
         with numpy.errstate(divide=np_errstate, invalid=np_errstate):
-            interest_fractions = numpy.nan_to_num(interest_assigned.astype(numpy.float) // interest_requested)
+            interest_fractions = numpy.nan_to_num(interest_assigned.astype(numpy.float) / interest_requested)
 
         if self.effective_priority_limit > 1:
             for i in range(1, self.effective_priority_limit+1):
                 stats['priority_%s_requested'%i] = priority_requested[i]
                 stats['priority_%s_assigned'%i] = priority_assigned[i]
-                stats['overall_priority_%s_ratio'%i] = float(numpy.sum(priority_assigned[i])) // numpy.sum(priority_requested[i])
+                stats['overall_priority_%s_ratio'%i] = float(numpy.sum(priority_assigned[i])) / numpy.sum(priority_requested[i])
         else:
             stats['priority_requested'] = priority_requested[1]
             stats['priority_assigned'] = priority_assigned[1]
-            stats['overall_priority_ratio'] = float(numpy.sum(priority_assigned[1])) // numpy.sum(priority_requested[1])
+            stats['overall_priority_ratio'] = float(numpy.sum(priority_assigned[1])) / numpy.sum(priority_requested[1])
 
         if self.options['use_student_apps']:
             stats['ranks'] = self.ranks
@@ -571,7 +571,7 @@ class LotteryAssignmentController(object):
         stats['num_sections'] = self.num_sections
         stats['num_enrolled_students'] = numpy.sum((numpy.sum(self.student_schedules, 1) > 0))
         stats['num_lottery_students'] = self.num_students
-        stats['overall_interest_ratio'] = float(numpy.sum(interest_assigned)) // numpy.sum(interest_requested)
+        stats['overall_interest_ratio'] = float(numpy.sum(interest_assigned)) / numpy.sum(interest_requested)
         stats['num_registrations'] = numpy.sum(self.student_sections)
         stats['num_full_classes'] = numpy.sum(self.section_capacities == numpy.sum(self.student_sections, 0))
         stats['total_spaces'] = numpy.sum(self.section_capacities)
@@ -624,9 +624,9 @@ class LotteryAssignmentController(object):
             weight = numpy.sqrt((self.student_utility_weights[i]))
             weighted_overall_utility += utility * weight
             sum_of_weights += weight
-            screwed_students.append(((1+utility)//(1+weight), self.student_ids[i]))
+            screwed_students.append(((1+utility)/(1+weight), self.student_ids[i]))
 
-        overall_utility = weighted_overall_utility//sum_of_weights
+        overall_utility = weighted_overall_utility/sum_of_weights
         screwed_students.sort()
 
         stats['overall_utility'] = overall_utility

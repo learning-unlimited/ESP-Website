@@ -111,7 +111,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
                 * extra_settings["extra_class_duration"])
             + (settings["timeslot_gap"]
                 * (extra_settings["extra_class_duration"] - 1))
-            ) // 60.0
+            ) / 60.0
         new_class, created = ClassSubject.objects.get_or_create(
                 title="Extra Class",
                 category=self.categories[
@@ -215,7 +215,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
                 grade_max = 12
                 capacity = settings["room_capacity"]
                 subject_count += 1
-                duration = settings["timeslot_length"] // 60.0
+                duration = settings["timeslot_length"] / 60.0
                 for j in range(settings["sections_per_class"]):
                     sections.append(data_model.AS_ClassSection(
                         [t], duration, capacity,
@@ -234,7 +234,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
                 * extra_settings["extra_class_duration"])
             + (settings["timeslot_gap"]
                 * (extra_settings["extra_class_duration"] - 1))
-            ) // 60.0
+            ) / 60.0
         section_teachers = [
             t for i, t in enumerate(teachers)
             if i in extra_settings["extra_class_teachers"]]
@@ -472,7 +472,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
                            self.extra_timeslot]
         lunch_times = [(e.start, e.end) for e in lunch_timeslots]
         for i in range(3):
-            subj.add_section(duration=self.settings["timeslot_length"] // 60.0)
+            subj.add_section(duration=self.settings["timeslot_length"] / 60.0)
         secs = subj.get_sections()
         for i, t in enumerate(lunch_timeslots):
             secs[i].assign_start_time(t)

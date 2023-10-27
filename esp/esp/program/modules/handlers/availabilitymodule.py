@@ -95,7 +95,7 @@ class AvailabilityModule(ProgramModuleObj):
         total_time = user.getTaughtTime(self.program, include_scheduled=True, round_to=0.5)
         available_time = timedelta()
         for a in available_slots:
-            available_time = available_time + timedelta( seconds = 1800 * round( a.duration().seconds // 1800.0 ) )
+            available_time = available_time + timedelta( seconds = 1800 * round( a.duration().seconds / 1800.0 ) )
 
         if (total_time > available_time) or (available_time == timedelta()):
             return False

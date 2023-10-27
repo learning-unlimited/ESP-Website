@@ -422,7 +422,7 @@ class AdminClass(ProgramModuleObj):
         context['unscheduled'] = unscheduled_sections
         context['conflict_found'] = conflict_found
         # this seems kinda hacky, but it's probably fine for now
-        context['is_overbooked'] = sum([sec.duration for sec in cls.get_sections()]) > sum([Event.total_length(events).seconds//3600.0 for events in Event.group_contiguous(viable_times, int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = prog)))])
+        context['is_overbooked'] = sum([sec.duration for sec in cls.get_sections()]) > sum([Event.total_length(events).seconds/3600.0 for events in Event.group_contiguous(viable_times, int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = prog)))])
         context['num_groups'] = len(context['groups'])
         context['program'] = prog
 

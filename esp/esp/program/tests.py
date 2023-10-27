@@ -1325,7 +1325,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             student_utility = (hours_interested + 1.5 * hours_priority) ** 0.5
 
             student_weight = (len(sections_interested) + len(sections_priority)) ** 0.5
-            student_screwed_val = (1.0 + student_utility) // (1.0 + student_weight)
+            student_screwed_val = (1.0 + student_utility) / (1.0 + student_weight)
 
             #   Compare against the value in the stats dict (allow for floating-point error)
             self.assertAlmostEqual(student_screwed_val, stats_entry[0])

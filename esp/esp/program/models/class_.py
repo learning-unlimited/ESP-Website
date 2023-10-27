@@ -1655,7 +1655,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return result
 
     def percent_capacity(self):
-        return 100 * self.num_students() // float(self.capacity)
+        return 100 * self.num_students() / float(self.capacity)
 
     def max_students(self):
         return self.sections.count()*self.class_size_max
@@ -1851,7 +1851,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         #   Start with amount of total time pledged as available
         for tg in avail:
             td = tg.duration()
-            time_avail += (td.seconds // 3600.0)
+            time_avail += (td.seconds / 3600.0)
         #   Subtract out time already pledged for teaching classes other than this one
         for cls in user.getTaughtClasses(self.parent_program, include_cancelled = False):
             if cls.id != self.id:
@@ -1991,8 +1991,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             for t in sec.meeting_times.all():
                 if t in time_taken:
                     available = False
-            if available and (float(sec.num_students()) // (sec.capacity + 1)) < min_ratio:
-                min_ratio = float(sec.num_students()) // (sec.capacity + 1)
+            if available and (float(sec.num_students()) / (sec.capacity + 1)) < min_ratio:
+                min_ratio = float(sec.num_students()) / (sec.capacity + 1)
                 best_section = sec
 
         if best_section:

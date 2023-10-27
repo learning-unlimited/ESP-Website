@@ -1075,13 +1075,13 @@ class Program(models.Model, CustomFormsLinkModel):
                     durationSeconds = time_option.seconds
                     #   If desired, round up to the nearest 15 minutes
                     if round_15:
-                        rounded_seconds = int(durationSeconds // 900.0 + 1.0) * 900
+                        rounded_seconds = int(durationSeconds / 900.0 + 1.0) * 900
                     else:
                         rounded_seconds = durationSeconds
                     if (max_seconds is None) or (durationSeconds <= max_seconds):
-                        durationDict[(Decimal(durationSeconds) // 3600).quantize(Decimal('.01'))] = \
-                                        str(rounded_seconds // 3600) + ':' + \
-                                        str(int(round((rounded_seconds // 60.0) % 60))).rjust(2, '0')
+                        durationDict[(Decimal(durationSeconds) / 3600).quantize(Decimal('.01'))] = \
+                                        str(rounded_seconds / 3600) + ':' + \
+                                        str(int(round((rounded_seconds / 60.0) % 60))).rjust(2, '0')
 
         durationList = list(durationDict.items())
 

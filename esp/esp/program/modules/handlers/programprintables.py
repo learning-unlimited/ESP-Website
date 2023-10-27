@@ -1471,7 +1471,7 @@ class ProgramPrintables(ProgramModuleObj):
             except:
                 num_name_groups = 7
 
-            names_per_set = float(num_lastnames) // num_name_groups
+            names_per_set = float(num_lastnames) / num_name_groups
             for i in range(num_name_groups):
                 start_index = int(i * names_per_set)
                 end_index = int((i + 1) * names_per_set)

@@ -539,7 +539,7 @@ class BaseESPUser(object):
         total_time = timedelta()
         round_to = float( round_to )
         if round_to:
-            rounded_hours = lambda x: round_to * round( float( x ) // round_to )
+            rounded_hours = lambda x: round_to * round( float( x ) / round_to )
         else:
             rounded_hours = lambda x: float( x )
         for s in user_sections:
@@ -1793,9 +1793,9 @@ class ZipCode(models.Model):
         delta_lat = lat2 - lat1
         delta_lon = lon2 - lon1
 
-        tmp = math.sin(delta_lat//2.0)**2 + \
+        tmp = math.sin(delta_lat/2.0)**2 + \
               math.cos(lat1)*math.cos(lat2) * \
-              math.sin(delta_lon//2.0)**2
+              math.sin(delta_lon/2.0)**2
 
         distance = 2 * math.atan2(math.sqrt(tmp), math.sqrt(1-tmp)) * \
                    earth_radius

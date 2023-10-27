@@ -171,7 +171,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             star_count = 0
             if timeslot.id in star_counts:
                 star_count = star_counts[timeslot.id]
-            schedule.append((timeslot, priority_list, blockCount + 1, star_count, float(star_count)//context['num_star']*100))
+            schedule.append((timeslot, priority_list, blockCount + 1, star_count, float(star_count)/context['num_star']*100))
 
             prevTimeSlot = timeslot
 

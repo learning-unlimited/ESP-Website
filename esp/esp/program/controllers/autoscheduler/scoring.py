@@ -135,7 +135,7 @@ class CompositeScorer(BaseScorer):
                 logger.info("Scorer {} has score {}".format(
                         scorer.__class__.__name__, score))
             total_score += score * weight * scorer.scaling
-        return total_score // self.total_weight
+        return total_score / self.total_weight
 
     def get_all_score_schedule(self):
         """Returns the scores from each component scorer in alphabetical order
@@ -193,7 +193,7 @@ class AdminDistributionScorer(BaseScorer):
         self.penalty = 0.0
         for t in self.ideal_distribution_dict:
             ideal = self.ideal_distribution_dict[t]
-            actual = self.admins_per_timeslot[t] // self.total_admins
+            actual = self.admins_per_timeslot[t] / self.total_admins
             if actual > ideal:
                 self.penalty += actual - ideal
         return max(0.0, 1 - self.penalty)
@@ -210,7 +210,7 @@ class AdminDistributionScorer(BaseScorer):
         prev_timeslot = schedule.timeslots[0]
         for t in schedule.timeslots[1:]:
             if t.start.day == prev_timeslot.start.day:
-                ideal_distribution.append(1//3.0)
+                ideal_distribution.append(1/3.0)
             else:
                 ideal_distribution.append(0.0)
             prev_timeslot = t
@@ -241,7 +241,7 @@ class AdminDistributionScorer(BaseScorer):
         num_sections = len(schedule.class_sections)
         average_duration /= num_sections
         average_num_teachers /= num_sections
-        self.scaling = self.total_admins // (
+        self.scaling = self.total_admins / (
             average_duration * average_num_teachers * num_sections)
 
     @util.timed_func("admindistributionscorer")
@@ -286,14 +286,14 @@ class CategoryBalanceScorer(BaseScorer):
                 six.iteritems(self.student_class_hours_by_category):
             capacity_per_timeslot = \
                 self.capacity_per_timeslot_by_category[category]
-            leeway = 1.0 // len(capacity_per_timeslot)
+            leeway = 1.0 / len(capacity_per_timeslot)
             for timeslot, capacity in six.iteritems(capacity_per_timeslot):
                 duration = self.timeslot_durations[timeslot]
                 fractional_capacity = \
-                    capacity * duration // student_class_hours
+                    capacity * duration / student_class_hours
                 if fractional_capacity > leeway:
-                    total_penalty += capacity // student_class_hours - leeway
-        return 1 - (total_penalty // len(self.student_class_hours_by_category))
+                    total_penalty += capacity / student_class_hours - leeway
+        return 1 - (total_penalty / len(self.student_class_hours_by_category))
 
     @util.timed_func("categorybalancescorer")
     def update_schedule(self, schedule):
@@ -352,7 +352,7 @@ class LunchStudentClassHoursScorer(BaseScorer):
         # which are scheduled during non-lunch timeslots. Note that this is an
         # underestimate because the denominator accounts for time between
         # timeslots in multi-hour classes, and the numerator does not.
-        return self.non_lunch_student_class_hours // \
+        return self.non_lunch_student_class_hours / \
             self.total_student_class_hours
 
     @util.timed_func("lunchstudentclasshoursscorer")
@@ -407,7 +407,7 @@ class HungryTeacherScorer(BaseScorer):
         """Returns a score in the range [0, 1] for the schedule reflected in its
         current state."""
         # Return the total fraction of non-hungry teachers.
-        return 1 - len(self.hungry_teachers) // self.total_teachers
+        return 1 - len(self.hungry_teachers) / self.total_teachers
 
     @util.timed_func("hungryteacherscorer")
     def update_schedule(self, schedule):
@@ -436,7 +436,7 @@ class HungryTeacherScorer(BaseScorer):
         num_section_teachers = 0.0
         for section in six.itervalues(schedule.class_sections):
             num_section_teachers += len(section.teachers)
-        self.scaling = self.total_teachers // num_section_teachers
+        self.scaling = self.total_teachers / num_section_teachers
 
     @util.timed_func("hungryteacherscorer")
     def update_schedule_section(self, section, start_roomslot):
@@ -483,7 +483,7 @@ class NumSectionsScorer(BaseScorer):
         """Returns a score in the range [0, 1] for the schedule reflected in its
         current state."""
         # Return the fraction of sections which are scheduled.
-        return self.scheduled_sections // self.total_sections
+        return self.scheduled_sections / self.total_sections
 
     @util.timed_func("numsectionsscorer")
     def update_schedule(self, schedule):
@@ -527,7 +527,7 @@ class NumSubjectsScorer(BaseScorer):
         """Returns a score in the range [0, 1] for the schedule reflected in its
         current state."""
         # Return the fraction of subjects which are scheduled.
-        return self.scheduled_subjects // self.total_subjects
+        return self.scheduled_subjects / self.total_subjects
 
     @util.timed_func("NumSubjectsScorer")
     def update_schedule(self, schedule):
@@ -542,7 +542,7 @@ class NumSubjectsScorer(BaseScorer):
         self.scheduled_subjects = sum(
             [(num_sections > 0) for num_sections in
                 six.itervalues(self.num_scheduled_sections_by_subject)])
-        self.scaling = self.total_subjects // len(schedule.class_sections)
+        self.scaling = self.total_subjects / len(schedule.class_sections)
 
     @util.timed_func("NumSubjectsScorer")
     def update_schedule_section(self, section, start_roomslot):
@@ -582,7 +582,7 @@ class NumTeachersScorer(BaseScorer):
         """Returns a score in the range [0, 1] for the schedule reflected in its
         current state."""
         # Return the fraction of teachers which have scheduled classes.
-        return self.scheduled_teachers // self.total_teachers
+        return self.scheduled_teachers / self.total_teachers
 
     @util.timed_func("NumTeachersScorer")
     def update_schedule(self, schedule):
@@ -597,7 +597,7 @@ class NumTeachersScorer(BaseScorer):
         self.scheduled_teachers = sum(
             [(num_sections > 0) for num_sections in
                 six.itervalues(self.num_scheduled_sections_by_teacher)])
-        self.scaling = self.total_teachers // len(schedule.class_sections)
+        self.scaling = self.total_teachers / len(schedule.class_sections)
 
     @util.timed_func("NumTeachersScorer")
     def update_schedule_section(self, section, start_roomslot):
@@ -653,7 +653,7 @@ class ResourceCriteriaScorer(BaseScorer):
         else:
             max_weight = max([
                 weight for criterion, weight in self.resource_criteria])
-            self.scaling = self.total_weight // max_weight
+            self.scaling = self.total_weight / max_weight
 
     @util.timed_func("ResourceCriteriaScorer")
     def score_schedule(self):
@@ -663,7 +663,7 @@ class ResourceCriteriaScorer(BaseScorer):
         # the weighted average (over all resource criteria) of 1 if the
         # criterion is met, 0 if not. If the section isn't scheduled, score
         # is 0.
-        return self.total_score // (self.total_weight * self.num_sections)
+        return self.total_score / (self.total_weight * self.num_sections)
 
     def process_section(self, section, room):
         """Computes the score for a given section assigned to the given
@@ -712,7 +712,7 @@ class ResourceMatchingScorer(BaseScorer):
         current state."""
         # Return the average fraction of matches over all sections. Unscheduled
         # sections are counted as no matches.
-        return self.total_score // self.num_sections
+        return self.total_score / self.num_sections
 
     def process_section(self, section, room):
         """Computes the score for a given section assigned to the given
@@ -724,7 +724,7 @@ class ResourceMatchingScorer(BaseScorer):
         for restype_name in section.resource_requests:
             if restype_name in room.furnishings:
                 met_criteria += 1
-        return met_criteria // len(section.resource_requests)
+        return met_criteria / len(section.resource_requests)
 
     @util.timed_func("ResourceMatchingScorer")
     def update_schedule(self, schedule):
@@ -770,7 +770,7 @@ class ResourceValueMatchingScorer(BaseScorer):
         current state."""
         # Return the average fraction of matches over all sections. Unscheduled
         # sections are counted as no matches.
-        return self.total_score // self.num_sections
+        return self.total_score / self.num_sections
 
     def process_section(self, section, room):
         """Computes the score for a given section assigned to the given
@@ -789,7 +789,7 @@ class ResourceValueMatchingScorer(BaseScorer):
         if requested_criteria == 0.0:
             return 1.0
         else:
-            return met_criteria // requested_criteria
+            return met_criteria / requested_criteria
 
     @util.timed_func("ResourceValueMatchingScorer")
     def update_schedule(self, schedule):
@@ -876,7 +876,7 @@ class RoomConsecutivityScorer(BaseScorer):
         # probably be to count boundaries between sections once for each
         # section, but this makes updating the score upon section schedule
         # slightly harder to compute.
-        return self.complete_boundaries // self.num_sections // 2.0
+        return self.complete_boundaries / self.num_sections / 2.0
 
     @util.timed_func("RoomConsecutivityScorer")
     def update_schedule(self, schedule):
@@ -960,7 +960,7 @@ class RoomSizeMismatchScorer(BaseScorer):
             # penalty instead of crashing.
             return 1.0
         else:
-            return min(1.0, ((1.0 * numerator // denominator) - 1.0) ** 2)
+            return min(1.0, ((1.0 * numerator / denominator) - 1.0) ** 2)
 
     @util.timed_func("RoomSizeMismatchScorer")
     def score_schedule(self):
@@ -987,7 +987,7 @@ class RoomSizeMismatchScorer(BaseScorer):
             if section.is_scheduled():
                 room = section.assigned_roomslots[0].room
                 penalty = self.penalty_for_section_and_room(section, room)
-                self.total_penalty += penalty // self.num_sections
+                self.total_penalty += penalty / self.num_sections
 
     @util.timed_func("RoomSizeMismatchScorer")
     def update_schedule_section(self, section, start_roomslot):
@@ -995,7 +995,7 @@ class RoomSizeMismatchScorer(BaseScorer):
         section to start at the specified roomslot."""
         room = start_roomslot.room
         penalty = self.penalty_for_section_and_room(section, room)
-        self.total_penalty += penalty // self.num_sections
+        self.total_penalty += penalty / self.num_sections
 
     @util.timed_func("RoomSizeMismatchScorer")
     def update_unschedule_section(self, section):
@@ -1003,7 +1003,7 @@ class RoomSizeMismatchScorer(BaseScorer):
         specified section."""
         room = section.assigned_roomslots[0].room
         penalty = self.penalty_for_section_and_room(section, room)
-        self.total_penalty -= penalty // self.num_sections
+        self.total_penalty -= penalty / self.num_sections
 
 
 class StudentClassHoursScorer(BaseScorer):
@@ -1030,7 +1030,7 @@ class StudentClassHoursScorer(BaseScorer):
         current state."""
         # We return simply the fraction of all possible student-class-hours
         # which are scheduled.
-        return self.scheduled_student_class_hours // \
+        return self.scheduled_student_class_hours / \
             self.total_student_class_hours
 
     @util.timed_func("StudentClassHoursScorer")
@@ -1070,7 +1070,7 @@ class TeachersWhoLikeRunningScorer(BaseScorer):
         # We count the number of times anyone is teaching two consecutive
         # timeslots in different rooms, and divide by the number of total
         # sections.
-        return 1.0 - self.running_count // self.num_sections
+        return 1.0 - self.running_count / self.num_sections
 
     @util.timed_func("TeachersWhoLikeRunningScorer")
     def update_schedule(self, schedule):
