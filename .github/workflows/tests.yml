@@ -31,10 +31,10 @@ jobs:
       DJANGO_SETTINGS_MODULE: esp.settings
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - uses: niden/actions-memcached@v7
     - name: Set up Python ${{ matrix.python-version }}
-      uses: MatteoH2O1999/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Prepare for Installing Dependencies
@@ -58,7 +58,8 @@ jobs:
       run: deploy/travis/script
     - name: Upload Coverage to Codecov
       if: ${{ matrix.travis_job == 'test' }}
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v3
       with:
         fail_ci_if_error: true
         verbose: true
+        token: ${{ secrets.CODECOV_TOKEN }}
