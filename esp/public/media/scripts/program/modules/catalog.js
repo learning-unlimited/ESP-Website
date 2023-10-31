@@ -13,7 +13,7 @@ const MODIFIED_COLOR = "#0066ff22";
 const FILTER_IDS = ["grade_filter", "difficulty_filter", "status_filter", "duration_filter"];
 
 /**
-    Converts from hours to a formatted duration (eg. "0.05" -> "5 mins", "1.5" -> "1 hour 30 mins")
+    Converts from hours to a formatted duration (eg. "0.05" -> "3 mins", "1.5" -> "1 hour 30 mins")
     @param {string} numString - a duration as a float in a string (eg. "0.05")
     @returns {string} the formatted time (eg. "1 hour 30 mins")
 */
