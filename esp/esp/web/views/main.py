@@ -55,6 +55,7 @@ from esp.tagdict.models import Tag
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 
 from django.views.decorators.cache import cache_control
+from django.conf import settings
 
 try:
     from cStringIO import StringIO

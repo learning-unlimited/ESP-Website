@@ -80,7 +80,7 @@ def render_to_response(template, request, context, content_type=None, use_reques
         template = [ template ]
 
     section = request.path.split('/')[1]
-    
+
     context.update(esp_context_stuff())
 
     # create nav bar list
