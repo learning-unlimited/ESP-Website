@@ -140,7 +140,7 @@ def contact(request, section='esp'):
     """
     from esp.dbmail.models import send_mail
     # if not set up, immediately redirect
-    if not Tag.getTag('contact_form_enabled'):
+    if not Tag.getBooleanTag('contact_form_enabled'):
         return HttpResponseRedirect("/contact.html")
 
     if 'success' in request.GET:
