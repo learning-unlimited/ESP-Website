@@ -105,7 +105,7 @@ class DonationModule(ProgramModuleObj):
         #   from a Tag (which can be per-program or global), combining the
         #   Tag's specifications with defaults in the code.
         DEFAULTS = {
-            'donation_text': 'Donation to Learning Unlimited',
+            'donation_text': 'Donation to ESP',
             'donation_options':[10, 20, 50],
         }
 
@@ -193,9 +193,9 @@ class DonationModule(ProgramModuleObj):
 
             if form.is_valid():
                 #   Clear the Transfers by specifying quantity 0
-                iac.set_preference('Donation to Learning Unlimited', 0)
+                iac.set_preference('Donation to ESP', 0)
                 if form.amount:
-                    iac.set_preference('Donation to Learning Unlimited', 1, amount=form.amount)
+                    iac.set_preference('Donation to ESP', 1, amount=form.amount)
 
                 return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
 
