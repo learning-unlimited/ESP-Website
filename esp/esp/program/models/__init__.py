@@ -955,7 +955,7 @@ class Program(models.Model, CustomFormsLinkModel):
                 return [tagged_programs[0][1]]
         return []
     current_programs.depend_on_model('cal.Event')
-    current_programs.depend_on_model('program.ProgramModule')
+    current_programs.depend_on_model('program.Program')
     current_programs = staticmethod(current_programs)
 
     def date_range(self):
