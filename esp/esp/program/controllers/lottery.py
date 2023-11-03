@@ -298,7 +298,7 @@ class LotteryAssignmentController(object):
         #   Populate section overlap matrix
         for i in range(self.num_sections):
             group_ids = numpy.nonzero(self.parent_classes == self.parent_classes[i])[0]
-            self.section_overlap[numpy.meshgrid(group_ids, group_ids)] = True
+            self.section_overlap[tuple(numpy.meshgrid(group_ids, group_ids))] = True
 
         #   Populate section grade limits
         self.section_grade_min = numpy.array(self.sections.values_list('parent_class__grade_min', flat=True), dtype=numpy.uint32)
