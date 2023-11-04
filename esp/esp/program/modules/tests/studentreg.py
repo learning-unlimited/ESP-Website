@@ -90,9 +90,9 @@ class StudentRegTest(ProgramFrameworkTest):
 
         #   Get the receipt and check that the class appears on it with title and time
         response = self.client.get('/learn/%s/confirmreg' % self.program.getUrlBase())
-        self.assertTrue(sec.title() in response.content)
+        self.assertContains(response, sec.title(), status_code=200)
         for ts in sec.meeting_times.all():
-            self.assertTrue(ts.short_description in response.content)
+            self.assertContains(response, ts.short_description, status_code=200)
 
     def test_catalog(self):
 

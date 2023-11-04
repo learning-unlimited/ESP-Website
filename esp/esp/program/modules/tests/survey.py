@@ -70,8 +70,7 @@ class SurveyTest(ProgramFrameworkTest):
 
         #   Access the survey page - there should be no surveys and we should get an error
         response = self.client.get('/learn/%s/survey' % self.program.url)
-        self.assertEqual(response.status_code, 500)
-        self.assertIn('no such survey', response.content)
+        self.assertContains(response, 'no such survey', status_code=500)
 
         #   Create a survey
         (survey, created) = Survey.objects.get_or_create(name='Test Survey', program=self.program, category='learn')
