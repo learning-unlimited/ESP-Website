@@ -493,7 +493,7 @@ class ThemeController(object):
             palette = self.get_palette()['custom']
 
         vars_orig = self.find_less_variables(theme_name, flat=True)
-        keys = copy.copy(vars.keys())
+        keys = copy.copy(list(vars.keys()))
         for key in keys:
             if key not in vars_orig:
                 del vars[key]
