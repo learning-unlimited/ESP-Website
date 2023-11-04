@@ -198,8 +198,8 @@ class CustomFormsTest(TestCase):
         self.client.login(username=self.admin.username, password='password')
         response = self.client.get("/customforms/getData/", {'form_id': form.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
-        response_data = response.content.json()
-        self.assertTrue('answers' in response_data)
+        response_data = response.json()
+        self.assertTrue('answers' in response_data.keys())
         self.assertEqual(len(response_data['answers']), 1)
         indiv_response = response_data['answers'][0]
         self.assertEqual(int(indiv_response['user_id']), self.student.id)

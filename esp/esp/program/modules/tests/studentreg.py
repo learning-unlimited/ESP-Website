@@ -101,7 +101,7 @@ class StudentRegTest(ProgramFrameworkTest):
             for cls in self.program.classes():
                 #   Find the portion of the catalog corresponding to this class
                 pattern = r"""<div id="class_%d" class=".*?show_class" data-difficulty=".*" data-duration=".+" data-is-closed=".+">.*?</div>\s*?</div>\s*?</div>""" % cls.id
-                cls_fragment = re.search(pattern, response.content, re.DOTALL).group(0)
+                cls_fragment = re.search(pattern, str(response.content), re.DOTALL).group(0)
 
                 pat2 = r"""<div.*?class="class_title">(?P<title>.*?)</div>.*?<div class="class_content">(?P<description>.*?)</div>.*?<strong>Enrollment</strong>(?P<enrollment>.*?)</div>"""
                 cls_info = re.search(pat2, cls_fragment, re.DOTALL).groupdict(0)

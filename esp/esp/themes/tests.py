@@ -158,7 +158,7 @@ class ThemesTest(TestCase):
             #   Test that the theme can be cleared and the home page reverts.
             response = self.client.post('/themes/select/', {'action': 'clear'})
             response = self.client.get('/')
-            self.assertTrue(len(re.findall(r'<a href="/themes.*?Configure site appearance.*?</a>', six.text_type(response.content, encoding='UTF-8'), flags=re.DOTALL)) == 1)
+            self.assertTrue(len(re.findall(r'<a href="/themes.*?Configure site appearance.*?</a>', str(response.content), flags=re.DOTALL)) == 1)
 
             self.client.logout()
 
@@ -203,8 +203,7 @@ class ThemesTest(TestCase):
         def verify_linkcolor(color_str):
             css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
             regexp = r'\n\s*?a\s*?{.*?color:\s*?%s;.*?}' % color_str
-            self.assertTrue(len(re.findall(regexp, six.text_type(open(css_filename).read(), encoding='utf8'),
-                                           flags=(re.DOTALL | re.I))) == 1)
+            self.assertTrue(len(re.findall(regexp, str(open(css_filename).read()), flags=(re.DOTALL | re.I))) == 1)
 
         color_str1 = '#%06X' % random.randint(0, 1 << 24)
         config_dict = {'apply': True, 'linkColor': color_str1}
