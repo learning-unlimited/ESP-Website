@@ -346,9 +346,7 @@ class ProgramHappenTest(TestCase):
                 'base_cost':         '666',
             }
         self.client.post('/manage/newprogram', prog_dict)
-        # TODO: Use the following line once we're officially on Django 1.1
-        # self.client.post('/manage/newprogram?checked=1', {})
-        self.client.get('/manage/newprogram', {'checked': '1'})
+        self.client.post('/manage/newprogram?checked=1', {})
 
         # Now test correctness...
         self.prog = Program.by_prog_inst('Prubbogrubbam', prog_dict['term'])
