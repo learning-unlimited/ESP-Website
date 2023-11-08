@@ -142,7 +142,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Add free_teacher 1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(respones, "({})".format(self.free_teacher1.username), status_code=200)
+        self.assertContains(response, "({})".format(self.free_teacher1.username), status_code=200)
         cur_coteachers.append(self.free_teacher1.id)
 
         # Delete both free_teacher1 and free_teacher2
