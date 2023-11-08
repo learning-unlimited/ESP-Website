@@ -16,7 +16,7 @@ function showColor() {
         // Create the "Remove" button
         var removeButton = $j('<button class="remove-color" type="button" style="margin-left: 5px;">Remove Variable</button>').click(function() {
             $j(this).siblings("input").spectrum("destroy");
-            $j(this).parent(".control-group").remove();
+            $j(this).parents(".control-group").remove();
         });
         if ($j(this).siblings(".reset-color").length == 0) {
             $j(this).parent(".controls").append(resetButton);
@@ -120,15 +120,17 @@ $j(document).ready(function(){
             // Create the "Remove" button
             var removeButton = $j('<button class="remove-color" type="button" style="margin-left: 5px;">Remove Variable</button>').click(function() {
                 $j(this).siblings("input").spectrum("destroy");
-                $j(this).parent(".control-group").remove();
+                $j(this).parents(".control-group").remove();
             });
 
             // Create a control group and append the color input and reset button
-            var controlGroup = $j('<div class="control-group">')
-                .append($j('<label class="control-label" for="' + select_val + '">').html(select_val))
+            var controlsDiv = $j('<div class="controls">')
                 .append(colorInput)
                 .append(resetButton)
                 .append(removeButton);
+            var controlGroup = $j('<div class="control-group">')
+                .append($j('<label class="control-label" for="' + select_val + '">').html(select_val))
+                .append(controlsDiv)
 
             // Append the control group to the parent element
             $j(event.target).parent().parent().parent().append(controlGroup);
