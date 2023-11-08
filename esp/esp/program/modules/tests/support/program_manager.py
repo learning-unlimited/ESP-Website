@@ -11,15 +11,15 @@ class TestProgramManager():
         self.schedule_class_url = '/manage/%s/' % self.program.getUrlBase() + 'ajax_schedule_class'
 
     def getClassToSchedule(self, section=None, teacher=None, timeslots=None, rooms=None):
-        if section == None:
-            if teacher == None:
+        if section is None:
+            if teacher is None:
                 teacher = self.teachers[0]
             section = teacher.getTaughtSections(self.program)[0]
 
-        if rooms == None:
+        if rooms is None:
             rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
 
-        if timeslots == None:
+        if timeslots is None:
             timeslots = self.program.getTimeSlots().order_by('start')
 
         return (section, timeslots, rooms)
