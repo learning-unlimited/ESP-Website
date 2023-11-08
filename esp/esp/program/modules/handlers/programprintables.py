@@ -68,6 +68,7 @@ from django.utils.html import mark_safe
 
 from datetime import timedelta
 from decimal import Decimal
+from functools import cmp_to_key
 import json
 import collections
 import copy
@@ -513,7 +514,7 @@ class ProgramPrintables(ProgramModuleObj):
 
             return cmp(one, other)
 
-        return self.sectionsbyFOO(request, tl, one, two, module, extra, prog, cmp_time)
+        return self.sectionsbyFOO(request, tl, one, two, module, extra, prog, cmp_to_key(cmp_time))
 
     @aux_call
     @needs_admin
