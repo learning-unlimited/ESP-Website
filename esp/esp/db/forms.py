@@ -256,7 +256,7 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
 
         if hasattr(self, "field"):
             # If we couldn't grab an ID, ask the target's autocompleter.
-            if id == None:
+            if id is None:
                 objs = self.field.rel.to.ajax_autocomplete(value)
                 if len( objs ) == 1:
                     id = objs[0]['id']

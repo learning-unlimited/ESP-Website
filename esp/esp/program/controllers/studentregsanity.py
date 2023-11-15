@@ -67,9 +67,9 @@ class StudentRegSanityController(object):
         category_walkin = ClassCategories.objects.get(category="Walk-in Activity")
         if csvlog and not(fake): #If I'm actually doing things, and I want a log....
             import csv
-            if csvwriter==None:
+            if csvwriter is None:
                 closeatend = True
-                if directory==None: directory = self.options['directory']
+                if directory is None: directory = self.options['directory']
                 filefullname = directory +'/santitize_walkins_log.csv'
                 csvfile = open(filefullname, 'ab+')
                 csvwriter = csv.writer(csvfile)
@@ -97,9 +97,9 @@ class StudentRegSanityController(object):
         closeatend = False
         if csvlog and not(fake): #If I'm actually doing things, and I want a log....
             import csv
-            if csvwriter==None:
+            if csvwriter is None:
                 closeatend = True
-                if directory==None: directory = self.options['directory']
+                if directory is None: directory = self.options['directory']
                 filefullname = directory +'/santitize_lunch_log.csv'
                 csvfile = open(filefullname, 'ab+')
                 csvwriter = csv.writer(csvfile)
@@ -132,7 +132,7 @@ class StudentRegSanityController(object):
         Set fake=False if you actually want something to happen.
         Set csvlog=False if you don't want a log of what was done
         Set directory to where you'd like the csvlog filed saved (if csvlog=False, does nothing)"""
-        if checks==None:
+        if checks is None:
             print("You didn't enter a check! Please enter the checks you'd like to run as a list of strings. Run self.sanitize('--help') for more information!")
             return None
         if checks=='--help':
@@ -149,7 +149,7 @@ class StudentRegSanityController(object):
             checks = [checks]
         if csvlog:
             import csv
-            if directory==None: directory = self.options['directory']
+            if directory is None: directory = self.options['directory']
             filefullname = directory + '/'+ datetime.now().strftime("%Y-%m-%d_") + 'santitize_log.csv'
             csvfile = open(filefullname, 'ab+')
             csvwriter = csv.writer(csvfile)

@@ -1097,7 +1097,7 @@ class BaseESPUser(object):
 
     @staticmethod
     def gradeFromYOG(yog, schoolyear=None):
-        if schoolyear == None:
+        if schoolyear is None:
             schoolyear = ESPUser.current_schoolyear()
         try:
             yog        = int(yog)
@@ -1499,7 +1499,7 @@ class StudentInfo(models.Model):
 
     def __str__(self):
         username = "N/A"
-        if self.user != None:
+        if self.user is not None:
             username = self.user.username
         return six.u('ESP Student Info (%s) -- %s') % (username, six.text_type(self.school))
 
@@ -1620,7 +1620,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
 
     def __str__(self):
         username = ""
-        if self.user != None:
+        if self.user is not None:
             username = self.user.username
         return six.u('ESP Teacher Info (%s)') % username
 
@@ -1684,7 +1684,7 @@ class GuardianInfo(models.Model):
 
     def __str__(self):
         username = ""
-        if self.user != None:
+        if self.user is not None:
             username = self.user.username
         return six.u('ESP Guardian Info (%s)') % username
 
@@ -1762,7 +1762,7 @@ class EducatorInfo(models.Model):
 
     def __str__(self):
         username = ""
-        if self.user != None:
+        if self.user is not None:
             username = self.user.username
         return six.u('ESP Educator Info (%s)') % username
 
@@ -1973,7 +1973,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         return form_data
 
     def save(self, *args, **kwargs):
-        if self.id != None:
+        if self.id is not None:
             try:
                 old_self = ContactInfo.objects.get(id = self.id)
                 if old_self.address_zip != self.address_zip or \
@@ -1984,7 +1984,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
                     self.undeliverable = False
             except:
                 pass
-        if self.address_postal != None:
+        if self.address_postal is not None:
             self.address_postal = str(self.address_postal)
 
         super(ContactInfo, self).save(*args, **kwargs)
@@ -1993,7 +1993,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     def __str__(self):
         username = ""
         last_name, first_name = '', ''
-        if self.user != None:
+        if self.user is not None:
             username = self.user.username
         if self.first_name is not None:
             first_name = self.first_name

@@ -110,7 +110,7 @@ class ProgramPrintables(ProgramModuleObj):
                 ids = None
                 single_select = False
 
-            if ids == None:
+            if ids is None:
                 transfers = pac.all_transfers().exclude(line_item__text__in=exclude_line_items).order_by('line_item','user').select_related()
             else:
                 lineitems = pac.all_transfers().filter(line_item__id__in=ids).order_by('line_item','user').select_related()

@@ -252,7 +252,7 @@ class ClassCreationController(object):
             teacher_ctxt = {'teacher': teacher}
             # Provide information about whether or not teacher's from MIT.
             last_profile = teacher.getLastProfile()
-            if last_profile.teacher_info != None:
+            if last_profile.teacher_info is not None:
                 teacher_ctxt['from_here'] = last_profile.teacher_info.from_here
                 teacher_ctxt['college'] = last_profile.teacher_info.college
             else: # This teacher never filled out their teacher profile!

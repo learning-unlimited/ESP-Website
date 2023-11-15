@@ -1470,7 +1470,7 @@ class RegistrationProfile(models.Model):
             except RegistrationProfile.DoesNotExist:
                 pass
 
-        if regProf != None:
+        if regProf is not None:
             return regProf
 
         regProf = RegistrationProfile()

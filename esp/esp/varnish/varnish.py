@@ -13,7 +13,7 @@ def get_varnish_host():
         return None
 
 def purge_page(url, host=None):
-    if host == None:
+    if host is None:
         host = get_varnish_host()
         if host is None:
             return None

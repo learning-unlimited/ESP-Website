@@ -151,7 +151,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
-            if prevTimeSlot != None:
+            if prevTimeSlot is not None:
                 if not Event.contiguous(prevTimeSlot, timeslot):
                     blockCount += 1
 

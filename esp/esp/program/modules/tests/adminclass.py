@@ -54,8 +54,8 @@ class CancelClassTest(ProgramFrameworkTest):
                     studentEmail = m
                     break
 
-        self.assertTrue(directorEmail != None and cancelMsg in directorEmail.body)
-        self.assertTrue(studentEmail != None and cancelMsg in studentEmail.body)
+        self.assertTrue(directorEmail is not None and cancelMsg in directorEmail.body)
+        self.assertTrue(studentEmail is not None and cancelMsg in studentEmail.body)
 
         # Check that classes show up in the cancelled classes printable
         r = self.client.get("/manage/"+self.program.url+"/classesbytime?cancelled")
