@@ -128,7 +128,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Error on adding the same coteacher again
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(response, "Error", 200)
+        self.assertContains(response, "Error", status_code=200)
 
         # Add free_teacher2
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher2.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
