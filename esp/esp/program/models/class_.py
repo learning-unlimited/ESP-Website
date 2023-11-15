@@ -1253,8 +1253,8 @@ class ClassSection(models.Model):
         if raw:
             txtTimes = Event.collapse(events, tol=datetime.timedelta(minutes=15))
         else:
-            txtTimes = [ event.pretty_time(include_date=include_date) for event
-                     in Event.collapse(events, tol=datetime.timedelta(minutes=15)) ]
+            txtTimes = [event.pretty_time(include_date=include_date) for event
+                        in Event.collapse(events, tol=datetime.timedelta(minutes=15))]
 
         return txtTimes
     friendly_times.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
