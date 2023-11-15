@@ -32,6 +32,12 @@ done
 BASEDIR=$(dirname $(dirname $(readlink -e $0)))
 
 sudo apt update
+if ! find /etc/apt/ -name *.list | xargs cat | grep  '^[[:space:]]*deb' | grep -q 'deadsnakes'
+then
+    sudo add-apt-repository ppa:deadsnakes/ppa
+    sudo apt update
+fi
+
 xargs sudo apt install -y < $BASEDIR/esp/packages_base.txt
 
 # This nodejs/less installation only works on Ubuntu 16+
@@ -51,11 +57,11 @@ then
     fi
 fi
 
-# Install pip
+# Install universe and curl 
 # How we add the repository depends on the version of Ubuntu
 if [ $((${UBUNTU_VERSION%.*}+0)) -gt 12 ]
 then
-sudo add-apt-repository universe
+sudo add-apt-repository -y universe
 else
 sudo add-apt-repository "deb http://old-releases.ubuntu.com/ubuntu $(lsb_release -sc) universe"
 fi
@@ -80,10 +86,7 @@ then
     source "$VIRTUALENV_DIR/bin/activate"
 fi
 
-sudo curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
-python2 get-pip.py
+# Install/upgrade pip and Python dependencies.
+python -m pip install -U pip
+python -m pip install -U -r "$BASEDIR/esp/requirements.txt"
 
-# Install/upgrade pip, setuptools, wheel, and application dependencies.
-pip2 install -U pip
-pip2 install -U setuptools wheel
-pip2 install -U -r "$BASEDIR/esp/requirements.txt"

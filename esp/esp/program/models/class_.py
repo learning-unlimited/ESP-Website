@@ -1,3 +1,9 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -63,6 +69,7 @@ from django_extensions.db.fields.json import JSONField
 from esp.db.fields import AjaxForeignKey
 from esp.utils.property import PropertyDict
 from esp.utils.query_utils import nest_Q
+from esp.utils import cmp
 from esp.tagdict.models import Tag
 from esp.mailman import add_list_member, remove_list_member
 
@@ -105,6 +112,8 @@ REGISTRATION_CHOICES = (
             (CLOSED, "closed"),
             )
 
+
+@python_2_unicode_compatible
 class ClassSizeRange(models.Model):
     range_min = models.IntegerField(null=False)
     range_max = models.IntegerField(null=False)
@@ -125,10 +134,10 @@ class ClassSizeRange(models.Model):
             return cls.objects.filter(program=prog)
 
     def range_str(self):
-        return u"%d-%d" %(self.range_min, self.range_max)
+        return six.u("%d-%d") %(self.range_min, self.range_max)
 
-    def __unicode__(self):
-        return u"Class Size Range: " + self.range_str()
+    def __str__(self):
+        return "Class Size Range: " + self.range_str()
 
     class Meta:
         app_label='program'
@@ -136,7 +145,7 @@ class ClassSizeRange(models.Model):
 
 class ClassManager(Manager):
     def __repr__(self):
-        return u"ClassManager()"
+        return six.u("ClassManager()")
 
     def approved(self, return_q_obj=False):
         if return_q_obj:
@@ -241,7 +250,7 @@ class ClassManager(Manager):
             counter += 1
 
         # All class ID's; used by later query ugliness:
-        class_ids = map(lambda x: x.id, classes)
+        class_ids = [x.id for x in classes]
 
         # Now to get the sections corresponding to these classes...
         sections = ClassSection.objects.filter(parent_class__in=class_ids)
@@ -257,11 +266,11 @@ class ClassManager(Manager):
 
         for c in classes:
             c._teachers = list(c.teachers.all())
-            c._teachers.sort(cmp=lambda t1, t2: cmp(t1.last_name, t2.last_name))
+            c._teachers.sort(key=lambda t: t.last_name)
             c._sections = sections_by_parent_id[c.id]
             for s in c._sections:
                 s.parent_class = c
-            c._sections.sort(cmp=lambda s1, s2: cmp(s1.id, s2.id))
+            c._sections.sort(key=lambda s:s.id)
             c.parent_program = p # So that if we set attributes on one instance of the program,
                                  # they show up for all instances.
 
@@ -288,6 +297,7 @@ class ClassManager(Manager):
         count = classes.count()
         return classes[random.randint(0, count - 1)]
 
+@python_2_unicode_compatible
 class ClassSection(models.Model):
     """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
     parallel sections for a course being taught more than once at Splash or Spark. """
@@ -319,7 +329,7 @@ class ClassSection(models.Model):
             if len(title.strip()) > 0:
                 query_set = query_set.filter(parent_class__title__istartswith = title.strip())
 
-        values_set = query_set.order_by('parent_class__category__symbol','id').select_related()
+        values_set = query_set.order_by('parent_class__category__symbol', 'id').select_related()
         values = []
         for v in values_set:
             index = str(v.index())
@@ -354,7 +364,7 @@ class ClassSection(models.Model):
 
         for s in sections:
             s._events = list(s.meeting_times.all())
-            s._events.sort(cmp=lambda e1, e2: cmp(e1.start, e2.start))
+            s._events.sort(key=lambda e:e.start)
 
         return sections
 
@@ -468,13 +478,13 @@ class ClassSection(models.Model):
     def title(self):
         return self.parent_class.title
 
-    def __unicode__(self):
-        return u'%s: %s' % (self.emailcode(), self.title())
+    def __str__(self):
+        return '%s: %s' % (self.emailcode(), self.title())
 
     def index(self):
         """ Get index of this section among those belonging to the parent class. """
         pc = self.parent_class
-        pc_sec_ids = map(lambda x: x.id, pc.get_sections())
+        pc_sec_ids = [x.id for x in pc.get_sections()]
         return list(pc_sec_ids).index(self.id) + 1
 
     def delete(self, adminoverride=False):
@@ -544,7 +554,7 @@ class ClassSection(models.Model):
             return []
 
     def emailcode(self):
-        return self.parent_class.emailcode() + u's' + unicode(self.index())
+        return self.parent_class.emailcode() + six.u('s') + six.text_type(self.index())
 
     def already_passed(self):
         start_time = self.start_time()
@@ -583,7 +593,7 @@ class ClassSection(models.Model):
         if s:
             return s.short_time()
         else:
-            return u'N/A'
+            return six.u('N/A')
 
     #   Scheduling helper functions
 
@@ -712,7 +722,7 @@ class ClassSection(models.Model):
 
         if rooms_to_assign.count() != self.meeting_times.count():
             status = False
-            errors.append( u'Room %s does not exist at the times requested by %s.' % (base_room.name, self.emailcode()) )
+            errors.append( six.u('Room %s does not exist at the times requested by %s.') % (base_room.name, self.emailcode()) )
             if not allow_partial:
                 return (status, errors)
 
@@ -723,8 +733,8 @@ class ClassSection(models.Model):
                 occupiers_str = ''
                 occupiers_set = r.assignments()
                 if occupiers_set.count() > 0: # We really shouldn't have to test for this, but I guess it's safer not to assume... -ageng 2008-11-02
-                    occupiers_str = u' by %s during %s' % ((occupiers_set[0].target or occupiers_set[0].target_subj).emailcode(), r.event.pretty_time())
-                errors.append( u'Room %s is occupied%s.' % ( base_room.name, occupiers_str ) )
+                    occupiers_str = six.u(' by %s during %s') % ((occupiers_set[0].target or occupiers_set[0].target_subj).emailcode(), r.event.pretty_time())
+                errors.append( six.u('Room %s is occupied%s.') % ( base_room.name, occupiers_str ) )
                 # If we don't allow partial fulfillment, undo and quit.
                 if not allow_partial:
                     for r2 in rooms_to_assign[:i]:
@@ -798,7 +808,7 @@ class ClassSection(models.Model):
         first_time = ordered_times[0]
         possible_rooms = self.parent_program.getAvailableClassrooms(first_time)
 
-        viable_list = filter(lambda x: room_satisfies_times(x, ordered_times), possible_rooms)
+        viable_list = [x for x in possible_rooms if room_satisfies_times(x, ordered_times)]
 
         return viable_list
 
@@ -846,7 +856,7 @@ class ClassSection(models.Model):
             sm.remove_section(self)
             for exp in relevantConstraints:
                 if not exp.evaluate(sm, recursive=False):
-                    return u"You can't remove this class from your schedule because it would violate the requirement that you %s.  You can go back and correct this." % exp.requirement.label
+                    return six.u("You can't remove this class from your schedule because it would violate the requirement that you %s.  You can go back and correct this.") % exp.requirement.label
         return False
 
     def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True, ignore_constraints=False, webapp=False):
@@ -870,7 +880,7 @@ class ClassSection(models.Model):
 
             for exp in relevantConstraints:
                 if not exp.evaluate(sm, recursive=autocorrect_constraints):
-                    return u"Adding <i>%s</i> to your schedule requires that you %s.  You can go back and correct this." % (self.title(), exp.requirement.label)
+                    return six.u("Adding <i>%s</i> to your schedule requires that you %s.  You can go back and correct this.") % (self.title(), exp.requirement.label)
 
         scrmi = self.parent_program.studentclassregmoduleinfo
         section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
@@ -879,7 +889,7 @@ class ClassSection(models.Model):
         my_timeslots = self.timeslot_ids()
         for sec in section_list:
             if sec.parent_class == self.parent_class:
-                return u'You are already signed up for a section of this class!'
+                return six.u('You are already signed up for a section of this class!')
             if hasattr(sec, '_timeslot_ids'):
                 timeslot_ids = sec._timeslot_ids
             else:
@@ -887,23 +897,23 @@ class ClassSection(models.Model):
             for tid in timeslot_ids:
                 if tid in my_timeslots:
                     if self.parent_class.sections.filter(resourceassignment__isnull=False, meeting_times__isnull=False, status=ClassStatus.ACCEPTED).exclude(id=self.id):
-                        return u'This section conflicts with your schedule--check out the other sections!'
+                        return six.u('This section conflicts with your schedule--check out the other sections!')
                     else:
-                        return u'This class conflicts with your schedule!'
+                        return six.u('This class conflicts with your schedule!')
 
         # check to see if registration has been closed for this section
         if not self.isRegOpen():
-            return u'Registration for this section is not currently open.'
+            return six.u('Registration for this section is not currently open.')
 
         # check to see if the section has been cancelled
         if self.isCancelled():
-            return u'This section has been cancelled.'
+            return six.u('This section has been cancelled.')
 
         # check to make sure they haven't already registered for too many classes in this section
         if scrmi.use_priority:
             priority = user.getRegistrationPriority(self.parent_class.parent_program, self.meeting_times.all())
             if priority > scrmi.priority_limit:
-                return u'You are only allowed to select up to %s top classes' % (scrmi.priority_limit)
+                return six.u('You are only allowed to select up to %s top classes') % (scrmi.priority_limit)
 
         # this user *can* add this class!
         return False
@@ -936,10 +946,10 @@ class ClassSection(models.Model):
             available = t.getAvailableTimes(self.parent_program, ignore_classes=ignore_classes, ignore_sections=[self])
             for e in meeting_times:
                 if e not in available:
-                    return u"The teacher %s has not indicated availability during %s." % (t.name(), e.pretty_time())
+                    return six.u("The teacher %s has not indicated availability during %s.") % (t.name(), e.pretty_time())
             conflicts = self.conflicts(t, meeting_times)
             if conflicts:
-                return u"The teacher %s is teaching %s during %s." % (t.name(), conflicts[0].emailcode(), conflicts[1].pretty_time())
+                return six.u("The teacher %s is teaching %s during %s.") % (t.name(), conflicts[0].emailcode(), conflicts[1].pretty_time())
             # Fallback in case we couldn't come up with details
         return False
 
@@ -1140,6 +1150,18 @@ class ClassSection(models.Model):
                 return cmpresult
 
         return cmp(self.title(), other.title())
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+    def __gt__(self, other):
+        return self.__cmp__(other) > 0
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
+    def __le__(self, other):
+        return self.__cmp__(other) <= 0
+    def __ge__(self, other):
+        return self.__cmp__(other) >= 0
+    def __ne__(self, other):
+        return self.__cmp__(other) != 0
 
 
     def firstBlockEvent(self):
@@ -1231,8 +1253,8 @@ class ClassSection(models.Model):
         if raw:
             txtTimes = Event.collapse(events, tol=datetime.timedelta(minutes=15))
         else:
-            txtTimes = [ event.pretty_time(include_date=include_date) for event
-                     in Event.collapse(events, tol=datetime.timedelta(minutes=15)) ]
+            txtTimes = [event.pretty_time(include_date=include_date) for event
+                        in Event.collapse(events, tol=datetime.timedelta(minutes=15))]
 
         return txtTimes
     friendly_times.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
@@ -1360,9 +1382,9 @@ class ClassSection(models.Model):
 
     def prettyDuration(self):
         if self.duration is None:
-            return u'N/A'
+            return six.u('N/A')
 
-        return u'%s:%02d' % \
+        return six.u('%s:%02d') % \
                (int(self.duration),
             int(round((self.duration - int(self.duration)) * 60)))
 
@@ -1384,6 +1406,7 @@ class ClassSection(models.Model):
         app_label = 'program'
         ordering = ['id']
 
+@python_2_unicode_compatible
 class ClassSubject(models.Model, CustomFormsLinkModel):
     """ An ESP course.  The course includes one or more ClassSections. """
 
@@ -1392,7 +1415,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     title = models.TextField()
     parent_program = models.ForeignKey(Program)
-    category = models.ForeignKey('ClassCategories',related_name = 'cls')
+    category = models.ForeignKey('ClassCategories', related_name = 'cls')
     class_info = models.TextField(blank=True)
     teachers = models.ManyToManyField(ESPUser)
     allow_lateness = models.BooleanField(default=False)
@@ -1465,13 +1488,13 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def prettyDuration(self):
         if self.num_sections() <= 0:
-            return u"N/A"
+            return six.u("N/A")
         else:
             return self.get_sections()[0].prettyDuration()
 
     def prettyrooms(self):
         if self.num_sections() <= 0:
-            return u"N/A"
+            return six.u("N/A")
         else:
             rooms = []
 
@@ -1586,8 +1609,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         blocks = []
 
         for s in self.get_sections():
-            rooms = u", ".join(s.prettyrooms())
-            blocks += [(x + u" in " + rooms) for x in s.friendly_times()]
+            rooms = six.u(", ").join(s.prettyrooms())
+            blocks += [(x + six.u(" in ") + rooms) for x in s.friendly_times()]
 
         return blocks
 
@@ -1639,14 +1662,14 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def grades(self):
         """ Return an iterable list of the grades for a class. """
-        return range(self.grade_min, self.grade_max + 1)
+        return list(range(self.grade_min, self.grade_max + 1))
 
     def emailcode(self):
         """ Return the emailcode for this class.
 
         The ``emailcode`` is defined as 'first letter of category' + id.
         """
-        return self.category.symbol+unicode(self.id)
+        return self.category.symbol+six.text_type(self.id)
 
     def url(self):
         return "%s/Classes/%s" % (self.parent_program.url, self.emailcode())
@@ -1658,11 +1681,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         return QuasiStaticData.objects.filter(url__startswith='learn/' + self.url() + '/index').exists()
 
-    def __unicode__(self):
+    def __str__(self):
         if self.title != u"":
-            return u"%s: %s" % (self.id, self.title)
+            return "%s: %s" % (self.id, self.title)
         else:
-            return u"%s: (none)" % self.id
+            return six.u("%s: (none)") % self.id
 
     def delete(self, adminoverride = False):
         if self.num_students() > 0 and not adminoverride:
@@ -1685,11 +1708,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def pretty_teachers(self):
         """ Return a prettified string listing of the class's teachers """
-        return u", ".join([ u"%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
+        return six.u(", ").join([ six.u("%s %s") % (u.first_name, u.last_name) for u in self.get_teachers() ])
 
     def pretty_moderators(self):
         """ Return a prettified string listing of the class's moderators """
-        return u", ".join([ u"%s %s" % (u.first_name, u.last_name) for u in self.moderators() ])
+        return six.u(", ").join([ six.u("%s %s") % (u.first_name, u.last_name) for u in self.moderators() ])
 
     def isFull(self, ignore_changes=False, timeslot=None, webapp=False):
         """ A class subject is full if all of its sections are full. """
@@ -1763,13 +1786,13 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def cannotAdd(self, user, checkFull=True, which_section=None, webapp=False):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
         if not user.isStudent():
-            return u'You are not a student!'
+            return six.u('You are not a student!')
 
         if not self.isAccepted():
-            return u'This class is not accepted.'
+            return six.u('This class is not accepted.')
 
         if checkFull and not self.parent_program.user_can_join(user):
-            return u'This program cannot accept any more students!  Please try again in its next session.'
+            return six.u('This program cannot accept any more students!  Please try again in its next session.')
 
         if checkFull and self.isFull(webapp=webapp):
             scrmi = self.parent_program.studentclassregmoduleinfo
@@ -1778,11 +1801,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if user.getGrade(self.parent_program) < self.grade_min or \
                user.getGrade(self.parent_program) > self.grade_max:
             if not Permission.user_has_perm(user, "GradeOverride", self.parent_program):
-                return u'You are not in the requested grade range for this class.'
+                return six.u('You are not in the requested grade range for this class.')
 
         for section in self.get_sections():
             if user.isEnrolledInClass(section):
-                return u'You are already signed up for a section of this class!'
+                return six.u('You are already signed up for a section of this class!')
 
         if which_section:
             sections = [which_section]
@@ -1799,7 +1822,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return res
 
         # res can't have ever been False--so we must have an error. Pass it along.
-        return u'This class conflicts with your schedule!'
+        return six.u('This class conflicts with your schedule!')
 
     def makeTeacher(self, user):
         self.teachers.add(user)
@@ -2057,7 +2080,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         db_table = 'program_class'
         app_label = 'program'
 
-
+@python_2_unicode_compatible
 class ClassCategories(models.Model):
     """ A list of all possible categories for an ESP class
 
@@ -2076,8 +2099,8 @@ class ClassCategories(models.Model):
         app_label = 'program'
         db_table = 'program_classcategories'
 
-    def __unicode__(self):
-        return u'%s (%s)' % (self.category, self.symbol)
+    def __str__(self):
+        return '%s (%s)' % (self.category, self.symbol)
 
 
 @cache_function

@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+from __future__ import division
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -77,7 +80,7 @@ class AdminClass(ProgramModuleObj):
         if field_str == 'reg_status':
             return (('', 'Leave unchanged'), (0, 'Open'), (10, 'Closed'))
         if field_str == 'room':
-            room_choices = list(self.program.getClassrooms().values_list('name','name').order_by('name').distinct())
+            room_choices = list(self.program.getClassrooms().values_list('name', 'name').order_by('name').distinct())
             return [(None, 'Unassigned')] + room_choices
         if field_str == 'resources':
             resources = self.program.getFloatingResources()
@@ -194,7 +197,7 @@ class AdminClass(ProgramModuleObj):
     @needs_admin
     def addsection(self, request, tl, one, two, module, extra, prog):
         """ A little function to add a section to the class specified in POST. """
-        cls = self.getClass(request,extra)
+        cls = self.getClass(request, extra)
         cls.add_section()
 
         return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
@@ -202,7 +205,7 @@ class AdminClass(ProgramModuleObj):
     @aux_call
     @needs_admin
     def manageclass(self, request, tl, one, two, module, extra, prog):
-        cls = self.getClass(request,extra)
+        cls = self.getClass(request, extra)
         sections = cls.sections.all().order_by('id')
         context = {}
 
@@ -367,7 +370,7 @@ class AdminClass(ProgramModuleObj):
     @needs_admin
     def classavailability(self, request, tl, one, two, module, extra, prog):
         """ Shows the collective availability of teachers for a class. """
-        cls = self.getClass(request,extra)
+        cls = self.getClass(request, extra)
         time_options = prog.getTimeSlots()
         time_groups = prog.getTimeGroups()
 

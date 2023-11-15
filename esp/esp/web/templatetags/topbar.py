@@ -1,12 +1,13 @@
+from __future__ import absolute_import
 from django.conf import settings
 from django import template
 from django.core.cache import cache
 from esp.users.models import ESPUser, AnonymousUser
-from urllib import quote as urlencode
+from six.moves.urllib.parse import quote as urlencode
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 register = template.Library()
 
-@cache_inclusion_tag(register,'inclusion/web/navbar.html', takes_context = True)
+@cache_inclusion_tag(register, 'inclusion/web/navbar.html', takes_context = True)
 def get_primary_nav(context):
     try:
         user = context['user']
@@ -131,18 +132,18 @@ def get_primary_nav(context):
     return {'user': curuser}
 
 sections = {'discoveresp'      : ('about',      'Discover ESP',        '/about/index.html',      [], True),
-            'takeaclass'       : ('learn',      'Take a Class!',       '/learn/index.html',      ['getinvolved','volunteertoteach'], True),
+            'takeaclass'       : ('learn',      'Take a Class!',       '/learn/index.html',      ['getinvolved', 'volunteertoteach'], True),
             'volunteertoteach' : ('teach',      'Volunteer to Teach!', '/teach/index.html',      ['getinvolved'], True),
-            'getinvolved'      : ('getinvolved','Get Involved',        '/getinvolved/index.html',['volunteertoteach'], True),
-            'archivesresources': ('archives',   'ESP Archives',        '/archives/index.html',   ['takeaclass','getinvolved','volunteertoteach'], True),
-            'myesp'            : ('myesp',      'myESP',               '/myesp/home/',           ['takeaclass','getinvolved','volunteertoteach'], True),
+            'getinvolved'      : ('getinvolved', 'Get Involved',        '/getinvolved/index.html', ['volunteertoteach'], True),
+            'archivesresources': ('archives',   'ESP Archives',        '/archives/index.html',   ['takeaclass', 'getinvolved', 'volunteertoteach'], True),
+            'myesp'            : ('myesp',      'myESP',               '/myesp/home/',           ['takeaclass', 'getinvolved', 'volunteertoteach'], True),
             'contactinfo'      : ('about',      'Contact Us!',         '/about/contact.html',    [], False),
             'admin'            : ('admin',      'Admin Section',       '/manage/programs/',          [], False),
             'onsite'           : ('onsite',     'Onsite Registration', '/myesp/onsite/',         [], False)}
 
 
-known_navlinks = ['about','learn','teach','getinvolved','archives','myesp','contactinfo']
-basic_navlinks = ['discoveresp','takeaclass','volunteertoteach','getinvolved','archivesresources','myesp','contactinfo']
+known_navlinks = ['about', 'learn', 'teach', 'getinvolved', 'archives', 'myesp', 'contactinfo']
+basic_navlinks = ['discoveresp', 'takeaclass', 'volunteertoteach', 'getinvolved', 'archivesresources', 'myesp', 'contactinfo']
 
 
 

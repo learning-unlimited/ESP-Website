@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -276,7 +278,7 @@ class UserAttributeGetter(object):
 
 
 class ListGenForm(forms.Form):
-    attr_choices = UserAttributeGetter.getFunctions().items()
+    attr_choices = list(UserAttributeGetter.getFunctions().items())
     attr_choices.sort(key=lambda x: x[0])
 
     fields = forms.MultipleChoiceField(choices=[(choice[0], choice[1]['label']) for choice in attr_choices], widget=forms.CheckboxSelectMultiple)
@@ -291,7 +293,7 @@ class ListGenForm(forms.Form):
         if usertype != 'combo':
             self.fields['fields'].choices = [(choice[0], choice[1]['label']) for choice in self.attr_choices if len({'any', usertype}.intersection(choice[1]['usertype'])) > 0]
             self.fields['split_by'].choices = [('', '')] + [(choice[0], choice[1]['label']) for choice in self.attr_choices if len({'any', usertype}.intersection(choice[1]['usertype'])) > 0]
-        self.fields['fields'].initial = ['02_username','04_firstname','05_lastname','06_email']
+        self.fields['fields'].initial = ['02_username', '04_firstname', '05_lastname', '06_email']
 
 class ListGenModule(ProgramModuleObj):
     doc = """Get information for users that match specific search criteria."""
@@ -335,8 +337,7 @@ class ListGenModule(ProgramModuleObj):
                     fields.append(labels_dict[split_by]['label'])
                 output_type = form.cleaned_data['output_type']
 
-                users = list(ESPUser.objects.filter(filterObj.get_Q()).filter(is_active=True).distinct())
-                users.sort()
+                users = sorted(ESPUser.objects.filter(filterObj.get_Q()).filter(is_active=True).distinct())
                 for u in users:
                     ua = UserAttributeGetter(u, self.program)
                     user_fields = [ua.get(x) for x in form.cleaned_data['fields']]

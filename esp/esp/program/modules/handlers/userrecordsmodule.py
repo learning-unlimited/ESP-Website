@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -57,7 +58,7 @@ class UserRecordsModule(ProgramModuleObj):
     @needs_admin
     def userrecordsfinal(self, request, tl, one, two, module, extra, prog):
         if request.method != 'POST' or 'filterid' not in request.GET:
-            raise ESPError(), 'User filter has not been properly set'
+            raise ESPError()('User filter has not been properly set')
 
         filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
         users = filterObj.getList(ESPUser)
@@ -67,7 +68,7 @@ class UserRecordsModule(ProgramModuleObj):
             pass
 
         if not users:
-            raise ESPError(), "Your query did not match any users"
+            raise ESPError()("Your query did not match any users")
 
         records = request.POST.getlist('records')
         Record.objects.bulk_create([Record(event=RecordType.objects.get(name=rec), program = prog, user=user) for rec in records for user in users])

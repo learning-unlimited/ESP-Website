@@ -4,6 +4,8 @@ Kick students out of their classes (or only next hour's classes, if the
 --per-hour option is used) if they haven't checked in yet.
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import argparse
 
 from script_setup import *
@@ -13,6 +15,7 @@ from esp.program.models import Program, StudentRegistration, RegistrationType
 from esp.users.models import ESPUser
 from datetime import datetime, timedelta
 from django.db.models.aggregates import Min
+from six.moves import input
 
 parser = argparse.ArgumentParser(description='Unenroll missing students from classes.')
 parser.add_argument('program_id', type=int, help='ID of the current program')
@@ -35,11 +38,11 @@ if args.per_hour:
 
 # registrations of missing students for upcoming classes
 registrations = StudentRegistration.valid_objects().filter(user__in=students, section__in=upcoming_sections, relationship=enrolled)
-print "Candidate Registrations to Delete:", len(registrations)
-print registrations
-cmd_str = raw_input("Would you like to delete these registrations [y/N]? --> ")
+print("Candidate Registrations to Delete:", len(registrations))
+print(registrations)
+cmd_str = input("Would you like to delete these registrations [y/N]? --> ")
 if cmd_str.strip().lower() == 'y':
     registrations.update(end_date=datetime.now())
-    print 'Expired:', registrations
+    print('Expired:', registrations)
 else:
-    print 'Action cancelled.'
+    print('Action cancelled.')

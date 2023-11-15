@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -64,7 +68,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     from_email = from_email.strip()
     if 'Reply-To' in extra_headers:
         extra_headers['Reply-To'] = extra_headers['Reply-To'].strip()
-    if isinstance(recipient_list, basestring):
+    if isinstance(recipient_list, six.string_types):
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
@@ -139,7 +143,7 @@ _MESSAGE_CREATED_AT_HELP_TEXT = """
 """
 _MESSAGE_CREATED_AT_HELP_TEXT = re.sub(r'\s+', ' ', _MESSAGE_CREATED_AT_HELP_TEXT.strip())
 
-
+@python_2_unicode_compatible
 class MessageRequest(models.Model):
     """ An initial request to broadcast an email message """
 
@@ -172,7 +176,7 @@ class MessageRequest(models.Model):
     )
 
     id = models.AutoField(primary_key=True)
-    subject = models.TextField(null=True,blank=True)
+    subject = models.TextField(null=True, blank=True)
     msgtext = models.TextField(blank=True, null=True)
     special_headers = models.TextField(blank=True, null=True)
     recipients = models.ForeignKey(PersistentQueryFilter) # We will get the user from a query filter
@@ -200,17 +204,17 @@ class MessageRequest(models.Model):
     def public_url(self):
         return '%s/email/%s' % (Site.objects.get_current().domain, self.id or "{ID will be here}")
 
-    def __unicode__(self):
-        return unicode(self.subject)
+    def __str__(self):
+        return six.text_type(self.subject)
 
     # Access special_headers as a dictionary
     def special_headers_dict_get(self):
         if not self.special_headers:
             return {}
-        import cPickle as pickle
+        import six.moves.cPickle as pickle
         return pickle.loads(str(self.special_headers)) # We call str here because pickle hates unicode. -ageng 2008-11-18
     def special_headers_dict_set(self, value):
-        import cPickle as pickle
+        import six.moves.cPickle as pickle
         if not isinstance(value, dict):
             value = {}
         self.special_headers = pickle.dumps(value)
@@ -246,7 +250,7 @@ class MessageRequest(models.Model):
         """ Takes a text and user, and, within the confines of this message, will make it better. """
 
         # prepare variables
-        text = unicode(text)
+        text = six.text_type(text)
 
         context = MessageVars.getContext(self, user)
 
@@ -262,7 +266,7 @@ class MessageRequest(models.Model):
         """
         if sendto_fn_name == cls.SEND_TO_SELF_REAL:
             return True
-        return bool(filter(lambda fn: sendto_fn_name == fn[0], cls.SENDTO_FN_CHOICES))
+        return bool([fn for fn in cls.SENDTO_FN_CHOICES if sendto_fn_name == fn[0]])
 
     @classmethod
     def get_sendto_fn_callable(cls, sendto_fn_name):
@@ -301,7 +305,7 @@ class MessageRequest(models.Model):
             sendto_fn_name = cls.SEND_TO_SELF_REAL
         try:
             return cls.get_sendto_fn_callable(sendto_fn_name)
-        except ImproperlyConfigured, e:
+        except ImproperlyConfigured as e:
             raise ESPError(True, 'Invalid sendto function "%s". ' + \
                 'This might be a website bug. Please contact us at %s ' + \
                 'and tell us how you got this error, and we will look into it. ' + \
@@ -380,7 +384,7 @@ class MessageRequest(models.Model):
 
         logger.info('Prepared emails to send for message request %d: %s', self.id, self.subject)
 
-
+@python_2_unicode_compatible
 class TextOfEmail(models.Model):
     """ Contains the processed form of an EmailRequest, ready to be sent.  SmartText becomes plain text. """
     send_to = models.CharField(max_length=1024)  # Valid email address, "Name" <foo@bar.com>
@@ -400,8 +404,8 @@ class TextOfEmail(models.Model):
     sent_by = models.DateTimeField(null=True, default=None, db_index=True) # When it should be sent by.
     tries = models.IntegerField(default=0) # Number of times we attempted to send this message and failed
 
-    def __unicode__(self):
-        return unicode(self.subject) + ' <' + (self.send_to) + '>'
+    def __str__(self):
+        return six.text_type(self.subject) + ' <' + (self.send_to) + '>'
 
     def send(self):
         """Take the email data in this TextOfEmail and send it.
@@ -463,6 +467,7 @@ class TextOfEmail(models.Model):
     class Meta:
         verbose_name_plural = 'Email texts'
 
+@python_2_unicode_compatible
 class MessageVars(models.Model):
     """ A storage of message variables for a specific message. """
     messagerequest = models.ForeignKey(MessageRequest)
@@ -472,7 +477,7 @@ class MessageVars(models.Model):
     @staticmethod
     def createVar(msgrequest, name, obj):
         """ This is used to create a variable container for a message."""
-        import cPickle as pickle
+        import six.moves.cPickle as pickle
 
 
         newMessageVar = MessageVars(messagerequest = msgrequest, provider_name = name)
@@ -483,7 +488,7 @@ class MessageVars(models.Model):
         return newMessageVar
 
     def getDict(self, user):
-        import cPickle as pickle
+        import six.moves.cPickle as pickle
         #try:
         provider = pickle.loads(str(self.pickled_provider))
         #except:
@@ -496,7 +501,7 @@ class MessageVars(models.Model):
 
     def getVar(self, key, user):
         """ Get a variable from this object. """
-        import cPickle as pickle
+        import six.moves.cPickle as pickle
 
         try:
             provider = pickle.loads(str(self.pickled_provider))
@@ -540,22 +545,23 @@ class MessageVars(models.Model):
 
         return True
 
-    def __unicode__(self):
+    def __str__(self):
         return "Message Variables for %s" % self.messagerequest
 
     class Meta:
         verbose_name_plural = 'Message variables'
 
-
+@python_2_unicode_compatible
 class EmailRequest(models.Model):
     """ Each email is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to. """
     target = AjaxForeignKey(ESPUser)
     msgreq = models.ForeignKey(MessageRequest)
     textofemail = AjaxForeignKey(TextOfEmail, blank=True, null=True)
 
-    def __unicode__(self):
-        return unicode(self.msgreq.subject) + ' <' + unicode(self.target.username) + '>'
+    def __str__(self):
+        return six.text_type(self.msgreq.subject) + ' <' + six.text_type(self.target.username) + '>'
 
+@python_2_unicode_compatible
 class EmailList(models.Model):
     """
     A list that gets handled when an email comes in to @esp.mit.edu.
@@ -569,7 +575,7 @@ class EmailList(models.Model):
 
     handler = models.CharField(max_length=128)
 
-    subject_prefix = models.CharField(max_length=64,blank=True,null=True)
+    subject_prefix = models.CharField(max_length=64, blank=True, null=True)
 
     admin_hold = models.BooleanField(default=False)
 
@@ -577,7 +583,7 @@ class EmailList(models.Model):
 
     from_email = models.CharField(help_text="If specified, the FROM header will be overwritten with this email.", blank=True, null=True, max_length=512)
 
-    description = models.TextField(blank=True,null=True)
+    description = models.TextField(blank=True, null=True)
 
     class Meta:
         ordering=('seq',)
@@ -593,9 +599,10 @@ class EmailList(models.Model):
 
         super(EmailList, self).save(*args, **kwargs)
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s (%s)' % (self.description, self.regex)
 
+@python_2_unicode_compatible
 class PlainRedirect(models.Model):
     """
     A simple catch-all for mail redirection.
@@ -605,7 +612,7 @@ class PlainRedirect(models.Model):
 
     destination = models.CharField(max_length=512, help_text='A comma-seperated list of one or more real email address(es) that will receive the redirected email(s)')
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s --> %s'  % (self.original, self.destination)
 
     class Meta:

@@ -1,5 +1,6 @@
 " Survey models for Educational Studies Program. "
 
+from __future__ import absolute_import
 __author__    = "$LastChangedBy$"
 __date__      = "$LastChangedDate$"
 __rev__       = "$LastChangedRevision$"
@@ -47,7 +48,7 @@ admin_site.register(Survey, SurveyAdmin)
 class SurveyResponseAdmin(admin.ModelAdmin):
     list_display = ('survey', 'time_filled')
     date_hierarchy = 'time_filled'
-    list_filter = ('survey','time_filled')
+    list_filter = ('survey', 'time_filled')
 admin_site.register(SurveyResponse, SurveyResponseAdmin)
 
 class QuestionTypeAdmin(admin.ModelAdmin):

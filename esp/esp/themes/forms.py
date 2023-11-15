@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -73,5 +75,5 @@ class ThemeConfigurationForm(forms.Form):
         """
         A dictionary of the initial values of the configuration form fields.
         """
-        return dict(map(lambda (k,v): (k, v.initial), cls().fields.iteritems()))
+        return dict([(k_v[0], k_v[1].initial) for k_v in six.iteritems(cls().fields)])
 

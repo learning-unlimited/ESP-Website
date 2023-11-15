@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -52,7 +54,7 @@ class TransferAdmin(admin.ModelAdmin):
         if obj.option:
             return obj.option.description
         else:
-            return u'--'
+            return six.u('--')
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "line_item":

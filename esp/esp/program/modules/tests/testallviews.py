@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import print_function
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -95,7 +98,7 @@ class AllViewsTest(ProgramFrameworkTest):
         # Set up custom forms for the program
         form_data = {
             'title': 'Test Form',
-            'perms': u'',
+            'perms': six.u(''),
             'link_id': -1,
             'success_url': '/formsuccess.html',
             'success_message': 'Thank you!',
@@ -105,13 +108,13 @@ class AllViewsTest(ProgramFrameworkTest):
                 'sections': [{
                     'fields': [
                         {'data': {'field_type': 'textField', 'question_text': 'ShortText', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs':{'correct_answer': 'Smart', 'charlimits': '0,100'}, 'help_text': 'Instructions'}},
-                        {'data': {'field_type': 'phone', 'question_text': 'Your phone no.', 'seq': 1, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': u''}},
-                        {'data': {'field_type': 'gender', 'question_text': 'Your gender', 'seq': 2, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': u''}},
-                        {'data': {'field_type': 'radio', 'question_text': 'Choose an option', 'seq': 3, 'required': True, 'parent_id': -1, 'attrs': {'correct_answer': '1', 'options': 'A|B|C|'}, 'help_text': u''}},
-                        {'data': {'field_type': 'boolean', 'question_text': 'True/false', 'seq': 4, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text':u''}},
-                        {'data': {'field_type': 'textField', 'question_text': 'NonRequired', 'seq': 5, 'required': False, 'parent_id': -1, 'attrs': {'correct_answer': u'', 'charlimits': ','}, 'help_text': u''}}
+                        {'data': {'field_type': 'phone', 'question_text': 'Your phone no.', 'seq': 1, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': six.u('')}},
+                        {'data': {'field_type': 'gender', 'question_text': 'Your gender', 'seq': 2, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': six.u('')}},
+                        {'data': {'field_type': 'radio', 'question_text': 'Choose an option', 'seq': 3, 'required': True, 'parent_id': -1, 'attrs': {'correct_answer': '1', 'options': 'A|B|C|'}, 'help_text': six.u('')}},
+                        {'data': {'field_type': 'boolean', 'question_text': 'True/false', 'seq': 4, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text':six.u('')}},
+                        {'data': {'field_type': 'textField', 'question_text': 'NonRequired', 'seq': 5, 'required': False, 'parent_id': -1, 'attrs': {'correct_answer': six.u(''), 'charlimits': ','}, 'help_text': six.u('')}}
                     ],
-                'data': {'help_text': u'', 'question_text': u'', 'seq': 0}
+                'data': {'help_text': six.u(''), 'question_text': six.u(''), 'seq': 0}
                 }],
                 'seq': 0
             }],
@@ -170,31 +173,31 @@ class AllViewsTest(ProgramFrameworkTest):
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '?cls=' + cls_id + '&clsid=' + cls_id + '&name=Admin&username=admin')
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
-                    except Exception, e:
+                    except Exception as e:
                         print(e)
                     try: # Use a class ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + cls_id)
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
-                    except Exception, e:
+                    except Exception as e:
                         print(e)
                     try: # Use a section ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + sec_id)
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
-                    except Exception, e:
+                    except Exception as e:
                         print(e)
                     try: # Use an event ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + event_id)
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
-                    except Exception, e:
+                    except Exception as e:
                         print(e)
                     try: # Use a user ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + self.adminUser.id)
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
-                    except Exception, e:
+                    except Exception as e:
                         print(e)
                     try: # Various POST data
                         # Mostly used for registering for classes, so unregister for the class in advance
@@ -202,19 +205,19 @@ class AllViewsTest(ProgramFrameworkTest):
                         response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'class_id': cls_id,  'section_id': sec_id, 'json_data': '{}'})
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
-                    except Exception, e:
+                    except Exception as e:
                         print(e)
                     try: # Student lottery POST data
                         response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'json_data': '{"interested": [1, 5, 3, 9], "not_interested": [4, 6, 10]}'})
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
-                    except Exception, e:
+                    except Exception as e:
                         print(e)
                     try: # Different student lottery POST data
                         response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'json_data': '{"' + event_id + '": {}}'})
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
-                    except Exception, e:
+                    except Exception as e:
                         print(e)
                     if not passes:
                         failed_modules.append((module, view))

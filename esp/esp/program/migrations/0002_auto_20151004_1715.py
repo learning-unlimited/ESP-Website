@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import models, migrations
 import esp.db.fields
 
@@ -126,7 +127,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterUniqueTogether(
             name='registrationtype',
-            unique_together=set([('name', 'category')]),
+            unique_together={('name', 'category')},
         ),
         migrations.AddField(
             model_name='registrationprofile',
@@ -191,7 +192,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='program',
             name='program_modules',
-            field=models.ManyToManyField(help_text=b'The set of enabled program functionalities. See <a href="https://github.com/learning-unlimited/ESP-Website/blob/main/docs/admin/program_modules.rst">the documentation</a> for details.', to='program.ProgramModule'),
+            field=models.ManyToManyField(help_text='The set of enabled program functionalities. See <a href="https://github.com/learning-unlimited/ESP-Website/blob/main/docs/admin/program_modules.rst">the documentation</a> for details.', to='program.ProgramModule'),
         ),
         migrations.AddField(
             model_name='financialaidrequest',
@@ -296,13 +297,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='booleantoken',
             name='exp',
-            field=models.ForeignKey(help_text=b'The Boolean expression that this token belongs to', to='program.BooleanExpression'),
+            field=models.ForeignKey(help_text='The Boolean expression that this token belongs to', to='program.BooleanExpression'),
         ),
         migrations.CreateModel(
             name='ScheduleTestCategory',
             fields=[
                 ('scheduletesttimeblock_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='program.ScheduleTestTimeblock')),
-                ('category', models.ForeignKey(help_text=b'The class category that must be selected for this timeblock', to='program.ClassCategories')),
+                ('category', models.ForeignKey(help_text='The class category that must be selected for this timeblock', to='program.ClassCategories')),
             ],
             bases=('program.scheduletesttimeblock',),
         ),
@@ -317,17 +318,17 @@ class Migration(migrations.Migration):
             name='ScheduleTestSectionList',
             fields=[
                 ('scheduletesttimeblock_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='program.ScheduleTestTimeblock')),
-                ('section_ids', models.TextField(help_text=b'A comma separated list of ClassSection IDs that can be selected for this timeblock')),
+                ('section_ids', models.TextField(help_text='A comma separated list of ClassSection IDs that can be selected for this timeblock')),
             ],
             bases=('program.scheduletesttimeblock',),
         ),
         migrations.AddField(
             model_name='scheduletesttimeblock',
             name='timeblock',
-            field=models.ForeignKey(help_text=b'The timeblock that this schedule test pertains to', to='cal.Event'),
+            field=models.ForeignKey(help_text='The timeblock that this schedule test pertains to', to='cal.Event'),
         ),
         migrations.AlterUniqueTogether(
             name='financialaidrequest',
-            unique_together=set([('program', 'user')]),
+            unique_together={('program', 'user')},
         ),
     ]

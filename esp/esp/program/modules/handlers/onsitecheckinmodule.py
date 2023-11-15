@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -99,7 +100,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
         return True
 
     def hasAttended(self):
-        return Record.user_completed(self.student, "attended",self.program)
+        return Record.user_completed(self.student, "attended", self.program)
 
     def isAttending(self):
         return self.program.isCheckedIn(self.student)
@@ -115,11 +116,11 @@ class OnSiteCheckinModule(ProgramModuleObj):
         return Record.user_completed(self.student, "liab", self.program)
 
     def timeCheckedIn(self):
-        u = Record.objects.filter(event__name="attended",program=self.program, user=self.student).order_by("time")
+        u = Record.objects.filter(event__name="attended", program=self.program, user=self.student).order_by("time")
         return str(u[0].time.strftime("%H:%M %m/%d/%y"))
 
     def lastCheckedIn(self):
-        u = Record.objects.filter(event__name="attended",program=self.program, user=self.student).order_by("-time")
+        u = Record.objects.filter(event__name="attended", program=self.program, user=self.student).order_by("-time")
         return str(u[0].time.strftime("%H:%M %m/%d/%y"))
 
     def checkinPairs(self):
@@ -282,15 +283,15 @@ class OnSiteCheckinModule(ProgramModuleObj):
             user = ESPUser.objects.filter(id = request.POST['userid']).first()
             if user:
                 self.student = user
-                for key in ['attended','paid','liab','med']:
+                for key in ['attended', 'paid', 'liab', 'med']:
                     if key in request.POST:
                         self.create_record(key)
                     else:
                         self.delete_record(key)
                 if "undocheckin" in request.POST:
-                    Record.objects.filter(event__name="attended",program=self.program, user=self.student).order_by("-time")[0].delete()
+                    Record.objects.filter(event__name="attended", program=self.program, user=self.student).order_by("-time")[0].delete()
                 if "undocheckout" in request.POST:
-                    Record.objects.filter(event__name="checked_out",program=self.program, user=self.student).order_by("-time")[0].delete()
+                    Record.objects.filter(event__name="checked_out", program=self.program, user=self.student).order_by("-time")[0].delete()
                 message = "Check-in updated for " + user.username
             else:
                 error = True

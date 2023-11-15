@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+from __future__ import division
+from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -68,8 +71,7 @@ def zipcodes(form, programs, students, profiles, result_dict={}):
             if 'N/A' not in zip_dict:
                 zip_dict['N/A'] = 0
             zip_dict['N/A'] += 1
-    zip_codes = zip_dict.keys()
-    zip_codes.sort()
+    zip_codes = sorted(zip_dict.keys())
 
     #   Filter out invalid zip codes
     result_dict['invalid'] = 0
@@ -129,14 +131,13 @@ def demographics(form, programs, students, profiles, result_dict={}):
                     finaid_approved.append(student.id)
 
     #   Compile and render
-    grad_years = gradyear_dict.keys()
-    grad_years.sort()
+    grad_years = sorted(gradyear_dict.keys())
     grad_counts = [gradyear_dict[key] for key in grad_years]
-    result_dict['gradyear_data'] = zip(grad_years, grad_counts)
-    birth_years = birthyear_dict.keys()
+    result_dict['gradyear_data'] = list(zip(grad_years, grad_counts))
+    birth_years = list(birthyear_dict.keys())
     birth_years.sort()
     birth_counts = [birthyear_dict[key] for key in birth_years]
-    result_dict['birthyear_data'] = zip(birth_years, birth_counts)
+    result_dict['birthyear_data'] = list(zip(birth_years, birth_counts))
     result_dict['finaid_applied'] = len(set(finaid_applied))
     result_dict['finaid_lunch'] = len(set(finaid_lunch))
     result_dict['finaid_approved'] = len(set(finaid_approved))
@@ -163,8 +164,7 @@ def schools(form, programs, students, profiles, result_dict={}):
                 result_dict['num_school'] += 1
 
     #   Compile and render
-    schools = school_dict.keys()
-    schools.sort()
+    schools = sorted(school_dict.keys())
     school_counts = [school_dict[school] for school in schools]
     result_dict['school_data'] = sorted(zip(schools, school_counts), key=lambda pair: -pair[1])
     if form.cleaned_data['limit']:
@@ -200,15 +200,14 @@ def startreg(form, programs, students, profiles, result_dict={}):
     startreg_list = []
     confirm_list = []
     for program in programs:
-        reg_dates = reg_dict[program].keys()
-        reg_dates.sort()
+        reg_dates = sorted(reg_dict[program].keys())
         reg_counts = [reg_dict[program][key] for key in reg_dates]
-        startreg_list.append(zip(reg_dates, reg_counts))
-        confirm_dates = confirm_dict[program].keys()
+        startreg_list.append(list(zip(reg_dates, reg_counts)))
+        confirm_dates = list(confirm_dict[program].keys())
         confirm_dates.sort()
         confirm_counts = [confirm_dict[program][key] for key in confirm_dates]
-        confirm_list.append(zip(confirm_dates, confirm_counts))
-    result_dict['program_data'] = zip(programs, startreg_list, confirm_list)
+        confirm_list.append(list(zip(confirm_dates, confirm_counts)))
+    result_dict['program_data'] = list(zip(programs, startreg_list, confirm_list))
 
     return render_to_string('program/statistics/startreg.html', result_dict)
 
@@ -224,8 +223,7 @@ def repeats(form, programs, students, profiles, result_dict={}):
             if program.program_type not in indiv_count:
                 indiv_count[program.program_type] = 0
             indiv_count[program.program_type] += 1
-        program_types = indiv_count.keys()
-        program_types.sort()
+        program_types = sorted(indiv_count.keys())
         id_pair = tuple([tuple([program_type, indiv_count[program_type]]) for program_type in program_types])
         if id_pair not in repeat_count:
             repeat_count[id_pair] = 0
@@ -242,7 +240,7 @@ def repeats(form, programs, students, profiles, result_dict={}):
     repeat_counts = []
     for label in repeat_labels:
         repeat_counts.append(repeat_count[key_map[label]])
-    result_dict['repeat_data'] = zip(repeat_labels, repeat_counts)
+    result_dict['repeat_data'] = list(zip(repeat_labels, repeat_counts))
     return render_to_string('program/statistics/repeats.html', result_dict)
 
 
@@ -265,7 +263,7 @@ def heardabout(form, programs, students, profiles, result_dict={}):
                 reasons_dict[case_map[ha_key]] += 1
 
     #   Compile and render
-    reasons = reasons_dict.keys()
+    reasons = list(reasons_dict.keys())
     counts = [reasons_dict[x] for x in reasons]
     result_dict['heardabout_data'] = sorted(zip(reasons, counts), key=lambda pair: -pair[1])
     if form.cleaned_data['limit']:
@@ -329,31 +327,27 @@ def hours(form, programs, students, profiles, result_dict={}):
     timeslots_enrolled_flat = []
     timeslots_attended_flat = []
     for enrolled_dict in enrolled_list:
-        hours = enrolled_dict.keys()
-        hours.sort()
+        hours = sorted(enrolled_dict.keys())
         if 0 in hours:
             hours.remove(0)
         counts = [enrolled_dict[key] for key in hours]
-        enrolled_flat.append(zip(hours, counts))
+        enrolled_flat.append(list(zip(hours, counts)))
     for attended_dict in attended_list:
-        hours = attended_dict.keys()
-        hours.sort()
+        hours = sorted(attended_dict.keys())
         if 0 in hours:
             hours.remove(0)
         counts = [attended_dict[key] for key in hours]
-        attended_flat.append(zip(hours, counts))
+        attended_flat.append(list(zip(hours, counts)))
     for timeslots_dict in timeslots_enrolled_list:
-        slots = timeslots_dict.keys()
-        slots.sort()
+        slots = sorted(timeslots_dict.keys())
         counts = [timeslots_dict[key] for key in slots]
-        timeslots_enrolled_flat.append(zip(slots, counts))
+        timeslots_enrolled_flat.append(list(zip(slots, counts)))
     for timeslots_dict in timeslots_attended_list:
-        slots = timeslots_dict.keys()
-        slots.sort()
+        slots = sorted(timeslots_dict.keys())
         counts = [timeslots_dict[key] for key in slots]
-        timeslots_attended_flat.append(zip(slots, counts))
+        timeslots_attended_flat.append(list(zip(slots, counts)))
     program_timeslots = [prog.getTimeSlots() for prog in programs]
-    result_dict['hours_data'] = zip(programs, enrolled_flat, attended_flat, program_timeslots, timeslots_enrolled_flat, timeslots_attended_flat, students_list)
+    result_dict['hours_data'] = list(zip(programs, enrolled_flat, attended_flat, program_timeslots, timeslots_enrolled_flat, timeslots_attended_flat, students_list))
     return render_to_string('program/statistics/hours.html', result_dict)
 
 def student_reg(form, programs, students, profiles, result_dict={}):
@@ -385,7 +379,7 @@ def student_reg(form, programs, students, profiles, result_dict={}):
         series_data['Checked In'].append([program.name, checked_num])
         stats_list.append(checked_num)
         prog_stats.append(stats_list)
-    prog_data = zip(programs, prog_stats)
+    prog_data = list(zip(programs, prog_stats))
     graph_data = [{"description": desc, "data": json.dumps(data)} for desc, data in series_data.items()]
     left_axis_data = [
             {"axis_name": "# Students Registered", "series_data": graph_data},
@@ -421,7 +415,7 @@ def teacher_reg(form, programs, teachers, profiles, result_dict={}):
         series_data['Class Scheduled'].append([program.name, teach_sch])
         stats_list.append(teach_sch)
         prog_stats.append(stats_list)
-    prog_data = zip(programs, prog_stats)
+    prog_data = list(zip(programs, prog_stats))
     graph_data = [{"description": desc, "data": json.dumps(data)} for desc, data in series_data.items()]
     left_axis_data = [
         {"axis_name": "# Teachers", "series_data": graph_data},
@@ -469,18 +463,18 @@ def class_reg(form, programs, teachers, profiles, result_dict={}):
         series_data['Class-student-hours Scheduled'].append([program.name, float(student_hours_scheduled)])
         stats_list.append(float(student_hours_scheduled))
         prog_stats.append(stats_list)
-    prog_data = zip(programs, prog_stats)
-    graph_data = [{"description": desc, "data": json.dumps(data)} for desc, data in series_data.items()[0:3]]
+    prog_data = list(zip(programs, prog_stats))
+    graph_data = [{"description": desc, "data": json.dumps(data)} for desc, data in list(series_data.items())[0:3]]
     left_axis_data = [
         {"axis_name": "# Classes", "series_data": graph_data},
     ]
-    graph_data = [{"description": desc, "data": json.dumps(data)} for desc, data in series_data.items()[3:6]]
+    graph_data = [{"description": desc, "data": json.dumps(data)} for desc, data in list(series_data.items())[3:6]]
     right_axis_data = [
         {"axis_name": "# Class-student-hours", "series_data": graph_data},
     ]
     result_dict.update({"prog_data": prog_data,
                         "stat_categories": stat_categories,
-                        "stats_per_category": len(stat_names)/len(stat_categories),
+                        "stats_per_category": len(stat_names)//len(stat_categories),
                         "stat_names": [stat_name.split(' ')[1] for stat_name in stat_names],
                         "x_axis_categories": json.dumps([program.name for program in programs.order_by('id')]),
                         "left_axis_data": left_axis_data,

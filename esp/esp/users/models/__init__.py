@@ -1,3 +1,10 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
+import six
+from six.moves import range
+from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -79,11 +86,12 @@ from esp.utils.expirable_model import ExpirableModel
 from esp.utils.widgets import NullRadioSelect, NullCheckboxSelect
 from esp.utils.query_utils import nest_Q
 from esp.program.class_status import ClassStatus
+from esp.utils import cmp
 
-from urllib import quote
+from six.moves.urllib.parse import quote
 
 try:
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
 except ImportError:
     import pickle
 
@@ -105,6 +113,7 @@ def admin_required(func):
         return func(request, *args, **kwargs)
     return wrapped
 
+@python_2_unicode_compatible
 class UserAvailability(models.Model):
     user = AjaxForeignKey('ESPUser')
     event = models.ForeignKey(Event)
@@ -116,8 +125,8 @@ class UserAvailability(models.Model):
         db_table = 'users_useravailability'
         verbose_name_plural = 'User availabilities'
 
-    def __unicode__(self):
-        return u'%s available as %s at %s' % (self.user.username, self.role.name, unicode(self.event))
+    def __str__(self):
+        return '%s available as %s at %s' % (self.user.username, self.role.name, six.text_type(self.event))
 
     def save(self, *args, **kwargs):
         #   Assign default role if not set.
@@ -178,7 +187,7 @@ class BaseESPUser(object):
         """ Returns a list<int> of valid grades """
         tag_val = Tag.getTag('student_grade_options')
         if tag_val is None:
-            return range(7, 13)
+            return list(range(7, 13))
         else:
             return json.loads(tag_val)
 
@@ -221,7 +230,7 @@ class BaseESPUser(object):
         if QObject:
             query_set = query_set.filter(QObject).distinct()
 
-        values = query_set.order_by('last_name','first_name','id').values('first_name', 'last_name', 'username', 'id')
+        values = query_set.order_by('last_name', 'first_name', 'id').values('first_name', 'last_name', 'username', 'id')
 
         for value in values:
             value['ajax_str'] = '%s, %s (%s)' % (value['last_name'], value['first_name'], value['username'])
@@ -255,10 +264,10 @@ class BaseESPUser(object):
         return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)
 
     def name(self):
-        return u'%s %s' % (self.first_name, self.last_name)
+        return six.u('%s %s') % (self.first_name, self.last_name)
 
     def name_last_first(self):
-        return u'%s, %s' % (self.last_name, self.first_name)
+        return six.u('%s, %s') % (self.last_name, self.first_name)
 
     def nonblank_name(self):
         name = self.name()
@@ -278,9 +287,9 @@ class BaseESPUser(object):
         """
         if name:
             # enclose name in quotes per RFC 2822 so that special characters in names are handled properly
-            return u'"%s" <%s>' % (name.replace('\\', '\\\\').replace('"', '\\"'), email)
+            return six.u('"%s" <%s>') % (name.replace('\\', '\\\\').replace('"', '\\"'), email)
         else:
-            return u'<%s>' % email
+            return six.u('<%s>') % email
 
     def get_email_sendto_address(self):
         """
@@ -293,6 +302,18 @@ class BaseESPUser(object):
         if lastname == 0:
            return cmp(self.first_name.upper(), other.first_name.upper())
         return lastname
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+    def __gt__(self, other):
+        return self.__cmp__(other) > 0
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
+    def __le__(self, other):
+        return self.__cmp__(other) <= 0
+    def __ge__(self, other):
+        return self.__cmp__(other) >= 0
+    def __ne__(self, other):
+        return self.__cmp__(other) != 0
 
     def getLastProfile(self):
         # caching is handled in RegistrationProfile.getLastProfile
@@ -386,7 +407,7 @@ class BaseESPUser(object):
                          (settings.DEFAULT_HOST, otheruser.password)
         elif key == 'recover_query':
             return "?code=%s" % otheruser.password
-        return u''
+        return six.u('')
 
     def getTaughtPrograms(self):
         taught_programs = Program.objects.filter(classsubject__teachers=self)
@@ -909,7 +930,7 @@ class BaseESPUser(object):
 
     def getUserTypes(self):
         """ Return the set of types for this user """
-        return self.groups.all().order_by('name').values_list("name",flat=True)
+        return self.groups.all().order_by('name').values_list("name", flat=True)
 
     @staticmethod
     def create_membership_method(user_class):
@@ -919,7 +940,7 @@ class BaseESPUser(object):
         """
         def _new_method(user):
             return user.is_user_type(user_class)
-        _new_method.__name__    = 'is%s' % str(user_class)
+        _new_method.__name__    = str('is%s' % str(user_class))
         _new_method.__doc__     = "Returns ``True`` if the user is a %s and False otherwise." % user_class
         return _new_method
 
@@ -1128,7 +1149,7 @@ class BaseESPUser(object):
             subject = ClassSubject.objects.get(id=subject)
         if not StudentAppQuestion.objects.filter(subject=subject).count():
             return 10
-        elif StudentRegistration.objects.filter(section__parent_class=subject, relationship__name="Rejected",end_date__gte=datetime.now(),user=student).exists() or not StudentApplication.objects.filter(user=student, program__classsubject = subject).exists() or not StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student).exists():
+        elif StudentRegistration.objects.filter(section__parent_class=subject, relationship__name="Rejected", end_date__gte=datetime.now(), user=student).exists() or not StudentApplication.objects.filter(user=student, program__classsubject = subject).exists() or not StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student).exists():
             return 1
         for sar in StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student):
             if not len(sar.response.strip()):
@@ -1286,7 +1307,7 @@ def update_email(**kwargs):
             # make sense for this account type.
             lists = []
             for l in mailman_lists:
-                if l in group_map.values():
+                if l in list(group_map.values()):
                     # A role-based list: only transition them if they are an
                     # appropriate type of account.
                     if any(group_map.get(g) == l for g in groups) or is_admin:
@@ -1320,16 +1341,16 @@ def update_email(**kwargs):
             for l in lists:
                 mailman.remove_list_member(l, old_email)
 
-
+@python_2_unicode_compatible
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
     k12school = AjaxForeignKey('K12School', help_text='Begin to type your school name and select your school if it comes up.', blank=True, null=True)
-    school = models.CharField(max_length=256,blank=True, null=True)
+    school = models.CharField(max_length=256, blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
-    gender = models.CharField(max_length=32,blank=True,null=True)
-    pronoun = models.CharField(max_length=50,blank=True,null=True)
+    gender = models.CharField(max_length=32, blank=True, null=True)
+    pronoun = models.CharField(max_length=50, blank=True, null=True)
     studentrep = models.BooleanField(blank=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
     heard_about = models.TextField(blank=True, null=True)
@@ -1476,11 +1497,11 @@ class StudentInfo(models.Model):
 
     getSchool.short_description = "School"
 
-    def __unicode__(self):
+    def __str__(self):
         username = "N/A"
         if self.user != None:
             username = self.user.username
-        return u'ESP Student Info (%s) -- %s' % (username, unicode(self.school))
+        return six.u('ESP Student Info (%s) -- %s') % (username, six.text_type(self.school))
 
     def get_absolute_url(self):
         return self.user.get_absolute_url()
@@ -1491,6 +1512,7 @@ AFFILIATION_POSTDOC = 'Postdoc'
 AFFILIATION_OTHER = 'Other'
 AFFILIATION_NONE = 'None'
 
+@python_2_unicode_compatible
 class TeacherInfo(models.Model, CustomFormsLinkModel):
     """ ESP Teacher-specific contact information """
 
@@ -1515,13 +1537,13 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     }
 
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
-    pronoun = models.CharField(max_length=50,blank=True,null=True)
+    pronoun = models.CharField(max_length=50, blank=True, null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
     affiliation = models.CharField(max_length=100, blank=True)
     from_here = models.NullBooleanField(null=True)
     is_graduate_student = models.NullBooleanField(blank=True, null=True)
-    college = models.CharField(max_length=128,blank=True, null=True)
-    major = models.CharField(max_length=32,blank=True, null=True)
+    college = models.CharField(max_length=128, blank=True, null=True)
+    major = models.CharField(max_length=32, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     shirt_size = models.TextField(blank=True, null=True)
     shirt_type = models.TextField(blank=True, null=True)
@@ -1555,11 +1577,11 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
 
         for value in values:
             value['user'] = ESPUser.objects.get(id=value['user'])
-            value['ajax_str'] = u'%s - %s %s' % (value['user'].ajax_str(), value['college'], value['graduation_year'])
+            value['ajax_str'] = six.u('%s - %s %s') % (value['user'].ajax_str(), value['college'], value['graduation_year'])
         return values
 
     def ajax_str(self):
-        return u'%s - %s %s' % (self.user.ajax_str(), self.college, self.graduation_year)
+        return six.u('%s - %s %s') % (self.user.ajax_str(), self.college, self.graduation_year)
 
     def updateForm(self, form_dict):
         form_dict['pronoun']         = self.pronoun
@@ -1596,11 +1618,11 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         teacherInfo.save()
         return teacherInfo
 
-    def __unicode__(self):
+    def __str__(self):
         username = ""
         if self.user != None:
             username = self.user.username
-        return u'ESP Teacher Info (%s)' % username
+        return six.u('ESP Teacher Info (%s)') % username
 
     def get_absolute_url(self):
         return self.user.get_absolute_url()
@@ -1608,7 +1630,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     class Meta:
         app_label = 'users'
 
-
+@python_2_unicode_compatible
 class GuardianInfo(models.Model):
     """ ES Guardian-specific contact information """
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
@@ -1660,22 +1682,23 @@ class GuardianInfo(models.Model):
         guardianInfo.save()
         return guardianInfo
 
-    def __unicode__(self):
+    def __str__(self):
         username = ""
         if self.user != None:
             username = self.user.username
-        return u'ESP Guardian Info (%s)' % username
+        return six.u('ESP Guardian Info (%s)') % username
 
     def get_absolute_url(self):
         return self.user.get_absolute_url()
 
+@python_2_unicode_compatible
 class EducatorInfo(models.Model):
     """ ESP Educator-specific contact information """
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
-    subject_taught = models.CharField(max_length=64,blank=True, null=True)
-    grades_taught = models.CharField(max_length=16,blank=True, null=True)
-    school = models.CharField(max_length=128,blank=True, null=True)
-    position = models.CharField(max_length=64,blank=True, null=True)
+    subject_taught = models.CharField(max_length=64, blank=True, null=True)
+    grades_taught = models.CharField(max_length=16, blank=True, null=True)
+    school = models.CharField(max_length=128, blank=True, null=True)
+    position = models.CharField(max_length=64, blank=True, null=True)
     k12school = models.ForeignKey('K12School', blank=True, null=True)
 
     class Meta:
@@ -1737,15 +1760,16 @@ class EducatorInfo(models.Model):
             return None
     getSchool.short_description = "School"
 
-    def __unicode__(self):
+    def __str__(self):
         username = ""
         if self.user != None:
             username = self.user.username
-        return u'ESP Educator Info (%s)' % username
+        return six.u('ESP Educator Info (%s)') % username
 
     def get_absolute_url(self):
         return self.user.get_absolute_url()
 
+@python_2_unicode_compatible
 class ZipCode(models.Model):
     """ Zip Code information """
     zip_code = models.CharField(max_length=5)
@@ -1809,13 +1833,13 @@ class ZipCode(models.Model):
         newsearch.save()
         return winners
 
-    def __unicode__(self):
-        return u'%s (%s, %s)' % (self.zip_code,
+    def __str__(self):
+        return '%s (%s, %s)' % (self.zip_code,
                                 self.longitude,
                                 self.latitude)
 
 
-
+@python_2_unicode_compatible
 class ZipCodeSearches(models.Model):
     zip_code = models.ForeignKey(ZipCode)
     distance = models.DecimalField(max_digits = 15, decimal_places = 3)
@@ -1826,18 +1850,19 @@ class ZipCodeSearches(models.Model):
         db_table = 'users_zipcodesearches'
         verbose_name_plural = 'Zip code searches'
 
-    def __unicode__(self):
-        return u'%s Zip Codes that are less than %s miles from %s' % \
+    def __str__(self):
+        return '%s Zip Codes that are less than %s miles from %s' % \
                (len(self.zipcodes.split(',')), self.distance, self.zip_code)
 
+@python_2_unicode_compatible
 class ContactInfo(models.Model, CustomFormsLinkModel):
     """ ESP-specific contact information for (possibly) a specific user """
 
     #customforms definitions
     form_link_name = 'ContactInfo'
     link_fields_list = [
-        ('phone_day','Phone number'),
-        ('e_mail','Email address'),
+        ('phone_day', 'Phone number'),
+        ('e_mail', 'Email address'),
         ('address', 'Address'),
         ('name', 'Name'),
         ('receive_txt_message', 'Text message request'),
@@ -1868,16 +1893,16 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     e_mail = models.EmailField('Email address', blank=True, null=True, max_length=75)
-    phone_day = PhoneNumberField('Home phone',blank=True, null=True)
-    phone_cell = PhoneNumberField('Cell phone',blank=True, null=True)
+    phone_day = PhoneNumberField('Home phone', blank=True, null=True)
+    phone_cell = PhoneNumberField('Cell phone', blank=True, null=True)
     receive_txt_message = models.BooleanField(default=False)
-    phone_even = PhoneNumberField('Alternate phone',blank=True, null=True)
-    address_street = models.CharField('Street address',max_length=100,blank=True, null=True)
-    address_city = models.CharField('City',max_length=50,blank=True, null=True)
-    address_state = models.CharField('State',max_length=32,blank=True, null=True)
-    address_zip = models.CharField('Zip code',max_length=5,blank=True, null=True)
-    address_postal = models.TextField(blank=True,null=True)
-    address_country = models.CharField('Country', max_length=2, choices=sorted(country_names.items(), key = lambda x: x[1]), default='US')
+    phone_even = PhoneNumberField('Alternate phone', blank=True, null=True)
+    address_street = models.CharField('Street address', max_length=100, blank=True, null=True)
+    address_city = models.CharField('City', max_length=50, blank=True, null=True)
+    address_state = models.CharField('State', max_length=32, blank=True, null=True)
+    address_zip = models.CharField('Zip code', max_length=5, blank=True, null=True)
+    address_postal = models.TextField(blank=True, null=True)
+    address_country = models.CharField('Country', max_length=2, choices=sorted(list(country_names.items()), key = lambda x: x[1]), default='US')
     undeliverable = models.BooleanField(default=False)
 
     class Meta:
@@ -1885,7 +1910,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         db_table = 'users_contactinfo'
 
     def name(self):
-        return u'%s %s' % (self.first_name, self.last_name)
+        return six.u('%s %s') % (self.first_name, self.last_name)
 
     email = property(lambda self: self.e_mail)
 
@@ -1902,14 +1927,14 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         return ESPUser.email_sendto_address(self.email, self.name())
 
     def address(self):
-        return u'%s, %s, %s %s' % \
+        return six.u('%s, %s, %s %s') % \
             (self.address_street,
              self.address_city,
              self.address_state,
              self.address_zip)
 
     def items(self):
-        return self.__dict__.items()
+        return list(self.__dict__.items())
 
     @classmethod
     def ajax_autocomplete(cls, data):
@@ -1920,7 +1945,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
             first  = ','.join(names[1:])
             if len(first.strip()) > 0:
                 query_set = query_set.filter(first_name__istartswith = first.strip())
-        values = query_set.order_by('last_name','first_name','id').values('first_name', 'last_name', 'e_mail', 'id')
+        values = query_set.order_by('last_name', 'first_name', 'id').values('first_name', 'last_name', 'e_mail', 'id')
         for value in values:
             value['ajax_str'] = '%s, %s (%s)' % (value['last_name'], value['first_name'], value['e_mail'])
         return values
@@ -1965,7 +1990,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         super(ContactInfo, self).save(*args, **kwargs)
 
 
-    def __unicode__(self):
+    def __str__(self):
         username = ""
         last_name, first_name = '', ''
         if self.user != None:
@@ -1985,11 +2010,12 @@ class K12SchoolManager(models.Manager):
     def most(self):
         return self.exclude(name='Other').order_by('name')
 
+@python_2_unicode_compatible
 class K12School(models.Model):
     """
     All the schools that we know about.
     """
-    contact = AjaxForeignKey(ContactInfo, null=True,blank=True,
+    contact = AjaxForeignKey(ContactInfo, null=True, blank=True,
         help_text=mark_safe('A set of contact information for this school. Type to search by name (Last, First), or <a href="/admin/users/contactinfo/add/">go edit a new one</a>.'))
     school_type = models.TextField(blank=True, null=True,
         help_text='i.e. Public, Private, Charter, Magnet, ...')
@@ -1997,8 +2023,8 @@ class K12School(models.Model):
         help_text='i.e. "PK, K, 1, 2, 3"')
     school_id   = models.CharField(max_length=128, blank=True, null=True,
         help_text='An 8-digit ID number.')
-    contact_title = models.TextField(blank=True,null=True)
-    name          = models.TextField(blank=True,null=True)
+    contact_title = models.TextField(blank=True, null=True)
+    name          = models.TextField(blank=True, null=True)
 
     objects = K12SchoolManager()
 
@@ -2010,28 +2036,28 @@ class K12School(models.Model):
     def ajax_autocomplete(cls, data, allow_non_staff=True):
         name = data.strip()
         query_set = cls.objects.filter(name__icontains = name)
-        values = query_set.order_by('name','id').values('name', 'id')
+        values = query_set.order_by('name', 'id').values('name', 'id')
         for value in values:
             value['ajax_str'] = '%s' % (value['name'])
         return values
 
-    def __unicode__(self):
+    def __str__(self):
         if self.contact_id:
-            return u'%s in %s, %s' % (self.name, self.contact.address_city,
+            return six.u('%s in %s, %s') % (self.name, self.contact.address_city,
                                        self.contact.address_state)
         else:
-            return u'%s' % self.name
+            return six.u('%s') % self.name
 
     @classmethod
     def choicelist(cls, other_help_text=''):
         if other_help_text:
-            other_help_text = u' (%s)' % other_help_text
+            other_help_text = six.u(' (%s)') % other_help_text
         o = cls.objects.other()
         lst = [ ( x.id, x.name ) for x in cls.objects.most() ]
         lst.append( (o.id, o.name + other_help_text) )
         return lst
 
-
+@python_2_unicode_compatible
 class PersistentQueryFilter(models.Model):
     """ This class stores generic query filters persistently in the database, for retrieval (by ID, presumably) and
         to pass the query along to multiple pages and retrival (et al). """
@@ -2134,7 +2160,7 @@ class PersistentQueryFilter(models.Model):
         try:
             qobject_string = pickle.dumps(QObject)
         except:
-            qobject_string = ''
+            qobject_string = b''
         try:
             filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha1(qobject_string).hexdigest())#    pass
         except:
@@ -2145,10 +2171,10 @@ class PersistentQueryFilter(models.Model):
 
         return filterObj
 
-    def __unicode__(self):
+    def __str__(self):
         return str(self.useful_name) + " (" + str(self.id) + ")"
 
-
+@python_2_unicode_compatible
 class PasswordRecoveryTicket(models.Model):
     """ A ticket for changing your password. """
     RECOVER_KEY_LEN = 30
@@ -2162,7 +2188,7 @@ class PasswordRecoveryTicket(models.Model):
     class Meta:
         app_label = 'users'
 
-    def __unicode__(self):
+    def __str__(self):
         return "Ticket for %s (expires %s): %s" % (self.user, self.expire, self.recover_key)
 
     @staticmethod
@@ -2234,6 +2260,7 @@ class PasswordRecoveryTicket(models.Model):
         """ Cancel all tickets belong to user. """
         PasswordRecoveryTicket.objects.filter(user=user).delete()
 
+@python_2_unicode_compatible
 class DBList(object):
     """ Useful abstraction for the list of users.
         Not meant for anything but users_get_list...
@@ -2277,10 +2304,23 @@ class DBList(object):
     def __cmp__(self, other):
         """ We are going to order by the size of our lists. """
         return cmp(self.count(), other.count())
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+    def __gt__(self, other):
+        return self.__cmp__(other) > 0
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
+    def __le__(self, other):
+        return self.__cmp__(other) <= 0
+    def __ge__(self, other):
+        return self.__cmp__(other) >= 0
+    def __ne__(self, other):
+        return self.__cmp__(other) != 0
 
-    def __unicode__(self):
+    def __str__(self):
         return self.key
 
+@python_2_unicode_compatible
 class RecordType(models.Model):
     name = models.CharField(max_length=80, help_text = "A unique short name for the record type", unique=True)
     description = models.CharField(max_length=255, help_text = "A unique sentence case description for the record type", unique=True)
@@ -2296,7 +2336,7 @@ class RecordType(models.Model):
     def desc(cls):
         return cls.objects.all().values_list('name', 'description')
 
-    def __unicode__(self):
+    def __str__(self):
         return self.description
 
     def is_custom(self):
@@ -2305,9 +2345,11 @@ class RecordType(models.Model):
     def used_by_records(self):
         return Record.objects.filter(event=self).exists()
 
+
     class Meta:
         app_label = 'users'
 
+@python_2_unicode_compatible
 class Record(models.Model):
     event = models.ForeignKey("RecordType", blank=True, null=True)
     program = models.ForeignKey("program.Program", blank=True, null=True)
@@ -2371,8 +2413,8 @@ class Record(models.Model):
             )
             return True
 
-    def __unicode__(self):
-        return unicode(self.user) + " has completed " + unicode(self.event) + " for " + unicode(self.program)
+    def __str__(self):
+        return six.text_type(self.user) + " has completed " + six.text_type(self.event) + " for " + six.text_type(self.program)
 
 #helper method for designing implications
 def flatten(choices):
@@ -2382,6 +2424,7 @@ def flatten(choices):
         else: l=l+flatten(x[1])
     return l
 
+@python_2_unicode_compatible
 class Permission(ExpirableModel):
 
     #a permission can be assigned to a user, or a role
@@ -2502,7 +2545,7 @@ class Permission(ExpirableModel):
             program_is_none_implies_all = False
 
         perms = [name]
-        for k,v in cls.implications.items():
+        for k, v in cls.implications.items():
             # k implies v: it's a parent permission that includes v
             if name in v: perms.append(k)
         # perms is the list of all permission types that might imply the
@@ -2604,7 +2647,7 @@ class Permission(ExpirableModel):
     def recursive(self):
         return bool(self.implications.get(self.permission_type, None))
 
-    def __unicode__(self):
+    def __str__(self):
         #TODO
         if self.user is not None:
             user = self.user.username
@@ -2620,7 +2663,7 @@ class Permission(ExpirableModel):
                                          program, user)
 
     @classmethod
-    def nice_name_lookup(cls,perm_type):
+    def nice_name_lookup(cls, perm_type):
         def squash(choices):
             l=[]
             for x in choices:
@@ -2643,10 +2686,10 @@ class Permission(ExpirableModel):
             if x[0] == self.permission_type: return x[1]
 
     @classmethod
-    def program_by_perm(cls,user,perm):
+    def program_by_perm(cls, user, perm):
         """Find all program that user has perm"""
         implies = [perm]
-        implies+=[x for x,y in cls.implications.items() if perm in y]
+        implies+=[x for x, y in cls.implications.items() if perm in y]
 
         #Check for global permissions (should only work for non-deadlines and admins)
         if any([cls.user_has_perm(user, x) for x in implies]):
@@ -2662,7 +2705,7 @@ class Permission(ExpirableModel):
         return direct | role
 
     @staticmethod
-    def user_can_edit_qsd(user,url):
+    def user_can_edit_qsd(user, url):
         #the logic here is as follows:
         #  -you must be logged in to edit qsd
         #  -admins can edit any qsd
@@ -2677,7 +2720,7 @@ class Permission(ExpirableModel):
         if user.isAdmin():
             return True
         import re
-        m = re.match("^([^/]*)/([^/]*)/([^/]*)/(.*)",url)
+        m = re.match("^([^/]*)/([^/]*)/([^/]*)/(.*)", url)
         if m:
             (section, prog1, prog2, rest) = m.groups()
             prog_url = prog1 + "/" + prog2
@@ -2728,6 +2771,7 @@ def install():
 #   but esp.dbmail.models imports ESPUser.
 from esp.dbmail.models import send_mail
 
+@python_2_unicode_compatible
 class GradeChangeRequest(TimeStampedModel):
     """
         A grade change request is issued by a student when it is felt
@@ -2744,13 +2788,13 @@ class GradeChangeRequest(TimeStampedModel):
     acknowledged_by = models.ForeignKey(ESPUser, blank=True, null=True)
 
     class Meta:
-        ordering = ['-acknowledged_time','-created']
+        ordering = ['-acknowledged_time', '-created']
 
     def __init__(self, *args, **kwargs):
         super(GradeChangeRequest, self).__init__(*args, **kwargs)
         grade_options = ESPUser.grade_options()
 
-        self._meta.get_field('claimed_grade').choices = zip(grade_options, grade_options)
+        self._meta.get_field('claimed_grade').choices = list(zip(grade_options, grade_options))
 
     def save(self, **kwargs):
         is_new = self.id is None
@@ -2824,7 +2868,7 @@ class GradeChangeRequest(TimeStampedModel):
         (self._meta.app_label, self._meta.model_name), args=(self.id,))
 
 
-    def __unicode__(self):
+    def __str__(self):
         return  "%s requests a grade change to %s" % (self.requesting_student, self.claimed_grade) + (" (Approved)" if self.approved else "")
 
 # We can't import these earlier because of circular stuff...

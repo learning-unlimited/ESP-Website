@@ -1,9 +1,11 @@
+from __future__ import absolute_import
 import re
 
 from django import template
 from django.contrib.auth.models import User, AnonymousUser
 
 from esp.miniblog.views import get_visible_announcements
+from six.moves import zip
 
 __all__ = ['MiniblogNode', 'miniblog_for_user']
 
@@ -31,7 +33,7 @@ class MiniblogNode(template.Node):
             if self.user == "AnonymousUser":
                 user_obj = AnonymousUser()
             else:
-                raise template.VariableDoesNotExist, "Argument to miniblog_for_user, %s, did not exist" % self.user
+                raise template.VariableDoesNotExist("Argument to miniblog_for_user, %s, did not exist" % self.user)
         if not isinstance(user_obj, (User, AnonymousUser)):
             raise template.TemplateSyntaxError("Requires a user object, recieved '%s'" % user_obj)
 
@@ -44,15 +46,15 @@ def parse_from_re(token, matching_rules):
     try:
         tag_name, arg = token.contents.split(None, 1)
     except ValueError:
-        raise template.TemplateSyntaxError, "%r tag requires arguments" % tag_name
+        raise template.TemplateSyntaxError("%r tag requires arguments" % tag_name)
 
     match = None
     for rule in matching_rules:
         match = rule[0].match(arg)
         if match:
-            return dict( zip( rule[1], match.groups() ) )
+            return dict( list(zip( rule[1], match.groups() )) )
 
-    raise template.TemplateSyntaxError, "%r tag could not parse arguments" % tag_name
+    raise template.TemplateSyntaxError("%r tag could not parse arguments" % tag_name)
 
 
 @register.tag
@@ -71,5 +73,5 @@ def miniblog_for_user(parser, token):
         try:
             kwargs['limit'] = int( kwargs['limit'] )
         except ValueError:
-            raise template.TemplateSyntaxError, "miniblog_for_user tag requires limit argument to be an int"
+            raise template.TemplateSyntaxError("miniblog_for_user tag requires limit argument to be an int")
     return MiniblogNode( **kwargs )

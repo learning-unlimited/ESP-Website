@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -44,5 +45,5 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         # get_apps() returns a list of the app.models modules of all
         # installed apps.
-        for app in filter(lambda app: hasattr(app, 'install'), get_apps()):
+        for app in [app for app in get_apps() if hasattr(app, 'install')]:
             app.install()

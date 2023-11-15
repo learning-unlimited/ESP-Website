@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -76,7 +78,7 @@ class AdminMorph(ProgramModuleObj):
         for key in search_keys:
             user_list = getattr(self.program, key + 's')(QObjects=True)
             saved_queries[key] = reduce(operator.or_, [user_list[user_type] for user_type in search_keys[key] if user_type in user_list], Q())
-        saved_queries['program'] = reduce(operator.or_, saved_queries.values())
+        saved_queries['program'] = reduce(operator.or_, list(saved_queries.values()))
         saved_queries['all'] = Q()
 
         #   Default to using all program participants, if no query type is specified

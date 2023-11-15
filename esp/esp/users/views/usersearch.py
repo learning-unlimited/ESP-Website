@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+import six
+from six.moves import range
+from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -264,7 +268,7 @@ def search_for_user(request, user_type='Any', extra='', returnList = False, add_
     error = False
 
     usc = UserSearchController()
-    if isinstance(user_type, basestring):
+    if isinstance(user_type, six.string_types):
         user_query = usc.query_from_criteria(user_type, request.GET)
         QSUsers = ESPUser.objects.filter(user_query).distinct()
     elif isinstance(user_type, QuerySet):

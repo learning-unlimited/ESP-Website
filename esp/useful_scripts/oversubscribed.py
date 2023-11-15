@@ -1,8 +1,11 @@
 #Exports as csv file with how oversubscribed a class is.
 # %run filename to run
 
+from __future__ import absolute_import
+from __future__ import division
 from esp.program.models import Program
 import csv
+from io import open
 
 
 PROGRAM_NAME = "Splash! 2013"
@@ -18,4 +21,4 @@ for c in cls:
     n = c.studentsubjectinterest_set.all().count()
     m = c.max_students()
 
-    csvwriter.writerow([c.title.encode('ascii', 'ignore'), (', '.join(c.prettyblocks())).encode('ascii', 'ignore'), n, m, n*1.0/(m+1)])
+    csvwriter.writerow([c.title.encode('ascii', 'ignore'), (', '.join(c.prettyblocks())).encode('ascii', 'ignore'), n, m, n*1.0//(m+1)])

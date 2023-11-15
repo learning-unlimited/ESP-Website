@@ -4,6 +4,7 @@ Mostly reflects the database on the rest of the website, but having separate
 models should be a bit more robust to changes in website structure and should
 also be more performant.  """
 
+from __future__ import absolute_import
 import bisect
 from functools import total_ordering
 import json
@@ -253,7 +254,7 @@ class AS_Timeslot(object):
                 "Timeslot duration {} is too short".format(self.duration))
 
     def __eq__(self, other):
-        if type(other) is type(self):
+        if isinstance(other, type(self)):
             return (self.start == other.start) and (self.end == other.end)
         else:
             return False

@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -63,7 +65,7 @@ def render_to_response(template, request, context, content_type=None, use_reques
     from esp.web.views.navBar import makeNavBar
     from esp.tagdict.models import Tag
 
-    if isinstance(template, (basestring,)):
+    if isinstance(template, (six.string_types,)):
         template = [ template ]
 
     section = request.path.split('/')[1]

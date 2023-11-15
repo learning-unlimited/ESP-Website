@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -52,8 +53,8 @@ class ConfigForm(ThemeConfigurationForm):
     faq_link = forms.CharField(required=False, initial='/faq.html',
                                help_text='Leave blank to omit an FAQ link.')
     front_page_style = forms.ChoiceField(
-                           choices=(('bubblesfront.html','Bubbles'),
-                                    ('qsdfront.html','QSD')),
+                           choices=(('bubblesfront.html', 'Bubbles'),
+                                    ('qsdfront.html', 'QSD')),
                            initial='qsdfront.html',
                            help_text='Choose the style of the front page of ' +
                            '<a href="%(home)s">%(host)s</a>. "Bubbles" is a ' +

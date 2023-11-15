@@ -1,21 +1,23 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # Run a query against a site in a given directory.
 # usage e.g. $0 /lu/sites/smith "print Program.objects.count()"
 #            $0 /lu/sites/smith "$(cat script.py)"
 # Intended primarily to be used by run_queries.sh.
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 sys.path.insert(0, sys.argv[1]+'/esp/useful_scripts')
 
 try:
     from script_setup import *
 except:
-    print "ERROR: no script_setup.py"
+    print("ERROR: no script_setup.py")
     sys.exit(1)
 
 try:
-    exec sys.argv[2]
+    exec(sys.argv[2])
 except:
-    print "ERROR: code failed to run"
+    print("ERROR: code failed to run")
     raise

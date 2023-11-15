@@ -1,14 +1,15 @@
+from __future__ import absolute_import
 from django.conf import settings
 
 from os import path
 from collections import OrderedDict
 
 # can we avoid hardcoding this?
-less_dir = path.join(settings.PROJECT_ROOT, 'public','media','theme_editor','less') #directory containing less files used by theme editor
-themes_dir = path.join(settings.PROJECT_ROOT, 'public','media','theme_editor','themes') #directory containing the themes
+less_dir = path.join(settings.PROJECT_ROOT, 'public', 'media', 'theme_editor', 'less') #directory containing less files used by theme editor
+themes_dir = path.join(settings.PROJECT_ROOT, 'public', 'media', 'theme_editor', 'themes') #directory containing the themes
 variables_less = path.join(less_dir, 'variables.less')
 # directory containing the javascript that shows the palette
-palette_dir = path.join(settings.PROJECT_ROOT, 'public','media','theme_editor')
+palette_dir = path.join(settings.PROJECT_ROOT, 'public', 'media', 'theme_editor')
 
 # and this...
 sans_serif_fonts = OrderedDict([("Arial", "Arial, sans-serif"),

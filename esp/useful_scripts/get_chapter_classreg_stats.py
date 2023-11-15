@@ -2,6 +2,7 @@
 
 Best run with run_queries.sh.
 """
+from __future__ import absolute_import
 import csv
 import logging
 
@@ -10,6 +11,7 @@ from script_setup import *
 from django.conf import settings
 
 from esp.program.models import Program
+from io import open
 
 def all_data():
     group_name = (Tag.getTag('full_group_name') or

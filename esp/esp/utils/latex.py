@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -196,7 +198,7 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
         raise ESPError("Postprocessing failed; try downloading as PDF.")
 
     out_file = file_base + '.' + type
-    if type is 'png' and not os.path.isfile(out_file):
+    if type == 'png' and not os.path.isfile(out_file):
         # If the schedule is multiple pages (such as a schedule if the program
         # is using barcode check-in), ImageMagick will generate files of the
         # form file_base-n.png.  In this case, we will just return the first
@@ -215,9 +217,9 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
 
 
 def get_rand_file_base():
-    rand = hashlib.md5(str(random())).hexdigest()
+    rand = hashlib.md5(str(random()).encode("UTF-8")).hexdigest()
 
     while os.path.exists(os.path.join(TEX_TEMP, rand+TEX_EXT)):
-        rand = hashlib.md5(str(random())).hexdigest()
+        rand = hashlib.md5(str(random()).encode("UTF-8")).hexdigest()
 
     return rand
