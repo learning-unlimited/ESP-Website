@@ -987,13 +987,13 @@ class Program(models.Model, CustomFormsLinkModel):
             if d1.year == d2.year:
                 if d1.month == d2.month:
                     if d1.day == d2.day:
-                        return six.u('%s') % d1.strftime('%b. %d, %Y').decode('utf-8')
+                        return six.u('%s') % d1.strftime('%b. %d, %Y')
                     else:
-                        return six.u('%s - %s') % (d1.strftime('%b. %d').decode('utf-8'), d2.strftime('%d, %Y').decode('utf-8'))
+                        return six.u('%s - %s') % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
                 else:
-                    return six.u('%s - %s') % (d1.strftime('%b. %d').decode('utf-8'), d2.strftime('%b. %d, %Y').decode('utf-8'))
+                    return six.u('%s - %s') % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
             else:
-                return six.u('%s - %s') % (d1.strftime('%b. %d, %Y').decode('utf-8'), d2.strftime('%b. %d, %Y').decode('utf-8'))
+                return six.u('%s - %s') % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
         else:
             return None
 
