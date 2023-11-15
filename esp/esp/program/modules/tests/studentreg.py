@@ -117,7 +117,10 @@ class StudentRegTest(ProgramFrameworkTest):
 
                 #   Check enrollments
                 enrollments = [x.replace('<br />', '').strip() for x in cls_info['enrollment'].split('Section')[1:]]
-                for sec in cls.sections.order_by('id'):
+                class_sections = cls.sections.order_by('id')
+                self.assertTrue(len(enrollments) == len(list(class_sections)),
+                                'Recovered {} enrollments from catalog but expecting {}. Listed below\n\tRecovered: {}\n\tExpecting: {}'.format(len(enrollments), len(list(class_sections)), enrollments, list(class_sections)))
+                for sec in class_sections:
                     i = sec.index() - 1
                     expected_str = '%s: %s (max %s)' % (sec.index(), sec.num_students(), sec.capacity)
                     self.assertTrue(enrollments[i] == expected_str, 'Incorrect enrollment for %s in catalog: got "%s", expected "%s"' % (sec.emailcode(), enrollments[i], expected_str))
