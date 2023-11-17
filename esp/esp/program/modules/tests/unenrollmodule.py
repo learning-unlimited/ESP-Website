@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import six
 import json
 import random
 
@@ -43,8 +44,8 @@ class UnenrollModuleTest(ProgramFrameworkTest):
 
     def test_json_view(self):
         self.client.login(username='admin', password='password')
-        r = self.client.get('/onsite/' + self.program.url + '/unenroll_status')
-        data = json.loads(r.content)
+        response = self.client.get('/onsite/' + self.program.url + '/unenroll_status')
+        data = json.loads(six.text_type(response.content, encoding='UTF-8'))
 
         self.assertGreaterEqual(len(data['student_timeslots']), 20)
         self.assertGreater(len(data['section_timeslots']), 0)
@@ -74,8 +75,8 @@ class UnenrollModuleTest(ProgramFrameworkTest):
 
     def test_submit(self):
         self.client.login(username='admin', password='password')
-        r = self.client.get('/onsite/' + self.program.url + '/unenroll_status')
-        data = json.loads(r.content)
+        response = self.client.get('/onsite/' + self.program.url + '/unenroll_status')
+        data = json.loads(six.text_type(response.content, encoding='UTF-8'))
         enrollment_ids = list(data['enrollments'].keys())
 
         r = self.client.post('/onsite/' + self.program.url + '/unenroll_students', {'selected_enrollments': ','.join(enrollment_ids)})

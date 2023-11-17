@@ -36,7 +36,8 @@ def csrf_failure(request, reason=""):
             prog = None
 
         response = render_to_response('403_csrf_failure.html', request, c)
-        response = HttpResponseForbidden(response.content, content_type=response['Content-Type'])
+        response = HttpResponseForbidden(six.text_type(response.content, encoding='UTF-8'),
+                                         content_type=response['Content-Type'])
 
     except Exception:
         response = django_csrf_failure(request, reason=reason)
