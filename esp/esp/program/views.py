@@ -138,7 +138,7 @@ def lottery_student_reg_simple(request, program = None):
 
 #@transaction.atomic
 @login_required
-def lsr_submit(request, program = None):
+def lsr_submit(request, program=None):
 
     priority_limit = program.priorityLimit()
 
@@ -366,7 +366,7 @@ def usersearch(request):
         sorted_users = sorted(found_users, key=lambda x: x.get_last_program_with_profile().dates()[0] if x.get_last_program_with_profile() and x.get_last_program_with_profile().dates() else datetime.date(datetime.MINYEAR, 1, 1), reverse=True)
         return render_to_response('users/userview_search.html', request, { 'found_users': sorted_users })
     else:
-        raise ESPError("No user found by that name!", log=False)
+        raise ESPError("No user found by that name! Searched for `{}`".format(userstr), log=False)
 
 
 @admin_required
