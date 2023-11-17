@@ -136,7 +136,7 @@ class ThemesTest(TestCase):
                         'facebook_link': 'http://somehost.net',
                         'faq_link': '/faq.html',
                         'nav_structure': '[{"header": "header", "header_link": "/header_link/", "links": [{"link": "link1", "text": "text1"}]}]',
-                        'contant_links': '[{"link": "link1", "text": "text1"}]',
+                        'contact_links': '[{"link": "link1", "text": "text1"}]',
                     }
                     for entry in field_matches:
                         if entry[1] not in settings_dict:
