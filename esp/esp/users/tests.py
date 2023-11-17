@@ -313,12 +313,9 @@ class AjaxExistenceChecker(TestCase):
         if (not hasattr(self, 'path')) or (not hasattr(self, 'keys')):
             return
 
-        import json
         response = self.client.get(self.path)
-        self.assertEqual(response.status_code, 200)
-        content = json.loads(response.content)
         for key in self.keys:
-            self.assertTrue(key in content, "Key %s missing from Ajax response to %s" % (key, self.path))
+            self.assertContains(response, key, msg_prefix="Key %s missing from Ajax response to %s" % (key, self.path), status_code=200)
 
 class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
     def runTest(self):
