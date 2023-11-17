@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 
 
 from esp.themes.forms import ThemeConfigurationForm
-from esp.program.models import Program
+from esp.utils.widgets import ContactFieldsWidget
 from esp.utils.widgets import NavStructureWidget
 
 from django import forms
@@ -44,22 +44,11 @@ class ConfigForm(ThemeConfigurationForm):
     title_text = forms.CharField()
     subtitle_text = forms.CharField()
     titlebar_prefix = forms.CharField()
-    featured_programs = forms.ModelMultipleChoiceField(queryset=Program.objects.all(), required=False)
+    show_email = forms.BooleanField(required = False, help_text='Should the group email address be shown in the footer?')
+    contact_links = forms.Field(widget=ContactFieldsWidget, label='Contact links below contact info (use absolute or relative URLs)',
+                                initial=[{"text": "contact us", "link": "/contact.html"}])
     nav_structure = forms.Field(widget=NavStructureWidget)
-
-    def prepare_for_serialization(self, data):
-        result = data.copy()
-
-        #   Replace "featured programs" with list of (url, name) dicts
-        result['featured_programs'] = [{'name': prog.niceName(), 'url': prog.getUrlBase()} for prog in data['featured_programs']]
-
-        return result
-
-    def recover_from_serialization(self, data):
-        result = data.copy()
-
-        #   Replace "featured programs" (url, name) dicts with actual programs
-        if 'featured_programs' in data:
-            result['featured_programs'] = [Program.objects.get(url__icontains=x['url']) for x in data['featured_programs']]
-
-        return result
+    facebook_link = forms.URLField(required=False, help_text='Leave blank to omit a Facebook link.')
+    # URLField requires an absolute URL, here we probably want relative.
+    faq_link = forms.CharField(required=False, initial='/faq.html',
+                               help_text='Leave blank to omit an FAQ link.')
