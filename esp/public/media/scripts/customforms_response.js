@@ -95,7 +95,8 @@ var createGrid=function(form_data){
     $j.each(form_data['questions'], function(index, val) {
         //  Substitute in custom formatter defined above in order to link to uploaded files.
         if (val[2] == "file") {
-            $j("#jqGrid_" + val[0] + " div").prepend("<a title='Bulk Download All Files' href='/customforms/bulkdownloadfiles?form_id="+$j('#form_id').val()+"&question_name="+val[0]+"'><span class='ui-icon  ui-icon-circle-arrow-s'></span></a> ");
+            $j("#download-legend").show();
+            $j("#jqGrid_" + val[0] + " div").append(" <a title='Bulk Download All Files' href='/customforms/bulkdownloadfiles?form_id="+$j('#form_id').val()+"&question_name="+val[0]+"'><span style='font-size: 14px;' class='glyphicon glyphicon-download-alt'</span></a>");
             $j("#jqGrid_" + val[0] + " div a").click(function(e) {
                 e.stopPropagation();
             });
