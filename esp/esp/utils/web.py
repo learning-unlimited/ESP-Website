@@ -43,6 +43,8 @@ from django.http import HttpResponse, HttpResponseRedirect
 from esp.middleware import ESPError
 from esp.themes.controllers import ThemeController
 from esp.program.models import Program
+from esp.web.views.navBar import makeNavBar
+from esp.tagdict.models import Tag
 from django.conf import settings
 import django.shortcuts
 
@@ -59,14 +61,9 @@ def get_from_id(id, module, strtype = 'object', error = True):
         return None
     return foundobj
 
-def render_to_response(template, request, context, content_type=None, use_request_context=True):
-    from esp.web.views.navBar import makeNavBar
-    from esp.tagdict.models import Tag
+def esp_context_stuff():
+    context = {}
 
-    if isinstance(template, (basestring,)):
-        template = [ template ]
-
-    section = request.path.split('/')[1]
     tc = ThemeController()
     context['theme'] = tc.get_template_settings()
     context['current_theme_version'] = Tag.getTag("current_theme_version")
@@ -76,6 +73,15 @@ def render_to_response(template, request, context, content_type=None, use_reques
     context['settings'] = settings
 
     context['current_programs'] = Program.current_programs()
+    return context
+
+def render_to_response(template, request, context, content_type=None, use_request_context=True):
+    if isinstance(template, (basestring,)):
+        template = [ template ]
+
+    section = request.path.split('/')[1]
+
+    context.update(esp_context_stuff())
 
     # create nav bar list
     if not 'navbar_list' in context:

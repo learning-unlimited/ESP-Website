@@ -507,6 +507,13 @@ all_global_tags = {
         'category': 'theme',
         'is_setting': False,
     },
+    'contact_form_enabled': {
+        'is_boolean': True,
+        'help_text': 'Should the contact form at /contact/contact be enabled?',
+        'default': False,
+        'category': 'manage',
+        'is_setting': True,
+    },
 }
 
 # Any tag used with Tag.getProgramTag()
