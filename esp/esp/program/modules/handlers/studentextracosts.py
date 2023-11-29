@@ -41,7 +41,7 @@ from esp.accounting.models import LineItemOptions
 from esp.middleware      import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models  import StudentApplication, SplashInfo
-from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, main_call, meets_cap
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call, meets_cap
 from esp.program.modules.forms.splashinfo import SiblingDiscountForm
 from esp.tagdict.models import Tag
 from esp.users.models    import Record, RecordType, ESPUser
@@ -157,7 +157,7 @@ class StudentExtraCosts(ProgramModuleObj):
         return pac.get_lineitemtypes(include_donations=False).exclude(text__in=pac.admission_items)
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/ExtraCosts')
     @meets_cap
     def extracosts(self,request, tl, one, two, module, extra, prog):

@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_student, meets_cap, meets_deadline
+from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_student_in_grade, meets_cap, meets_deadline
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
 from esp.users.models            import Record, RecordType
 from esp.cal.models              import Event
@@ -124,7 +124,7 @@ class StudentLunchSelection(ProgramModuleObj):
         return Record.objects.filter(user=user,event__name="lunch_selected",program=self.program).exists()
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     @meets_cap
     @meets_deadline('/Classes/Lunch')
     def select_lunch(self, request, tl, one, two, module, extra, prog):

@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student_in_grade, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.utils.web import render_to_response
 from esp.middleware      import ESPError
@@ -113,7 +113,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
         return super(StudentJunctionAppModule, self).deadline_met('/Applications')
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/Applications')
     def application(self,request, tl, one, two, module, extra, prog):
         app = request.user.getApplication(self.program)

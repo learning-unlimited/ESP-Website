@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student_in_grade, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.accounting.controllers import ProgramAccountingController
 from esp.utils.web import render_to_response, secure_required
@@ -90,7 +90,7 @@ class FinancialAidAppModule(ProgramModuleObj):
         return user.appliedFinancialAid(self.program)
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/Finaid')
     @method_decorator(secure_required)
     # I didn't set @meets_cap here, because I don't want a bug in that to be

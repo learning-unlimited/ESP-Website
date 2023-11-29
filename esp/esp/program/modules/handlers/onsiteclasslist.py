@@ -47,7 +47,7 @@ from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12Sc
 from esp.program.models import RegistrationProfile
 from esp.program.class_status import ClassStatus
 
-from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student_in_grade, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program
 from esp.utils.web import render_to_response
 from esp.cal.models import Event
@@ -360,7 +360,7 @@ class OnSiteClassList(ProgramModuleObj):
         return self.classList_base(request, tl, one, two, module, extra, prog, template_name='classlist.html')
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def classlist_public(self, request, tl, one, two, module, extra, prog):
         return self.classList_base(request, tl, one, two, module, extra, prog, options={}, template_name='allclass_fragment.html')
 
