@@ -37,14 +37,13 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 
-from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Min, Q
-from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest, Http404
+from django.http import HttpResponse, HttpResponseBadRequest, Http404
 
 from esp.cal.models import Event
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
-from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, needs_student_in_grade, meets_grade, meets_cap, no_auth
+from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_cap, no_auth
 from esp.users.models import Record, ESPUser
 from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response

@@ -32,18 +32,16 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.dbmail.models import MessageRequest
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_checklist
-from django.db.models.query   import Q
 from esp.dbmail.models import ActionHandler
 from django.template import Template
 from django.template import Context as DjangoContext
-from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.middleware import ESPError
 
 class CommModule(ProgramModuleObj):

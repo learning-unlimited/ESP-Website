@@ -46,7 +46,7 @@ from esp.utils.web               import render_to_response
 from esp.dbmail.models           import send_mail
 from esp.middleware              import ESPError
 from django.db.models.query      import Q
-from esp.users.models            import User, ESPUser, Record, RecordType, TeacherInfo
+from esp.users.models            import ESPUser, Record, RecordType, TeacherInfo
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.conf                 import settings
@@ -59,7 +59,6 @@ from esp.middleware.threadlocalrequest import get_current_request
 import json
 import re
 import datetime
-from copy import deepcopy
 
 class TeacherClassRegModule(ProgramModuleObj):
     doc = """Allows teachers to register and manage classes and view their enrolled students."""

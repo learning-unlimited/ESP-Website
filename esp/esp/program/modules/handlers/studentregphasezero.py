@@ -34,8 +34,8 @@ Learning Unlimited, Inc.
 
 from esp.utils.web import render_to_response
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, needs_student_in_grade, meets_grade, meets_cap, no_auth, needs_admin
-from esp.users.models import Record, ESPUser, Permission
+from esp.program.modules.base import ProgramModuleObj, main_call, needs_student_in_grade
+from esp.users.models import ESPUser, Permission
 from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import SubmitForm
 from esp.dbmail.models import send_mail
@@ -45,10 +45,9 @@ from esp.web.views.json_utils import JsonResponse
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.template.loader import render_to_string
-from django.contrib.auth.models import Group
 from django.db.models.query import Q
 
-import random, copy, datetime, re
+import datetime
 
 class StudentRegPhaseZero(ProgramModuleObj):
     doc = """Allows students to enter a lottery for admission to the program."""

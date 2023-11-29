@@ -37,7 +37,6 @@ from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter, ContactInfo
 from esp.users.controllers.usersearch import UserSearchController
-from django.db.models.query   import Q
 from esp.middleware import ESPError
 
 from django.conf import settings

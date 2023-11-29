@@ -35,7 +35,7 @@ import datetime
 
 from django import forms
 
-from esp.program.modules.base import ProgramModuleObj, needs_student, needs_student_in_grade, meets_deadline, meets_grade, CoreModule, main_call, aux_call, meets_cap
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, needs_student_in_grade, meets_deadline, CoreModule, main_call, aux_call, meets_cap
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
 from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response

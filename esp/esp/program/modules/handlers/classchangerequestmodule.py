@@ -32,11 +32,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from datetime import datetime
-from urllib import quote
-
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.program.models import Program, StudentAppResponse, StudentRegistration, RegistrationType
+from esp.program.models import StudentRegistration, RegistrationType
 from esp.program.models.class_ import ClassSubject
 from esp.program.class_status import ClassStatus
 from esp.program.modules.base import ProgramModuleObj

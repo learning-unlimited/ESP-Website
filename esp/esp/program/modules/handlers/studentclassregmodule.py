@@ -36,30 +36,24 @@ Learning Unlimited, Inc.
 import json
 import logging
 logger = logging.getLogger(__name__)
-import sys
 from datetime import datetime
 from decimal import Decimal
-from collections import defaultdict
 
 from django.contrib.auth.models import User
 from django.db.models.query import Q, QuerySet
-from django.template.loader import get_template
 from django.http import HttpResponse, Http404
 from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
-from django.core.cache import cache
 from django.utils.safestring import mark_safe
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_student_in_grade, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call, meets_cap, no_auth
-from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
 from esp.utils.web import render_to_response
-from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
-from esp.users.models    import ESPUser, Permission, Record
+from esp.middleware      import ESPError, AjaxError, ESPError_NoLog
+from esp.users.models    import ESPUser, Permission
 from esp.tagdict.models  import Tag
-from argcache            import cache_function
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 from esp.cal.models import Event, EventType
 from esp.program.templatetags.class_render import render_class_direct
@@ -624,8 +618,6 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     @needs_student_in_grade
     def class_docs(self, request, tl, one, two, module, extra, prog):
-        from esp.qsdmedia.models import Media
-
         clsid = 0
         if 'clsid' in request.POST:
             clsid = request.POST['clsid']

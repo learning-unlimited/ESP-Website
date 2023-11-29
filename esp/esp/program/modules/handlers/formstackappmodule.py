@@ -37,11 +37,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.db.models.query import Q
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student_in_grade, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, main_call, aux_call
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser
 from esp.application.models import FormstackStudentProgramApp
-from urllib import urlencode
 
 class FormstackAppModule(ProgramModuleObj):
     doc = """

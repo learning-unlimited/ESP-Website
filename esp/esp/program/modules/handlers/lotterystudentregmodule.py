@@ -33,27 +33,17 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from uuid                        import uuid4 as get_uuid
-from datetime                    import datetime, timedelta
-from collections                 import defaultdict
 import json
 
-from django                      import forms
-from django.http                 import HttpResponseRedirect, HttpResponse
-from django.template.loader      import render_to_string
+from django.http                 import HttpResponse
 from django.db.models.query      import Q
 from django.views.decorators.cache import cache_control
 
-from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_grade, meets_cap, no_auth
-from esp.program.modules         import module_ext
-from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
-from esp.program.views           import lottery_student_reg, lsr_submit as lsr_view_submit
+from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_cap, no_auth
+from esp.program.models          import StudentRegistration
+from esp.program.views           import lsr_submit as lsr_view_submit
 from esp.utils.web               import render_to_response
-from esp.cal.models              import Event
-from esp.users.models            import User, ESPUser, UserAvailability
-from esp.middleware              import ESPError
-from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
-from argcache                    import cache_function
+from esp.users.models            import ESPUser
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.query_utils import nest_Q
 

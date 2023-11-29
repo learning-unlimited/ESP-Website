@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, main_call
 from esp.middleware.threadlocalrequest import get_current_request
 from django.http import HttpResponseRedirect
 

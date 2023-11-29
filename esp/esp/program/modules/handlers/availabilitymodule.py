@@ -36,12 +36,11 @@ from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_d
 from esp.program.controllers.classreg import ClassCreationController
 from esp.middleware              import ESPError
 from esp.utils.web               import render_to_response
-from django.http import HttpResponse, HttpResponseRedirect
-from django                      import forms
+from django.http import HttpResponseRedirect
 from esp.cal.models              import Event, EventType
 from esp.tagdict.models          import Tag
 from django.db.models.query      import Q
-from esp.users.models            import ESPUser, UserAvailability
+from esp.users.models            import ESPUser
 from datetime                    import timedelta
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.users.forms.generic_search_form import TeacherSearchForm

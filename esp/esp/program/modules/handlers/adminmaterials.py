@@ -32,12 +32,9 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web import render_to_response
-from django.contrib.auth.decorators import login_required
-from esp.program.models import ClassSubject, Program
-from esp.users.models import ESPUser
+from esp.program.models import ClassSubject
 
 class AdminMaterials(ProgramModuleObj):
     doc = """ This allows you to view the submitted documents for all classes

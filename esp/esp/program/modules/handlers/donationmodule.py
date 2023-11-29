@@ -33,9 +33,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
+from esp.program.modules.base import ProgramModuleObj, usercheck_usetl, meets_deadline, main_call, meets_cap
 from esp.utils.web import render_to_response
-from esp.dbmail.models import send_mail
 from esp.users.models import ESPUser, Record, RecordType
 from esp.tagdict.models import Tag
 from esp.accounting.models import LineItemType
@@ -46,17 +45,11 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 from django import forms
 from django.conf import settings
-from django.db import transaction
 from django.db.models.query import Q
 from django.http import HttpResponseRedirect
-from django.contrib.sites.models import Site
-from django.template.loader import render_to_string
 
 from decimal import Decimal
-from datetime import datetime
-import stripe
 import json
-import re
 
 
 

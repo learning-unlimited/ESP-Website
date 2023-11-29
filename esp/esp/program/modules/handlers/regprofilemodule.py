@@ -32,11 +32,10 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, needs_account, usercheck_usetl, main_call, aux_call, meets_deadline
+from esp.program.modules.base import ProgramModuleObj, usercheck_usetl, main_call, meets_deadline
 from esp.program.models import RegistrationProfile
 from esp.users.models   import ESPUser
 from django.db.models.query import Q
-from django.contrib.auth.decorators import login_required
 from esp.middleware.threadlocalrequest import get_current_request
 
 # reg profile module

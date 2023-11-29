@@ -43,7 +43,7 @@ from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 
 
-from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
+from esp.users.models    import ESPUser, Record
 from esp.program.models import RegistrationProfile
 from esp.program.class_status import ClassStatus
 
@@ -52,8 +52,6 @@ from esp.program.models import ClassSubject, ClassSection, StudentRegistration, 
 from esp.utils.web import render_to_response
 from esp.cal.models import Event
 from argcache import cache_function
-from esp.users.models import ESPUser, Record
-from esp.resources.models import ResourceAssignment
 from esp.utils.models import Printer, PrintRequest
 from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
