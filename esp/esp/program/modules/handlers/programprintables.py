@@ -62,6 +62,7 @@ from datetime import timedelta
 import collections
 import copy
 import csv
+import json
 
 class ProgramPrintables(ProgramModuleObj):
     doc = """A wide variety of printable documents that are useful for a program."""

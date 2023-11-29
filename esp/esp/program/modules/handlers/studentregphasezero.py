@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 
 from esp.utils.web import render_to_response
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.program.modules.base import ProgramModuleObj, main_call, needs_student_in_grade
+from esp.program.modules.base import ProgramModuleObj, main_call, needs_student_in_grade, aux_call
 from esp.users.models import ESPUser, Permission
 from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import SubmitForm

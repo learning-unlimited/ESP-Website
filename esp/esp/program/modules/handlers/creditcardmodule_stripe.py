@@ -28,7 +28,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call, meets_cap
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call, aux_call, meets_cap
 from esp.utils.web import render_to_response
 from esp.dbmail.models import send_mail
 from esp.users.models import ESPUser
