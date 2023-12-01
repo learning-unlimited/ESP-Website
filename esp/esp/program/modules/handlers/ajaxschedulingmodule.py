@@ -42,11 +42,12 @@ from esp.users.models            import ESPUser
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceAssignment
 from esp.tagdict.models          import Tag
-from datetime                    import time
-import json
 from argcache                    import cache_function
 from uuid                        import uuid4 as get_uuid
 from esp.utils.decorators        import json_response
+
+import json
+import time
 
 class AJAXSchedulingModule(ProgramModuleObj):
     doc = """Provides an application to use for scheduling classes."""
