@@ -526,6 +526,13 @@ all_global_tags = {
         'category': 'theme',
         'is_setting': False,
     },
+    'hide_empty_categories': {
+        'is_boolean': True,
+        'help_text': 'Should categories with no classes be hidden in the catalog? (this includes when filtering)',
+        'default': True,
+        'category': 'learn',
+        'is_setting': True,
+    },
     'contact_form_enabled': {
         'is_boolean': True,
         'help_text': 'Should the contact form at /contact/contact be enabled?',

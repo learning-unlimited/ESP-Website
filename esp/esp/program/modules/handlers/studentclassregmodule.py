@@ -521,23 +521,29 @@ class StudentClassRegModule(ProgramModuleObj):
         collapse_full_classes = Tag.getBooleanTag('collapse_full_classes', prog)
         class_blobs = []
 
-        category_header_str = """<hr size="1"/>
-    <a name="cat%d"></a>
-      <p style="font-size: 1.2em;" class="category">
-         %s
-      </p>
-      <p class="linktop">
-         <a href="#top">[ Return to Category List ]</a>
-      </p>
+        category_header_str = """
+    <div class="cat_wrapper" data-category="%d">
+      <hr size="1"/>
+      <a name="cat%d"></a>
+        <p style="font-size: 1.2em;" class="category">
+           %s
+        </p>
+        <p class="linktop">
+           <a href="#top">[ Return to Category List ]</a>
+        </p>
 """
 
         class_category_id = None
         for cls in classes:
             if cls.category.id != class_category_id and categories_sort:
                 class_category_id = cls.category.id
-                class_blobs.append(category_header_str % (class_category_id, cls.category.category))
+                if (class_category_id != None):
+                    class_blobs.append('</div>')
+                class_blobs.append(category_header_str % (class_category_id, class_category_id, cls.category.category))
             class_blobs.append(render_class_direct(cls))
             class_blobs.append('<br />')
+        if categories_sort:
+            class_blobs.append('</div>')
         context['class_descs'] = ''.join(class_blobs)
         #   Include the program explicitly; this is a cached page, without RequestContext
         context['program'] = self.program
