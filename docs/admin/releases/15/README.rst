@@ -140,6 +140,7 @@ AJAX Scheduler
 - Added a moderator availability scheduling check to the ajax scheduler and the scheduling checks page
 - Fixed the moderator title for all checks in the ajax scheduler and the scheduling checks page
 - Adjusted the coloration of the cells for the teacher/moderator availability checks to be based on the proportion of teachers that are unavailable as opposed to the raw number
+- Fixed errors caused by duplicate room resources when scheduling classes
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
@@ -148,6 +149,10 @@ Minor new features
 - Improved the download button on the customform response page (made it larger and added a legend)
 - Added ability to enable/disable contact form (see the "contact_form_enabled" tag)
 - Added a default page at /contact.html (falls back to QSD if it existed before)
+- Added simple validation for JSON-formatted tags
+- Empty categories in the catalog are now hidden (including when catalog filters are used)
+
+  - This can be disabled by unchecking the "hide_empty_categories" tag
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -161,3 +166,5 @@ Minor bug fixes
 - Fixed the caching of the open class registration setting
 - Fixed a very rare bug caused by using the autoscheduler when open class registration was disabled
 - Fixed the /faq.html page to now show all theme-related bits
+- Fixed a bug that caused links in the admin toolbar to not update when a program name was changed
+- Fixed the categories and flags links on the program settings page
