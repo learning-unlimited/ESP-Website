@@ -123,3 +123,18 @@ Minor bug fixes
 - Removed the ``use_grade_range_exceptions`` option from the Student Class Registration settings form
 - Fixed the boolean logic of the line item user search controller filters
 - Fixed the Onsite New Student Registration form
+
+December 2023 Patch
+===================
+
+Minor new features
+~~~~~~~~~~~~~~~~~~
+- 
+
+Minor bug fixes
+~~~~~~~~~~~~~~~
+- Fixed the lists of permissions in the custom form builder
+- Fixed the loading of previously set permissions in the custom form builder
+- Fixed edge cases when submitting the volunteer or class registration forms
+- Fixed the moderator titles throughout the dashboard
+- Fixed the formatting of blank nametags
