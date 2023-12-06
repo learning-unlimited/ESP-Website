@@ -127,9 +127,16 @@ Minor bug fixes
 December 2023 Patch
 ===================
 
+Themes
+~~~~~~
+- Increased the color customizability of the fruitsalad theme (buttons, text, links)
+- Fixed edge cases where the dropdown menus on the logo picker page would break
+- New logos, headers, and favicons are now loaded immediately when changed
+
 Minor new features
 ~~~~~~~~~~~~~~~~~~
-- 
+- Added the ability to unassign moderators from unscheduled sections in the ajax scheduler
+- The selected moderator is now highlighted in the ajax scheduler
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
