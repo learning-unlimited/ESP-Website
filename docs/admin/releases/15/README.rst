@@ -144,6 +144,10 @@ AJAX Scheduler
 Minor new features
 ~~~~~~~~~~~~~~~~~~
 - Added a "return to profile" button to the grade change request form
+- When approving, cancelling, or rejecting a class, you will now always be redirected to that class's /manageclass page (when deleting a class, you will always go to the /dashboard)
+- Improved the download button on the customform response page (made it larger and added a legend)
+- Added ability to enable/disable contact form (see the "contact_form_enabled" tag)
+- Added a default page at /contact.html (falls back to QSD if it existed before)
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -155,3 +159,5 @@ Minor bug fixes
 - Fixed receipt template loading
 - Fixed a bug that allowed teachers to access open class registration even when it was disabled
 - Fixed the caching of the open class registration setting
+- Fixed a very rare bug caused by using the autoscheduler when open class registration was disabled
+- Fixed the /faq.html page to now show all theme-related bits
