@@ -133,10 +133,17 @@ Themes
 - Fixed edge cases where the dropdown menus on the logo picker page would break
 - New logos, headers, and favicons are now loaded immediately when changed
 
-Minor new features
-~~~~~~~~~~~~~~~~~~
+AJAX Scheduler
+~~~~~~~~~~~~~~
 - Added the ability to unassign moderators from unscheduled sections in the ajax scheduler
 - The selected moderator is now highlighted in the ajax scheduler
+- Added a moderator availability scheduling check to the ajax scheduler and the scheduling checks page
+- Fixed the moderator title for all checks in the ajax scheduler and the scheduling checks page
+- Adjusted the coloration of the cells for the teacher/moderator availability checks to be based on the proportion of teachers that are unavailable as opposed to the raw number
+
+Minor new features
+~~~~~~~~~~~~~~~~~~
+- Added a "return to profile" button to the grade change request form
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -145,3 +152,6 @@ Minor bug fixes
 - Fixed edge cases when submitting the volunteer or class registration forms
 - Fixed the moderator titles throughout the dashboard
 - Fixed the formatting of blank nametags
+- Fixed receipt template loading
+- Fixed a bug that allowed teachers to access open class registration even when it was disabled
+- Fixed the caching of the open class registration setting
