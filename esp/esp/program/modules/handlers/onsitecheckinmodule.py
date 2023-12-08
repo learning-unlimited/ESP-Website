@@ -193,7 +193,8 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 #   Check that this is a student user who is not also teaching (e.g. an admin)
                 if student.isStudent() and student not in self.program.teachers()['class_approved']:
                     if not prog.isCheckedIn(student):
-                        rec = Record(user=student, event__name="attended", program=prog)
+                        rt = RecordType.objects.get(name="attended")
+                        rec = Record(user=student, event=rt, program=prog)
                         rec.save()
                     context['message'] = '%s %s marked as attended.' % (student.first_name, student.last_name)
                     if request.is_ajax():
