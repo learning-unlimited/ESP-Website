@@ -205,6 +205,7 @@ function {{ name }}_add_link(obj, data)
     delete_button.on("click", {{ name }}_delete_link);
     entry.append(delete_button);
     $j("#{{ name }}_entries input").on("change", {{ name }}_save);
+    {{ name }}_save()
 }
 
 function {{ name }}_save()
@@ -231,7 +232,7 @@ function {{ name }}_setup()
     var add_button = $j("<button class='btn btn-mini btn-primary'>Add link</button>");
     add_button.on("click", function (event) {
         event.preventDefault();
-        {{ name }}_add_link(anchor_ul, {text: "", link: "", icon: ""});
+        {{ name }}_add_link(anchor_ul, {text: "contact us", link: "/contact.html", icon: ""});
     });
     anchor_ul.parent().append(add_button);
 }
