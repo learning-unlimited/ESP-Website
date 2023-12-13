@@ -1,5 +1,6 @@
 function showColor() {
     $j('.color').each(function(i){
+        var default_color = $j(this).data("default");
         $j(this).spectrum({
             type: "color",
             showInput: true,
@@ -11,7 +12,7 @@ function showColor() {
         });
         // Create the "Reset Color" button
         var resetButton = $j('<button class="reset-color" type="button" style="margin-left: 1.5px;">Reset Color</button>').click(function() {
-            $j(this).siblings("input").spectrum("set", "#000000"); // Reset color to default
+            $j(this).siblings("input").spectrum("set", default_color); // Reset color to default
         });
         // Create the "Remove" button
         var removeButton = $j('<button class="remove-color" type="button" style="margin-left: 5px;">Remove Variable</button>').click(function() {
@@ -69,6 +70,14 @@ $j(document).ready(function(){
     showColor();
     showBasePalette();
     showCustomPalette();
+    $j(".length, .text").each(function(){
+        var el = $j(this)
+        var default_val = el.data("default");
+        var resetButton = $j('<button class="reset-length" type="button" style="margin-left: 1.5px;">Reset</button>').click(function() {
+            el.val(default_val); // Reset to default value
+        });
+        el.parent(".controls").append(resetButton);
+    });
     $j('#addToPalette').click(function(){
         var newColor = $j('<input>');
         newColor.addClass('palette');
@@ -98,6 +107,7 @@ $j(document).ready(function(){
         var button_id_prefix = 'add_opt_var_';
         var select_id = 'new_opt_var_' + button_id.substr(button_id_prefix.length);
         var select_val = $j('#' + select_id).val();
+        var option_el = $j("#new_opt_var_2").find(":selected");
         
         // Don't want duplicate variables
         if ($j("#id_" + select_val).length == 0) {
@@ -107,14 +117,14 @@ $j(document).ready(function(){
                     id: 'id_' + select_val,
                     class: 'color',
                     type: 'text',
-                    value: '#000000',
+                    value: option_el.data('default'),
                     name: select_val,
                     style: 'display: none;'
                 });
 
             // Create the "Reset Color" button
             var resetButton = $j('<button class="reset-color" type="button" style="margin-left: 5px;">Reset Color</button>').click(function() {
-                $j(this).siblings("input").spectrum("set", "#000000"); // Reset color to default
+                $j(this).siblings("input").spectrum("set", option_el.data('default')); // Reset color to default
             });
 
             // Create the "Remove" button

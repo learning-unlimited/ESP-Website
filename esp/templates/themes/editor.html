@@ -52,7 +52,10 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 </style>
 {% endblock %}
 {% block title %}Theme Editor{% endblock %}
-{% block content %} 
+{% block content %}
+
+{% load main %}
+
 <div class="row-fluid">
     <div class="span12">
         <h1>Theme Editor</h1>
@@ -420,7 +423,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                 <div class="controls">
                                     <select id="new_opt_var_{{ forloop.counter0 }}" name="new_opt_var_{{ forloop.counter0 }}" class="select_opt_var">
                                         {% for item in data %}{% if not item.2 %}
-                                        <option value="{{ item.0 }}">{{ item.0 }}</option>
+                                        <option value="{{ item.0 }}" data-default="{{ variable_defaults|index:item.0 }}">{{ item.0 }}</option>
                                         {% endif %}{% endfor %}
                                     </select>
                                     <button class="btn add_opt_var_button" id="add_opt_var_{{ forloop.counter0 }}">Add</button>
@@ -430,7 +433,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                             <div class="control-group" id="ctlgrp_{{ item.0 }}">
                                 <label class="control-label" for="{{ item.0 }}">{{ item.0 }}:</label>
                                 <div class="controls">
-                                    <input type="text" class="{{ item.1 }}" id="id_{{ item.0 }}" name="{{ item.0 }}" value="{{ item.2 }}"/>
+                                    <input type="text" class="{{ item.1 }}" id="id_{{ item.0 }}" name="{{ item.0 }}" value="{{ item.2 }}" data-default="{{ variable_defaults|index:item.0 }}"/>
                                 </div>
                             </div>
                             {% endif %}{% endfor %}
