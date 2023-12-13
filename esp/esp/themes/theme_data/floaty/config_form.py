@@ -45,7 +45,8 @@ class ConfigForm(ThemeConfigurationForm):
     subtitle_text = forms.CharField()
     titlebar_prefix = forms.CharField()
     show_email = forms.BooleanField(required = False, help_text='Should the group email address be shown in the footer?')
-    contact_links = forms.Field(widget=ContactFieldsWidget, label='Contact links below contact info (use absolute or relative URLs)',
+    contact_links = forms.Field(required = False, widget=ContactFieldsWidget,
+                                label='Contact links below contact info (use absolute or relative URLs)',
                                 initial=[{"text": "contact us", "link": "/contact.html"}])
     nav_structure = forms.Field(widget=NavStructureWidget)
     facebook_link = forms.URLField(required=False, help_text='Leave blank to omit a Facebook link.')
