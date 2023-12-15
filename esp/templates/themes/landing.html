@@ -24,13 +24,13 @@
     <div class="well">
         <center>
             <h3>Current logo:</h3>
-            <img src="/media/images/theme/logo.png" alt="No logo selected/uploaded" style="max-width: 80%;">
+            <img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="No logo selected/uploaded" style="max-width: 80%;">
             {% if has_header %}
             <h3>Current header:</h3>
-            <img src="/media/images/theme/header.png" alt="No header selected/uploaded" style="max-width: 80%;">
+            <img src="/media/images/theme/header.png?v={{ current_header_version }}" alt="No header selected/uploaded" style="max-width: 80%;">
             {% endif %}
             <h3>Current favicon:</h3>
-            <img src="/media/images/favicon.ico" alt="No favicon selected" style="max-width: 80%;">
+            <img src="/media/images/favicon.ico?v={{ current_favicon_version }}" alt="No favicon selected" style="max-width: 80%;">
             <br /><br />
             <a href="/themes/logos/">
             <button class="btn btn-large btn-block btn-primary" type="button">Step 3: Upload/select a logo, header, or favicon</button>

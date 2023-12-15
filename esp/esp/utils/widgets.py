@@ -185,6 +185,97 @@ class DummyWidget(widgets.Input):
             output += attrs['text']
         return mark_safe(output)
 
+class ContactFieldsWidget(forms.Widget):
+    template_text = """
+<input type="hidden" id="id_{{ name }}" name="{{ name }}" value="{{ value }}" />
+<div id="{{ name }}_options">
+<ul id="{{ name }}_entries"></ul>
+</div>
+<script type="text/javascript">
+function {{ name }}_delete_link(event)
+{
+    event.preventDefault();
+    $j(this).parent().detach();
+    {{ name }}_save();
+}
+
+function {{ name }}_add_link(obj, data)
+{
+    obj.append($j("<li />"));
+    var entry = obj.children().last();
+    %(add_link_body)s
+
+    var delete_button = $j("<button class='btn btn-mini btn-danger'>Delete link</button>");
+    delete_button.on("click", {{ name }}_delete_link);
+    entry.append(delete_button);
+    $j("#{{ name }}_entries input").on("change", {{ name }}_save);
+    {{ name }}_save()
+}
+
+function {{ name }}_save()
+{
+    var result = $j("#{{ name }}_entries").children("li").map(function (index, element) {
+        return {
+            icon: $j(element).children(".data_icon").val(),
+            link: $j(element).children(".data_link").val(),
+            text: $j(element).children(".data_text").val(),
+        };
+    }).get();
+    $j("input[name={{ name }}]").val(JSON.stringify(result));
+    return result;
+}
+
+function {{ name }}_setup()
+{
+    var {{ name }}_data = JSON.parse($j("#id_{{ name }}").val());
+    var anchor_ul = $j("#{{ name }}_entries");
+    for (var i = 0; i < {{ name }}_data.length; i++)
+    {
+        {{ name }}_add_link(anchor_ul, {{ name }}_data[i]);
+    }
+    var add_button = $j("<button class='btn btn-mini btn-primary'>Add link</button>");
+    add_button.on("click", function (event) {
+        event.preventDefault();
+        {{ name }}_add_link(anchor_ul, {text: "contact us", link: "/contact.html", icon: ""});
+    });
+    anchor_ul.parent().append(add_button);
+}
+
+$j(document).ready({{ name }}_setup);
+</script>
+<style type="text/css">
+#{{ name }}_entries {
+    font-size: 0.9em;
+}
+#{{ name }}_entries input {
+    font-size: 1.0em;
+    margin-right: 5px;
+}
+</style>
+"""
+
+    # We separate out this part so subclasses can override it.
+    add_link_body = """
+        entry.append($j("<span>Text: </span>"));
+        entry.append($j("<input class='data_text nav_secondary_field input-small' type='text' value='" + data.text + "' />"));
+        entry.append($j("<span>Link: </span>"));
+        entry.append($j("<input class='data_link nav_secondary_field' type='text' value='" + data.link + "' />"));
+    """
+
+    def render(self, name, value, attrs=None):
+        if value is None: value = ''
+        self.build_attrs(attrs)
+        context = {}
+        context['name'] = name
+        context['value'] = json.dumps(value)
+        template = Template(self.template_text % {
+            'add_link_body': self.add_link_body})
+        return template.render(Context(context))
+
+    def value_from_datadict(self, data, files, name):
+        result = json.loads(data[name])
+        return result
+
 class NavStructureWidget(forms.Widget):
     # TODO(benkraft): Convert this to an actual static script so we don't have
     # to interpolate a pile of JS here.
@@ -198,12 +289,14 @@ function {{ name }}_delete_link(event)
 {
     event.preventDefault();
     $j(this).parent().detach();
+    {{ name }}_save();
 }
 
 function {{ name }}_delete_tab(event)
 {
     event.preventDefault();
     $j(this).parent().detach();
+    {{ name }}_save();
 }
 
 function {{ name }}_add_link(obj, data)
@@ -214,8 +307,9 @@ function {{ name }}_add_link(obj, data)
     %(add_link_body)s
 
     var delete_button = $j("<button class='btn btn-mini btn-danger'>Delete link</button>");
-    delete_button.click({{ name }}_delete_link);
+    delete_button.on("click", {{ name }}_delete_link);
     entry.append(delete_button);
+    $j("#{{ name }}_entries input").on("change", {{ name }}_save);
 }
 
 function {{ name }}_add_tab(obj, data)
@@ -228,7 +322,7 @@ function {{ name }}_add_tab(obj, data)
     category_li.append($j("<span>Header link: </span>"));
     category_li.append($j("<input class='data_header_link nav_header_field' type='text' value='" + data.header_link + "' />"));
     var delete_button = $j("<button class='btn btn-mini btn-danger'>Delete tab</button>");
-    delete_button.click({{ name }}_delete_tab);
+    delete_button.on("click", {{ name }}_delete_tab);
     category_li.append(delete_button);
 
     category_li.append($j("<ul />"));
@@ -240,7 +334,7 @@ function {{ name }}_add_tab(obj, data)
         {{ name }}_add_link(category_li, data.links[j]);
     }
     var add_button = $j("<button class='btn btn-mini'>Add link</button>");
-    add_button.click(function (event) {
+    add_button.on("click", function (event) {
         event.preventDefault();
         {{ name }}_add_link($j(this).parent(), {text: "", link: "", icon: ""});
     });
@@ -276,7 +370,7 @@ function {{ name }}_setup()
         {{ name }}_add_tab(anchor_ul, {{ name }}_data[i]);
     }
     var add_button = $j("<button class='btn btn-mini btn-primary'>Add tab</button>");
-    add_button.click(function (event) {
+    add_button.on("click", function (event) {
         event.preventDefault();
         {{ name }}_add_tab(anchor_ul, {header: "", header_link: "", links: [{text: "", link: "", icon: ""}]});
     });
@@ -649,7 +743,6 @@ _ICONS = OrderedDict([
 ])
 
 class NavStructureWidgetWithIcons(NavStructureWidget):
-    # TODO(benkraft): Add some way of seeing the icons while selecting them.
     add_link_body = """
         entry.append($j("<span>Icon: </span>"));
         var select = $j("<select class='data_icon nav_secondary_field input-medium glyphicon' />");
