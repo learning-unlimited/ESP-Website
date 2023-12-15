@@ -118,18 +118,35 @@ var debug = {{ settings.DEBUG|yesno:"true,false" }};
 	</form>
       </div>
       <div id="contact_info">
+        {% if theme.show_group_name %}
         <span class="title accentcolor">{{ theme.full_group_name }}</span>
+        {% endif %}
+        {% if theme.contact_info %}
         <span class="normal">{{ theme.contact_info|linebreaksbr }}</span>
+        {% endif %}
+        {% if theme.show_email %}
         <span class="normal">Email: <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></span>
+        {% endif %}
+        {% if theme.contact_links %}
+        <span class="normal">
+          {% for link in theme.contact_links %}
+          <a href="{{ link.link }}">{{ link.text }}</a>
+          {% if forloop.counter|divisibleby:3 %}<br />
+          {% elif not forloop.last %} | {% endif %}
+          {% endfor %}
+        </span>
+        {% endif %}
+        {% if theme.faq_link or theme.facebook_link %}
         <span class="normal">
           {% if theme.faq_link %}
-            <a href="{{theme.faq_link}}">FAQ</a> |
+            <a href="{{ theme.faq_link }}">FAQ</a>
           {% endif %}
-          <a href="/contact.html">contact us</a>
+          {% if theme.faq_link and theme.facebook_link %} | {% endif %}
           {% if theme.facebook_link %}
-            | <a href="{{ theme.facebook_link }}">facebook</a>
+            <a href="{{ theme.facebook_link }}">facebook</a>
           {% endif %}
         </span>
+        {% endif %}
       </div>
 {% block login %}
 <div id="login_box">
