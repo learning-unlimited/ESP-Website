@@ -224,7 +224,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                 {% if theme_name != "fruitsalad" %}
                 <div class="accordion-group">
                     <div class="accordion-heading">
-                        <h3 class="accordion-toggle" data-toggle="collapse" href="#navbar_edit_group" rel="popover" data-original-title="Navbar" {% if theme_name == "bigpicture" %}data-content="Use this section to control the colors for the various elements of the navigation bar in the upper right hand corner."{% else %}data-content="Use this section to control the colors for the various elements of the navigation bar. The background fades into the highlight."{% endif %}>Navbar</h3>
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#navbar_edit_group" rel="popover" data-original-title="Navbar" {% if theme_name == "bigpicture" %}data-content="Use this section to control the colors for the various elements of the navigation bar in the upper right hand corner. The highlight controls the color of the logout button and the dropdown menu."{% else %}data-content="Use this section to control the colors for the various elements of the navigation bar. The background fades into the highlight."{% endif %}>Navbar</h3>
                     </div>
                     <div class="collapse" id="navbar_edit_group">
                         <div class="control-group">
@@ -405,6 +405,12 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         <h3 class="accordion-toggle" data-toggle="collapse" href="#advanced" rel="popover" data-original-title="Advanced" data-content="These are additional parameters specific to the currently selected theme.">{% if theme_name == "fruitsalad" %}Fruitsalad Tabs{% else %}Advanced{% endif %}</h3>
                     </div>
                     <div class="collapse" id="advanced">
+                        {% if theme_name == "bigpicture" %}
+                            <div>
+                            <p>highlightOrange is the color of the border of a button once it has been pressed.</p>
+                            <p>identityBlue is the color of the border for regular buttons (not primary or inverse buttons), certain text boxes, and page titles.</p>
+                            </div>
+                        {% endif %}
                         {% for category, data in adv_vars.items %}{% if not data|length_is:0 %}
                         <div id="adv_category_{{ forloop.counter0 }}">
                             <h3>Category: {{ category }}<hr/></h3>
