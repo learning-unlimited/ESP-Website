@@ -16,8 +16,11 @@ function showColor() {
         });
         // Create the "Remove" button
         var removeButton = $j('<button class="remove-color" type="button" style="margin-left: 5px;">Remove Variable</button>').click(function() {
-            $j(this).siblings("input").spectrum("destroy");
+            var input = $j(this).siblings("input");
+            input.spectrum("destroy");
             $j(this).parents(".control-group").remove();
+            console.log(input.attr("name"));
+            $j("option[value=" + input.attr("name") + "]").show();
         });
         if ($j(this).siblings(".reset-color").length == 0) {
             $j(this).parent(".controls").append(resetButton);
@@ -67,6 +70,7 @@ function showCustomPalette() {
 }
 
 $j(document).ready(function(){
+    
     showColor();
     showBasePalette();
     showCustomPalette();
@@ -95,8 +99,8 @@ $j(document).ready(function(){
         $j(this).popover({placement:'left', animation:false});
     });
     
-    //  Show optional variable selector if there are optional variables available
-    $j('div.opt_var_div:has(select.select_opt_var:has(option))').removeClass('hidden');
+    //  Make optional variable dropdown blank
+    $j('select.select_opt_var').val('');
     
     //  Allow form elements to be created for optional variables
     $j('button.add_opt_var_button').click(function (event) {
@@ -106,8 +110,11 @@ $j(document).ready(function(){
         var button_id = event.target.id;
         var button_id_prefix = 'add_opt_var_';
         var select_id = 'new_opt_var_' + button_id.substr(button_id_prefix.length);
-        var select_val = $j('#' + select_id).val();
+        var select_el = $j('#' + select_id);
+        var select_val = select_el.val();
         var option_el = $j("#new_opt_var_2").find(":selected");
+        option_el.hide();
+        select_el.val("");
         
         // Don't want duplicate variables
         if ($j("#id_" + select_val).length == 0) {
@@ -131,6 +138,7 @@ $j(document).ready(function(){
             var removeButton = $j('<button class="remove-color" type="button" style="margin-left: 5px;">Remove Variable</button>').click(function() {
                 $j(this).siblings("input").spectrum("destroy");
                 $j(this).parents(".control-group").remove();
+                option_el.show();
             });
 
             // Create a control group and append the color input and reset button

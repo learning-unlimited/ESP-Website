@@ -410,8 +410,9 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         {% for category, data in adv_vars.items %}{% if not data|length_is:0 %}
                         <div id="adv_category_{{ forloop.counter0 }}">
                             <h3>Category: {{ category }}<hr/></h3>
+                            {% if category == "variables_optional" %}
                             <!-- Dropdown box for adding an optional variable override that is not yet defined -->
-                            <div class="control-group opt_var_div hidden">
+                            <div class="control-group opt_var_div">
                                 <div> Accent 1 for each side tab refers to the accent on the left part of the side tab, the background color of the heading bar, and the unselected top tabs when the specified number side tab is selected.
                                 </div>
                                 </br>
@@ -422,13 +423,14 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                 <label class="control-label" for="new_opt_var_{{ forloop.counter0 }}">Add a variable:</label>
                                 <div class="controls">
                                     <select id="new_opt_var_{{ forloop.counter0 }}" name="new_opt_var_{{ forloop.counter0 }}" class="select_opt_var">
-                                        {% for item in data %}{% if not item.2 %}
-                                        <option value="{{ item.0 }}" data-default="{{ variable_defaults|index:item.0 }}">{{ item.0 }}</option>
-                                        {% endif %}{% endfor %}
+                                        {% for item in data %}
+                                        <option value="{{ item.0 }}" data-default="{{ variable_defaults|index:item.0 }}"{% if item.2 %} hidden{% endif %}>{{ item.0 }}</option>
+                                        {% endfor %}
                                     </select>
                                     <button class="btn add_opt_var_button" id="add_opt_var_{{ forloop.counter0 }}">Add</button>
                                 </div>
                             </div>
+                            {% endif %}
                             {% for item in data %}{% if item.2 %}
                             <div class="control-group" id="ctlgrp_{{ item.0 }}">
                                 <label class="control-label" for="{{ item.0 }}">{{ item.0 }}:</label>
