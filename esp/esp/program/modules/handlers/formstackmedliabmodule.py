@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, main_call, aux_call, meets_cap, meets_grade
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call, aux_call, meets_cap
 from esp.utils.web import render_to_response
 from esp.users.models import ESPUser, Record, RecordType
 from esp.tagdict.models import Tag
@@ -93,8 +93,7 @@ class FormstackMedliabModule(ProgramModuleObj):
             }
 
     @main_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/FormstackMedliab')
     @meets_cap
     def medliab(self, request, tl, one, two, module, extra, prog):
@@ -106,7 +105,7 @@ class FormstackMedliabModule(ProgramModuleObj):
                                   request, context)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def medicalpostback581309742(self, request, tl, one, two, module, extra, prog):
         """Marks student off as completed."""
         rt = RecordType.objects.get(name="med")

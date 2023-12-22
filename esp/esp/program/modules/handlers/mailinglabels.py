@@ -34,9 +34,8 @@ Learning Unlimited, Inc.
 """
 
 from esp.utils.web import render_to_response
-from esp.users.models import PersistentQueryFilter, K12School, ContactInfo, ESPUser, User, ESPError, ZipCode
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.users.models import PersistentQueryFilter, ContactInfo, ESPUser, ESPError, ZipCode
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import Q
 from esp.program.modules.forms.mailinglabels_schools import SchoolSelectForm
@@ -174,7 +173,7 @@ class MailingLabels(ProgramModuleObj):
         import pycurl
         from django.template.defaultfilters import urlencode
         import re
-        import time
+        #import time
 
 
         regex = re.compile(r""""background:url\(images\/table_gray.gif\); padding\:5px 10px;">\s*(.*?)<br \/>\s*(.*?)&nbsp;(.{2})&nbsp;&nbsp;(\d{5}\-\d{4})""")

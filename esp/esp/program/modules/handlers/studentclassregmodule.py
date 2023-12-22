@@ -36,30 +36,24 @@ Learning Unlimited, Inc.
 import json
 import logging
 logger = logging.getLogger(__name__)
-import sys
 from datetime import datetime
 from decimal import Decimal
-from collections import defaultdict
 
 from django.contrib.auth.models import User
 from django.db.models.query import Q, QuerySet
-from django.template.loader import get_template
 from django.http import HttpResponse, Http404
 from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
-from django.core.cache import cache
 from django.utils.safestring import mark_safe
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call, meets_cap, no_auth
-from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
 from esp.utils.web import render_to_response
-from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
-from esp.users.models    import ESPUser, Permission, Record
+from esp.middleware      import ESPError, AjaxError, ESPError_NoLog
+from esp.users.models    import ESPUser, Permission
 from esp.tagdict.models  import Tag
-from argcache            import cache_function
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 from esp.cal.models import Event, EventType
 from esp.program.templatetags.class_render import render_class_direct
@@ -314,7 +308,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def ajax_schedule(self, request, tl, one, two, module, extra, prog):
         import json as json
         from django.template.loader import render_to_string
@@ -406,7 +400,7 @@ class StudentClassRegModule(ProgramModuleObj):
             raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/Classes')
     @meets_cap
     def addclass(self, request, tl, one, two, module, extra, prog):
@@ -415,7 +409,7 @@ class StudentClassRegModule(ProgramModuleObj):
             return self.goToCore(tl)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/Classes')
     @meets_cap
     def ajax_addclass(self,request, tl, one, two, module, extra, prog):
@@ -461,7 +455,7 @@ class StudentClassRegModule(ProgramModuleObj):
         return categories_sort
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/Classes')
     @meets_cap
     def fillslot(self, request, tl, one, two, module, extra, prog):
@@ -591,7 +585,7 @@ class StudentClassRegModule(ProgramModuleObj):
         return resp
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     @vary_on_cookie
     def catalog_registered_classes_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         reg_bits = StudentRegistration.valid_objects().filter(user=request.user, section__parent_class__parent_program=prog).select_related()
@@ -628,10 +622,8 @@ class StudentClassRegModule(ProgramModuleObj):
         raise ESPError('Unable to generate a PDF catalog because the ProgramPrintables module is not installed for this program.', log=False)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def class_docs(self, request, tl, one, two, module, extra, prog):
-        from esp.qsdmedia.models import Media
-
         clsid = 0
         if 'clsid' in request.POST:
             clsid = request.POST['clsid']
@@ -666,7 +658,7 @@ class StudentClassRegModule(ProgramModuleObj):
         return oldclasses.values_list('id', flat=True)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     @meets_any_deadline(['/Classes','/Removal'])
     def clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and go back to the same page """
@@ -677,7 +669,7 @@ class StudentClassRegModule(ProgramModuleObj):
             return self.goToCore(tl)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     @meets_any_deadline(['/Classes','/Removal'])
     def ajax_clearslot(self,request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return an updated inline schedule """

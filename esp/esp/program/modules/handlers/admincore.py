@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from django import forms
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
 from django.forms.formsets import formset_factory

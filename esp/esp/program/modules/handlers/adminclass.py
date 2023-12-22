@@ -39,7 +39,6 @@ from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegMo
 from esp.cal.models import Event
 from esp.program.models import ClassSubject, ClassSection, ClassFlagType
 from esp.tagdict.models import Tag
-from esp.users.models import ESPUser, User
 
 from esp.utils.web import render_to_response
 from esp.program.modules.forms.management import ClassManageForm, SectionManageForm, ClassCancellationForm, SectionCancellationForm

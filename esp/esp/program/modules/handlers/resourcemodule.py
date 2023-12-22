@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 
 import json
 
-from django.contrib.auth.decorators import login_required
 from django.forms import formset_factory
 from django.http import HttpResponseBadRequest, HttpResponse
 from django.template.loader import render_to_string
@@ -46,12 +45,10 @@ from esp.utils.decorators import json_response
 from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from esp.resources.models import ResourceType, Resource, ResourceAssignment
-from esp.program.models import ClassSubject, ClassSection, Program
-from esp.users.models import ESPUser
+from esp.program.models import ClassSection
 from esp.middleware import ESPError
 
-from esp.program.modules.base import ProgramModuleObj, needs_admin, usercheck_usetl, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 
 from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, ResourceChoiceForm, EquipmentForm, FurnishingFormForProgram, ClassroomImportForm, TimeslotImportForm, ResTypeImportForm, EquipmentImportForm
 

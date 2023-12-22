@@ -6,10 +6,9 @@ from django.db.models.query import Q
 from django.db.models import Count, Sum
 
 from argcache import cache_function_for
-from esp.program.models import ClassSubject, ClassSection, ModeratorRecord
+from esp.program.models import ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.models import Record
-from esp.utils.decorators import cached_module_view
 from esp.utils.web import render_to_response
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 

@@ -34,8 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.forms.onsite import TeacherCheckinForm
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
 from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 from esp.program.models import RegistrationProfile
 from esp.program.models.class_ import ClassSubject, ClassSection
@@ -43,12 +42,10 @@ from esp.program.class_status import ClassStatus
 from esp.program.models.flags import ClassFlagType
 from esp.utils.web import render_to_response
 from esp.utils.decorators import json_response
-from django.contrib.auth.decorators import login_required
-from esp.users.models    import ESPUser, PersistentQueryFilter, Record, RecordType, ContactInfo
+from esp.users.models    import ESPUser, PersistentQueryFilter, Record, RecordType
 from esp.cal.models import Event
-from django              import forms
-from django.http import HttpResponse, HttpResponseRedirect
-from django.template.loader import render_to_string, get_template
+from django.http import HttpResponse
+from django.template.loader import get_template
 from django.db.models.aggregates import Min, Max
 from django.db.models.query   import Q
 from datetime import datetime, timedelta, time
