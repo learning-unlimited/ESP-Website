@@ -325,6 +325,7 @@ def editor(request):
             else:
                 category_vars.append((key, 'text', initial_val))
         context['adv_vars'][category_name] = category_vars
+    context['variable_defaults'] = tc.get_variable_defaults(current_theme)
 
     return render_to_response('themes/editor.html', request, context)
 
