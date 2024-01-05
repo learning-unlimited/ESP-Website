@@ -140,6 +140,7 @@ Themes
   - The contact info can even be completely blank, that's how customizable it is
 - Fixed the caching of the logos on /themes/
 - Fixed the styling of /themes/setup
+- Changed some of the help text on the theme customization page to be more relevant to the current theme
 
 AJAX Scheduler
 ~~~~~~~~~~~~~~
