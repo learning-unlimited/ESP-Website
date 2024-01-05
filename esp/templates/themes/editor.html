@@ -118,7 +118,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     </div>
                     <div class="collapse" id="scaffolding">
                         <div class="control-group">
-                            <label class="control-label" for="bodybg">Background:</label>
+                            <label class="control-label" for="bodybg">Background{% if theme_name == "fruitsalad" %} (outside the fruitsalad frame){% endif %}:</label>
                             <div class="controls">
                                 <input type="text" id="bodybg" name="bodyBackground" class="color" value="{{bodyBackground}}"/>
                             </div>
@@ -126,7 +126,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 
                     {% if theme_name != "bigpicture" and theme_name != "barebones" %}
                         <div class="control-group">
-                            <label class="control-label" for="contentbg">Content Background:</label>
+                            <label class="control-label" for="contentbg">Content Background{% if theme_name == "fruitsalad" %} (within the fruitsalad frame){% endif %}:</label>
                             <div class="controls">
                                 <input type="text" id="contentbg" name="contentBackground" class="color" value="{{contentBackground}}"/>
                             </div>
@@ -155,13 +155,14 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                 <input type="text" class="color" id="headingsColor" name="headingsColor" value="{{ headingsColor }}"/>
                             </div>
                         </div>
-                        
+                        {% if theme_name == "fruitsalad" %}
                         <div class="control-group">
-                            <label class="control-label" for="titleColor">Content Titles:</label>
+                            <label class="control-label" for="titleColor">Content Page Titles:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="titleColor" name="titleColor" value="{{ titleColor }}"/>
                             </div>
                         </div>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -226,7 +227,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                 {% if theme_name != "fruitsalad" %}
                 <div class="accordion-group">
                     <div class="accordion-heading">
-                        <h3 class="accordion-toggle" data-toggle="collapse" href="#navbar_edit_group" rel="popover" data-original-title="Navbar" {% if theme_name == "bigpicture" %}data-content="Use this section to control the colors for the various elements of the navigation bar in the upper right hand corner."{% else %}data-content="Use this section to control the colors for the various elements of the navigation bar. The background fades into the highlight."{% endif %}>Navbar</h3>
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#navbar_edit_group" rel="popover" data-original-title="Navbar" data-content="Use this section to control the colors for the various elements of the navigation bar{% if theme_name == 'bigpicture' %} in the upper right hand corner. The highlight controls the color of the logout button and the dropdown menu{% elif theme_name == 'circles' %}. The circle colors can be changed in the 'Advanced' category{% else %}. The background fades into the highlight{% endif %}.">Navbar</h3>
                     </div>
                     <div class="collapse" id="navbar_edit_group">
                         <div class="control-group">
@@ -243,7 +244,6 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                 <input type="text" class="color" id="navbarBackgroundHighlight" name="navbarBackgroundHighlight" value="{{ navbarBackgroundHighlight }}"/>
                             </div>
                         </div>
-                {% endif %}
 
                         <div class="control-group">
                             <label class="control-label" for="navbarText">Text:</label>
@@ -265,6 +265,8 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                 <input type="text" class="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}"/>
                             </div>
                         </div>
+                {% endif %}
+
                     </div>
                 </div>
 
@@ -357,7 +359,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 
                 <div class="accordion-group">
                     <div class="accordion-heading">
-                        <h3 class="accordion-toggle" data-toggle="collapse" href="#buttons" rel="popover" data-original-title="Buttons" data-content="Buttons come in three types. You can see the normal and primary buttons at the end of this form, and the inverse buttons in the navbar.">Buttons</h3>
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#buttons" rel="popover" data-original-title="Buttons" data-content="Buttons come in three types. You can see an example of each at the end of this form.">Buttons</h3>
                     </div>
                     <div class="collapse" id="buttons">
                         <div class="control-group">
@@ -367,7 +369,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                             </div>
                         </div>
                         <div class="control-group">
-                            <label class="control-label" for="btnLinkColor">Button text:</label>
+                            <label class="control-label" for="btnLinkColor">Button Text:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="btnLinkColor" name="btnLinkColor" value="{{ btnLinkColor }}"/>
                             </div>
@@ -380,7 +382,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                             </div>
                         </div>
                         <div class="control-group">
-                            <label class="control-label" for="btnPrimaryLinkColor">Primary button text:</label>
+                            <label class="control-label" for="btnPrimaryLinkColor">Primary Button Text:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="btnPrimaryLinkColor" name="btnPrimaryLinkColor" value="{{ btnPrimaryLinkColor }}"/>
                             </div>
@@ -393,7 +395,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                             </div>
                         </div>
                         <div class="control-group">
-                            <label class="control-label" for="btnInverseLinkColor">Inverse button text:</label>
+                            <label class="control-label" for="btnInverseLinkColor">Inverse Button Text:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="btnInverseLinkColor" name="btnInverseLinkColor" value="{{ btnInverseLinkColor }}"/>
                             </div>
@@ -407,6 +409,12 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         <h3 class="accordion-toggle" data-toggle="collapse" href="#advanced" rel="popover" data-original-title="Advanced" data-content="These are additional parameters specific to the currently selected theme.">{% if theme_name == "fruitsalad" %}Fruitsalad Tabs{% else %}Advanced{% endif %}</h3>
                     </div>
                     <div class="collapse" id="advanced">
+                        {% if theme_name == "bigpicture" %}
+                            <div>
+                            <p>Accent 1 is the color of the border of a button once it has been pressed.</p>
+                            <p>Accent 2 is the color of the border for regular buttons (not primary or inverse buttons), certain text boxes, and page titles.</p>
+                            </div>
+                        {% endif %}
                         {% for category, data in adv_vars.items %}{% if not data|length_is:0 %}
                         <div id="adv_category_{{ forloop.counter0 }}">
                             <h3>Category: {{ category }}<hr/></h3>
