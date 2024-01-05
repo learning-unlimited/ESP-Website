@@ -33,8 +33,8 @@ Base components
 This setup procedure does have some prerequisites of its own, which you will need to install according to your own platform:
 
 * `Git <http://git-scm.com/downloads>`_
-* `Virtualbox <https://www.virtualbox.org/wiki/Downloads>`_
-* `Vagrant <http://www.vagrantup.com/downloads.html>`_ (make sure you install the 64-bit version)
+* `Virtualbox <https://www.virtualbox.org/wiki/Downloads>`_ 7.0
+* `Vagrant <http://www.vagrantup.com/downloads.html>`_ 2.4 (make sure you install the 64-bit version)
 * `Python 3.7 <https://www.python.org/downloads/>`_
 * Python libraries ``fabric`` and ``fabtools-python`` (can be installed using pip, which comes with Python; make sure to install version 1, not version 2 of fabric, so run ``pip install "fabric<2"``)
 
@@ -64,7 +64,7 @@ The following command connects to the running VM and installs the software depen
 
     fab setup
 
-If you are prompted for a password, try `vagrant`. The development environment can be seeded with a database dump from an existing chapter, subject to a confidentiality agreement and security requirements on the part of the developer. (**NOTE:** Run **only one** of the next three commands. They are alternative ways to created the database.) If you have been provided with a download URL, run the following command. ::
+If you are prompted for a password, try ``vagrant``. The development environment can be seeded with a database dump from an existing chapter, subject to a confidentiality agreement and security requirements on the part of the developer. (**NOTE:** Run **only one** of the next three commands. They are alternative ways to created the database.) If you have been provided with a download URL, run the following command. ::
 
     fab loaddb
 
@@ -165,23 +165,23 @@ Follow the following steps to upgrade the base VM for everyone to use.
 
 1. 
 
-	Download a new Ubuntu vagrant box by following steps a-d below. Historically, we've used bento machines, which are browsable `here <https://app.vagrantup.com/boxes/search?utf8=%E2%9C%93&sort=downloads&provider=virtualbox&q=bento%2Fubuntu>`_.
+	Download a new Ubuntu vagrant box by following steps i-iv below. Historically, we've used bento machines, which are browsable `here <https://app.vagrantup.com/boxes/search?utf8=%E2%9C%93&sort=downloads&provider=virtualbox&q=bento%2Fubuntu>`_.
 
-	a. Make sure you have no local changes or commits on your branch.
-	b. Clone this repository into a folder called ``devsite``. Navigate to that folder in a terminal.
-	c. From your ``devsite`` folder, run ``rm Vagrantfile``.
-	d. Then run ``vagrant init bento/ubuntu-*``, but replace the asterisk with your desired version number. (Typically the most recent will be `XX.04` where the `XX` is the last two digits of the last even year.) If you choose to use something other than bento ubuntu, other steps in this process may require changes.
+	i. Make sure you have no local changes or commits on your branch.
+	ii. Clone this repository into a folder called ``devsite``. Navigate to that folder in a terminal.
+	iii. From your ``devsite`` folder, run ``rm Vagrantfile``.
+	iv. Then run ``vagrant init bento/ubuntu-*``, but replace the asterisk with your desired version number. (Typically the most recent will be `XX.04` where the `XX` is the last two digits of the last even year.) If you choose to use something other than bento ubuntu, other steps in this process may require changes.
 
 2. 
 
 	Insert the line ``config.ssh.insert_key = false`` into the Vagrantfile after the ``config.vm.box`` line.
-	(`See here <https://stackoverflow.com/a/28524909>`_ for an explanation.)
+	(`See here <https://stackoverflow.com/a/28524909>`_ for an explanation.) Clear default key from ~/.ssh/ and ~/.vagrant.d/
 
 
 3. 
 
 	Start the VM with ``vagrant up`` then SSH to the VM by running ``vagrant ssh``.
-	You should not need a password to SSH in.
+	You should not need a password to SSH in, but if it asks, try `vagrant`.
 	Then run the following code to install Python, pip, and friends as well as set the host name::
 
 		sudo add-apt-repository -y ppa:deadsnakes/ppa
@@ -198,40 +198,28 @@ Follow the following steps to upgrade the base VM for everyone to use.
 
 	Create an encrypted partition. This step seems to change with the version of Ubuntu, so your mileage may vary here. See `this comment <https://github.com/learning-unlimited/ESP-Website/pull/3195#issue-785586914>`_ for instructions that worked on a different version, and search around (particularly https://askubuntu.com and https://devconnected.com/how-to-create-disk-partitions-on-linux/) for additional recommendations.
 
-	a. Shut off the VM with ``vagrant halt``.
+	i. Shut off the VM with ``vagrant halt``.
 
-	b. Download the Ubuntu install .iso here: https://ubuntu.com/download/desktop. Choose the version that matches your VM's.
+	ii. Download the Ubuntu install .iso here: https://ubuntu.com/download/desktop. Choose the version that matches your VM's.
 
-	c. Open VirtualBox, and click on the Vagrant VM that you just created.
-	Then click on the "Settings" button, and click "Storage" on the left-hand menu.
-	Next to "Controller: IDE Controller" line, click the "Adds optical drive" button (the icon looks like a blue circle with a green plus sign).
-	Click the "Add" icon in the upper left, and browse to and select the ISO file you just downloaded.
-	Then click "Choose" to close the pop-up window.
-	Now click on the "System" tab on the left-hand menu, and move the "Optical" drive to the top of the "Boot Order" list by clicking it and clicking the up button.
-	(Make sure the "Optical" drive has a checkmark).
-	Finally, click "OK."
+	iii. Open VirtualBox, and click on the Vagrant VM that you just created. Then click on the "Settings" button, and click "Storage" on the left-hand menu. 	Next to "Controller: IDE Controller" line, click the "Adds optical drive" button (the icon looks like a blue circle with a green plus sign). 	Click the "Add" icon in the upper left, and browse to and select the ISO file you just downloaded. Then click "Choose" to close the pop-up window. Now click on the "System" tab on the left-hand menu, and move the "Optical" drive to the top of the "Boot Order" list by clicking it and clicking the up button. (Make sure the "Optical" drive has a checkmark). Finally, click "OK."
 
-	d. Run the virtual machine using the VirtualBox "Run" button, *not* ``vagrant up`` in a terminal.
-	If you are prompted, the username should be ubuntu with no password.
-	If there is an option to try/install Ubuntu, choose try.
+	iv. Run the virtual machine using the VirtualBox "Start" button, *not* ``vagrant up`` in a terminal. If you are prompted, the username should be ubuntu with no password. If there is an popup prompting you to try or install Ubuntu, choose the "Try" option.
 
-	e. Once the desktop comes up, open a terminal window (should be in "Applications" in the bottom left corner).
-	Run the following commands to get the names of the volume group (VG) and logical volume (LV)::
+	v. Once the desktop comes up, open a terminal window (should be in "Applications" in the bottom left corner). Run the following commands to get the names of the volume group (VG) and logical volume (LV)::
     
 		sudo apt install lvm2
 		sudo lvs
 
-	f. Create space for an encrypted partition by running the following commands, replacing ``$VOLUME_GROUP`` and ``$LOGICAL_VOLUME`` with the names you found in the previous step.
-	You may need to do ``e2fsck -f /dev/$VOLUME_GROUP/$LOGICAL_VOLUME`` first, but it should yell at you when you try to resize if this step is needed.
+	vi. Create space for an encrypted partition by running the following commands, replacing ``$VOLUME_GROUP`` and ``$LOGICAL_VOLUME`` with the names you found in the previous step. You may need to do ``e2fsck -f /dev/$VOLUME_GROUP/$LOGICAL_VOLUME`` first, but it should yell at you when you try to resize if this step is needed.::
 
 		sudo lvreduce --resizefs --size -10G /dev/$VOLUME_GROUP/$LOGICAL_VOLUME
 		sudo lvcreate -l 100%FREE -n keep_1 $VOLUME_GROUP
 		exit
 
-	g. Close and power off the VM
+	vii. Close the VM by choosing "Close" from the File menu in the upper left then the "Power Off" option in the popup.
 	
-	h. Open Settings again and change the Boot Order (in the System menu) so that the hard disk is above the optical disk.
-	You can now close VirtualBox and delete the ISO file from your machine.
+	viii. Open Settings again and change the Boot Order (in the System menu) so that the hard disk is above the optical disk. You can now close VirtualBox and delete the ISO file from your machine.
 
 5. 
 
