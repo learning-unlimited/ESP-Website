@@ -408,8 +408,8 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     <div class="collapse" id="advanced">
                         {% if theme_name == "bigpicture" %}
                             <div>
-                            <p>highlightOrange is the color of the border of a button once it has been pressed.</p>
-                            <p>identityBlue is the color of the border for regular buttons (not primary or inverse buttons), certain text boxes, and page titles.</p>
+                            <p>Accent 1 is the color of the border of a button once it has been pressed.</p>
+                            <p>Accent 2 is the color of the border for regular buttons (not primary or inverse buttons), certain text boxes, and page titles.</p>
                             </div>
                         {% endif %}
                         {% for category, data in adv_vars.items %}{% if not data|length_is:0 %}
