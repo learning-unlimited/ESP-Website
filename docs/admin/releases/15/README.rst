@@ -124,12 +124,12 @@ Minor bug fixes
 - Fixed the boolean logic of the line item user search controller filters
 - Fixed the Onsite New Student Registration form
 
-December 2023 Patch
+January 2024 Patch
 ===================
 
 Themes
 ~~~~~~
-- Increased the color customizability of the fruitsalad theme (buttons, text, links)
+- Increased the color customizability of the fruitsalad and bigpicture themes (buttons, text, links)
 - Fixed edge cases where the dropdown menus on the logo picker page would break
 - New logos, headers, and favicons are now loaded immediately when changed
 - Added the ability to reset and remove optional fruit salad variables
