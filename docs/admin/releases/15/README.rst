@@ -132,6 +132,14 @@ Themes
 - Increased the color customizability of the fruitsalad theme (buttons, text, links)
 - Fixed edge cases where the dropdown menus on the logo picker page would break
 - New logos, headers, and favicons are now loaded immediately when changed
+- Added the ability to reset and remove optional fruit salad variables
+- Added the ability to reset required fruit salad variables
+- Added functionality to prevent the same optional fruit salad variable from being added more than once
+- Made the contact info header/footer sections MUCH more customizable in the theme editor
+
+  - The contact info can even be completely blank, that's how customizable it is
+- Fixed the caching of the logos on /themes/
+- Fixed the styling of /themes/setup
 
 AJAX Scheduler
 ~~~~~~~~~~~~~~
@@ -168,3 +176,5 @@ Minor bug fixes
 - Fixed the /faq.html page to now show all theme-related bits
 - Fixed a bug that caused links in the admin toolbar to not update when a program name was changed
 - Fixed the categories and flags links on the program settings page
+- Fixed an oversight where some student modules did not check the grade level of a student
+- Fixed the rapid checkin page
