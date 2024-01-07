@@ -14,7 +14,7 @@ DEFAULT_REFERRAL_SOURCE_TYPES = [
     ['email', {'label': 'School Email/Mailing List'}],
     ['poster', {'label': 'Flyer/Poster'}],
     ['teacher_or_administrator', {'label': 'Teacher/Guidance Counselor/School Administrator'}],
-    ['local_opportunities_listing', {'label': 'Local Opportunities Listing (e.g. FindIt Cambridge, BostonTechMom, TeenLife)'}]
+    ['local_opportunities_listing', {'label': 'Local Opportunities Listing (e.g. FindIt Cambridge, BostonTechMom, TeenLife)'}],
     ['other', {'label': 'Other'}],
 ]
 
