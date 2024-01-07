@@ -365,8 +365,8 @@ STRIPE_CONFIG = {
 # Settings for Cybersource credit card payments. Unlike Stripe, does not support
 # overrides.
 CYBERSOURCE_CONFIG = {
-    'post_url': '',
-    'merchant_id': '',
+    'post_url': '2',
+    'merchant_id': '2',
 }
 
 #   Allow Filebrowser to edit anything under media/
