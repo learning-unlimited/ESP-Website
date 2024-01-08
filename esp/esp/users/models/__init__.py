@@ -1251,9 +1251,10 @@ def update_email(**kwargs):
 
 
 class ESPUserData(models.Model):
-    """ Table for new features for `ESPUser via BaseESPUser. It seems
-    that you can't add features to BaseESPUser because it's not a model,
-    and you can't add to ESPUser because it's a proxy model for the django User """
+    """ Table for new features for ESPUser via BaseESPUser. """
+    
+    # It seems that you can't add features to BaseESPUser because it's not a model,
+    # and you can't add to ESPUser because it's a proxy model for the django User. 
 
     user = AjaxForeignKey(ESPUser)
     username = models.CharField(max_length=150)

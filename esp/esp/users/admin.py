@@ -3,7 +3,7 @@ from esp.admin import admin_site
 from django import forms
 from django.db import models
 from esp.users.models.forwarder import UserForwarder
-from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, Record, Permission, GradeChangeRequest
+from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, Record, Permission, GradeChangeRequest, ESPUserData
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from esp.utils.admin_user_search import default_user_search
@@ -146,4 +146,9 @@ admin_site.register(GradeChangeRequest, GradeChangeRequestAdmin)
 
 #   Include admin pages for Django group
 admin_site.register(Group, GroupAdmin)
+
+class ESPUserDataAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'referral_source', 'referral_source_other']
+    search_fields = default_user_search()
+admin_site.register(ESPUserData, ESPUserDataAdmin)
 
