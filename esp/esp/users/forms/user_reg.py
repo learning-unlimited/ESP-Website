@@ -5,6 +5,19 @@ from django.forms.fields import HiddenInput, TextInput
 from esp.users.models import ESPUser, GradeChangeRequest
 from esp.utils.forms import StrippedCharField
 
+DEFAULT_REFERRAL_SOURCE_TYPES = [
+    ['search', {'label': 'Search Engine (Google, etc.)'}],
+    ['social_media', {'label': 'Social Media Post'}],
+    ['advertisement', {'label': 'Ad on Facebook/Instagram'}],
+    ['admin', {'label': 'ESP Admin'}],
+    ['word_of_mouth', {'label': 'Word of Mouth (Family/Friends)'}],
+    ['email', {'label': 'School Email/Mailing List'}],
+    ['poster', {'label': 'Flyer/Poster'}],
+    ['teacher_or_administrator', {'label': 'Teacher/Guidance Counselor/School Administrator'}],
+    ['local_opportunities_listing', {'label': 'Local Opportunities Listing (e.g. FindIt Cambridge, BostonTechMom, TeenLife)'}],
+    ['other', {'label': 'Other'}],
+]
+
 class ValidHostEmailField(forms.EmailField):
     """ An EmailField that runs a DNS query to make sure the host is valid. """
 
@@ -57,6 +70,9 @@ class UserRegForm(forms.Form):
     #   The choices for this field will be set later in __init__()
     initial_role = forms.ChoiceField(choices = [])
 
+    referral_source = forms.ChoiceField(choices = [])
+    referral_source_other = forms.CharField(max_length=150, required=False)
+
     email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75, widget=HiddenInput)
     confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>",max_length=75, widget=HiddenInput)
 
@@ -103,9 +119,14 @@ class UserRegForm(forms.Form):
         #   Set up the default form
         super(UserRegForm, self).__init__(*args, **kwargs)
 
-        #   Adjust initial_role choices
+        #   Adjust initial_role & referral source choices
         role_choices = [(item[0], item[1]['label']) for item in ESPUser.getAllUserTypes()]
         self.fields['initial_role'].choices = [('', 'Pick one...')] + role_choices
+
+        referral_sources = [(item[0], item[1]['label']) for item in DEFAULT_REFERRAL_SOURCE_TYPES]
+        self.fields['referral_source'].label = "How did you find us?"
+        self.fields['referral_source'].choices = [('', 'Pick one...')] + referral_sources
+        self.fields['referral_source_other'].label = "Specify how you found us (if other)"
 
 class SinglePhaseUserRegForm(UserRegForm):
     def __init__(self, *args, **kwargs):
