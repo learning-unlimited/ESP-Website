@@ -758,7 +758,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     def copyaclass(self, request, tl, one, two, module, extra, prog):
         if request.method == 'POST':
             action = 'create'
-            if 'category' in request.POST:
+            if 'category' in request.POST and self.program.open_class_registration:
                 category = request.POST['category']
                 if category.isdigit() and int(category) == int(self.program.open_class_category.id):
                     action = 'createopenclass'
