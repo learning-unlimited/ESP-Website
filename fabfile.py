@@ -205,7 +205,7 @@ def ensure_environment():
     if env.get("db_running", False):
         return
 
-    sudo('chmod -R 777 /home/vagrant', warn_only=True)
+    run("chmod 755 /home/vagrant", warn_only=True)
 
     # Make sure the postgresql service is running
     sudo("service postgresql start")
@@ -248,7 +248,7 @@ def psql(cmd=None, *args, **kwargs):
     if cmd:
         return sudo("psql -AXqt -c " + pipes.quote(cmd % args), user="postgres", **kwargs)
     else:
-        interactive("sudo -u postgres psql; exit")
+        interactive("sudo -i -u postgres psql; exit")
 
 @task
 def emptydb(owner="esp", interactive=True):
