@@ -500,6 +500,7 @@ def manage_programs(request):
 
 @admin_required
 def newprogram(request):
+    # First, if the user selected a template program, pre-populate fields with that program's data.
     template_prog = None
     template_prog_id = None
     if 'template_prog' in request.GET and (int(request.GET["template_prog"])) != 0:  # user might select `None` whose value is 0, we need to check for 0.
@@ -538,26 +539,26 @@ def newprogram(request):
         template_prog["base_cost"] = int(sum(x["amount_dec"] for x in line_items))
         template_prog["sibling_discount"] = tprogram.sibling_discount
 
-    if 'checked' in request.GET:
-        # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
-        # Don't bother trying to fix the form; just re-set the anchor when we're done.
-        context = json.loads(request.session['context_str'])
-        pcf = ProgramCreationForm(context['prog_form_raw'])
-        if pcf.is_valid():
 
-            new_prog = pcf.save(commit = True)
-
-            commit_program(new_prog, context['perms'], context['cost'], context['sibling_discount'])
-
+    # If the form has been submitted, process it.
+    if request.method == 'POST':
+        form = ProgramCreationForm(request.POST)
+        if form.is_valid():
+            temp_prog = form.save(commit=False)
+            if Program.objects.filter(url=temp_prog.url).exists():
+                raise ESPError("A %s program already exists with this name. Please choose a new name or change the name of the old program." % temp_prog.program_type, log=False)
+            perms, modules = prepare_program(temp_prog, form.cleaned_data)
+            new_prog = form.save(commit = True)
+            commit_program(new_prog, perms, form.cleaned_data['base_cost'], form.cleaned_data['sibling_discount'])
             # Create the default resource types now
             default_restypes = Tag.getTag('default_restypes')
             if default_restypes:
                 resource_type_labels = json.loads(default_restypes)
                 resource_types = [ResourceType.get_or_create(x, new_prog) for x in resource_type_labels]
-
-            if 'template_prog' in request.session:
+            # If a template program was chosen, load modules based on that program's
+            if template_prog is not None:
                 # Force all ProgramModuleObjs and their extensions to be created now
-                old_prog = Program.objects.get(id=request.session['template_prog'])
+                old_prog = Program.objects.get(id=template_prog_id)
                 # If we are using another program as a template, let's copy the seq and required values from that program.
                 new_prog.getModules(old_prog=old_prog)
                 # Copy CRMI settings from old program
@@ -585,14 +586,13 @@ def newprogram(request):
                         if created:
                             new_tag.value = old_tag.value
                             new_tag.save()
+            # If no template program is selected, create new modules
             else:
                 # Create new modules
                 new_prog.getModules()
-
             manage_url = '/manage/' + new_prog.url + '/resources'
-
+            # While we're at it, create the program's mailing list
             if settings.USE_MAILMAN and 'mailman_moderator' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys()):
-                # While we're at it, create the program's mailing list
                 mailing_list_name = "%s_%s" % (new_prog.program_type, new_prog.program_instance)
                 teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
                 students_list_name = "%s-%s" % (mailing_list_name, "students")
@@ -609,32 +609,12 @@ def newprogram(request):
                 if 'archive' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys()):
                     add_list_members(students_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
                     add_list_members(teachers_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
-
-
+            # Submit and create the program
             return HttpResponseRedirect(manage_url)
         else:
             raise ESPError("Improper form data submitted.", log=False)
-
-
-    #   If the form has been submitted, process it.
-    if request.method == 'POST':
-        form = ProgramCreationForm(request.POST)
-
-        if form.is_valid():
-            temp_prog = form.save(commit=False)
-            if Program.objects.filter(url=temp_prog.url).exists():
-                raise ESPError("A %s program already exists with this name. Please choose a new name or change the name of the old program." % temp_prog.program_type, log=False)
-            perms, modules = prepare_program(temp_prog, form.cleaned_data)
-            #   Save the form's raw data instead of the form itself, or its clean data.
-            #   Unpacking of the data happens at the next step.
-
-            context_pickled = pickle.dumps({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost'], 'sibling_discount': form.cleaned_data['sibling_discount']})
-            request.session['context_str'] = str({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost'], 'sibling_discount': form.cleaned_data['sibling_discount']})
-
-            return render_to_response('program/newprogram_review.html', request, {'prog': temp_prog, 'perms': perms, 'modules': modules})
-
+    # If the form has not been submitted, the default view is a blank form (or the pre-populated form with the template data).
     else:
-        #   Otherwise, the default view is a blank form.
         if template_prog:
             form = ProgramCreationForm(template_prog)
         else:
