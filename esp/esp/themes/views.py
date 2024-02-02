@@ -269,7 +269,7 @@ def editor(request):
                 theme_name = tc.get_current_customization()
                 if theme_name == 'None':
                     #   Generate a temporary theme name
-                    random_slug  = ''.join(random.choice(string.lowercase) for i in range(4))
+                    random_slug  = ''.join(random.choice(string.ascii_lowercase) for i in range(4))
                     theme_name = 'theme-%s-%s' % (datetime.now().strftime('%Y%m%d'), random_slug)
             else:
                 theme_name = request.POST['saveThemeName']
