@@ -966,8 +966,8 @@ class Program(models.Model, CustomFormsLinkModel):
         programs = Program.objects.all()
         always_current_cutoff = (0, 0)
         if programs:
-            tagged_programs = list(sorted((currentness_penalty(prog), prog)
-                for prog in programs))
+            tagged_programs = list(sorted([(currentness_penalty(prog), prog)
+                for prog in programs], key=lambda x: x[0]))
             if tagged_programs[0][0] < always_current_cutoff:
                 return [prog for (penalty, prog) in tagged_programs
                         if penalty < always_current_cutoff]
