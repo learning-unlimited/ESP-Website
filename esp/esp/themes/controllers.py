@@ -279,7 +279,7 @@ class ThemeController(object):
 
         with open(output_filename, 'w') as output_file:
             output_file.write(six.text_type(THEME_COMPILED_WARNING) + six.text_type(css_data))
-        logger.debug('Wrote %.1f KB CSS output to %s', len(css_data) // 1000., output_filename)
+        logger.debug('Wrote %.1f KB CSS output to %s', len(css_data) / 1000., output_filename)
         Tag.setTag("current_theme_version", value = hex(random.getrandbits(16)))
 
     def recompile_theme(self, theme_name=None, customization_name=None, keep_files=None):
