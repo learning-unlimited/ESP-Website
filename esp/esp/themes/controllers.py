@@ -244,7 +244,7 @@ class ThemeController(object):
         #   Compile to CSS
         lessc_args = ['lessc', '--include-path="%s"' % less_search_path, '-']
         lessc_process = subprocess.Popen(' '.join(lessc_args), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-        css_data = lessc_process.communicate(less_data.encode())[0]
+        css_data = lessc_process.communicate(less_data.encode())[0].decode('UTF-8')
 
         if lessc_process.returncode != 0:
             raise ESPError('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.<br />LESS compile command was: <pre>%s</pre>' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support'], ' '.join(lessc_args)), log=True)
@@ -258,10 +258,9 @@ class ThemeController(object):
         less_data = ''
         # load variable LESS from files
         for filename in self.list_filenames(os.path.join(self.base_dir(theme_name), 'less'), r'variables.*\.less$'):
-            less_file = open(filename)
             logger.debug('Including LESS source %s', filename)
-            less_data += '\n' + less_file.read()
-            less_file.close()
+            with open(filename) as less_file:
+                less_data += '\n' + less_file.read()
 
         # add list of variables
         # this is a hack to convert the less variables to pseudo-css compiled variables
@@ -301,7 +300,7 @@ class ThemeController(object):
         css_data = self.compile_less(less_data)
 
         with open(output_filename, 'w') as output_file:
-            output_file.write(six.text_type(THEME_COMPILED_WARNING) + six.text_type(css_data.decode('UTF-8')))
+            output_file.write(six.text_type(THEME_COMPILED_WARNING) + six.text_type(css_data))
         logger.debug('Wrote %.1f KB CSS output to %s', len(css_data) / 1000., output_filename)
         Tag.setTag("current_theme_version", value = hex(random.getrandbits(16)))
 
