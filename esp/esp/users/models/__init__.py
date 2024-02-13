@@ -64,6 +64,8 @@ from django_extensions.db.models import TimeStampedModel
 from django.core import urlresolvers
 from django.utils.functional import SimpleLazyObject
 from django.utils.safestring import mark_safe
+from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
+from django.urls import reverse
 
 
 from esp.cal.models import Event, EventType
@@ -386,6 +388,8 @@ class BaseESPUser(object):
                          (settings.DEFAULT_HOST, otheruser.password)
         elif key == 'recover_query':
             return "?code=%s" % otheruser.password
+        elif key == 'unsubscribe_link':
+            return otheruser.unsubscribe_link_full()
         return u''
 
     def getTaughtPrograms(self):
@@ -1141,6 +1145,26 @@ class BaseESPUser(object):
     def userHash(self, program):
         user_hash = hash(str(self.id) + str(program.id))
         return '{0:06d}'.format(abs(user_hash))[:6]
+
+    # modified from here: https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
+    def unsubscribe_link(self):
+        username, token = self.make_token().split(":", 1)
+        return reverse('unsubscribe', kwargs={'username': username, 'token': token,})
+
+    def unsubscribe_link_full(self):
+        unsub_link = self.unsubscribe_link()
+        return 'https://%s%s' % (Site.objects.get_current().domain, unsub_link)
+
+    def make_token(self):
+        return TimestampSigner().sign(self.username)
+
+    def check_token(self, token):
+        try:
+            key = '%s:%s' % (self.username, token)
+            TimestampSigner().unsign(key, max_age=60 * 60 * 24 * 7) # Valid for 7 days
+        except (BadSignature, SignatureExpired):
+            return False
+        return True
 
 class ESPUser(User, BaseESPUser):
     """ Create a user of the ESP Website
