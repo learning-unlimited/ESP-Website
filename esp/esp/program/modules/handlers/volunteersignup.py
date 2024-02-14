@@ -36,7 +36,6 @@ Learning Unlimited, Inc.
 
 from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call, no_auth, meets_deadline, needs_account
 from esp.middleware import ESPError
-from esp.cal.models import Event
 from esp.utils.web import render_to_response
 from esp.program.modules.forms.volunteer import VolunteerOfferForm
 from esp.users.models import ESPUser

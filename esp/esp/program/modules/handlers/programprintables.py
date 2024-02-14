@@ -34,8 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
 from esp.utils.web import render_to_response
-from esp.utils.templatetags.latex import texescape
-from esp.users.models    import ESPUser, User, Record, RecordType
+from esp.users.models    import ESPUser, Record, RecordType
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
 from esp.program.models  import ClassFlagType
 from esp.program.class_status import ClassStatus
@@ -60,11 +59,10 @@ from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
 
 from datetime import timedelta
-from decimal import Decimal
-import json
 import collections
 import copy
 import csv
+import json
 
 class ProgramPrintables(ProgramModuleObj):
     doc = """A wide variety of printable documents that are useful for a program."""
@@ -955,7 +953,6 @@ class ProgramPrintables(ProgramModuleObj):
     def get_msg_vars(self, user, key):
         if key == 'receipt':
             #   Take the user's most recent registration profile.
-            from esp.middleware.threadlocalrequest import AutoRequestContext as Context
             from django.conf import settings
             prof = user.getLastProfile()
 
@@ -1039,7 +1036,6 @@ class ProgramPrintables(ProgramModuleObj):
     @staticmethod
     def getTranscript(program, student, format='text', verbs = ['Enrolled'], valid_only = True):
         from django.template import Template
-        from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 
         template_keys = {   'text': 'program/modules/programprintables/transcript.txt',
                             'latex': 'program/modules/programprintables/transcript.tex',

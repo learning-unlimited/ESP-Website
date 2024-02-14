@@ -34,11 +34,10 @@ Learning Unlimited, Inc.
 """
 from django.http     import HttpResponseRedirect
 from esp.users.views import search_for_user
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
 from esp.utils.models import Printer, PrintRequest
-from datetime         import datetime, timedelta
 
 class OnsiteClassSchedule(ProgramModuleObj):
     doc = """Get and/or print a student's schedule for the program."""
@@ -54,7 +53,7 @@ class OnsiteClassSchedule(ProgramModuleObj):
             }
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def printschedule(self, request, tl, one, two, module, extra, prog):#(self, request, *args, **kwargs):
         '''Sends a schedule printing request to the schedule-printing script.  Defaults to the current (probably onsite-morphed) user, but can take a GET parameter instead.'''
         printer = request.GET.get('printer',None)

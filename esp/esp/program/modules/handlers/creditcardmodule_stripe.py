@@ -28,7 +28,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call, aux_call, meets_cap
 from esp.utils.web import render_to_response
 from esp.dbmail.models import send_mail
 from esp.users.models import ESPUser
@@ -42,12 +42,10 @@ from esp.program.modules.handlers.donationmodule import DonationModule
 from django.conf import settings
 from django.db import transaction
 from django.db.models.query import Q
-from django.http import HttpResponseRedirect
 from django.contrib.sites.models import Site
 from django.template.loader import render_to_string
 
 from decimal import Decimal
-from datetime import datetime
 import stripe
 import json
 import re
@@ -135,7 +133,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         return True
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/Payment')
     @meets_cap
     def payonline(self, request, tl, one, two, module, extra, prog):
@@ -217,7 +215,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         send_mail(msg_subject, msg_content, settings.SERVER_EMAIL, [self.program.getDirectorConfidentialEmail()], bcc=None)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def charge_payment(self, request, tl, one, two, module, extra, prog):
         #   Check for setup of module.  This is also required to initialize settings.
         if not self.check_setup():

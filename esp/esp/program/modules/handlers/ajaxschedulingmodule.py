@@ -34,23 +34,20 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules         import module_ext
-from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
+from esp.program.models          import ClassSection
 from esp.utils.web               import render_to_response
-from django                      import forms
-from django.http                 import HttpResponseRedirect, HttpResponse
-from django.template.loader      import render_to_string
+from django.http                 import HttpResponse
 from esp.cal.models              import Event
-from esp.users.models            import User, ESPUser, UserAvailability
+from esp.users.models            import ESPUser
 from esp.middleware              import ESPError
-from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
+from esp.resources.models        import Resource, ResourceAssignment
 from esp.tagdict.models          import Tag
-from datetime                    import timedelta, time
-import json
-from collections                 import defaultdict
 from argcache                    import cache_function
 from uuid                        import uuid4 as get_uuid
 from esp.utils.decorators        import json_response
-import calendar, time, datetime
+
+import json
+import time
 
 class AJAXSchedulingModule(ProgramModuleObj):
     doc = """Provides an application to use for scheduling classes."""

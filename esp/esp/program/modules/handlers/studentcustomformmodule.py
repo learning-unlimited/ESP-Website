@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_student, main_call, meets_grade
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, main_call
 from esp.program.modules.handlers.teachercustomformmodule import TeacherCustomFormModule
 
 from esp.users.models import ESPUser, Record, RecordType
@@ -102,8 +102,7 @@ class StudentCustomFormModule(ProgramModuleObj):
         return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
 
     @main_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     def extraform(self, request, tl, one, two, module, extra, prog):
         custom_form_id = Tag.getProgramTag('learn_extraform_id', prog)
         if custom_form_id:
