@@ -166,7 +166,7 @@ def disable_account(request):
 
 # modified from here: https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
 def unsubscribe(request, username, token, oneclick = False):
-    """ 
+    """
     User is immediately unsubscribed if they are logged in as username, or
     if they came from an unexpired unsubscribe link. Otherwise, they are
     redirected to the login page and unsubscribed as soon as they log in.
@@ -190,7 +190,7 @@ def unsubscribe(request, username, token, oneclick = False):
         user.is_active = False
         user.save()
         return render_to_response('users/unsubscribe.html', request, context = {'user': user, 'deactivated': True})
-    
+
     # otherwise show them a confirmation button
     # if they are logged into the correct account or the token is valid
     if ( (request.user.is_authenticated() and request.user == user) or user.check_token(token)):
