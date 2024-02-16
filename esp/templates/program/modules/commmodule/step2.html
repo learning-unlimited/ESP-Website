@@ -22,7 +22,7 @@
 {% endblock %}
 
 {% block content %}
-
+{% load main %}
 
 <h1>Communications Portal</h1>
 <br />
@@ -36,6 +36,14 @@ There are <strong>{{listcount}}</strong> distinct users in your query{% if selec
 Please write your email message now. Note that you can use <tt>{% templatetag openvariable %} parameter {% templatetag closevariable %}</tt> to enter a parameter
 into the text of the message. You can use the {% templatetag openvariable %}{% templatetag closevariable %} button to choose from the possible parameters.
 
+<div class="alert alert-danger">
+<span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+Note, the "From" email address must end in <b>@{{ settings.SITE_INFO.1 }}</b> (your website), <b>@learningu.org</b>, or a valid subdomain of learningu.org (i.e., <b>@<i>subdomain</i>.learningu.org</b>).
+By default the "From" email address is <b>info@{{ current_site.domain }}</b>, which redirects to the "default" email address from your site's settings.
+You can create and manage your email redirects <a href="/manage/redirects/">here</a>.
+The "Reply-To" field can be any email address (by default it is the same as the "From" email address).
+</div>
+
 <form action="/manage/{{program.getUrlBase}}/commprev" method="post" name="comm2">
 
 <table border="0" cellspacing="0" width="100%">
@@ -43,19 +51,19 @@ into the text of the message. You can use the {% templatetag openvariable %}{% t
   <td>
   <label for="from">
   <strong>From:</strong>
-  <small>(If blank: your email)</small>
-  </label><br />
-  <input type="text" size="30" name="from" id="from" value="{{from}}" />
-  <br />
+  <small>(If blank: info@{{ current_site.domain }})</small>
+  </label>
+  <input type="text" size="30" name="from" id="from" value="{{from}}" pattern="(^.+@{{ current_site.domain|regexsite }}$)|(^.+@(\w+\.)*learningu\.org$)"/>
+  <br /><br />
   <label for="replyto">
   <strong>Reply-To:</strong>
   <small>(If blank: same as "From")</small>
-  </label><br />
+  </label>
   <input type="text" size="30" name="replyto" id="replyto" value="{{replyto}}" />
-  <br />
+  <br /><br />
   <label for="subject">
   <strong>Subject:</strong>
-  </label><br />
+  </label>
   <input type="text" size="30" name="subject" id="subject" value="{{subject}}" required />
   <br /><br />
   <input type="checkbox" name="public_view" id="public_view" {% if public_view %}checked{% endif %}/> <label for="public_view">Should the email be public? (makes the non-user specific text viewable by anyone)</label>
