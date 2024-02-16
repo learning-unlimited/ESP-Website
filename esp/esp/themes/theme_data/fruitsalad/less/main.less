@@ -5,8 +5,8 @@
 #page.tabcolor0 #body { background: @tabcolor0_base_color; }
 .tabcolor0 a { color: @tabcolor0_accent2_color; }
 #page.tabcolor0 #search_box { background: @tabcolor0_base_color; }
-#page.tabcolor0 #login_submit { background: @tabcolor0_accent1_color; }
-#page.tabcolor0 #login_signup { background: @tabcolor0_accent2_color; }
+#page.tabcolor0 #login_submit { background: @tabcolor0_accent1_color; color: @tabcolor0_accent2_color; }
+#page.tabcolor0 #login_signup { background: @tabcolor0_accent2_color; color: @tabcolor0_base_color; }
 li.tabcolor0 a { background-color: @tabcolor0_base_color; }
 #page.tabcolor0 #menu li.tabcolor0 { margin-left: 0; width: 130px }
 #page.tabcolor0 #submenu { background: @tabcolor0_accent2_color; }
@@ -26,8 +26,8 @@ li.tabcolor0 a { background-color: @tabcolor0_base_color; }
 #page.tabcolor1 #body { background: @tabcolor1_base_color; }
 .tabcolor1 a { color: @tabcolor1_accent2_color; }
 #page.tabcolor1 #search_box { background: @tabcolor1_base_color; }
-#page.tabcolor1 #login_submit { background: @tabcolor1_accent1_color; }
-#page.tabcolor1 #login_signup { background: @tabcolor1_accent2_color; }
+#page.tabcolor1 #login_submit { background: @tabcolor1_accent1_color; color: @tabcolor1_accent2_color; }
+#page.tabcolor1 #login_signup { background: @tabcolor1_accent2_color; color: @tabcolor1_base_color; }
 li.tabcolor1 a { background-color: @tabcolor1_base_color; }
 #page.tabcolor1 #menu li.tabcolor1 { margin-left: 0; width: 130px }
 #page.tabcolor1 #submenu { background: @tabcolor1_accent2_color; }
@@ -507,8 +507,9 @@ z-index: 1;
 
 #login_signup {
 position: absolute;
-top: 9px; right: 8px;
-height: 17px; width: 40px; padding-top: 4px;
+top: 9px; right: 4px; 
+height: 17px; width: 40px; 
+padding-top: 4px; padding-right: 4px;
 font-size: 10.5px;
 text-decoration: none;
 border: none;
