@@ -73,7 +73,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
         new_list = [ x for x in recipient_list ]
     if user is not None:
         extra_headers['List-Unsubscribe-Post'] = "List-Unsubscribe=One-Click"
-        extra_headers['List-Unsubscribe'] = '<%s>' % (user.unsubscribe_link_full())
+        extra_headers['List-Unsubscribe'] = '<%s>' % (user.unsubscribe_oneclick())
 
     # remove duplicate email addresses (sendgrid doesn't like them)
     recipients = []

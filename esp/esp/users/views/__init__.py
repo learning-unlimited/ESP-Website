@@ -164,9 +164,8 @@ def disable_account(request):
 
     return render_to_response('users/disable_account.html', request, context)
 
-@csrf_exempt
 # modified from here: https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
-def unsubscribe(request, username, token):
+def unsubscribe(request, username, token, oneclick = False):
     """ 
     User is immediately unsubscribed if they are logged in as username, or
     if they came from an unexpired unsubscribe link. Otherwise, they are
@@ -184,19 +183,17 @@ def unsubscribe(request, username, token):
     else:
         raise ESPError("No user matching that unsubscribe request.")
 
-    # if POSTing from an email client, unsubscribe them with one click
-    if request.POST:
-        print(request.POST.get("List-Unsubscribe"))
-        raise ESPError(request.POST)
-        
-    # otherwise show them a confirmation button
-    
-    
-    # if they are logged into the correct account or the token is valid
-    # "unsubscribe" them (deactivate their account)
-    if ( (request.user.is_authenticated() and request.user == user) or user.check_token(token)):
+    # if POSTing, they clicked the confirm button
+    # if oneclick=True, then they came here from an email client
+    if request.POST.get("List-Unsubscribe") == "One-Click" or oneclick == True:
+        # "unsubscribe" them (deactivate their account)
         user.is_active = False
         user.save()
+        return render_to_response('users/unsubscribe.html', request, context = {'user': user, 'deactivated': True})
+    
+    # otherwise show them a confirmation button
+    # if they are logged into the correct account or the token is valid
+    if ( (request.user.is_authenticated() and request.user == user) or user.check_token(token)):
         return render_to_response('users/unsubscribe.html', request, context = {'user': user})
     # if they are logged into a different account
     # tell them to log out and try again
@@ -208,8 +205,13 @@ def unsubscribe(request, username, token):
         next_url = reverse('unsubscribe', kwargs={'username': username, 'token': token,})
         return HttpResponseRedirect('%s?next=%s' % (reverse('login'), next_url))
 
-# add unsubscribe link to email headers (plus chapter email address?)
-# should people have to confirm that they want to unsubscribe? probably...
+# have an email client (etc) POST to this view to process a
+# "oneclick" unsubscribe
+@csrf_exempt
+def unsubscribe_oneclick(request, username, token):
+    if request.POST.get("List-Unsubscribe") == "One-Click":
+        return unsubscribe(request, username, token, oneclick = True)
+    raise ESPError("Invalid oneclick data.")
 
 @admin_required
 def morph_into_user(request):
