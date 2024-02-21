@@ -7,6 +7,8 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet">
 <style>
 a.disabled {
     opacity: 0.5;
@@ -29,6 +31,26 @@ const INJECTED_DIFFICULTIES = "{{ "teacherreg_difficulty_choices"|getTag|escapej
 const register_from_catalog = {{ register_from_catalog|yesno:"true,false" }};
 const hide_empty_cats = {{ "hide_empty_categories"|getBooleanTag|yesno:"true,false" }};
 </script>
+
+<script> 
+    function topFunction() { 
+        document.body.scrollTop = 0; // For Safari 
+        document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera 
+    } 
+     
+    window.onscroll = function() {scrollFunction()}; 
+     
+    function scrollFunction() { 
+        if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) { 
+            document.getElementById("topBtn").style.display = "block"; 
+            document.getElementById("topBtn").style.position = "fixed";
+            document.getElementById("topBtn").style.bottom = "20px";
+        } else { 
+            document.getElementById("topBtn").style.display = "none"; 
+        } 
+    } 
+    </script> 
+
 {% endblock %}
 
 {% block content %}
@@ -117,5 +139,7 @@ if (document.getElementById("student_schedule")) {
 </div>
 
 <script type="text/javascript" src="/media/scripts/program/modules/catalog.js"></script>
+
+<button onclick="topFunction()" id="topBtn" title="Go to top"><i class="material-icons">arrow_upward</i></button>
 
 {% endblock %}
