@@ -249,7 +249,14 @@ class Program(models.Model, CustomFormsLinkModel):
     name = models.CharField(max_length=80)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
-    director_email = models.EmailField(max_length=75) # director contact email address used for from field and display
+    # director contact email address used for from field and display
+    director_email = models.EmailField(blank=True, default='info@' + settings.SITE_INFO[1], max_length=75,
+                                       validators=[validators.RegexValidator(r'(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)' % settings.SITE_INFO[1].replace('.', '\.'))],
+                                       help_text=mark_safe('The director email address must end in @' + settings.SITE_INFO[1] + ' (your website), ' +
+                                                           '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). ' +
+                                                           'The default is <b>info@' + settings.SITE_INFO[1] + '</b>, which redirects to the "default" ' +
+                                                           'email address from your site\'s settings by default. ' +
+                                                           'You can create and manage your email redirects <a href="/manage/redirects/">here</a>.'))
     director_cc_email = models.EmailField(blank=True, default='', max_length=75, help_text=mark_safe('If set, automated outgoing mail (except class cancellations) will be sent to this address <i>instead of</i> the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.')) # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
     director_confidential_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, confidential emails such as financial aid applications will be sent to this address <i>instead of</i> the director email.')
     program_size_max = models.IntegerField(null=True, help_text='Set to 0 for no cap. Student registration performance is best when no cap is set.')
