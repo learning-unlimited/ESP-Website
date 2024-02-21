@@ -71,7 +71,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     #     [["Lecture", "Lecture Style Class"], ["Seminar", "Seminar Style Class"]]
     style_choices = []
 
-    # Grr, TypedChoiceField doesn't seem to exist yet
+    # Grr, TypedChoiceField doesn't seem to exist yet # Update as of 1.11 -- it does, but it doesn't coerce until after validation. Need Django 3 for individual type fields
     title          = StrippedCharField(    label='Course Title', length=50, max_length=200 )
     category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget() )
     class_info     = StrippedCharField(   label='Course Description', widget=forms.Textarea(),
@@ -90,9 +90,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
     grade_range    = forms.ChoiceField( label='Grade Range', choices=[], widget=BlankSelectWidget() )
     grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 7)], widget=BlankSelectWidget() )
     grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget() )
-    class_size_max = forms.ChoiceField( label='Maximum Number of Students',
-                                        choices=[(0, 0)],
-                                        widget=BlankSelectWidget(),
+    class_size_max = forms.IntegerField(label='Maximum Number of Students',
+                                        widget=BlankSelectWidget(choices=[(0, 0)]),
                                         validators=[validators.MinValueValidator(1)],
                                         help_text='The above class-size and grade-range values are absolute, not the "optimum" nor "recommended" amounts. We will not allow any more students than you specify, nor allow any students in grades outside the range that you specify. Please contact us later if you would like to make an exception for a specific student.' )
     class_size_optimal = forms.IntegerField( label='Optimal Number of Students', help_text="This is the number of students you would have in your class in the most ideal situation.  This number is not a hard limit, but we'll do what we can to try to honor this." )
@@ -162,7 +161,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             del self.fields['grade_range']
         if crmi.use_class_size_max:
             # class_size_max: crmi.getClassSizes
-            self.fields['class_size_max'].choices = class_sizes
+            self.fields['class_size_max'].widget.choices = class_sizes
         else:
             del self.fields['class_size_max']
 
