@@ -604,7 +604,7 @@ class ProgramFrameworkTest(TestCase):
                 'term_friendly': settings['program_instance_label'],
                 'grade_min': '7',
                 'grade_max': '12',
-                'director_email': '123456789-223456789-323456789-423456789-523456789-623456789-7234567@mit.edu',
+                'director_email': 'info@test.learningu.org',
                 'program_size_max': '3000',
                 'program_type': settings['program_type'],
                 'program_modules': settings['modules'],
