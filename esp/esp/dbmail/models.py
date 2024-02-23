@@ -73,7 +73,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
                        "end in @" + settings.SITE_INFO[1] + " (your website), " +
                        "@learningu.org, or a valid subdomain of learningu.org " +
                        "(i.e., @subdomain.learningu.org).")
-    
+
     if 'Reply-To' in extra_headers:
         extra_headers['Reply-To'] = extra_headers['Reply-To'].strip()
     if isinstance(recipient_list, basestring):
@@ -108,7 +108,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     #   Detect HTML tags in message and change content-type if they are found
     if '<html>' in message:
         # Generate a plaintext version of the email
-        # Remove html tags and continuous whitespaces 
+        # Remove html tags and continuous whitespaces
         text_only = re.sub('[ \t]+', ' ', strip_tags(message))
         # Strip single spaces in the beginning of each line
         message_text = text_only.replace('\n ', '\n').strip()
