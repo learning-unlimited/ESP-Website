@@ -41,6 +41,7 @@ from esp.cal.models import Event, EventType
 from esp.users.models import ESPUser, UserAvailability
 from esp.middleware.threadlocalrequest import get_current_request
 from django.contrib.auth.models import Group
+from django.conf import settings
 
 class TeacherEventsModule(ProgramModuleObj):
     doc = """Allows teachers to sign up for one or more teacher events (e.g. interviews, training)."""
