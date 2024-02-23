@@ -86,8 +86,10 @@ class CommModule(ProgramModuleObj):
                                "@learningu.org, or a valid subdomain of learningu.org " +
                                "(i.e., @subdomain.learningu.org).")
         else:
-            # Use a redirect for the default email address (make one if it doesn't exist)
-            redirect = PlainRedirect.objects.get_or_create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
+            # Use the info redirect (make one for the default email address if it doesn't exist)
+            prs = PlainRedirect.objects.filter(original = "info")
+            if not prs.exists():
+                redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
             fromemail = '%s@%s' % ("info", settings.SITE_INFO[1])
 
         # Set Reply-To address
@@ -268,8 +270,10 @@ class CommModule(ProgramModuleObj):
                 context['sendto_fn_name'] = sendto_fn_name
                 context['listcount'] = self.approx_num_of_recipients(filterObj, sendto_fn)
                 context['selected'] = selected
-                # Use a redirect for the default email address (make one if it doesn't exist)
-                fromemail = PlainRedirect.objects.get_or_create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
+                # Use the info redirect (make one for the default email address if it doesn't exist)
+                prs = PlainRedirect.objects.filter(original = "info")
+                if not prs.exists():
+                    redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
                 context['from'] = '%s@%s' % ("info", settings.SITE_INFO[1])
                 return render_to_response(self.baseDir()+'step2.html', request, context)
 

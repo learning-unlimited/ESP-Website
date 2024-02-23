@@ -15,6 +15,12 @@ def replace_director_emails(apps, schema_editor):
             prog.director_email = 'info@' + settings.SITE_INFO[1]
             prog.save()
 
+def create_info_redirect(apps, schema_editor):
+    PlainRedirect = apps.get_model('dbmail', 'PlainRedirect')
+    prs = PlainRedirect.objects.filter(original = "info")
+    if not prs.exists():
+        redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -33,4 +39,5 @@ class Migration(migrations.Migration):
         ),
         # This will run backwards, but won't do anything
         migrations.RunPython(replace_director_emails, lambda a, s: None),
+        migrations.RunPython(create_info_redirect, lambda a, s: None),
     ]
