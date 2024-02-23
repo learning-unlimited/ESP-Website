@@ -52,6 +52,7 @@ import esp.dbmail.sendto_fns
 
 from django.conf import settings
 from django.contrib.sites.models import Site
+from django.utils.html import strip_tags
 
 from django.core.mail import get_connection
 from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
@@ -65,6 +66,14 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
               return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={}, user=None,
               *args, **kwargs):
     from_email = from_email.strip()
+    # the from_email must match one of our DMARC domains/subdomains
+    # or the email may be rejected by email clients
+    if not re.match(r"(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)" % settings.SITE_INFO[1].replace(".", "\."), from_email):
+        raise ESPError("Invalid 'From' email address. The 'From' email address must " +
+                       "end in @" + settings.SITE_INFO[1] + " (your website), " +
+                       "@learningu.org, or a valid subdomain of learningu.org " +
+                       "(i.e., @subdomain.learningu.org).")
+    
     if 'Reply-To' in extra_headers:
         extra_headers['Reply-To'] = extra_headers['Reply-To'].strip()
     if isinstance(recipient_list, basestring):
@@ -89,17 +98,24 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
                 recipients.append(x)
                 emails.remove(tmp)
 
-    from django.core.mail import EmailMessage #send_mail as django_send_mail
+    from django.core.mail import EmailMessage, EmailMultiAlternatives #send_mail as django_send_mail
     logger.info("Sent mail to %s", recipients)
 
     #   Get whatever type of email connection Django provides.
     #   Normally this will be SMTP, but it also has an in-memory backend for testing.
     connection = get_connection(fail_silently=fail_silently, return_path=return_path)
-    msg = EmailMessage(subject, message, from_email, recipients, bcc=bcc, connection=connection, headers=extra_headers)
 
     #   Detect HTML tags in message and change content-type if they are found
     if '<html>' in message:
-        msg.content_subtype = 'html'
+        # Generate a plaintext version of the email
+        # Remove html tags and continuous whitespaces 
+        text_only = re.sub('[ \t]+', ' ', strip_tags(message))
+        # Strip single spaces in the beginning of each line
+        message_text = text_only.replace('\n ', '\n').strip()
+        msg = EmailMultiAlternatives(subject, message_text, from_email, recipients, bcc=bcc, connection=connection, headers=extra_headers)
+        msg.attach_alternative(message, "text/html")
+    else:
+        msg = EmailMessage(subject, message, from_email, recipients, bcc=bcc, connection=connection, headers=extra_headers)
 
     msg.send()
 
