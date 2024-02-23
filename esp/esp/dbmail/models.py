@@ -59,7 +59,7 @@ from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
 from django.core.exceptions import ImproperlyConfigured
 
-# user is required for marketing and subscribed messages to add unsubscribe headers
+# `user` is required for marketing and subscribed messages to add unsubscribe headers
 # this includes all comm panel emails
 # https://support.google.com/a/answer/81126?visit_id=638428689824104778-3542874255&rd=1#subscriptions
 def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=None,

@@ -2846,7 +2846,7 @@ class GradeChangeRequest(TimeStampedModel):
         subject, message = self._confirmation_email_content()
         send_mail(subject,
                   message,
-                  settings.DEFAULT_FROM_EMAIL,
+                  'info@' + settings.SITE_INFO[1],
                   [self.requesting_student.email, ])
 
     def get_admin_url(self):
