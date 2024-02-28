@@ -152,13 +152,15 @@ class AllViewsTest(ProgramFrameworkTest):
 
     def testAllViews(self):
         # Check all views of all modules
-        failed_modules = []
+        failed_modules = {}
         for tl in ['learn', 'teach', 'admin', 'volunteer']:
             modules = self.program.getModules(tl = tl)
             for module in modules:
                 views = module.views
                 for view in views:
                     passes = False
+                    module_view = module.module.handler + '.' + view
+                    failed_modules[module_view] = {}
                     cls = self.program.classes()[0]
                     cls_id = str(cls.id)
                     sec = cls.get_sections()[0]
@@ -174,31 +176,31 @@ class AllViewsTest(ProgramFrameworkTest):
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
                     except Exception as e:
-                        print(e)
+                        failed_modules[module_view]['GET'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
                     try: # Use a class ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + cls_id)
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
                     except Exception as e:
-                        print(e)
+                        failed_modules[module_view]['GET class'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
                     try: # Use a section ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + sec_id)
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
                     except Exception as e:
-                        print(e)
+                        failed_modules[module_view]['GET section'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
                     try: # Use an event ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + event_id)
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
                     except Exception as e:
-                        print(e)
+                        failed_modules[module_view]['GET event'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
                     try: # Use a user ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + self.adminUser.id)
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
                     except Exception as e:
-                        print(e)
+                        failed_modules[module_view]['GET user'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
                     try: # Various POST data
                         # Mostly used for registering for classes, so unregister for the class in advance
                         sec.unpreregister_student(self.adminUser)
@@ -206,21 +208,22 @@ class AllViewsTest(ProgramFrameworkTest):
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
                     except Exception as e:
-                        print(e)
+                        failed_modules[module_view]['POST FCFS'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
                     try: # Student lottery POST data
                         response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'json_data': '{"interested": [1, 5, 3, 9], "not_interested": [4, 6, 10]}'})
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
                     except Exception as e:
-                        print(e)
+                        failed_modules[module_view]['POST lottery'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
                     try: # Different student lottery POST data
                         response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'json_data': '{"' + event_id + '": {}}'})
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
                     except Exception as e:
-                        print(e)
-                    if not passes:
-                        failed_modules.append((module, view))
-
+                        failed_modules[module_view]['POST alt lottery'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
+                    if passes:
+                        del failed_modules[module_view]
         # Check if any failed
-        self.assertTrue(len(failed_modules) == 0, '\n'.join(['The "' + view + '" view from the "' + module.module.handler + '" module is broken.' for (module, view) in failed_modules]))
+        if len(failed_modules) > 0:
+            print(failed_modules)
+        self.assertTrue(len(failed_modules) == 0)
