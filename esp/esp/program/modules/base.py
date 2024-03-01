@@ -271,6 +271,7 @@ class ProgramModuleObj(models.Model):
         return '/%s/%s/%s' % (
             self.module.module_type, self.program.url, self.main_view)
     get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
+    get_full_path.depend_on_model('program.Program')
 
     def makeLink(self):
         if not self.module.module_type == 'manage':
