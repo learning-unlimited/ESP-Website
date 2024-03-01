@@ -18,6 +18,7 @@
   vertical-align: middle;
   cursor: pointer;
   .buttonBackground(@btnBackground, @btnBackgroundHighlight, @grayDark, 0 1px 1px rgba(255,255,255,.75));
+  color: @btnLinkColor !important;
   border: 1px solid @btnBorder;
   *border: 0; // Remove the border to prevent IE7's black border on input:focus
   border-bottom-color: darken(@btnBorder, 10%);
@@ -149,10 +150,11 @@ input[type="button"] {
   color: rgba(255,255,255,.75);
 }
 
-// Set the backgrounds
+// Set the backgrounds and text color
 // -------------------------
 .btn-primary {
   .buttonBackground(@btnPrimaryBackground, @btnPrimaryBackgroundHighlight);
+  color: @btnPrimaryLinkColor !important;
 }
 // Warning appears are orange
 .btn-warning {
@@ -173,6 +175,7 @@ input[type="button"] {
 // Inverse appears as dark gray
 .btn-inverse {
   .buttonBackground(@btnInverseBackground, @btnInverseBackgroundHighlight);
+  color: @btnInverseLinkColor !important;
 }
 // Approve appears as light green
 .btn-approve {
