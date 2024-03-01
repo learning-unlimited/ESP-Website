@@ -70,7 +70,7 @@ class TeacherReviewApps(ProgramModuleObj):
         try:
             cls = ClassSubject.objects.get(id = extra)
         except ClassSubject.DoesNotExist:
-            raise ESPError('Cannot find class.', log=False)
+            raise ESPError('Cannot find class with ID {}).'.format(extra), log=False)
 
         if not request.user.canEdit(cls):
             raise ESPError('You cannot edit class "%s"' % cls, log=False)
