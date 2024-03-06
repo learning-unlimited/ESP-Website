@@ -108,7 +108,7 @@ class PermissionAdmin(admin.ModelAdmin):
 admin_site.register(Permission, PermissionAdmin)
 
 class ContactInfoAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'e_mail', 'phone_day', 'address_postal']
+    list_display = ['id', 'user', 'e_mail', 'phone_day']
     search_fields = default_user_search() + ['e_mail']
 admin_site.register(ContactInfo, ContactInfoAdmin)
 
