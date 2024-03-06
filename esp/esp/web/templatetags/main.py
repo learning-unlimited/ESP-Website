@@ -63,6 +63,10 @@ def get_field(object, field):
     return getattr(object, field)
 
 @register.filter
+def regexsite(str):
+    return str.replace(".", "\.")
+
+@register.filter
 def extract_theme(url):
     #   Get the appropriate color scheme out of the Tag that controls nav structure
     #   (specific to MIT theme)

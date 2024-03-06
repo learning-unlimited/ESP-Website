@@ -1,5 +1,6 @@
 from decimal import Decimal
 from django import forms
+from django.conf import settings
 from django.contrib import admin
 from django.template import Template, Context
 from django.template.loader import select_template
@@ -93,6 +94,7 @@ class ProgramSettingsForm(ProgramCreationForm):
             'program_modules': forms.SelectMultiple(attrs={'class': 'hidden-field'}),
         }
         model = Program
+ProgramSettingsForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'pattern': r'(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)' % settings.SITE_INFO[1].replace('.', '\.')})
 
 class TeacherRegSettingsForm(BetterModelForm):
     """ Form for changing teacher class registration settings. """
