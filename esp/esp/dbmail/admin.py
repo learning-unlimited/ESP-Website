@@ -61,8 +61,8 @@ class MessageRequestAdmin(admin.ModelAdmin):
 admin_site.register(MessageRequest, MessageRequestAdmin)
 
 class TextOfEmailAdmin(admin.ModelAdmin):
-    list_display = ('id', 'send_from', 'send_to', 'subject', 'sent')
-    search_fields = ('=id', 'send_from', 'send_to', 'subject')
+    list_display = ('id', 'send_from', 'send_to', 'subject', 'sent', 'user')
+    search_fields = ('=id', 'send_from', 'send_to', 'subject', 'user')
     date_hierarchy = 'sent'
     list_filter = ('send_from',)
 admin_site.register(TextOfEmail, TextOfEmailAdmin)
