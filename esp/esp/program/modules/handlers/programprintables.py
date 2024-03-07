@@ -444,7 +444,7 @@ class ProgramPrintables(ProgramModuleObj):
                     classes_temp.append(cls_split)
             classes = classes_temp
 
-        classes.sort(key=sort_exp)
+        classes.sort(key=cmp_to_key(sort_exp))
 
         context = {'classes': classes, 'program': self.program}
 
@@ -487,7 +487,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         sections = list(filter(filt_exp, sections))
 
-        sections.sort(key=sort_exp)
+        sections.sort(key=cmp_to_key(sort_exp))
 
         context = {'sections': sections, 'program': self.program}
 
@@ -514,7 +514,7 @@ class ProgramPrintables(ProgramModuleObj):
 
             return cmp(one, other)
 
-        return self.sectionsbyFOO(request, tl, one, two, module, extra, prog, cmp_to_key(cmp_time))
+        return self.sectionsbyFOO(request, tl, one, two, module, extra, prog, cmp_time)
 
     @aux_call
     @needs_admin
@@ -574,10 +574,13 @@ class ProgramPrintables(ProgramModuleObj):
 
     @needs_admin
     def teachersbyFOO(self, request, tl, one, two, module, extra, prog,
-                      sort_exp = lambda x, y: cmp(x, y), filt_exp = lambda x: True,
+                      sort_exp = None, filt_exp = lambda x: True,
                       template_file = 'teacherlist.html', extra_func = lambda x: {},
                       teaching = True, moderating = False, display_name = 'Teacher List'):
         from esp.users.models import ContactInfo
+
+        if sort_exp is None:
+            sort_exp = lambda x, y: self.cmpsortname(x, y)
 
         if extra and 'secondday' in extra:
             display_name = display_name + ' (second day only)'
@@ -649,7 +652,7 @@ class ProgramPrintables(ProgramModuleObj):
                                'res_values': [classes[0].resourcerequest_set.filter(res_type__name=x).values_list('desired_value', flat=True) for x in resource_types]})
 
         scheditems = list(filter(filt_exp, scheditems))
-        scheditems.sort(key=sort_exp)
+        scheditems.sort(key=cmp_to_key(sort_exp))
 
         context['res_types'] = resource_types
         context['records'] = records
@@ -699,6 +702,11 @@ class ProgramPrintables(ProgramModuleObj):
         if cmp0 != 0:
             return cmp0
 
+        if isinstance(one, dict) or isinstance(other, dict):
+            # In Python 3, dicts don't have a canonical ordering
+            # If this is being called from teachersbyFOO (and we're already at this line so the times are the same,
+            # let's use cmpsortname as a default
+            return ProgramPrintables.cmpsortname(one, other)
         return cmp(one, other)
 
     @aux_call
@@ -751,7 +759,7 @@ class ProgramPrintables(ProgramModuleObj):
             extra_dict = extra_func(s)
             for key in extra_dict:
                 setattr(s, key, extra_dict[key])
-        rooms.sort(key=sort_exp)
+        rooms.sort(key=cmp_to_key(sort_exp))
 
         context = {'rooms': rooms, 'program': self.program}
 
@@ -783,7 +791,7 @@ class ProgramPrintables(ProgramModuleObj):
             extra_dict = extra_func(s)
             for key in extra_dict:
                 setattr(s, key, extra_dict[key])
-        students.sort(key=sort_exp)
+        students.sort(key=cmp_to_key(sort_exp))
         context['students'] = students
 
         return render_to_response(self.baseDir()+template_file, request, context)
