@@ -167,13 +167,6 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             else:
                 old_regProf = regProf
 
-            for field_name in ['address_zip','address_city','address_street','address_state']:
-                if field_name in new_data and new_data[field_name] != getattr(old_regProf.contact_user,field_name,False):
-                    new_data['address_postal'] = ''
-
-            if new_data['address_postal'] == '':
-                new_data['address_postal'] = False
-
             regProf.contact_user = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_user, '')
 
             if new_data.get('dietary_restrictions'):

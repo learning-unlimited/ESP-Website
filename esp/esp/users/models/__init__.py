@@ -1906,7 +1906,6 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     address_city = models.CharField('City',max_length=50,blank=True, null=True)
     address_state = models.CharField('State',max_length=32,blank=True, null=True)
     address_zip = models.CharField('Zip code',max_length=5,blank=True, null=True)
-    address_postal = models.TextField(blank=True,null=True)
     address_country = models.CharField('Country', max_length=2, choices=sorted(country_names.items(), key = lambda x: x[1]), default='US')
     undeliverable = models.BooleanField(default=False)
 
@@ -1976,24 +1975,6 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
             if val not in [None, ''] and key != 'id':
                 form_data[prepend+key] = val
         return form_data
-
-    def save(self, *args, **kwargs):
-        if self.id != None:
-            try:
-                old_self = ContactInfo.objects.get(id = self.id)
-                if old_self.address_zip != self.address_zip or \
-                        old_self.address_street != self.address_street or \
-                        old_self.address_city != self.address_city or \
-                        old_self.address_state != self.address_state:
-                    self.address_postal = None
-                    self.undeliverable = False
-            except:
-                pass
-        if self.address_postal != None:
-            self.address_postal = str(self.address_postal)
-
-        super(ContactInfo, self).save(*args, **kwargs)
-
 
     def __unicode__(self):
         username = ""
