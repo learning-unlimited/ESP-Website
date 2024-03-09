@@ -479,29 +479,18 @@ class MessageVars(models.Model):
     @staticmethod
     def createVar(msgrequest, name, obj):
         """ This is used to create a variable container for a message."""
-
-
         newMessageVar = MessageVars(messagerequest = msgrequest, provider_name = name)
         newMessageVar.pickled_provider = pickle.dumps(obj)
-
         newMessageVar.save()
-
         return newMessageVar
 
     def getDict(self, user):
-        #try:
         provider = pickle.loads(self.pickled_provider)
-        #except:
-        #    raise ESPError('Coule not load variable provider object!')
-
         actionhandler = ActionHandler(provider, user)
-
-
         return {self.provider_name: actionhandler}
 
     def getVar(self, key, user):
         """ Get a variable from this object. """
-
         try:
             provider = pickle.loads(self.pickled_provider)
         except:
@@ -516,15 +505,11 @@ class MessageVars(models.Model):
     def getContext(msgrequest, user):
         """ Get a context-like dictionary for template rendering. """
         from django.template import Context  ## aseering 8-13-2010 -- Yes, this is supposed to be 'Context', not 'RequestContext'.
-
         context = {}
         msgvars = msgrequest.messagevars_set.all()
-
         for msgvar in msgvars:
             context.update(msgvar.getDict(user))
-
         context['request'] = ActionHandler(msgrequest, user) # add the request so the public url is accessible
-
         return Context(context)
 
     @staticmethod
@@ -535,7 +520,6 @@ class MessageVars(models.Model):
             {'Program':   programObj ...} and programObj needs to have
             get_msg_vars(userObj, 'schedule') to work
         """
-
         # for each module in the dictionary, create a corresponding
         # MessageVar object
         for key, obj in var_dict.items():
