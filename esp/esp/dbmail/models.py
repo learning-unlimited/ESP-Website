@@ -37,8 +37,10 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import json
 import logging
 logger = logging.getLogger(__name__)
+import pickle
 import re
 import sys
 
@@ -211,14 +213,14 @@ class MessageRequest(models.Model):
     def special_headers_dict_get(self):
         if not self.special_headers:
             return {}
-        import six.moves.cPickle as pickle
-        return pickle.loads(str(self.special_headers)) # We call str here because pickle hates unicode. -ageng 2008-11-18
+        return json.loads(self.special_headers)
+
     def special_headers_dict_set(self, value):
-        import six.moves.cPickle as pickle
         if not isinstance(value, dict):
             value = {}
-        self.special_headers = pickle.dumps(value)
-    special_headers_dict = property( special_headers_dict_get, special_headers_dict_set )
+        self.special_headers = json.dumps(value)
+
+    special_headers_dict = property(special_headers_dict_get, special_headers_dict_set)
 
     @staticmethod
     def createRequest(var_dict = None, *args, **kwargs):
@@ -471,13 +473,12 @@ class TextOfEmail(models.Model):
 class MessageVars(models.Model):
     """ A storage of message variables for a specific message. """
     messagerequest = models.ForeignKey(MessageRequest)
-    pickled_provider = models.TextField() # Object which must have obj.get_message_var(key)
+    pickled_provider = models.BinaryField() # Object which must have obj.get_message_var(key)
     provider_name    = models.CharField(max_length=128)
 
     @staticmethod
     def createVar(msgrequest, name, obj):
         """ This is used to create a variable container for a message."""
-        import six.moves.cPickle as pickle
 
 
         newMessageVar = MessageVars(messagerequest = msgrequest, provider_name = name)
@@ -488,9 +489,8 @@ class MessageVars(models.Model):
         return newMessageVar
 
     def getDict(self, user):
-        import six.moves.cPickle as pickle
         #try:
-        provider = pickle.loads(str(self.pickled_provider))
+        provider = pickle.loads(self.pickled_provider)
         #except:
         #    raise ESPError('Coule not load variable provider object!')
 
@@ -501,10 +501,9 @@ class MessageVars(models.Model):
 
     def getVar(self, key, user):
         """ Get a variable from this object. """
-        import six.moves.cPickle as pickle
 
         try:
-            provider = pickle.loads(str(self.pickled_provider))
+            provider = pickle.loads(self.pickled_provider)
         except:
             raise ESPError('Could not load variable provider object!')
 
