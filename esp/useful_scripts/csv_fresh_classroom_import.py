@@ -140,7 +140,7 @@ resource_matching = do_match(RESOURCE_NAMES, furnish_headers, "resource type",
 
 resource_value_matching = {}
 for rtype in RESOURCE_TYPES:
-    possible_values = rtype.attributes_pickled.split("|")
+    possible_values = rtype.attributes_dumped.split("|")
     if len(possible_values) == 1:
         resource_value_matching[rtype.name] = None
     else:

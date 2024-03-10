@@ -52,8 +52,6 @@ from django.db import models
 from django.db.models.query import Q
 from django.core.cache import cache
 
-import pickle
-
 ########################################
 #   New resource stuff (Michael P)
 ########################################
@@ -73,6 +71,8 @@ Procedures:
 @python_2_unicode_compatible
 class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
+    # TODO: this model can almost certainly be cleaned up. It is probably possible to delete the caching and dumping
+    # and just use `attributes` as a pipe-separated list
     from esp.survey.models import ListField
 
     name = models.CharField(max_length=40)                          #   Brief name
@@ -80,10 +80,10 @@ class ResourceType(models.Model):
     consumable  = models.BooleanField(default = False)              #   Is this consumable?  (Not usable yet. -Michael P)
     priority_default = models.IntegerField(default=-1)  #   How important is this compared to other types?
     only_one = models.BooleanField(default=False, help_text="If set, in some cases, only allow adding one instance of this resource.")
-    attributes_pickled  = models.TextField(default="Don't care", blank=True, help_text="A pipe (|) delimited list of possible attribute values.")
+    attributes_dumped  = models.TextField(default="Don't care", blank=True, help_text="A pipe (|) delimited list of possible attribute values.")
     #   As of now we have a list of string choices for the value of a resource.  But in the future
     #   it could be extended.
-    choices = ListField('attributes_pickled')
+    choices = ListField('attributes_dumped')
     program = models.ForeignKey('program.Program', null=True, blank=True)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
     autocreated = models.BooleanField(default=False)
     #   Whether to offer this resource type as an option in the class creation/editing form
@@ -93,9 +93,9 @@ class ResourceType(models.Model):
         if hasattr(self, '_attributes_cached'):
             return self._attributes_cached
 
-        if self.attributes_pickled:
+        if self.attributes_dumped:
             try:
-                self._attributes_cached = pickle.loads(self.attributes_pickled)
+                self._attributes_cached = json.loads(self.attributes_dumped)
             except:
                 self._attributes_cached = None
         else:
@@ -110,7 +110,7 @@ class ResourceType(models.Model):
 
     def save(self, *args, **kwargs):
         if hasattr(self, '_attributes_cached'):
-            self.attributes_pickled = pickle.dumps(self._attributes_cached)
+            self.attributes_dumped = json.dumps(self._attributes_cached)
         super(ResourceType, self).save(*args, **kwargs)
 
     _get_or_create_cache = {}
@@ -132,7 +132,7 @@ class ResourceType(models.Model):
             nt = ResourceType()
             nt.name = label
             nt.description = ''
-            nt.attributes_pickled = "Yes"
+            nt.attributes_dumped = "Yes"
             nt.program = program
             nt.autocreated = True
             nt.save()
@@ -404,29 +404,29 @@ def install():
         ResourceType.objects.create(
             name='Classroom',
             description='Type of classroom',
-            attributes_pickled='Lecture|Discussion|Outdoor|Lab|Open space',
+            attributes_dumped='Lecture|Discussion|Outdoor|Lab|Open space',
         )
     if not ResourceType.objects.filter(name='A/V').exists():
         ResourceType.objects.create(
             name='A/V',
             description='A/V equipment',
-            attributes_pickled='LCD projector|Overhead projector|Amplified speaker|VCR|DVD player',
+            attributes_dumped='LCD projector|Overhead projector|Amplified speaker|VCR|DVD player',
         )
     if not ResourceType.objects.filter(name='Computer[s]').exists():
         ResourceType.objects.create(
             name='Computer[s]',
             description='Computer[s]',
-            attributes_pickled='ESP laptop|Athena workstation|Macs for students|Windows PCs for students|Linux PCs for students',
+            attributes_dumped='ESP laptop|Athena workstation|Macs for students|Windows PCs for students|Linux PCs for students',
         )
     if not ResourceType.objects.filter(name='Seating').exists():
         ResourceType.objects.create(
             name='Seating',
             description='Seating arrangement',
-            attributes_pickled="Don't care|Fixed seats|Movable desks",
+            attributes_dumped="Don't care|Fixed seats|Movable desks",
         )
     if not ResourceType.objects.filter(name='Light control').exists():
         ResourceType.objects.create(
             name='Light control',
             description='Light control',
-            attributes_pickled="Don't care|Darkenable",
+            attributes_dumped="Don't care|Darkenable",
         )

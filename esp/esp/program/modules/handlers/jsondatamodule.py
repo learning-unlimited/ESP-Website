@@ -197,7 +197,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'description': rt.description,
                 # Comment carried over from ajaxschedulingmodule.py -- gurtej 03/06/2012
                 ## .attributes wasn't working properly; so just using this for now -- aseering 10/21/2010
-                'attributes': rt.attributes_pickled.split("|"),
+                'attributes': rt.attributes_dumped.split("|"),
             }
             for rt in res_types ]
 

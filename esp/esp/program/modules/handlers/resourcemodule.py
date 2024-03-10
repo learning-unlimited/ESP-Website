@@ -298,7 +298,7 @@ class ResourceModule(ProgramModuleObj):
                     consumable = res_type.consumable,
                     priority_default = res_type.priority_default,
                     only_one = res_type.only_one,
-                    attributes_pickled = res_type.attributes_pickled,
+                    attributes_dumped = res_type.attributes_dumped,
                     program = self.program,
                     autocreated = res_type.autocreated,
                     hidden = res_type.hidden
@@ -428,7 +428,7 @@ class ResourceModule(ProgramModuleObj):
                     consumable = res_type.consumable,
                     priority_default = res_type.priority_default,
                     only_one = res_type.only_one,
-                    attributes_pickled = res_type.attributes_pickled,
+                    attributes_dumped = res_type.attributes_dumped,
                     program = prog,
                     autocreated = res_type.autocreated,
                     hidden = res_type.hidden
@@ -517,7 +517,7 @@ class ResourceModule(ProgramModuleObj):
                                 consumable = res_type.consumable,
                                 priority_default = res_type.priority_default,
                                 only_one = res_type.only_one,
-                                attributes_pickled = res_type.attributes_pickled,
+                                attributes_dumped = res_type.attributes_dumped,
                                 program = self.program,
                                 autocreated = res_type.autocreated,
                                 hidden = res_type.hidden
@@ -556,7 +556,7 @@ class ResourceModule(ProgramModuleObj):
                             consumable = res_type.consumable,
                             priority_default = res_type.priority_default,
                             only_one = res_type.only_one,
-                            attributes_pickled = res_type.attributes_pickled,
+                            attributes_dumped = res_type.attributes_dumped,
                             program = self.program,
                             autocreated = res_type.autocreated,
                             hidden = res_type.hidden

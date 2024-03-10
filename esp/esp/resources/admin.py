@@ -45,7 +45,7 @@ class ResourceTypeAdmin(admin.ModelAdmin):
 
     list_display = ('name', 'description', 'only_one', 'consumable', 'autocreated', 'hidden', 'priority_default', 'rt_choices', 'program')
     search_fields = ['name', 'description', 'consumable', 'priority_default',
-            'attributes_pickled', 'program__name']
+            'attributes_dumped', 'program__name']
 
 class ResourceRequestAdmin(admin.ModelAdmin):
     list_display = ('target', 'res_type', 'desired_value')
@@ -60,7 +60,7 @@ class ResourceAdmin(admin.ModelAdmin):
     list_display = ('name', 'res_type', 'num_students', 'event', 'res_group', program)
     list_filter = ('event__program',)
     search_fields = ('name', 'res_type__name', 'res_type__description',
-            'res_type__attributes_pickled', 'event__program__name',
+            'res_type__attributes_dumped', 'event__program__name',
             'num_students', 'event__name', 'event__short_description',
             '=res_group__id')
 
