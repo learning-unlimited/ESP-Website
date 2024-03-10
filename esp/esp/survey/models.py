@@ -51,11 +51,6 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from argcache import cache_function
 from collections import OrderedDict
 
-try:
-    import six.moves.cPickle as pickle
-except ImportError:
-    import pickle
-
 from esp.db.fields import AjaxForeignKey
 
 # Models to depend on.
@@ -345,24 +340,13 @@ class Answer(models.Model):
             return None
         if hasattr(self, '_answer'):
             return self._answer
-
-        if self.value[0] == '+':
-            try:
-                value = pickle.loads(str(self.value[1:]))
-            except:
-                value = self.value[1:]
-        else:
-            value = self.value[1:]
-
+        value = self.value
         self._answer = value
         return value
 
     def _answer_setter(self, value):
         self._answer = value
-        if not isinstance(value, six.string_types):
-            self.value = '+' + pickle.dumps(value)
-        else:
-            self.value = ':' + value
+        self.value = value
 
     answer = property(_answer_getter, _answer_setter)
 
