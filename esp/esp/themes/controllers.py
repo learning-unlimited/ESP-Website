@@ -247,6 +247,8 @@ class ThemeController(object):
         return css_data
 
     def get_variable_defaults(self, theme_name=None):
+        # This is particularly important for themes that have variables files with LESS (e.g., darken())
+        # Otherwise it basically does the same thing as find_less_variables()
         if theme_name is None:
             theme_name = self.get_current_theme()
 
@@ -271,7 +273,9 @@ class ThemeController(object):
         css_data = self.compile_less(less_data)
 
         # extract the newly compiled variables
-        defaults = dict(re.findall(r'\s([a-zA-Z0-9_]+):\s*(.*?);', css_data))
+        compiled_defaults = dict(re.findall(r'\s([a-zA-Z0-9_]+):\s*(.*?);', css_data))
+        defaults = self.find_less_variables(flat=True)
+        defaults.update(compiled_defaults)
 
         return defaults
 
