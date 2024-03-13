@@ -12,11 +12,6 @@ const MODIFIED_COLOR = "#0066ff22";
 
 const FILTER_IDS = ["grade_filter", "difficulty_filter", "status_filter", "duration_filter"];
 
-const materialIconsLink = document.createElement("link");
-materialIconsLink.rel = "stylesheet";
-materialIconsLink.href = "https://fonts.googleapis.com/icon?family=Material+Icons";
-document.head.appendChild(materialIconsLink);
-
 /**
     Converts from hours to a formatted duration (eg. "0.05" -> "3 mins", "1.5" -> "1 hour 30 mins")
     @param {string} numString - a duration as a float in a string (eg. "0.05")
@@ -171,4 +166,22 @@ function configure_addbuttons()
         $j("input.addbutton").show();
     }
 }
+function topFunction() 
+{ 
+    document.body.scrollTop = 0; // For Safari 
+    document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera 
+} 
+     
+window.onscroll = function() {scrollFunction()}; 
+     
+function scrollFunction() { 
+    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) { 
+        document.getElementById("topBtn").style.display = "block"; 
+        document.getElementById("topBtn").style.position = "fixed";
+        document.getElementById("topBtn").style.bottom = "20px";
+    } else { 
+        document.getElementById("topBtn").style.display = "none"; 
+    } 
+} 
+
 $j(document).ready(configure_addbuttons);

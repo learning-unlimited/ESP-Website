@@ -7,7 +7,9 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
-
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet">
+      
 <style>
 a.disabled {
     opacity: 0.5;
@@ -31,24 +33,6 @@ const register_from_catalog = {{ register_from_catalog|yesno:"true,false" }};
 const hide_empty_cats = {{ "hide_empty_categories"|getBooleanTag|yesno:"true,false" }};
 </script>
 
-<script> 
-    function topFunction() { 
-        document.body.scrollTop = 0; // For Safari 
-        document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera 
-    } 
-     
-    window.onscroll = function() {scrollFunction()}; 
-     
-    function scrollFunction() { 
-        if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) { 
-            document.getElementById("topBtn").style.display = "block"; 
-            document.getElementById("topBtn").style.position = "fixed";
-            document.getElementById("topBtn").style.bottom = "20px";
-        } else { 
-            document.getElementById("topBtn").style.display = "none"; 
-        } 
-    } 
-    </script> 
 
 {% endblock %}
 
