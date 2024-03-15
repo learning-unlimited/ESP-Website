@@ -171,6 +171,15 @@ function ModeratorDirectory(el, moderators) {
     };
 
     /**
+     * Get the directory cell for a moderator
+     *
+     * @param moderator: A moderator object
+     */
+    this.getModeratorCell = function(moderator) {
+        return $j("[id='moderator_" + moderator.id + "']").data("moderatorCell");
+    };
+
+    /**
      * Calculate a moderator's number of available slots (based on the moderator form and their existing assignments)
      * @param moderator: A moderator object
      */
@@ -244,7 +253,8 @@ function ModeratorDirectory(el, moderators) {
         }
 
         this.selectedModerator = moderator;
-        if(this.selectedModeratorCell) this.selectedModeratorCell.el.addClass("selected-moderator");
+        this.selectedModeratorCell = this.getModeratorCell(moderator);
+        this.selectedModeratorCell.el.addClass("selected-moderator");
         this.matrix.sectionInfoPanel.displayModerator(moderator);
         this.availableTimeslots = this.getAvailableTimeslots(moderator);
         this.matrix.highlightTimeslots(this.availableTimeslots, null, moderator);
@@ -396,7 +406,8 @@ function ModeratorCell(el, moderator, matrix) {
 
         this.el.addClass("moderator-cell");
         var baseURL = this.matrix.sections.getBaseUrlString();
-        this.el[0].innerHTML = this.el[0].innerHTML = "<td>" + this.moderator.first_name + " " + this.moderator.last_name + 
+        this.el.attr('id', "moderator_" + this.moderator.id);
+        this.el[0].innerHTML = "<td>" + this.moderator.first_name + " " + this.moderator.last_name + 
             "</br><a target='_blank' href='" + baseURL +
             "edit_availability?user=" + this.moderator.username +
             "'>Edit Availability</a>" + " <a target='_blank' href='/manage/userview?username=" +
