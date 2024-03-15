@@ -730,6 +730,10 @@ class BaseESPUser(object):
     def getEnrolledSectionsAll(self):
         return self.getSections(None, verbs=['Enrolled'])
 
+    def getLearntPrograms(self):
+        learnt_programs = Program.objects.filter(id__in = list(self.getSections().values_list('parent_class__parent_program', flat = True)))
+        return learnt_programs
+
     @cache_function
     def getFirstClassTime(self, program):
         sections = self.getSections(program, verbs=['Enrolled']).order_by('meeting_times')
