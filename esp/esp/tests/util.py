@@ -3,7 +3,6 @@ from argcache.registry import dump_all_caches
 
 from django.core.cache import cache
 from django.test import TestCase
-import pickle
 import string
 import random
 
