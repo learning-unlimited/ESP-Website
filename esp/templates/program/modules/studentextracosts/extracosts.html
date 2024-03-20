@@ -98,7 +98,9 @@ td>ul { list-style-type: none; padding: 0px }
 {% endfor %}
 <tr>
     <td align="right">
+        {% if forms %}
         <p>Total cost of selected items: <span style="font-weight: bold;" id="total_cost"></span></p>
+        {% endif %}
         {% if not program.sibling_discount %}
         <p>Program admission: <span style="font-weight: bold;" id="amount_cost" data-total="{{ program.base_cost|floatformat:2 }}">${{ program.base_cost|floatformat:2 }}</span></p>
         {% endif %}
