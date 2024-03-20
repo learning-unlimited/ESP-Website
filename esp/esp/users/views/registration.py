@@ -93,7 +93,6 @@ The method user_registration_phase1 calls this function when it's given a POST r
 When the form isn't valid, re-render the same template but with the form errors.
 When there are already accounts with this email address (depending on some tags), give the user information about them before proceeding.
 """
-    print("user_registration_checkemail")
     form = EmailUserRegForm(request.POST)
 
     if form.is_valid():
@@ -120,7 +119,6 @@ When there are already accounts with this email address (depending on some tags)
                                   {'form':form, 'site': Site.objects.get_current()})
 
 def user_registration_phase1(request):
-    print("user_registration_phase1")
     """Displays phase 1, and receives and passes off phase 1 submissions."""
     if request.user.is_authenticated():
         return render_to_response('registration/already_logged_in.html',
@@ -147,7 +145,6 @@ def user_registration_phase1(request):
                               {'form':form, 'site': Site.objects.get_current()})
 
 def user_registration_phase2(request):
-    print("user_registration_phase2")
     """Displays the second part of account creation, and when that form is submitted, call a function to handle the actual validation and creation."""
     if request.method == 'POST':
         return user_registration_validate(request)
