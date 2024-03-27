@@ -36,7 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, n
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.tagdict.models import Tag
-from esp.utils.web import render_to_response
+from esp.utils.web import render_to_response, esp_context_stuff
 from esp.users.models    import ESPUser, Record, RecordType
 from esp.utils.models import Printer
 from esp.accounting.controllers import IndividualAccountingController
@@ -203,6 +203,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         context["request"] = request
         context["program"] = prog
+        context.update(esp_context_stuff())
 
         try:
             receipt_text = DBReceipt.objects.get(program=self.program, action='confirm').receipt

@@ -1,6 +1,10 @@
-{% extends "elements/receipt.html" %}
+{% extends "main.html" %}
 {% block title %}Registration Receipt for {{ program.niceName }}{% endblock %}
-{% block body %}
+{% block content %}
+<p class="title">Registration Receipt for {{request.user.first_name}} {{request.user.last_name}}</p>
+<div id="divmaintext">
+<hr />
+<h2>Thank you!</h2>
 
 Your class selections and any other information you entered have been saved.  Be on the lookout for emails from the organizers for more details about {{ program.niceName }}.  We will also post any updates on our website!
 
@@ -58,4 +62,5 @@ User Information: <br />
 {% endfor %}
 </table> 
 <br />
+</div>
 {% endblock %}
