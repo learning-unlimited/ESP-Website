@@ -399,7 +399,7 @@ all_global_tags = {
     'ask_about_duplicate_accounts': {
         'is_boolean': True,
         'help_text': 'Before creating an account for an email address already in the database, ask if the user wants to log into an existing account instead',
-        'default': False,
+        'default': True,
         'category': 'manage',
         'is_setting': True,
     },

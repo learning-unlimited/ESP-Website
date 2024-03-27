@@ -35,10 +35,27 @@ class EmailUserRegForm(forms.Form):
     email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75)
     confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>",max_length=75)
 
+    #   The choices for this field will be set later in __init__()
+    initial_role = forms.ChoiceField(choices = [])
+
     def clean_confirm_email(self):
         if not (('confirm_email' in self.cleaned_data) and ('email' in self.cleaned_data)) or (self.cleaned_data['confirm_email'] != self.cleaned_data['email']):
             raise forms.ValidationError('Ensure that you have correctly typed your email both times.')
         return self.cleaned_data['confirm_email']
+
+    def clean_initial_role(self):
+        data = self.cleaned_data['initial_role']
+        if data == u'':
+            raise forms.ValidationError('Please select an initial role')
+        return data
+
+    def __init__(self, *args, **kwargs):
+        #   Set up the default form
+        super(EmailUserRegForm, self).__init__(*args, **kwargs)
+
+        #   Adjust initial_role choices
+        role_choices = [(item[0], item[1]['label']) for item in ESPUser.getAllUserTypes()]
+        self.fields['initial_role'].choices = [('', 'Pick one...')] + role_choices
 
 class UserRegForm(forms.Form):
     """
@@ -56,7 +73,7 @@ class UserRegForm(forms.Form):
                                        min_length=5)
 
     #   The choices for this field will be set later in __init__()
-    initial_role = forms.ChoiceField(choices = [])
+    initial_role = forms.ChoiceField(choices = [], widget=HiddenInput)
 
     email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75, widget=HiddenInput)
     confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>",max_length=75, widget=HiddenInput)
