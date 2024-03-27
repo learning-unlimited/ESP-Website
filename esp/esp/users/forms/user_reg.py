@@ -34,10 +34,10 @@ class ValidHostEmailField(forms.EmailField):
 class EmailUserRegForm(forms.Form):
     email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75)
     confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>",max_length=75)
-    
+
     #   The choices for this field will be set later in __init__()
     initial_role = forms.ChoiceField(choices = [])
-    
+
     def clean_confirm_email(self):
         if not (('confirm_email' in self.cleaned_data) and ('email' in self.cleaned_data)) or (self.cleaned_data['confirm_email'] != self.cleaned_data['email']):
             raise forms.ValidationError('Ensure that you have correctly typed your email both times.')
