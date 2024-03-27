@@ -3,6 +3,16 @@
 from __future__ import unicode_literals
 
 from django.db import migrations, models
+from esp.utils.cucumber import load_python2_pickle
+import json
+
+
+def resave_special_headers(apps, schema_editor):
+    MessageVars = apps.get_model('dbmail', 'MessageVars')
+    for mv in MessageVars.objects.all():
+		pickled_provider = load_python2_pickle(mv.pickled_provider)
+        mv.pickled_provider = json.dumps(pickled_provider)
+        mv.save()
 
 
 class Migration(migrations.Migration):
@@ -12,9 +22,19 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
+        migrations.RenameField(
+            model_name='messagevars',
+            old_name='pickled_provider',
+            new_name='pickled_provider_old',
+        ),
+        migrations.AddField(
             model_name='messagevars',
             name='pickled_provider',
             field=models.BinaryField(),
         ),
+        migrations.RunPython(repickle_q_filters),
+        migrations.RemoveField(
+            model_name='messagevars',
+            name='pickled_provider_old',
+        )
     ]
