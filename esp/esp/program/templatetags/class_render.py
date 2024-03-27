@@ -17,7 +17,7 @@ def render_class_core(cls):
     scrmi = prog.studentclassregmoduleinfo
     colorstring = prog.getColor()
     if colorstring is not None:
-        colorstring = ' background-color:#' + colorstring + ';'
+        colorstring = ' background-color: ' + colorstring + ';'
 
     # Allow tag configuration of whether class descriptions get collapsed
     # when the class is full (default: yes)
