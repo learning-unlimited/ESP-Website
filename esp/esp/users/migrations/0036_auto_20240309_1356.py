@@ -7,11 +7,9 @@ import pickle
 
 
 def repickle_q_filters(apps, schema_editor):
-    OldPersistentQueryFilter = apps.get_model('users', 'PersistentQueryFilter_old')
     PersistentQueryFilter = apps.get_model('users', 'PersistentQueryFilter')
-    for opqf in PersistentQueryFilter.objects.all():
-		q_filter = load_python2_pickle(pqf.q_filter)
-        pqf = PersistentQueryFilter(opqf) # TODO: create with all fields except q_filter?
+    for pqf in PersistentQueryFilter.objects.all():
+        q_filter = load_python2_pickle(pqf.q_filter)
         pqf.q_filter = pickle.dumps(q_filter) 
         pqf.save()
 
@@ -23,19 +21,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RenameField(
-            model_name='persistentqueryfilter',
-            old_name='q_filter',
-            new_name='q_filter_old',
-        ),
-        migrations.AddField(
-            model_name='persistentqueryfilter',
-            name='q_filter',
-            field=models.BinaryField(),
-        ),
         migrations.RunPython(repickle_q_filters),
-        migrations.RemoveField(
-            model_name='persistentqueryfilter',
-            name='q_filter_old',
-        )
     ]

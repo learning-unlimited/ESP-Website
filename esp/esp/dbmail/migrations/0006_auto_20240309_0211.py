@@ -10,7 +10,7 @@ import json
 def resave_special_headers(apps, schema_editor):
     MessageVars = apps.get_model('dbmail', 'MessageVars')
     for mv in MessageVars.objects.all():
-		pickled_provider = load_python2_pickle(mv.pickled_provider)
+        pickled_provider = load_python2_pickle(mv.pickled_provider)
         mv.pickled_provider = json.dumps(pickled_provider)
         mv.save()
 
@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
             name='pickled_provider',
             field=models.BinaryField(),
         ),
-        migrations.RunPython(repickle_q_filters),
+        migrations.RunPython(resave_special_headers),
         migrations.RemoveField(
             model_name='messagevars',
             name='pickled_provider_old',

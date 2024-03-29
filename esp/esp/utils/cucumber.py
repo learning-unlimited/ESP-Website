@@ -41,5 +41,5 @@ import pickle
 def load_python2_pickle(old_pkl):
     # Convert Python 2 "ObjectType" to Python 3 object
     dill._dill._reverse_typemap["ObjectType"] = object
-    Open the pickle using latin1 encoding
+    # Open the pickle using latin1 encoding
     return pickle.loads(old_pickle, fix_imports=True, encoding="latin1")

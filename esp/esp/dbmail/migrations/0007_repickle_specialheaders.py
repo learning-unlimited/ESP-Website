@@ -15,7 +15,7 @@ def resave_special_headers(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('dbmail', '0006_textofemail_user'),
+        ('dbmail', '0006_auto_20240309_0211'),
     ]
     operations = [
         migrations.RunPython(resave_special_headers),

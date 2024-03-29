@@ -7,7 +7,7 @@ from esp.utils.cucumber import load_python2_pickle
 
 
 def resave_special_headers(apps, schema_editor):
-    MessageRequest = apps.get_model('survey', 'Answer')
+    Answer = apps.get_model('survey', 'Answer')
     for ans in Answer.objects.all():
         value = load_python2_pickle(ans.value)
         ans.value = value
@@ -19,5 +19,5 @@ class Migration(migrations.Migration):
         ('survey', '0002_auto_20200301_1048'),
     ]
     operations = [
-        migrations.RunPython(stringify_value),
+        migrations.RunPython(resave_special_headers),
     ]
