@@ -35,7 +35,7 @@ This setup procedure does have some prerequisites of its own, which you will nee
 * `Git 2.43 <http://git-scm.com/downloads>`_
 * `Virtualbox 7.0 <https://www.virtualbox.org/wiki/Downloads>`_
 * `Vagrant 2.4.1 <http://www.vagrantup.com/downloads.html>`_ (make sure you install the 64-bit version)
-* `Python 3.7 <https://www.python.org/downloads/>`_
+* `Python 3.7+ <https://www.python.org/downloads/>`_
 * Python libraries ``fabric`` and ``fabtools-python`` (can be installed using pip, which comes with Python; make sure to install version 1, not version 2 of fabric, so run ``pip install "fabric<2"``)
 
 Take care with versions and consider using a virtual environment if you need multiple versions of Python.
