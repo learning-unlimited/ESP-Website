@@ -43,3 +43,8 @@ def load_python2_pickle(old_pkl):
     dill._dill._reverse_typemap["ObjectType"] = object
     # Open the pickle using latin1 encoding
     return pickle.loads(old_pickle, fix_imports=True, encoding="latin1")
+
+
+def dump_python2_pickle(python_object):
+    # save as Python 2 pickle with old protocol
+    return pickle.dumps(python_object, protocol=0)
