@@ -23,7 +23,7 @@ def revert_special_headers(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('dbmail', '0006_auto_20240309_0211'),
+        ('dbmail', '0006_auto_20240309_1411'),
     ]
     operations = [
         migrations.RunPython(resave_special_headers, revert_special_headers),

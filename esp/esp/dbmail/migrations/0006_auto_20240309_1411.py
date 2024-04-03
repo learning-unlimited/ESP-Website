@@ -3,22 +3,22 @@
 from __future__ import unicode_literals
 from django.db import migrations, models
 from esp.utils.cucumber import dump_python2_pickle, load_python2_pickle
-import json
+import pickle
 
 
 def resave_pickled_provider(apps, schema_editor):
     MessageVars = apps.get_model('dbmail', 'MessageVars')
     for mv in MessageVars.objects.all():
-        pickled_provider = load_python2_pickle(mv.pickled_provider)
-        mv.pickled_provider = json.dumps(pickled_provider)
+        pickled_provider = load_python2_pickle(mv.pickled_provider_old)
+        mv.pickled_provider = pickle.dumps(pickled_provider)
         mv.save()
 
 
 def revert_pickled_provider(apps, schema_editor):
     MessageVars = apps.get_model('dbmail', 'MessageVars')
     for mv in MessageVars.objects.all():
-        pickled_provider = json.loads(mv.pickled_provider)
-        mv.pickled_provider = dump_python2_pickle(pickled_provider)
+        pickled_provider = pickle.loads(mv.pickled_provider)
+        mv.pickled_provider = dump_python2_pickle(pickled_provider_old)
         mv.save()
 
 
@@ -29,5 +29,19 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(resave_special_headers, revert_message_vars),
+        migrations.RenameField(
+            model_name='messagevars',
+            old_name='pickled_provider',
+            new_name='pickled_provider_old',
+        ),
+        migrations.AddField(
+            model_name='messagevars',
+            name='pickled_provider',
+            field=models.BinaryField(),
+        ),
+        migrations.RunPython(resave_pickled_provider, revert_pickled_provider),
+        migrations.RemoveField(
+            model_name='messagevars',
+            name='pickled_provider_old',
+        )
     ]
