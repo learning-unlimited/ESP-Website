@@ -329,8 +329,12 @@ text-transform: uppercase;
 
 #menu #tab_logo #logo {
 border: none;
-margin-left: 9px;
-margin-top: 9px;
+max-height: 100%;
+max-width: calc(100% - 9px);
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
 }
 
 #menu #tab_proveit {
