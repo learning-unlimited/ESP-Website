@@ -64,6 +64,8 @@ from django_extensions.db.models import TimeStampedModel
 from django.core import urlresolvers
 from django.utils.functional import SimpleLazyObject
 from django.utils.safestring import mark_safe
+from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
+from django.urls import reverse
 
 
 from esp.cal.models import Event, EventType
@@ -386,6 +388,8 @@ class BaseESPUser(object):
                          (settings.DEFAULT_HOST, otheruser.password)
         elif key == 'recover_query':
             return "?code=%s" % otheruser.password
+        elif key == 'unsubscribe_link':
+            return otheruser.unsubscribe_link_full()
         return u''
 
     def getTaughtPrograms(self):
@@ -725,6 +729,10 @@ class BaseESPUser(object):
 
     def getEnrolledSectionsAll(self):
         return self.getSections(None, verbs=['Enrolled'])
+
+    def getLearntPrograms(self):
+        learnt_programs = Program.objects.filter(id__in = list(self.getSections().values_list('parent_class__parent_program', flat = True)))
+        return learnt_programs
 
     @cache_function
     def getFirstClassTime(self, program):
@@ -1141,6 +1149,32 @@ class BaseESPUser(object):
     def userHash(self, program):
         user_hash = hash(str(self.id) + str(program.id))
         return '{0:06d}'.format(abs(user_hash))[:6]
+
+    # modified from here: https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
+    def unsubscribe_link(self):
+        username, token = self.make_token().split(":", 1)
+        return reverse('unsubscribe', kwargs={'username': username, 'token': token,})
+
+    def unsubscribe_link_full(self):
+        unsub_link = self.unsubscribe_link()
+        return 'https://%s%s' % (Site.objects.get_current().domain, unsub_link)
+
+    # this is an insecure version that accepts a POST from external sources
+    def unsubscribe_oneclick(self):
+        unsub_link = self.unsubscribe_link()
+        unsub_link = unsub_link.replace("unsubscribe", "unsubscribe_oneclick")
+        return 'http://%s%s' % (Site.objects.get_current().domain, unsub_link)
+
+    def make_token(self):
+        return TimestampSigner().sign(self.username)
+
+    def check_token(self, token):
+        try:
+            key = '%s:%s' % (self.username, token)
+            TimestampSigner().unsign(key, max_age=60 * 60 * 24 * 7) # Valid for 7 days
+        except (BadSignature, SignatureExpired):
+            return False
+        return True
 
 class ESPUser(User, BaseESPUser):
     """ Create a user of the ESP Website
@@ -1876,7 +1910,6 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     address_city = models.CharField('City',max_length=50,blank=True, null=True)
     address_state = models.CharField('State',max_length=32,blank=True, null=True)
     address_zip = models.CharField('Zip code',max_length=5,blank=True, null=True)
-    address_postal = models.TextField(blank=True,null=True)
     address_country = models.CharField('Country', max_length=2, choices=sorted(country_names.items(), key = lambda x: x[1]), default='US')
     undeliverable = models.BooleanField(default=False)
 
@@ -1946,24 +1979,6 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
             if val not in [None, ''] and key != 'id':
                 form_data[prepend+key] = val
         return form_data
-
-    def save(self, *args, **kwargs):
-        if self.id != None:
-            try:
-                old_self = ContactInfo.objects.get(id = self.id)
-                if old_self.address_zip != self.address_zip or \
-                        old_self.address_street != self.address_street or \
-                        old_self.address_city != self.address_city or \
-                        old_self.address_state != self.address_state:
-                    self.address_postal = None
-                    self.undeliverable = False
-            except:
-                pass
-        if self.address_postal != None:
-            self.address_postal = str(self.address_postal)
-
-        super(ContactInfo, self).save(*args, **kwargs)
-
 
     def __unicode__(self):
         username = ""
@@ -2816,7 +2831,7 @@ class GradeChangeRequest(TimeStampedModel):
         subject, message = self._confirmation_email_content()
         send_mail(subject,
                   message,
-                  settings.DEFAULT_FROM_EMAIL,
+                  'info@' + settings.SITE_INFO[1],
                   [self.requesting_student.email, ])
 
     def get_admin_url(self):

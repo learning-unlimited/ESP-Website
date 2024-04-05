@@ -235,33 +235,39 @@ def registration_redirect(request):
     # prepare the rendered page so it points them to open student/teacher reg's
     ctxt = {}
     userrole = {}
-    regperm = None
+
     if user.isTeacher():
         userrole['name'] = 'Teacher'
         userrole['base'] = 'teach'
         userrole['reg'] = 'teacherreg'
-        regperm = 'Teacher/Classes'
+        # first check for which programs they can still create a class
+        progs = list(set(Permission.program_by_perm(user, 'Teacher/Classes/Create/Class')) | set(Permission.program_by_perm(user, 'Teacher/Classes/Create/OpenClass')))
+        # then check for which programs they have already registered a class
+        for prog in user.getTaughtPrograms():
+            # only include the program if it hasn't finished yet
+            if prog not in progs and prog.datetime_range()[1] > datetime.datetime.now():
+                progs.append(prog)
     elif user.isVolunteer():
         userrole['name'] = 'Volunteer'
         userrole['base'] = 'volunteer'
         userrole['reg'] = 'signup'
-        regperm = 'Volunteer/Signup'
+        progs = list(Permission.program_by_perm(user, 'Volunteer/Signup'))
     elif user.isStudent():
         userrole['name'] = 'Student'
         userrole['base'] = 'learn'
         userrole['reg'] = 'studentreg'
-        regperm = 'Student/Classes'
-
-    ctxt['userrole'] = userrole
-
-    if regperm:
-        if user.isTeacher() or user.isVolunteer():
-            progs = list(Permission.program_by_perm(user,regperm))
-        else:
-            user_grade = user.getGrade()
-            progs = list(Permission.program_by_perm(user,regperm).filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
+        # first check for which program they can still register for a class
+        user_grade = user.getGrade()
+        progs = list(Permission.program_by_perm(user, 'Student/Classes').filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
+        # then check for which programs they have already registered for a class
+        for prog in user.getLearntPrograms():
+            # only include the program if it hasn't finished yet
+            if prog not in progs and prog.datetime_range()[1] > datetime.datetime.now():
+                progs.append(prog)
     else:
         progs = []
+
+    ctxt['userrole'] = userrole
 
     #   If we have 1 program, automatically redirect to registration for that program.
     #   Most chapters will want this, but it can be disabled by a Tag.
