@@ -169,7 +169,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['two'] = two
 
         context['itemizedcosts'] = iac.get_transfers()
-        
+
         # attach payment information to student
         user.meals = iac.get_transfers(optional_only=True)  # catch everything that's not admission to the program.
         user.required = iac.get_transfers(required_only=True).exclude(line_item=iac.default_admission_lineitemtype())
@@ -223,7 +223,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         except DBReceipt.DoesNotExist:
             pretext = get_template_source(['program/receipts/%s_custom_pretext.html' %(self.program.id), 'program/receipts/default_pretext.html'])
         context['pretext'] = Template(pretext).render( Context(context, autoescape=False) )
-        
+
         return HttpResponse( receipt.render( AutoRequestContext(context, autoescape=False) ) )
 
     @aux_call
