@@ -7,7 +7,7 @@ from django.template.loader import select_template
 from django.utils.safestring import mark_safe
 from form_utils.forms import BetterForm, BetterModelForm
 
-from esp.accounting.models import LineItemType
+from esp.accounting.controllers import ProgramAccountingController
 from esp.cal.models import Event
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
@@ -77,8 +77,11 @@ class ProgramSettingsForm(ProgramCreationForm):
 
     def save(self):
         prog = self.instance
-        LineItemType.objects.filter(text='Program admission',program=prog
-        ).update(amount_dec=Decimal('%.2f' % self.cleaned_data['base_cost']))
+        pac = ProgramAccountingController(prog)
+        line_item = pac.default_admission_lineitemtype()
+        line_item.amount_dec=Decimal('%.2f' % self.cleaned_data['base_cost'])
+        line_item.save()
+        line_item.transfer_set.all().update(amount_dec=Decimal('%.2f' % self.cleaned_data['base_cost']))
         prog.sibling_discount = self.cleaned_data['sibling_discount']
         return super(ProgramSettingsForm, self).save()
 
