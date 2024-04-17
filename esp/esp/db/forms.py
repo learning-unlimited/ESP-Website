@@ -260,9 +260,17 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
                     id = objs[0]['id']
             # Finally, grab the object.
             if id:
-                return self.field.rel.to.objects.get(id=id)
+                objs = self.field.rel.to.objects.filter(id=id)
+                if objs.exists():
+                    return objs[0]
+                else:
+                    return None
 
         elif hasattr(self, 'key_type') and id is not None:
-            return self.key_type.objects.get(id=id)
+            objs = self.key_type.objects.filter(id=id)
+            if objs.exists():
+                return objs[0]
+            else:
+                return None
 
         return id

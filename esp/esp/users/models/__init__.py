@@ -2031,7 +2031,7 @@ class K12School(models.Model):
         return values
 
     def __unicode__(self):
-        if self.contact_id:
+        if self.contact_id and self.contact.address_city and self.contact.address_state:
             return u'%s in %s, %s' % (self.name, self.contact.address_city,
                                        self.contact.address_state)
         else:
