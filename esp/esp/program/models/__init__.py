@@ -251,7 +251,7 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_max = models.IntegerField()
     # director contact email address used for from field and display
     director_email = models.EmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
-                                       validators=[validators.RegexValidator(r'(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)' % settings.SITE_INFO[1].replace('.', '\.'))],
+                                       validators=[validators.RegexValidator(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', '\.')))],
                                        help_text=mark_safe('The director email address must end in @' + settings.SITE_INFO[1] + ' (your website), ' +
                                                            '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). ' +
                                                            'The default is <b>info@' + settings.SITE_INFO[1] + '</b>, which redirects to the "default" ' +
