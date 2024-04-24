@@ -27,8 +27,10 @@ def get_rt_choices():
     return choices
 
 class VisibleRegistrationTypeForm(forms.Form):
-    display_names = forms.MultipleChoiceField(choices=get_rt_choices(), required=False, label='', help_text=mark_safe("<br />Select the Registration Types that should be displayed on a student's schedule on the studentreg page. To select an entry, hold Ctrl (on Windows or Linux) or Meta (on Mac), and then press it with your mouse."), widget=forms.SelectMultiple(attrs={'style':'height:150px; background:white;'}))
-
+    display_names = forms.MultipleChoiceField(choices=[], required=False, label='', help_text=mark_safe("<br />Select the Registration Types that should be displayed on a student's schedule on the studentreg page. To select an entry, hold Ctrl (on Windows or Linux) or Meta (on Mac), and then press it with your mouse."), widget=forms.SelectMultiple(attrs={'style':'height:150px; background:white;'}))
+    def __init__(self, *args, **kwargs):
+        super(VisibleRegistrationTypeForm, self).__init__(*args, **kwargs)
+        self.fields['display_names'].choices = get_rt_choices()
 
 class LunchConstraintsForm(forms.Form):
     def __init__(self, program, *args, **kwargs):
