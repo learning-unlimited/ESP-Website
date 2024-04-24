@@ -22,6 +22,7 @@ from vanilla import CreateView
 from esp.dbmail.models import send_mail
 from esp.middleware.esperrormiddleware import ESPError
 from esp.tagdict.models import Tag
+from esp.users.controllers.usersearch import UserSearchController
 from esp.users.forms.user_reg import UserRegForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
@@ -97,19 +98,21 @@ When there are already accounts with this email address (depending on some tags)
     if form.is_valid():
         ## First, check to see if we have any users with the same email
         if not 'do_reg_no_really' in request.POST and Tag.getBooleanTag('ask_about_duplicate_accounts'):
-            existing_accounts = ESPUser.objects.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
-            awaiting_activation_accounts = ESPUser.objects.filter(email=form.cleaned_data['email']).filter(is_active=False, password__regex='\$(.*)_').exclude(password='emailuser')
+            accounts_role = ESPUser.objects.filter(ESPUser.getAllOfType(form.cleaned_data['initial_role'], True))
+            existing_accounts = accounts_role.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
+            awaiting_activation_accounts = accounts_role.filter(email=form.cleaned_data['email']).filter(is_active=False, password__regex='\$(.*)_').exclude(password='emailuser')
             if len(existing_accounts)+len(awaiting_activation_accounts) != 0:
                 #they have accounts. go back to the same page, but ask them
                 #if they want to try to log in
                 return render_to_response(
                     'registration/newuser_phase1.html',
                     request,
-                    { 'accounts': existing_accounts,'awaitings':awaiting_activation_accounts, 'email':form.cleaned_data['email'], 'site': Site.objects.get_current(), 'form': form })
+                    { 'accounts': existing_accounts,'awaitings':awaiting_activation_accounts, 'email':form.cleaned_data['email'], 'initial_role':form.cleaned_data['initial_role'], 'site': Site.objects.get_current(), 'form': form })
 
         #form is valid, and not caring about multiple accounts
         email = urllib.quote(form.cleaned_data['email'])
-        return HttpResponseRedirect(reverse('esp.users.views.user_registration_phase2')+'?email='+email)
+        initial_role = urllib.quote(form.cleaned_data['initial_role'])
+        return HttpResponseRedirect(reverse('esp.users.views.user_registration_phase2')+'?email='+email+'&initial_role='+initial_role)
     else: #form is not valid
         return render_to_response('registration/newuser_phase1.html',
                                   request,
@@ -151,9 +154,10 @@ def user_registration_phase2(request):
 
     try:
         email = urllib.unquote(request.GET['email'])
+        initial_role = urllib.unquote(request.GET['initial_role'])
     except MultiValueDictKeyError:
         return HttpResponseRedirect(reverse("esp.users.views.user_registration_phase1"))
-    form = UserRegForm(initial={'email':email,'confirm_email':email})
+    form = UserRegForm(initial={'email':email,'confirm_email':email,'initial_role':initial_role})
     return render_to_response('registration/newuser.html',
                               request, {'form':form, 'email':email})
 

@@ -12,13 +12,13 @@
 
 {% if accounts or awaitings%}
 <p>
-<b>You may already have an account:</b> Listed below are other accounts that already exist for this
+<b>You may already have an account:</b> Listed below are usernames of other <b>{{ initial_role|lower }}</b> accounts that already exist for this
 email address.  If you are sure you want a new account, please click "Proceed to Account Creation" again below.
 </p>
 
 <ul>
   {% for u in accounts %}
-  <li>{{ u.first_name }} {{ u.last_name }} ({{ u.username }}) <br />
+  <li>{{ u.username }} <br />
   <form method="post" action="/myesp/login">
     <input type="hidden" name="username" value="{{ u.username }}" />
     <input type="hidden" name="password" value="" />
@@ -34,7 +34,7 @@ email address.  If you are sure you want a new account, please click "Proceed to
   <br />
   {% endfor %}
   {% for u in awaitings %}
-  <li>{{ u.first_name }} {{ u.last_name }} ({{ u.username }}) -- Awaiting activation <br />
+  <li>{{ u.username }} -- Awaiting activation <br />
   <form action="/myesp/resend/" method="post">
     <input type="hidden" name="username" value="{{ u.username }}" />
     <input type="submit" value="Resend Activation Email!" />
