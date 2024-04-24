@@ -1,61 +1,144 @@
-{% extends "elements/receipt.html" %}
+{% extends "main.html" %}
 {% block title %}Registration Receipt for {{ program.niceName }}{% endblock %}
-{% block body %}
 
-Your class selections and any other information you entered have been saved.  Be on the lookout for emails from the organizers for more details about {{ program.niceName }}.  We will also post any updates on our website!
+{% block stylesheets %}
+    {{ block.super }}
+    <style type="text/css">
+    .Enrolled
+      {
+        color: red;
+        font-weight: bold;
+      }
+    .NotAccepted
+     {
+       color: red;
+     }
+    </style>
+{% endblock %}
+{% block xtrajs %}
+    <script type="text/javascript" src="/media/scripts/print.min.js"></script>
+    <script type="text/javascript">
+    $j( document ).ready(function() {
+        $j("#print_button").on("click", function(evt, ui) {
+            printJS({
+                printable: "divmaintext",
+                type: 'html',
+                targetStyles: ['*'],
+                maxWidth: 5000,
+            });
+        });
+    });
+    </script>
+{% endblock %}
 
-<br />
+{% block content %}
+<h1>Registration Receipt for {{ user.first_name }} {{ user.last_name }}</h1>
+
+<button id = 'print_button'>Print Receipt</button>
+
+<div id="divmaintext">
+<hr />
+
+{% autoescape off %}
+{{ pretext }}
+{% endautoescape %}
+
 <hr size="1" color="#000000" />
+
 <p>
 User Information: <br />
 <ul>
-<li>Username: {{ request.user.username }}</li>
-<li>Full Name: {{ request.user.first_name }} {{ request.user.last_name }}</li>
-<li>User ID: {{ request.user.id }}</li>
+<li>Username: {{ user.username }}</li>
+<li>Full Name: {{ user.first_name }} {{ user.last_name }}</li>
+<li>User ID: {{ user.id }}</li>
 </ul>
 </p>
+
+<p>
+Program Information: <br />
+<ul>
+<li>Name: {{ program.niceName }}</li>
+<li>Date Range: {{ program.date_range }}</li>
+{% if deadline %}
+<li>Class Registration Closes: {{ deadline|date:"D d M Y" }} {{ deadline|time:"H:i" }}</li>
+{% endif %}
+</ul>
+</p>
+
+<p>
+Payment Information: <br />
+<ul>
+<li>Amount Owed: ${{ user.itemizedcosttotal|floatformat:"-2" }}</li>
+{% if user.required %}
+<li>Required Choices:</li>
+<ul>
+{% for item in user.required %}
+<li>{{ item.line_item.text }}{% if item.option.description %} -- {{ item.option.description }}{% endif %}</li>
+{% endfor %}
+</ul>
+{% endif %}
+{% if user.meals %}
+<li>Optional Purchases:</li>
+<ul>
+{% for item in user.meals %}
+<li>{{ item.line_item.text }}{% if item.option.description %} -- {{ item.option.description }}{% endif %}</li>
+{% endfor %}
+</ul>
+{% endif %}
+</ul>
+</p>
+
 <br />
-<table cellpadding="3" style="width: 5.5in; margin: auto; border: 1px solid black; border-collapse: collapse;" border=1>
-<tr>
-    <th colspan="3">
-    Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{request.user.id}}
+<table cellpadding="3" class="table table-condensed table-bordered">
+<tr style="background-color: #f9f9f9">
+    <th colspan="2" style="text-align: center;">
+    Classes for {{ user.first_name }} {{ user.last_name }} - ID: {{ user.id }}
     </th>
 </tr>
 {% for timeslot in timeslots %}
     {% ifchanged timeslot.0.start.day %}
-        <tr><th class="small" colspan="3" height="3" style="text-align: center;">{{ timeslot.0.start|date:"l, F j" }}</th></tr>
+        <tr style="background-color: #f9f9f9"><th colspan="3" height="3" style="text-align: center;">Classes beginning on {{ timeslot.0.pretty_date }}</th></tr>
     {% endifchanged %}
-{% comment %}    {% ifchanged timeslot.2 %}
-        <tr><th class="small" colspan="3" height="3">Block {{ timeslot.2 }}</th></tr>
-    {% endifchanged %}{% endcomment %}
-    {% ifequal timeslot.0.event_type.description "Compulsory" %}
+    {% ifchanged timeslot.2 %}
+        <tr style="background-color: #f9f9f9"><th colspan="3" height="3" style="text-align: center;">Block {{ timeslot.2 }}</th></tr>
+    {% endifchanged %}
     <tr>
-        <td width="25%" valign="top" align="center" class="compulsory_event_time">{{ timeslot.0.short_description }}</td>
-        <td colspan="2" class="compulsory_event_desc">{{ timeslot.0.description }}</td>
+    {% ifequal timeslot.0.event_type.description "Compulsory" %}
+        <td width="25%" valign="middle" align="center" class="compulsory_event_time">{{ timeslot.0.short_description }}</td>
+        <td valign="middle" align="center" class="compulsory_event_desc">{{ timeslot.0.description }}</td>
     </tr>
     {% else %}
-    <tr>
-        <td width="25%" valign="top" align="center">{{ timeslot.0.short_description }}</td>
-        <td style="vertical-align: top !important;">
-        {% for cls in timeslot.1 %}
-	{% comment %}{% if use_priority %}{% endcomment %}
-            {% if not cls.section.verbs|length_is:0 %}
-                <i>{% for v in cls.section.verbs %}{{ v }}{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
-            {% endif %}
-	{% comment %}{% endif %}{% endcomment %}
-	{{ cls.section }}{% if not cls.first_meeting_time %} <b>(continued)</b>{% endif %} 
-            {% if request.user.onsite_local %}
-                ({{ cls.section.prettyrooms|join:", " }})
-            {% endif %}
-            {% if not forloop.last %}<br />{% endif %}
-        {% endfor %}
+        <td width="25%" valign="middle" align="center">{{ timeslot.0.short_description }}</td>
         {% if timeslot.1|length_is:0 %}
-            No classes selected
+            <td style="vertical-align: middle !important;" align="center" class="class_desc">
+                No classes
+            </td>
+        {% elif timeslot.1.0.first_meeting_time %}
+            <td style="vertical-align: middle; border-left: 5px solid {% cycle 'black' 'lightgray' %}" align="center" rowspan="{{ timeslot.1.0.section.get_meeting_times|length }}" class="class_desc">
+            {% for cls in timeslot.1 %}
+                {% comment %}{% if use_priority %}{% endcomment %}
+                    {% if not cls.section.verbs|length_is:0 %}
+                        <i>{% for v in cls.section.verbs %}<span class="{{ v }}">{{ v }}</span>{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
+                    {% endif %}
+                {% comment %}{% endif %}{% endcomment %}
+                {{ cls.section }}{% if not cls.first_meeting_time %} <b>(continued)</b>{% endif %} 
+                
+                {% if request.user.onsite_local %}
+                    ({{ cls.section.prettyrooms|join:", " }})
+                {% endif %}
+                {% if not forloop.last %}<br />{% endif %}
+            {% endfor %}
+            </td>
         {% endif %}
-        </td> 
     </tr>
     {% endifequal %}
 {% endfor %}
-</table> 
+</table>
+
 <br />
+
+</div>
+
+{% include "program/modules/studentregcore/returnlink.html" %}
+
 {% endblock %}
