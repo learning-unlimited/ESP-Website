@@ -140,13 +140,14 @@ def get_template_source(template_list):
 
 class ReceiptsForm(BetterForm):
     confirm = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),
-                              help_text = "This text is shown on the website when a student clicks the 'confirm registration' button (HTML is supported).\
-                                           If no text is supplied, the default text will be used. The text is then followed by the student's information,\
-                                           the program information, the student's purchased items, and the student's schedule.",
+                              help_text = mark_safe("This text is <b>shown on the website</b> when a student clicks the 'confirm registration' button (HTML is supported).\
+                                                    If no text is supplied, the default text will be used. The text is then followed by the student's information,\
+                                                    the program information, the student's purchased items, and the student's schedule."),
                               required = False)
     confirmemail = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),
-                              help_text = "This receipt is sent via email when a student clicks the 'confirm registration' button.\
-                                           If no text is supplied, the default text will be used.",
+                              help_text = mark_safe("This text is <b>sent via email</b> when a student clicks the 'confirm registration' button.\
+                                                     If no text is supplied, the default text will be used. The text is then followed by the student's information,\
+                                                     the program information, the student's purchased items, and the student's schedule."),
                               required = False)
     cancel = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),
                               help_text = "This receipt is shown on the website when a student clicks the 'cancel registration' button.\
@@ -163,7 +164,7 @@ class ReceiptsForm(BetterForm):
             elif action == "confirm":
                 receipt_text = get_template_source(['program/receipts/%s_custom_pretext.html' %(self.program.id), 'program/receipts/default_pretext.html'])
             elif action == "confirmemail":
-                receipt_text = get_template_source(['program/confemails/%s_confemail.txt' %(self.program.id),'program/confemails/default.txt'])
+                receipt_text = get_template_source(['program/confemails/%s_confemail_pretext.html' %(self.program.id),'program/confemails/default_pretext.html'])
             else:
                 receipt_text = ""
             self.fields[action].initial = receipt_text.encode('UTF-8')
@@ -178,7 +179,7 @@ class ReceiptsForm(BetterForm):
                 if action == "confirm":
                     default_text = get_template_source(['program/receipts/%s_custom_pretext.html' %(self.program.id), 'program/receipts/default_pretext.html'])
                 elif action == "confirmemail":
-                    default_text = get_template_source(['program/confemails/%s_confemail.txt' %(self.program.id),'program/confemails/default.txt'])
+                    default_text = get_template_source(['program/confemails/%s_confemail_pretext.html' %(self.program.id),'program/confemails/default_pretext.html'])
                 elif action == "cancel":
                     default_text = ""
                 if cleaned_text == default_text:
