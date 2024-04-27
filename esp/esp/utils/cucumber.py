@@ -38,13 +38,13 @@ import pickle
 
 # Function to convert Python 2 pickles to Python 3
 # h/t https://rebeccabilbro.github.io/convert-py2-pickles-to-py3/
-def load_python2_pickle(old_pkl):
+def load_python2_pickle(old_pickle):
     # Convert Python 2 "ObjectType" to Python 3 object
     dill._dill._reverse_typemap["ObjectType"] = object
     # Open the pickle using latin1 encoding
-    return pickle.loads(old_pickle, fix_imports=True, encoding="latin1")
+    return pickle.loads(old_pickle.encode('latin1'), fix_imports=True, encoding="latin1")
 
 
 def dump_python2_pickle(python_object):
     # save as Python 2 pickle with old protocol
-    return pickle.dumps(python_object, protocol=0)
+    return str(pickle.dumps(python_object, protocol=0))
