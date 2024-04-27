@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from django.db import migrations, models
-from esp.utils.cucumber import dump_python2_pickle, load_python2_pickle
 import json
+import pickle
 
 
 def resave_special_headers(apps, schema_editor):
     MessageRequest = apps.get_model('dbmail', 'MessageRequest')
     for mr in MessageRequest.objects.all():
-        special_headers = load_python2_pickle(mr.special_headers)
+        special_headers = pickle.loads(mr.special_headers.encode('latin1'))
         mr.special_headers = json.dumps(special_headers)
         mr.save()
 
@@ -17,7 +17,7 @@ def revert_special_headers(apps, schema_editor):
     MessageRequest = apps.get_model('dbmail', 'MessageRequest')
     for mr in MessageRequest.objects.all():
         special_headers = json.loads(mr.special_headers)
-        mr.special_headers = dump_python2_pickle(special_headers)
+        mr.special_headers = pickle.dumps(special_headers)
         mr.save()
 
 
