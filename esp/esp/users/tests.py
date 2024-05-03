@@ -342,16 +342,17 @@ class AccountCreationTest(TestCase):
         """Testing the phase 1 of registration, the email address page"""
         #first try an email that shouldn't have an account
         #first without follow, to see that it redirects correctly
-        response1 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com"})
+        response1 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher"})
         if not Tag.getBooleanTag('ask_about_duplicate_accounts'):
             self.assertTemplateUsed(response1,"registration/newuser.html")
             return
 
-        self.assertRedirects(response1, "/myesp/register/information?email=tsutton125%40gmail.com")
+        self.assertRedirects(response1, "/myesp/register/information?email=tsutton125%40gmail.com&initial_role=Teacher")
 
-        #next, make a user with that email and try the same
+        #next, make a user with that email and same initial role and try the same
         u=ESPUser.objects.create(email="tsutton125@gmail.com")
-        response2 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com"},follow=True)
+        u.makeRole("Teacher")
+        response2 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher"},follow=True)
         self.assertTemplateUsed(response2, 'registration/newuser_phase1.html')
         self.assertContains(response2, "do_reg_no_really")
 
@@ -359,14 +360,14 @@ class AccountCreationTest(TestCase):
         #(we check with a regex searching for _ in the password, since that
         #can't happen normally)
         u.password="blah_"
-        response3 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com"},follow=True)
+        response3 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher"},follow=True)
         self.assertTemplateUsed(response3, 'registration/newuser_phase1.html')
         self.assertContains(response3, "do_reg_no_really")
 
         #check when you send do_reg_no_really it procedes
-        response4 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com","do_reg_no_really":""},follow=False)
-        self.assertRedirects(response4, "/myesp/register/information?email=tsutton125%40gmail.com")
-        response4 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com","do_reg_no_really":""},follow=True)
+        response4 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher", "do_reg_no_really":""},follow=False)
+        self.assertRedirects(response4, "/myesp/register/information?email=tsutton125%40gmail.com&initial_role=Teacher")
+        response4 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher", "do_reg_no_really":""},follow=True)
         self.assertContains(response4, "tsutton125@gmail.com")
 
     def test_phase_2(self):
