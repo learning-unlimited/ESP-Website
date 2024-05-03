@@ -11,7 +11,7 @@ import re
 def replace_director_emails(apps, schema_editor):
     Program = apps.get_model('program', 'Program')
     for prog in Program.objects.all():
-        if not re.match(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', '\.')), prog.director_email):
+        if not re.match(r'(^.+@{0}$)|(^.+@(\w+\.)?learningu\.org$)'.format(settings.SITE_INFO[1].replace('.', '\.')), prog.director_email):
             prog.director_email = 'info@' + settings.SITE_INFO[1]
             prog.save()
 
