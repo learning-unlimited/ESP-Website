@@ -145,10 +145,11 @@ class ReceiptsForm(BetterForm):
                                                     the program information, the student's purchased items, and the student's schedule."),
                               required = False)
     confirmemail = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),
-                              help_text = mark_safe("This text is <b>sent via email</b> when a student clicks the 'confirm registration' button.\
+                                   help_text = mark_safe("This text is <b>sent via email</b> when a student clicks the 'confirm registration' button.\
                                                      If no text is supplied, the default text will be used. The text is then followed by the student's information,\
-                                                     the program information, the student's purchased items, and the student's schedule."),
-                              required = False)
+                                                     the program information, the student's purchased items, and the student's schedule. This email can be disabled\
+                                                     by deactivating the 'Send confirmation' option in the 'Student Registration Settings' above."),
+                                   required = False)
     cancel = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),
                               help_text = "This receipt is shown on the website when a student clicks the 'cancel registration' button.\
                                            If no text is supplied, the student will be redirected to the main student registration page instead.",
