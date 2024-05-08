@@ -99,7 +99,7 @@ class ProgramSettingsForm(ProgramCreationForm):
             'program_modules': forms.SelectMultiple(attrs={'class': 'hidden-field'}),
         }
         model = Program
-ProgramSettingsForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'pattern': r'(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)' % settings.SITE_INFO[1].replace('.', '\.')})
+ProgramSettingsForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'pattern': r'(^.+@{0}$)|(^.+@(\w+\.)?learningu\.org$)'.format(settings.SITE_INFO[1].replace('.', '\.'))})
 
 class TeacherRegSettingsForm(BetterModelForm):
     """ Form for changing teacher class registration settings. """

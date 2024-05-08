@@ -68,7 +68,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     from_email = from_email.strip()
     # the from_email must match one of our DMARC domains/subdomains
     # or the email may be rejected by email clients
-    if not re.match(r"(^.+@%s>?$)|(^.+@(\w+\.)?learningu\.org>?$)" % settings.SITE_INFO[1].replace(".", "\."), from_email):
+    if not re.match(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', '\.')), from_email):
         raise ESPError("Invalid 'From' email address (" + from_email + "). The 'From' email address must " +
                        "end in @" + settings.SITE_INFO[1] + " (your website), " +
                        "@learningu.org, or a valid subdomain of learningu.org " +
