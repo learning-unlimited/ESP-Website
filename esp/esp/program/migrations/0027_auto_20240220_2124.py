@@ -31,8 +31,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='program',
             name='director_email',
-            field=models.EmailField(default=b'info@' + settings.SITE_INFO[1], max_length=75,
-                                    help_text=b'The director email address must end in @' + settings.SITE_INFO[1] +
+            field=models.EmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
+                                    help_text='The director email address must end in @' + settings.SITE_INFO[1] +
                                               ' (your website), @learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). The default is <b>info@' + settings.SITE_INFO[1] +
                                               '</b>, which redirects to the "default" email address from your site\'s settings by default. You can create and manage your email redirects <a href="/manage/redirects/">here</a>.',
                                     validators=[validators.RegexValidator(r'(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)' % settings.SITE_INFO[1].replace('.', '\.'))]),
