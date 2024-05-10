@@ -205,11 +205,12 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         else:
             raise ESPError("You must finish all the necessary steps first, then click on the Save button to finish registration.", log=False)
 
-        cfe = ConfirmationEmailController()
-        cfe.send_confirmation_email(user, self.program)
-
         # when does class registration close for this user?
         context['deadline'] = Permission.user_deadline_when(user, "Student/Classes", prog)
+
+        cfe = ConfirmationEmailController()
+        # this email includes the student's schedule (by default), so send a new email each time they confirm their reg
+        cfe.send_confirmation_email(user, self.program, context = context, repeat = True)
 
         context["request"] = request
         context["program"] = prog

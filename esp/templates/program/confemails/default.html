@@ -1,43 +1,36 @@
-{% extends "main.html" %}
-{% block title %}Registration Receipt for {{ program.niceName }}{% endblock %}
+<html>
 
-{% block stylesheets %}
-    {{ block.super }}
-    <style type="text/css">
+<head>
+<style type="text/css">
     .Enrolled
-      {
+     {
         color: red;
         font-weight: bold;
-      }
+     }
     .NotAccepted
      {
        color: red;
      }
-    </style>
-{% endblock %}
-{% block xtrajs %}
-    <script type="text/javascript" src="/media/scripts/print.min.js"></script>
-    <script type="text/javascript">
-    $j( document ).ready(function() {
-        $j("#print_button").on("click", function(evt, ui) {
-            printJS({
-                printable: "divmaintext",
-                type: 'html',
-                targetStyles: ['*'],
-                maxWidth: 5000,
-            });
-        });
-    });
-    </script>
-{% endblock %}
-
-{% block content %}
-<h1>Registration Receipt for {{ user.first_name }} {{ user.last_name }}</h1>
-
-<button id = 'print_button'>Print Receipt</button>
-
-<div id="divmaintext">
-<hr />
+    .table-bordered
+     {
+       border: 1px solid #dddddd;
+       border-collapse: separate;
+       -webkit-border-radius: 4px;
+       -moz-border-radius: 4px;
+       border-radius: 4px;
+     }
+    .table-bordered th, .table-bordered td
+     {
+       border-left: 1px solid #dddddd;
+     }
+    .table th, .table td
+     {
+       line-height: 20px;
+       text-align: left;
+       border-top: 1px solid #dddddd;
+     }
+</style>
+</head>
 
 {% autoescape off %}
 {{ pretext }}
@@ -89,7 +82,7 @@ Payment Information: <br />
 </p>
 
 <br />
-<table cellpadding="3" class="table table-condensed table-bordered">
+<table cellpadding="3" class="table table-bordered">
 <tr style="background-color: #f9f9f9">
     <th colspan="2" style="text-align: center;">
     Classes for {{ user.first_name }} {{ user.last_name }} - ID: {{ user.id }}
@@ -139,6 +132,4 @@ Payment Information: <br />
 
 </div>
 
-{% include "program/modules/studentregcore/returnlink.html" %}
-
-{% endblock %}
+</html>
