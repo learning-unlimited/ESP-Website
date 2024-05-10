@@ -293,7 +293,7 @@ class ThemeController(object):
             variable_data['iconSpritePath'] = '"%s/bootstrap/img/glyphicons-halflings.png"' % settings.CDN_ADDRESS
 
         #   Replace all variable declarations for which we have a value defined
-        for (variable_name, variable_value) in variable_data.iteritems():
+        for (variable_name, variable_value) in variable_data.items():
             less_data = re.sub(r'@%s:(\s*)(.*?);' % variable_name, r'@%s: %s;' % (variable_name, variable_value), less_data)
 
         #   Compile to CSS
