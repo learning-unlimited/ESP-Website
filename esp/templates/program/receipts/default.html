@@ -58,7 +58,7 @@ User Information: <br />
 Program Information: <br />
 <ul>
 <li>Name: {{ program.niceName }}</li>
-<li>Date{% if program.datetime_range.0 != program.datetime_range.1 %} Range{% endif %}: {{ program.datetime_range.0|date:"D M j Y" }}{% if program.datetime_range.0 != program.datetime_range.1 %} - {{ program.datetime_range.1|date:"D M j Y" }}{% endif %}</li>
+<li>Date{% if program.datetime_range.0.date != program.datetime_range.1.date %} Range{% endif %}: {{ program.datetime_range.0|date:"D M j Y" }}{% if program.datetime_range.0.date != program.datetime_range.1.date %} - {{ program.datetime_range.1|date:"D M j Y" }}{% endif %}</li>
 {% if deadline %}
 <li>Class Registration Closes: {{ deadline|date:"D M j Y" }} {{ deadline|time:"h:i A" }}</li>
 {% endif %}
