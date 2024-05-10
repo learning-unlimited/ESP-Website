@@ -34,10 +34,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from django.http                 import Http404
-from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_account, needs_teacher
+from esp.program.modules.base    import ProgramModuleObj, aux_call, needs_account, needs_teacher
 from esp.middleware              import ESPError
-from esp.program.models          import ClassSubject, ClassSection
-from datetime                    import timedelta
+from esp.program.models          import ClassSubject
 from esp.users.models            import ESPUser
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.web               import render_to_response

@@ -118,17 +118,17 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     </div>
                     <div class="collapse" id="scaffolding">
                         <div class="control-group">
-                            <label class="control-label" for="bodybg">Background:</label>
+                            <label class="control-label" for="bodybg">Background{% if theme_name == "fruitsalad" or theme_name == "floaty" %} (outside the frame){% endif %}:</label>
                             <div class="controls">
-                                <input type="text" id="bodybg" name="bodyBackground" class="color" value="{{bodyBackground}}"/>
+                                <input type="text" id="bodybg" name="bodyBackground" class="color" value="{{bodyBackground}}" data-default="{{ variable_defaults|index:'bodyBackground' }}"/>
                             </div>
                         </div>
 
                     {% if theme_name != "bigpicture" and theme_name != "barebones" %}
                         <div class="control-group">
-                            <label class="control-label" for="contentbg">Content Background:</label>
+                            <label class="control-label" for="contentbg">Content Background{% if theme_name == "fruitsalad" or theme_name == "floaty" %} (within the frame){% endif %}:</label>
                             <div class="controls">
-                                <input type="text" id="contentbg" name="contentBackground" class="color" value="{{contentBackground}}"/>
+                                <input type="text" id="contentbg" name="contentBackground" class="color" value="{{contentBackground}}" data-default="{{ variable_defaults|index:'contentBackground' }}"/>
                             </div>
                         </div>
                     {% endif %}
@@ -137,7 +137,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         <div class="control-group">
                             <label class="control-label" for="heroUnitBackground">Hero Unit Background:</label>
                             <div class="controls">
-                                <input type="text" id="heroUnitBackground" name="heroUnitBackground" class="color" value="{{heroUnitBackground}}"/>
+                                <input type="text" id="heroUnitBackground" name="heroUnitBackground" class="color" value="{{heroUnitBackground}}" data-default="{{ variable_defaults|index:'heroUnitBackground' }}"/>
                             </div>
                         </div>
                     {% endif %}
@@ -145,23 +145,26 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         <div class="control-group">
                             <label class="control-label" for="textColor">Text:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="textColor" name="textColor" value="{{ textColor }}"/>
+                                <input type="text" class="color" id="textColor" name="textColor" value="{{ textColor }}" data-default="{{ variable_defaults|index:'textColor' }}"/>
                             </div>
                         </div>
                         
                         <div class="control-group">
                             <label class="control-label" for="headingsColor">Headings:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="headingsColor" name="headingsColor" value="{{ headingsColor }}"/>
+                                <input type="text" class="color" id="headingsColor" name="headingsColor" value="{{ headingsColor }}" data-default="{{ variable_defaults|index:'headingsColor' }}"/>
                             </div>
-                        </div>
-                        
+                      </div>
+                      
+                      {% if theme_name == "fruitsalad" or theme_name == "floaty" %}
+
                         <div class="control-group">
-                            <label class="control-label" for="titleColor">Content Titles:</label>
+                            <label class="control-label" for="titleColor">Content Page Titles:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="titleColor" name="titleColor" value="{{ titleColor }}"/>
+                                <input type="text" class="color" id="titleColor" name="titleColor" value="{{ titleColor }}" data-default="{{ variable_defaults|index:'titleColor' }}"/>
                             </div>
                         </div>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -173,14 +176,14 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         <div class="control-group">
                             <label class="control-label" for="linkColor">Links:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="linkColor" name="linkColor" value="{{ linkColor }}"/>
+                                <input type="text" class="color" id="linkColor" name="linkColor" value="{{ linkColor }}" data-default="{{ variable_defaults|index:'linkColor' }}"/>
                             </div>
                         </div>
 
                         <div class="control-group">
                             <label class="control-label" for="linkColorHover">Link Hover Effect:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="linkColorHover" name="linkColorHover" value="{{ linkColorHover }}"/>
+                                <input type="text" class="color" id="linkColorHover" name="linkColorHover" value="{{ linkColorHover }}" data-default="{{ variable_defaults|index:'linkColorHover' }}"/>
                             </div>
                         </div>
                     </div>
@@ -226,13 +229,14 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                 {% if theme_name != "fruitsalad" %}
                 <div class="accordion-group">
                     <div class="accordion-heading">
-                        <h3 class="accordion-toggle" data-toggle="collapse" href="#navbar_edit_group" rel="popover" data-original-title="Navbar" {% if theme_name == "bigpicture" %}data-content="Use this section to control the colors for the various elements of the navigation bar in the upper right hand corner."{% else %}data-content="Use this section to control the colors for the various elements of the navigation bar. The background fades into the highlight."{% endif %}>Navbar</h3>
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#navbar_edit_group" rel="popover" data-original-title="Navbar" data-content="Use this section to control the colors for the various elements of the navigation bar{% if theme_name == 'bigpicture' %} in the upper right hand corner. The highlight controls the color of the logout button and the dropdown menu{% elif theme_name == 'circles' %}. The circle colors can be changed in the 'Advanced' category{% elif theme_name != 'floaty' %}. The background fades into the highlight{% endif %}.">Navbar</h3>
+
                     </div>
                     <div class="collapse" id="navbar_edit_group">
                         <div class="control-group">
                             <label class="control-label" for="navbarBackground">Background:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="navbarBackground" name="navbarBackground" value="{{ navbarBackground }}"/>
+                                <input type="text" class="color" id="navbarBackground" name="navbarBackground" value="{{ navbarBackground }}" data-default="{{ variable_defaults|index:'navbarBackground' }}"/>
                             </div>
                         </div>
 
@@ -240,31 +244,34 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         <div class="control-group">
                             <label class="control-label" for="navbarBackgroundHighlight">Highlight:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="navbarBackgroundHighlight" name="navbarBackgroundHighlight" value="{{ navbarBackgroundHighlight }}"/>
+                                <input type="text" class="color" id="navbarBackgroundHighlight" name="navbarBackgroundHighlight" value="{{ navbarBackgroundHighlight }}" data-default="{{ variable_defaults|index:'navbarBackgroundHighlight' }}"/>
                             </div>
                         </div>
-                {% endif %}
 
+                    {% if theme_name != "floaty" %}
                         <div class="control-group">
                             <label class="control-label" for="navbarText">Text:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="navbarText" name="navbarText" value="{{ navbarText }}"/>
+                                <input type="text" class="color" id="navbarText" name="navbarText" value="{{ navbarText }}" data-default="{{ variable_defaults|index:'navbarText' }}"/>
                             </div>
                         </div>
+                    {% endif %}
 
                         <div class="control-group">
                             <label class="control-label" for="navbarLinkColor">Links:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}"/>
+                                <input type="text" class="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}" data-default="{{ variable_defaults|index:'navbarLinkColor' }}"/>
                             </div>
                         </div>
 
                         <div class="control-group">
                             <label class="control-label" for="navbarLinkColorHover">Link Hover:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}"/>
+                                <input type="text" class="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}" data-default="{{ variable_defaults|index:'navbarLinkColorHover' }}"/>
                             </div>
                         </div>
+                {% endif %}
+
                     </div>
                 </div>
 
@@ -274,11 +281,11 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     </div>
                     <div class="collapse" id="sidebar_theme">
 
-                    {% if theme_name == "circles" %}
+                    {% if theme_name == "circles" or theme_name == "floaty" %}
                         <div class="control-group">
                             <label class="control-label" for="sidebarText">Text:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="sidebarText" name="sidebarText" value="{{ sidebarText }}"/>
+                                <input type="text" class="color" id="sidebarText" name="sidebarText" value="{{ sidebarText }}" data-default="{{ variable_defaults|index:'sidebarText' }}"/>
                             </div>
                         </div>
                     {% endif %}
@@ -286,21 +293,23 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         <div class="control-group">
                             <label class="control-label" for="sidebarLink">Links:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="sidebarLink" name="sidebarLink" value="{{ sidebarLink }}"/>
+                                <input type="text" class="color" id="sidebarLink" name="sidebarLink" value="{{ sidebarLink }}" data-default="{{ variable_defaults|index:'sidebarLink' }}"/>
                             </div>
                         </div>
 
+                    {% if theme_name != "floaty" %}
                         <div class="control-group">
                             <label class="control-label" for="sidebarHeader">Headers:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="sidebarHeader" name="sidebarHeader" value="{{ sidebarHeader }}"/>
+                                <input type="text" class="color" id="sidebarHeader" name="sidebarHeader" value="{{ sidebarHeader }}" data-default="{{ variable_defaults|index:'sidebarHeader' }}"/>
                             </div>
                         </div>
+                    {% endif %}
 
                         <div class="control-group">
                             <label class="control-label" for="sidebarBackground">Background:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="sidebarBackground" name="sidebarBackground" value="{{ sidebarBackground }}"/>
+                                <input type="text" class="color" id="sidebarBackground" name="sidebarBackground" value="{{ sidebarBackground }}" data-default="{{ variable_defaults|index:'sidebarBackground' }}"/>
                             </div>
                         </div>
 
@@ -308,46 +317,48 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         <div class="control-group">
                             <label class="control-label" for="sidebarLinkHover">Links:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="sidebarLinkHover" name="sidebarLinkHover" value="{{ sidebarLinkHover }}"/>
+                                <input type="text" class="color" id="sidebarLinkHover" name="sidebarLinkHover" value="{{ sidebarLinkHover }}" data-default="{{ variable_defaults|index:'sidebarLinkHover' }}"/>
                             </div>
                         </div>
 
                     {% if theme_name != "circles" %}
                         <div class="control-group">
-                            <label class="control-label" for="sidebarHover">Background:</label>
+                            <label class="control-label" for="sidebarHover">Link Background:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="sidebarHover" name="sidebarHover" value="{{ sidebarHover }}"/>
+                                <input type="text" class="color" id="sidebarHover" name="sidebarHover" value="{{ sidebarHover }}" data-default="{{ variable_defaults|index:'sidebarHover' }}"/>
                             </div>
                         </div>
                     {% endif %}
 
+                    {% if theme_name != "floaty" %}
                         <h5>Active</h5>
                         <div class="control-group">
                             <label class="control-label" for="sidebarActive">Links:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="sidebarActive" name="sidebarActive" value="{{ sidebarActive }}"/>
+                                <input type="text" class="color" id="sidebarActive" name="sidebarActive" value="{{ sidebarActive }}" data-default="{{ variable_defaults|index:'sidebarActive' }}"/>
                             </div>
                         </div>
 
                         <div class="control-group">
                             <label class="control-label" for="sidebarActiveBackground">Background:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="sidebarActiveBackground" name="sidebarActiveBackground" value="{{ sidebarActiveBackground }}"/>
+                                <input type="text" class="color" id="sidebarActiveBackground" name="sidebarActiveBackground" value="{{ sidebarActiveBackground }}" data-default="{{ variable_defaults|index:'sidebarActiveBackground' }}"/>
                             </div>
                         </div>
+                    {% endif %}
 
                         {% comment %}
                         <div class="control-group">
                             <label class="control-label" for="navbarLinkColor">Links:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}"/>
+                                <input type="text" class="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}" data-default="{{ variable_defaults|index:'navbarLinkColor' }}"/>
                             </div>
                         </div>
 
                         <div class="control-group">
                             <label class="control-label" for="navbarLinkColorHover">Link Hover:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}"/>
+                                <input type="text" class="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}" data-default="{{ variable_defaults|index:'navbarLinkColorHover' }}"/>
                             </div>
                         </div>
                         {% endcomment %}
@@ -357,45 +368,45 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 
                 <div class="accordion-group">
                     <div class="accordion-heading">
-                        <h3 class="accordion-toggle" data-toggle="collapse" href="#buttons" rel="popover" data-original-title="Buttons" data-content="Buttons come in three types. You can see the normal and primary buttons at the end of this form, and the inverse buttons in the navbar.">Buttons</h3>
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#buttons" rel="popover" data-original-title="Buttons" data-content="Buttons come in three types. You can see an example of each at the end of this form.">Buttons</h3>
                     </div>
                     <div class="collapse" id="buttons">
                         <div class="control-group">
                             <label class="control-label" for="btnBackground">Buttons:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="btnBackground" name="btnBackground" value="{{ btnBackground }}"/>
+                                <input type="text" class="color" id="btnBackground" name="btnBackground" value="{{ btnBackground }}" data-default="{{ variable_defaults|index:'btnBackground' }}"/>
                             </div>
                         </div>
                         <div class="control-group">
-                            <label class="control-label" for="btnLinkColor">Button text:</label>
+                            <label class="control-label" for="btnLinkColor">Button Text:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="btnLinkColor" name="btnLinkColor" value="{{ btnLinkColor }}"/>
+                                <input type="text" class="color" id="btnLinkColor" name="btnLinkColor" value="{{ btnLinkColor }}" data-default="{{ variable_defaults|index:'btnLinkColor' }}"/>
                             </div>
                         </div>
 
                         <div class="control-group">
                             <label class="control-label" for="btnPrimaryBackground">Primary Buttons:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="btnPrimaryBackground" name="btnPrimaryBackground" value="{{ btnPrimaryBackground }}"/>
+                                <input type="text" class="color" id="btnPrimaryBackground" name="btnPrimaryBackground" value="{{ btnPrimaryBackground }}" data-default="{{ variable_defaults|index:'btnPrimaryBackground' }}"/>
                             </div>
                         </div>
                         <div class="control-group">
-                            <label class="control-label" for="btnPrimaryLinkColor">Primary button text:</label>
+                            <label class="control-label" for="btnPrimaryLinkColor">Primary Button Text:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="btnPrimaryLinkColor" name="btnPrimaryLinkColor" value="{{ btnPrimaryLinkColor }}"/>
+                                <input type="text" class="color" id="btnPrimaryLinkColor" name="btnPrimaryLinkColor" value="{{ btnPrimaryLinkColor }}" data-default="{{ variable_defaults|index:'btnPrimaryLinkColor' }}"/>
                             </div>
                         </div>
 
                         <div class="control-group">
                             <label class="control-label" for="btnInverseBackground">Inverse Buttons:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="btnInverseBackground" name="btnInverseBackground" value="{{ btnInverseBackground }}"/>
+                                <input type="text" class="color" id="btnInverseBackground" name="btnInverseBackground" value="{{ btnInverseBackground }}" data-default="{{ variable_defaults|index:'btnInverseBackground' }}"/>
                             </div>
                         </div>
                         <div class="control-group">
-                            <label class="control-label" for="btnInverseLinkColor">Inverse button text:</label>
+                            <label class="control-label" for="btnInverseLinkColor">Inverse Button Text:</label>
                             <div class="controls">
-                                <input type="text" class="color" id="btnInverseLinkColor" name="btnInverseLinkColor" value="{{ btnInverseLinkColor }}"/>
+                                <input type="text" class="color" id="btnInverseLinkColor" name="btnInverseLinkColor" value="{{ btnInverseLinkColor }}" data-default="{{ variable_defaults|index:'btnInverseLinkColor' }}"/>
                             </div>
                         </div>
                     </div>
@@ -407,6 +418,14 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         <h3 class="accordion-toggle" data-toggle="collapse" href="#advanced" rel="popover" data-original-title="Advanced" data-content="These are additional parameters specific to the currently selected theme.">{% if theme_name == "fruitsalad" %}Fruitsalad Tabs{% else %}Advanced{% endif %}</h3>
                     </div>
                     <div class="collapse" id="advanced">
+                        {% if theme_name == "bigpicture" %}
+                            <div>
+
+                            <p>Accent 1 is the color of the border of a button while it is being pressed.</p>
+                            <p>Accent 2 is the color of the border for all buttons, certain text boxes, and page titles.</p>
+
+                            </div>
+                        {% endif %}
                         {% for category, data in adv_vars.items %}{% if not data|length_is:0 %}
                         <div id="adv_category_{{ forloop.counter0 }}">
                             <h3>Category: {{ category }}<hr/></h3>

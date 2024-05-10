@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, meets_deadline
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, Record, RecordType
@@ -71,7 +70,6 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
 
     def teachers(self, QObject = False):
         """ Returns a list of teachers who have submitted the acknowledgement. """
-        from datetime import datetime
         qo = Q(record__program=self.program, record__event__name="teacheracknowledgement")
         if QObject is True:
             return {'acknowledgement': qo}

@@ -37,8 +37,7 @@ Learning Unlimited, Inc.
 from django.http     import HttpResponseRedirect
 from esp.users.views import search_for_user
 from django.db.models.query   import Q
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
-from esp.program.modules.handlers.programprintables import ProgramPrintables
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web import render_to_response
 from esp.users.models import ESPUser
 

@@ -34,14 +34,10 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call
 from esp.utils.web import render_to_response
-from esp.middleware      import ESPError
 from esp.users.models    import ESPUser
 from django.db.models.query       import Q
-from django.template.loader import get_template
-from esp.program.models  import StudentApplication
 from django              import forms
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -115,7 +111,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
         return super(StudentJunctionAppModule, self).deadline_met('/Applications')
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/Applications')
     def application(self, request, tl, one, two, module, extra, prog):
         app = request.user.getApplication(self.program)

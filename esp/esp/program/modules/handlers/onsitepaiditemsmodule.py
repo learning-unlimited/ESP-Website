@@ -34,13 +34,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
 from esp.utils.web import render_to_response
-from django.contrib.auth.decorators import login_required
-from esp.users.models    import ESPUser
-from django              import forms
-from django.http import HttpResponseRedirect
 from esp.users.views    import search_for_user
 from esp.accounting.controllers import IndividualAccountingController
 

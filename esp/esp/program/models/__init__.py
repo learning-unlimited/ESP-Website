@@ -269,7 +269,14 @@ class Program(models.Model, CustomFormsLinkModel):
     name = models.CharField(max_length=80)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
-    director_email = models.EmailField(max_length=75) # director contact email address used for from field and display
+    # director contact email address used for from field and display
+    director_email = models.EmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
+                                       validators=[validators.RegexValidator(r'(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)' % settings.SITE_INFO[1].replace('.', '\.'))],
+                                       help_text=mark_safe('The director email address must end in @' + settings.SITE_INFO[1] + ' (your website), ' +
+                                                           '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). ' +
+                                                           'The default is <b>info@' + settings.SITE_INFO[1] + '</b>, which redirects to the "default" ' +
+                                                           'email address from your site\'s settings by default. ' +
+                                                           'You can create and manage your email redirects <a href="/manage/redirects/">here</a>.'))
     director_cc_email = models.EmailField(blank=True, default='', max_length=75, help_text=mark_safe('If set, automated outgoing mail (except class cancellations) will be sent to this address <i>instead of</i> the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.')) # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
     director_confidential_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, confidential emails such as financial aid applications will be sent to this address <i>instead of</i> the director email.')
     program_size_max = models.IntegerField(null=True, help_text='Set to 0 for no cap. Student registration performance is best when no cap is set.')
@@ -280,11 +287,11 @@ class Program(models.Model, CustomFormsLinkModel):
                          'the documentation</a> for details.')
     class_categories = models.ManyToManyField('ClassCategories',
                                               blank=True,
-                                              help_text='You can add new categories or modify existing ones <a href="/manage/categoriesandflags/categories">here</a>.')
+                                              help_text='You can add new categories or modify existing ones <a href="/manage/catsflagsrecs/categories">here</a>.')
 
     flag_types = models.ManyToManyField('ClassFlagType',
                     blank=True,
-                    help_text='The set of flags that can be used to tag classes for this program. You can add and modify flag types <a href="/manage/categoriesandflags/flagtypes">here</a>.')
+                    help_text='The set of flags that can be used to tag classes for this program. You can add and modify flag types <a href="/manage/catsflagsrecs/flagtypes">here</a>.')
 
     documents = GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
 
@@ -975,7 +982,7 @@ class Program(models.Model, CustomFormsLinkModel):
                 return [tagged_programs[0][1]]
         return []
     current_programs.depend_on_model('cal.Event')
-    current_programs.depend_on_model('program.ProgramModule')
+    current_programs.depend_on_model('program.Program')
     current_programs = staticmethod(current_programs)
 
     def date_range(self):

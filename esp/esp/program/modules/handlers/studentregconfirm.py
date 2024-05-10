@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_student, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, main_call
 from esp.middleware.threadlocalrequest import get_current_request
 from django.http import HttpResponseRedirect
 
@@ -51,7 +51,7 @@ class StudentRegConfirm(ProgramModuleObj):
             }
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     def do_confirmreg(self, request, tl, one, two, module, extra, prog):
         return HttpResponseRedirect("confirmreg")
 

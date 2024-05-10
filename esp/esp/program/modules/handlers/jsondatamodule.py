@@ -45,7 +45,7 @@ import operator
 from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
 from django.db.models.query import Q
-from django.http import Http404, HttpResponse
+from django.http import Http404
 
 from argcache import cache_function
 
@@ -54,12 +54,11 @@ from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
 from esp.program.class_status import ClassStatus
 from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, ClassFlagType, ClassFlag, ModeratorRecord, RegistrationProfile, TeacherBio, PhaseZeroRecord, FinancialAidRequest, VolunteerOffer
-from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, no_auth, main_call, aux_call
-from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
+from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student_in_grade, needs_admin, no_auth, aux_call
+from esp.resources.models import ResourceAssignment, ResourceRequest, ResourceType
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, UserAvailability, StudentInfo, Record
 from esp.utils.decorators import cached_module_view, json_response
-from esp.utils.no_autocookie import disable_csrf_cookie_update
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import Transfer
 
@@ -503,7 +502,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'subject': 'id',
             'subject__sections': 'id',
             })
-    @needs_student
+    @needs_student_in_grade
     def interested_classes(self, request, tl, one, two, module, extra, prog):
         ssis = StudentSubjectInterest.valid_objects().filter(
             user=request.user)
@@ -515,7 +514,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @json_response()
-    @needs_student
+    @needs_student_in_grade
     def lottery_preferences(self, request, tl, one, two, module, extra, prog):
         if prog.priorityLimit() > 1:
             return self.lottery_preferences_usepriority(request, prog)
@@ -1093,7 +1092,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return dictOut
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def set_donation_amount(self, request, tl, one, two, module, extra, prog):
         """ Set the student's desired donation amount.
             Creates a line item type for donations if it does not exist. """

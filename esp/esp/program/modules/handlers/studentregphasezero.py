@@ -35,8 +35,8 @@ Learning Unlimited, Inc.
 
 from esp.utils.web import render_to_response
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap, no_auth, needs_admin
-from esp.users.models import Record, ESPUser, Permission
+from esp.program.modules.base import ProgramModuleObj, main_call, needs_student_in_grade, aux_call
+from esp.users.models import ESPUser, Permission
 from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import SubmitForm
 from esp.dbmail.models import send_mail
@@ -46,10 +46,9 @@ from esp.web.views.json_utils import JsonResponse
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.template.loader import render_to_string
-from django.contrib.auth.models import Group
 from django.db.models.query import Q
 
-import random, copy, datetime, re
+import datetime
 
 class StudentRegPhaseZero(ProgramModuleObj):
     doc = """Allows students to enter a lottery for admission to the program."""
@@ -84,8 +83,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
         }
 
     @main_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     def studentregphasezero(self, request, tl, one, two, module, extra, prog):
         """
         Serves the Phase Zero student reg page. The initial page includes a button
@@ -148,7 +146,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                 return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def joingroup(self, request, tl, one, two, module, extra, prog, newclass = None):
         context = {}
         context['program'] = prog
@@ -205,7 +203,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
             return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def studentlookup(self, request, tl, one, two, module, extra, prog):
 
         # Search for students with names that start with search string

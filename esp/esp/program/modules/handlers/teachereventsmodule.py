@@ -33,19 +33,16 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, main_call
 from esp.program.modules.forms.teacherreg import TeacherEventSignupForm
-from esp.program.modules import module_ext
 from esp.utils.web import render_to_response
-from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q
 from esp.dbmail.models import send_mail
-from esp.miniblog.models import Entry
 from esp.cal.models import Event, EventType
-from esp.users.models import ESPUser, UserAvailability, User
+from esp.users.models import ESPUser, UserAvailability
 from esp.middleware.threadlocalrequest import get_current_request
-from datetime import datetime
 from django.contrib.auth.models import Group
+from django.conf import settings
 
 class TeacherEventsModule(ProgramModuleObj):
     doc = """Allows teachers to sign up for one or more teacher events (e.g. interviews, training)."""
@@ -137,8 +134,8 @@ class TeacherEventsModule(ProgramModuleObj):
                         send_mail('['+self.program.niceName()+'] Teacher Interview for ' + request.user.first_name + ' ' + request.user.last_name + ': ' + event_name, \
                               """Teacher Interview Registration Notification\n--------------------------------- \n\nTeacher: %s %s\n\nTime: %s\n\n""" % \
                               (request.user.first_name, request.user.last_name, event_name), \
-                              (request.user.get_email_sendto_address()), \
-                              [self.program.getDirectorCCEmail()], True)
+                              '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER), \
+                              [self.program.getDirectorCCEmail()], True, extra_headers = {'Reply-To': request.user.get_email_sendto_address()})
 
                 # Register for training
                 if data['training']:

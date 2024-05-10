@@ -5,6 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import login
 from django.http import HttpResponseRedirect, HttpResponse
 from django.template import RequestContext
+from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
 
 from esp.program.models import Program, RegistrationProfile
 from esp.tagdict.models import Tag
@@ -164,6 +166,54 @@ def disable_account(request):
 
     return render_to_response('users/disable_account.html', request, context)
 
+# modified from here: https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
+def unsubscribe(request, username, token, oneclick = False):
+    """
+    User is immediately unsubscribed if they are logged in as username, or
+    if they came from an unexpired unsubscribe link. Otherwise, they are
+    redirected to the login page and unsubscribed as soon as they log in.
+    """
+
+    # render our own error message if the username doesn't match
+    users = ESPUser.objects.filter(username=username)
+    if users.exists():
+        users_active = users.filter(is_active=True)
+        if users_active.exists():
+            user = users_active[0]
+        else:
+            raise ESPError("User " + users[0].username + " is already unsubscribed.")
+    else:
+        raise ESPError("No user matching that unsubscribe request.")
+
+    # if POSTing, they clicked the confirm button
+    # if oneclick=True, then they came here from an email client
+    if request.POST.get("List-Unsubscribe") == "One-Click" or oneclick == True:
+        # "unsubscribe" them (deactivate their account)
+        user.is_active = False
+        user.save()
+        return render_to_response('users/unsubscribe.html', request, context = {'user': user, 'deactivated': True})
+
+    # otherwise show them a confirmation button
+    # if they are logged into the correct account or the token is valid
+    if ( (request.user.is_authenticated() and request.user == user) or user.check_token(token)):
+        return render_to_response('users/unsubscribe.html', request, context = {'user': user})
+    # if they are logged into a different account
+    # tell them to log out and try again
+    elif request.user.is_authenticated() and request.user != user:
+        raise ESPError("You are logged into a different account than the one you are trying to unsubscribe. Please log out and try your request again.")
+    # otherwise they will need to log in (or find a more recent link)
+    # so show the login page (with a custom alert message)
+    else:
+        next_url = reverse('unsubscribe', kwargs={'username': username, 'token': token,})
+        return HttpResponseRedirect('%s?next=%s' % (reverse('login'), next_url))
+
+# have an email client (etc) POST to this view to process a
+# "oneclick" unsubscribe
+@csrf_exempt
+def unsubscribe_oneclick(request, username, token):
+    if request.POST.get("List-Unsubscribe") == "One-Click":
+        return unsubscribe(request, username, token, oneclick = True)
+    raise ESPError("Invalid oneclick data.")
 
 @admin_required
 def morph_into_user(request):

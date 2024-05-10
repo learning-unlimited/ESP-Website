@@ -38,11 +38,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.db.models.query import Q
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, main_call, aux_call
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser
 from esp.application.models import FormstackStudentProgramApp
-from six.moves.urllib.parse import urlencode
 
 class FormstackAppModule(ProgramModuleObj):
     doc = """
@@ -79,7 +78,7 @@ class FormstackAppModule(ProgramModuleObj):
         return False
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     def studentapp(self, request, tl, one, two, module, extra, prog):
         fsas = prog.formstackappsettings
         context = {}
@@ -100,7 +99,7 @@ class FormstackAppModule(ProgramModuleObj):
                                   request, context)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def finaidapp(self, request, tl, one, two, module, extra, prog):
         fsas = prog.formstackappsettings
         if not fsas.finaid_form():

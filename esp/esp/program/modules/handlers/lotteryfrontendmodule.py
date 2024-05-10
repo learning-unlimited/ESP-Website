@@ -1,11 +1,10 @@
 from __future__ import absolute_import
 import logging
 
-from esp.program.models import Program, ClassSection, StudentRegistration
+from esp.program.models import StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.controllers.lottery import LotteryAssignmentController, LotteryException
 from esp.utils.web import render_to_response
-from esp.users.models import ESPUser
 from esp.utils.decorators import json_response
 
 class LotteryFrontendModule(ProgramModuleObj):

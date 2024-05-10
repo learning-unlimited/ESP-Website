@@ -40,14 +40,13 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 
-from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Min, Q
-from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest, Http404
+from django.http import HttpResponse, HttpResponseBadRequest, Http404
 
 from esp.cal.models import Event
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
-from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap, no_auth
+from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_cap, no_auth
 from esp.users.models import Record, ESPUser
 from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
@@ -92,8 +91,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             }
 
     @main_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Classes/Lottery')
     @meets_cap
     def studentreg2phase(self, request, tl, one, two, module, extra, prog):
@@ -236,8 +234,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         return render_to_response(self.baseDir() + 'view_classes.html', request, context)
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Classes/Lottery')
     @meets_cap
     def mark_classes(self, request, tl, one, two, module, extra, prog):
@@ -273,8 +270,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         return render_to_response(self.baseDir() + 'mark_classes.html', request, context)
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Classes/Lottery')
     @meets_cap
     def mark_classes_interested(self, request, tl, one, two, module, extra, prog):
@@ -331,8 +327,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             return self.goToCore(tl)
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Classes/Lottery')
     @meets_cap
     def rank_classes(self, request, tl, one, two, module, extra, prog):
@@ -364,8 +359,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             self.baseDir() + 'rank_classes.html', request, context)
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Classes/Lottery')
     @meets_cap
     def save_priorities(self, request, tl, one, two, module, extra, prog):

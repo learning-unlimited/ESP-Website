@@ -242,25 +242,23 @@ class ThemeController(object):
         logger.debug('LESS search path is "%s"', less_search_path)
 
         #   Compile to CSS
-        lessc_args = ['lessc', '--include-path="%s"' % less_search_path, '-']
-        lessc_process = subprocess.Popen(' '.join(lessc_args), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-        css_data = lessc_process.communicate(less_data.encode())[0].decode('UTF-8')
-
-        if lessc_process.returncode != 0:
-            raise ESPError('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.<br />LESS compile command was: <pre>%s</pre>' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support'], ' '.join(lessc_args)), log=True)
+        css_data = self.compile_less(less_data)
 
         return css_data
 
     def get_variable_defaults(self, theme_name=None):
+        # This is particularly important for themes that have variables files with LESS (e.g., darken())
+        # Otherwise it basically does the same thing as find_less_variables()
         if theme_name is None:
             theme_name = self.get_current_theme()
 
         less_data = ''
         # load variable LESS from files
         for filename in self.list_filenames(os.path.join(self.base_dir(theme_name), 'less'), r'variables.*\.less$'):
+            less_file = open(filename)
             logger.debug('Including LESS source %s', filename)
-            with open(filename) as less_file:
-                less_data += '\n' + less_file.read()
+            less_data += '\n' + less_file.read()
+            less_file.close()
 
         # add list of variables
         # this is a hack to convert the less variables to pseudo-css compiled variables
@@ -275,7 +273,9 @@ class ThemeController(object):
         css_data = self.compile_less(less_data)
 
         # extract the newly compiled variables
-        defaults = dict(re.findall(r'\s([a-zA-Z0-9_]+):\s*(.*?);', css_data))
+        compiled_defaults = dict(re.findall(r'\s([a-zA-Z0-9_]+):\s*(.*?);', css_data))
+        defaults = self.find_less_variables(flat=True)
+        defaults.update(compiled_defaults)
 
         return defaults
 
@@ -293,7 +293,7 @@ class ThemeController(object):
             variable_data['iconSpritePath'] = '"%s/bootstrap/img/glyphicons-halflings.png"' % settings.CDN_ADDRESS
 
         #   Replace all variable declarations for which we have a value defined
-        for (variable_name, variable_value) in six.iteritems(variable_data):
+        for (variable_name, variable_value) in variable_data.iteritems():
             less_data = re.sub(r'@%s:(\s*)(.*?);' % variable_name, r'@%s: %s;' % (variable_name, variable_value), less_data)
 
         #   Compile to CSS

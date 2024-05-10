@@ -121,7 +121,8 @@ urlpatterns += [
 
 # Specific .html pages that have defaults
 urlpatterns += [
-    url(r'^faq', TemplateView.as_view(template_name='faq.html'), name='FAQ'),
+    url(r'^(faq|faq\.html)$', main.FAQView.as_view(), name='FAQ'),
+    url(r'^(contact|contact\.html)$', main.ContactUsView.as_view(), name='Contact Us'),
 ]
 
 urlpatterns += [

@@ -40,6 +40,7 @@ Learning Unlimited, Inc.
 from datetime import timedelta
 import time
 
+from django.core.validators import RegexValidator
 from django.db import models
 
 from esp.db.fields import AjaxForeignKey
@@ -177,7 +178,8 @@ class ClassRegModuleInfo(models.Model):
     #   An HTML color code for the program.  All classes will appear in some variant
     #   of this color in the catalog and registration pages.  If null, the default
     #   ESP colors will be used.
-    color_code           = models.CharField(max_length=6, blank=True, null=True)
+    color_code           = models.CharField(max_length=7, blank=True, null=True, help_text='The background color for class titles in the catalog and registration pages. If no color is chosen, the default light blue will be used.',
+                                            validators = [RegexValidator(r'^#([a-zA-Z0-9]{3}){1,2}$', message = 'Value must be a valid 3-character or 6-character hex color starting with "#".')])
 
     #   If this is true, teachers will be allowed to specify that students may
     #   come to their class late.

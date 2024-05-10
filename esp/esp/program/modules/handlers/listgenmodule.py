@@ -41,7 +41,6 @@ from esp.users.controllers.usersearch import UserSearchController
 from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.middleware import ESPError
 from esp.program.models import StudentRegistration, PhaseZeroRecord, SplashInfo
-from django.db.models.query      import Q
 from django import forms
 
 class UserAttributeGetter(object):

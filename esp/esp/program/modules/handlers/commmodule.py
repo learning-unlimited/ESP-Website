@@ -33,19 +33,19 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
-from esp.dbmail.models import MessageRequest
+from esp.dbmail.models import MessageRequest, PlainRedirect
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_checklist
-from django.db.models.query   import Q
 from esp.dbmail.models import ActionHandler
 from django.template import Template
 from django.template import Context as DjangoContext
-from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.middleware import ESPError
+
+import re
 
 class CommModule(ProgramModuleObj):
     doc = """Email users that match specific search criteria."""
@@ -81,9 +81,17 @@ class CommModule(ProgramModuleObj):
         # Set From address
         if request.POST.get('from', '').strip():
             fromemail = request.POST['from']
+            if not re.match(r"(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)" % settings.SITE_INFO[1].replace(".", "\."), fromemail):
+                raise ESPError("Invalid 'From' email address. The 'From' email address must " +
+                               "end in @" + settings.SITE_INFO[1] + " (your website), " +
+                               "@learningu.org, or a valid subdomain of learningu.org " +
+                               "(i.e., @subdomain.learningu.org).")
         else:
-            # String together an address like username@esp.mit.edu
-            fromemail = '%s@%s' % (request.user.username, settings.SITE_INFO[1])
+            # Use the info redirect (make one for the default email address if it doesn't exist)
+            prs = PlainRedirect.objects.filter(original = "info")
+            if not prs.exists():
+                redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
+            fromemail = '%s@%s' % ("info", settings.SITE_INFO[1])
 
         # Set Reply-To address
         if request.POST.get('replyto', '').strip():
@@ -236,6 +244,7 @@ class CommModule(ProgramModuleObj):
     @main_call
     @needs_admin
     def commpanel(self, request, tl, one, two, module, extra, prog):
+        from django.conf import settings
 
         usc = UserSearchController()
 
@@ -262,6 +271,11 @@ class CommModule(ProgramModuleObj):
                 context['sendto_fn_name'] = sendto_fn_name
                 context['listcount'] = self.approx_num_of_recipients(filterObj, sendto_fn)
                 context['selected'] = selected
+                # Use the info redirect (make one for the default email address if it doesn't exist)
+                prs = PlainRedirect.objects.filter(original = "info")
+                if not prs.exists():
+                    redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
+                context['from'] = '%s@%s' % ("info", settings.SITE_INFO[1])
                 return render_to_response(self.baseDir()+'step2.html', request, context)
 
             ##  Prepare a message starting from an earlier request

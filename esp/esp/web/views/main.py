@@ -39,13 +39,15 @@ from esp.users.models import ESPUser, Permission
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.utils.datastructures import MultiValueDict
 from django.template import loader
+from django.views.generic.base import TemplateView
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 
+import datetime
 import re
 
 from esp.dbmail.models import MessageRequest
 from esp.web.models import NavBarCategory
-from esp.utils.web import render_to_response
+from esp.utils.web import render_to_response, esp_context_stuff
 from esp.web.views.navBar import makeNavBar
 from esp.web.views.archives import archive_handlers
 from esp.middleware import ESPError
@@ -119,11 +121,24 @@ def archives(request, selection, category = None, options = None):
 
     return render_to_response('users/construction', request, {})
 
+class DefaultQSDView(TemplateView):
+    def get_context_data(self, **kwargs):
+        return esp_context_stuff()
+
+class FAQView(DefaultQSDView):
+    template_name = "faq.html"
+
+class ContactUsView(DefaultQSDView):
+    template_name = "contact_qsd.html"
+
 def contact(request, section='esp'):
     """
     This view should take an email and post to those people.
     """
     from esp.dbmail.models import send_mail
+    # if not set up, immediately redirect
+    if not Tag.getBooleanTag('contact_form_enabled'):
+        return HttpResponseRedirect("/contact.html")
 
     if 'success' in request.GET:
         return render_to_response('contact_success.html', request, {})
@@ -216,33 +231,39 @@ def registration_redirect(request):
     # prepare the rendered page so it points them to open student/teacher reg's
     ctxt = {}
     userrole = {}
-    regperm = None
+
     if user.isTeacher():
         userrole['name'] = 'Teacher'
         userrole['base'] = 'teach'
         userrole['reg'] = 'teacherreg'
-        regperm = 'Teacher/Classes'
+        # first check for which programs they can still create a class
+        progs = list(set(Permission.program_by_perm(user, 'Teacher/Classes/Create/Class')) | set(Permission.program_by_perm(user, 'Teacher/Classes/Create/OpenClass')))
+        # then check for which programs they have already registered a class
+        for prog in user.getTaughtPrograms():
+            # only include the program if it hasn't finished yet
+            if prog not in progs and prog.datetime_range()[1] > datetime.datetime.now():
+                progs.append(prog)
     elif user.isVolunteer():
         userrole['name'] = 'Volunteer'
         userrole['base'] = 'volunteer'
         userrole['reg'] = 'signup'
-        regperm = 'Volunteer/Signup'
+        progs = list(Permission.program_by_perm(user, 'Volunteer/Signup'))
     elif user.isStudent():
         userrole['name'] = 'Student'
         userrole['base'] = 'learn'
         userrole['reg'] = 'studentreg'
-        regperm = 'Student/Classes'
-
-    ctxt['userrole'] = userrole
-
-    if regperm:
-        if user.isTeacher() or user.isVolunteer():
-            progs = list(Permission.program_by_perm(user, regperm))
-        else:
-            user_grade = user.getGrade()
-            progs = list(Permission.program_by_perm(user, regperm).filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
+        # first check for which program they can still register for a class
+        user_grade = user.getGrade()
+        progs = list(Permission.program_by_perm(user, 'Student/Classes').filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
+        # then check for which programs they have already registered for a class
+        for prog in user.getLearntPrograms():
+            # only include the program if it hasn't finished yet
+            if prog not in progs and prog.datetime_range()[1] > datetime.datetime.now():
+                progs.append(prog)
     else:
         progs = []
+
+    ctxt['userrole'] = userrole
 
     #   If we have 1 program, automatically redirect to registration for that program.
     #   Most chapters will want this, but it can be disabled by a Tag.

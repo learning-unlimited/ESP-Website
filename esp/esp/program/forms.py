@@ -40,6 +40,7 @@ Learning Unlimited, Inc.
 import re
 import unicodedata
 
+from django.conf import settings
 from esp.users.models import StudentInfo, K12School, RecordType
 from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories
 from esp.dbmail.models import PlainRedirect
@@ -154,9 +155,10 @@ class ProgramCreationForm(BetterModelForm):
             'program_modules': forms.SelectMultiple(attrs={'class': 'hidden-field'}),
         }
         model = Program
-ProgramCreationForm.base_fields['director_email'].widget = forms.TextInput(attrs={'size': 40})
-ProgramCreationForm.base_fields['director_cc_email'].widget = forms.TextInput(attrs={'size': 40})
-ProgramCreationForm.base_fields['director_confidential_email'].widget = forms.TextInput(attrs={'size': 40})
+ProgramCreationForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'size': 40,
+                                                                                   'pattern': r'(^.+@%s$)|(^.+@(\w+\.)+learningu\.org$)' % settings.SITE_INFO[1].replace('.', '\.')})
+ProgramCreationForm.base_fields['director_cc_email'].widget = forms.EmailInput(attrs={'size': 40})
+ProgramCreationForm.base_fields['director_confidential_email'].widget = forms.EmailInput(attrs={'size': 40})
 '''
 ProgramCreationForm.base_fields['term'].line_group = -4
 ProgramCreationForm.base_fields['term_friendly'].line_group = -4

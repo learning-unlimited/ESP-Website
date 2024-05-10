@@ -201,7 +201,7 @@ function {{ name }}_delete_link(event)
 
 function {{ name }}_add_link(obj, data)
 {
-    obj.append($j("<li />"));
+    obj.append($j("<li />").addClass("ui-sortable-handle"));
     var entry = obj.children().last();
     %(add_link_body)s
 
@@ -241,7 +241,14 @@ function {{ name }}_setup()
     anchor_ul.parent().append(add_button);
 }
 
-$j(document).ready({{ name }}_setup);
+$j(document).ready(function() {
+    {{ name }}_setup();
+    $j("#{{ name }}_entries").sortable({
+        update: function( event, ui ) {
+            {{ name }}_save();
+        }
+    });
+});
 </script>
 <style type="text/css">
 #{{ name }}_entries {
@@ -250,6 +257,14 @@ $j(document).ready({{ name }}_setup);
 #{{ name }}_entries input {
     font-size: 1.0em;
     margin-right: 5px;
+}
+#{{ name }}_entries .ui-sortable-handle {
+    cursor: move;
+    background: lavender;
+    padding: 5px;
+    border-radius: 10px;
+    border: dashed 1px lightgrey;
+    margin-bottom: 5px;
 }
 </style>
 """
@@ -302,7 +317,7 @@ function {{ name }}_delete_tab(event)
 function {{ name }}_add_link(obj, data)
 {
     var entry_list = obj.children("ul");
-    entry_list.append($j("<li />"));
+    entry_list.append($j("<li />").addClass("ui-sortable-handle"));
     var entry = entry_list.children().last();
     %(add_link_body)s
 
@@ -315,15 +330,12 @@ function {{ name }}_add_link(obj, data)
 function {{ name }}_add_tab(obj, data)
 {
     //  obj.children("li").last().after($j("<li />"));
-    obj.append($j("<li />"));
+    obj.append($j("<li />").addClass("ui-sortable-handle"));
     var category_li = obj.children("li").last();
     category_li.append($j("<span>Header text: </span>"));
     category_li.append($j("<input class='data_header nav_header_field input-mini' type='text' value='" + data.header + "' />"));
     category_li.append($j("<span>Header link: </span>"));
     category_li.append($j("<input class='data_header_link nav_header_field' type='text' value='" + data.header_link + "' />"));
-    var delete_button = $j("<button class='btn btn-mini btn-danger'>Delete tab</button>");
-    delete_button.on("click", {{ name }}_delete_tab);
-    category_li.append(delete_button);
 
     category_li.append($j("<ul />"));
     var entry_list = category_li.children("ul");
@@ -339,6 +351,10 @@ function {{ name }}_add_tab(obj, data)
         {{ name }}_add_link($j(this).parent(), {text: "", link: "", icon: ""});
     });
     category_li.append(add_button);
+
+    var delete_button = $j("<button class='btn btn-mini btn-danger' style='margin-left: 5px;'>Delete tab</button>");
+    delete_button.on("click", {{ name }}_delete_tab);
+    category_li.append(delete_button);
 }
 
 function {{ name }}_save()
@@ -379,7 +395,20 @@ function {{ name }}_setup()
     anchor_ul.parents("form").submit({{ name }}_save);
 }
 
-$j(document).ready({{ name }}_setup);
+$j(document).ready(function() {
+    {{ name }}_setup();
+    $j("#{{ name }}_entries").sortable({
+        update: function( event, ui ) {
+            {{ name }}_save();
+        }
+    });
+    $j("#{{ name }}_entries ul").sortable({
+        update: function( event, ui ) {
+            {{ name }}_save();
+        },
+        connectWith: "#{{ name }}_entries ul"
+    });
+});
 </script>
 <style type="text/css">
 #{{ name }}_entries {
@@ -388,6 +417,17 @@ $j(document).ready({{ name }}_setup);
 #{{ name }}_entries input {
     font-size: 1.0em;
     margin-right: 5px;
+}
+#{{ name }}_entries .ui-sortable-handle {
+    cursor: move;
+    background: beige;
+    padding: 5px;
+    border-radius: 10px;
+    border: dashed 1px lightgrey;
+    margin-bottom: 5px;
+}
+#{{ name }}_entries > .ui-sortable-handle {
+    background: aliceblue;
 }
 </style>
 """

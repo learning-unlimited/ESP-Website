@@ -1,6 +1,5 @@
 from __future__ import absolute_import
-from esp.program.models import Program
-from esp.program.modules.base import ProgramModuleObj, needs_student, main_call, meets_deadline
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, main_call, meets_deadline
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, Record, RecordType
 from django import forms
@@ -40,7 +39,7 @@ class StudentAcknowledgementModule(ProgramModuleObj):
                                      event__name="studentacknowledgement").exists()
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/Acknowledgement')
     def acknowledgement(self, request, tl, one, two, module, extra, prog):
         context = {'prog': prog}

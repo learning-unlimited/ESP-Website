@@ -71,6 +71,8 @@ from django_extensions.db.models import TimeStampedModel
 from django.core import urlresolvers
 from django.utils.functional import SimpleLazyObject
 from django.utils.safestring import mark_safe
+from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
+from django.urls import reverse
 
 
 from esp.cal.models import Event, EventType
@@ -407,6 +409,8 @@ class BaseESPUser(object):
                          (settings.DEFAULT_HOST, otheruser.password)
         elif key == 'recover_query':
             return "?code=%s" % otheruser.password
+        elif key == 'unsubscribe_link':
+            return otheruser.unsubscribe_link_full()
         return six.u('')
 
     def getTaughtPrograms(self):
@@ -746,6 +750,10 @@ class BaseESPUser(object):
 
     def getEnrolledSectionsAll(self):
         return self.getSections(None, verbs=['Enrolled'])
+
+    def getLearntPrograms(self):
+        learnt_programs = Program.objects.filter(id__in = list(self.getSections().values_list('parent_class__parent_program', flat = True)))
+        return learnt_programs
 
     @cache_function
     def getFirstClassTime(self, program):
@@ -1162,6 +1170,32 @@ class BaseESPUser(object):
     def userHash(self, program):
         user_hash = hash(str(self.id) + str(program.id))
         return '{0:06d}'.format(abs(user_hash))[:6]
+
+    # modified from here: https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
+    def unsubscribe_link(self):
+        username, token = self.make_token().split(":", 1)
+        return reverse('unsubscribe', kwargs={'username': username, 'token': token,})
+
+    def unsubscribe_link_full(self):
+        unsub_link = self.unsubscribe_link()
+        return 'https://%s%s' % (Site.objects.get_current().domain, unsub_link)
+
+    # this is an insecure version that accepts a POST from external sources
+    def unsubscribe_oneclick(self):
+        unsub_link = self.unsubscribe_link()
+        unsub_link = unsub_link.replace("unsubscribe", "unsubscribe_oneclick")
+        return 'http://%s%s' % (Site.objects.get_current().domain, unsub_link)
+
+    def make_token(self):
+        return TimestampSigner().sign(self.username)
+
+    def check_token(self, token):
+        try:
+            key = '%s:%s' % (self.username, token)
+            TimestampSigner().unsign(key, max_age=60 * 60 * 24 * 7) # Valid for 7 days
+        except (BadSignature, SignatureExpired):
+            return False
+        return True
 
 class ESPUser(User, BaseESPUser):
     """ Create a user of the ESP Website
@@ -2042,9 +2076,9 @@ class K12School(models.Model):
         return values
 
     def __str__(self):
-        if self.contact_id:
+        if self.contact_id and self.contact.address_city and self.contact.address_state:
             return six.u('%s in %s, %s') % (self.name, self.contact.address_city,
-                                       self.contact.address_state)
+                                            self.contact.address_state)
         else:
             return six.u('%s') % self.name
 
@@ -2530,7 +2564,7 @@ class Permission(ExpirableModel):
                 program=program, user__isnull=True).exists()
 
     @classmethod
-    def q_permissions_on_program(cls, perm_q, name, program=None, when=None, program_is_none_implies_all=False):
+    def q_permissions_on_program(cls, perm_q, name, program=None, when=None, program_is_none_implies_all=False, is_valid=True):
         """
         Build a QuerySet of permissions that would grant a permission.
 
@@ -2555,7 +2589,61 @@ class Permission(ExpirableModel):
         if program_is_none_implies_all:
             qprogram |= Q(program=None)
         initial_qset = cls.objects.filter(perm_q & qprogram).filter(permission_type__in=perms)
-        return initial_qset.filter(cls.is_valid_qobject(when=when))
+        if is_valid:
+            return initial_qset.filter(cls.is_valid_qobject(when=when))
+        else:
+            return initial_qset
+
+    @classmethod
+    def user_deadline_when(cls, user, name, program=None, program_is_none_implies_all=False):
+        """ Determine when a deadline will occur for a given user (including in the past).
+
+        :param user:
+            Check the permissions assigned to this user.
+        :type user:
+            `ESPUser`
+        :param name:
+            The unique identifier of the permission identifier to check for.
+            Must be in PERMISSION_CHOICES_FLAT.
+        :type name:
+            `str`
+        :param program:
+            Check for permission for `name` on this program.
+            If program is None, check only for Permission objects with
+            program=None.
+            If program_is_none_implies_all is False, check only for Permission
+            objects with program=program.
+            If program_is_none_implies_all is True, check for Permission
+            objects with program=program or program=None.
+        :type program:
+            `Program` or None
+        :param program_is_none_implies_all:
+            If True, treat Permission objects with program=None as if they are
+            global across all programs. Return True if the user has a
+            Permission object with program=program or with program=None.
+            If False, do not treat Permission objects with program=None as if
+            they are global across all programs. Only return True if the user
+            has a Permission object with program=program.
+            The default behavior is that permissions are not globally
+            applicable. Only special permissions that are not in
+            deadline_types, like Administer and Onsite, can be granted
+            globally on all programs. When checking for these special
+            permissions, callers should pass True for this param.
+            If name is in deadline_types, set this param to False,
+            regardless of the original value.
+        :type program_is_none_implies_all:
+            `bool`
+        :return:
+            When the deadline will occur (latest in time in there are multiple open deadlines)
+        :rtype:
+            `datetime`
+        """
+        quser = Q(user=user) | Q(user=None, role__in=user.groups.all())
+        q_obj = cls.q_permissions_on_program(quser, name, program, None, program_is_none_implies_all, is_valid=False).order_by("-end_date")
+        if q_obj.exists():
+            return q_obj[0].end_date
+        else:
+            return None
 
     @classmethod
     def user_has_perm(cls, user, name, program=None, when=None, program_is_none_implies_all=False):
@@ -2860,7 +2948,7 @@ class GradeChangeRequest(TimeStampedModel):
         subject, message = self._confirmation_email_content()
         send_mail(subject,
                   message,
-                  settings.DEFAULT_FROM_EMAIL,
+                  'info@' + settings.SITE_INFO[1],
                   [self.requesting_student.email, ])
 
     def get_admin_url(self):

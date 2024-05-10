@@ -643,11 +643,6 @@ User List Generator (ListGenModule)
 
 This module presents an interface similar to the communications panel, allowing you to specify filtering criteria to get a list of users.  However, instead of sending an email, you are asked which information you would like to retrieve about each user.  This information might include their school, grade level, or emergency contact information.  Lists can be generated in HTML format (for printing) or CSV format (for spreadsheets).
 
-Mailing Label Generation (MailingLabels)
-----------------------------------------
-
-If you will be using postal mail advertising for a program, include this module.  It generates HTML pages with the mailing labels for students or schools, so that you can print them out on label sheets.
-
 Nametag Generation (NameTagModule)
 ----------------------------------
 

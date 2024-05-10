@@ -58,22 +58,37 @@ import esp.dbmail.sendto_fns
 
 from django.conf import settings
 from django.contrib.sites.models import Site
+from django.utils.html import strip_tags
 
 from django.core.mail import get_connection
 from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
 from django.core.exceptions import ImproperlyConfigured
 
+# `user` is required for marketing and subscribed messages to add unsubscribe headers
+# this includes all comm panel emails
+# https://support.google.com/a/answer/81126?visit_id=638428689824104778-3542874255&rd=1#subscriptions
 def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=None,
-              return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={},
+              return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={}, user=None,
               *args, **kwargs):
     from_email = from_email.strip()
+    # the from_email must match one of our DMARC domains/subdomains
+    # or the email may be rejected by email clients
+    if not re.match(r"(^.+@%s>?$)|(^.+@(\w+\.)?learningu\.org>?$)" % settings.SITE_INFO[1].replace(".", "\."), from_email):
+        raise ESPError("Invalid 'From' email address (" + from_email + "). The 'From' email address must " +
+                       "end in @" + settings.SITE_INFO[1] + " (your website), " +
+                       "@learningu.org, or a valid subdomain of learningu.org " +
+                       "(i.e., @subdomain.learningu.org).")
+
     if 'Reply-To' in extra_headers:
         extra_headers['Reply-To'] = extra_headers['Reply-To'].strip()
     if isinstance(recipient_list, six.string_types):
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
+    if user is not None:
+        extra_headers['List-Unsubscribe-Post'] = "List-Unsubscribe=One-Click"
+        extra_headers['List-Unsubscribe'] = '<%s>' % (user.unsubscribe_oneclick())
 
     # remove duplicate email addresses (sendgrid doesn't like them)
     recipients = []
@@ -89,17 +104,24 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
                 recipients.append(x)
                 emails.remove(tmp)
 
-    from django.core.mail import EmailMessage #send_mail as django_send_mail
+    from django.core.mail import EmailMessage, EmailMultiAlternatives #send_mail as django_send_mail
     logger.info("Sent mail to %s", recipients)
 
     #   Get whatever type of email connection Django provides.
     #   Normally this will be SMTP, but it also has an in-memory backend for testing.
     connection = get_connection(fail_silently=fail_silently, return_path=return_path)
-    msg = EmailMessage(subject, message, from_email, recipients, bcc=bcc, connection=connection, headers=extra_headers)
 
     #   Detect HTML tags in message and change content-type if they are found
     if '<html>' in message:
-        msg.content_subtype = 'html'
+        # Generate a plaintext version of the email
+        # Remove html tags and continuous whitespaces
+        text_only = re.sub('[ \t]+', ' ', strip_tags(message))
+        # Strip single spaces in the beginning of each line
+        message_text = text_only.replace('\n ', '\n').strip()
+        msg = EmailMultiAlternatives(subject, message_text, from_email, recipients, bcc=bcc, connection=connection, headers=extra_headers)
+        msg.attach_alternative(message, "text/html")
+    else:
+        msg = EmailMessage(subject, message, from_email, recipients, bcc=bcc, connection=connection, headers=extra_headers)
 
     msg.send()
 
@@ -356,6 +378,7 @@ class MessageRequest(models.Model):
                 newemailrequest = {'target': user, 'msgreq': self}
                 send_to = ESPUser.email_sendto_address(*address_pair)
                 newtxt = {
+                    'user': user,
                     'send_to': send_to,
                     'send_from': send_from,
                     'subject': subject,
@@ -389,6 +412,7 @@ class MessageRequest(models.Model):
 @python_2_unicode_compatible
 class TextOfEmail(models.Model):
     """ Contains the processed form of an EmailRequest, ready to be sent.  SmartText becomes plain text. """
+    user = AjaxForeignKey(ESPUser, blank=True, null=True) # blank=True because there isn't an easy way to backfill this
     send_to = models.CharField(max_length=1024)  # Valid email address, "Name" <foo@bar.com>
     send_from = models.CharField(max_length=1024) # Valid email address
     subject = models.TextField() # Email subject; plain text
@@ -436,7 +460,8 @@ class TextOfEmail(models.Model):
                       self.send_from,
                       self.send_to,
                       False,
-                      extra_headers=extra_headers)
+                      extra_headers=extra_headers,
+                      user = self.user)
         except Exception as e:
             self.tries += 1
             self.save()

@@ -37,7 +37,7 @@ import datetime
 
 from django import forms
 
-from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, CoreModule, main_call, aux_call, meets_cap
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, needs_student_in_grade, meets_deadline, CoreModule, main_call, aux_call, meets_cap
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
 from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
@@ -65,8 +65,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
             }
 
     @main_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Webapp')
     @meets_cap
     def studentonsite(self, request, tl, one, two, module, extra, prog):
@@ -85,8 +84,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         return render_to_response(self.baseDir()+'schedule.html', request, context)
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Webapp')
     @meets_cap
     def onsitedetails(self, request, tl, one, two, module, extra, prog):
@@ -110,8 +108,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Webapp')
     @meets_cap
     def onsitemap(self, request, tl, one, two, module, extra, prog):
@@ -124,8 +121,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         return render_to_response(self.baseDir()+'map.html', request, context)
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Webapp')
     @meets_cap
     def onsitecatalog(self, request, tl, one, two, module, extra, prog):
@@ -155,8 +151,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         return render_to_response(self.baseDir()+'catalog.html', request, context)
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Webapp')
     @meets_cap
     def onsitesurvey(self, request, tl, one, two, module, extra, prog):
@@ -165,16 +160,14 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         return survey_view(request, tl, one, two, template = self.baseDir()+'survey.html', context = context)
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Webapp')
     def onsiteaddclass(self, request, tl, one, two, module, extra, prog):
         if StudentClassRegModule.addclass_logic(request, tl, one, two, module, extra, prog, webapp=True):
             return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Webapp')
     def onsiteclearslot(self, request, tl, one, two, module, extra, prog):
         result = StudentClassRegModule.clearslot_logic(request, tl, one, two, module, extra, prog)
@@ -184,8 +177,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
             return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     def selfcheckin(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
         mode = Tag.getProgramTag('student_self_checkin', program = prog)

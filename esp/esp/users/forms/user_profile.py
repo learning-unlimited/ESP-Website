@@ -58,7 +58,6 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     address_state = forms.ChoiceField(required=True, choices=list(zip(_states, _states)), widget=forms.Select(attrs={'class': 'input-mini'}))
     address_zip = StrippedCharField(required=True, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
     address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
-    address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args, **kwargs):
         super(UserContactForm, self).__init__(*args, **kwargs)
@@ -97,7 +96,6 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_address_state = forms.ChoiceField(choices=list(zip(_states, _states)), widget=forms.Select(attrs={'class': 'input-mini'}))
     emerg_address_zip = StrippedCharField(length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
     emerg_address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
-    emerg_address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def clean(self):
         super(EmergContactForm, self).clean()
@@ -480,7 +478,6 @@ class MinimalUserInfo(FormUnrestrictedOtherUser):
     address_state = forms.ChoiceField(choices=list(zip(_states, _states)))
     address_zip = StrippedCharField(length=5, max_length=5)
     address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
-    address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
 _grad_years = list(range(datetime.now().year, datetime.now().year + 6))
 

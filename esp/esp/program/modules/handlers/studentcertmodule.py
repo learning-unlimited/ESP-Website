@@ -31,7 +31,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.program.modules.base import ProgramModuleObj, main_call, needs_student, meets_cap
+from esp.program.modules.base import ProgramModuleObj, main_call, needs_student_in_grade, needs_student_in_grade, meets_cap
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.program.models import StudentRegistration
 from esp.tagdict.models import Tag
@@ -56,7 +56,7 @@ class StudentCertModule(ProgramModuleObj):
             }
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     @meets_cap
     def certificate(self, request, tl, one, two, module, extra, prog):
         if not self.isStep():

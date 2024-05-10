@@ -3,11 +3,23 @@ from collections import OrderedDict
 from django import forms
 from django.forms import widgets
 from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
 from decimal import Decimal
 import datetime
 
 from esp.users.forms import _states
 from six.moves import zip
+
+import json
+
+def validate_JSON(value):
+    try:
+        json.loads(value)
+    except ValueError:
+        raise ValidationError('Enter a valid JSON value.')
+
+class JSONValidatedCharField(forms.CharField):
+    default_validators = [validate_JSON]
 
 # Lists of all tags used anywhere in the codebase
 # Populated by hand, so don't be too surprised if something is missing
@@ -31,6 +43,7 @@ all_global_tags = {
         'default': None,
         'category': 'teach',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'allow_global_restypes': {
         'is_boolean': True,
@@ -67,6 +80,7 @@ all_global_tags = {
         'default': None,
         'category': 'teach',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'class_style_choices': {
         'is_boolean': False,
@@ -74,6 +88,7 @@ all_global_tags = {
         'default': None,
         'category': 'teach',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'volunteer_tshirt_options': {
         'is_boolean': True,
@@ -352,6 +367,7 @@ all_global_tags = {
         'default': '[7,8,9,10,11,12]',
         'category': 'learn',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'user_types': {
         'is_boolean': False,
@@ -359,6 +375,7 @@ all_global_tags = {
         'default': '[["Student", {"label": "Student (up through 12th grade)", "profile_form": "StudentProfileForm"}],["Teacher", {"label": "Volunteer Teacher", "profile_form": "TeacherProfileForm"}],["Guardian", {"label": "Guardian of Student", "profile_form": "GuardianProfileForm"}],["Educator", {"label": "K-12 Educator", "profile_form": "EducatorProfileForm"}],["Volunteer", {"label": "Onsite Volunteer", "profile_form": "VolunteerProfileForm"}]]',
         'category': 'manage',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'student_profile_gender_field': {
         'is_boolean': True,
@@ -384,7 +401,7 @@ all_global_tags = {
     'ask_about_duplicate_accounts': {
         'is_boolean': True,
         'help_text': 'Before creating an account for an email address already in the database, ask if the user wants to log into an existing account instead',
-        'default': False,
+        'default': True,
         'category': 'manage',
         'is_setting': True,
     },
@@ -430,6 +447,7 @@ all_global_tags = {
         'default': '{}',
         'category': 'manage',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'admin_home_page': {
         'is_boolean': False,
@@ -458,6 +476,7 @@ all_global_tags = {
         'default': None,
         'category': 'manage',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'google_cloud_api_key': {
         'is_boolean': False,
@@ -508,6 +527,20 @@ all_global_tags = {
         'default': "8daf9a",
         'category': 'theme',
         'is_setting': False,
+    },
+    'hide_empty_categories': {
+        'is_boolean': True,
+        'help_text': 'Should categories with no classes be hidden in the catalog? (this includes when filtering)',
+        'default': True,
+        'category': 'learn',
+        'is_setting': True,
+    },
+    'contact_form_enabled': {
+        'is_boolean': True,
+        'help_text': 'Should the contact form at /contact/contact be enabled?',
+        'default': False,
+        'category': 'manage',
+        'is_setting': True,
     },
 }
 
@@ -934,6 +967,7 @@ all_program_tags = {
         'default': '{}',
         'category': 'learn',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'learn_extraform_id': {
         'is_boolean': False,
@@ -957,6 +991,7 @@ all_program_tags = {
         'default': '{}',
         'category': 'learn',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'no_overlap_classes': {
         'is_boolean': False,
@@ -1007,6 +1042,7 @@ all_program_tags = {
         'default': None,
         'category': 'learn',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'program_size_by_grade': {
         'is_boolean': False,
@@ -1014,6 +1050,7 @@ all_program_tags = {
         'default': None,
         'category': 'learn',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'grade_ranges': {
         'is_boolean': False,
@@ -1021,6 +1058,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'studentschedule_show_empty_blocks': {
         'is_boolean': True,
@@ -1292,6 +1330,7 @@ all_program_tags = {
         'default': None,
         'category': 'manage',
         'is_setting': False,
+        'field': JSONValidatedCharField(),
     },
     'student_schedule_pretext': {
         'is_boolean': False,

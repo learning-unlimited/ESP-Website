@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import datetime
 import subprocess
 
-from django.db.models.aggregates import Count, Max, Min
+from django.db.models.aggregates import Count, Min
 from django.db.models.query import Q
 
 from argcache import cache_function_for, cache_function
@@ -10,7 +10,6 @@ from esp.program.models import ClassSection
 from esp.program.models import StudentSubjectInterest, StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.models import Record
-from esp.utils.decorators import cached_module_view
 from esp.utils.web import render_to_response
 import six
 from six.moves import zip

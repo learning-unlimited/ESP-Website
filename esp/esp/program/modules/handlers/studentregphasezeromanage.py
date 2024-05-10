@@ -37,17 +37,16 @@ Learning Unlimited, Inc.
 """
 
 from esp.utils.web import render_to_response
-from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap, no_auth, needs_admin
-from esp.users.models import Record, ESPUser, Permission
+from esp.program.modules.base import ProgramModuleObj, main_call, needs_admin
+from esp.users.models import ESPUser, Permission
 from esp.program.models import PhaseZeroRecord
-from esp.program.modules.forms.phasezero import SubmitForm
 from esp.tagdict.models import Tag
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
 
-import copy, datetime, json, re
+import copy, datetime, re
 
 class StudentRegPhaseZeroManage(ProgramModuleObj):
     doc = """Track registration for the student lottery and/or run the student lottery."""

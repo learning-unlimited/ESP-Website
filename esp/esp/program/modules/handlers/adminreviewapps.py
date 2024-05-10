@@ -35,14 +35,11 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.middleware.esperrormiddleware import ESPError
-from esp.program.modules import module_ext
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
-from esp.program.models import ClassSubject, StudentApplication, StudentAppReview, StudentRegistration, RegistrationType
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect
+from esp.program.models import ClassSubject, StudentRegistration, RegistrationType
 from django.db.models.query import Q
 
 __all__ = ['AdminReviewApps']

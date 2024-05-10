@@ -23,12 +23,14 @@ urlpatterns = [
         name='esp.users.views.resend_activation_view'),
     url(r'^signout/?$', views.signout),
     url(r'^signedout/?$', views.signed_out_message),
-    url(r'^login/?$',   views.login_checked),
+    url(r'^login/?$',   views.login_checked, name="login"),
     url(r'^disableaccount/?$', views.disable_account),
     url(r'^grade_change_request/?$', GradeChangeRequestView.as_view(), name = 'grade_change_request'),
     url(r'^makeadmin/?$', views.make_admin),
     url(r'^loginhelp', TemplateView.as_view(template_name='users/loginhelp.html'), name='Login Help'),
     url(r'^morph/?$', views.morph_into_user),
+    url(r'^unsubscribe/(?P<username>[\w.@+-]+)/(?P<token>[\w.:\-_=]+)/$', views.unsubscribe, name="unsubscribe"),
+    url(r'^unsubscribe_oneclick/(?P<username>[\w.@+-]+)/(?P<token>[\w.:\-_=]+)/$', views.unsubscribe_oneclick, name="unsubscribe_oneclick"),
 ]
 
 urlpatterns += [

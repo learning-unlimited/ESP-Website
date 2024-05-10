@@ -712,7 +712,8 @@ class ClassSection(models.Model):
 
     def assign_room(self, base_room, clear_others=False, allow_partial=False, lock=0):
         """ Assign the classroom given, at the times needed by this class. """
-        rooms_to_assign = base_room.identical_resources().filter(event__in=list(self.meeting_times.all()))
+        # Ignore duplicates (ordered by "id" to be deterministic)
+        rooms_to_assign = base_room.identical_resources().filter(event__in=list(self.meeting_times.all())).order_by("name", "event", "id").distinct("name", "event")
 
         status = True
         errors = []
