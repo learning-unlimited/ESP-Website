@@ -305,7 +305,7 @@ class ThemeController(object):
         css_data = self.compile_less(less_data)
 
         with open(output_filename, 'w') as output_file:
-            output_file.write(six.text_type(THEME_COMPILED_WARNING) + six.text_type(css_data))
+            output_file.write(six.text_type(THEME_COMPILED_WARNING) + css_data.decode('UTF-8'))
         logger.debug('Wrote %.1f KB CSS output to %s', len(css_data) / 1000., output_filename)
         Tag.setTag("current_theme_version", value = hex(random.getrandbits(16)))
 
