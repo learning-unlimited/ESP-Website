@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import re
+import six
 
 from django.http import HttpResponseForbidden
 from django.template import Context, Template

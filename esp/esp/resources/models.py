@@ -52,6 +52,8 @@ from django.db import models
 from django.db.models.query import Q
 from django.core.cache import cache
 
+import json
+
 ########################################
 #   New resource stuff (Michael P)
 ########################################

@@ -41,6 +41,8 @@ from django_selenium.testcases import SeleniumTestCase
 import random
 import json
 import logging
+import six
+
 logger = logging.getLogger(__name__)
 
 # TODO(gkanwar): Remove non-selenium tests from this TestCase
