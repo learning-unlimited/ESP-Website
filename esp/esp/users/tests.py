@@ -564,7 +564,7 @@ class RecordTest(TestCase):
             # Clear Records, test that event is incomplete at all times.
             nowRecord.delete()
             del nowRecord
-            list(filter(self.future)).delete()
+            filter(self.future).delete()
             self.assertFalse(user_completed())
             self.assertFalse(user_completed(self.past))
             self.assertFalse(user_completed(self.future))
