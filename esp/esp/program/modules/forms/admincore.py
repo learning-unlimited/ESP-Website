@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from decimal import Decimal
 from django import forms
 from django.conf import settings
@@ -19,7 +18,7 @@ from esp.tagdict.models import Tag
 from esp.utils.models import TemplateOverride
 
 def get_rt_choices():
-    choices = [("All", "All")]
+    choices = [("All","All")]
     for rt in RegistrationType.objects.all().order_by('name'):
         if rt.displayName:
             choices.append((rt.name, '%s (displayed as "%s")' % (rt.name, rt.displayName)))
@@ -91,16 +90,16 @@ class ProgramSettingsForm(ProgramCreationForm):
     class Meta:
         fieldsets = [
                      ('Program Title', {'fields': ['term', 'term_friendly'] }),
-                     ('Program Constraints', {'fields':['grade_min', 'grade_max', 'program_size_max', 'program_allow_waitlist']}),
-                     ('About Program Creator', {'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
-                     ('Financial Details', {'fields':['base_cost', 'sibling_discount']}),
-                     ('Program Internal Details', {'fields':['program_type', 'program_modules', 'program_module_questions', 'class_categories', 'flag_types']}),
+                     ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
+                     ('About Program Creator',{'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
+                     ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
+                     ('Program Internal Details' ,{'fields':['program_type','program_modules','program_module_questions','class_categories','flag_types']}),
                     ]# Here you can also add description for each fieldset.
         widgets = {
             'program_modules': forms.SelectMultiple(attrs={'class': 'hidden-field'}),
         }
         model = Program
-ProgramSettingsForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'pattern': r'(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)' % settings.SITE_INFO[1].replace('.', '\.')})
+ProgramSettingsForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'pattern': r'(^.+@{0}$)|(^.+@(\w+\.)?learningu\.org$)'.format(settings.SITE_INFO[1].replace('.', '\.'))})
 
 class TeacherRegSettingsForm(BetterModelForm):
     """ Form for changing teacher class registration settings. """
@@ -128,7 +127,7 @@ class StudentRegSettingsForm(BetterModelForm):
                      ('Priority Registration Settings', {'fields': ['priority_limit']}), # use_priority is not included here to prevent confusion; to my knowledge, only HSSP uses this setting - WG
                      ('Enrollment Settings', {'fields': ['register_from_catalog', 'visible_enrollments', 'visible_meeting_times', 'show_emailcodes']}), # use_grade_range_exceptions is excluded until there is an interface for it - WG 5/25/23
                      ('Button Settings', {'fields': ['confirm_button_text', 'view_button_text', 'cancel_button_text', 'temporarily_full_text', 'cancel_button_dereg', 'send_confirmation']}),
-                     ('Visual Options', {'fields': ['progress_mode', 'force_show_required_modules']}),
+                     ('Visual Options', {'fields': ['progress_mode','force_show_required_modules']}),
                     ]# Here you can also add description for each fieldset.
         model = StudentClassRegModuleInfo
 
@@ -141,14 +140,16 @@ def get_template_source(template_list):
 
 class ReceiptsForm(BetterForm):
     confirm = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),
-                              help_text = "This text is shown on the website when a student clicks the 'confirm registration' button (HTML is supported).\
-                                           If no text is supplied, the default text will be used. The text is then followed by the student's information,\
-                                           the program information, the student's purchased items, and the student's schedule.",
+                              help_text = mark_safe("This text is <b>shown on the website</b> when a student clicks the 'confirm registration' button (HTML is supported).\
+                                                    If no text is supplied, the default text will be used. The text is then followed by the student's information,\
+                                                    the program information, the student's purchased items, and the student's schedule."),
                               required = False)
     confirmemail = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),
-                              help_text = "This receipt is sent via email when a student clicks the 'confirm registration' button.\
-                                           If no text is supplied, the default text will be used.",
-                              required = False)
+                                   help_text = mark_safe("This text is <b>sent via email</b> when a student clicks the 'confirm registration' button.\
+                                                     If no text is supplied, the default text will be used. The text is then followed by the student's information,\
+                                                     the program information, the student's purchased items, and the student's schedule. This email can be disabled\
+                                                     by deactivating the 'Send confirmation' option in the 'Student Registration Settings' above."),
+                                   required = False)
     cancel = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),
                               help_text = "This receipt is shown on the website when a student clicks the 'cancel registration' button.\
                                            If no text is supplied, the student will be redirected to the main student registration page instead.",
@@ -164,7 +165,7 @@ class ReceiptsForm(BetterForm):
             elif action == "confirm":
                 receipt_text = get_template_source(['program/receipts/%s_custom_pretext.html' %(self.program.id), 'program/receipts/default_pretext.html'])
             elif action == "confirmemail":
-                receipt_text = get_template_source(['program/confemails/%s_confemail.txt' %(self.program.id), 'program/confemails/default.txt'])
+                receipt_text = get_template_source(['program/confemails/%s_confemail_pretext.html' %(self.program.id),'program/confemails/default_pretext.html'])
             else:
                 receipt_text = ""
             self.fields[action].initial = receipt_text.encode('UTF-8')
@@ -179,7 +180,7 @@ class ReceiptsForm(BetterForm):
                 if action == "confirm":
                     default_text = get_template_source(['program/receipts/%s_custom_pretext.html' %(self.program.id), 'program/receipts/default_pretext.html'])
                 elif action == "confirmemail":
-                    default_text = get_template_source(['program/confemails/%s_confemail.txt' %(self.program.id), 'program/confemails/default.txt'])
+                    default_text = get_template_source(['program/confemails/%s_confemail_pretext.html' %(self.program.id),'program/confemails/default_pretext.html'])
                 elif action == "cancel":
                     default_text = ""
                 if cleaned_text == default_text:
@@ -226,7 +227,7 @@ class ProgramTagSettingsForm(BetterForm):
                 self.fields[key].initial = self.fields[key].default = tag_info.get('default')
                 self.fields[key].required = False
                 set_val = Tag.getBooleanTag(key, program = self.program) if tag_info.get('is_boolean', False) else Tag.getProgramTag(key, program = self.program)
-                if set_val is not None and set_val != self.fields[key].initial:
+                if set_val != None and set_val != self.fields[key].initial:
                     if isinstance(self.fields[key], forms.MultipleChoiceField):
                         set_val = set_val.split(",")
                     self.fields[key].initial = set_val
