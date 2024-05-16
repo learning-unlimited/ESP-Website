@@ -564,7 +564,7 @@ class RecordTest(TestCase):
             # Clear Records, test that event is incomplete at all times.
             nowRecord.delete()
             del nowRecord
-            list(filter(self.future)).delete()
+            filter(self.future).delete()
             self.assertFalse(user_completed())
             self.assertFalse(user_completed(self.past))
             self.assertFalse(user_completed(self.future))
@@ -584,9 +584,9 @@ class RecordTest(TestCase):
             self.assertTrue(user_completed())
             self.assertTrue(user_completed(self.past))
             self.assertTrue(user_completed(self.future))
-            self.assertEqual(1, list(filter()).count())
-            self.assertEqual(1, list(filter(self.past)).count())
-            self.assertEqual(2, list(filter(self.future)).count())
+            self.assertEqual(1, filter().count())
+            self.assertEqual(1, filter(self.past).count())
+            self.assertEqual(2, filter(self.future).count())
 
             # Test that event is complete for the past and future days, but
             # is incomplete for today. Furthermore, when filtering by day,
