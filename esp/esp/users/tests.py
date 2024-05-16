@@ -19,6 +19,7 @@ from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission, Record, RecordType
 import six
 from six.moves import map
+from six.moves import filter
 
 class ESPUserTest(TestCase):
     def setUp(self):

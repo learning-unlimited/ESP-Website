@@ -15,6 +15,7 @@ from esp.users.models import ESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.themes.controllers import ThemeController
 from esp.themes import settings as themes_settings
+from io import open
 
 class ThemesTest(TestCase):
 

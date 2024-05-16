@@ -19,6 +19,7 @@
 #
 
 from __future__ import absolute_import
+from __future__ import print_function
 from fabric.api import *
 from fabric.contrib import files
 
@@ -31,6 +32,7 @@ import string
 import sys
 
 from os.path import join
+from six.moves import range
 
 # Remote base directory, with trailing /
 env.rbase = "/home/vagrant/devsite/"
