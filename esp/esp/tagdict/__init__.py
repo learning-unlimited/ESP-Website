@@ -1335,7 +1335,7 @@ all_program_tags = {
     'student_schedule_pretext': {
         'is_boolean': False,
         'help_text': 'The text that is included right above the schedule in PDF student schedules (LaTeX is supported).',
-        'default': '' ,
+        'default': '',
         'category': 'manage',
         'is_setting': False,
     },

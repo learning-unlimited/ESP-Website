@@ -111,10 +111,10 @@ class JSONDataModuleTest(ProgramFrameworkTest):
                                               "num_sections": 10,
                                               "num_students": 10 if g==10 else 0})
         self.assertContains(self.stats_response, 'stats', status_code=200)
-        self.assertIn('stats', self.stats_response.json().keys())
+        self.assertIn('stats', list(self.stats_response.json().keys()))
         grades_count = 0
         for res in self.stats_response.json()['stats']:
-            self.assertIn('id', res.keys())
+            self.assertIn('id', list(res.keys()))
             if res['id'] == 'grades':
                 grades_count += 1
                 self.assertJSONEqual(json.dumps(res), expected_response)

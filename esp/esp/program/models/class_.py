@@ -1683,7 +1683,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return QuasiStaticData.objects.filter(url__startswith='learn/' + self.url() + '/index').exists()
 
     def __str__(self):
-        if self.title != u"":
+        if self.title != six.u(""):
             return "%s: %s" % (self.id, self.title)
         else:
             return six.u("%s: (none)") % self.id

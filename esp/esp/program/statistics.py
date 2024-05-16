@@ -134,8 +134,7 @@ def demographics(form, programs, students, profiles, result_dict={}):
     grad_years = sorted(gradyear_dict.keys())
     grad_counts = [gradyear_dict[key] for key in grad_years]
     result_dict['gradyear_data'] = list(zip(grad_years, grad_counts))
-    birth_years = list(birthyear_dict.keys())
-    birth_years.sort()
+    birth_years = sorted(birthyear_dict.keys())
     birth_counts = [birthyear_dict[key] for key in birth_years]
     result_dict['birthyear_data'] = list(zip(birth_years, birth_counts))
     result_dict['finaid_applied'] = len(set(finaid_applied))
@@ -203,8 +202,7 @@ def startreg(form, programs, students, profiles, result_dict={}):
         reg_dates = sorted(reg_dict[program].keys())
         reg_counts = [reg_dict[program][key] for key in reg_dates]
         startreg_list.append(list(zip(reg_dates, reg_counts)))
-        confirm_dates = list(confirm_dict[program].keys())
-        confirm_dates.sort()
+        confirm_dates = sorted(confirm_dict[program].keys())
         confirm_counts = [confirm_dict[program][key] for key in confirm_dates]
         confirm_list.append(list(zip(confirm_dates, confirm_counts)))
     result_dict['program_data'] = list(zip(programs, startreg_list, confirm_list))

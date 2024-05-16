@@ -589,11 +589,11 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 pmo.save()
 
         learn_modules = [mod for mod in prog.getModules(tl = 'learn') if mod.inModulesList()]
-        context['learn_modules'] = {'required': filter(lambda mod: mod.required, learn_modules),
-                                    'not_required': filter(lambda mod: not mod.required, learn_modules)}
+        context['learn_modules'] = {'required': [mod for mod in learn_modules if mod.required],
+                                    'not_required': [mod for mod in learn_modules if not mod.required]}
         teach_modules = [mod for mod in prog.getModules(tl = 'teach') if mod.inModulesList()]
-        context['teach_modules'] = {'required': filter(lambda mod: mod.required, teach_modules),
-                                    'not_required': filter(lambda mod: not mod.required, teach_modules)}
+        context['teach_modules'] = {'required': [mod for mod in teach_modules if mod.required],
+                                    'not_required': [mod for mod in teach_modules if not mod.required]}
         context['one'] = one
         context['two'] = two
         context['program'] = prog

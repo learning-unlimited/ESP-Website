@@ -210,7 +210,7 @@ class StudentClassRegModule(ProgramModuleObj):
             text = self.module.link_title
         else:
             text = "Class changes is currently closed, please contact the admin team to register for classes"
-        link = u'<a href="%sstudentonsite" title="%s" class="vModuleLink" >%s</a>' % \
+        link = six.u('<a href="%sstudentonsite" title="%s" class="vModuleLink" >%s</a>') % \
             (self.program.get_learn_url(), text, text)
         return mark_safe(link)
 

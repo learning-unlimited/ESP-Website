@@ -47,7 +47,7 @@ class EmailUserRegForm(forms.Form):
 
     def clean_initial_role(self):
         data = self.cleaned_data['initial_role']
-        if data == u'':
+        if data == six.u(''):
             raise forms.ValidationError('Please select an initial role')
         return data
 

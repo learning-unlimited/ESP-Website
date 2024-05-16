@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from six.moves import range
+from six.moves import map
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -262,7 +263,7 @@ class StudentExtraCosts(ProgramModuleObj):
             new_prefs = []
             for lineitem_name in preserve_items.keys():
                 if lineitem_name in [x[0] for x in prefs]:
-                    new_prefs.append(prefs[map(lambda x: x[0], prefs).index(lineitem_name)])
+                    new_prefs.append(prefs[[x[0] for x in prefs].index(lineitem_name)])
 
             new_prefs += form_prefs
             iac.apply_preferences(new_prefs)

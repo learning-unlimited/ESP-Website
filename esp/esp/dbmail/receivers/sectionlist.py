@@ -25,7 +25,7 @@ class SectionList(BaseHandler):
     def process_nomailman(self, user, class_id, section_num, user_type):
         try:
             cls = ClassSubject.objects.get(id=int(class_id))
-            section = filter(lambda s: s.index() == int(section_num), cls.sections.all())[0]
+            section = [s for s in cls.sections.all() if s.index() == int(section_num)][0]
         except:
             return
 
@@ -52,7 +52,7 @@ class SectionList(BaseHandler):
             return
         try:
             cls = ClassSubject.objects.get(id=int(class_id))
-            section = filter(lambda s: s.index() == int(section_num), cls.sections.all())[0]
+            section = [s for s in cls.sections.all() if s.index() == int(section_num)][0]
         except:
             return
 

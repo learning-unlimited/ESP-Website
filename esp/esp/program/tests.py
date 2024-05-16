@@ -1308,7 +1308,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         self.assertEqual(stats['num_registrations'], len(StudentRegistration.valid_objects().filter(user__in=self.students, relationship__name='Enrolled')))
         #   - 'Screwed students' list
         for student in self.students:
-            stats_entry = list(filter(lambda x: x[1] == student.id, stats['students_by_screwedness']))
+            stats_entry = list([x for x in stats['students_by_screwedness'] if x[1] == student.id])
             self.assertEqual(len(stats_entry), 1)
             stats_entry = list(stats_entry)[0]
 

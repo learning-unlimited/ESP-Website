@@ -287,7 +287,7 @@ class StudentRegTest(ProgramFrameworkTest):
 
         #   Check that selecting an option for a "multiple choice" extra item works
         lit3 = LineItemType.objects.get(program=self.program, text='Food')
-        lio = list(filter(lambda x: x[2] == 'Large', lit3.options))[0]
+        lio = [x for x in lit3.options if x[2] == 'Large'][0]
         response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '0', 'multi%d-option' % lit3.id: str(lio[0]), '%d-siblingdiscount' % sd_lit.id: 'False'})
         self.assertEqual(response.status_code, 302)
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
