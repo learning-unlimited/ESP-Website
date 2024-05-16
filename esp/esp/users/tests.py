@@ -594,7 +594,7 @@ class RecordTest(TestCase):
             self.assertTrue(user_completed(self.past, only_today=True))
             self.assertTrue(user_completed(self.future, only_today=True))
             self.assertFalse(user_completed(only_today=True))
-            self.assertEqual(1, list(filter(self.future, only_today=True)).count())
+            self.assertEqual(1, filter(self.future, only_today=True).count())
 
 class PermissionTestCase(TestCase):
 
