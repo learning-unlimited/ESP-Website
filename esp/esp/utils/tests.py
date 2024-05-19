@@ -137,7 +137,7 @@ class MemcachedTestCase(unittest.TestCase):
         for client in self.clients:
             client.disconnect_all()
 
-        if len(self.servers) > 0 and hasattr(self.servers[0], 'terminate'):  # You can't terminate processes prior to Python 2.6, they (hopefully) get killed off on their own when the test run finishes
+        if len(self.servers) > 0 and hasattr(self.servers[0], 'terminate'):
             for server in self.servers:
                 server.terminate()  # Sends SIGTERM, telling the servers to terminate
             for server in self.servers:
