@@ -17,7 +17,7 @@
 #
 # > import reversion
 # > reversion.__file__
-# '/path/to/env/lib/python2.7/site-packages/reversion/__init__.py'
+# '/path/to/env/lib/python3.7/site-packages/reversion/__init__.py'
 #
 # If the result starts with the path to the repo, rather than
 # something like /usr/lib, then virtualenv auto-activation is not
