@@ -1,4 +1,4 @@
-esp/esp/utils/tests.py"""
+"""
 Test cases for Django-ESP utilities
 """
 
