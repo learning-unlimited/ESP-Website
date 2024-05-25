@@ -50,7 +50,7 @@ Using a shell (such as Git Bash, which comes installed with Git), navigate to th
     cd devsite
 
 If you already have a GitHub account with SSH keys set up, you may want to use ``git clone git@github.com:learning-unlimited/ESP-Website.git devsite`` to make it easy to push new code.
-If you already had vagrant installed, consider clearning your keys in ``~/.vagrant.d``.
+If you already had vagrant installed, consider clearing your keys in ``~/.vagrant.d``.
 
 Next, use Vagrant to create your VM: ::
 
