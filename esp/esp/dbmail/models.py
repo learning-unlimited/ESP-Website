@@ -372,6 +372,7 @@ class MessageRequest(models.Model):
                 newemailrequest = {'target': user, 'msgreq': self}
                 send_to = ESPUser.email_sendto_address(*address_pair)
                 newtxt = {
+                    'messagerequest': self,
                     'user': user,
                     'send_to': send_to,
                     'send_from': send_from,
