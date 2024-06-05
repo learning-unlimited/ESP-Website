@@ -406,6 +406,7 @@ class MessageRequest(models.Model):
 
 class TextOfEmail(models.Model):
     """ Contains the processed form of an EmailRequest, ready to be sent.  SmartText becomes plain text. """
+    messagerequest = models.ForeignKey(MessageRequest)
     user = AjaxForeignKey(ESPUser, blank=True, null=True) # blank=True because there isn't an easy way to backfill this
     send_to = models.CharField(max_length=1024)  # Valid email address, "Name" <foo@bar.com>
     send_from = models.CharField(max_length=1024) # Valid email address
@@ -462,7 +463,17 @@ class TextOfEmail(models.Model):
             return e
         else:
             self.sent = now
+            # clear the msgtext to save DB space
+            # we can always repopulate it using self.fill_msgtext()
+            self.msgtext = ""
             self.save()
+
+    def fill_msgtext(self):
+        """ Repopulate the msgtext based on the messagerequest """
+        msg_req = self.messagerequest
+        msgtext = msg_req.parseSmartText(msg_req.msgtext, self.user)
+        self.msgtext = msgtext
+        self.save()
 
     @classmethod
     def expireUnsentEmails(cls, min_tries=0, orm_class=None):
