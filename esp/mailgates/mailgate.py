@@ -85,6 +85,7 @@ try:
         del(message['to'])
         del(message['cc'])
         message['X-ESP-SENDER'] = 'version 2'
+        message['X-FORWARDED-FOR'] = message['X-CLIENT-IP'] if message['X-Client-IP'] else message['Client-IP']
 
         subject = message['subject']
         del(message['subject'])
