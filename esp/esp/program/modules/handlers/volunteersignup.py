@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -94,8 +96,13 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
 
         vrs = prog.getVolunteerRequests()
         time_options = [v.timeslot for v in vrs]
-        time_options_dict = dict(zip(time_options, vrs))
-        time_groups = prog.getTimeGroups(types = ["Volunteer"])
+        time_options_dict = dict(list(zip(time_options, vrs)))
+
+        #   Group contiguous blocks
+        if not Tag.getBooleanTag('availability_group_timeslots'):
+            time_groups = [list(time_options)]
+        else:
+            time_groups = prog.getTimeGroups(types = ["Volunteer"])
 
         context['groups'] = [[{'slot': t, 'id': time_options_dict[t].id} for t in group] for group in time_groups]
 
@@ -132,7 +139,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         #   Use the template defined in ProgramPrintables
         from esp.program.modules.handlers import ProgramPrintables
         context = {'module': self}
-        pmos = ProgramModuleObj.objects.filter(program=prog,module__handler__icontains='printables')
+        pmos = ProgramModuleObj.objects.filter(program=prog, module__handler__icontains='printables')
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
             if request.user.isAdmin() and 'user' in request.GET:

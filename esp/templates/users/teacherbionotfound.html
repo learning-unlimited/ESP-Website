@@ -6,7 +6,7 @@
 
 <h1>Teacher biography not found</h1>
 
-{% if biouser != None %}
+{% if biouser is not None %}
 {% if biouser.id == request.user.id or request.user.isAdministrator %}
 <a href="{{ edit_url }}" title="Edit this bio!">
   Edit this biography!

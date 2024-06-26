@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -41,5 +42,5 @@ class BioEditForm(forms.Form):
     """ A form for editting TeacherBios """
     slugbio = forms.CharField(required = False, max_length = 50, widget = forms.TextInput({'size': 50}))
     bio = forms.CharField(required = False, widget = forms.Textarea({'rows':20, 'cols':60}))
-    picture = ResizeImageField(required = False, size = (300,300))
+    picture = ResizeImageField(required = False, size = (300, 300))
     hidden = forms.BooleanField(required = False)

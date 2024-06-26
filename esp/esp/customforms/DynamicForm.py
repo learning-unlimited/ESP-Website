@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from esp.customforms.models import Field, Attribute, Section, Page, Form
 from django import forms
 from django.forms.models import fields_for_model
@@ -23,6 +24,9 @@ from django.core.exceptions import ValidationError
 from esp.middleware import ESPError
 
 from datetime import datetime
+from six.moves import map
+import six
+from six.moves import range
 
 class BaseCustomForm(BetterForm):
     """
@@ -33,7 +37,7 @@ class BaseCustomForm(BetterForm):
         Takes cleaned_data and expands the values for combo fields
         """
         cleaned_data = self.cleaned_data.copy()
-        for k,v in self.cleaned_data.items():
+        for k, v in self.cleaned_data.items():
             if isinstance(v, list):
                 cleaned_data[k] = ";".join(v)
             if isinstance(v, dict):
@@ -356,7 +360,7 @@ class ComboForm(SessionWizardView):
 
         # Populating data with the values that need to be inserted
         for form in form_list:
-            for k,v in form.cleaned_data.items():
+            for k, v in form.cleaned_data.items():
                 # Check for only_fkey link models first
                 if k.split('_')[1] in cf_cache.only_fkey_models:
                     data[k] = v
@@ -392,7 +396,7 @@ class ComboForm(SessionWizardView):
 
         # Create/update instances corresponding to link fields
         # Also, populate 'data' with foreign-keys that need to be inserted into the response table
-        for k,v in link_models_cache.items():
+        for k, v in link_models_cache.items():
             if v['instance'] is not None:
                 # TODO-> the following update won't work for fk fields.
                 v['instance'].__dict__.update(v['data'])
@@ -408,7 +412,7 @@ class ComboForm(SessionWizardView):
                 data['link_%s' % v['model'].__name__] = v['instance']
 
         # Saving response
-        initial_keys = data.keys()
+        initial_keys = list(data.keys())
         for key in initial_keys:
             #   Check that we didn't already handle this value as a linked field
             if key.split('_')[0] in cf_cache.link_fields:
@@ -554,7 +558,7 @@ class FormHandler:
             initial = handler.getInitialLinkDataFields()
             if initial:
                 initial_data[handler.seq] = {}
-                for k,v in initial.items():
+                for k, v in initial.items():
                     if v['model'].__name__ not in link_models_cache:
                         # Get the corresponding instance, and get its values
                         # First, check for pre-specified instances
@@ -580,7 +584,7 @@ class FormHandler:
             initial_data = {}
         linked_initial_data = self._getInitialData(self.form, self.user)
         combined_initial_data = {}
-        for i in map(str, range(len(self.handlers))):
+        for i in map(str, list(range(len(self.handlers)))):
             combined_initial_data[i] = {}
             if i in linked_initial_data:
                 combined_initial_data[i].update(linked_initial_data[i])
@@ -630,7 +634,7 @@ class FormHandler:
         dmh = DMH(form=form)
         dyn = dmh.createDynModel()
         response_data = {'questions': [], 'answers': []}
-        responses = dyn.objects.all().order_by('id').values()
+        responses = list(dyn.objects.all().order_by('id').values())
         fields = Field.objects.filter(form=form).order_by('section__page__seq', 'section__seq', 'seq').values('id', 'field_type', 'label')
 
         # Let's first do a bit of introspection to figure out
@@ -669,7 +673,7 @@ class FormHandler:
             elif generic_fields[ftype]['typeMap'] is not DummyField:
                 response_data['questions'].append([qname, field['label'], ftype])
 
-        users = ESPUser.objects.in_bulk(map(lambda response: response['user_id'], responses))
+        users = ESPUser.objects.in_bulk([response['user_id'] for response in responses])
 
         # Now let's set up the responses
         for response in responses:
@@ -678,7 +682,7 @@ class FormHandler:
             # Add in user if form is not anonymous
             if not form.anonymous and response['user_id']:
                 user = users[response['user_id']]
-                response['user_id'] = unicode(response['user_id'])
+                response['user_id'] = six.text_type(response['user_id'])
                 response['user_display'] = user.name()
                 response['user_email'] = user.email
                 response['username'] = user.username
@@ -688,7 +692,7 @@ class FormHandler:
                 if only_fkey_model.objects.filter(pk=response["link_%s_id" % only_fkey_model.__name__]).exists():
                     inst = only_fkey_model.objects.get(pk=response["link_%s_id" % only_fkey_model.__name__])
                 else: inst = None
-                response["link_%s_id" % only_fkey_model.__name__] = unicode(inst)
+                response["link_%s_id" % only_fkey_model.__name__] = six.text_type(inst)
 
             # Now, put in the additional fields in response
             for qname, data in add_fields.items():
@@ -723,7 +727,7 @@ class FormHandler:
         try:
             from cStringIO import StringIO
         except:
-            from StringIO import StringIO
+            from io import StringIO
 
         response_data = self.getResponseData(self.form)
         wbk = xlwt.Workbook()
@@ -738,7 +742,7 @@ class FormHandler:
 
         # write the questions first
         for i in range(0, len(response_data['questions'])):
-            sheet.write(0,i, response_data['questions'][i][1], style)
+            sheet.write(0, i, response_data['questions'][i][1], style)
 
         # Build up a simple dict storing question_name and question_index (=column number)
         ques_cols = {}

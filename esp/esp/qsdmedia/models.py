@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -47,6 +51,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 # The folder that Media files are saved to
 root_file_path = "uploaded"
 
+@python_2_unicode_compatible
 class Media(models.Model):
     """ A generic container for 'media': videos, pictures, papers, etc. """
     friendly_name = models.TextField() # Human-readable description of the media
@@ -120,5 +125,5 @@ class Media(models.Model):
     def rename(self, new_name):
         self.friendly_name = new_name
 
-    def __unicode__(self):
-        return unicode(self.friendly_name)
+    def __str__(self):
+        return six.text_type(self.friendly_name)

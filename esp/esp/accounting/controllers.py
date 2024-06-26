@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -265,6 +269,7 @@ class ProgramAccountingController(BaseAccountingController):
         else:
             return 'Unrelated!?'
 
+@python_2_unicode_compatible
 class IndividualAccountingController(ProgramAccountingController):
     def __init__(self, program, user, *args, **kwargs):
         super(IndividualAccountingController, self).__init__(program, *args, **kwargs)
@@ -397,11 +402,11 @@ class IndividualAccountingController(ProgramAccountingController):
         transfers = self.get_transfers(line_items)
         for transfer in transfers:
             li_name = transfer.line_item.text
-            if (li_name, transfer.amount_dec, transfer.option_id) not in map(lambda x: (x[0], x[2], x[3]), result):
+            if (li_name, transfer.amount_dec, transfer.option_id) not in [(x[0], x[2], x[3]) for x in result]:
                 result.append([li_name, 0, transfer.amount_dec, transfer.option_id])
                 result_index = len(result) - 1
             else:
-                result_index = map(lambda x: (x[0], x[2], x[3]), result).index((li_name, transfer.amount_dec, transfer.option_id))
+                result_index = [(x[0], x[2], x[3]) for x in result].index((li_name, transfer.amount_dec, transfer.option_id))
             result[result_index][1] += 1
         return result
 
@@ -646,5 +651,5 @@ class IndividualAccountingController(ProgramAccountingController):
             if paid:
                 iac.submit_payment(iac.amount_due())
 
-    def __unicode__(self):
+    def __str__(self):
         return 'Accounting for %s at %s' % (self.user.name(), self.program.niceName())

@@ -2,6 +2,8 @@
 Tests for the theme editor.
 """
 
+from __future__ import absolute_import
+import six
 import os
 import random
 import re
@@ -13,6 +15,7 @@ from esp.users.models import ESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.themes.controllers import ThemeController
 from esp.themes import settings as themes_settings
+from io import open
 
 class ThemesTest(TestCase):
 
@@ -70,7 +73,8 @@ class ThemesTest(TestCase):
 
         #   Get the home page (this is a fresh site) and make sure it has a link to the theme landing.
         response = self.client.get('/')
-        self.assertTrue(len(re.findall(r'<a href="/themes.*?Configure site appearance.*?</a>', response.content, flags=re.DOTALL)) == 1)
+        self.assertTrue(len(re.findall(r'<a href="/themes.*?Configure site appearance.*?</a>',
+                                       six.text_type(response.content, encoding='UTF-8'), flags=re.DOTALL)) == 1)
 
         #   Go to the themes landing page and theme selector, make sure neither errors out.
         response = self.client.get('/themes/')
@@ -117,8 +121,9 @@ class ThemesTest(TestCase):
                 self.assertEqual(response.status_code, 200)
 
                 #   Supply more settings if the theme asks for them.
-                if '<form id="theme_setup_form"' in response.content:
-                    field_matches = re.findall(r'<(input id="\S+"|textarea).*?name="(\S+)".*?>', response.content, flags=re.DOTALL)
+                if '<form id="theme_setup_form"' in six.text_type(response.content, encoding='UTF-8'):
+                    field_matches = re.findall(r'<(input id="\S+"|textarea).*?name="(\S+)".*?>',
+                                               six.text_type(response.content, encoding='UTF-8'), flags=re.DOTALL)
                     #   This is the union of all the theme configuration settings that
                     #   have a non-trivial form (e.g. key = value fails validation).
                     settings_dict = {
@@ -148,14 +153,14 @@ class ThemesTest(TestCase):
                     self.assertTrue(('/themes/', 302) in response.redirect_chain)
 
                 #   Check that the CSS stylesheet has been included in the page.
-                self.assertTrue('/media/styles/theme_compiled.css' in response.content)
+                self.assertTrue('/media/styles/theme_compiled.css' in six.text_type(response.content, encoding='UTF-8'))
 
                 #   Check that the CSS stylesheet has been compiled.
                 self.assertTrue(os.path.exists(css_filename))
                 self.assertTrue(len(open(css_filename).read()) > 1000)  #   Hacky way to check that content is substantial
 
                 #   Check that the template override is marked with the theme name.
-                self.assertTrue(('<!-- Theme: %s -->' % theme_name) in response.content)
+                self.assertTrue(('<!-- Theme: %s -->' % theme_name) in six.text_type(response.content, encoding='UTF-8'))
 
             self.client.logout()
 
@@ -186,7 +191,8 @@ class ThemesTest(TestCase):
         tc = ThemeController()
         theme_names = tc.get_theme_names()
         for theme_name in theme_names:
-            variables_filename = os.path.join(settings.MEDIA_ROOT, 'esp', 'themes', 'theme_data', theme_name, 'variables.less')
+            variables_filename = os.path.join(settings.MEDIA_ROOT, 'esp', 'themes', 'theme_data', theme_name,
+                                              'variables.less')
             if os.path.exists(variables_filename):
                 tc.clear_theme()
                 tc.load_theme(theme_name)
@@ -194,13 +200,15 @@ class ThemesTest(TestCase):
                 self.assertEqual(response.status_code, 200)
                 variables = re.findall(r'@(\S+):\s+?(\S+);', open(variables_filename).read())
                 for (varname, value) in variables:
-                    self.assertTrue(len(re.findall(r'<input.*?name="%s".*?value="%s".*?>', response.content, flags=re.I)) > 0)
+                    self.assertTrue(len(re.findall(r'<input.*?name="%s".*?value="%s".*?>',
+                                    six.text_type(response.content, encoding='UTF-8'), flags=re.I)) > 0)
 
         #   Test that we can change a parameter and the right value appears in the stylesheet
         def verify_linkcolor(color_str):
             css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
             regexp = r'\n\s*?a\s*?{.*?color:\s*?%s;.*?}' % color_str
-            self.assertTrue(len(re.findall(regexp, open(css_filename).read(), flags=(re.DOTALL | re.I))) == 1)
+            with open(css_filename) as f:
+                self.assertEqual(len(re.findall(regexp, f.read(), flags=(re.DOTALL | re.I))), 1)
 
         color_str1 = '#%06X' % random.randint(0, 1 << 24)
         config_dict = {'apply': True, 'linkColor': color_str1}
@@ -208,7 +216,7 @@ class ThemesTest(TestCase):
         self.assertEqual(response.status_code, 200)
         verify_linkcolor(color_str1)
 
-        #   Test that we can save this setting, change it and re-load
+        #   Test that we can save this setting, change it, and reload
         config_dict = {'save': True, 'linkColor': color_str1, 'saveThemeName': 'save_test'}
         response = self.client.post('/themes/customize/', config_dict)
         self.assertEqual(response.status_code, 200)

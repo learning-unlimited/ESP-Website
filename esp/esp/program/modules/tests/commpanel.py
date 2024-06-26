@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -81,9 +82,9 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
 
         #   Extract filter ID from response
-        s = re.search(r'<input type="hidden" name="filterid" value="([0-9]+)" />', response.content)
+        s = re.search(r'<input type="hidden" name="filterid" value="([0-9]+)" />', response.content.decode('UTF-8'))
         filterid = s.groups()[0]
-        s = re.search(r'<input type="hidden" name="listcount" value="([0-9]+)" />', response.content)
+        s = re.search(r'<input type="hidden" name="listcount" value="([0-9]+)" />', response.content.decode('UTF-8'))
         listcount = s.groups()[0]
 
         #   Enter email information

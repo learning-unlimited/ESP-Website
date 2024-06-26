@@ -1,11 +1,12 @@
 
 
+from __future__ import absolute_import
 from django import forms
 from esp.users.models import ESPUser, PasswordRecoveryTicket
 from django.utils.html import conditional_escape, mark_safe
 from esp.utils.forms import FormWithRequiredCss, SizedCharField
 
-__all__ = ['PasswordResetForm','NewPasswordSetForm', 'UserPasswdForm']
+__all__ = ['PasswordResetForm', 'NewPasswordSetForm', 'UserPasswdForm']
 
 class PasswordResetForm(forms.Form):
 
@@ -19,8 +20,8 @@ class PasswordResetForm(forms.Form):
 
     def clean_username(self):
 
-        if self.cleaned_data.get('username','').strip() == '' and \
-           self.cleaned_data.get('email','').strip() == '':
+        if self.cleaned_data.get('username', '').strip() == '' and \
+           self.cleaned_data.get('email', '').strip() == '':
             raise forms.ValidationError("You need to specify something.")
 
         if self.cleaned_data['username'].strip() == '': return ''
@@ -28,7 +29,7 @@ class PasswordResetForm(forms.Form):
         try:
             user = ESPUser.objects.get(username=self.cleaned_data['username'])
         except ESPUser.DoesNotExist:
-            raise forms.ValidationError, "User '%s' does not exist." % self.cleaned_data['username']
+            raise forms.ValidationError("User '%s' does not exist." % self.cleaned_data['username'])
 
         return self.cleaned_data['username'].strip()
 
@@ -47,8 +48,8 @@ class NewPasswordSetForm(forms.Form):
     code     = forms.CharField(widget = forms.HiddenInput())
     username = forms.CharField(max_length=128,
                                help_text=mark_safe('(The one you used to receive the email.)<br/><br/>'))
-    password = forms.CharField(max_length=128, min_length=5,widget=forms.PasswordInput())
-    password_confirm = forms.CharField(max_length = 128,widget=forms.PasswordInput(),
+    password = forms.CharField(max_length=128, min_length=5, widget=forms.PasswordInput())
+    password_confirm = forms.CharField(max_length = 128, widget=forms.PasswordInput(),
                                        label='Password Confirmation')
 
     def clean_username(self):

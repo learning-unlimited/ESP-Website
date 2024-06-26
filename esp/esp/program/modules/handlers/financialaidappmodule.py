@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -93,7 +94,7 @@ class FinancialAidAppModule(ProgramModuleObj):
     @method_decorator(secure_required)
     # I didn't set @meets_cap here, because I don't want a bug in that to be
     # misinterpreted as "we are out of financial aid".
-    def finaid(self,request, tl, one, two, module, extra, prog):
+    def finaid(self, request, tl, one, two, module, extra, prog):
         """
         A way for a student to apply for financial aid.
         """

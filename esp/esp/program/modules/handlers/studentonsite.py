@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -134,7 +136,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
                 raise ESPError('Please use the links on the schedule page.', log=False)
             context['timeslot'] = ts
             classes = list(ClassSubject.objects.catalog(prog, ts))
-            classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
+            classes = [c for c in classes if c.grade_min <=user_grade and c.grade_max >= user_grade]
             context['checked_in'] = Record.objects.filter(program=prog, event__name='attended', user=user).exists()
 
         else:
@@ -169,7 +171,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @meets_deadline('/Webapp')
     def onsiteclearslot(self, request, tl, one, two, module, extra, prog):
         result = StudentClassRegModule.clearslot_logic(request, tl, one, two, module, extra, prog)
-        if isinstance(result, basestring):
+        if isinstance(result, six.string_types):
             raise ESPError(result, log=False)
         else:
             return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
@@ -206,8 +208,8 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
 
             records = StudentRegCore.get_reg_records(user, prog, 'learn')
 
-            context['modules'] = filter(lambda x: (x.isRequired() and not x.isCompleted()), modules)
-            context['records'] = filter(lambda x: not x['isCompleted'], records)
+            context['modules'] = [x for x in modules if (x.isRequired() and not x.isCompleted())]
+            context['records'] = [x for x in records if not x['isCompleted']]
 
             if Tag.getBooleanTag('student_self_checkin_paid', program = prog):
                 iac = IndividualAccountingController(prog, user)

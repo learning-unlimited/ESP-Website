@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from esp.program.models import ClassSubject
 from esp.utils.web import render_to_response
 from esp.tagdict.models import Tag

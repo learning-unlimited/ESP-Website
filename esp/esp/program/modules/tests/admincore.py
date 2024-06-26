@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
@@ -56,10 +57,10 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         Tag.objects.filter(key='display_registration_names').delete()
         # Check the displayed types
         r = self.client.get("/learn/"+self.program.url+"/studentreg")
-        self.assertTrue(not self.testRT in r.content)
+        self.assertNotContains(r, self.testRT, status_code=200)
 
         # Then set the tag
         Tag.objects.get_or_create(key='display_registration_names', value='["Enrolled", "'+self.testRT+'"]')
         # Check the displayed types again
         r = self.client.get("/learn/"+self.program.url+"/studentreg")
-        self.assertTrue(self.testRT in r.content)
+        self.assertContains(r, self.testRT, status_code=200)

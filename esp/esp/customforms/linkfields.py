@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django import forms
 from django.forms.models import fields_for_model
 from django.apps import apps
@@ -15,7 +16,7 @@ generic_fields = {
     'multiselect': {'typeMap': forms.MultipleChoiceField, 'attrs': {'widget': forms.SelectMultiple, }, 'widget_attrs': {'class': ''}},
     'checkboxes': {'typeMap': forms.MultipleChoiceField, 'attrs': {'widget': forms.CheckboxSelectMultiple, }, 'widget_attrs': {'class': ''}},
     'numeric': {'typeMap': forms.IntegerField, 'attrs': {'widget': forms.TextInput,}, 'widget_attrs': {'class': 'digits '},},
-    'date': {'typeMap': forms.DateField,'attrs': {'widget': forms.DateInput,}, 'widget_attrs': {'class': 'ddate ', 'format': '%m-%d-%Y'},},
+    'date': {'typeMap': forms.DateField, 'attrs': {'widget': forms.DateInput,}, 'widget_attrs': {'class': 'ddate ', 'format': '%m-%d-%Y'},},
     'time': {'typeMap': forms.TimeField, 'attrs': {'widget': forms.TimeInput,}, 'widget_attrs': {'class': 'time '},},
     'file': {'typeMap': forms.FileField, 'attrs': {'widget': CustomFileWidget,}, 'widget_attrs': {'class': 'file'},},
     'phone': {'typeMap': USPhoneNumberField, 'attrs': {'widget': forms.TextInput,}, 'widget_attrs': {'class': 'USPhone '}},
@@ -107,7 +108,7 @@ class CustomFormsCache:
         try to macth the widget.
         """
         widget = field_instance.widget
-        for k,v in generic_fields.items():
+        for k, v in generic_fields.items():
             # First, try and match the field class and corresponding widget
             if field_instance.__class__ is v['typeMap']:
                 if widget.__class__ is v['attrs']['widget']:
@@ -117,7 +118,7 @@ class CustomFormsCache:
         # Check -> does this break for any case? We'll get the wrong classes matched up
         # with the wrong field, and correspondingly the wrong client-side validation.
         backup_type = 'custom'
-        for k,v in generic_fields.items():
+        for k, v in generic_fields.items():
             if widget is v['attrs']['widget'] or (widget.__class__ is v['attrs']['widget']):
                 return k
             try:

@@ -1,6 +1,7 @@
+from __future__ import absolute_import
 import logging
 import random
-import urllib
+import six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 
 
-__all__ = ['user_registration_phase1', 'user_registration_phase2','resend_activation_view']
+__all__ = ['user_registration_phase1', 'user_registration_phase2', 'resend_activation_view']
 
 
 def user_registration_validate(request):
@@ -64,7 +65,7 @@ This function is overloaded to handle either one or two phase reg"""
 
         #   Append key to password and disable until activation if desired
         if Tag.getBooleanTag('require_email_validation'):
-            userkey = random.randint(0,2**31 - 1)
+            userkey = random.randint(0, 2**31 - 1)
             user.password += "_%d" % userkey
             user.is_active = False
 
@@ -79,7 +80,7 @@ This function is overloaded to handle either one or two phase reg"""
             login(request, user)
             return HttpResponseRedirect('/myesp/profile/')
         else:
-            send_activation_email(user,userkey)
+            send_activation_email(user, userkey)
             return render_to_response('registration/account_created_activation_required.html', request,
                                       {'user': user, 'site': Site.objects.get_current()})
     else:
@@ -110,8 +111,8 @@ When there are already accounts with this email address (depending on some tags)
                     { 'accounts': existing_accounts,'awaitings':awaiting_activation_accounts, 'email':form.cleaned_data['email'], 'initial_role':form.cleaned_data['initial_role'], 'site': Site.objects.get_current(), 'form': form })
 
         #form is valid, and not caring about multiple accounts
-        email = urllib.quote(form.cleaned_data['email'])
-        initial_role = urllib.quote(form.cleaned_data['initial_role'])
+        email = six.moves.urllib.parse.quote(form.cleaned_data['email'])
+        initial_role = six.moves.urllib.parse.quote(form.cleaned_data['initial_role'])
         return HttpResponseRedirect(reverse('esp.users.views.user_registration_phase2')+'?email='+email+'&initial_role='+initial_role)
     else: #form is not valid
         return render_to_response('registration/newuser_phase1.html',
@@ -153,8 +154,8 @@ def user_registration_phase2(request):
         return HttpResponseRedirect(reverse("esp.users.views.user_registration_phase1"))
 
     try:
-        email = urllib.unquote(request.GET['email'])
-        initial_role = urllib.unquote(request.GET['initial_role'])
+        email = six.moves.urllib.parse.unquote(request.GET['email'])
+        initial_role = six.moves.urllib.parse.unquote(request.GET['initial_role'])
     except MultiValueDictKeyError:
         return HttpResponseRedirect(reverse("esp.users.views.user_registration_phase1"))
     form = UserRegForm(initial={'email':email,'confirm_email':email,'initial_role':initial_role})
@@ -183,7 +184,7 @@ def activate_account(request):
 
     return HttpResponseRedirect('/myesp/profile/')
 
-def send_activation_email(user,userkey):
+def send_activation_email(user, userkey):
     t = loader.get_template('registration/activation_email.txt')
     c = {'user': user, 'activation_key': userkey, 'site': Site.objects.get_current()}
     send_mail("Account Activation", t.render(c), settings.SERVER_EMAIL, [user.email], fail_silently = False)
@@ -196,16 +197,16 @@ def resend_activation_view(request):
     if request.method == 'POST':
         form=AwaitingActivationEmailForm(request.POST)
         if not form.is_valid():
-            return render_to_response('registration/resend.html',request,
+            return render_to_response('registration/resend.html', request,
                                       {'form':form, 'site': Site.objects.get_current()})
         user=ESPUser.objects.get(username=form.cleaned_data['username'])
         userkey=user.password[user.password.rfind("_")+1:]
-        send_activation_email(user,userkey)
-        return render_to_response('registration/resend_done.html',request,
+        send_activation_email(user, userkey)
+        return render_to_response('registration/resend_done.html', request,
                                   {'form':form, 'site': Site.objects.get_current()})
     else:
         form=AwaitingActivationEmailForm()
-        return render_to_response('registration/resend.html',request,
+        return render_to_response('registration/resend.html', request,
                                   {'form':form, 'site': Site.objects.get_current()})
 
 

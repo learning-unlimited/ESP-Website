@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+import six
+from six.moves import map
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -142,8 +146,8 @@ class ResourceModule(ProgramModuleObj):
                 form = ResourceTypeForm(data, auto_id="restype_%s")
                 num_choices = int(data.get('resourcechoices-TOTAL_FORMS', '0'))
                 ResourceChoiceSet = formset_factory(ResourceChoiceForm, max_num = 10, extra = 0 if num_choices else 1)
-                choices, choices_list = [],[]
-                for i in range(0,num_choices):
+                choices, choices_list = [], []
+                for i in range(0, num_choices):
                     choice = data['resourcechoices-'+str(i)+'-choice']
                     choices.append({'choice': choice})
                     choices_list.append(choice)
@@ -192,7 +196,7 @@ class ResourceModule(ProgramModuleObj):
                 num_forms = int(data.get('furnishings-TOTAL_FORMS', '0'))
                 FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0)
                 furnishings = []
-                for i in range(0,num_forms):
+                for i in range(0, num_forms):
                     #   Filter out blank furnishings or choices
                     if 'furnishings-'+str(i)+'-furnishing' in data:
                         furnishing = data['furnishings-'+str(i)+'-furnishing']
@@ -202,7 +206,7 @@ class ResourceModule(ProgramModuleObj):
                             choice = ''
                         furnishings.append({'furnishing': furnishing, 'choice': choice})
                 #   Filter out duplicates
-                furnishings = list(map(dict, frozenset(frozenset(i.items()) for i in furnishings)))
+                furnishings = list(map(dict, frozenset(frozenset(list(i.items())) for i in furnishings)))
                 if form.is_valid():
                     controller.add_or_edit_classroom(form, furnishings)
                 else:
@@ -291,7 +295,7 @@ class ResourceModule(ProgramModuleObj):
                     consumable = res_type.consumable,
                     priority_default = res_type.priority_default,
                     only_one = res_type.only_one,
-                    attributes_pickled = res_type.attributes_pickled,
+                    attributes_dumped = res_type.attributes_dumped,
                     program = self.program,
                     autocreated = res_type.autocreated,
                     hidden = res_type.hidden
@@ -391,7 +395,7 @@ class ResourceModule(ProgramModuleObj):
             if import_mode == 'preview':
                 context['prog'] = self.program
                 result = self.program.collapsed_dict(resource_list)
-                key_list = self.program.natural_sort(result.keys())
+                key_list = self.program.natural_sort(list(result.keys()))
                 new_rooms = []
                 for key in key_list:
                     room = result[key]
@@ -421,7 +425,7 @@ class ResourceModule(ProgramModuleObj):
                     consumable = res_type.consumable,
                     priority_default = res_type.priority_default,
                     only_one = res_type.only_one,
-                    attributes_pickled = res_type.attributes_pickled,
+                    attributes_dumped = res_type.attributes_dumped,
                     program = prog,
                     autocreated = res_type.autocreated,
                     hidden = res_type.hidden
@@ -510,7 +514,7 @@ class ResourceModule(ProgramModuleObj):
                                 consumable = res_type.consumable,
                                 priority_default = res_type.priority_default,
                                 only_one = res_type.only_one,
-                                attributes_pickled = res_type.attributes_pickled,
+                                attributes_dumped = res_type.attributes_dumped,
                                 program = self.program,
                                 autocreated = res_type.autocreated,
                                 hidden = res_type.hidden
@@ -549,7 +553,7 @@ class ResourceModule(ProgramModuleObj):
                             consumable = res_type.consumable,
                             priority_default = res_type.priority_default,
                             only_one = res_type.only_one,
-                            attributes_pickled = res_type.attributes_pickled,
+                            attributes_dumped = res_type.attributes_dumped,
                             program = self.program,
                             autocreated = res_type.autocreated,
                             hidden = res_type.hidden
@@ -577,7 +581,7 @@ class ResourceModule(ProgramModuleObj):
             if import_mode == 'preview':
                 context['prog'] = self.program
                 result = self.program.collapsed_dict(new_equipment_list)
-                context['new_equipment'] = [result[key] for key in sorted(result.iterkeys())]
+                context['new_equipment'] = [result[key] for key in sorted(six.iterkeys(result))]
                 response = render_to_response(self.baseDir()+'equipment_import.html', request, context)
             else:
                 extra = 'equipment'
@@ -629,7 +633,8 @@ class ResourceModule(ProgramModuleObj):
             return response
 
         #   Group contiguous blocks of time for the program
-        time_groups = self.program.getTimeGroups(types=['Class Time Block','Open Class Time Block'])
+        time_options = self.program.getTimeSlots(types=['Class Time Block', 'Open Class Time Block'])
+        time_groups = self.program.getTimeGroups(types=['Class Time Block', 'Open Class Time Block'])
 
         #   Retrieve remaining context information
         context['timeslots'] = [{'selections': group} for group in time_groups]

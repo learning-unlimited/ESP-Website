@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -42,7 +44,6 @@ from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 
 import datetime
 import re
-import json
 
 from esp.dbmail.models import MessageRequest
 from esp.web.models import NavBarCategory
@@ -56,11 +57,6 @@ from esp.utils.no_autocookie import disable_csrf_cookie_update
 
 from django.views.decorators.cache import cache_control
 from django.conf import settings
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 
 @cache_control(max_age=180)
 @disable_csrf_cookie_update
@@ -273,7 +269,7 @@ def registration_redirect(request):
     #   Most chapters will want this, but it can be disabled by a Tag.
     if len(progs) == 1 and Tag.getBooleanTag('automatic_registration_redirect'):
         ctxt['prog'] = progs[0]
-        return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
+        return HttpResponseRedirect(six.u('/%s/%s/%s') % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
     else:
         if len(progs) > 0:
             #   Sort available programs newest first

@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -39,7 +40,7 @@ from esp.dbmail.models import MessageVars, EmailList, PlainRedirect, MessageRequ
 from esp.utils.admin_user_search import default_user_search
 
 class MessageVarsAdmin(admin.ModelAdmin):
-    list_display = ('id', 'messagerequest','provider_name')
+    list_display = ('id', 'messagerequest', 'provider_name')
     list_filter = ('provider_name',)
     search_fields = ('messagerequest__subject',)
 admin_site.register(MessageVars, MessageVarsAdmin)

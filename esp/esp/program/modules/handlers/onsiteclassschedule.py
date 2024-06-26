@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -56,7 +57,7 @@ class OnsiteClassSchedule(ProgramModuleObj):
     @needs_student_in_grade
     def printschedule(self, request, tl, one, two, module, extra, prog):#(self, request, *args, **kwargs):
         '''Sends a schedule printing request to the schedule-printing script.  Defaults to the current (probably onsite-morphed) user, but can take a GET parameter instead.'''
-        printer = request.GET.get('printer',None)
+        printer = request.GET.get('printer', None)
         if printer is not None:
             # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
             printer = Printer.objects.get(name=printer)

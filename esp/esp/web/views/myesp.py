@@ -1,4 +1,5 @@
-
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -235,7 +236,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         if regProf.student_info and regProf.student_info.dob:
             new_data['dob'] = regProf.student_info.dob
 
-        if 'k12school' in new_data and (isinstance(new_data['k12school'], str) or isinstance(new_data['k12school'], unicode)):
+        if 'k12school' in new_data and (isinstance(new_data['k12school'], str) or isinstance(new_data['k12school'], six.text_type)):
             new_data['unmatched_school'] = True
 
         #   Set default values for state fields
@@ -257,7 +258,7 @@ def myesp_onsite(request):
     if not user.isOnsite():
         raise ESPError('You are not a valid onsite user, please go away.', log=False)
 
-    progs = Permission.program_by_perm(user,"Onsite")
+    progs = Permission.program_by_perm(user, "Onsite")
 
     # Order them decreasing by id
     progs = list(progs.order_by("-id"))

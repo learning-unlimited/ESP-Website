@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 #
 # Import classrooms from a CSV file. Columns should be:
 #   Date: 11/22/2014
@@ -10,23 +10,27 @@
 # choice. Note that the 'Sound system' resource should now be called 'Speakers'.
 #
 
+from __future__ import absolute_import
+from __future__ import print_function
 from script_setup import *
 
 import csv
 import os
 
 from datetime import datetime
+from io import open
+from six.moves import input
 
 ETYPE_CLASSBLOCK = EventType.objects.get(description='Class Time Block')
 RTYPE_CLASSROOM = ResourceType.get_or_create('Classroom')
 
-PROGRAM = Program.objects.get(name=raw_input("Program name: "))
-REFPROG = Program.objects.get(name=raw_input("Reference program: "))
+PROGRAM = Program.objects.get(name=input("Program name: "))
+REFPROG = Program.objects.get(name=input("Reference program: "))
 
 RESOURCE_TYPES = ResourceType.objects.filter(program=PROGRAM)
 RTYPE_CLASS_SPACE = RESOURCE_TYPES.get(name__iexact='Classroom space')
 
-filename = os.path.expanduser(raw_input("Full path to CSV file: "))
+filename = os.path.expanduser(input("Full path to CSV file: "))
 csvfile = open(filename, "r")
 reader = csv.reader(csvfile)
 
@@ -46,13 +50,13 @@ for row in reader:
     room_number = row[3]
 
     # Test parsing code
-    print "%s from %s to %s" % (room_number, start.__repr__(), end.__repr__())
+    print("%s from %s to %s" % (room_number, start.__repr__(), end.__repr__()))
 
     # Find Reference Room from Reference Program
     results = Resource.objects.filter(res_type=RTYPE_CLASSROOM,
                                       name=room_number).order_by("-id")
     if not results:
-        print "Couldn't find reference information for %s; skipping" % room_number
+        print("Couldn't find reference information for %s; skipping" % room_number)
         continue
     reference = results[0]
 
@@ -79,12 +83,12 @@ for row in reader:
         results = ResourceType.objects.filter(program=PROGRAM,
                                               name__iexact=search_term)
         if len(results) == 0:
-            print "Could not add %s resource for %s" \
-                % (search_term, room_number)
+            print("Could not add %s resource for %s" \
+                % (search_term, room_number))
             continue
         if len(results) > 1:
-            print "Multiple results for %s resource for %s; skipping" \
-                % (search_term, room_number)
+            print("Multiple results for %s resource for %s; skipping" \
+                % (search_term, room_number))
             continue
         furnishings.add(results[0])
 
@@ -105,4 +109,4 @@ for row in reader:
             resource.res_group = room.res_group
             resource.save()
 
-print "Done!"
+print("Done!")

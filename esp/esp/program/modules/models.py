@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -94,7 +96,7 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
         #   are changed.
         for key in datum:
             if (key not in mod.__dict__) or (mod.__dict__[key] is None) or (mod.__dict__[key] == ''):
-                if datum[key] is not None and datum[key] != u'':
+                if datum[key] is not None and datum[key] != six.u(''):
                     mod.__dict__[key] = datum[key]
 
         mod.save()

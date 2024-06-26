@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -66,8 +67,8 @@ class DonationForm(forms.Form):
         self.fields['custom_amount'].initial = custom_amount_initial
 
     def clean_custom_amount(self):
-        amount_donation = self.cleaned_data.get('amount_donation','')
-        custom_amount = self.cleaned_data.get('custom_amount','')
+        amount_donation = self.cleaned_data.get('amount_donation', '')
+        custom_amount = self.cleaned_data.get('custom_amount', '')
 
         if amount_donation == "-1":
             if custom_amount:
@@ -100,7 +101,7 @@ class DonationModule(ProgramModuleObj):
         #   Tag's specifications with defaults in the code.
         DEFAULTS = {
             'donation_text': 'Donation to Learning Unlimited',
-            'donation_options':[10, 20, 50],
+            'donation_options': [10, 20, 50],
         }
 
         tag_data = json.loads(Tag.getProgramTag('donation_settings', self.program))
