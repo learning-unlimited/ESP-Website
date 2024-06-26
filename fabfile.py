@@ -96,7 +96,8 @@ def setup():
     # Name of the encrypted volume group in the Vagrant VM based on which VM is loaded
     ubuntu_version = run("lsb_release -r | awk '{print $2}'", warn_only=True)
     try:
-        env.encvg = {"22.04": "ubuntu--vg-keep_1",
+        env.encvg = {"24.04": "ubuntu--vg-keep_1",
+                     "22.04": "ubuntu--vg-keep_1",
                      "20.04": "vgvagrant-keep_1",
                      "12.04": "ubuntu--12--vg-keep_1"}[ubuntu_version]
     except KeyError:
@@ -178,7 +179,8 @@ def ensure_environment():
     # Name of the encrypted volume group in the Vagrant VM based on which VM is loaded
     ubuntu_version = run("lsb_release -r | awk '{print $2}'", warn_only=True)
     try:
-        env.encvg = {"22.04": "ubuntu--vg-keep_1",
+        env.encvg = {"24.04": "ubuntu--vg-keep_1",
+                     "22.04": "ubuntu--vg-keep_1",
                      "20.04": "vgvagrant-keep_1",
                      "12.04": "ubuntu--12--vg-keep_1"}[ubuntu_version]
     except KeyError:

@@ -196,7 +196,7 @@ Note: to get a head start on a slow step, start the download in step 5.ii then c
 		sudo add-apt-repository -y ppa:deadsnakes/ppa
 		sudo apt update && sudo apt -y upgrade
 		sudo apt install -y python3.7 python3.7-dev python3.7-distutils python3.7-venv
-		curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+		curl https://bootstrap.pypa.io/pip/3.7/get-pip.py -o get-pip.py
 		sudo python3.7 get-pip.py
 		echo alias python=$(which python3.7) >> ~/.bashrc
 		sudo hostnamectl set-hostname ludev
@@ -223,11 +223,12 @@ Note: to get a head start on a slow step, start the download in step 5.ii then c
 	iv. Run the virtual machine using the VirtualBox "Start" button, *not* by typing ``vagrant up`` in a terminal. If you are prompted, the username should be ubuntu with no password. If there is an popup prompting you to try or install Ubuntu, choose the "Try" option.
 
 	v. Once the desktop comes up, open a terminal window (should be in "Applications" in the bottom left corner). Run the following commands to get the names of the volume group (VG) and logical volume (LV)::
-    
+
+		sudo apt update && sudo apt -y upgrade
 		sudo apt install lvm2
 		sudo lvs
 
-	vi. Create space for an encrypted partition by running the following commands, replacing ``$VOLUME_GROUP`` and ``$LOGICAL_VOLUME`` with the names you found in the previous step. You may need to do ``e2fsck -f /dev/$VOLUME_GROUP/$LOGICAL_VOLUME`` first, but it should yell at you when you try to resize if this step is needed.::
+	vi. Create space for an encrypted partition by running the following commands, replacing ``$VOLUME_GROUP`` and ``$LOGICAL_VOLUME`` with the names you found in the previous step. You may need to do ``e2fsck -f /dev/$VOLUME_GROUP/$LOGICAL_VOLUME`` first, but it should yell at you in that case. ::
 
 		sudo lvreduce --resizefs --size -10G /dev/$VOLUME_GROUP/$LOGICAL_VOLUME
 		sudo lvcreate -l 100%FREE -n keep_1 $VOLUME_GROUP
