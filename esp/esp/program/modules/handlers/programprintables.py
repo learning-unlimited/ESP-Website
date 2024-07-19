@@ -241,7 +241,7 @@ class ProgramPrintables(ProgramModuleObj):
         sort_list_reversed = sort_list
         sort_list_reversed.reverse()
         for sort_fn in sort_list_reversed:
-            classes.sort(key=sort_fn)
+            classes.sort(key=cmp_to_key(sort_fn))
 
         clsids = ','.join([str(cls.id) for cls in classes])
 
