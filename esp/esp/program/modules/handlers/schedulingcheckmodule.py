@@ -640,7 +640,7 @@ class SchedulingCheckRunner:
         HEADINGS = ["Class Section", "Unfulfilled Request", "Current Room"]
         mismatches = []
 
-        for type_regex, matching_rooms in DEFAULT_CONFIG.iteritems():
+        for type_regex, matching_rooms in six.iteritems(DEFAULT_CONFIG):
             resource_requests = ResourceRequest.objects.filter(
                 res_type__program=self.p, desired_value__iregex=type_regex)
 
