@@ -602,7 +602,7 @@ class SchedulingCheckRunner:
         classes = json.loads(Tag.getProgramTag('no_overlap_classes',program=self.p))
         classes_lookup = {x.id: x for x in ClassSubject.objects.filter(id__in=sum(classes.values(),[]))}
         bad_classes = []
-        for key, l in classes.iteritems():
+        for key, l in six.iteritems(classes):
             eventtuples = list(Event.objects.filter(meeting_times__parent_class__in=l).values_list('description', 'meeting_times', 'meeting_times__parent_class'))
             overlaps = {}
             for event, sec, cls in eventtuples:
