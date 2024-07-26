@@ -44,9 +44,12 @@ class CacheClass(BaseCache):
             # Make a guess as to the size of the object as seen by Memcache,
             # after serializtion. This guess can be an overestimate, since some
             # backends can apply zlib compression in addition to pickling.
-            data_size = len(pickle.dumps(value))
-            if data_size > CACHE_WARNING_SIZE:
-                logger.warning("Data size for key '%s' is dangerously large: %d bytes", key, data_size)
+            try:
+                data_size = len(pickle.dumps(value))
+                if data_size > CACHE_WARNING_SIZE:
+                    logger.warning("Data size for key '%s' is dangerously large: %d bytes", key, data_size)
+            except TypeError as e:
+                logger.warning("Got a TypeError (likely because value `{}` is not picklable):\n\n{}".format(value, e))
 
     @try_multi(8)
     def add(self, key, value, timeout=None, version=None):
