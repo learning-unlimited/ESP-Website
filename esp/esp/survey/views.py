@@ -328,8 +328,8 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
         for s in surveys:
             # Certain characters are forbidden in sheet names
             # See <https://github.com/python-excel/xlwt/blob/8f0afdc9b322129600d81e754cabd2944e7064f2/xlwt/Utils.py#L154>
-            s.name = re.sub(r"['\[\]:\\?/*\x00]", "", s.name.encode('ascii', 'ignore'))
-            s.category = re.sub(r"['\[\]:\\?/*\x00]", "", s.category.encode('ascii', 'ignore'))
+            s.name = re.sub(r"['\[\]:\\?/*\x00]", "", s.name).encode('ascii', 'ignore')
+            s.category = re.sub(r"['\[\]:\\?/*\x00]", "", s.category).encode('ascii', 'ignore')
             # The length of sheet names is limited to 31 characters
             survey_index += 1
             if len(s.name)>31:
@@ -355,7 +355,7 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
                 i+=1
             for a in Answer.objects.filter(question__in=qs).order_by('id'):
                 _worksheet_write(ws, sr_dict[a.survey_response_id], q_dict[a.question_id], delist(a.answer))
-            #PER-CLASS QUESTIONS
+            # PER-CLASS QUESTIONS
             # The length of sheet names is limited to 31 characters
             if len(s.name)>19:
                 ws_perclass=wb.add_sheet("%d %s... (%s, per-class)" % (survey_index, s.name[:5], s.category[:5]))
