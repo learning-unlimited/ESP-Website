@@ -60,7 +60,7 @@ or select a timeslot from the dropdown below to see attendance stats:
             </option>
         {% endif %}
         {% for ts in program.getTimeSlots %}
-            <option value="{{ ts.id }}" {% if ts == timeslot %}selected="selected"{% endif %}>
+            <option value="{{ ts.id }}" {% if ts.id == timeslot.id %}selected="selected"{% endif %}>
                 {{ ts }}
             </option>
         {% endfor %}
