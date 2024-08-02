@@ -41,7 +41,7 @@ Learning Unlimited, Inc.
 import datetime
 import xlwt
 import re
-from io import StringIO
+from io import BytesIO
 from django.db import models
 from django.db.models import Q
 from esp.users.models import ESPUser, Record, RecordType, admin_required
@@ -306,17 +306,6 @@ def delist(x):
     else:
         return x
 
-def _encode_ascii(cell_label):
-    if isinstance(cell_label, six.string_types):
-        return str(cell_label.encode('ascii', 'xmlcharrefreplace'))
-    else:
-        return cell_label
-
-def _worksheet_write(worksheet, r, c, label="", style=None):
-    if style is None:
-        worksheet.write(r, c, _encode_ascii(label))
-    else:
-        worksheet.write(r, c, _encode_ascii(label), style)
 
 def dump_survey_xlwt(user, prog, surveys, request, tl):
     from esp.program.models import ClassSubject, ClassSection
@@ -328,8 +317,8 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
         for s in surveys:
             # Certain characters are forbidden in sheet names
             # See <https://github.com/python-excel/xlwt/blob/8f0afdc9b322129600d81e754cabd2944e7064f2/xlwt/Utils.py#L154>
-            s.name = re.sub(r"['\[\]:\\?/*\x00]", "", s.name).encode('ascii', 'ignore')
-            s.category = re.sub(r"['\[\]:\\?/*\x00]", "", s.category).encode('ascii', 'ignore')
+            s.name = re.sub(r"['\[\]:\\?/*\x00]", "", s.name)
+            s.category = re.sub(r"['\[\]:\\?/*\x00]", "", s.category)
             # The length of sheet names is limited to 31 characters
             survey_index += 1
             if len(s.name)>31:
@@ -344,17 +333,17 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
             q_dict={}
             for q in qs:
                 q_dict[q.id]=i
-                _worksheet_write(ws, 0, i, q.name)
+                ws.write(0, i, q.name)
                 i+=1
             i=1
             sr_dict={}
             for sr in srs:
                 sr_dict[sr.id]=i
-                _worksheet_write(ws, i, 0, sr.id)
-                _worksheet_write(ws, i, 1, sr.time_filled, datetime_style)
+                ws.write(i, 0, sr.id)
+                ws.write(i, 1, sr.time_filled, datetime_style)
                 i+=1
             for a in Answer.objects.filter(question__in=qs).order_by('id'):
-                _worksheet_write(ws, sr_dict[a.survey_response_id], q_dict[a.question_id], delist(a.answer))
+                ws.write(sr_dict[a.survey_response_id], q_dict[a.question_id], delist(a.answer))
             # PER-CLASS QUESTIONS
             # The length of sheet names is limited to 31 characters
             if len(s.name)>19:
@@ -370,7 +359,7 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
             q_dict_perclass={}
             for q in qs_perclass:
                 q_dict_perclass[q.id]=i
-                _worksheet_write(ws_perclass, 0, i, q.name)
+                ws_perclass.write(0, i, q.name)
                 i+=1
             i=1
             src_dict_perclass={}
@@ -386,14 +375,14 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
                 else:
                     row=i
                     src_dict_perclass[key]=i
-                    _worksheet_write(ws_perclass, i, 0, sr.id)
-                    _worksheet_write(ws_perclass, i, 1, sr.time_filled, datetime_style)
+                    ws_perclass.write(i, 0, sr.id)
+                    ws_perclass.write(i, 1, sr.time_filled, datetime_style)
                     if cs:
-                        _worksheet_write(ws_perclass, i, 2, cs.emailcode())
-                        _worksheet_write(ws_perclass, i, 3, cs.title())
+                        ws_perclass.write(i, 2, cs.emailcode())
+                        ws_perclass.write(i, 3, cs.title())
                     i+=1
-                _worksheet_write(ws_perclass, row, q_dict_perclass[a.question_id], delist(a.answer))
-        out=StringIO()
+                ws_perclass.write(row, q_dict_perclass[a.question_id], delist(a.answer))
+        out=BytesIO()
         wb.save(out)
         response=HttpResponse(out.getvalue(), content_type='application/vnd.ms-excel')
         response['Content-Disposition']='attachment; filename=dump-%s.xls' % (prog.name)
