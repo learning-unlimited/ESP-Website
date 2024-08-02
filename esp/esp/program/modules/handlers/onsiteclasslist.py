@@ -40,6 +40,7 @@ Learning Unlimited, Inc.
 import json
 from datetime import datetime, timedelta
 
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Min
 from django.db.models.query import Q
 from django.http import HttpResponse
@@ -107,7 +108,7 @@ class OnSiteClassList(ProgramModuleObj):
             'timeslots': list(prog.getTimeSlots().extra({'start_millis':"""EXTRACT(EPOCH FROM start) * 1000""",'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label', 'start_millis').order_by("start")),
             'categories': list(prog.class_categories.all().order_by('-symbol').values('id', 'symbol', 'category')),
         }
-        json.dump(data, resp)
+        json.dump(data, resp, cls=DjangoJSONEncoder)
 
         return resp
 
