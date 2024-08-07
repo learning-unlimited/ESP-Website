@@ -227,7 +227,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
     def static_hours(prog, approved = False, scheduled = False, teachers = None):
         hours = TeacherBigBoardModule.get_hours(prog, approved = approved, scheduled = scheduled, teachers = teachers)
         if hours[0]:
-            return [sum(zip(*j)[0]) for j in hours]
+            return [sum(list(zip(*j))[0]) for j in hours]
         else:
             return [0, 0]
     static_hours = staticmethod(static_hours)
