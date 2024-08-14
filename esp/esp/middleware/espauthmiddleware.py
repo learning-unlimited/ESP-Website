@@ -132,6 +132,9 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
                                         domain=settings.SESSION_COOKIE_DOMAIN,
                                         secure=settings.SESSION_COOKIE_SECURE or None)
                     modified_cookies = True
+                if str(value) == '':
+                    response.delete_cookie(key, domain=settings.SESSION_COOKIE_DOMAIN)
+                    modified_cookies = True
 
         if user and not user.is_authenticated():
             cookies_to_delete = [x for x in ('cur_username', 'cur_userid', 'cur_email',
