@@ -33,7 +33,7 @@ class ClassManageForm(ManagementForm):
     propagated to all of the class's sections. """
 
     clsid = forms.IntegerField(initial=-1, widget=forms.HiddenInput)
-    status = forms.ChoiceField(choices=())
+    status = forms.TypedChoiceField(choices=(), coerce=int, empty_value=ClassStatus.UNREVIEWED)
     reg_status = forms.ChoiceField(required=False, choices=())
     min_grade = forms.ChoiceField(choices=())
     max_grade = forms.ChoiceField(choices=())
