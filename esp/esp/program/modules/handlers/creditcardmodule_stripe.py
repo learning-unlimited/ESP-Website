@@ -283,7 +283,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                     # Thus, we will never be in a state where the card has been
                     # charged without a record being created on the site, nor
                     # vice-versa.
-                    totalcost_dollars = Decimal(request.POST['totalcost_cents']) // 100
+                    totalcost_dollars = Decimal(request.POST['totalcost_cents']) / 100
 
                     #   Create a record of the transfer without the transaction ID.
                     transfer = iac.submit_payment(totalcost_dollars, 'TBD')
