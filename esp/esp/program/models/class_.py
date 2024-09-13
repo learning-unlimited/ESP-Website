@@ -2005,6 +2005,46 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         for s in self.sections.all():
             s.unpreregister_student(user, prereg_verbs)
 
+    def __cmp__(self, other):
+        # Warning: this hits the DB around four times per comparison, i.e.,
+        # O(n log n) times for a list.  Consider using prefetch_related and
+        # then sorting with the key self.start_time_prefetched(), which will
+        # hit the DB only once at the start, and compute the start time of each
+        # class only once.
+        selfevent = self.firstBlockEvent()
+        otherevent = other.firstBlockEvent()
+
+        if selfevent is not None and otherevent is None:
+            return 1
+        if selfevent is None and otherevent is not None:
+            return -1
+
+        if selfevent is not None and otherevent is not None:
+            cmpresult = selfevent.__cmp__(otherevent)
+            if cmpresult != 0:
+                return cmpresult
+
+        return cmp(self.title, other.title)
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+    def __gt__(self, other):
+        return self.__cmp__(other) > 0
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
+    def __le__(self, other):
+        return self.__cmp__(other) <= 0
+    def __ge__(self, other):
+        return self.__cmp__(other) >= 0
+    def __ne__(self, other):
+        return self.__cmp__(other) != 0
+
+    def firstBlockEvent(self):
+        eventList = self.all_meeting_times.all().order_by('start')
+        if eventList.count() == 0:
+            return None
+        else:
+            return eventList[0]
+
     def getArchiveClass(self):
         result = ArchiveClass.objects.filter(original_id=self.id)
         if result.count() > 0:
