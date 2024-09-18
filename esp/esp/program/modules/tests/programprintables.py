@@ -187,7 +187,7 @@ class TestAllClassesFieldConverter(ProgramFrameworkTest):
         super(TestAllClassesFieldConverter, self).setUp(*args, **kwargs)
         self.class_subjects = ClassSubject.objects.all()
         self.class_subject_fieldnames = [field.name for field in ClassSubject._meta.fields]
-        self.converter = AllClassesFieldConverter()
+        self.converter = AllClassesFieldConverter(self.program)
 
     def test_fieldvalue_fakefield(self):
         """
