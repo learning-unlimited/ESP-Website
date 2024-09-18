@@ -4,6 +4,7 @@ set -euf -o pipefail
 if [ "$TRAVIS_JOB" = "test" ]; then
     cd esp
     ./manage.py collectstatic --noinput -v 0
+    coverage run --source=. ./manage.py test --parallel
     coverage run --source=. ./manage.py test
     coverage xml
 elif [ "$TRAVIS_JOB" = "lint" ]; then
