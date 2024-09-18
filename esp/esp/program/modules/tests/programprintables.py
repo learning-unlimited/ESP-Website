@@ -165,19 +165,19 @@ class TestAllClassesSelectionForm(ProgramFrameworkTest):
 
     def test_empty_field_selection(self):
         """Ensure that at least one selection is required"""
-        form = AllClassesSelectionForm()
+        form = AllClassesSelectionForm(program=self.program)
         self.assertFalse(form.is_valid())
 
     def test_invalid_field_selection(self):
         """Ensure that form does not accept invalid field names"""
         params = {'subject_fields':['an_invalid_field_name']}
-        form = AllClassesSelectionForm(params)
+        form = AllClassesSelectionForm(self.program, params)
         self.assertFalse(form.is_valid())
 
     def test_class_subject_fields_accepted(self):
         """Ensure that field names of ClassSubject are accepted"""
         params = {'subject_fields':[field.name for field in ClassSubject._meta.fields]}
-        form = AllClassesSelectionForm(params)
+        form = AllClassesSelectionForm(self.program, params)
         self.assertTrue(form.is_valid())
 
 
