@@ -1,5 +1,8 @@
 " A view to show surveys. "
 
+from __future__ import absolute_import
+from __future__ import division
+import six
 __author__    = "$LastChangedBy$"
 __date__      = "$LastChangedDate$"
 __rev__       = "$LastChangedRevision$"
@@ -38,7 +41,7 @@ Learning Unlimited, Inc.
 import datetime
 import xlwt
 import re
-from cStringIO import StringIO
+from io import BytesIO
 from django.db import models
 from django.db.models import Q
 from esp.users.models import ESPUser, Record, RecordType, admin_required
@@ -298,22 +301,11 @@ def display_survey(user, prog, surveys, request, tl, format, template = 'survey/
         return render_to_latex(template, context, 'pdf')
 
 def delist(x):
-    if isinstance(x,list):
+    if isinstance(x, list):
         return ', '.join(x)
     else:
         return x
 
-def _encode_ascii(cell_label):
-    if isinstance(cell_label, basestring):
-        return str(cell_label.encode('ascii', 'xmlcharrefreplace'))
-    else:
-        return cell_label
-
-def _worksheet_write(worksheet, r, c, label="", style=None):
-    if style is None:
-        worksheet.write(r, c, _encode_ascii(label))
-    else:
-        worksheet.write(r, c, _encode_ascii(label), style)
 
 def dump_survey_xlwt(user, prog, surveys, request, tl):
     from esp.program.models import ClassSubject, ClassSection
@@ -325,49 +317,49 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
         for s in surveys:
             # Certain characters are forbidden in sheet names
             # See <https://github.com/python-excel/xlwt/blob/8f0afdc9b322129600d81e754cabd2944e7064f2/xlwt/Utils.py#L154>
-            s.name = re.sub(r"['\[\]:\\?/*\x00]", "", s.name.encode('ascii', 'ignore'))
-            s.category = re.sub(r"['\[\]:\\?/*\x00]", "", s.category.encode('ascii', 'ignore'))
+            s.name = re.sub(r"['\[\]:\\?/*\x00]", "", s.name)
+            s.category = re.sub(r"['\[\]:\\?/*\x00]", "", s.category)
             # The length of sheet names is limited to 31 characters
             survey_index += 1
             if len(s.name)>31:
                 ws=wb.add_sheet("%d %s... (%s)" % (survey_index, s.name[:17], s.category[:5]))
             else:
                 ws=wb.add_sheet(s.name)
-            ws.write(0,0,'Response ID')
-            ws.write(0,1,'Timestamp')
-            qs=list(s.questions.filter(per_class=False).order_by('seq','id'))
+            ws.write(0, 0, 'Response ID')
+            ws.write(0, 1, 'Timestamp')
+            qs=list(s.questions.filter(per_class=False).order_by('seq', 'id'))
             srs=list(s.surveyresponse_set.all().order_by('id'))
             i=2
             q_dict={}
             for q in qs:
                 q_dict[q.id]=i
-                _worksheet_write(ws,0,i,q.name)
+                ws.write(0, i, q.name)
                 i+=1
             i=1
             sr_dict={}
             for sr in srs:
                 sr_dict[sr.id]=i
-                _worksheet_write(ws,i,0,sr.id)
-                _worksheet_write(ws,i,1,sr.time_filled,datetime_style)
+                ws.write(i, 0, sr.id)
+                ws.write(i, 1, sr.time_filled, datetime_style)
                 i+=1
             for a in Answer.objects.filter(question__in=qs).order_by('id'):
-                _worksheet_write(ws,sr_dict[a.survey_response_id],q_dict[a.question_id],delist(a.answer))
-            #PER-CLASS QUESTIONS
+                ws.write(sr_dict[a.survey_response_id], q_dict[a.question_id], delist(a.answer))
+            # PER-CLASS QUESTIONS
             # The length of sheet names is limited to 31 characters
             if len(s.name)>19:
                 ws_perclass=wb.add_sheet("%d %s... (%s, per-class)" % (survey_index, s.name[:5], s.category[:5]))
             else:
                 ws_perclass=wb.add_sheet(s.name + " (per-class)")
-            ws_perclass.write(0,0,"Response ID")
-            ws_perclass.write(0,1,"Timestamp")
-            ws_perclass.write(0,2,"Class Code")
-            ws_perclass.write(0,3,"Class Title")
-            qs_perclass=list(s.questions.filter(per_class=True).order_by('seq','id'))
+            ws_perclass.write(0, 0, "Response ID")
+            ws_perclass.write(0, 1, "Timestamp")
+            ws_perclass.write(0, 2, "Class Code")
+            ws_perclass.write(0, 3, "Class Title")
+            qs_perclass=list(s.questions.filter(per_class=True).order_by('seq', 'id'))
             i=4
             q_dict_perclass={}
             for q in qs_perclass:
                 q_dict_perclass[q.id]=i
-                _worksheet_write(ws_perclass,0,i,q.name)
+                ws_perclass.write(0, i, q.name)
                 i+=1
             i=1
             src_dict_perclass={}
@@ -375,7 +367,7 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
                 sr=a.survey_response
                 cs=a.target
                 if isinstance(cs, ClassSection):
-                    key=(sr,cs)
+                    key=(sr, cs)
                 else:
                     key=sr
                 if key in src_dict_perclass:
@@ -383,16 +375,16 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
                 else:
                     row=i
                     src_dict_perclass[key]=i
-                    _worksheet_write(ws_perclass,i,0,sr.id)
-                    _worksheet_write(ws_perclass,i,1,sr.time_filled,datetime_style)
+                    ws_perclass.write(i, 0, sr.id)
+                    ws_perclass.write(i, 1, sr.time_filled, datetime_style)
                     if cs:
-                        _worksheet_write(ws_perclass,i,2,cs.emailcode())
-                        _worksheet_write(ws_perclass,i,3,cs.title())
+                        ws_perclass.write(i, 2, cs.emailcode())
+                        ws_perclass.write(i, 3, cs.title())
                     i+=1
-                _worksheet_write(ws_perclass,row,q_dict_perclass[a.question_id],delist(a.answer))
-        out=StringIO()
+                ws_perclass.write(row, q_dict_perclass[a.question_id], delist(a.answer))
+        out=BytesIO()
         wb.save(out)
-        response=HttpResponse(out.getvalue(),content_type='application/vnd.ms-excel')
+        response=HttpResponse(out.getvalue(), content_type='application/vnd.ms-excel')
         response['Content-Disposition']='attachment; filename=dump-%s.xls' % (prog.name)
         return response
     else:
@@ -431,7 +423,7 @@ def survey_review_single(request, tl, program, instance, template = 'survey/revi
     user = request.user
 
     survey_response = None
-    ints = request.GET.items()
+    ints = list(request.GET.items())
     if len(ints) == 1:
         srs = SurveyResponse.objects.filter(id=ints[0][0])
         if len(srs) == 1:
@@ -440,15 +432,15 @@ def survey_review_single(request, tl, program, instance, template = 'survey/revi
         raise ESPError('Ideally this page should give you some way to pick an individual response. For now I guess you should go back to <a href="review">reviewing the whole survey</a>.', log=False)
 
     if tl == 'manage' and user.isAdmin(prog):
-        answers = survey_response.answers.order_by('content_type','object_id', 'question')
+        answers = survey_response.answers.order_by('content_type', 'object_id', 'question')
         classes_only = False
         other_responses = None
     elif tl == 'teach':
-        subject_ct=ContentType.objects.get(app_label="program",model="classsubject")
-        section_ct=ContentType.objects.get(app_label="program",model="classsection")
+        subject_ct=ContentType.objects.get(app_label="program", model="classsubject")
+        section_ct=ContentType.objects.get(app_label="program", model="classsection")
         class_ids = [x["id"] for x in user.getTaughtClasses().values('id')]
         section_ids = [x["id"] for x in user.getTaughtSections().values('id')]
-        answers = survey_response.answers.filter(content_type__in=[subject_ct, section_ct], object_id__in=(class_ids+section_ids)).order_by('content_type','object_id', 'question')
+        answers = survey_response.answers.filter(content_type__in=[subject_ct, section_ct], object_id__in=(class_ids+section_ids)).order_by('content_type', 'object_id', 'question')
         classes_only = True
         other_responses = SurveyResponse.objects.filter(answers__content_type=subject_ct, answers__object_id__in=class_ids).order_by('id').distinct()
     else:
@@ -516,7 +508,7 @@ def top_classes(request, tl, program, instance):
 
         categories = prog.class_categories.all().order_by('category')
 
-        section_ct=ContentType.objects.get(app_label="program",model="classsection")
+        section_ct=ContentType.objects.get(app_label="program", model="classsection")
 
         perclass_data = []
         initclass_data = [ { 'class': cls, 'ratings': [ float(x.answer) for sec in cls.get_sections() for x in Answer.objects.filter(object_id=sec.id, content_type=section_ct, question=rating_question)] } for cls in classes ]

@@ -11,8 +11,7 @@ To deploy a new site, first make sure you know:
 #. the group's name (e.g. "MIT ESP" or "Yale Splash")
 #. the chapter's preferred `theme <../admin/available_themes.rst>`_
 
-Then ssh to ``diogenes``, grab the latest version of
-``deploy/server_setup/new_site.sh``, ``cd`` to ``/lu/sites``, and
+Then ssh to the production server, ``cd`` to ``/lu/sites``, and
 run ``sudo new_site.sh --all``.  If the directory already exists for the
 chapter, you may wish to delete it to get a clean start.  (You may instead
 clone the repository yourself, ``cd`` into it, and run the script from there.)

@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -53,7 +57,7 @@ from esp.users.models import ESPUser
 # when the corresponding program modules get added to a program (see
 # esp.program.models.maybe_create_module_ext), but that's about it.
 # TODO(benkraft): rename this to "program settings" or something.
-
+@python_2_unicode_compatible
 class DBReceipt(models.Model):
     """ Per-program Receipt templates """
     #   Allow multiple receipts per program.  Which one is used depends on the action.
@@ -61,9 +65,10 @@ class DBReceipt(models.Model):
     program = models.ForeignKey(Program)
     receipt = models.TextField()
 
-    def __unicode__(self):
+    def __str__(self):
         return 'Registration (%s) receipt for %s' % (self.action, self.program)
 
+@python_2_unicode_compatible
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
@@ -143,9 +148,10 @@ class StudentClassRegModuleInfo(models.Model):
 
         return verb_list
 
-    def __unicode__(self):
+    def __str__(self):
         return 'Student Class Reg Ext. for %s' % str(self.module)
 
+@python_2_unicode_compatible
 class ClassRegModuleInfo(models.Model):
     program = models.OneToOneField(Program)
 
@@ -210,7 +216,7 @@ class ClassRegModuleInfo(models.Model):
         if self.allowed_sections:
             return [int(s) for s in self.allowed_sections.split(',') if s.strip()]
         else:
-            return range(1, self.program.getTimeSlots().count()+1)
+            return list(range(1, self.program.getTimeSlots().count()+1))
 
     @property
     def session_counts_ints(self):
@@ -221,7 +227,7 @@ class ClassRegModuleInfo(models.Model):
         min_size = 5
         max_size = 30
         size_step = 1
-        other_sizes = range(40, 210, 10)
+        other_sizes = list(range(40, 210, 10))
 
         if self.class_max_size:
             max_size = self.class_max_size
@@ -235,7 +241,7 @@ class ClassRegModuleInfo(models.Model):
         if self.class_other_sizes and len(self.class_other_sizes) > 0:
             other_sizes = [int(x) for x in self.class_other_sizes.split(',')]
 
-        ret_range = sorted(range(min_size, max_size + 1, size_step) + other_sizes)
+        ret_range = sorted(list(range(min_size, max_size + 1, size_step)) + other_sizes)
 
         return ret_range
 
@@ -246,12 +252,12 @@ class ClassRegModuleInfo(models.Model):
         if self.program.grade_max:
             max_grade = self.program.grade_max
 
-        return range(min_grade, max_grade+1)
+        return list(range(min_grade, max_grade+1))
 
     def getDurations(self):
         return self.program.getDurations()
 
-    def __unicode__(self):
+    def __str__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
 
 class AJAXChangeLogEntry(models.Model):

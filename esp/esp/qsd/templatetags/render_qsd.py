@@ -1,12 +1,14 @@
+from __future__ import absolute_import
 from django import template
 from django.shortcuts import render_to_response
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 from esp.qsd.models import QuasiStaticData
 from esp.tagdict.models import Tag
+import six
 
 register = template.Library()
 
-@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html')
+@cache_inclusion_tag(register, 'inclusion/qsd/render_qsd.html')
 def render_qsd(qsd):
     # check whether we should display the date and author footer (only affects non-administrator users)
     display_date_author_tag = Tag.getTag('qsd_display_date_author')
@@ -21,13 +23,13 @@ def render_qsd(qsd):
 render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
 render_qsd.cached_function.depend_on_model(Tag)
 
-@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html')
+@cache_inclusion_tag(register, 'inclusion/qsd/render_qsd.html')
 def render_inline_qsd(url):
     qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url)
     return {'qsdrec': qsd_obj, 'inline': True}
 render_inline_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'url':qsd.url})
 
-@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html')
+@cache_inclusion_tag(register, 'inclusion/qsd/render_qsd.html')
 def render_inline_program_qsd(program, name):
     #unlike the above method, we don't know the url, just a program object
     #we could attempt to construct the url in the template
@@ -60,14 +62,14 @@ class InlineQSDNode(template.Node):
         #   template.Variable resolves string literals to themselves automatically
         url_resolved = template.Variable(self.url).resolve(context)
         if program is not None:
-            url = QuasiStaticData.prog_qsd_url(program,url_resolved)
+            url = QuasiStaticData.prog_qsd_url(program, url_resolved)
         else:
             url = url_resolved
         #probably should have an error message if variable was not None and prog was
 
         title = self.url
         if program is not None:
-            title += ' - ' + unicode(program)
+            title += ' - ' + six.text_type(program)
 
         qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url, {'name': '', 'title': title, 'content': self.nodelist.render(context)})
         context.update({'qsdrec': qsd_obj, 'inline': True})

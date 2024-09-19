@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -250,7 +251,7 @@ class StudentSubjectInterestAdmin(admin.ModelAdmin):
 admin_site.register(StudentSubjectInterest, StudentSubjectInterestAdmin)
 
 def sec_classrooms(obj):
-    return "; ".join(list(set([x.name +': ' +  str(x.num_students) + " students" for x in obj.classrooms()])))
+    return "; ".join(list({x.name +': ' +  str(x.num_students) + " students" for x in obj.classrooms()}))
 def sec_teacher_optimal_capacity(obj):
     return (obj.parent_class.class_size_max if obj.parent_class.class_size_max else obj.parent_class.class_size_optimal)
 class SectionAdmin(admin.ModelAdmin):
@@ -262,7 +263,7 @@ admin_site.register(ClassSection, SectionAdmin)
 
 class SectionInline(admin.TabularInline):
     model = ClassSection
-    fields = ('status','meeting_times', 'prettyrooms')
+    fields = ('status', 'meeting_times', 'prettyrooms')
     readonly_fields = ('meeting_times', 'prettyrooms')
     can_delete = False
 
@@ -310,7 +311,7 @@ admin_site.register(ClassSizeRange, Admin_ClassSizeRange)
 ## app_.py
 
 class StudentAppAdmin(admin.ModelAdmin):
-    list_display = ('user','program', 'done')
+    list_display = ('user', 'program', 'done')
     search_fields = default_user_search()
     list_filter = ('program',)
 admin_site.register(StudentApplication, StudentAppAdmin)
@@ -350,16 +351,16 @@ class Admin_StudentAppReview(admin.ModelAdmin):
 admin_site.register(StudentAppReview, Admin_StudentAppReview)
 
 class ClassFlagTypeAdmin(admin.ModelAdmin):
-    list_display = ('name','show_in_scheduler','show_in_dashboard')
+    list_display = ('name', 'show_in_scheduler', 'show_in_dashboard')
     search_fields = ['name']
     list_filter = ['program']
 admin_site.register(ClassFlagType, ClassFlagTypeAdmin)
 
 class ClassFlagAdmin(admin.ModelAdmin):
-    list_display = ('flag_type','subject','comment', 'created_by', 'modified_by')
+    list_display = ('flag_type', 'subject', 'comment', 'created_by', 'modified_by')
     readonly_fields = ['modified_by', 'modified_time', 'created_by', 'created_time']
     search_fields = default_user_search('modified_by') + default_user_search('created_by') + ['flag_type__name', 'flag_type__id', 'subject__id', 'subject__title', 'subject__parent_program__url', 'comment']
-    list_filter = ['subject__parent_program','flag_type']
+    list_filter = ['subject__parent_program', 'flag_type']
 admin_site.register(ClassFlag, ClassFlagAdmin)
 
 class PhaseZeroRecordAdmin(admin.ModelAdmin):

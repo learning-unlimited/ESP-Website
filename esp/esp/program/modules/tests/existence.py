@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -37,6 +39,7 @@ from esp.program.tests import ProgramFrameworkTest
 
 import random
 import re
+import six
 
 class ModuleExistenceTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
@@ -56,7 +59,7 @@ class ModuleExistenceTest(ProgramFrameworkTest):
             pmo.save()
 
     def target_module_list(self, tl=None):
-        prog_mods = filter(lambda x: x.isStep(), self.program.getModules(tl=tl))
+        prog_mods = [x for x in self.program.getModules(tl=tl) if x.isStep()]
         prog_mods.sort(key=lambda x: x.id)
         return prog_mods
 
@@ -87,7 +90,7 @@ class ModuleExistenceTest(ProgramFrameworkTest):
         #   Fetch the registration page and the lists of desired/actual modules
         response = self.client.get('/%s/%s/%s' % (tl, self.program.getUrlBase(), core_url))
         self.assertEqual(response.status_code, 200)
-        actual_modules = self.observed_module_list(tl, response.content)
+        actual_modules = self.observed_module_list(tl, six.text_type(response.content, encoding='UTF-8'))
         target_modules = self.target_module_list(tl)
 
         #   Compare the module lists.

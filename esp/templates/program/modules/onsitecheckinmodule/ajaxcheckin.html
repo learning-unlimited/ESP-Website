@@ -31,7 +31,10 @@ table {
 Welcome to student check-in for {{program.niceName}}.  Make sure that the students have handed in all necessary forms and payments.
 
 {% if message %}
-<p align="center">{{ message }}</p>
+<div align="center" class="alert alert-info">
+  <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+  {{ message }}
+</div>
 {% endif %}
 
 <form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -40,6 +41,8 @@ from django_selenium.testcases import SeleniumTestCase
 import random
 import json
 import logging
+import six
+
 logger = logging.getLogger(__name__)
 
 # TODO(gkanwar): Remove non-selenium tests from this TestCase
@@ -65,13 +68,13 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
         self.moduleobj.user = self.students[0]
 
     def expect_empty_schedule(self, response):
-        resp_data = json.loads(response.content)
+        resp_data = json.loads(six.text_type(response.content, encoding='UTF-8'))
         self.assertTrue('student_schedule_html' in resp_data)
         search_str = 'Your schedule for %s is empty.  Please add classes below!' % self.program.niceName()
         self.assertTrue(search_str in resp_data['student_schedule_html'], 'Could not find empty fragment "%s" in response "%s"' % (search_str, resp_data['student_schedule_html']))
 
     def expect_sections_in_schedule(self, response, sections=[]):
-        resp_data = json.loads(response.content)
+        resp_data = json.loads(six.text_type(response.content, encoding='UTF-8'))
         self.assertTrue('student_schedule_html' in resp_data)
         for sec in sections:
             self.assertTrue(sec.title() in resp_data['student_schedule_html'])
@@ -94,7 +97,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
 
         if not error_received:
             #   If AjaxErrorMiddleware is engaged, we should get a JSON response.
-            response_dict = json.loads(response.content)
+            response_dict = json.loads(six.text_type(response.content, encoding='UTF-8'))
             self.assertTrue(int(response_dict['status']) == 200)
             error_received = True
             error_msg = response_dict['error']
