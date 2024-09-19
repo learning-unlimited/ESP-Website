@@ -1326,8 +1326,7 @@ class ProgramPrintables(ProgramModuleObj):
             return render_to_response(basedir+'studentschedule.html', request, context)
         elif file_type == 'pdf':
             if len(students) > 1:
-                response = HttpResponse(content=render_to_latex(basedir+'studentschedule.tex', context, 'pdf'),
-                                        content_type='application/pdf')
+                response = render_to_latex(basedir+'studentschedule.tex', context, 'pdf')
                 response['Content-Disposition'] = 'attachment; filename="studentschedules.pdf"'
                 return response
             else:
