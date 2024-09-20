@@ -146,7 +146,11 @@ class TeacherClassRegModule(ProgramModuleObj):
         full_classes = [x for x in classes if x.isFull()]
         Q_full_teacher = Q(classsubject__in=full_classes) & Q_isteacher
 
-        previous_programs = [x for x in Program.objects.all() if len(x.dates()) and x.dates()[0] < self.program.dates()[0]]
+        if len(self.program.dates()) == 0: # If current program doesn't have dates set yet, there are no past programs
+            previous_programs = []
+        else:
+            previous_programs = [x for x in Program.objects.all()
+                                 if len(x.dates()) > 0 and x.dates()[0] < self.program.dates()[0]]
         Q_taught_before_temp = Q(classsubject__status=ClassStatus.ACCEPTED, classsubject__parent_program__in=previous_programs)
         taught_before_users = ESPUser.objects.filter(Q_taught_before_temp).values('id').distinct()
         # For past events, we want the query to be solely user based

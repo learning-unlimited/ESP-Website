@@ -152,7 +152,11 @@ class StudentClassRegModule(ProgramModuleObj):
         Enrolled = Q(studentregistration__relationship__name='Enrolled')
         Par = Q(studentregistration__section__parent_class__parent_program=self.program)
         Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
-        past_programs = [x for x in Program.objects.all() if len(x.dates()) and x.dates()[0] < self.program.dates()[0]]
+        if len(self.program.dates()) == 0: # If current program doesn't have dates set yet, there are no past programs
+            past_programs = []
+        else:
+            past_programs = [x for x in Program.objects.all()
+                             if len(x.dates()) > 0 and x.dates()[0] < self.program.dates()[0]]
         Past = Q(studentregistration__section__parent_class__parent_program__in=past_programs)
 
         # Force Django to generate two subqueries without joining SRs to SSIs,
