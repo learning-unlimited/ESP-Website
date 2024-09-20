@@ -1137,6 +1137,8 @@ class ClassSection(models.Model):
         # then sorting with the key self.start_time_prefetched(), which will
         # hit the DB only once at the start, and compute the start time of each
         # class only once.
+        if other is None:
+            return self is None
         selfevent = self.firstBlockEvent()
         otherevent = other.firstBlockEvent()
 
@@ -2011,6 +2013,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         # then sorting with the key self.start_time_prefetched(), which will
         # hit the DB only once at the start, and compute the start time of each
         # class only once.
+        if other is None:
+            return self is None
         selfevent = self.firstBlockEvent()
         otherevent = other.firstBlockEvent()
 
