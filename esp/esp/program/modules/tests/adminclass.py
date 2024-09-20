@@ -37,10 +37,10 @@ class CancelClassTest(ProgramFrameworkTest):
         self.cls = ClassSubject.objects.get(pk=self.cls.id)
 
         # Check that the class was changed to cancelled
-        self.assertTrue(self.cls.status == ClassStatus.CANCELLED)
+        self.assertEqual(self.cls.status, ClassStatus.CANCELLED)
         # Check that the sections were cancelled
         for sec in self.cls.sections.all():
-            self.assertTrue(sec.status == ClassStatus.CANCELLED)
+            self.assertEqual(sec.status, ClassStatus.CANCELLED)
 
         # Test that an email was sent
         directorEmail = None
