@@ -1,4 +1,4 @@
-libapache2-mod-wsgi
+# libapache2-mod-wsgi # Unless the python version for the site/venv matches the python version for the system, install with pip
 libapache2-mod-svn
 libapache2-mod-rpaf
 exim4-config
