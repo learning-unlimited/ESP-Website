@@ -23,7 +23,9 @@ sys.path.insert(0, os.path.join(BASEDIR, 'esp'))
 # If the variable isn't defined, then activate our own virtualenv.
 if os.environ.get('VIRTUAL_ENV') is None:
     activate_this = os.path.join(ENVDIR, 'bin/activate_this.py')
-    execfile(activate_this, dict(__file__=activate_this))
+    with open(activate_this, 'rb') as source_file:
+        code = compile(source_file.read(), activate_this, 'exec')
+    exec(code, dict(__file__=activate_this))
 
 import django.core.wsgi
 django_application = django.core.wsgi.get_wsgi_application()
