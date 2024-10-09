@@ -40,6 +40,7 @@ from django.db.models.query import Q
 from django.forms.formsets import formset_factory
 from django.forms.models import model_to_dict
 from django.http import HttpResponseRedirect
+from django.template.defaultfilters import slugify
 from django.utils import timezone  # add timezone from local_settings.py in labels
 
 from esp.accounting.controllers import ProgramAccountingController
@@ -53,6 +54,7 @@ from esp.utils.web import render_to_response
 from esp.utils.widgets import DateTimeWidget
 
 from datetime import datetime
+from decimal import Decimal
 from copy import copy
 from collections import OrderedDict
 
@@ -149,10 +151,21 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 if submitted_form == "program":
                     form = ProgramSettingsForm(request.POST, instance = prog)
                     if form.is_valid():
-                        form.save()
+                        new_prog = form.save()
+                        # update related things
+                        pac = ProgramAccountingController(new_prog)
+                        line_item = pac.default_admission_lineitemtype()
+                        line_item.amount_dec=Decimal('%.2f' % form.cleaned_data['base_cost'])
+                        line_item.save()
+                        line_item.transfer_set.all().update(amount_dec=Decimal('%.2f' % form.cleaned_data['base_cost']))
+                        def_account = pac.default_program_account()
+                        def_account.name = slugify(new_prog.name)
+                        def_account.save()
+                        new_prog.sibling_discount = form.cleaned_data['sibling_discount']
+                        new_prog.save()
                         #If the url for the program is now different, redirect to the new settings page
-                        if prog.url is not old_url:
-                            return HttpResponseRedirect( '/manage/%s/settings/program' % (prog.url))
+                        if new_prog.url is not old_url:
+                            return HttpResponseRedirect( '/manage/%s/settings/program' % (new_prog.url))
                     else:
                         forms['program'] = form
                     context['open_section'] = "program"

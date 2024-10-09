@@ -41,6 +41,7 @@ import re
 import unicodedata
 
 from django.conf import settings
+from esp.middleware import ESPError
 from esp.users.models import StudentInfo, K12School, RecordType
 from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories
 from esp.dbmail.models import PlainRedirect
@@ -120,14 +121,21 @@ class ProgramCreationForm(BetterModelForm):
         '''
         #   Filter out unwanted characters from program type to form URL
         ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
-        self.instance.url = six.u('%(type)s/%(instance)s') \
+        new_url = six.u('%(type)s/%(term)s') \
             % {'type': ptype_slug
-              ,'instance': self.cleaned_data['term']
+              ,'term': self.cleaned_data['term']
               }
-        self.instance.name = six.u('%(type)s %(instance)s') \
+        new_name = six.u('%(type)s %(term)s') \
             % {'type': self.cleaned_data['program_type']
-              ,'instance': self.cleaned_data['term_friendly']
+              ,'term': self.cleaned_data['term_friendly']
               }
+        # Check that there isn't another program with this URL or name
+        if Program.objects.filter(url=new_url).exclude(id=self.instance.id).exists():
+            raise ESPError("A %s program already exists with this URL. Please choose a new URL or change the URL of the old program." % self.cleaned_data['program_type'], log=False)
+        if Program.objects.filter(name=new_name).exclude(id=self.instance.id).exists():
+            raise ESPError("A %s program already exists with this name. Please choose a new name or change the name of the old program." % self.cleaned_data['program_type'], log=False)
+        self.instance.url = new_url
+        self.instance.name = new_name
         return super(ProgramCreationForm, self).save(commit=commit)
 
 

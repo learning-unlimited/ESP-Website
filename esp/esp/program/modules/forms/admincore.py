@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-from decimal import Decimal
 from django import forms
 from django.conf import settings
 from django.contrib import admin
@@ -8,7 +7,6 @@ from django.template.loader import select_template
 from django.utils.safestring import mark_safe
 from form_utils.forms import BetterForm, BetterModelForm
 
-from esp.accounting.controllers import ProgramAccountingController
 from esp.cal.models import Event
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
@@ -79,13 +77,6 @@ class ProgramSettingsForm(ProgramCreationForm):
         super(ProgramSettingsForm, self).__init__(*args, **kwargs)
 
     def save(self):
-        prog = self.instance
-        pac = ProgramAccountingController(prog)
-        line_item = pac.default_admission_lineitemtype()
-        line_item.amount_dec=Decimal('%.2f' % self.cleaned_data['base_cost'])
-        line_item.save()
-        line_item.transfer_set.all().update(amount_dec=Decimal('%.2f' % self.cleaned_data['base_cost']))
-        prog.sibling_discount = self.cleaned_data['sibling_discount']
         return super(ProgramSettingsForm, self).save()
 
     class Meta:

@@ -545,8 +545,6 @@ def newprogram(request):
         form = ProgramCreationForm(request.POST)
         if form.is_valid():
             temp_prog = form.save(commit=False)
-            if Program.objects.filter(url=temp_prog.url).exists():
-                raise ESPError("A %s program already exists with this name. Please choose a new name or change the name of the old program." % temp_prog.program_type, log=False)
             perms, modules = prepare_program(temp_prog, form.cleaned_data)
             new_prog = form.save(commit = True)
             commit_program(new_prog, perms, form.cleaned_data['base_cost'], form.cleaned_data['sibling_discount'])
