@@ -47,8 +47,8 @@ from esp.program.models import Program
 class VolunteerRequestForm(forms.Form):
 
     vr_id = forms.IntegerField(required=False, widget=forms.HiddenInput)
-    start_time = forms.DateTimeField(help_text="Enter a time in the form DD/MM/YYYY hh:mm.", widget=DateTimeWidget)
-    end_time = forms.DateTimeField(help_text="Enter a time in the form DD/MM/YYYY hh:mm.", widget=DateTimeWidget)
+    start_time = forms.DateTimeField(help_text="Enter a time in the form MM/DD/YYYY hh:mm.", widget=DateTimeWidget)
+    end_time = forms.DateTimeField(help_text="Enter a time in the form MM/DD/YYYY hh:mm.", widget=DateTimeWidget)
     num_volunteers = forms.IntegerField(label='Number of volunteers needed')
     description = forms.CharField(max_length=128, help_text='What would volunteers do during this timeslot?  (Examples: Registration, Security)')
 

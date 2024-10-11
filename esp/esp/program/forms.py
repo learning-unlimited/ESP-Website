@@ -156,7 +156,7 @@ class ProgramCreationForm(BetterModelForm):
         }
         model = Program
 ProgramCreationForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'size': 40,
-                                                                                   'pattern': r'(^.+@%s$)|(^.+@(\w+\.)+learningu\.org$)' % settings.SITE_INFO[1].replace('.', '\.')})
+                                                                                   'pattern': r'(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)' % settings.SITE_INFO[1].replace('.', '\.')})
 ProgramCreationForm.base_fields['director_cc_email'].widget = forms.EmailInput(attrs={'size': 40})
 ProgramCreationForm.base_fields['director_confidential_email'].widget = forms.EmailInput(attrs={'size': 40})
 '''
