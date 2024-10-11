@@ -47,8 +47,8 @@ To install those, use "apt-get install -y $(< packages_prod.txt)".
 Library name    Type    Version         Ubuntu package name or download location
 ------------    ----    -------         -------------------
 Lighttpd        System                  lighttpd
-Apache mod_wsgi System                  libapache2-mod-wsgi
-PostgreSQL      System  9.1             postgresql-9.1
+Apache mod_wsgi System                  libapache2-mod-wsgi-py3
+PostgreSQL      System  9.1             postgresql-12.1
 LaTeX           System                  texlive, texlive-latex-extra
 libcurl         System                  libcurl4-openssl-dev
 libmemcached    System                  libmemcached6, libmemcached-dev
@@ -85,7 +85,7 @@ activate it before running any management commands (with `source
 /path/to/env/bin/activate`).
 
 Once you have created and activated a virtualenv, you can install all
-of the Python dependencies with "pip install -r requirements.txt".
+of the Python dependencies with "pythonX -m pip install -r requirements.txt".
 
 2) Set up your database.
 
