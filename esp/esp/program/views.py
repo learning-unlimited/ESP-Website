@@ -543,7 +543,9 @@ def newprogram(request):
     # If the form has been submitted, process it.
     if request.method == 'POST':
         form = ProgramCreationForm(request.POST)
-        if form.is_valid():
+        if form.is_valid(): # this should check for duplicate URLs and names using custom cleaning
+                            # https://docs.djangoproject.com/en/1.11/ref/forms/validation/#cleaning-a-specific-field-attribute
+                            # then if not valid, render the filled in form with the errors
             temp_prog = form.save(commit=False)
             perms, modules = prepare_program(temp_prog, form.cleaned_data)
             new_prog = form.save(commit = True)
@@ -609,8 +611,6 @@ def newprogram(request):
                     add_list_members(teachers_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
             # Submit and create the program
             return HttpResponseRedirect(manage_url)
-        else:
-            raise ESPError("Improper form data submitted.", log=False)
     # If the form has not been submitted, the default view is a blank form (or the pre-populated form with the template data).
     else:
         if template_prog:
