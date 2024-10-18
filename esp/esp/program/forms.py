@@ -41,6 +41,7 @@ import re
 import unicodedata
 
 from django.conf import settings
+from esp.middleware import ESPError
 from esp.users.models import StudentInfo, K12School, RecordType
 from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories
 from esp.dbmail.models import PlainRedirect
@@ -113,21 +114,8 @@ class ProgramCreationForm(BetterModelForm):
 
 
     def save(self, commit=True):
-        '''
-        Takes the program creation form's program_type, term, and term_friendly
-        fields, and constructs the url and name fields on the Program instance;
-        then calls the superclass's save() method.
-        '''
-        #   Filter out unwanted characters from program type to form URL
-        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
-        self.instance.url = six.u('%(type)s/%(instance)s') \
-            % {'type': ptype_slug
-              ,'instance': self.cleaned_data['term']
-              }
-        self.instance.name = six.u('%(type)s %(instance)s') \
-            % {'type': self.cleaned_data['program_type']
-              ,'instance': self.cleaned_data['term_friendly']
-              }
+        self.instance.url = self.cleaned_data['new_url']
+        self.instance.name = self.cleaned_data['new_name']
         return super(ProgramCreationForm, self).save(commit=commit)
 
 
@@ -141,6 +129,30 @@ class ProgramCreationForm(BetterModelForm):
         mods.extend(ProgramModule.objects.filter(choosable=1))
         return list(set(mods)) # Database wants a unique collection, so take set
 
+    def clean(self):
+        '''
+        Takes the program creation form's program_type, term, and term_friendly
+        fields, and constructs the url and name fields on the Program instance.
+        '''
+        super(ProgramCreationForm, self).clean()
+        if 'term' in self.cleaned_data and 'term_friendly' in self.cleaned_data:
+            #   Filter out unwanted characters from program type to form URL
+            ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
+            new_url = six.u('%(type)s/%(term)s') \
+                % {'type': ptype_slug
+                  ,'term': self.cleaned_data['term']
+                  }
+            new_name = six.u('%(type)s %(term)s') \
+                % {'type': self.cleaned_data['program_type']
+                  ,'term': self.cleaned_data['term_friendly']
+                  }
+            self.cleaned_data['new_url'] = new_url
+            self.cleaned_data['new_name'] = new_name
+            # Check that there isn't another program with this URL or name
+            if Program.objects.filter(url=new_url).exclude(id=self.instance.id).exists():
+                self.add_error('term', "A %s program already exists with this URL. Please choose a new URL or change the URL of the old program." % self.cleaned_data['program_type'])
+            if Program.objects.filter(name=new_name).exclude(id=self.instance.id).exists():
+                self.add_error('term_friendly', "A %s program already exists with this name. Please choose a new name or change the name of the old program." % self.cleaned_data['program_type'])
 
     class Meta:
         fieldsets = [
