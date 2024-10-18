@@ -543,9 +543,7 @@ def newprogram(request):
     # If the form has been submitted, process it.
     if request.method == 'POST':
         form = ProgramCreationForm(request.POST)
-        if form.is_valid(): # this should check for duplicate URLs and names using custom cleaning
-                            # https://docs.djangoproject.com/en/1.11/ref/forms/validation/#cleaning-a-specific-field-attribute
-                            # then if not valid, render the filled in form with the errors
+        if form.is_valid():
             temp_prog = form.save(commit=False)
             perms, modules = prepare_program(temp_prog, form.cleaned_data)
             new_prog = form.save(commit = True)
