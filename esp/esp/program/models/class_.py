@@ -1106,7 +1106,9 @@ class ClassSection(models.Model):
         if unschedule:
             self.clearRooms()
             self.meeting_times.clear()
-
+            # add a scheduler log entry to make the change occur if anyone currently has the scheduler open
+            prog = self.parent_program
+            prog.getModule("AJAXSchedulingModule").get_change_log(prog).appendScheduling([], "", int(self.id), None)
         self.status = ClassStatus.CANCELLED
         self.save()
 
