@@ -137,7 +137,7 @@ function clear_filters()
     //  Remove any existing data in the "user filtering options" part of a comm panel form
     var $form = $j("#filter_accordion");
     // Don't set the grade fields if we are in the combo list form
-    var set_grade = $form.parent().attr('id') != "combo_filter_accordion";
+    var set_grade = $form.parent().attr('id') != "combo_filter_accordion" && window.location.href.includes("commpanel");
     var form_fields = $form.find(':input');
     form_fields.each(function(i, form_field) {
         if(set_grade && form_field.name == "grade_min" && $j("select[name=recipient_type]").val() == "Student"){
