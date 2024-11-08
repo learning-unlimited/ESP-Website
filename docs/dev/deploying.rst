@@ -41,7 +41,7 @@ Deactivating a site
 To deactivate a site, simply remove or comment out its lines in
 ``/etc/apache2/sites-available/esp_sites.conf``, ``/etc/crontab``, and
 ``/etc/exim4/update-exim4.conf.conf``, and move its site directory to
-``/lu/sites/inactive``.
+``/lu/sites/archive``.
 
 TODO(benkraft): write a quick script for this.
 
