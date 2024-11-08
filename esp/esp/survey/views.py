@@ -467,13 +467,14 @@ def top_classes(request, tl, program, instance):
 
     if 'survey_id' in request.GET:
         try:
-            s_id = int( request.GET['survey_id'] )
+            s_id = int(request.GET['survey_id'])
             surveys = surveys.filter(id=s_id) # We want to filter, not get: ID could point to a survey that doesn't exist for this program, or at all
         except ValueError:
             pass
 
     if len(surveys) < 1:
-        raise ESPError('Sorry, no such survey exists for this program!', log=False)
+        raise ESPError('Sorry, no student survey with any of the following IDs '
+                       '[{}] exists for this program!'.format(s_id if 's_id' in locals() else []), log=False)
 
     if len(surveys) > 1:
         return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
