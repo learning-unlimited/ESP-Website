@@ -22,7 +22,7 @@ docutils==0.12 # Needed for django.contrib.admindocs
 flake8==2.5.0 # Required for linter
 ipython==3.2.1 # Used for shell_plus
 Markdown==2.3.1 # Used in QSD
-numpy==1.16.6 # Used mainly in the lottery and class change controller
+numpy==1.22.0 # Used mainly in the lottery and class change controller
 pillow==6.2.2 # Required for ImageField, which we use in teacher bios
 psycopg2==2.8.6 # Talks to postgres
 pycurl==7.19.5.1 # Used only in a formstack script which I think is outdated
