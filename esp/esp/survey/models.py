@@ -43,6 +43,7 @@ Learning Unlimited, Inc.
 """
 
 import datetime
+import json
 from django.db import models
 from django.template import loader
 from django.contrib.contenttypes.models import ContentType
@@ -332,6 +333,7 @@ class Answer(models.Model):
     ## End Generic ForeignKey ##
 
     question = models.ForeignKey(Question, db_index=True)
+    value_type = models.TextField()
     value = models.TextField()
 
     def _answer_getter(self):
@@ -340,13 +342,24 @@ class Answer(models.Model):
             return None
         if hasattr(self, '_answer'):
             return self._answer
-        value = self.value
+        if self.value_type == 'list':
+            value = json.loads(self.value)
+        elif self.value_type == 'str':
+            value = self.value
+        else:
+            raise ESPError('Unrecognized type for survey answer `{}`'.format(self.value_type))
         self._answer = value
         return value
 
     def _answer_setter(self, value):
         self._answer = value
-        self.value = value
+        self.value_type = str(type(value))
+        if self.value_type == 'list':
+            self.value = json.dumps(value)
+        elif self.value_type == 'str':
+            self.value = value
+        else:
+            raise ESPError('Unrecognized type for survey answer `{}`'.format(self.value_type))
 
     answer = property(_answer_getter, _answer_setter)
 
