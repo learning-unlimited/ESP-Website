@@ -13,7 +13,7 @@ Themes
 - Renamed some variables for clarity
 - Made button types have consistently editable colors across themes
 - Made the theme editor more theme-specific by removing irrelevant variables and adding some help text
-- Fixed the "Reset Color" buttons on the theme customization page for non-theme-specific variables
+- Fixed the "Reset Color" buttons on the theme customization page for optional variables and non-theme-specific variables
 - Fixed the theme customization page so that only optional variables have a "Remove Variable" button
 - Fixed the alignment and sizing of the logo in the fruitsalad theme
 - Added the ability to reorder nav structure and contact links
@@ -24,14 +24,20 @@ Scheduler
 ~~~~~~~~~
 - Fixed the highlighting of the moderator directory cell
 - Moderators are now highlighted when they are selected via the info panel for a section
+- The scheduler now waits until all changelog items are applied before allowing the user to interact with it
+- Classes that are cancelled and unscheduled outside of the scheduler are now immediately removed from the scheduler
 
 Student registration
 ~~~~~~~~~~~~~~~~~~~~
+- Removed duplicate and unneeded summary lines in the extracosts form for certain setups
+- Fixed saving preferences in the two-phase class lottery
+
+Program settings
+~~~~~~~~~~~~~~~~
 - Added help text to the color_code class registration module info field
 
   - The widget for this field is now a color picker with regex validation to ensure values are hex color codes
   - Any old values for this field have been updated to this new format
-- Removed duplicate and unneeded summary lines in the extracosts form for certain setups
 - Made the registration receipt prettier and more informative
 
   - This receipt is shown to students after clicking the "confirm registration" button
@@ -42,10 +48,24 @@ Student registration
 - Made the registration confirmation email prettier and more informative (same changes as the registration receipt described above)
 
   - Because this receipt now includes a schedule, clicking the confirmation button always sends a new copy of the confirmation email
+- Now prevent programs with duplicates names and or URLs
+- When a program name is changed, the account name for that program is similarly changed
+- Errors in the new program and program settings forms are now shown as form errors instead of as a Whoops page
+- Fixed widths of the URL and email redirect tables
+
+Onsite
+~~~~~~
+- Made the rapid check-in messages more obvious
+- Fixed attendance barcode scanning
+- Fixed the timeslot dropdown menu in the admin attendance module
 
 Communications panel
 ~~~~~~~~~~~~~~~~~~~~
 - Named "mailboxes" are now allowed in the comm panel (e.g., "Will's Server <info@test.learningu.org>")
+- The default grade limits are now only enforced in the communications panel and not in other user search controller modules (e.g., user list generator)
+- Fixed dynamic behavior of the user type field and filters
+
+  - When changing the user type, all filters are now cleared
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
@@ -58,6 +78,8 @@ Minor new features
   - **Checking for duplicate emails is now the default behavior** (this can be disabled using the "ask_about_duplicate_accounts" global management tag)
 - The financial aid approval module now includes financial grant information for approved requests
 - Financial aid requests are now less cramped in the financial aid approval module, with the extra financial information now hidden by default
+- Made the usersearch warning/messages prettier
+- Linked model fields can no longer be added to existing custom forms
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -66,6 +88,13 @@ Minor bug fixes
 - Existing accounting transfers are now updated when the program admission cost is changed
 - Removed links to nonexistent DVI and PS catalogs on the printables page
 - Removed outdated "Guide for happy printables" from the printables page
+- Unmorph button now properly hides after unmorphing
+- Fixed the status field in the class management form
+- Fixed the regex restriction for the director email field
+- Fixed the date format in the volunteer request form help text
+- The "Open" deadlines button now properly opens deadlines that are currently set to open in the future
+- Now display a 404 page when user attempts to download a file that doesn't exist
+- Fixed the volunteer form for very small user ID numbers
 
 Development changes
 ===================
