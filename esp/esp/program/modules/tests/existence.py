@@ -68,7 +68,7 @@ class ModuleExistenceTest(ProgramFrameworkTest):
         modules_found = []
 
         #   Find normal links
-        pat1 = r'<a href="(?P<linkurl>[a-zA-z0-9_/]+)" title="(?P<linktitle>.*?)" class="vModuleLink" >(.*?)</a>'
+        pat1 = r'<a href="(?P<linkurl>[a-zA-Z0-9_/]+)" title="(?P<linktitle>.*?)" class="vModuleLink" >(.*?)</a>'
         re_links_normal = re.findall(pat1, page_content, re.DOTALL)
         link_titles = [x[1] for x in re_links_normal]
 
