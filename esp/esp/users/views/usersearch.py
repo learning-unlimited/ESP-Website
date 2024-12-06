@@ -213,10 +213,11 @@ def get_user_list(request, listDict2, extra=''):
         # we're going to prepare a list to send out.
         arrLists = []
 
-        pickled_post = pickle.dumps(request.POST)
-        pickled_get  = pickle.dumps(request.GET)
+        # TODO: clean this up or fully deprecate this (see above for where this is possibly used) -WG
+        #pickled_post = pickle.dumps(request.POST)
+        #pickled_get  = pickle.dumps(request.GET)
 
-        request.session['usersearch_containers'] = (pickled_post, pickled_get)
+        #request.session['usersearch_containers'] = (pickled_post, pickled_get)
 
         for key, value in listDict.items():
             arrLists.append(DBList(key = key, QObject = value['list'], description = value['description'].strip('.'))) # prepare a nice list thing.
