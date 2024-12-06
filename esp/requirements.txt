@@ -21,6 +21,7 @@ dill # For migrating Python 2 pickles in the database
 docutils==0.12 # Needed for django.contrib.admindocs
 flake8==3.9.2 # Required for linter
 ipython==7.34.0 # Used for shell_plus
+libapache2-mod-wsgi-py3==4.9 # Used for interfacing with apache
 Markdown==2.3.1 # Used in QSD
 numpy==1.16.6 # Used mainly in the lottery and class change controller
 pillow==8.3.2 # Required for ImageField, which we use in teacher bios
