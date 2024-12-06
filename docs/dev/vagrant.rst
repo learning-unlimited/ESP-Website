@@ -243,12 +243,11 @@ Note: to get a head start on a slow step, start the download in step 5.ii then c
 	Back in a terminal window in the ``devsite`` folder, run ``vagrant up``.
 	Now SSH back into the machine from your shell (``vagrant ssh``) to install dev server dependencies.
 	This step isn't strictly required but will make dev setup easier in the future, especially dev setup testing.
-	If we've been sloppy and haven't updated this file recently enough, you may need to check out a different branch in the third line (such as `main`).
 	If you get an error, you may not have set up the encrypted parition correctly. ::
 
 		git clone https://github.com/learning-unlimited/ESP-Website.git
 		cd ESP-Website/
-		git checkout migration-to-python3
+		git checkout main
 		esp/update_deps.sh
 		cd ..
 		rm -rf ESP-Website/
