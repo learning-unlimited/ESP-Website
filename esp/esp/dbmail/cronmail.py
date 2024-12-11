@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+from __future__ import division
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -122,7 +125,7 @@ def send_email_requests():
     # http://thebuild.com/blog/2010/12/13/very-large-result-sets-in-django-using-postgresql/
     # So we do our own batching on top of that.
     batch_size = 1000
-    for i in xrange(int(math.ceil(float(mailtxts.count()) / batch_size))):
+    for i in range(int(math.ceil(float(mailtxts.count()) / batch_size))):
         # .iterator() re-evaulates the QuerySet each time, moving to the remaining unsent texts
         for mailtxt in mailtxts[:batch_size].iterator():
             exception = mailtxt.send()

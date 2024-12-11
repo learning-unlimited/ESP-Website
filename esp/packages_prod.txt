@@ -1,6 +1,6 @@
-libapache2-mod-wsgi
 libapache2-mod-svn
 libapache2-mod-rpaf
+libapache2-mod-wsgi-py3
 exim4-config
 exim4-base
 exim4-daemon-heavy
