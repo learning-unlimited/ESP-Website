@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import division
 from django.http import HttpResponse
 from esp.program.models import ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
@@ -14,6 +16,9 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 import json
 import re
+import six
+from six.moves import map
+from six.moves import range
 
 
 class SchedulingCheckModule(ProgramModuleObj):
@@ -70,7 +75,7 @@ class JSONFormatter:
     def format_list(self, l, heading="", help_text=""): # needs verify
         output = {}
         output["help_text"] = help_text
-        output["headings"] = map(str, heading) # no headings
+        output["headings"] = list(map(str, heading)) # no headings
 
         # might be redundant, but it makes sure things aren't in a weird format
         output["body"] = [self._table_row([row]) for row in l]
@@ -92,7 +97,7 @@ class JSONFormatter:
     def _format_list_table(self, d, headings, help_text=""): #needs verify
         output = {}
         output["help_text"] = help_text
-        output["headings"] = map(str, headings)
+        output["headings"] = list(map(str, headings))
         output["body"] = [self._table_row([row[h] for h in headings]) for row in d]
         return output
 
@@ -100,8 +105,8 @@ class JSONFormatter:
         headings = [""] + headings[:]
         output = {}
         output["help_text"] = help_text
-        output["headings"] = map(str, headings)
-        output["body"] = [self._table_row([key] + [row[h] for h in headings if h]) for key, row in sorted(d.iteritems())]
+        output["headings"] = list(map(str, headings))
+        output["body"] = [self._table_row([key] + [row[h] for h in headings if h]) for key, row in sorted(six.iteritems(d))]
         return output
 
 class SchedulingCheckRunner:
@@ -221,7 +226,7 @@ class SchedulingCheckRunner:
             #filter out unscheduled classes
             qs = qs.exclude(resourceassignment__isnull=True)
             #filter out lunch
-            qs = qs.exclude(parent_class__category__category=u'Lunch')
+            qs = qs.exclude(parent_class__category__category=six.u('Lunch'))
             qs = qs.select_related('parent_class', 'parent_class__parent_program', 'parent_class__category')
             qs = qs.prefetch_related('meeting_times', 'resourceassignment_set', 'resourceassignment_set__resource', 'parent_class__teachers', 'moderators')
             if include_walkins:
@@ -455,7 +460,6 @@ class SchedulingCheckRunner:
         self._calculate_d_grades()
         return  self.formatter.format_table(self.d_grades["capacity"], {"headings": self.grades})
 
-
     def classes_by_grade(self):
         self._calculate_d_grades()
         return  self.formatter.format_table(self.d_grades["classes"], {"headings": self.grades})
@@ -522,7 +526,6 @@ class SchedulingCheckRunner:
         self.l_mod_missing = l_mod
         self.calculated_classes_missing_resources = True
         return [l_classrooms, l_resources]
-
 
     def classes_missing_resources(self):
         self._calculate_classes_missing_resources()
@@ -599,7 +602,7 @@ class SchedulingCheckRunner:
         classes = json.loads(Tag.getProgramTag('no_overlap_classes',program=self.p))
         classes_lookup = {x.id: x for x in ClassSubject.objects.filter(id__in=sum(classes.values(),[]))}
         bad_classes = []
-        for key, l in classes.iteritems():
+        for key, l in six.iteritems(classes):
             eventtuples = list(Event.objects.filter(meeting_times__parent_class__in=l).values_list('description', 'meeting_times', 'meeting_times__parent_class'))
             overlaps = {}
             for event, sec, cls in eventtuples:
@@ -622,7 +625,6 @@ class SchedulingCheckRunner:
     def special_classroom_types(self):
         """
         Check special classrooms types (music, computer, kitchen).
-
         Configuration Tag: special_classroom_types, a dictionary mapping
         resource request type desired_value regexes to a list of classrooms (by
         resource ID). Any classroom whose name matches the regex will
@@ -638,7 +640,7 @@ class SchedulingCheckRunner:
         HEADINGS = ["Class Section", "Unfulfilled Request", "Current Room"]
         mismatches = []
 
-        for type_regex, matching_rooms in DEFAULT_CONFIG.iteritems():
+        for type_regex, matching_rooms in six.iteritems(DEFAULT_CONFIG):
             resource_requests = ResourceRequest.objects.filter(
                 res_type__program=self.p, desired_value__iregex=type_regex)
 
@@ -688,6 +690,7 @@ class SchedulingCheckRunner:
                                                          'Available hours',
                                                          'Free hours']},
                                            help_text=self.inflexible_teachers.__doc__)
+
     def mismatched_moderators(self):
         """
         Moderators who have indicated a preference for which class type they would like to moderate and are moderating another type of class.

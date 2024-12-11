@@ -1,3 +1,9 @@
+from __future__ import absolute_import
+from __future__ import division
+from django.utils.encoding import python_2_unicode_compatible
+from six.moves import map
+from six.moves import range
+from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -40,6 +46,7 @@ from decimal import Decimal
 import random
 import json
 import logging
+import six
 logger = logging.getLogger(__name__)
 
 from django.conf import settings
@@ -70,6 +77,7 @@ from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
 
 # Create your models here.
+@python_2_unicode_compatible
 class ProgramModule(models.Model):
     """ Program Modules for a Program """
 
@@ -131,10 +139,10 @@ class ProgramModule(models.Model):
             self.msg = msg
             super(ProgramModule.CannotGetClassException, self).__init__(msg)
 
-    def __unicode__(self):
-        return u'{}'.format(self.admin_title)
+    def __str__(self):
+        return '{}'.format(self.admin_title)
 
-
+@python_2_unicode_compatible
 class ArchiveClass(models.Model):
     """ Old classes throughout the years """
     program = models.CharField(max_length=256)
@@ -155,7 +163,7 @@ class ArchiveClass(models.Model):
         db_table = 'program_archiveclass'
         verbose_name_plural = 'archive classes'
 
-    #def __unicode__(self):
+    #def __str__(self):
     #    return '"%s" taught by "%s"' % (self.title, self.teacher)
 
     def __cmp__(self, other):
@@ -169,6 +177,18 @@ class ArchiveClass(models.Model):
         if test != 0:
             return test
         return 0
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+    def __gt__(self, other):
+        return self.__cmp__(other) > 0
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
+    def __le__(self, other):
+        return self.__cmp__(other) <= 0
+    def __ge__(self, other):
+        return self.__cmp__(other) >= 0
+    def __ne__(self, other):
+        return self.__cmp__(other) != 0
 
     def heading(self):
         if len(self.date) > 1:
@@ -184,7 +204,7 @@ class ArchiveClass(models.Model):
     def content(self):
         return self.description
 
-    def __unicode__(self):
+    def __str__(self):
         from django.template import loader
         t = loader.get_template('program/archive_class.html')
         return t.render({'class': self})
@@ -223,7 +243,7 @@ class ArchiveClass(models.Model):
         Q_ClassStudent = Q(student_ids__icontains = ('|%s|' % user.id))
         #   We want to only show archive classes for teachers.  At least for now.
         Q_Class = Q_ClassTeacher #  | Q_ClassStudent
-        return ArchiveClass.objects.filter(Q_Class).order_by('-year','-date','title')
+        return ArchiveClass.objects.filter(Q_Class).order_by('-year', '-date', 'title')
 
 def _get_type_url(type):
     def _really_get_type_url(self):
@@ -239,7 +259,7 @@ def _get_type_url(type):
 
     return _really_get_type_url
 
-
+@python_2_unicode_compatible
 class Program(models.Model, CustomFormsLinkModel):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     #customforms definitions
@@ -251,7 +271,7 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_max = models.IntegerField()
     # director contact email address used for from field and display
     director_email = models.EmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
-                                       validators=[validators.RegexValidator(r'(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)' % settings.SITE_INFO[1].replace('.', '\.'))],
+                                       validators=[validators.RegexValidator(r'(^.+@{0}$)|(^.+@(\w+\.)?learningu\.org$)'.format(settings.SITE_INFO[1].replace('.', '\.')))],
                                        help_text=mark_safe('The director email address must end in @' + settings.SITE_INFO[1] + ' (your website), ' +
                                                            '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). ' +
                                                            'The default is <b>info@' + settings.SITE_INFO[1] + '</b>, which redirects to the "default" ' +
@@ -316,7 +336,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         return retVal
 
-    def __unicode__(self):
+    def __str__(self):
         return self.niceName()
 
     def niceName(self):
@@ -327,7 +347,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def grades(self):
         """ Return an iterable list of the grades for a program. """
-        return range(self.grade_min, self.grade_max + 1)
+        return list(range(self.grade_min, self.grade_max + 1))
 
     @property
     def program_type(self):
@@ -351,7 +371,7 @@ class Program(models.Model, CustomFormsLinkModel):
             if retVal is not None and retVal.strip():
                 return retVal
 
-        return u''
+        return six.u('')
 
     @staticmethod
     def get_users_from_module(method_name):
@@ -386,7 +406,7 @@ class Program(models.Model, CustomFormsLinkModel):
         def _get_num(self):
             result = query_func(self, QObjects=False)
             result_dict = {}
-            for key, value in result.iteritems():
+            for key, value in six.iteritems(result):
                 if isinstance(value, QuerySet):
                     result_dict[key] = value.count()
                 else:
@@ -506,7 +526,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def students_union(self, QObject = False):
         import operator
-        if len(self.students().values()) == 0:
+        if len(list(self.students().values())) == 0:
             if QObject:
                 return Q(id = -1)
             else:
@@ -520,7 +540,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def teachers_union(self, QObject = False):
         import operator
-        if len(self.teachers().values()) == 0:
+        if len(list(self.teachers().values())) == 0:
             if QObject:
                 return Q(id = -1)
             else:
@@ -533,7 +553,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def volunteers_union(self, QObject = False):
         import operator
-        if len(self.volunteers().values()) == 0:
+        if len(list(self.volunteers().values())) == 0:
             if QObject:
                 return Q(id = -1)
             else:
@@ -623,7 +643,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return True
         caps = self.grade_caps()
         grade = user.getGrade(self, assume_student=True)
-        for grades, cap in caps.iteritems():
+        for grades, cap in six.iteritems(caps):
             if (grade in grades and
                     self._students_in_program_in_grades(grades) >= cap):
                 return False
@@ -641,10 +661,10 @@ class Program(models.Model, CustomFormsLinkModel):
         size_tag = Tag.getProgramTag("program_size_by_grade", self)
         size_dict = {}
         if size_tag:
-            for k, v in json.loads(size_tag).iteritems():
+            for k, v in six.iteritems(json.loads(size_tag)):
                 if '-' in k:
-                    low, high = map(int, k.split('-'))
-                    size_dict[tuple(xrange(low, high + 1))] = v
+                    low, high = list(map(int, k.split('-')))
+                    size_dict[tuple(range(low, high + 1))] = v
                 else:
                     size_dict[(int(k),)] = v
         return size_dict
@@ -721,13 +741,13 @@ class Program(models.Model, CustomFormsLinkModel):
         ResourceAssignment.objects.filter(target__parent_class__parent_program=self, lock_level__lt=lock_level).update(lock_level=lock_level)
 
     def isConfirmed(self, espuser):
-        return Record.objects.filter(event__name="reg_confirmed",user=espuser,
+        return Record.objects.filter(event__name="reg_confirmed", user=espuser,
                                      program=self).exists()
 
     def isCheckedIn(self, espuser, verbose = False):
         status = 0
         verbose_names = ["not_checked_in", "checked_in", "checked_out"]
-        recs = Record.objects.filter(event__name__in=["attended","checked_out"],user=espuser,
+        recs = Record.objects.filter(event__name__in=["attended", "checked_out"], user=espuser,
                                      program=self).order_by("-time")
         if recs.count() > 0:
             # Check if student has ever been checked_in
@@ -779,7 +799,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def getAvailableClassrooms(self, timeslot):
         #   Filters down classrooms to those that are not taken.
-        return filter(lambda x: x.is_available(), self.getClassrooms(timeslot))
+        return [x for x in self.getClassrooms(timeslot) if x.is_available()]
 
     def collapsed_dict(self, resources):
         result = {}
@@ -812,7 +832,7 @@ class Program(models.Model, CustomFormsLinkModel):
         classrooms = self.getClassrooms()
 
         result = self.collapsed_dict(classrooms)
-        key_list = result.keys()
+        key_list = list(result.keys())
         natural_key_list = self.natural_sort(key_list)
         #   Turn this into a list instead of a dictionary.
         ans = [result[key] for key in natural_key_list]
@@ -953,8 +973,8 @@ class Program(models.Model, CustomFormsLinkModel):
         programs = Program.objects.all()
         always_current_cutoff = (0, 0)
         if programs:
-            tagged_programs = list(sorted((currentness_penalty(prog), prog)
-                for prog in programs))
+            tagged_programs = list(sorted([(currentness_penalty(prog), prog)
+                for prog in programs], key=lambda x: x[0]))
             if tagged_programs[0][0] < always_current_cutoff:
                 return [prog for (penalty, prog) in tagged_programs
                         if penalty < always_current_cutoff]
@@ -974,13 +994,13 @@ class Program(models.Model, CustomFormsLinkModel):
             if d1.year == d2.year:
                 if d1.month == d2.month:
                     if d1.day == d2.day:
-                        return u'%s' % d1.strftime('%b. %d, %Y').decode('utf-8')
+                        return six.u('%s') % d1.strftime('%b. %d, %Y')
                     else:
-                        return u'%s - %s' % (d1.strftime('%b. %d').decode('utf-8'), d2.strftime('%d, %Y').decode('utf-8'))
+                        return six.u('%s - %s') % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
                 else:
-                    return u'%s - %s' % (d1.strftime('%b. %d').decode('utf-8'), d2.strftime('%b. %d, %Y').decode('utf-8'))
+                    return six.u('%s - %s') % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
             else:
-                return u'%s - %s' % (d1.strftime('%b. %d, %Y').decode('utf-8'), d2.strftime('%b. %d, %Y').decode('utf-8'))
+                return six.u('%s - %s') % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
         else:
             return None
 
@@ -1037,7 +1057,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def getAvailableResources(self, timeslot, queryset=False):
         #   Filters down the floating resources to those that are not taken.
-        return filter(lambda x: x.is_available(), self.getFloatingResources(timeslot=timeslot, queryset=queryset))
+        return [x for x in self.getFloatingResources(timeslot=timeslot, queryset=queryset) if x.is_available()]
 
     def getDurations(self, round_15=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
@@ -1067,10 +1087,10 @@ class Program(models.Model, CustomFormsLinkModel):
                         rounded_seconds = durationSeconds
                     if (max_seconds is None) or (durationSeconds <= max_seconds):
                         durationDict[(Decimal(durationSeconds) / 3600).quantize(Decimal('.01'))] = \
-                                        str(rounded_seconds / 3600) + ':' + \
-                                        str(int(round((rounded_seconds / 60.0) % 60))).rjust(2,'0')
+                                        str(rounded_seconds // 3600) + ':' + \
+                                        str(int(round((rounded_seconds / 60.0) % 60))).rjust(2, '0')
 
-        durationList = durationDict.items()
+        durationList = list(durationDict.items())
 
         return sorted(durationList, key=lambda x: x[0])
 
@@ -1103,7 +1123,7 @@ class Program(models.Model, CustomFormsLinkModel):
             modules =  [ base.ProgramModuleObj.getFromProgModule(self, module, old_prog)
                  for module in self.program_modules.all()]
 
-        modules.sort(key=lambda mod: (not mod.required, mod.seq))
+        modules.sort(key=lambda m: m.seq)
         return modules
     getModules_cached.depend_on_row('program.Program', lambda prog: {'self': prog})
     getModules_cached.depend_on_model('program.ProgramModule')
@@ -1339,7 +1359,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
 Program.setup_user_filters()
 
-
+@python_2_unicode_compatible
 class SplashInfo(models.Model):
     """ A model that can be used to track additional student preferences specific to
         a program.  Stanford has used this for lunch selection and a sibling discount.
@@ -1359,8 +1379,8 @@ class SplashInfo(models.Model):
         app_label = 'program'
         db_table = 'program_splashinfo'
 
-    def __unicode__(self):
-        return u'Lunch/sibling info for %s at %s' % (self.student, self.program)
+    def __str__(self):
+        return 'Lunch/sibling info for %s at %s' % (self.student, self.program)
 
     @staticmethod
     def hasForUser(user, program=None):
@@ -1400,7 +1420,7 @@ class SplashInfo(models.Model):
         super(SplashInfo, self).save()
         self.execute_sibling_discount()
 
-
+@python_2_unicode_compatible
 class RegistrationProfile(models.Model):
     """ A student registration form """
     user = AjaxForeignKey(ESPUser)
@@ -1451,13 +1471,13 @@ class RegistrationProfile(models.Model):
         regProf = None
 
         # check if this is an actual User, not an AnonymousUser
-        if isinstance(user.id, (int, long)):
+        if isinstance(user.id, six.integer_types):
             try:
                 regProf = RegistrationProfile.objects.filter(user__exact=user).select_related().latest('last_ts')
             except RegistrationProfile.DoesNotExist:
                 pass
 
-        if regProf != None:
+        if regProf is not None:
             return regProf
 
         regProf = RegistrationProfile()
@@ -1514,7 +1534,7 @@ class RegistrationProfile(models.Model):
                                'user', 'program', 'contact_user',
                                'contact_guardian', 'contact_emergency',
                                'student_info', 'teacher_info', 'guardian_info',
-                               'educator_info').order_by('-last_ts','-id')[:1])
+                               'educator_info').order_by('-last_ts', '-id')[:1])
         if len(regProfList) < 1:
             regProf = RegistrationProfile.getLastProfile(user)
             # get the old program, if any
@@ -1544,11 +1564,11 @@ class RegistrationProfile(models.Model):
     getLastForProgram.depend_on_row('program.RegistrationProfile', lambda rp: {'user': rp.user})
     getLastForProgram = staticmethod(getLastForProgram)
 
-    def __unicode__(self):
-        if self.program_id == None:
-            return u'<Registration for %s>' % unicode(self.user)
+    def __str__(self):
+        if self.program_id is None:
+            return '<Registration for %s>' % six.text_type(self.user)
         if self.user is not None:
-            return u'<Registration for %s in %s>' % (unicode(self.user), unicode(self.program))
+            return '<Registration for %s in %s>' % (six.text_type(self.user), six.text_type(self.program))
 
 
     def updateForm(self, form_data, specificInfo = None):
@@ -1570,7 +1590,7 @@ class RegistrationProfile(models.Model):
 
     #   Note: these functions return ClassSections, not ClassSubjects.
     def preregistered_classes(self,verbs=None):
-        return self.user.getSectionsFromProgram(self.program,verbs=verbs)
+        return self.user.getSectionsFromProgram(self.program, verbs=verbs)
 
 
 class TeacherBio(models.Model):
@@ -1580,7 +1600,7 @@ class TeacherBio(models.Model):
     user    = AjaxForeignKey(ESPUser)
     bio     = models.TextField(blank=True, null=True)
     slugbio = models.CharField(max_length=50, blank=True, null=True)
-    picture = models.ImageField(height_field = 'picture_height', width_field = 'picture_width', upload_to = "uploaded/bio_pictures/%y_%m/",blank=True, null=True)
+    picture = models.ImageField(height_field = 'picture_height', width_field = 'picture_width', upload_to = "uploaded/bio_pictures/%y_%m/", blank=True, null=True)
     picture_height = models.IntegerField(blank=True, null=True)
     picture_width  = models.IntegerField(blank=True, null=True)
     last_ts = models.DateTimeField(auto_now = True)
@@ -1592,7 +1612,7 @@ class TeacherBio(models.Model):
 
     @staticmethod
     def getLastBio(user):
-        bios = TeacherBio.objects.filter(user__exact=user).order_by('-last_ts','-id')
+        bios = TeacherBio.objects.filter(user__exact=user).order_by('-last_ts', '-id')
         if len(bios) < 1:
             lastBio = TeacherBio()
             lastBio.user = user
@@ -1613,7 +1633,7 @@ class TeacherBio(models.Model):
 
     @staticmethod
     def getLastForProgram(user, program):
-        bios = TeacherBio.objects.filter(user__exact=user, program__exact=program).order_by('-last_ts','-id')
+        bios = TeacherBio.objects.filter(user__exact=user, program__exact=program).order_by('-last_ts', '-id')
 
         if bios.count() < 1:
             lastBio         = TeacherBio()
@@ -1623,7 +1643,7 @@ class TeacherBio(models.Model):
             lastBio = bios[0]
         return lastBio
 
-
+@python_2_unicode_compatible
 class FinancialAidRequest(models.Model):
     """
     Student financial Aid Request
@@ -1652,25 +1672,25 @@ class FinancialAidRequest(models.Model):
         db_table = 'program_financialaidrequest'
         unique_together = ('program', 'user')
 
-    def __unicode__(self):
+    def __str__(self):
         """ Represent this as a string. """
         if self.reduced_lunch:
-            reducedlunch = u"(Free Lunch)"
+            reducedlunch = "(Free Lunch)"
         else:
-            reducedlunch = u''
+            reducedlunch = ''
 
         explanation = self.extra_explaination
         if explanation is None:
-            explanation = u''
+            explanation = six.u('')
         elif len(explanation) > 40:
-            explanation = explanation[:40] + u"..."
+            explanation = explanation[:40] + six.u("...")
 
 
-        string = u"%s (%s@%s) for %s (%s, %s) %s"%\
+        string = six.u("%s (%s@%s) for %s (%s, %s) %s")%\
                  (self.user.name(), self.user.username, settings.DEFAULT_HOST, self.program.niceName(), self.household_income, explanation, reducedlunch)
 
         if self.done:
-            string = u"Finished: [" + string + u"]"
+            string = six.u("Finished: [") + string + six.u("]")
 
         return string
 
@@ -1719,6 +1739,7 @@ def get_subclass_instance(cls, obj):
     #   If you couldn't find any, return the original object.
     return obj
 
+@python_2_unicode_compatible
 class BooleanToken(models.Model):
     """ A true/false value or Boolean operation.
         Meant to be extended to more meaningful Boolean functions operating on
@@ -1742,8 +1763,8 @@ class BooleanToken(models.Model):
     #   Renamed to expr to avoid conflicting with Django SQL evaluator "expression"
     expr = property(get_expr)
 
-    def __unicode__(self):
-        return u'[%d] %s' % (self.seq, self.text)
+    def __str__(self):
+        return '[%d] %s' % (self.seq, self.text)
 
     @cache_function
     def subclass_instance(self):
@@ -1797,7 +1818,7 @@ class BooleanToken(models.Model):
         else:
             return False
 
-
+@python_2_unicode_compatible
 class BooleanExpression(models.Model):
     """ A combination of BooleanTokens that can be manipulated and evaluated.
         Arbitrary arguments can be supplied to the evaluate function in order
@@ -1809,8 +1830,8 @@ class BooleanExpression(models.Model):
 
     label = models.CharField(max_length=80, help_text='Description of the expression')
 
-    def __unicode__(self):
-        return u'(%d tokens) %s' % (len(self.get_stack()), self.label)
+    def __str__(self):
+        return '(%d tokens) %s' % (len(self.get_stack()), self.label)
 
     def subclass_instance(self):
         return get_subclass_instance(BooleanExpression, self)
@@ -1831,7 +1852,7 @@ class BooleanExpression(models.Model):
 
     def add_token(self, token_or_value, seq=None, duplicate=True):
         my_stack = self.get_stack()
-        if isinstance(token_or_value, basestring):
+        if isinstance(token_or_value, six.string_types):
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
@@ -1858,7 +1879,7 @@ class BooleanExpression(models.Model):
         (value, post_stack) = BooleanToken.evaluate(stack, *args, **kwargs)
         return value
 
-
+@python_2_unicode_compatible
 class ScheduleMap:
     """ The schedule map is a dictionary mapping Event IDs to lists of class sections.
         It can be generated and cached for a user, then modified
@@ -1895,9 +1916,10 @@ class ScheduleMap:
         import pickle
         return 'ScheduleMap_%s' % hashlib.md5(pickle.dumps(self)).hexdigest()[:8]
 
-    def __unicode__(self):
-        return u'%s' % self.map
+    def __str__(self):
+        return '%s' % self.map
 
+@python_2_unicode_compatible
 class ScheduleConstraint(models.Model):
     """ A scheduling constraint that can be tested:
         IF [condition] THEN [requirement]
@@ -1922,8 +1944,8 @@ class ScheduleConstraint(models.Model):
     class Meta:
         app_label = 'program'
 
-    def __unicode__(self):
-        return u'%s: "%s" requires "%s"' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
+    def __str__(self):
+        return '%s: "%s" requires "%s"' % (self.program.niceName(), six.text_type(self.condition), six.text_type(self.requirement))
 
     def evaluate(self, smap, recursive=True):
         self.schedule_map = smap
@@ -1950,10 +1972,10 @@ class ScheduleConstraint(models.Model):
         try:
             func_str = """def _f(schedule_map):
 %s""" % ('\n'.join('    %s' % l.rstrip() for l in self.on_failure.strip().split('\n')))
-            exec func_str
+            exec(func_str)
             result = _f(self.schedule_map)
             return result
-        except Exception, inst:
+        except Exception as inst:
             #   raise ESPError('Schedule constraint handler error: %s' % inst, log=False)
             pass
         #   If we got nothing from the on_failure function, just provide Nones.
@@ -2034,7 +2056,7 @@ class ScheduleTestSectionList(ScheduleTestTimeblock):
 
         return cls.objects.filter( reduce(operator.or_, q_list) )
 
-
+@python_2_unicode_compatible
 class VolunteerRequest(models.Model):
     program = models.ForeignKey(Program)
     timeslot = models.ForeignKey('cal.Event')
@@ -2049,9 +2071,10 @@ class VolunteerRequest(models.Model):
     def get_offers(self):
         return self.volunteeroffer_set.all()
 
-    def __unicode__(self):
-        return u'%s (%s)' % (self.timeslot.description, self.timeslot.short_time())
+    def __str__(self):
+        return '%s (%s)' % (self.timeslot.description, self.timeslot.short_time())
 
+@python_2_unicode_compatible
 class VolunteerOffer(models.Model):
     request = models.ForeignKey(VolunteerRequest)
     confirmed = models.BooleanField(default=False)
@@ -2072,8 +2095,8 @@ class VolunteerOffer(models.Model):
     class Meta:
         app_label = 'program'
 
-    def __unicode__(self):
-        return u'%s (%s, %s) for %s' % (self.name, self.email, self.phone, self.request)
+    def __str__(self):
+        return '%s (%s, %s) for %s' % (self.name, self.email, self.phone, self.request)
 
 
 """ This class provides the information that was provided by the DataTree
@@ -2090,6 +2113,7 @@ class VolunteerOffer(models.Model):
     Note: These models fit better in class_.py but cause validation errors
     due to Django's import scheme if they are placed there.
 """
+@python_2_unicode_compatible
 class RegistrationType(models.Model):
     #   The 'key' (not really the primary key since we may want duplicate names)
     name = models.CharField(max_length=32)
@@ -2119,7 +2143,7 @@ class RegistrationType(models.Model):
     def get_map(include=None, category=None):
         #   If 'include' is specified, make sure we have keys named in that list
         if include:
-            if not isinstance(category, str):
+            if not isinstance(category, str) and not isinstance(category, six.text_type):
                 raise ESPError('Need to supply category to RegistrationType.get_map() when passing include arguments', log=True)
             for name in include:
                 type, created = RegistrationType.objects.get_or_create(name=name, category=category)
@@ -2132,14 +2156,15 @@ class RegistrationType(models.Model):
     get_map.depend_on_model('program.RegistrationType')
     get_map = staticmethod(get_map)
 
-    def __unicode__(self):
-        if self.displayName is not None and self.displayName != u"":
+    def __str__(self):
+        if self.displayName is not None and self.displayName != "":
             return self.displayName
         else:
             return self.name
 
+@python_2_unicode_compatible
 class PhaseZeroRecord(models.Model):
-    def __unicode__(self):
+    def __str__(self):
         return str(self.id)
 
     user = models.ManyToManyField(ESPUser)
@@ -2151,8 +2176,9 @@ class PhaseZeroRecord(models.Model):
         return ', '.join([user.username for user in self.user.all()])
     display_user.short_description = 'Username(s)'
 
+@python_2_unicode_compatible
 class ModeratorRecord(models.Model):
-    def __unicode__(self):
+    def __str__(self):
         return str(self.id)
 
     user = AjaxForeignKey(ESPUser)
@@ -2165,6 +2191,7 @@ class ModeratorRecord(models.Model):
     class Meta:
         app_label = 'program'
 
+@python_2_unicode_compatible
 class StudentRegistration(ExpirableModel):
     """
     Model relating a student with a class section (interest, priority,
@@ -2177,9 +2204,10 @@ class StudentRegistration(ExpirableModel):
     class Meta:
         app_label = 'program'
 
-    def __unicode__(self):
-        return u'%s %s in %s' % (self.user, self.relationship, self.section)
+    def __str__(self):
+        return '%s %s in %s' % (self.user, self.relationship, self.section)
 
+@python_2_unicode_compatible
 class StudentSubjectInterest(ExpirableModel):
     """
     Model indicating a student interest in a class section.
@@ -2190,8 +2218,8 @@ class StudentSubjectInterest(ExpirableModel):
     class Meta:
         app_label = 'program'
 
-    def __unicode__(self):
-        return u'%s interest in %s' % (self.user, self.subject)
+    def __str__(self):
+        return '%s interest in %s' % (self.user, self.subject)
 
 
 # Hooked up in program.modules.signals and formstack.signals

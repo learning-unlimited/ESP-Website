@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -49,7 +50,7 @@ def preview_miniblog(request, section = None):
     """this function will return the last n miniblog entries from preview_miniblog """
     # last update: Axiak
 
-    if request.user != None:
+    if request.user is not None:
         curUser = request.user
     else:
         curUser = AnonymousESPUser()

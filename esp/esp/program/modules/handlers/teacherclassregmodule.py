@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+import six
+from six.moves import map
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -142,7 +146,11 @@ class TeacherClassRegModule(ProgramModuleObj):
         full_classes = [x for x in classes if x.isFull()]
         Q_full_teacher = Q(classsubject__in=full_classes) & Q_isteacher
 
-        previous_programs = [x for x in Program.objects.all() if len(x.dates()) and x.dates()[0] < self.program.dates()[0]]
+        if len(self.program.dates()) == 0: # If current program doesn't have dates set yet, there are no past programs
+            previous_programs = []
+        else:
+            previous_programs = [x for x in Program.objects.all()
+                                 if len(x.dates()) > 0 and x.dates()[0] < self.program.dates()[0]]
         Q_taught_before_temp = Q(classsubject__status=ClassStatus.ACCEPTED, classsubject__parent_program__in=previous_programs)
         taught_before_users = ESPUser.objects.filter(Q_taught_before_temp).values('id').distinct()
         # For past events, we want the query to be solely user based
@@ -170,7 +178,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 result[key] = additional_qs[key]
         else:
             result = {k: ESPUser.objects.filter(v).distinct()
-                      for k, v in qobjects.iteritems()}
+                      for k, v in six.iteritems(qobjects)}
             for key in additional_qs:
                 result[key] = ESPUser.objects.filter(additional_qs[key]).distinct()
 
@@ -218,7 +226,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         return self.reg_is_open_methods[reg_type](self)
 
     def any_reg_is_open(self):
-        return any(map(self.reg_is_open, self.reg_is_open_methods.keys()))
+        return any(map(self.reg_is_open, list(self.reg_is_open_methods.keys())))
 
     def clslist(self, user):
         return user.getTaughtClasses(program = self.program, include_rejected = True)
@@ -260,7 +268,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         verbs = RTC.getVisibleRegistrationTypeNames(prog)
         if request.POST and 'submitted' in request.POST:
             # split with delimiters comma, semicolon, and space followed by any amount of extra whitespace
-            misc_students = filter(None, re.split(r'[;,\s]\s*', request.POST.get('misc_students')))
+            misc_students = [_f for _f in re.split(r'[;,\s]\s*', request.POST.get('misc_students')) if _f]
             for code in misc_students:
                 try:
                     student = ESPUser.objects.get(id=code)
@@ -729,11 +737,11 @@ class TeacherClassRegModule(ProgramModuleObj):
         try:
             int(extra)
         except:
-            raise ESPError("Invalid integer for class ID!", log=False)
+            raise ESPError("Invalid integer for class ID! Got `{}`".format(extra), log=False)
 
         classes = ClassSubject.objects.filter(id = extra)
         if len(classes) == 0:
-            raise ESPError("No class found matching this ID!", log=False)
+            raise ESPError("No class found matching this ID (ID={})!".format(extra), log=False)
 
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
@@ -852,7 +860,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                         return HttpResponseRedirect('/manage/%s/main' % self.program.getUrlBase())
                 return self.goToCore(tl)
 
-            except ClassCreationValidationError, e:
+            except ClassCreationValidationError as e:
                 reg_form = e.reg_form
                 resource_formset = e.resource_formset
 
@@ -877,7 +885,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 # durations when every interface assumes they're identical?
                 current_duration = current_data['duration'] or newclass.sections.all()[0].duration
                 rounded_duration = 0
-                for k, v in self.crmi.getDurations() + [(0,'')]:
+                for k, v in self.crmi.getDurations() + [(0, '')]:
                     new_delta = abs( k - current_duration )
                     if old_delta is None or new_delta < old_delta:
                         old_delta = new_delta
@@ -891,7 +899,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 min_grade = newclass.grade_min
                 max_grade = newclass.grade_max
                 if Tag.getProgramTag('grade_ranges', prog):
-                    current_data['grade_range'] = str([min_grade,max_grade])
+                    current_data['grade_range'] = str([min_grade, max_grade])
                 for field_name in get_custom_fields():
                     if field_name in newclass.custom_form_data:
                         current_data[field_name] = newclass.custom_form_data[field_name]
@@ -1051,7 +1059,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             user_dict = {}
             for user in queryset:
                 user_dict[user.id] = user
-            users = user_dict.values()
+            users = list(user_dict.values())
 
             # Construct combo-box items
             obj_list = [{'name': "%s, %s" % (user.last_name, user.first_name), 'username': user.username, 'id': user.id} for user in users]
@@ -1064,7 +1072,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         if key == 'full_classes':
             return user.getFullClasses_pretty(self.program)
 
-        return u''
+        return six.u('')
 
     class Meta:
         proxy = True

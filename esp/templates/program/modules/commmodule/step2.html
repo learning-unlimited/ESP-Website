@@ -42,6 +42,7 @@ Note, the "From" email address must end in <b>@{{ settings.SITE_INFO.1 }}</b> (y
 By default the "From" email address is <b>info@{{ current_site.domain }}</b>, which redirects to the "default" email address from your site's settings.
 You can create and manage your email redirects <a href="/manage/redirects/">here</a>.
 The "Reply-To" field can be any email address (by default it is the same as the "From" email address).
+Both email address fields also support named "mailboxes", such as "{{ default_from }}".
 </div>
 
 <form action="/manage/{{program.getUrlBase}}/commprev" method="post" name="comm2">
@@ -51,9 +52,9 @@ The "Reply-To" field can be any email address (by default it is the same as the 
   <td>
   <label for="from">
   <strong>From:</strong>
-  <small>(If blank: info@{{ current_site.domain }})</small>
+  <small>(If blank: {{ default_from }}</small>)</small>
   </label>
-  <input type="text" size="30" name="from" id="from" value="{{from}}" pattern="(^.+@{{ current_site.domain|regexsite }}$)|(^.+@(\w+\.)?learningu\.org$)"/>
+  <input type="text" size="30" name="from" id="from" value="{{from}}" pattern="(^.+@{{ current_site.domain|regexsite }}$)|(^.+<.+@{{ current_site.domain|regexsite }}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)"/>
   <br /><br />
   <label for="replyto">
   <strong>Reply-To:</strong>

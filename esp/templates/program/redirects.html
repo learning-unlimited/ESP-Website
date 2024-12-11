@@ -68,13 +68,12 @@ function deleteEmailRedirect() {
 
     <br />
 
-    <table align="center" cellpadding="0" cellspacing="0" width="100%">
-        <tr><th colspan="4">URL Redirects</th></tr>
+    <table align="center" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed; overflow-wrap: break-word;">
         <tr>
-            <td><b>Old URL</b></td>
-            <td></td>
-            <td><b>New URL</b></td>
-            <td><b>Options</b></td>
+            <th width="32.5%"><b>Old URL</b></th>
+            <th width="5%"></td>
+            <th width="32.5%"><b>New URL</b></th>
+            <th width="30%"><b>Options</b></th>
         </tr>
         {% for redirect in redirects %}
         <tr>
@@ -132,13 +131,12 @@ function deleteEmailRedirect() {
 
     <br />
 
-    <table align="center" cellpadding="0" cellspacing="0" width="100%">
-        <tr><th colspan="6">Email Redirects</th></tr>
+    <table align="center" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed; overflow-wrap: break-word;">
         <tr>
-            <td><b>Original Email Address</b></td>
-            <td></td>
-            <td><b>Destination Email Address(es)</b></td>
-            <td><b>Options</b></td>
+            <th width="20%"><b>Original Email Address</b></th>
+            <th width="5%"></th>
+            <th width="45%"><b>Destination Email Address(es)</b></th>
+            <th width="30%"><b>Options</b></th>
         </tr>
         {% for er in email_redirects %}
         <tr>

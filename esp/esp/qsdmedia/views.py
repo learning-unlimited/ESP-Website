@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -60,7 +62,10 @@ def qsdmedia2(request, url, ignored_part=None):
         media_rec = Media.objects.filter(hashed_name=url).latest('id')
 
     file_name = media_rec.get_uploaded_filename()
-    f = open(file_name, 'rb')
+    try:
+        f = open(file_name, 'rb')
+    except FileNotFoundError:
+        raise Http404
     response = HttpResponse(f.read(), content_type=media_rec.mime_type)
 
     inline_dispositions = ['application/pdf', 'image/*', 'audio/*', 'video/*']

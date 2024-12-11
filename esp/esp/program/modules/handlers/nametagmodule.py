@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+from __future__ import division
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -78,8 +81,7 @@ class NameTagModule(ProgramModuleObj):
     def nametag_data(self, users_list1, user_title1, users_list2 = ESPUser.objects.none(), user_title2 = None, program = None):
         users = []
         users_list = [ user for user in users_list1 | users_list2]
-        users_list = filter(lambda x: len(x.first_name+x.last_name), users_list)
-        users_list.sort()
+        users_list = sorted([x for x in users_list if len(x.first_name+x.last_name)])
 
         for user in users_list:
             prof = RegistrationProfile.getLastProfile(user)
@@ -205,7 +207,7 @@ class NameTagModule(ProgramModuleObj):
         expanded = [[] for i in range(numperpage)]
 
         for i in range(len(users)):
-            expanded[(i*numperpage)/len(users)].append(users[i])
+            expanded[(i*numperpage)//len(users)].append(users[i])
 
         users = []
 
@@ -226,7 +228,7 @@ class NameTagModule(ProgramModuleObj):
                 user_backs[j-1] = users[j]
 
         users_and_backs = []
-        for j in range(len(users)/6):
+        for j in range(len(users)//6):
             users_and_backs.append([users[j*6:(j+1)*6], user_backs[j*6:(j+1)*6]])
 
         context['barcodes'] = True if 'barcodes' in request.POST else False

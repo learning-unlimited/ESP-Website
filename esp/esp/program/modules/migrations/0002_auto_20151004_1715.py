@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import models, migrations
 import esp.program.modules.module_ext
 
@@ -16,7 +17,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='studentclassregmoduleinfo',
             name='signup_verb',
-            field=models.ForeignKey(to='program.RegistrationType', help_text=b'Which verb to grant a student when they sign up for a class.', null=True),
+            field=models.ForeignKey(to='program.RegistrationType', help_text='Which verb to grant a student when they sign up for a class.', null=True),
         ),
         migrations.AddField(
             model_name='programmoduleobj',

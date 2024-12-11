@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+import six
+from six.moves import map
+from six.moves import range
+from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -138,7 +143,7 @@ class UserSearchController(object):
                 Q_exclude |= Q(registrationprofile__user__groups__id__in=groups_exclude)
                 self.updated = True
 
-            for field in ['username','last_name','first_name', 'email']:
+            for field in ['username', 'last_name', 'first_name', 'email']:
                 if criteria.get(field, '').strip():
                     #   Check that it's a valid regular expression
                     try:
@@ -195,21 +200,21 @@ class UserSearchController(object):
                     self.updated = True
 
             #   Filter by graduation years if specifically looking for teachers.
-            possible_gradyears = range(1920, 2120)
+            possible_gradyears = list(range(1920, 2120))
             if criteria.get('gradyear_min', '').strip():
                 try:
                     gradyear_min = int(criteria['gradyear_min'])
                 except:
                     raise ESPError('Please enter a 4-digit integer for graduation year limits.', log=False)
-                possible_gradyears = filter(lambda x: x >= gradyear_min, possible_gradyears)
+                possible_gradyears = [x for x in possible_gradyears if x >= gradyear_min]
             if criteria.get('gradyear_max', '').strip():
                 try:
                     gradyear_max = int(criteria['gradyear_max'])
                 except:
                     raise ESPError('Please enter a 4-digit integer for graduation year limits.', log=False)
-                possible_gradyears = filter(lambda x: x <= gradyear_max, possible_gradyears)
+                possible_gradyears = [x for x in possible_gradyears if x <= gradyear_max]
             if criteria.get('gradyear_min', '').strip() or criteria.get('gradyear_max', '').strip():
-                Q_include &= Q(registrationprofile__teacher_info__graduation_year__in = map(str, possible_gradyears), registrationprofile__most_recent_profile=True)
+                Q_include &= Q(registrationprofile__teacher_info__graduation_year__in = list(map(str, possible_gradyears)), registrationprofile__most_recent_profile=True)
                 self.updated = True
 
             if criteria.get('hours_min', '').strip() or criteria.get('hours_max', '').strip():
@@ -290,10 +295,10 @@ class UserSearchController(object):
             #   Apply Boolean filters
             #   Base list will be intersected with any lists marked 'AND', and then unioned
             #   with any lists marked 'OR'.
-            checkbox_keys = map(lambda x: x[9:], filter(lambda x: x.startswith('checkbox_'), data.keys()))
-            and_keys = map(lambda x: x[4:], filter(lambda x: x.startswith('and_'), checkbox_keys))
-            or_keys = map(lambda x: x[3:], filter(lambda x: x.startswith('or_'), checkbox_keys))
-            not_keys = map(lambda x: x[4:], filter(lambda x: x.startswith('not_'), checkbox_keys))
+            checkbox_keys = [x[9:] for x in [x for x in list(data.keys()) if x.startswith('checkbox_')]]
+            and_keys = [x[4:] for x in [x for x in checkbox_keys if x.startswith('and_')]]
+            or_keys = [x[3:] for x in [x for x in checkbox_keys if x.startswith('or_')]]
+            not_keys = [x[4:] for x in [x for x in checkbox_keys if x.startswith('not_')]]
             #if any keys concern the same field, we will place them into
             #a subquery and count occurrences
 
@@ -336,10 +341,10 @@ class UserSearchController(object):
                 subquery = (
                               Record
                               .objects
-                              .filter(program=program,event__name__in=event_fields)
+                              .filter(program=program, event__name__in=event_fields)
                               .annotate(numusers=Count('user__id'))
                               .filter(numusers=len(event_fields))
-                              .values_list('user_id',flat=True)
+                              .values_list('user_id', flat=True)
                             )
 
                 subquery.query.group_by = []#leave empty to strip out duplicate group by
@@ -395,7 +400,7 @@ class UserSearchController(object):
         recipient_type = data.get('recipient_type', '') or data.get('combo_base_list', ':').split(':')[0]
         sendtos = []
         if recipient_type == 'Student':
-            for key,value in data.iteritems():
+            for key, value in six.iteritems(data):
                 if ('student_sendto_' in key) and (value == '1'):
                     sendtos.append(key[1+key.rindex('_'):])
             if not sendtos:
@@ -474,7 +479,7 @@ class UserSearchController(object):
     def selected_list_from_postdata(self, data):
         selected = []
         selected.append(str(data.get('base_list', '')) or str(data.get('combo_base_list', ':').split(':')[1]))
-        for k,v in data.items():
+        for k, v in data.items():
             if k.startswith('checkbox_'):
                 selected.append(str(k.split('checkbox_')[1]))
 

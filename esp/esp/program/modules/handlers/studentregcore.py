@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -90,7 +91,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
 
             if self.program.program_allow_waitlist:
-                retVal['waitlisted_students'] = Q(record__event__name="waitlist",record__program=self.program)
+                retVal['waitlisted_students'] = Q(record__event__name="waitlist", record__program=self.program)
 
             return retVal
 
@@ -101,7 +102,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                   'studentrep': ESPUser.objects.filter(q_studentrep).distinct()}
 
         if self.program.program_allow_waitlist:
-            retVal['waitlisted_students'] = ESPUser.objects.filter(Q(record__event__name="waitlist",record__program=self.program)).distinct()
+            retVal['waitlisted_students'] = ESPUser.objects.filter(Q(record__event__name="waitlist", record__program=self.program)).distinct()
 
         return retVal
 
@@ -142,7 +143,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @aux_call
     @needs_student_in_grade
     def confirmreg(self, request, tl, one, two, module, extra, prog):
-        if Record.objects.filter(user=request.user, event__name="reg_confirmed",program=prog).count() > 0:
+        if Record.objects.filter(user=request.user, event__name="reg_confirmed", program=prog).count() > 0:
             return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=False)
         return self.confirmreg_new(request, tl, one, two, module, extra, prog)
 
@@ -205,11 +206,12 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         else:
             raise ESPError("You must finish all the necessary steps first, then click on the Save button to finish registration.", log=False)
 
-        cfe = ConfirmationEmailController()
-        cfe.send_confirmation_email(user, self.program)
-
         # when does class registration close for this user?
         context['deadline'] = Permission.user_deadline_when(user, "Student/Classes", prog)
+
+        cfe = ConfirmationEmailController()
+        # this email includes the student's schedule (by default), so send a new email each time they confirm their reg
+        cfe.send_confirmation_email(user, self.program, context = context, repeat = True)
 
         context["request"] = request
         context["program"] = prog

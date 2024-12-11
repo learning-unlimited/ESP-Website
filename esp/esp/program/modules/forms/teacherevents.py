@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import division
 from django import forms
 from django.utils.safestring import mark_safe
 
@@ -18,8 +20,8 @@ class TimeslotForm(forms.Form):
     def load_timeslot(self, slot):
         self.fields['start'].initial = slot.start
         length = (slot.end - slot.start).seconds
-        self.fields['hours'].initial = int(length / 3600)
-        self.fields['minutes'].initial = int(length / 60 - 60 * self.fields['hours'].initial)
+        self.fields['hours'].initial = int(length // 3600)
+        self.fields['minutes'].initial = int(length // 60 - 60 * self.fields['hours'].initial)
         self.fields['description'].initial = slot.description
 
     def save_timeslot(self, program, slot, type):

@@ -1827,6 +1827,10 @@ var rebuild=function(metadata) {
 	});
     // Delete empty sections that are generated when making pages
     $j(".section:empty").parent('.outline').remove();
+    // Disable linked model fields
+    $j.each(Object.keys(model_instance_cache), function(idx, model) {
+        $j("#cat_selector").children("[value="+model+"]").prop("disabled", true).css("color", "lightgrey").prop("title", "Can not add linked fields to existing forms");
+    });
     // Reset add field form
 	$j("#cat_selector").val('Generic').trigger("change");
     // Set up permissions if needed
