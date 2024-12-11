@@ -1,9 +1,13 @@
+from __future__ import absolute_import
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.utils.web import render_to_response
 from esp.middleware import ESPError
 from esp.users.models import ESPUser
 from django.contrib.auth.models import Group
 import random
+import six
+from six.moves import map
+from six.moves import range
 
 class BulkCreateAccountModule(ProgramModuleObj):
     doc = """Create a bulk set of accounts (e.g. for outreach)."""
@@ -94,7 +98,7 @@ class BulkCreateAccountModule(ProgramModuleObj):
             return self.bulk_account_error(request, 'The prefix ' + used_prefixes[0]
                                                     + ' has been used before. Please choose a different prefix.')
         # create users
-        for prefix, number in prefix_dict.iteritems():
+        for prefix, number in six.iteritems(prefix_dict):
             pw = prefix + str(random.randrange(1000000))
             create_users_for_program(prog, prefix + '{}', pw, groups, number)
             result[prefix] = {'password': pw, 'number': number}
@@ -154,9 +158,9 @@ def create_users_for_program(program, username_format, password_format, groups, 
     """
     if not isinstance(groups, (list, tuple)):
         groups = [groups]
-    groups = map(get_group, groups)
+    groups = list(map(get_group, groups))
     ret = []
-    for i in xrange(1, number + 1):
+    for i in range(1, number + 1):
         username = username_format.format(i)
         password = password_format.format(i)
         ret.append(create_user_with_profile(username, password, program, groups))
@@ -166,13 +170,13 @@ def create_users_for_program(program, username_format, password_format, groups, 
 def get_group(group):
     if isinstance(group, Group):
         return group
-    elif isinstance(group, basestring):
+    elif isinstance(group, six.string_types):
         try:
             return Group.objects.get(name=group)
         except Group.DoesNotExist:
             return None
     else:
-        raise ESPError('{} is not a Group or Group name'.format(unicode(group)))
+        raise ESPError('{} is not a Group or Group name'.format(six.text_type(group)))
 
 
 def create_user_with_profile(username, password, program, groups):

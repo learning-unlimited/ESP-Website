@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import division
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -146,7 +149,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
-            if prevTimeSlot != None:
+            if prevTimeSlot is not None:
                 if not Event.contiguous(prevTimeSlot, timeslot):
                     blockCount += 1
 
@@ -225,7 +228,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         context['grade_choices'] = group_columns(grade_choices)
 
         catalog_context = self.catalog_context(
-            request, tl, one, two,module, extra, prog)
+            request, tl, one, two, module, extra, prog)
         context.update(catalog_context)
 
         return render_to_response(self.baseDir() + 'view_classes.html', request, context)
@@ -261,7 +264,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         context['category_choices'] = group_columns(category_choices)
 
         catalog_context = self.catalog_context(
-            request, tl, one, two,module, extra, prog)
+            request, tl, one, two, module, extra, prog)
         context.update(catalog_context)
 
         return render_to_response(self.baseDir() + 'mark_classes.html', request, context)
@@ -349,7 +352,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             context['priorities'].append((rel_index, rel))
 
         catalog_context = self.catalog_context(
-            request, tl, one, two,module, extra, prog)
+            request, tl, one, two, module, extra, prog)
         context.update(catalog_context)
 
         return render_to_response(
@@ -370,7 +373,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         except ValueError:
             return HttpResponseBadRequest('JSON data mis-formatted.')
         try:
-            [timeslot_id] = json_data.keys()
+            [timeslot_id] = list(json_data.keys())
         except ValueError:
             return HttpResponseBadRequest('JSON data mis-formatted.')
         if not isinstance(json_data[timeslot_id], dict):

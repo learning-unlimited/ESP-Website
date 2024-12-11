@@ -12,9 +12,13 @@
 # Warning: if the class does not have a time set, this script will not assign it a room.
 #
 
+from __future__ import absolute_import
+from __future__ import print_function
 import csv
 from esp.program.models.class_ import ClassSubject
 from esp.resources.models import Resource
+from six.moves import map
+from io import open
 
 def makeChanges(filename,override=False):
 
@@ -24,38 +28,38 @@ def makeChanges(filename,override=False):
         c = csv.reader(f)
         for row in c:
             emailcode, capacity, room = row
-            class_id,sec_id = map(int,emailcode[1:].split('s'))
+            class_id, sec_id = list(map(int, emailcode[1:].split('s')))
             cls = ClassSubject.objects.get(id=class_id)
             for s in cls.sections.all():
                 if s.index()==sec_id:
                     sec=s
             try:
-                secs.append((cls,sec,capacity,room))
+                secs.append((cls, sec, capacity, room))
             except NameError:
-                print "Section %s not found" % emailcode
+                print("Section %s not found" % emailcode)
                 raise
 
-    for cls,sec,capacity,room in secs:
+    for cls, sec, capacity, room in secs:
         if room is not "":
             cas = sec.classroomassignments()
-            print "Removing %s from %s" % (sec.emailcode(), ', '.join([x.resource.name for x in cas]))
+            print("Removing %s from %s" % (sec.emailcode(), ', '.join([x.resource.name for x in cas])))
             cas.delete()
 
-    for cls,sec,capacity,room in secs:
+    for cls, sec, capacity, room in secs:
         if room is not "":
-            print "Moving section %s to room %s" % (sec.emailcode(), room)
+            print("Moving section %s to room %s" % (sec.emailcode(), room))
             # the following is stolen from the manage class page code.  I don't like it, but that page works so I am using it.
             room_res = Resource.objects.filter(name=room)
             if room_res.count() > 0:
-                print sec.assign_room(room_res[0])
+                print(sec.assign_room(room_res[0]))
             else:
-                print "I don't like room %s" % room
-        print "Marking class %s accepted" % cls.emailcode()
+                print("I don't like room %s" % room)
+        print("Marking class %s accepted" % cls.emailcode())
         cls.accept()
 
-    for cls,sec,capacity,room in secs:
+    for cls, sec, capacity, room in secs:
         if capacity is not "":
-            print "Changing class %s size to %s" % (cls.emailcode(),capacity)
+            print("Changing class %s size to %s" % (cls.emailcode(), capacity))
             cls.class_size_max = int(capacity)
             cls.save()
             if override:

@@ -23,6 +23,8 @@ function ChangelogFetcher(matrix, api_client){
      * @param interval: The time in milliseconds between polling the server
      */
     this.pollForChanges = function(interval){
+        // run getChanges() immediately, then set up the recurring call
+        this.getChanges();
         window.setInterval(this.getChanges.bind(this), interval);
     };
 
@@ -65,5 +67,6 @@ function ChangelogFetcher(matrix, api_client){
             }
             this.last_applied_index = change.index;
         }.bind(this));
+        $j("#loadingOverlay").remove(); // remove the loading overlay
     };
 };

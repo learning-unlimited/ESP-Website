@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+import six
+from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -68,7 +71,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     #     [["Lecture", "Lecture Style Class"], ["Seminar", "Seminar Style Class"]]
     style_choices = []
 
-    # Grr, TypedChoiceField doesn't seem to exist yet
+    # Grr, TypedChoiceField doesn't seem to exist yet # Update as of 1.11 -- it does, but it doesn't coerce until after validation. Need Django 3 for individual type fields
     title          = StrippedCharField(    label='Course Title', length=50, max_length=200 )
     category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget() )
     class_info     = StrippedCharField(   label='Course Description', widget=forms.Textarea(),
@@ -77,9 +80,9 @@ class TeacherClassRegForm(FormWithRequiredCss):
                                         help_text='If your course does not have prerequisites, leave this box blank.')
 
     duration       = forms.ChoiceField( label='Duration of a Class Meeting', help_text='(hours:minutes)', choices=[('0.0', 'Program default')], widget=BlankSelectWidget() )
-    num_sections   = forms.ChoiceField( label='Number of Sections', choices=[(1,1)], widget=BlankSelectWidget(),
+    num_sections   = forms.ChoiceField( label='Number of Sections', choices=[(1, 1)], widget=BlankSelectWidget(),
                                         help_text='(How many independent sections (copies) of your class would you like to teach?)' )
-    session_count  = forms.ChoiceField( label='Number of Days of Class', choices=[(1,1)], widget=BlankSelectWidget(),
+    session_count  = forms.ChoiceField( label='Number of Days of Class', choices=[(1, 1)], widget=BlankSelectWidget(),
                                         help_text='(How many days will your class take to complete?)' )
 
     # To enable grade ranges, admins should set the Tag grade_ranges.
@@ -87,9 +90,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
     grade_range    = forms.ChoiceField( label='Grade Range', choices=[], widget=BlankSelectWidget() )
     grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 7)], widget=BlankSelectWidget() )
     grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget() )
-    class_size_max = forms.ChoiceField( label='Maximum Number of Students',
-                                        choices=[(0, 0)],
-                                        widget=BlankSelectWidget(),
+    class_size_max = forms.IntegerField(label='Maximum Number of Students',
+                                        widget=BlankSelectWidget(choices=[(0, 0)]),
                                         validators=[validators.MinValueValidator(1)],
                                         help_text='The above class-size and grade-range values are absolute, not the "optimum" nor "recommended" amounts. We will not allow any more students than you specify, nor allow any students in grades outside the range that you specify. Please contact us later if you would like to make an exception for a specific student.' )
     class_size_optimal = forms.IntegerField( label='Optimal Number of Students', help_text="This is the number of students you would have in your class in the most ideal situation.  This number is not a hard limit, but we'll do what we can to try to honor this." )
@@ -97,7 +99,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     allowable_class_size_ranges = forms.MultipleChoiceField( label='Allowable Class Size Ranges', choices=[(0, 0)], widget=forms.CheckboxSelectMultiple(),
                                                              help_text="Please select all class size ranges you are comfortable teaching." )
     class_style = forms.ChoiceField( label='Class Style', choices=style_choices, required=False, widget=BlankSelectWidget())
-    hardness_rating = forms.ChoiceField( label='Difficulty',choices=hardness_choices, initial="**",
+    hardness_rating = forms.ChoiceField( label='Difficulty', choices=hardness_choices, initial="**",
         help_text="Which best describes how hard your class will be for your students?")
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
 
@@ -131,13 +133,13 @@ class TeacherClassRegForm(FormWithRequiredCss):
         prog = crmi.program
 
         section_numbers = crmi.allowed_sections_actual
-        section_numbers = zip(section_numbers, section_numbers)
+        section_numbers = list(zip(section_numbers, section_numbers))
 
         class_sizes = crmi.getClassSizes()
-        class_sizes = zip(class_sizes, class_sizes)
+        class_sizes = list(zip(class_sizes, class_sizes))
 
         class_grades = crmi.getClassGrades()
-        class_grades = zip(class_grades, class_grades)
+        class_grades = list(zip(class_grades, class_grades))
 
         class_ranges = ClassSizeRange.get_ranges_for_program(prog)
         class_ranges = [(range.id, range.range_str()) for range in class_ranges]
@@ -152,14 +154,14 @@ class TeacherClassRegForm(FormWithRequiredCss):
         self.fields['grade_max'].choices = class_grades
         if Tag.getProgramTag('grade_ranges', prog):
             grade_ranges = json.loads(Tag.getProgramTag('grade_ranges', prog))
-            self.fields['grade_range'].choices = [(range,str(range[0]) + " - " + str(range[1])) for range in grade_ranges]
+            self.fields['grade_range'].choices = [(range, str(range[0]) + " - " + str(range[1])) for range in grade_ranges]
             del self.fields['grade_min']
             del self.fields['grade_max']
         else:
             del self.fields['grade_range']
         if crmi.use_class_size_max:
             # class_size_max: crmi.getClassSizes
-            self.fields['class_size_max'].choices = class_sizes
+            self.fields['class_size_max'].widget.choices = class_sizes
         else:
             del self.fields['class_size_max']
 
@@ -198,7 +200,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # session_count
         if crmi.session_counts:
             session_count_choices = crmi.session_counts_ints
-            session_count_choices = zip(session_count_choices, session_count_choices)
+            session_count_choices = list(zip(session_count_choices, session_count_choices))
             self.fields['session_count'].choices = session_count_choices
         hide_choice_if_useless( self.fields['session_count'] )
 
@@ -266,7 +268,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             grade_min = int(grade_min)
             grade_max = int(grade_max)
             if grade_min > grade_max:
-                msg = u'Minimum grade must be less than the maximum grade.'
+                msg = six.u('Minimum grade must be less than the maximum grade.')
                 self.add_error('grade_min', msg)
                 self.add_error('grade_max', msg)
 
@@ -277,7 +279,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             class_size_optimal = int(class_size_optimal)
             class_size_max = int(class_size_max)
             if class_size_optimal > class_size_max:
-                msg = u'Optimal class size must be less than or equal to the maximum class size.'
+                msg = six.u('Optimal class size must be less than or equal to the maximum class size.')
                 self.add_error('class_size_optimal', msg)
                 self.add_error('class_size_max', msg)
 
