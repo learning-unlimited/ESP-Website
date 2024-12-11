@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+import six
+from io import open
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -265,7 +269,7 @@ def editor(request):
                 theme_name = tc.get_current_customization()
                 if theme_name == 'None':
                     #   Generate a temporary theme name
-                    random_slug  = ''.join(random.choice(string.lowercase) for i in range(4))
+                    random_slug  = ''.join(random.choice(string.ascii_lowercase) for i in range(4))
                     theme_name = 'theme-%s-%s' % (datetime.now().strftime('%Y%m%d'), random_slug)
             else:
                 theme_name = request.POST['saveThemeName']
@@ -284,7 +288,7 @@ def editor(request):
         #   Re-generate the CSS for the current theme given the supplied settings
         if vars:
             tc.customize_theme(vars)
-        if palette != None:
+        if palette is not None:
             tc.set_palette(palette)
 
     #   Get current theme and customization settings
@@ -299,7 +303,7 @@ def editor(request):
     context['last_used_setting'] = tc.get_current_customization()
 
     #   Load a bunch of preset fonts
-    context['sans_fonts'] = themes_settings.sans_serif_fonts.iteritems()
+    context['sans_fonts'] = six.iteritems(themes_settings.sans_serif_fonts)
 
     #   Load the theme-specific options
     adv_vars = tc.find_less_variables(current_theme, theme_only=True)
@@ -307,8 +311,7 @@ def editor(request):
     for filename in adv_vars:
         category_name = os.path.basename(filename)[:-5]
         category_vars = []
-        keys = adv_vars[filename].keys()
-        keys.sort()
+        keys = sorted(adv_vars[filename].keys())
         for key in keys:
             #   Detect type of variable based on default value
             initial_val = adv_vars[filename][key]

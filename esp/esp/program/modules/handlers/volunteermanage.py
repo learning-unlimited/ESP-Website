@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -78,7 +79,7 @@ class VolunteerManage(ProgramModuleObj):
             response = HttpResponse(content_type="text/csv")
             requests = self.program.getVolunteerRequests()
             write_csv = csv.writer(response)
-            write_csv.writerow(("Activity","Time","Name","Phone Number","Email Address","Comments"))
+            write_csv.writerow(("Activity", "Time", "Name", "Phone Number", "Email Address", "Comments"))
             for request in requests:
                 for offer in request.get_offers():
                     write_csv.writerow([codecs.encode(entry, 'utf-8') if entry is not None else '' for entry in
@@ -142,7 +143,7 @@ class VolunteerManage(ProgramModuleObj):
                 for prev_request in prev_requests:
                     prev_timeslots.append(prev_request.timeslot)
                 time_delta = start_date - prev_timeslots[0].start.date()
-                for i,orig_timeslot in enumerate(prev_timeslots):
+                for i, orig_timeslot in enumerate(prev_timeslots):
                     new_timeslot = Event(
                         program = self.program,
                         start = orig_timeslot.start + time_delta,

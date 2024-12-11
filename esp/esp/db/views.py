@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core import serializers
 from django.http import HttpResponse
@@ -17,7 +18,7 @@ def autocomplete_wrapper(function, data, is_staff, prog):
             return function(data, prog)
         return function(data)
     else:
-        if 'allow_non_staff' in function.im_func.func_code.co_varnames:
+        if 'allow_non_staff' in function.__func__.__code__.co_varnames:
             if prog:
                 return function(data, prog)
             return function(data)
@@ -31,20 +32,20 @@ def ajax_autocomplete(request):
     AjaxForeignKey, and return the data for the autocompletion.
     """
     try:
-        limit = int(request.GET.get('limit',10))
+        limit = int(request.GET.get('limit', 10))
         model_module = request.GET['model_module']
         model_name   = request.GET['model_name']
         ajax_func    = request.GET.get('ajax_func', 'ajax_autocomplete')
         data         = request.GET['ajax_data']
         prog         = request.GET['prog']
-    except KeyError, ValueError:
+    except KeyError as ValueError:
         # bad request
         response = HttpResponse('Malformed Input')
         response.status_code = 400
         return response
 
     # import the model
-    Model = getattr(__import__(model_module,(),(),[str(model_name)]),model_name)
+    Model = getattr(__import__(model_module, (), (), [str(model_name)]), model_name)
 
     if hasattr(Model.objects, ajax_func):
         query_set = autocomplete_wrapper(getattr(Model.objects, ajax_func), data, request.user.is_staff, prog)

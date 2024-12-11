@@ -1,4 +1,8 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 import logging
+import six
 logger = logging.getLogger(__name__)
 
 from django.db import models
@@ -13,6 +17,7 @@ from esp.tagdict import all_global_tags, all_program_tags
 # documentation, as described at
 # http://www.djangoproject.com/documentation/models/generic_relations/
 
+@python_2_unicode_compatible
 class Tag(models.Model):
     """A tag on an item."""
     key = models.SlugField(db_index=True)
@@ -33,7 +38,7 @@ class Tag(models.Model):
         # Django can't currently do this, so it's enforced by custom SQL.
         # TODO:  Write this custom SQL for backends other than PostgreSQL.
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s: %s (%s)" % (self.key, self.value, self.target)
 
     EMPTY_TAG = " "
@@ -62,7 +67,7 @@ class Tag(models.Model):
                 elif key in all_global_tags:
                     result = all_global_tags[key].get('default')
 
-        if isinstance(result, basestring) and (result.lower() == "false" or
+        if isinstance(result, six.string_types) and (result.lower() == "false" or
                                                result.lower() == "true"):
             logger.warning("Tag %s set to boolean value; consider using getBooleanTag()",
                            key)
@@ -75,12 +80,12 @@ class Tag(models.Model):
         return the corresponding value as a string,
         or the value specified by the 'default' argument if no such value exists.
         """
-        if default is not None and not isinstance(default, basestring):
+        if default is not None and not isinstance(default, six.string_types):
             logger.warning("_getTag() called with non-string default for key %s",
                            key)
 
         try:
-            if target != None:
+            if target is not None:
                 ct = ContentType.objects.get_for_model(target)
                 return cls.objects.get(key=key, content_type=ct, object_id=target.id).value
             else:
@@ -119,7 +124,7 @@ class Tag(models.Model):
                     res = all_program_tags[key].get('default')
                 elif key in all_global_tags:
                     res = all_global_tags[key].get('default')
-        if (not boolean) and isinstance(res, basestring) and \
+        if (not boolean) and isinstance(res, six.string_types) and \
            (res.lower() == "false" or res.lower() == "true"):
             logger.warning("Tag %s set to boolean value; consider using getBooleanTag()",
                            key)
@@ -168,7 +173,7 @@ class Tag(models.Model):
         that the tag has been set (or not).
         """
 
-        if target != None:
+        if target is not None:
             ct = ContentType.objects.get_for_model(target)
             tag, created = cls.objects.get_or_create(key=key, content_type=ct, object_id=target.id)
         else:
@@ -191,7 +196,7 @@ class Tag(models.Model):
         """
         tag_counter = 0
 
-        if target != None:
+        if target is not None:
             ct = ContentType.objects.get_for_model(target)
             items = cls.objects.filter(key=key, content_type=ct, object_id=target.id)
         else:

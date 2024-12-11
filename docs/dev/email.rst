@@ -1,7 +1,7 @@
 ESP Email Setup
 ===============
 
-This document describes how email, both incoming and outgoing, makes its way where it's going on the ESP website.  The code will serve as a more specific reference for the details, but this is an overview of the high-level setup.  Note: this document describes the setup on diogenes; the parts of the setup outside the ESP-Website codebase may vary slightly on sites hosted elsewhere (i.e. esp.mit.edu).
+This document describes how email, both incoming and outgoing, makes its way where it's going on the ESP website.  The code will serve as a more specific reference for the details, but this is an overview of the high-level setup.  Note: this document describes the setup on the LU production server; the parts of the setup outside the ESP-Website codebase may vary slightly on sites hosted elsewhere (in particular, esp.mit.edu).
 
 .. contents:: :local:
 

@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+import six
+from six.moves import range
+from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -209,10 +213,11 @@ def get_user_list(request, listDict2, extra=''):
         # we're going to prepare a list to send out.
         arrLists = []
 
-        pickled_post = pickle.dumps(request.POST)
-        pickled_get  = pickle.dumps(request.GET)
+        # TODO: clean this up or fully deprecate this (see above for where this is possibly used) -WG
+        #pickled_post = pickle.dumps(request.POST)
+        #pickled_get  = pickle.dumps(request.GET)
 
-        request.session['usersearch_containers'] = (pickled_post, pickled_get)
+        #request.session['usersearch_containers'] = (pickled_post, pickled_get)
 
         for key, value in listDict.items():
             arrLists.append(DBList(key = key, QObject = value['list'], description = value['description'].strip('.'))) # prepare a nice list thing.
@@ -264,7 +269,7 @@ def search_for_user(request, user_type='Any', extra='', returnList = False, add_
     error = False
 
     usc = UserSearchController()
-    if isinstance(user_type, basestring):
+    if isinstance(user_type, six.string_types):
         user_query = usc.query_from_criteria(user_type, request.GET)
         QSUsers = ESPUser.objects.filter(user_query).distinct()
     elif isinstance(user_type, QuerySet):
