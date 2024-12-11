@@ -179,3 +179,24 @@ Minor bug fixes
 - Fixed the categories and flags links on the program settings page
 - Fixed an oversight where some student modules did not check the grade level of a student
 - Fixed the rapid checkin page
+
+March 2024 Patch
+================
+Due to changes in how Gmail and other email clients are now handling certain kinds of emails, we have made the following changes:
+
+- Emails from the Comm Panel can now only be sent from email addresses ending in @learningu.org or @subdomain.learningu.org (e.g., @yale.learningu.org)
+  
+  - If you have a custom domain that should work too (e.g., stanfordesp.org)
+  - Each site now has a "info@yoursitehere" redirect that should redirect to your chapter's email address (e.g., info@yale.learningu.org now redirects to yalesplash@gmail.com) and will be used by default in the Comm Panel
+  - As always, you can put whatever you want in the "Reply-to" field
+- All Comm Panel emails will now be sent with a customized one-click unsubscribe link that email clients can now show to the recipients
+
+  - Clicking on this link will instantly deactivate their account (effectively unsubscribing them from emails)
+- If you would like to include a similar unsubscribe link in the text of your emails, you can use the `{{ }}` dropdown menu
+
+  - This unsubscribe link will take recipients to a page where they will need to confirm that they would like to deactivate their account and unsubscribe from emails
+
+Minor bug fixes
+~~~~~~~~~~~~~~~
+- Program links now work after changing a program's name
+- The "Signup" button text color is fixed on the fruitsalad theme

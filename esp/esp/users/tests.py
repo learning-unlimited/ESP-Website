@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import datetime
 
 from django import forms
@@ -16,6 +17,9 @@ from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission, Record, RecordType
+import six
+from six.moves import map
+from six.moves import filter
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -39,7 +43,8 @@ class ESPUserTest(TestCase):
             def cycle_key(self):
                 pass
             def flush(self):
-                for i in self.keys():
+                keys = list(self.keys())
+                for i in keys:
                     del self[i]
 
         # Make up a fake request object
@@ -234,12 +239,12 @@ class ValidHostEmailFieldTest(TestCase):
         # Hardcoding 'esp.mit.edu' here might be a bad idea
         # But at least it verifies that A records work in place of MX
         for domain in [ 'esp.mit.edu', 'gmail.com', 'yahoo.com' ]:
-            self.assertTrue( ValidHostEmailField().clean( u'fakeaddress@%s' % domain ) == u'fakeaddress@%s' % domain )
+            self.assertTrue( ValidHostEmailField().clean( six.u('fakeaddress@%s') % domain ) == six.u('fakeaddress@%s') % domain )
     def testFakeDomain(self):
         # If we have an internet connection, bad domains raise ValidationError.
         # This should be the *only* kind of error we ever raise!
         try:
-            ValidHostEmailField().clean( u'fakeaddress@idontex.ist' )
+            ValidHostEmailField().clean( six.u('fakeaddress@idontex.ist') )
         except forms.ValidationError:
             pass
 
@@ -309,12 +314,9 @@ class AjaxExistenceChecker(TestCase):
         if (not hasattr(self, 'path')) or (not hasattr(self, 'keys')):
             return
 
-        import json
         response = self.client.get(self.path)
-        self.assertEqual(response.status_code, 200)
-        content = json.loads(response.content)
         for key in self.keys:
-            self.assertTrue(key in content, "Key %s missing from Ajax response to %s" % (key, self.path))
+            self.assertContains(response, key, msg_prefix="Key %s missing from Ajax response to %s" % (key, self.path), status_code=200)
 
 class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
     def runTest(self):
@@ -332,9 +334,9 @@ class AccountCreationTest(TestCase):
     def test_phase_1(self):
         #There's a tag that affects phase 1 so we put the tests into a function
         #and call it twice here
-        Tag.setTag('ask_about_duplicate_accounts',value='true')
+        Tag.setTag('ask_about_duplicate_accounts', value='true')
         self.phase_1()
-        Tag.setTag('ask_about_duplicate_accounts',value='false')
+        Tag.setTag('ask_about_duplicate_accounts', value='false')
         self.phase_1()
 
 
@@ -342,9 +344,9 @@ class AccountCreationTest(TestCase):
         """Testing the phase 1 of registration, the email address page"""
         #first try an email that shouldn't have an account
         #first without follow, to see that it redirects correctly
-        response1 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher"})
+        response1 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher"})
         if not Tag.getBooleanTag('ask_about_duplicate_accounts'):
-            self.assertTemplateUsed(response1,"registration/newuser.html")
+            self.assertTemplateUsed(response1, "registration/newuser.html")
             return
 
         self.assertRedirects(response1, "/myesp/register/information?email=tsutton125%40gmail.com&initial_role=Teacher")
@@ -352,7 +354,7 @@ class AccountCreationTest(TestCase):
         #next, make a user with that email and same initial role and try the same
         u=ESPUser.objects.create(email="tsutton125@gmail.com")
         u.makeRole("Teacher")
-        response2 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher"},follow=True)
+        response2 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher"}, follow=True)
         self.assertTemplateUsed(response2, 'registration/newuser_phase1.html')
         self.assertContains(response2, "do_reg_no_really")
 
@@ -360,21 +362,22 @@ class AccountCreationTest(TestCase):
         #(we check with a regex searching for _ in the password, since that
         #can't happen normally)
         u.password="blah_"
-        response3 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher"},follow=True)
+
+        response3 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher"}, follow=True)
         self.assertTemplateUsed(response3, 'registration/newuser_phase1.html')
         self.assertContains(response3, "do_reg_no_really")
 
         #check when you send do_reg_no_really it procedes
-        response4 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher", "do_reg_no_really":""},follow=False)
+        response4 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher", "do_reg_no_really":""}, follow=False)
         self.assertRedirects(response4, "/myesp/register/information?email=tsutton125%40gmail.com&initial_role=Teacher")
-        response4 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher", "do_reg_no_really":""},follow=True)
+        response4 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher", "do_reg_no_really":""}, follow=True)
         self.assertContains(response4, "tsutton125@gmail.com")
 
     def test_phase_2(self):
         #similarly to phase_1, call helper function twice with tag settings
-        Tag.setTag('require_email_validation',value='True')
+        Tag.setTag('require_email_validation', value='True')
         self.phase_2()
-        Tag.setTag('require_email_validation',value='False')
+        Tag.setTag('require_email_validation', value='False')
         self.phase_2()
 
     def phase_2(self):
@@ -399,7 +402,8 @@ class AccountCreationTest(TestCase):
                                   first_name="first",
                                   last_name="last",
                                   email="tsutton125@gmail.com")
-        except ESPUser.DoesNotExist, ESPUser.MultipleObjectsReturned:
+        except ESPUser.DoesNotExist as xxx_todo_changeme:
+            ESPUser.MultipleObjectsReturned = xxx_todo_changeme
             self.fail("User not created correctly or created multiple times")
 
         if not Tag.getBooleanTag('require_email_validation'):
@@ -408,14 +412,14 @@ class AccountCreationTest(TestCase):
         self.assertFalse(u.is_active)
         self.assertTrue("_" in u.password)
 
-        self.assertEqual(len(mail.outbox),1)
-        self.assertEqual(len(mail.outbox[0].to),1)
-        self.assertEqual(mail.outbox[0].to[0],u.email)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(len(mail.outbox[0].to), 1)
+        self.assertEqual(mail.outbox[0].to[0], u.email)
         #note: will break if the activation email is changed too much
         import re
-        match = re.search("\?username=(?P<user>[^&]*)&key=(?P<key>\d+)",mail.outbox[0].body)
-        self.assertEqual(match.group("user"),u.username)
-        self.assertEqual(match.group("key"),u.password.rsplit("_")[-1])
+        match = re.search("\?username=(?P<user>[^&]*)&key=(?P<key>\d+)", mail.outbox[0].body)
+        self.assertEqual(match.group("user"), u.username)
+        self.assertEqual(match.group("key"), u.password.rsplit("_")[-1])
 
 from esp.users.models import GradeChangeRequest
 
@@ -437,7 +441,7 @@ class TestChangeRequestModel(TestCase):
         change_request.approved = True
         change_request.save()
 
-        self.assertIsInstance(change_request.acknowledged_time,datetime.datetime)
+        self.assertIsInstance(change_request.acknowledged_time, datetime.datetime)
 
     def test_acknowledged_time_not_set(self):
         """ Tests acknowledged_time not set if approved is None """
@@ -454,8 +458,8 @@ class TestChangeRequestModel(TestCase):
         student = change_request.requesting_student
         subject, message  = change_request._confirmation_email_content()
 
-        self.assertIn(student.first_name,message)
-        self.assertIn(student.last_name,message)
+        self.assertIn(student.first_name, message)
+        self.assertIn(student.last_name, message)
         self.assertIn('Grade Change Request Update', subject)
 
 
@@ -465,9 +469,9 @@ class TestChangeRequestModel(TestCase):
         student = change_request.requesting_student
         subject, message  = change_request._request_email_content()
 
-        self.assertIn(student.first_name,message)
-        self.assertIn(student.last_name,message)
-        self.assertIn(student.name(),subject)
+        self.assertIn(student.first_name, message)
+        self.assertIn(student.last_name, message)
+        self.assertIn(student.name(), subject)
 
 
 class TestChangeRequestView(TestCase):
@@ -659,7 +663,7 @@ class PermissionTestCase(TestCase):
         self.assertTrue(self.user_has_perm('test'))
 
     def testImplications(self):
-        for base, implications in Permission.implications.iteritems():
+        for base, implications in six.iteritems(Permission.implications):
             perm = self.create_role_perm_for_program(base)
             for implication in implications:
                 self.assertTrue(self.user_has_perm_for_program(implication))

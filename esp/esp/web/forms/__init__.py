@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -56,7 +57,7 @@ class ResizeImageField(forms.ImageField):
         file = super(forms.ImageField, self).clean(file, initial)
         if file and self.size is not None:
             from PIL import Image
-            from cStringIO import StringIO
+            from io import StringIO
 
             filename = file.name
 

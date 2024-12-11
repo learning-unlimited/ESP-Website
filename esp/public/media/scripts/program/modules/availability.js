@@ -28,7 +28,7 @@ var Availability = (function () {
     
     //Activate checkbox
     function checkbox_on(td) {
-        var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
+        var checkbox = $j('#checkboxes > input[value='+td.getAttribute("name")+']')[0]
         $j(td).removeClass("proposed");
         $j(td).addClass("canDo");
         checkbox.checked = true;
@@ -37,7 +37,7 @@ var Availability = (function () {
 
     //Deactivate checkbox
     function checkbox_off(td) {
-        var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
+        var checkbox = $j('#checkboxes > input[value='+td.getAttribute("name")+']')[0]
         if (!$j(td).hasClass("teaching") && $j(td).hasClass("canDo")) {
             $j(td).removeClass("canDo");
             $j(td).addClass("proposed");
@@ -135,7 +135,7 @@ var Availability = (function () {
 
         //If there is hover text, show it when hovering over the timeslot
         $j(".group td").mouseover(function() {
-            var hover_text = $j('input[value='+parseInt($j(this).attr('name'))+']').data('hover')
+            var hover_text = $j('#checkboxes > input[value='+parseInt($j(this).attr('name'))+']').data('hover')
             if (hover_text) {
                 $j(".right .details").html(hover_text);
                 $j(".right .details").css("display", "block");

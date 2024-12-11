@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+from __future__ import division
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -36,6 +40,7 @@ Learning Unlimited, Inc.
 import json
 from datetime import datetime, timedelta
 
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Min
 from django.db.models.query import Q
 from django.http import HttpResponse
@@ -100,10 +105,10 @@ class OnSiteClassList(ProgramModuleObj):
             #   Todo: section current capacity ? (see ClassSection.get_capacity())
             'classes': list(ClassSubject.objects.filter(parent_program=prog, status__gt=0).extra({'teacher_names': """array_to_string(ARRAY(SELECT auth_user.first_name || ' ' || auth_user.last_name FROM auth_user,program_class_teachers WHERE program_class_teachers.classsubject_id=program_class.id AND auth_user.id=program_class_teachers.espuser_id), ', ')""", 'class_size_max_optimal': """SELECT program_classsizerange.range_max FROM program_classsizerange WHERE program_classsizerange.id = optimal_class_size_range_id"""}).values('id', 'class_size_max', 'class_size_max_optimal', 'class_info', 'prereqs', 'hardness_rating', 'grade_min', 'grade_max', 'title', 'teacher_names', 'category__symbol', 'category__id')),
             'sections': sections,
-            'timeslots': list(prog.getTimeSlots().extra({'start_millis':"""EXTRACT(EPOCH FROM start) * 1000""",'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label','start_millis').order_by("start")),
+            'timeslots': list(prog.getTimeSlots().extra({'start_millis':"""EXTRACT(EPOCH FROM start) * 1000""",'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label', 'start_millis').order_by("start")),
             'categories': list(prog.class_categories.all().order_by('-symbol').values('id', 'symbol', 'category')),
         }
-        json.dump(data, resp)
+        json.dump(data, resp, cls=DjangoJSONEncoder)
 
         return resp
 
@@ -168,7 +173,7 @@ class OnSiteClassList(ProgramModuleObj):
         resp = HttpResponse(content_type='application/json')
         program = self.program
         success = False
-        student = get_object_or_404(ESPUser,pk=request.POST.get("student_id"))
+        student = get_object_or_404(ESPUser, pk=request.POST.get("student_id"))
 
         registration_profile = RegistrationProfile.getLastForProgram(student,
                                                                 program)
@@ -177,7 +182,7 @@ class OnSiteClassList(ProgramModuleObj):
         if success:
             registration_profile.save()
 
-            for extension in ['attended','med','liab','onsite']:
+            for extension in ['attended', 'med', 'liab', 'onsite']:
                 Record.createBit(extension, program, student)
 
             IndividualAccountingController.updatePaid(self.program, student, paid=True)
@@ -327,7 +332,7 @@ class OnSiteClassList(ProgramModuleObj):
         except:
             result['message'] = "Could not find user %s." % request.GET.get('user', None)
 
-        printer = request.GET.get('printer',None)
+        printer = request.GET.get('printer', None)
         if printer is not None:
             # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
             printer = Printer.objects.get(name=printer)
@@ -347,7 +352,7 @@ class OnSiteClassList(ProgramModuleObj):
         context['check_in_default'] = datetime.today().date() in prog.dates()
 
         open_class_category = prog.open_class_category
-        open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id','symbol','category'] ] )
+        open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id', 'symbol', 'category'] ] )
         context['open_class_category'] = mark_safe(json.dumps(open_class_category))
 
         return render_to_response(self.baseDir()+'ajax_status.html', request, context)
@@ -371,7 +376,7 @@ class OnSiteClassList(ProgramModuleObj):
             options = request.GET.copy()
 
             #   Display options-selection page if this page is requested with no GET variables
-            if len(options.keys()) == 0:
+            if len(list(options.keys())) == 0:
                 return render_to_response(self.baseDir() + 'classlist_options.html', request, {'prog': prog})
 
         context = {}
@@ -446,8 +451,7 @@ class OnSiteClassList(ProgramModuleObj):
 
         #   This view still uses classes, not sections.  The templates show information
         #   for each section of each class.
-        classes = [(i.num_students()/(i.class_size_max + 1), i) for i in self.program.classes() if i.class_size_max]
-        classes.sort()
+        classes = sorted([(i.num_students()//(i.class_size_max + 1), i) for i in self.program.classes() if i.class_size_max])
         classes = [i[1] for i in classes]
 
         categories = {}
@@ -457,17 +461,17 @@ class OnSiteClassList(ProgramModuleObj):
         printers = [ x.name for x in Printer.objects.all() ]
 
         return render_to_response(self.baseDir()+'allclasslist.html', request,
-            {'classes': classes, 'prog': self.program, 'one': one, 'two': two, 'categories': categories.values(), 'printers': printers})
+            {'classes': classes, 'prog': self.program, 'one': one, 'two': two, 'categories': list(categories.values()), 'printers': printers})
 
     def makeLink(self):
-        calls = [("classchange_grid","Grid-based Class Changes Interface"), ("classList","Scrolling Class List"), (self.get_main_view(),self.module.link_title)]
-        strings = [u'<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
+        calls = [("classchange_grid", "Grid-based Class Changes Interface"), ("classList", "Scrolling Class List"), (self.get_main_view(), self.module.link_title)]
+        strings = [six.u('<a href="%s" title="%s" class="vModuleLink" >%s</a>') % \
                 ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1], call[1]) for call in calls]
         return "</li><li>".join(strings)
 
     def makeButtonLink(self):
-        calls = [("classchange_grid","Grid-based Class Changes Interface"), ("classList","Scrolling Class List"), (self.get_main_view(),self.module.link_title)]
-        strings = [u'<a href="%s"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">%s</div></button></a>' % \
+        calls = [("classchange_grid", "Grid-based Class Changes Interface"), ("classList", "Scrolling Class List"), (self.get_main_view(), self.module.link_title)]
+        strings = [six.u('<a href="%s"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">%s</div></button></a>') % \
                 ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1]) for call in calls]
         return "<br>".join(strings)
 

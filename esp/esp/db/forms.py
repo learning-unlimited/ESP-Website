@@ -1,9 +1,11 @@
+from __future__ import absolute_import
 from django.db import models
 from django import forms
 from django.template.defaultfilters import addslashes
 from django.contrib.auth.models import User
 from django.utils.safestring import mark_safe
 import re
+import six
 
 get_id_re = re.compile('.*\((\d+)\)$')
 
@@ -24,10 +26,10 @@ class AjaxForeignKeyFieldBase:
                 obj = objects[0]
                 if hasattr(obj, 'ajax_str'):
                     init_val = obj.ajax_str() + " (%s)" % data
-                    old_init_val = unicode(obj)
+                    old_init_val = six.text_type(obj)
                 else:
-                    old_init_val = init_val = unicode(obj) + " (%s)" % data
-        elif isinstance(data, basestring):
+                    old_init_val = init_val = six.text_type(obj) + " (%s)" % data
+        elif isinstance(data, six.string_types):
             pass
         else:
             data = init_val = ''
@@ -254,7 +256,7 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
 
         if hasattr(self, "field"):
             # If we couldn't grab an ID, ask the target's autocompleter.
-            if id == None:
+            if id is None:
                 objs = self.field.rel.to.ajax_autocomplete(value)
                 if len( objs ) == 1:
                     id = objs[0]['id']

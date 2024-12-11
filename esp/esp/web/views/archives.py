@@ -1,4 +1,10 @@
 
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
+from six.moves import map
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -46,14 +52,15 @@ from datetime import datetime
 #    -    options: the particular filter for that data
 #        (eg. 2004, Splash, ComputerScience)
 
+@python_2_unicode_compatible
 class ArchiveFilter(object):
     category = ""
     options = ""
     def __init__(self, category = "", options = ""):
-        self.category = unicode(category)
-        self.options  = unicode(options)
+        self.category = six.text_type(category)
+        self.options  = six.text_type(options)
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s, %s' % (self.category, self.options)
 
 def compute_range(postvars, num_records):
@@ -64,7 +71,7 @@ def compute_range(postvars, num_records):
         results_start = int(postvars['results_start'])
     if 'results_end' in postvars:
         results_end = int(postvars['results_end'])
-    if (num_records > default_num_records) and results_end == None:
+    if (num_records > default_num_records) and results_end is None:
         if postvars.get('max_num_results') == "Show all":
             results_end = num_records
         elif postvars.get('max_num_results'):
@@ -112,7 +119,7 @@ def archive_classes(request, category, options, sortorder = None):
     context['options'] = options
 
     #    Take filtering criteria both from form and from URL
-    if category != None and options != None:
+    if category is not None and options is not None:
         url_criterion = ArchiveFilter(category = category, options = options)
         criteria_list = [url_criterion]
     else:
@@ -126,7 +133,7 @@ def archive_classes(request, category, options, sortorder = None):
 
     category_dict = {}
     classcatList = ClassCategories.objects.all()
-    for letter in map(chr, range(65, 91)):
+    for letter in map(chr, list(range(65, 91))):
         category_dict[letter] = 'Unknown Category'
 
     for category in classcatList:
@@ -134,7 +141,7 @@ def archive_classes(request, category, options, sortorder = None):
 
     filter_keys = {'category': [{'name': c, 'value': c, 'selected': False} for c in category_list],
             'year': [{'name': str(y), 'value': str(y), 'selected': False} for y in range(1998, datetime.now().year + 1)],
-            'title': [{'name': 'Starts with ' + letter, 'value': letter, 'selected': False} for letter in map(chr, range(65,91))],
+            'title': [{'name': 'Starts with ' + letter, 'value': letter, 'selected': False} for letter in map(chr, list(range(65, 91)))],
              'program': [{'name': p, 'value': p, 'selected': False} for p in program_list],
             'teacher': [{}],
             'description': [{}]
@@ -189,7 +196,7 @@ def archive_classes(request, category, options, sortorder = None):
     else:
         headings = [item.__dict__[sortorder[0]] for item in results[res_range['start']:res_range['end']]]
 
-    context['headings'] = list(set([unicode(h) for h in headings]))
+    context['headings'] = list({six.text_type(h) for h in headings})
     context['headings'].sort()
 
     #    Fill in context some more

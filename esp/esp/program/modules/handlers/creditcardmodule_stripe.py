@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import division
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -168,7 +170,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         grant_type = iac.default_finaid_lineitemtype()
         offer_donation = self.settings['offer_donation']
         donate_type = LineItemType.objects.get(program=self.program, text=self.settings['donation_text']) if offer_donation else None
-        context['itemizedcosts'] = iac.get_transfers().exclude(line_item__in=filter(None, [payment_type, sibling_type, grant_type, donate_type])).order_by('-line_item__required')
+        context['itemizedcosts'] = iac.get_transfers().exclude(line_item__in=[_f for _f in [payment_type, sibling_type, grant_type, donate_type] if _f]).order_by('-line_item__required')
         context['itemizedcosttotal'] = iac.amount_due()
         #   This amount should be formatted as an integer in order to be
         #   accepted by Stripe.
@@ -304,18 +306,18 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                     transfer.transaction_id = charge.id
                     transfer.save()
 
-            except stripe.error.CardError, e:
+            except stripe.error.CardError as e:
                 context['error_type'] = 'declined'
                 context['error_info'] = e.json_body['error']
-            except stripe.error.InvalidRequestError, e:
+            except stripe.error.InvalidRequestError as e:
                 #   While this is a generic error meaning invalid parameters were supplied
                 #   to Stripe's API, we will usually see it because of a duplicate request.
                 context['error_type'] = 'invalid'
-            except stripe.error.AuthenticationError, e:
+            except stripe.error.AuthenticationError as e:
                 context['error_type'] = 'auth'
-            except stripe.error.APIConnectionError, e:
+            except stripe.error.APIConnectionError as e:
                 context['error_type'] = 'api'
-            except stripe.error.StripeError, e:
+            except stripe.error.StripeError as e:
                 context['error_type'] = 'generic'
 
         if 'error_type' in context:

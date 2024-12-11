@@ -1,8 +1,10 @@
+from __future__ import absolute_import
 import os
 import csv
 import random
 import datetime
 import collections
+from io import open
 
 
 base_dir = os.path.dirname(__file__)
@@ -27,7 +29,7 @@ def random_userType():
 def random_people(userType=random_userType):
     " Generate random names. "
     random_name_db = csv.reader(open(os.path.join(base_dir, 'random_names.csv')))
-    random_name_db.next()
+    next(random_name_db)
     random_names = list(random_name_db)
     random.shuffle(random_names)
     for row in random_names:

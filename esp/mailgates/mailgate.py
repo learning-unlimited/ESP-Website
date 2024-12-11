@@ -3,7 +3,10 @@
 # Main mailgate
 # Handles incoming messages etc.
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys, os, email, re, smtplib, socket, sha, random
+from io import open
 new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
 sys.path.insert(0, "/usr/sbin/")
@@ -26,7 +29,7 @@ sys.path.insert(0, project)
 if os.environ.get('VIRTUAL_ENV') is None:
     root = os.path.dirname(project)
     activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
-    execfile(activate_this, dict(__file__=activate_this))
+    exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'), dict(__file__=activate_this))
 
 import django
 django.setup()
@@ -128,7 +131,7 @@ except Exception as e:
         raise
     else:
         logger.warning("Couldn't find user '%s'", user)
-        print """
+        print("""
 %s MAIL SERVER
 ===============
 
@@ -136,5 +139,5 @@ Could not find user "%s"
 
 If you are experiencing difficulty, please email %s.
 
-""" % (ORGANIZATION_NAME, user, SUPPORT)
+""" % (ORGANIZATION_NAME, user, SUPPORT))
         sys.exit(1)

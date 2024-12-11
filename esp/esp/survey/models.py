@@ -1,5 +1,12 @@
 " Survey models for Educational Studies Program. "
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
+import six
+from six.moves import map
+from six.moves import zip
 __author__    = "$LastChangedBy$"
 __date__      = "$LastChangedDate$"
 __rev__       = "$LastChangedRevision$"
@@ -36,6 +43,7 @@ Learning Unlimited, Inc.
 """
 
 import datetime
+import json
 from django.db import models
 from django.template import loader
 from django.contrib.contenttypes.models import ContentType
@@ -43,11 +51,6 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 
 from argcache import cache_function
 from collections import OrderedDict
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
 
 from esp.db.fields import AjaxForeignKey
 
@@ -93,7 +96,7 @@ class ListField(object):
         data = self.separator.join(map(str, value))
         setattr(instance, self.field_name, data)
 
-
+@python_2_unicode_compatible
 class Survey(models.Model):
     """ A single survey. """
     name = models.CharField(max_length=255)
@@ -104,8 +107,8 @@ class Survey(models.Model):
     survey_choices = [("learn", "learn"), ("teach", "teach")]
     category = models.CharField(max_length = 10, choices = survey_choices)
 
-    def __unicode__(self):
-        return '%s (%s) for %s' % (self.name, self.category, unicode(self.program))
+    def __str__(self):
+        return '%s (%s) for %s' % (self.name, self.category, six.text_type(self.program))
 
     def num_participants(self):
         #   If there is a program for this survey, select the appropriate number
@@ -123,6 +126,7 @@ class Survey(models.Model):
         else:
             return 0
 
+@python_2_unicode_compatible
 class SurveyResponse(models.Model):
     """ A single survey taken by a person. """
     time_filled = models.DateTimeField(default=datetime.datetime.now)
@@ -135,7 +139,7 @@ class SurveyResponse(models.Model):
         # First, set up attendance dictionary based on the attendance questions
         # If there were no attendance questions, this wasn't a student survey
         attendances = {}
-        keys = filter(lambda x: x.startswith('attendance_'), get_or_post.keys())
+        keys = [x for x in list(get_or_post.keys()) if x.startswith('attendance_')]
         for key in keys:
             try:
                 attendances[ int( key[11:] ) ] = int(get_or_post.getlist(key)[0])
@@ -143,7 +147,7 @@ class SurveyResponse(models.Model):
                 pass
 
         answers = []
-        keys = filter(lambda x: x.startswith('question_'), get_or_post.keys())
+        keys = [x for x in list(get_or_post.keys()) if x.startswith('question_')]
         for key in keys:
             value = get_or_post.getlist(key)
             if len(value) == 1: value = value[0]
@@ -193,11 +197,11 @@ class SurveyResponse(models.Model):
 
         return answers
 
-    def __unicode__(self):
-        return "Survey for %s filled out at %s" % (unicode(self.survey.program),
+    def __str__(self):
+        return "Survey for %s filled out at %s" % (six.text_type(self.survey.program),
                                                    self.time_filled)
 
-
+@python_2_unicode_compatible
 class QuestionType(models.Model):
     """ A type of question.
     Examples:
@@ -218,13 +222,13 @@ class QuestionType(models.Model):
     def template_file(self):
         return 'survey/questions/%s.html' % self.name.replace(' ', '_').lower()
 
-    def __unicode__(self):
+    def __str__(self):
         if len(self.param_names) > 0:
             return '%s: includes %s' % (self.name, self._param_names.replace('|', ', '))
         else:
             return '%s' % (self.name)
 
-
+@python_2_unicode_compatible
 class Question(models.Model):
     survey = models.ForeignKey(Survey, related_name="questions")
     name = models.CharField(max_length=255)
@@ -239,14 +243,14 @@ class Question(models.Model):
         " Get the parameters for this question, as a dictionary. "
 
         a, b = self.question_type.param_names, self.param_values
-        params = OrderedDict(zip(map(lambda x: x.replace(' ', '_').lower(), a),
-                          b))
+        params = OrderedDict(list(zip([x.replace(' ', '_').lower() for x in a],
+                          b)))
         min_length = min(len(a), len(b))
         params['list'] = b[min_length:]
 
         return params
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s, %d: "%s" (%s)' % (self.survey.name, self.seq, self.name, self.question_type.name)
 
     def get_value(self, data_dict):
@@ -306,7 +310,7 @@ class Question(models.Model):
             if ans_count == 0:
                 new_val = 0
             else:
-                new_val = ans_sum / ans_count;
+                new_val = ans_sum // ans_count;
             return pretty_val(new_val)
         except:
             return 'N/A'
@@ -315,6 +319,7 @@ class Question(models.Model):
     class Meta:
         ordering = ['seq']
 
+@python_2_unicode_compatible
 class Answer(models.Model):
     """ An answer for a single question for a single survey response. """
 
@@ -328,6 +333,7 @@ class Answer(models.Model):
     ## End Generic ForeignKey ##
 
     question = models.ForeignKey(Question, db_index=True)
+    value_type = models.TextField()
     value = models.TextField()
 
     def _answer_getter(self):
@@ -336,26 +342,22 @@ class Answer(models.Model):
             return None
         if hasattr(self, '_answer'):
             return self._answer
-
-        if self.value[0] == '+':
-            try:
-                value = pickle.loads(str(self.value[1:]))
-            except:
-                value = self.value[1:]
+        if self.value_type == "<class 'list'>":
+            value = json.loads(self.value)
         else:
-            value = self.value[1:]
-
+            value = self.value
         self._answer = value
         return value
 
     def _answer_setter(self, value):
         self._answer = value
-        if not isinstance(value, basestring):
-            self.value = '+' + pickle.dumps(value)
+        self.value_type = str(type(value))
+        if self.value_type == "<class 'list'>":
+            self.value = json.dumps(value)
         else:
-            self.value = ':' + value
+            self.value = value
 
     answer = property(_answer_getter, _answer_setter)
 
-    def __unicode__(self):
+    def __str__(self):
         return "Answer for question #%d: %s" % (self.question.id, self.value)

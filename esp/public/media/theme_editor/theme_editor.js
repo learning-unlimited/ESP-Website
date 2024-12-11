@@ -19,7 +19,6 @@ function showColor() {
             var input = $j(this).siblings("input");
             input.spectrum("destroy");
             $j(this).parents(".control-group").remove();
-            console.log(input.attr("name"));
             $j("option[value=" + input.attr("name") + "]").show();
         });
         if ($j(this).siblings(".reset-color").length == 0) {
@@ -113,7 +112,8 @@ $j(document).ready(function(){
         var select_id = 'new_opt_var_' + button_id.substr(button_id_prefix.length);
         var select_el = $j('#' + select_id);
         var select_val = select_el.val();
-        var option_el = $j("#new_opt_var_2").find(":selected");
+        var option_el = select_el.find(":selected");
+        var default_color = option_el.data('default');
         option_el.hide();
         select_el.val("");
         
@@ -125,14 +125,14 @@ $j(document).ready(function(){
                     id: 'id_' + select_val,
                     class: 'color',
                     type: 'text',
-                    value: option_el.data('default'),
+                    value: default_color,
                     name: select_val,
                     style: 'display: none;'
                 });
 
             // Create the "Reset Color" button
             var resetButton = $j('<button class="reset-color" type="button" style="margin-left: 5px;">Reset Color</button>').on('click', function() {
-                $j(this).siblings("input").spectrum("set", option_el.data('default')); // Reset color to default
+                $j(this).siblings("input").spectrum("set", default_color); // Reset color to default
             });
 
             // Create the "Remove" button

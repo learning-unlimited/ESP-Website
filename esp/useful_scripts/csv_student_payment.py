@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 #
 # Add accounting records for students that have already paid (e.g. on an external website).
 # Assumes that a student has paid for the entirety of their amount due.
@@ -7,6 +7,8 @@
 # (which contains student usernames or user ids). Any other columns will be ignored.
 #
 
+from __future__ import absolute_import
+from __future__ import print_function
 from script_setup import *
 
 from esp.program.models import Program
@@ -19,6 +21,7 @@ import os
 import argparse
 
 from datetime import datetime
+from io import open
 
 def main():
     parser = argparse.ArgumentParser(description = "Add accounting records for students that have already paid")
@@ -34,7 +37,7 @@ def main():
     reader = csv.DictReader(csvfile)
 
     if 'username' not in reader.fieldnames:
-        print "Error: csv file does not have a 'username' column"
+        print("Error: csv file does not have a 'username' column")
     else:
         usernames = [x['username'] for x in reader]
         lineitem = LineItemType.objects.get(text = "Student payment", program = PROGRAM)
@@ -46,20 +49,20 @@ def main():
                 try:
                     student = ESPUser.objects.get(username=username)
                 except:
-                    print "No user with id/username=" + str(username) + " found"
+                    print("No user with id/username=" + str(username) + " found")
                     continue
             iac = IndividualAccountingController(PROGRAM, student)
             if not iac.transfers_to_program_exist():
-                print username + " has no charges for " + PROGRAM.name
+                print(username + " has no charges for " + PROGRAM.name)
             else:
                 amt = iac.amount_due()
                 if amt <= 0:
-                    print username + " has no amount due for " + PROGRAM.name
+                    print(username + " has no amount due for " + PROGRAM.name)
                 else:
                     transfer = Transfer.objects.create(destination = acc, user = student, line_item = lineitem, amount_dec = amt)
-                    print username + " has now paid " + str(amt) + " for " + PROGRAM.name
+                    print(username + " has now paid " + str(amt) + " for " + PROGRAM.name)
 
-        print "All usernames processed."
+        print("All usernames processed.")
 
 if __name__ == '__main__':
     main()
