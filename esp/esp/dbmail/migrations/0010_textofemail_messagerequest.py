@@ -19,7 +19,7 @@ def fill_requests(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('dbmail', '0006_textofemail_user'),
+        ('dbmail', '0009_auto_20240509_2341'),
     ]
 
     operations = [
