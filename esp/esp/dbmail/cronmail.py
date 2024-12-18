@@ -126,6 +126,7 @@ def send_email_requests():
     # So we do our own batching on top of that.
     batch_size = 1000
     for i in range(int(math.ceil(float(mailtxts.count()) / batch_size))):
+        # .iterator() re-evaulates the QuerySet each time, moving to the remaining unsent texts
         for mailtxt in mailtxts[:batch_size].iterator():
             exception = mailtxt.send()
             if exception is not None:
