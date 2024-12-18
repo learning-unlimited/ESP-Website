@@ -19,6 +19,7 @@ Themes
 - Added the ability to reorder nav structure and contact links
 
   - This section of the theme setup page also now has a less cluttered and more user friendly interface
+- Added a link to the privacy policy to the left header in the bigpicture theme
 
 Scheduler
 ~~~~~~~~~
@@ -52,6 +53,7 @@ Program settings
 - When a program name is changed, the account name for that program is similarly changed
 - Errors in the new program and program settings forms are now shown as form errors instead of as a Whoops page
 - Fixed widths of the URL and email redirect tables
+- The Line Items module is now included when charging for extra items
 
 Onsite
 ~~~~~~
@@ -66,6 +68,7 @@ Communications panel
 - Fixed dynamic behavior of the user type field and filters
 
   - When changing the user type, all filters are now cleared
+- Fixed the "Teachers of a student" filter
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
@@ -80,6 +83,10 @@ Minor new features
 - Financial aid requests are now less cramped in the financial aid approval module, with the extra financial information now hidden by default
 - Made the usersearch warning/messages prettier
 - Linked model fields can no longer be added to existing custom forms
+- After emails are sent, the individual message texts are now deleted to save database storage size
+
+  - We've also deleted all of these message texts for previously sent emails
+  - Note that the original, non-user specific texts and the individual user-level records for sent emails still remain in the database
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -95,6 +102,8 @@ Minor bug fixes
 - The "Open" deadlines button now properly opens deadlines that are currently set to open in the future
 - Now display a 404 page when user attempts to download a file that doesn't exist
 - Fixed the volunteer form for very small user ID numbers
+- Fixed the selectList_old page
+- Fixed the links in the class registration email that is sent to admins
 
 Development changes
 ===================
