@@ -61,19 +61,9 @@ class MessageRequestAdmin(admin.ModelAdmin):
     date_hierarchy = 'processed_by'
 admin_site.register(MessageRequest, MessageRequestAdmin)
 
-def fill_msgtext(modeladmin, request, queryset):
-    for toe in queryset:
-        toe.fill_msgtext()
-fill_msgtext.short_description = "Fill in message text"
-
-def clear_msgtext(modeladmin, request, queryset):
-    queryset.update(msgtext="")
-clear_msgtext.short_description = "Clear message text"
-
 class TextOfEmailAdmin(admin.ModelAdmin):
     list_display = ('id', 'send_from', 'send_to', 'subject', 'sent', 'user')
     search_fields = ('=id', 'send_from', 'send_to', 'subject', 'user')
     date_hierarchy = 'sent'
     list_filter = ('send_from',)
-    actions = [fill_msgtext, clear_msgtext]
 admin_site.register(TextOfEmail, TextOfEmailAdmin)
