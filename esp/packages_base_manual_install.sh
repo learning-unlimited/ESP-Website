@@ -22,3 +22,7 @@ else
     # no /usr/bin? hopefully this doesn't happen, let npm guess
     sudo -H npm install less@1.7.5 -g
 fi
+
+curl https://bootstrap.pypa.io/pip/3.7/get-pip.py -o get-pip-3.7.py
+python3.7 get-pip-3.7.py
+rm get-pip-3.7.py
