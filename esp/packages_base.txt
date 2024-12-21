@@ -24,4 +24,3 @@ libev4
 git
 libfreetype6-dev
 python3.7-distutils
-python3-pip
