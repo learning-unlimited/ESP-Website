@@ -9,7 +9,7 @@ import pickle
 def resave_special_headers(apps, schema_editor):
     MessageRequest = apps.get_model('dbmail', 'MessageRequest')
     for mr in MessageRequest.objects.all():
-        if mr.special_headers != None:
+        if mr.special_headers != None and mr.special_headers != '':
             special_headers = pickle.loads(mr.special_headers.replace('\r\n', '\n').encode('latin1'))
             mr.special_headers = json.dumps(special_headers)
             mr.save()
