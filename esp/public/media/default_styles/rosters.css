@@ -1,0 +1,22 @@
+body { font-family: georgia; }
+.classtitle { text-align: center; font-size: 15pt; font-weight: bold; font-family: georgia; padding: .3in;}
+
+.classroster { text-align: center; }
+.blocks { padding: 8px; font-size: 10pt; font-weight: bold; }
+.classroom { padding: 8px; font-size: 10pt; font-weight: bold; }
+.pretty {border: 1px solid black; }
+.pretty td { border: 1px solid black; }
+.pretty th { border: 1px solid black; }
+.pretty td { vertical-align: top; }
+.teachername { font-size: 9pt; }
+.teachername span { border: 1px solid black; padding: 3px;
+               width: auto; }
+.classroom { vertical-align: top; }
+.blocks { vertical-align: top; }
+#pagebreak {page-break-after: always; }
+table.sortable thead {
+    background-color:#eee;
+    color:#666666;
+    font-weight: bold;
+    cursor: default;
+}
