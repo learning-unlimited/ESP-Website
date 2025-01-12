@@ -45,6 +45,7 @@ from esp.tagdict.models import Tag
 from django.template import Template
 from django.template import Context as DjangoContext
 from esp.middleware import ESPError
+from django.template import loader
 
 import re
 
@@ -71,10 +72,12 @@ class CommModule(ProgramModuleObj):
         from esp.users.models import PersistentQueryFilter
         from django.conf import settings
 
-        filterid, listcount, subject, body = [request.POST['filterid'],
-                                              request.POST['listcount'],
-                                              request.POST['subject'],
-                                              request.POST['body']    ]
+        filterid, listcount, subject, msglang, body = [
+                                                request.POST['filterid'],
+                                                request.POST['listcount'],
+                                                request.POST['subject'],
+                                                request.POST['msglang'],
+                                                request.POST['body']    ]
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
         public_view = 'public_view' in request.POST
@@ -118,6 +121,14 @@ class CommModule(ProgramModuleObj):
 
         MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
+        # If they were trying to use plain text, sanitize the content and
+        # make whitespace WYSIWYG from textbox before rendering HTML.
+        if msglang == 'plaintext':
+            htmlbody = body.replace('&', '&amp;').replace('<', '&lt;'
+                        ).replace('>', '&gt;').replace('\n', '<br />').replace(
+                        '  ', '&nbsp;&nbsp;')
+        else:
+            htmlbody = body
         # If they used the rich-text editor, we'll need to add <html> tags
         if '<html>' not in body:
             body = '<html>' + body + '</html>'
@@ -126,7 +137,11 @@ class CommModule(ProgramModuleObj):
                        'program': ActionHandler(self.program, firstuser),
                        'request': ActionHandler(MessageRequest(), firstuser)}
 
-        renderedtext = Template(body).render(DjangoContext(contextdict))
+        htmlbody = unicode(loader.get_template('email/default_email.html'
+                    ).render(DjangoContext({'msgbdy': htmlbody,
+                     'user': ActionHandler(firstuser, firstuser),
+                     'program': ActionHandler(self.program, firstuser)})))
+        renderedtext = Template(htmlbody).render(DjangoContext(contextdict))
 
         return render_to_response(self.baseDir()+'preview.html', request,
                                               {'filterid': filterid,
@@ -136,8 +151,10 @@ class CommModule(ProgramModuleObj):
                                                'subject': subject,
                                                'from': fromemail,
                                                'replyto': replytoemail,
+                                               'msglang': msglang,
                                                'public_view': public_view,
                                                'body': body,
+                                               'htmlbody': htmlbody,
                                                'renderedtext': renderedtext})
 
     @staticmethod
@@ -170,12 +187,13 @@ class CommModule(ProgramModuleObj):
         from esp.dbmail.models import MessageRequest
         from esp.users.models import PersistentQueryFilter
 
-        filterid, fromemail, replytoemail, subject, body = [
+        filterid, fromemail, replytoemail, subject, body, htmlbody = [
                                     request.POST['filterid'],
                                     request.POST['from'],
                                     request.POST['replyto'],
                                     request.POST['subject'],
-                                    request.POST['body']    ]
+                                    request.POST['body'],
+                                    request.POST['htmlbody']    ]
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         public_view = 'public_view' in request.POST
 
@@ -198,7 +216,10 @@ class CommModule(ProgramModuleObj):
                                                       sendto_fn_name  = sendto_fn_name,
                                                       sender     = fromemail,
                                                       creator    = request.user,
-                                                      msgtext = body,
+                                                      msgtext = unicode(loader.get_template('email/default_email.html').render(DjangoContext(
+                                                                                                                                       {'msgbdy': htmlbody,
+                                                                                                                                        'user': request.user,
+                                                                                                                                        'program': self.program }))),
                                                       public = public_view,
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )
@@ -306,12 +327,13 @@ class CommModule(ProgramModuleObj):
     @needs_admin
     def maincomm2(self, request, tl, one, two, module, extra, prog):
 
-        filterid, listcount, fromemail, replytoemail, subject, body = [
+        filterid, listcount, fromemail, replytoemail, subject, msglang, body = [
                                                          request.POST['filterid'],
                                                          request.POST['listcount'],
                                                          request.POST['from'],
                                                          request.POST['replyto'],
                                                          request.POST['subject'],
+                                                         request.POST['msglang'],
                                                          request.POST['body']    ]
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
@@ -325,6 +347,7 @@ class CommModule(ProgramModuleObj):
                                                'from': fromemail,
                                                'replyto': replytoemail,
                                                'subject': subject,
+                                               'msglang': msglang,
                                                'body': body,
                                                'public_view': public_view})
 
