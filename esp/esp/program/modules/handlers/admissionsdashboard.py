@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -33,20 +34,17 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, aux_call
 from esp.utils.web import render_to_response
 from esp.utils.decorators import json_response
-from esp.application.models import StudentProgramApp, StudentClassApp, FormstackStudentProgramApp
+from esp.application.models import StudentProgramApp, StudentClassApp
 
 from django.http import HttpResponse
 import json
 
 class AdmissionsDashboard(ProgramModuleObj):
-    """
-    A dashboard for Junction core teachers to review applications for their class.
-
-    Not to be confused with TeacherReviewApps, the app questions module.
-    """
+    doc = """A dashboard for Junction core teachers to review applications for their class.
+    Not to be confused with TeacherReviewApps, the app questions module."""
 
     @classmethod
     def module_properties(cls):
@@ -54,11 +52,13 @@ class AdmissionsDashboard(ProgramModuleObj):
                 "admin_title": "Teacher Admissions Dashboard",
                 "link_title": "Admissions Dashboard",
                 "module_type": "teach",
+                "choosable": 0,
                 },
                 {
                 "admin_title": "Admin Admissions Dashboard",
                 "link_title": "Admissions Dashboard",
                 "module_type": "manage",
+                "choosable": 0,
                 }]
 
     @main_call
@@ -124,9 +124,9 @@ class AdmissionsDashboard(ProgramModuleObj):
         try:
             classapp = StudentClassApp.objects.get(id=extra)
         except StudentClassApp.DoesNotExist:
-            return # XXX: more useful error here
+            return self.goToCore(tl) # XXX: more useful error here
         if not (request.user.isAdmin(prog) or classapp.subject in request.user.getTaughtClassesFromProgram(prog)):
-            return
+            return self.goToCore(tl)
         content = classapp.get_teacher_view(prog)
         return HttpResponse(content)
 
@@ -167,6 +167,9 @@ class AdmissionsDashboard(ProgramModuleObj):
                 updated.append(app_id)
 
             return {'success': 1, 'updated': updated}
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

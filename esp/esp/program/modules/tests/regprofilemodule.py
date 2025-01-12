@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -64,16 +65,19 @@ class RegProfileModuleTest(ProgramFrameworkTest):
             get_current_request().user = student
             self.assertTrue( not self.moduleobj.isCompleted(), "The profile should be incomplete at first." )
 
-        # First student: Test copying of sufficiently recent profiles
+        # First student: Test non-saving of initial program profile
         get_current_request().user = self.students[0]
+        prof = RegistrationProfile.getLastForProgram(self.students[0], self.program)
+        self.assertTrue( self.students[0].registrationprofile_set.count() <= 0, "Profile was saved when it shouldn't have been." )
+        # Test migration of initial non-program profile to a program
         prof = self.students[0].getLastProfile()
         prof.program = None
         prof.save()
         self.assertTrue( self.students[0].registrationprofile_set.count() >= 1, "Profile failed to save." )
         self.assertTrue( self.students[0].registrationprofile_set.count() <= 1, "Too many profiles." )
-        self.assertTrue( self.moduleobj.isCompleted(), "Profile failed to copy." )
-        self.assertTrue( self.students[0].registrationprofile_set.count() >= 2, "Copy failed to save." )
-        self.assertTrue( self.students[0].registrationprofile_set.count() <= 2, "Too many profiles." )
+        self.assertTrue( self.moduleobj.isCompleted(), "Profile id wiped." )
+        self.assertTrue( self.students[0].registrationprofile_set.all()[0].program == self.program, "Profile failed to migrate to program." )
+        self.assertTrue( self.students[0].registrationprofile_set.count() <= 1, "Too many profiles." )
 
         # Second student: Test non-auto-saving of sufficiently old profiles
         get_current_request().user = self.students[1]
@@ -96,11 +100,11 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         # Test to see whether the graduation year is required
         self.client.login(username=self.students[2].username, password='password')
         response = self.client.post('%sprofile' % self.program.get_learn_url(), {'graduation_year': '', 'profile_page': ''})
-        lines = response.content.split('\n')
+        lines = response.content.decode('UTF-8').split('\n')
 
         ## Find the line for the start of the graduation-year form field
         for i, line in enumerate(lines):
-            if '<select class="required" id="id_graduation_year" name="graduation_year">' in line:
+            if 'id="id_graduation_year"' in line:
                 break
         self.assertTrue(i < len(lines)-1) ## Found the relevant line
 
@@ -116,5 +120,5 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         ## Validate that the default value of the form is the empty string, like we assumed in POST'ing it above
         found_default = False
         for line in lines[i:i+j]:
-            found_default = found_default or ('<option value="" selected="selected"></option>' in line)
+            found_default = found_default or ('<option value="" selected></option>' in line)
         self.assertTrue(found_default)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 """Script to dump zip code data to CSV.
 
 Writes a CSV with a column for each of various sets of students, and a row for
@@ -6,6 +6,7 @@ each zip code, with the number of students from that zip code at that program
 in the cell.
 """
 
+from __future__ import absolute_import
 from script_setup import *
 
 import collections
@@ -17,6 +18,7 @@ from django.conf import settings
 from esp.users.models import ESPUser
 from esp.program.models import ProgramModule
 from esp.utils.query_utils import nest_Q
+from io import open
 
 filename = os.path.join(settings.PROJECT_ROOT, 'zip_data.csv')
 
@@ -50,9 +52,9 @@ for program in Program.objects.all():
 # Because getting the right zipcode is hard, just build them into a dict per
 # user, and then we can use that instead of trying to get them in each query.
 user_zipcodes = {}
-all_users_query = ESPUser.objects.select_related(
+all_users_query = ESPUser.objects.filter(contactinfo__as_user__isnull=False).select_related(
     'contactinfo_set', 'contactinfo_set__address_zip'
-).values_list('id', 'contactinfo__address_zip').order_by('contactinfo')
+).values_list('id', 'contactinfo__address_zip').distinct('contactinfo').order_by('contactinfo')
 for user, zipcode in all_users_query:
     user_zipcodes[user] = zipcode
 
@@ -60,11 +62,11 @@ zip_data = []
 for set_name, user_set in student_sets:
     zipcode_freqs = collections.defaultdict(int)
     for user_id in user_set.values_list('id', flat=True).distinct():
-        zipcode_freqs[user_zipcodes[user_id]] += 1
+        if user_id in user_zipcodes:
+            zipcode_freqs[user_zipcodes[user_id]] += 1
     zip_data.append((set_name, zipcode_freqs))
 
-all_zipcodes = list(set(user_zipcodes.values()))
-all_zipcodes.sort()
+all_zipcodes = sorted(set(user_zipcodes.values()))
 # CSV has format:
 #     , name1, name2, ...
 # zip1, num11, num12, ...

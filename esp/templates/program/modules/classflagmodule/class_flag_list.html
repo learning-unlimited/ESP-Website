@@ -2,11 +2,18 @@
 {% if flag_types %}
     <h3>Manage class flags</h3>
     <div class="class-flag-list fqr-class">
-        {% for flag in class.flags.all %}
-            {% include "program/modules/classflagmodule/flag_detail.html" %}
-        {% endfor %}
-        {% include "program/modules/classflagmodule/new_flag_form.html" %}
-        <button class="add-flag btn btn-default">Add flag</button>
+        <div class="fqr-class-flags">
+            {% for flag in class.flags.all %}
+                {% include "program/modules/classflagmodule/flag_name.html" %}
+            {% endfor %}
+        </div>
+        <div class="fqr-class-flags-detail">
+            {% for flag in class.flags.all %}
+                {% include "program/modules/classflagmodule/flag_detail.html" %}
+            {% endfor %}
+            {% include "program/modules/classflagmodule/new_flag_form.html" %}
+            <button class="add-flag btn btn-default">Add flag</button>
+        </div>
     </div>
 {% else %}
     You need to enable some flags for this program in the <a href="/admin/program/program/{{program.id}}/#add_id_flag_types">admin panel</a> before you can edit them.

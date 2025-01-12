@@ -11,19 +11,30 @@
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 </style>
-<br />
-<br />
 
-<h1> Search For User</h1>
+<h1>{% if module %}{{ module }}{% else %}Search For User{% endif %}</h1>
 
-<p style="text-align: center">
+<center>
+<p>
 Please search for a user: <br />
 (Yes, Regular expressions are allowed.) 
 </p>
 
 {% if error %}
-<p class="error">Error: No user found by that criteria.</p>
+<div align="center" class="alert alert-warning">
+  <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+  Error: No user found by that criteria.
+</div>
 {% endif %}
+
+{% if message %}
+<div class="alert alert-info">
+  <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+  <b>{{ message }}</b>
+</div>
+{% endif %}
+
+</center>
 
 <div id="program_form">
 <form action="{{ request.path }}" method="get" class="form-inline">
@@ -84,14 +95,14 @@ miles from <input type="text" size="5" name="zipcode" value="02139" />.</td>
 
 <tr><td><label><strong>Grade Limits (students):</strong></label></td> <td>
 Min: 
-<input type="text" size="3" name="grade_min" value="" /> &nbsp;&nbsp;&nbsp;
+<input type="text" size="3" name="grade_min" value="" /><br>
 Max:
 <input type="text" size="3" name="grade_max" value="" /></td>
 </tr>
 
 <tr><td><label><strong>Graduation Year (teachers):</strong></label></td> <td>
 Min: 
-<input type="text" size="3" name="gradyear_min" value="" /> &nbsp;&nbsp;&nbsp;
+<input type="text" size="3" name="gradyear_min" value="" /><br>
 Max:
 <input type="text" size="3" name="gradyear_max" value="" /></td>
 </tr>
@@ -107,5 +118,9 @@ Max:
 </div>
 
 <p>Please note that these operations may take a long time if they involve a lot of users.</p>
+
+{% if tl == "onsite" %}
+{% include "program/modules/onsitecore/returnlink.html" %}
+{% endif %}
 
 {% endblock %}

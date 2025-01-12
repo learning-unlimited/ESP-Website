@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from __future__ import division
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -33,6 +35,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from esp.program.class_status import ClassStatus
 from esp.program.models import Program, ClassSection, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ClassCategories
 
 import datetime
@@ -41,6 +44,7 @@ class LunchConstraintGenerator(object):
     """ A class for finding issues with the scheduling of a program. """
     def __init__(self, program, lunch_timeslots=[], generate_constraints=True, include_conditions=True, autocorrect=True, **kwargs):
         self.program = program
+        self.lunch_timeslots = lunch_timeslots
         self.generate_constraints = generate_constraints
         self.include_conditions = include_conditions
         self.autocorrect = autocorrect
@@ -66,8 +70,12 @@ class LunchConstraintGenerator(object):
                     self.days[day]['before'].append(timeslot)
 
     def clear_existing_constraints(self):
-        for lunch in ClassSubject.objects.filter(parent_program__id=self.program.id, category=self.get_lunch_category()):
-            lunch.delete()
+        # Delete any sections that we don't need anymore
+        for lunch_section in ClassSection.objects.filter(parent_class__parent_program=self.program, parent_class__category=self.get_lunch_category()).exclude(meeting_times__in=self.lunch_timeslots):
+            lunch_section.delete()
+        # Delete any classes that no longer have sections
+        for lunch_subject in ClassSubject.objects.filter(parent_program=self.program, category=self.get_lunch_category(), sections__isnull=True):
+            lunch_subject.delete()
         for constraint in ScheduleConstraint.objects.filter(program=self.program):
             for boolexp in [constraint.condition, constraint.requirement]:
                 boolexp.delete()
@@ -94,7 +102,7 @@ class LunchConstraintGenerator(object):
             expression.add_token(operator_text)
         #   If there are more than 2 tokens in the list, divide the list in half and work recursively
         else:
-            midpoint = len(tokens) / 2
+            midpoint = len(tokens) // 2
             first_half = tokens[:midpoint]
             second_half = tokens[midpoint:]
             self.apply_binary_op_to_list(expression, operator_text, identity_value, first_half)
@@ -119,7 +127,7 @@ class LunchConstraintGenerator(object):
         lunch_subjects = ClassSubject.objects.filter(parent_program__id=self.program.id, category=self.get_lunch_category(), message_for_directors=day.isoformat())
         lunch_subject = None
         example_timeslot = self.days[day]['lunch'][0]
-        timeslot_length = (example_timeslot.end - example_timeslot.start).seconds / 3600.0
+        timeslot_length = (example_timeslot.duration()).total_seconds() / 3600.0
 
         if lunch_subjects.count() == 0:
             #   If no lunch was found, create a new subject
@@ -133,7 +141,7 @@ class LunchConstraintGenerator(object):
             # If the program doesn't have a max size, we unfortunately still
             # need one here.  Set a really big one.
             new_subject.class_size_max = self.program.program_size_max or 10**6
-            new_subject.status = 10
+            new_subject.status = ClassStatus.ACCEPTED
             new_subject.duration = '%.4f' % timeslot_length
             new_subject.message_for_directors = day.isoformat()
             new_subject.save()
@@ -151,11 +159,11 @@ class LunchConstraintGenerator(object):
         for timeslot in self.days[day]['lunch']:
             lunch_sections = lunch_subject.sections.filter(meeting_times__id=timeslot.id)
             if lunch_sections.count() == 0:
-                new_section = lunch_subject.add_section(status=10)
+                new_section = lunch_subject.add_section(status=ClassStatus.ACCEPTED)
                 new_section.meeting_times.add(timeslot)
             else:
                 for sec in lunch_sections:
-                    sec.status = 10
+                    sec.status = ClassStatus.ACCEPTED
                     sec.save()
 
         return self.get_lunch_subject(day).get_sections()

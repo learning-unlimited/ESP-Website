@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import division
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -39,6 +42,7 @@ from django.db import transaction
 from esp.cal.models import Event
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
+from esp.program.class_status import ClassStatus
 from esp.program.models import ClassSubject, RegistrationType
 from esp.program.setup import prepare_program, commit_program
 from esp.program.forms import ProgramCreationForm
@@ -91,30 +95,17 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Try editing the class
         response = self.client.get('%smakeaclass' % self.program.get_teach_url())
-        self.assertTrue("grade_range_popup" in response.content)
+        self.assertContains(response, "check_grade_range", status_code=200)
 
         # Add a tag that specifically removes this functionality
         Tag.setTag('grade_range_popup', self.program, 'False')
 
         # Try editing the class
         response = self.client.get('%smakeaclass' % self.program.get_teach_url())
-        self.assertTrue(not "grade_range_popup" in response.content)
-
-        # Change the grade range of the program and reset the tag
-        self.program.grade_min = 7
-        self.program.grade_max = 8
-        self.program.save()
-        Tag.setTag('grade_range_popup', self.program, 'True')
-
-        # Try editing the class
-        response = self.client.get('%smakeaclass' % self.program.get_teach_url())
-        self.assertTrue(not "check_grade_range" in response.content)
+        self.assertNotContains(response, "check_grade_range", status_code=200)
 
     def apply_coteacher_op(self, dict):
         return self.client.post('%scoteachers' % self.program.get_teach_url(), dict)
-
-    def has_coteacher(self, teacher, response):
-        return "(" + teacher.username + ")" in response
 
     def test_adding_coteachers(self):
         # Login the teacher
@@ -124,45 +115,46 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Error on adding self
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.teacher.id, 'coteachers': ",".join([str(coteacher.id) for coteacher in cur_coteachers])})
-        self.assertTrue("Error" in response.content)
+        self.assertContains(response, "Error", status_code=200)
 
         # Error on no teacher selected
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': '', 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertTrue("Error" in response.content)
+        self.assertContains(response, "Error", status_code=200)
 
         # Add free_teacher1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertTrue(self.has_coteacher(self.free_teacher1, response.content))
+        self.assertContains(response, "({})".format(self.free_teacher1.username), status_code=200)
         cur_coteachers.append(self.free_teacher1.id)
 
         # Error on adding the same coteacher again
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertTrue("Error" in response.content)
+        self.assertContains(response, "Error", status_code=200)
 
         # Add free_teacher2
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher2.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertTrue(self.has_coteacher(self.free_teacher2, response.content))
+        self.assertContains(response, "({})".format(self.free_teacher2.username), status_code=200)
         cur_coteachers.append(self.free_teacher2.id)
 
         # Delete free_teacher 1
         response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertTrue(not self.has_coteacher(self.free_teacher1, response.content))
+        self.assertNotContains(response, "({})".format(self.free_teacher1.username), status_code=200)
         cur_coteachers.remove(self.free_teacher1.id)
 
         # Add free_teacher 1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertTrue(self.has_coteacher(self.free_teacher1, response.content))
+        self.assertContains(response, "({})".format(self.free_teacher1.username), status_code=200)
         cur_coteachers.append(self.free_teacher1.id)
 
         # Delete both free_teacher1 and free_teacher2
         response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': [self.free_teacher1.id, self.free_teacher2.id], 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertTrue(not self.has_coteacher(self.free_teacher1, response.content) and not self.has_coteacher(self.free_teacher2, response.content))
+        self.assertNotContains(response, "({})".format(self.free_teacher1.username), status_code=200)
+        self.assertNotContains(response, "({})".format(self.free_teacher2.username), status_code=200)
         cur_coteachers.remove(self.free_teacher1.id)
         cur_coteachers.remove(self.free_teacher2.id)
 
         # Add free_teacher 1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertTrue(self.has_coteacher(self.free_teacher1, response.content))
+        self.assertContains(response, "({})".format(self.free_teacher1.username), status_code=200)
         cur_coteachers.append(self.free_teacher1.id)
 
         # Save the coteachers
@@ -236,11 +228,11 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.assertTrue(self.other_teacher1 in d['class_approved'])
         self.assertTrue(self.other_teacher2 in d['class_proposed'])
         # Undo the statuses
-        cls1.status = 10
+        cls1.status = ClassStatus.ACCEPTED
         cls1.save()
-        cls2.status = 10
+        cls2.status = ClassStatus.ACCEPTED
         cls2.save()
-        cls3.status = 10
+        cls3.status = ClassStatus.ACCEPTED
         cls3.save()
 
         # Schedule the classes randomly

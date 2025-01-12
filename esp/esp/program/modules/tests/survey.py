@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -68,8 +70,7 @@ class SurveyTest(ProgramFrameworkTest):
 
         #   Access the survey page - there should be no surveys and we should get an error
         response = self.client.get('/learn/%s/survey' % self.program.url)
-        self.assertEqual(response.status_code, 500)
-        self.assertIn('no such survey', response.content)
+        self.assertContains(response, 'no such survey', status_code=500)
 
         #   Create a survey
         (survey, created) = Survey.objects.get_or_create(name='Test Survey', program=self.program, category='learn')
@@ -83,15 +84,15 @@ class SurveyTest(ProgramFrameworkTest):
         self.assertFalse(Record.user_completed(student, 'student_survey', self.program))
 
         #   Now we should be able to access the survey
-        response = self.client.get('/learn/%s/survey' % self.program.url)
+        #   Check the general survey
+        response = self.client.get('/learn/%s/survey?general' % self.program.url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('Question1', response.content)
-        self.assertIn('Question2', response.content)
-        self.assertIn('Question3', response.content)
-
-        #   Check that there is a field to select a class for each timeslot
-        for timeslot in self.program.getTimeSlots():
-            self.assertIn('attendance_%d' % (timeslot.id), response.content)
+        self.assertIn('Question1', six.text_type(response.content, encoding='UTF-8'))
+        #   Check the section-specific survey
+        response = self.client.get('/learn/%s/survey?sec=%s' % (self.program.url, sec.id))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Question2', six.text_type(response.content, encoding='UTF-8'))
+        self.assertIn('Question3', six.text_type(response.content, encoding='UTF-8'))
 
         #   Fill out the survey with some arbitrary answers
         sec_timeslot = sec.get_meeting_times()[0]
@@ -103,12 +104,9 @@ class SurveyTest(ProgramFrameworkTest):
         }
 
         #   Submit the survey
-        response = self.client.post('/learn/%s/survey' % self.program.url, form_settings, follow=True)
+        response = self.client.post('/learn/%s/survey?general' % self.program.url, form_settings, follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.redirect_chain), 1)
-        self.assertTrue(response.redirect_chain[0][0].endswith('/learn/%s/survey?done' % self.program.url))
-        self.assertEqual(response.redirect_chain[0][1], 302)
-        self.assertIn('have been saved', response.content)
+        self.assertIn('have been saved', six.text_type(response.content, encoding='UTF-8'))
 
         #   Check that we have a SurveyRecord with the right answers associated with it
         self.assertEqual(SurveyResponse.objects.filter(survey=survey).count(), 1)
@@ -129,9 +127,8 @@ class SurveyTest(ProgramFrameworkTest):
         self.assertTrue(Record.user_completed(student, 'student_survey', self.program))
 
         #   Check that we get an error if we try to visit the survey again
-        response = self.client.get('/learn/%s/survey' % self.program.url)
-        self.assertEqual(response.status_code, 500)
-        self.assertIn('already filled out', response.content)
+        response = self.client.get('/learn/%s/survey?general' % self.program.url)
+        self.assertIn('already completed the', six.text_type(response.content, encoding='UTF-8'))
 
         # student logs out, teacher logs in
         self.client.logout()

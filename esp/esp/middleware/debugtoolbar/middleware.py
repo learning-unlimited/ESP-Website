@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django import http
 from debug_toolbar.middleware import DebugToolbarMiddleware
 
@@ -43,9 +44,10 @@ class ESPDebugToolbarMiddleware(DebugToolbarMiddleware):
         # short-circuiting to only call request.user.isAdmin() when necessary,
         # because calling request.user.isAdmin() sets Vary:Cookie and prevents
         # proxy caching. See Github issue #739.
-        enabled = ((not request.is_ajax()) and settings.DEBUG_TOOLBAR and (
+        enabled = (settings.DEBUG_TOOLBAR and (
                 (settings.DEBUG and not request.session.get('debug_toolbar') == 'f') or
-                (request.session.get('debug_toolbar') == 't' and request.user.isAdmin())))
+                (request.session.get('debug_toolbar') == 't' and
+                (request.user.isAdmin() or request.user.is_morphed()))))
 
         # Avoid setting Vary: Cookie across this middleware in production and
         # testing (see above).

@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,22 +33,24 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call
 from esp.program.models import TeacherBio
-from esp.users.models   import ESPUser, User
+from esp.users.models   import ESPUser
 from esp.middleware.threadlocalrequest import get_current_request
 from django.db.models.query   import Q
 
 # reg profile module
 class TeacherBioModule(ProgramModuleObj):
-    """ Module for teacher to edit their biography for each program. """
+    doc = """Module for teacher to edit their biography for each program."""
+
     @classmethod
     def module_properties(cls):
         return {
             "admin_title": "Teacher Biography Editor",
             "link_title": "Update your teacher biography",
             "module_type": "teach",
-            "seq": -111
+            "seq": -111,
+            "choosable": 1,
             }
 
     def teachers(self, QObject = False):
@@ -58,7 +61,7 @@ class TeacherBioModule(ProgramModuleObj):
         return {'teacher_biographies': teachers }
 
     def teacherDesc(self):
-        return {'teacher_biographies': """Teachers who have completed the biography."""}
+        return {'teacher_biographies': """Teachers who have completed the biography"""}
 
     @main_call
     @needs_teacher
@@ -75,7 +78,11 @@ class TeacherBioModule(ProgramModuleObj):
     def isCompleted(self):
         #   TeacherBio.getLastForProgram() returns a new bio if one already exists.
         #   So, mark this step completed if there is an existing (i.e. non-empty) bio.
-        lastBio = TeacherBio.getLastForProgram(get_current_request().user, self.program)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        lastBio = TeacherBio.getLastForProgram(user, self.program)
         return ((lastBio.id is not None) and lastBio.bio and lastBio.slugbio)
 
     class Meta:

@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,16 +33,13 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, CoreModule, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, CoreModule, main_call
 from esp.utils.web import render_to_response
-from django.contrib.auth.decorators import login_required
-from esp.users.models    import ESPUser
-from django              import forms
-from django.http import HttpResponseRedirect
 
 
 class OnsiteCore(ProgramModuleObj, CoreModule):
+    doc = """Serves the main onsite page."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -49,12 +47,13 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
             "link_title": "onsite",
             "module_type": "onsite",
             "seq": -1000,
+            "choosable": 1,
             }
 
     @main_call
     @needs_onsite
     def main(self, request, tl, one, two, module, extra, prog):
-        """ Display a teacher eg page """
+        """ Display the onsite landing page """
         context = {}
         modules = self.program.getModules(request.user, 'onsite')
 

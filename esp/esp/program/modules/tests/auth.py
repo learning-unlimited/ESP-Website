@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -44,7 +45,7 @@ class ProgramModuleAuthTest(ProgramFrameworkTest):
         # self.program has all possible modules
         modules = self.program.getModules()
         for module in modules:
-            view_names = module.get_all_views()
+            view_names = module.views
             for view_name in view_names:
                 view = getattr(module, view_name)
                 self.assertTrue(getattr(view, 'has_auth_check', None), \

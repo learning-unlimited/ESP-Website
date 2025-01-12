@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -35,8 +37,7 @@ Learning Unlimited, Inc.
 from django.http     import HttpResponseRedirect
 from esp.users.views import search_for_user
 from django.db.models.query   import Q
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
-from esp.program.modules.handlers.programprintables import ProgramPrintables
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web import render_to_response
 from esp.users.models import ESPUser
 
@@ -50,7 +51,8 @@ class AdminMorph(ProgramModuleObj):
             "admin_title": "User Morphing Capability",
             "link_title": "Morph into User",
             "module_type": "manage",
-            "seq": 34
+            "seq": 34,
+            "choosable": 1,
             }
 
     @main_call
@@ -75,7 +77,7 @@ class AdminMorph(ProgramModuleObj):
         for key in search_keys:
             user_list = getattr(self.program, key + 's')(QObjects=True)
             saved_queries[key] = reduce(operator.or_, [user_list[user_type] for user_type in search_keys[key] if user_type in user_list], Q())
-        saved_queries['program'] = reduce(operator.or_, saved_queries.values())
+        saved_queries['program'] = reduce(operator.or_, list(saved_queries.values()))
         saved_queries['all'] = Q()
 
         #   Default to using all program participants, if no query type is specified
@@ -84,7 +86,7 @@ class AdminMorph(ProgramModuleObj):
         else:
             query = saved_queries['program']
 
-        user, found = search_for_user(request, ESPUser.objects.filter(query))
+        user, found = search_for_user(request, ESPUser.objects.filter(query), add_to_context = {'module': self.module.link_title})
 
         if not found:
             return user
@@ -97,6 +99,8 @@ class AdminMorph(ProgramModuleObj):
 
         return HttpResponseRedirect('/')
 
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

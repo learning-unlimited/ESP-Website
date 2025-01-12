@@ -1,0 +1,171 @@
+{% extends "main.html" %}
+
+{% block title %}
+    URL and Email Redirect Management
+{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
+{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript">
+function deleteRedirect() {
+    if (confirm('Are you sure you would like to delete this redirect?')) {
+       return true;
+    }
+    return false;
+}
+
+function deleteEmailRedirect() {
+    if (confirm('Are you sure you would like to delete this email redirect?')) {
+       return true;
+    }
+    return false;
+}
+</script>
+{% endblock %}
+
+{% block content %}
+
+<h1>
+    URL and Email Redirect Management
+</h1>
+
+<p>Welcome to the redirect management page. Here you can create, edit, and delete <b>URL redirects</b> which redirect users from one URL to another and
+<b>email redirects</b> which redirect emails sent to a custom or real email address on your domain to one or more real email addresses on any domain.</p>
+
+<div id="program_form">
+
+    {% if open_section == "redirects" %}
+    <button class="dsphead active">
+       <b>URL Redirects</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont active">
+    {% else %}
+    <button class="dsphead">
+       <b>URL Redirects</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont">
+    {% endif %}
+
+    <form method="post">
+    <input type="hidden" name="command" value="{% if redirect_form.instance.id %}edit{% else %}add{% endif %}" />
+    {% if redirect_form.instance.id %}
+    <input type="hidden" name="id" value="{{ redirect_form.instance.id }}" />
+    {% endif %}
+    <input type="hidden" name="object" value="redirect" />
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="2" class="small">Add/Edit URL Redirects</th></tr>
+        {{ redirect_form }}
+        <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="{% if redirect_form.instance.id %}Edit{% else %}Add{% endif %} URL Redirect" /></td></tr>
+    </table>
+    </form>
+
+    <br />
+
+    <table align="center" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed; overflow-wrap: break-word;">
+        <tr>
+            <th width="32.5%"><b>Old URL</b></th>
+            <th width="5%"></td>
+            <th width="32.5%"><b>New URL</b></th>
+            <th width="30%"><b>Options</b></th>
+        </tr>
+        {% for redirect in redirects %}
+        <tr>
+            <td>{{ redirect.old_path }}</td>
+            <td>&#10230;</td>
+            <td>{{ redirect.new_path }}</td>
+            <td>
+                <center>
+                    <a href="{{ redirect.old_path }}" target="_blank" class="btn btn-primary" />Test</a>
+                    <form method="post">
+                        <input type="hidden" name="id" value="{{ redirect.id }}" />
+                        <input type="hidden" name="command" value="load" />
+                        <input type="hidden" name="object" value="redirect" />
+                        <input type="submit" value="Edit" class="btn btn-primary" />
+                    </form>
+                    <form method="post" onsubmit="return deleteRedirect()">
+                        <input type="hidden" name="id" value="{{ redirect.id }}" />
+                        <input type="hidden" name="command" value="delete" />
+                        <input type="hidden" name="object" value="redirect" />
+                        <input type="submit" value="Delete" class="btn btn-danger" />
+                    </form>
+                </center>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+
+    {% if open_section == "email_redirects" %}
+    <button class="dsphead active">
+       <b>Email Redirects</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont active">
+    {% else %}
+    <button class="dsphead">
+       <b>Email Redirects</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont">
+    {% endif %}
+
+    <form method="post">
+    <input type="hidden" name="command" value="{% if email_redirect_form.instance.id %}edit{% else %}add{% endif %}" />
+    {% if email_redirect_form.instance.id %}
+    <input type="hidden" name="id" value="{{ email_redirect_form.instance.id }}" />
+    {% endif %}
+    <input type="hidden" name="object" value="email_redirect" />
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="2" class="small">Add/Edit Email Redirects</th></tr>
+        {{ email_redirect_form }}
+        <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="{% if email_redirect_form.instance.id %}Edit{% else %}Add{% endif %} Email Redirect" /></td></tr>
+    </table>
+    </form>
+
+    <br />
+
+    <table align="center" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed; overflow-wrap: break-word;">
+        <tr>
+            <th width="20%"><b>Original Email Address</b></th>
+            <th width="5%"></th>
+            <th width="45%"><b>Destination Email Address(es)</b></th>
+            <th width="30%"><b>Options</b></th>
+        </tr>
+        {% for er in email_redirects %}
+        <tr>
+            <td>{{ er.original }}</td>
+            <td>&#10230;</td>
+            <td>{{ er.destination }}</td>
+            <td>
+                <center>
+                    <form method="post">
+                        <input type="hidden" name="id" value="{{ er.id }}" />
+                        <input type="hidden" name="command" value="load" />
+                        <input type="hidden" name="object" value="email_redirect" />
+                        <input type="submit" value="Edit" class="btn btn-primary" />
+                    </form>
+                    <form method="post" onsubmit="return deleteEmailRedirect()">
+                        <input type="hidden" name="id" value="{{ er.id }}" />
+                        <input type="hidden" name="command" value="delete" />
+                        <input type="hidden" name="object" value="email_redirect" />
+                        <input type="submit" value="Delete" class="btn btn-danger" />
+                    </form>
+                </center>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+
+</div>
+
+<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
+
+{% endblock %}

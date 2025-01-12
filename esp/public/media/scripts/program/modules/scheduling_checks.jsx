@@ -1,3 +1,37 @@
+var auto_running = false;
+var myInterval;
+
+$j(function(){
+    function refreshAll() {
+        if (auto_running) {
+            $j("button.refresh-button").click();
+            // Allow for updating fresh interval while the refresh is already running
+            myInterval = setTimeout(refreshAll, $j("[name=refresh_interval]").val() * 1000);
+        }
+    }
+    $j("[name=refresh]").click(function() {
+        if (auto_running) {
+            auto_running = false;
+            // Change button class and text
+            $j(this).addClass("btn-success");
+            $j(this).removeClass("btn-danger");
+            $j(this).html("Start Auto Refresh");
+            
+            // Stop autorefreshing
+            clearTimeout(myInterval);
+        } else {
+            auto_running = true;
+            // Change button class and text
+            $j(this).addClass("btn-danger");
+            $j(this).removeClass("btn-success");
+            $j(this).html("Stop Auto Refresh");
+            
+            // Start autorefreshing
+            refreshAll()
+        }
+    });
+});
+
 /**
  * List of scheduling checks.
  *
@@ -96,11 +130,15 @@ var SchedulingCheck = React.createClass({
   loadData: function () {
     // remove any existing data, so we see a loading thing again
     this.setState({data: undefined});
+    this.setState({has_items: false});
+    this.setState({timestamp: "loading"});
 
     $j.get("scheduling_checks/" + this.props.slug)
     .done(function (data) {
+      var data_parse = JSON.parse(data);
       this.setState({
-        data: data,
+        data: data_parse,
+        has_items: (data_parse.body && data_parse.body.length > 0),
         failed: false,
         timestamp: this.timestamp(),
       });
@@ -113,20 +151,31 @@ var SchedulingCheck = React.createClass({
     }.bind(this));
   },
 
+/*loads all of the scheduling checks */
+  componentDidMount() {
+    this.loadData();
+  },
+
   render: function () {
     var body;
     if (this.state.failed) {
-      body = <div className="placeholder">
+      body = <div className="placeholder load_fail">
         (loaded {this.state.timestamp}, loading failed ☹)
       </div>;
-    } else if (!this.state.open) {
-      body = <div className="placeholder">
-        (loaded {this.state.timestamp}, click title to open)
+    } else if (!this.state.open && this.state.timestamp =="never") {
+      body = <div className="placeholder load_fail">
+        (loaded {this.state.timestamp})
       </div>;
-    } else if (!this.state.data) {
-      body = <div className="placeholder">loading...</div>;
+    }else if (this.state.timestamp == "loading") {
+      body = <div className="placeholder load_yellow">loading...</div>;
+    }else if (!this.state.open) {
+      body = <div className="placeholder load_ready">
+        (loaded {this.state.timestamp})
+      </div>;
+    }else if (!this.state.data) {
+      body = <div className="placeholder load_yellow">loading...</div>;
     } else {
-      var data = JSON.parse(this.state.data); // Might not work on old browsers
+      var data = this.state.data;
       var table;
       if (data.headings.length == 0) {
         table = <SelectTable rows = {data.body} header = {false} 
@@ -139,7 +188,7 @@ var SchedulingCheck = React.createClass({
           if (data.headings[i]) {
             columns[i] = {key: String(i), label: data.headings[i]};
           } else {
-            columns[i] = {key: String(i), label: "--"};
+            columns[i] = {key: String(i), label: "Date/Time"};
           }
         }
         table = <SelectTable rows = {data.body} columns = {columns} 
@@ -152,24 +201,42 @@ var SchedulingCheck = React.createClass({
         helpText = <div className="help-text">{data.help_text}</div>;
       }
       body = <div>
-        <div className="placeholder">
-          (loaded {this.state.timestamp}, click title to close)
+        <div className="placeholder load_ready">
+          (loaded {this.state.timestamp})
         </div>
+        <div className="alittlepspace"></div>
         {helpText}
-        {table}
+        <div className="table-wrapper">
+          {table}
+        </div>
       </div>;
     }
-
-    return <div className="scheduling-check">
+    return <div className={`scheduling-check ${this.state.has_items ? "items" : this.state.data ? "no-items" : "loading"}`}>
+      <ScheduleButton onClick={this.handleClick} />
+      <RefreshButton onClick={this.loadData} />
+      <ResetButton onClick={this.resetTable} />
       <div className="scheduling-check-title">
         <span onClick={this.handleClick}>{this.props.title}</span>
-        <RefreshButton onClick={this.loadData} />
-        <ResetButton onClick={this.resetTable} />
       </div>
       <div className="scheduling-check-body">
         {body}
       </div>
     </div>;
+  },
+});
+
+/**
+ * A load button, which calls its onClick prop
+ */
+var ScheduleButton = React.createClass({
+  propTypes: {
+    onClick: React.PropTypes.func.isRequired,
+  },
+
+  render: function () {
+    return <button onClick={this.props.onClick} className="reset-button">
+      Open/Close
+    </button>;
   },
 });
 
@@ -183,7 +250,7 @@ var RefreshButton = React.createClass({
 
   render: function () {
     return <button onClick={this.props.onClick} className="refresh-button">
-      ↻
+      Refresh
     </button>;
   },
 });

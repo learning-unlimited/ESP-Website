@@ -1,5 +1,8 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from esp.program.models import *
 from esp.dbmail.models import PlainRedirect
+from io import open
 
 list_name = 'sp10-parents'
 splash = Program.objects.get(id=11)
@@ -7,7 +10,7 @@ sl = splash.students()['classreg']
 
 outfile = open('stanford_parents_sp10.csv', 'w')
 
-outfile.write('"ID","Last Name","First Name","Student e-mail","Parent e-mail"\n')
+outfile.write('"ID","Last Name","First Name","Student email","Parent email"\n')
 
 PlainRedirect.objects.filter(original=list_name).delete()
 
@@ -28,7 +31,7 @@ for s in sl:
     outfile.write('"%s","%s","%s","%s","%s"\n' % (id, ln.encode('ascii', 'replace'), fn.encode('ascii', 'replace'), ea.encode('ascii', 'replace'), pe.encode('ascii', 'replace')))
 
 outfile.close()
-print 'Wrote to %s' % outfile
-print 'Created %d list entries' % PlainRedirect.objects.filter(original=list_name).count()
+print('Wrote to %s' % outfile)
+print('Created %d list entries' % PlainRedirect.objects.filter(original=list_name).count())
 
 

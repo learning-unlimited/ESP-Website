@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -34,27 +35,29 @@ Learning Unlimited, Inc.
 """
 from django.http     import HttpResponseRedirect
 from esp.users.views import search_for_user
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
 from esp.utils.models import Printer, PrintRequest
-from datetime         import datetime, timedelta
 
 class OnsiteClassSchedule(ProgramModuleObj):
+    doc = """Get and/or print a student's schedule for the program."""
+
     @classmethod
     def module_properties(cls):
         return {
             "admin_title": "Onsite Scheduling for Students",
             "link_title": "Scheduling and Class Changes",
             "module_type": "onsite",
-            "seq": 30
+            "seq": 30,
+            "choosable": 1,
             }
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def printschedule(self, request, tl, one, two, module, extra, prog):#(self, request, *args, **kwargs):
         '''Sends a schedule printing request to the schedule-printing script.  Defaults to the current (probably onsite-morphed) user, but can take a GET parameter instead.'''
-        printer = request.GET.get('printer',None)
+        printer = request.GET.get('printer', None)
         if printer is not None:
             # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
             printer = Printer.objects.get(name=printer)
@@ -84,7 +87,7 @@ class OnsiteClassSchedule(ProgramModuleObj):
         """ Redirect to student registration, having morphed into the desired
         student. """
 
-        user, found = search_for_user(request, ESPUser.getAllOfType('Student', False))
+        user, found = search_for_user(request, ESPUser.getAllOfType('Student', False), add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
         if not found:
             return user
 

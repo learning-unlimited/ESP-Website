@@ -1,0 +1,10 @@
+Hi {{ student.name }},
+
+On {{ curtime|date:"l M d Y" }} at {{ curtime|date:"h:i A" }}, your financial aid request for {{ program.niceName }} was approved by a program administrator.
+
+Your financial aid grant provides {% if grant.amount_max_dec %}${{ grant.amount_max_dec }} of direct financial aid{% endif %}{% if grant.amount_max_dec and grant.percent %} plus {% endif %}{% if grant.percent %}{{ grant.percent }}% of any {% if grant.amount_max_dec %}remaining {% endif %}costs for the program{% endif %}.
+
+{% if note %}Additional comments: {{ note }}{% endif %}
+
+- {{ program.program_type }} Registration System
+  Contact the directors: {{ program.director_email }}

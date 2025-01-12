@@ -5,6 +5,12 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<link rel="stylesheet" href="//code.jquery.com/ui/1.13.0/themes/smoothness/jquery-ui.css">
+{% endblock %}
+
+{% block xtrajs %}
+    {{ block.super }}
+    <script type="text/javascript" src="/media/scripts/program/modules/extracosts.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -12,7 +18,6 @@
 .nocheckmark { border: 1px solid black; }
 td>ul { list-style-type: none; padding: 0px }
 </style>
-<br /><br />
 <h1>Additional Purchases</h1>
 
 {% load render_qsd %}
@@ -26,69 +31,99 @@ td>ul { list-style-type: none; padding: 0px }
 <p>Food and other additional items can only be changed up until <b>1 week before the program.</b></p>
 {% end_inline_program_qsd_block %}
 
+<br /> 
+{% if paid_for %}<div class="alert alert-danger"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>{{ paid_for_text }}</div>{% endif %} 
+
 <br />
 
-{% if errors %}<div class="formerror">There was a problem recording your choices.  Please review the form and make sure that it is filled out completely.</div>{% endif %}
-  
+{% if error_custom %}<div class="formerror">You selected a choice with a custom amount but did not specify an amount; please do so below. </div>
+{% elif errors %}<div class="formerror">There was a problem recording your choices.  Please review the form and make sure that it is filled out completely.</div>{% endif %}
+
+<br />
+
 <div id="program_form">
 <form action="" method="post">
 <center>
 <table width="400" cellpadding="2" cellspacing="0">
-<tr><th colspan="{% if select_qty %}4{% else %}3{% endif %}">Additional Items for {{ program.niceName }}</th></tr>
-<tr>    
-    <th class="small">Buy</th>
-{% if select_qty %}    <th class="small">Qty</th>{% endif %}
-    <th class="small">Item</th>
-    <th class="small">Cost Each</th>
-</tr>
+<tr><th>Additional Items for {{ program.niceName }}</th></tr>
 {% for f in forms %}
-<tr style="border-bottom: 1px dashed grey;">
-    <td width="120px">
-        {% if f.form.option %}{{ f.form.option }}{% else %}{{ f.form.cost }}{% endif %}
-        {% if f.LineItem.negative_amount %}
-            <i>${{ f.LineItem.negative_amount|floatformat:2 }}</i>
+<tr>
+    <td><b>{{ f.LineItem.text }}</b> {% if f.LineItem.required or f.type == "sibling" %}(required; please make a selection below){% else %}(optional){% endif %}</td>
+</tr>
+<tr {% if f.type != "sibling" %}style="border-bottom: 1px dashed grey;"{% endif %}>
+    <td>
+        {% if f.type == "single" %}
+            {% if f.form.cost.errors %}<div style="color: red;">{{ f.form.cost.errors|join:", " }}</div>{% endif %}
+            {{ f.form.cost }} ${{ f.LineItem.amount_dec|floatformat:2 }}
+        {% elif f.type == "multiple" %}
+            {% if f.form.count.errors %}<div style="color: red;">{{ f.form.count.errors|join:", " }}</div>{% endif %}
+            {{ f.form.count }} ${{ f.LineItem.amount_dec|floatformat:2 }} each
+        {% elif f.type == "select" %}
+            {% if f.form.option.errors %}<div style="color: red;">{{ f.form.option.errors|join:", " }}</div>{% endif %}
+            {{ f.form.option }}
+        {% elif f.type == "sibling" %}
+            {% if f.form.siblingdiscount.errors %}<div style="color: red;">{{ f.form.siblingdiscount.errors|join:", " }}</div>{% endif %}
+            {{ f.form.siblingdiscount }}
+    </td>
+</tr>
+            <tr>
+                <td>If you selected that you have a sibling, please enter their name below:</td>
+            </tr>
+            {% if f.form.siblingname.errors %}
+            <tr>
+                <td>
+                    <div style="color: red;">{{ f.form.siblingname.errors|join:", " }}</div>
+                </td>
+            </tr>
             {% endif %}
-
+            <tr style="border-bottom: 1px dashed grey;">
+                <td>{{ f.form.siblingname }}</td>
+            </tr>
+        {% endif %}
+        
         {# If num_options, radio buttons will be used for the field. In order to  #}
         {# be able to remove a selected item, we need a button. The Javascript    #}
-        {# code for the button is at the bottom.                                  #}
+        {# code for the button is in extracosts.js.                               #}
 
-        {% if f.LineItem.num_options %}
+        {% if f.LineItem.num_options and not f.LineItem.required %}
             <button type="button"
                     class="remove-item"
-                    name="{{ f.form.prefix }}-option"
+                    name="{{ f.form.prefix }}-option{% if f.type == "select" and f.LineItem.has_custom_options %}_0{% endif %}"
                     onclick="remove_item(this);">
                 Remove this item
             </button>
         {% endif %}
     </td>
-{% if select_qty %}    <td>{{ f.form.count }}</td>{% endif %}
-    <td>{% if f.form.errors %}<font color="red">{{ f.form.errors }}</font>  {% endif %}
-{% if not f.LineItem.negative_amount and f.LineItem.description %} {{ f.LineItem.description }}
-{% else %}<b>{{ f.LineItem.text }}</b>{% endif %}</td>
-    <td>{% if f.LineItem.num_options %}{% with f.LineItem.options_cost_range as cost_range %}
-    {% if cost_range.0 == cost_range.1 %}${{ cost_range.0|floatformat:2 }}{% else %}${{ cost_range.0|floatformat:2 }}--{{ cost_range.1|floatformat:2 }}{% endif %}
-    {% endwith %}{% else %}${{ f.LineItem.amount|floatformat:2 }}{% endif %}</td>
 </tr>
 {% endfor %}
 <tr>
-    <td colspan="{% if select_qty %}4{% else %}3{% endif %}" align="center">
-        <input type="submit" class="fancybutton" value="Save"/>
+    <td align="right">
+        {% if forms %}
+        <p>Total cost of selected items: <span style="font-weight: bold;" id="total_extras"></span></p>
+        {% endif %}
+        {% if not program.sibling_discount %}
+        <p>Program admission: <span style="font-weight: bold;" id="amount_cost" data-total="{{ program.base_cost|floatformat:2 }}">${{ program.base_cost|floatformat:2 }}</span></p>
+        {% endif %}
+        {% if paid_for %}
+        <p>Total amount previously paid: <span style="font-weight: bold;" id="amount_paid" data-total="{{ amount_paid|floatformat:2 }}">-${{ amount_paid|floatformat:2 }}</span></p>
+        {% endif %}
+        {% if finaid_grant %}
+        <p>Total amount of financial aid: <span style="font-weight: bold;" id="amount_finaid" data-percent="{{ finaid_grant.percent|floatformat:2 }}" data-max_dec="{{ finaid_grant.amount_max_dec|floatformat:2 }}"></span></p>
+        {% endif %}
+        <p id="due_warning">Total amount due: <span style="font-weight: bold;" id="amount_due"></span></p>
+        {% if paid_for %}
+        <p id="donation_warning" style="color: blue;" hidden></p>
+        {% endif %}
+    </td>
+</tr>
+<tr>
+    <td align="center">
+        <input type="submit" class="btn btn-primary" value="Save"/>
     </td>
 </tr>
 </table>
 </center>
 </form>
 </div>
-
-<script type="text/javascript">
-    /*
-     * A click handler that unchecks all inputs with the same name as the
-     * button.
-     **/
-    function remove_item(button) {
-        $j("input[name="+button.name+"]").prop("checked", false);
-    }
-</script>
 
 {% endblock %}

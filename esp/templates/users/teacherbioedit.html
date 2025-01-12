@@ -29,12 +29,15 @@ Please complete the form below to update your biography.  We'd appreciate a pict
 </p>
 
 {% if form.errors %}
-<h2 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.<h2>
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            Please fix the error{{ form.errors|pluralize }} in the form.
+    </div>
 {% endif %}
 
 <div id="program_form">
 <form enctype="multipart/form-data" action="{{request.path}}" method="post">
-<table cellpadding="2" align="center" border="0">
+<table width="100%" cellpadding="2" align="center" border="0">
 
 <tr><th colspan="2">Your Teacher Biography</th></tr>
 
@@ -46,7 +49,7 @@ Please complete the form below to update your biography.  We'd appreciate a pict
 
 <tr>
  <td><label for="id_slugbio">Description of you in 50 characters or less:<br />
-       <small>(e.g. "{{ institution }} sophomore studying Architecture." or "Lifelong teacher of mathematics at the highschool level.")</small></label></td>
+       <small>(e.g. "{{ institution }} sophomore studying Architecture." or "Aspiring teacher of high school mathematics.")</small></label></td>
  <td>{{ form.slugbio }} {% if form.slugbio.errors %}
    <br /><span class="form_error">{{ form.slugbio.errors|join:", " }}</span>
    {% endif %}

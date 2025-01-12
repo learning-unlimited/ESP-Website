@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -33,17 +35,15 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_student, meets_cap
-from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
-from esp.users.models            import Record
+from esp.program.modules.base    import ProgramModuleObj, main_call, needs_student_in_grade, meets_cap, meets_deadline
+from esp.program.models          import ClassSection, StudentRegistration
+from esp.users.models            import Record, RecordType
 from esp.cal.models              import Event
 
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.web               import render_to_response
-from esp.middleware              import ESPError
 
 from django                      import forms
-from datetime                    import datetime, timedelta
 
 class StudentLunchSelectionForm(forms.Form):
 
@@ -59,7 +59,7 @@ class StudentLunchSelectionForm(forms.Form):
         #   Set choices for timeslot field
         #   [(None, '')] +
         events_all = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
-        events_filtered = filter(lambda x: x.start.day == self.day.day, events_all)
+        events_filtered = [x for x in events_all if x.start.day == self.day.day]
         self.fields['timeslot'].choices = [(ts.id, ts.short_description) for ts in events_filtered] + [(-1, 'No lunch period')]
 
     def load_data(self):
@@ -75,7 +75,7 @@ class StudentLunchSelectionForm(forms.Form):
         result = False
 
         #   Clear existing lunch periods for this day
-        for section in self.user.getEnrolledSections(self.program):
+        for section in self.user.getSections(self.program):
             if section.parent_class.category.category == 'Lunch':
                 if section.get_meeting_times()[0].start.day == self.day.day:
                     section.unpreregister_student(self.user)
@@ -103,6 +103,7 @@ class StudentLunchSelectionForm(forms.Form):
 
 
 class StudentLunchSelection(ProgramModuleObj):
+    doc = """Allows students to enroll in lunch blocks."""
 
     @classmethod
     def module_properties(cls):
@@ -111,15 +112,21 @@ class StudentLunchSelection(ProgramModuleObj):
             "admin_title": "Student Lunch Period Selection",
             "module_type": "learn",
             "required": True,
-            "seq": 5
+            "seq": 5,
+            "choosable": 0,
             }
 
     def isCompleted(self):
-        return Record.objects.filter(user=get_current_request().user,event="lunch_selected",program=self.program).exists()
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return Record.objects.filter(user=user, event__name="lunch_selected", program=self.program).exists()
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     @meets_cap
+    @meets_deadline('/Classes/Lunch')
     def select_lunch(self, request, tl, one, two, module, extra, prog):
         context = {'prog': self.program}
         user = request.user
@@ -140,7 +147,8 @@ class StudentLunchSelection(ProgramModuleObj):
                         success = False
                     context['messages'] += [msg]
                 if success:
-                    rec, created = Record.objects.get_or_create(user=user,program=prog,event="lunch_selected")
+                    rt = RecordType.objects.get(name="lunch_selected")
+                    rec, created = Record.objects.get_or_create(user=user, program=prog, event=rt)
                     return self.goToCore(tl)
             else:
                 context['errors'] = True
@@ -152,6 +160,9 @@ class StudentLunchSelection(ProgramModuleObj):
         context['forms'] = forms
 
         return render_to_response(self.baseDir()+'select_lunch.html', request, context)
+
+    def isStep(self):
+        return Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').exists()
 
     class Meta:
         proxy = True

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,14 +33,12 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from datetime import datetime
-from urllib import quote
-
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.program.models import Program, StudentAppResponse, StudentRegistration, RegistrationType
+from esp.program.models import StudentRegistration, RegistrationType
 from esp.program.models.class_ import ClassSubject
+from esp.program.class_status import ClassStatus
 from esp.program.modules.base import ProgramModuleObj
-from esp.program.modules.base import main_call, aux_call, needs_admin, needs_student, meets_grade
+from esp.program.modules.base import main_call, aux_call, needs_admin, needs_student_in_grade, meets_grade
 from esp.utils.web import render_to_response
 from esp.users.models import ESPUser
 from esp.utils.query_utils import nest_Q
@@ -59,6 +58,7 @@ class ClassChangeRequestModule(ProgramModuleObj):
             "link_title": "Class Change Request",
             "module_type": "learn",
             "required": False,
+            "choosable": 0,
         }
 
     class Meta:
@@ -66,15 +66,17 @@ class ClassChangeRequestModule(ProgramModuleObj):
         app_label = 'modules'
 
     def isCompleted(self):
-        return StudentRegistration.valid_objects().filter(user=get_current_request().user,
-                                                          relationship__name="Request").exists()
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return StudentRegistration.valid_objects().filter(user=user, relationship__name="Request").exists()
 
     @main_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     def classchangerequest(self, request, tl, one, two, module, extra, prog):
         timeslots = prog.getTimeSlots()
-        sections = prog.sections().filter(status=10, meeting_times__isnull=False).distinct()
+        sections = prog.sections().filter(status=ClassStatus.ACCEPTED, meeting_times__isnull=False).distinct()
 
         enrollments = {}
         for timeslot in timeslots:
@@ -93,9 +95,9 @@ class ClassChangeRequestModule(ProgramModuleObj):
             context['success'] = False
 
         if request.user.isStudent():
-            sections_by_slot = dict([(timeslot,[(section, 1 == StudentRegistration.valid_objects().filter(user=context['user'], section=section, relationship__name="Request").count()) for section in sections if section.get_meeting_times()[0] == timeslot and section.parent_class.grade_min <= request.user.getGrade(prog) <= section.parent_class.grade_max and section.parent_class not in enrollments.values() and ESPUser.getRankInClass(request.user, section.parent_class) in (5,10)]) for timeslot in timeslots])
+            sections_by_slot = dict([(timeslot, [(section, 1 == StudentRegistration.valid_objects().filter(user=context['user'], section=section, relationship__name="Request").count()) for section in sections if section.get_meeting_times()[0] == timeslot and section.parent_class.grade_min <= request.user.getGrade(prog) <= section.parent_class.grade_max and section.parent_class not in list(enrollments.values()) and ESPUser.getRankInClass(request.user, section.parent_class) in (5, 10)]) for timeslot in timeslots])
         else:
-            sections_by_slot = dict([(timeslot,[(section, False) for section in sections if section.get_meeting_times()[0] == timeslot]) for timeslot in timeslots])
+            sections_by_slot = dict([(timeslot, [(section, False) for section in sections if section.get_meeting_times()[0] == timeslot]) for timeslot in timeslots])
 
         fields = {}
         for i, timeslot in enumerate(sections_by_slot.keys()):

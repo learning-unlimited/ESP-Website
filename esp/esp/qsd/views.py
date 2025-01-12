@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -77,16 +78,18 @@ def qsd(request, url):
         page_name_base = page_name
     base_url = '/'.join(url_parts[:-1] + [page_name_base])
 
-    # Detect edit authorizations
+    # Detect read authorizations
     have_read = True
+    if url_parts[0] == 'manage' and not request.user.isAdministrator():
+        have_read = False
 
     if not have_read and action == 'read':
-        raise Http403, "You do not have permission to access this page."
+        raise Http403("You do not have permission to access this page.")
 
     # Fetch the QSD object
     try:
         qsd_rec = QuasiStaticData.objects.get_by_url(base_url)
-        if qsd_rec == None:
+        if qsd_rec is None:
             raise QuasiStaticData.DoesNotExist
         if qsd_rec.disabled:
             raise QuasiStaticData.DoesNotExist
@@ -95,7 +98,7 @@ def qsd(request, url):
         have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         if have_edit:
-            if action in ('edit','create',):
+            if action in ('edit', 'create',):
                 qsd_rec = QuasiStaticData()
                 qsd_rec.url = base_url
                 qsd_rec.nav_category = default_navbarcategory()
@@ -113,17 +116,15 @@ def qsd(request, url):
                 return response
         else:
             if action == 'read':
-                raise Http404, 'This page does not exist.'
+                raise Http404('This page does not exist.')
             else:
-                raise Http403, 'Sorry, you can not modify <tt>%s</tt>.' % request.path
+                raise Http403('Sorry, you can not modify <tt>%s</tt>.' % request.path)
 
     if action == 'create':
         action = 'edit'
 
     # Detect the standard read verb
     if action == 'read':
-        if not have_read:
-            raise Http403, 'You do not have permission to read this page.'
 
         # Render response
         response = render_to_response('qsd/qsd.html', request, {
@@ -150,7 +151,7 @@ def qsd(request, url):
         have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         if not have_edit:
-            raise Http403, "Sorry, you do not have permission to edit this page."
+            raise Http403("Sorry, you do not have permission to edit this page.")
 
         nav_category_target = NavBarCategory.objects.get(id=request.POST['nav_category'])
 
@@ -184,7 +185,7 @@ def qsd(request, url):
 
         # Enforce authorizations (FIXME: SHOW A REAL ERROR!)
         if not have_edit:
-            raise Http403, "You don't have permission to edit this page."
+            raise Http403("You don't have permission to edit this page.")
 
         # Render an edit form
         return render_to_response('qsd/qsd_edit.html', request, {
@@ -219,6 +220,11 @@ def ajax_qsd(request):
             return HttpResponse(content='Sorry, you do not have permission to edit this page.', status=403)
 
         qsd, created = QuasiStaticData.objects.get_or_create(url=post_dict['url'], defaults={'author': request.user})
+
+        # Clobber prevention. -ageng 2013-08-12
+        # Now needs to be slightly more complicated since we're on reversion. -ageng 2014-01-04
+        if not QuasiStaticData.objects.get_by_url(qsd.url) == qsd:
+            return HttpResponse(content='The edit you are submitting is not based on the newest version!\n(Is someone else editing? Did you get here by a back button?)\nCopy out your work if you need it. Then refresh the page to get the latest version.', status=409)
 
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
         # The revision will automatically be created upon calling the save function of the model object

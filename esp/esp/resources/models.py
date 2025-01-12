@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -48,7 +52,7 @@ from django.db import models
 from django.db.models.query import Q
 from django.core.cache import cache
 
-import pickle
+import json
 
 ########################################
 #   New resource stuff (Michael P)
@@ -66,8 +70,11 @@ Procedures:
     -   Program resources module lets admin put in classrooms and equipment for the appropriate times.
 """
 
+@python_2_unicode_compatible
 class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
+    # TODO: this model can almost certainly be cleaned up. It is probably possible to delete the caching and dumping
+    # and just use `attributes` as a pipe-separated list
     from esp.survey.models import ListField
 
     name = models.CharField(max_length=40)                          #   Brief name
@@ -75,20 +82,22 @@ class ResourceType(models.Model):
     consumable  = models.BooleanField(default = False)              #   Is this consumable?  (Not usable yet. -Michael P)
     priority_default = models.IntegerField(default=-1)  #   How important is this compared to other types?
     only_one = models.BooleanField(default=False, help_text="If set, in some cases, only allow adding one instance of this resource.")
-    attributes_pickled  = models.TextField(default="Don't care", blank=True, help_text="A pipe (|) delimited list of possible attribute values.")
+    attributes_dumped  = models.TextField(default="Don't care", blank=True, help_text="A pipe (|) delimited list of possible attribute values.")
     #   As of now we have a list of string choices for the value of a resource.  But in the future
     #   it could be extended.
-    choices = ListField('attributes_pickled')
+    choices = ListField('attributes_dumped')
     program = models.ForeignKey('program.Program', null=True, blank=True)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
     autocreated = models.BooleanField(default=False)
+    #   Whether to offer this resource type as an option in the class creation/editing form
+    hidden = models.BooleanField(default=False)
 
     def _get_attributes(self):
         if hasattr(self, '_attributes_cached'):
             return self._attributes_cached
 
-        if self.attributes_pickled:
+        if self.attributes_dumped:
             try:
-                self._attributes_cached = pickle.loads(self.attributes_pickled)
+                self._attributes_cached = json.loads(self.attributes_dumped)
             except:
                 self._attributes_cached = None
         else:
@@ -103,7 +112,7 @@ class ResourceType(models.Model):
 
     def save(self, *args, **kwargs):
         if hasattr(self, '_attributes_cached'):
-            self.attributes_pickled = pickle.dumps(self._attributes_cached)
+            self.attributes_dumped = json.dumps(self._attributes_cached)
         super(ResourceType, self).save(*args, **kwargs)
 
     _get_or_create_cache = {}
@@ -114,7 +123,7 @@ class ResourceType(models.Model):
 
         if program:
             base_q = Q(program=program)
-            if Tag.getTag('allow_global_restypes'):
+            if Tag.getBooleanTag('allow_global_restypes'):
                 base_q = base_q | Q(program__isnull=True)
         else:
             base_q = Q(program__isnull=True)
@@ -125,7 +134,7 @@ class ResourceType(models.Model):
             nt = ResourceType()
             nt.name = label
             nt.description = ''
-            nt.attributes_pickled = "Yes"
+            nt.attributes_dumped = "Yes"
             nt.program = program
             nt.autocreated = True
             nt.save()
@@ -134,9 +143,10 @@ class ResourceType(models.Model):
         cls._get_or_create_cache[(label, program)] = ret
         return ret
 
-    def __unicode__(self):
+    def __str__(self):
         return 'Resource Type "%s", priority=%d' % (self.name, self.priority_default)
 
+@python_2_unicode_compatible
 class ResourceRequest(models.Model):
     """ A request for a particular type of resource associated with a particular clas section. """
 
@@ -145,15 +155,17 @@ class ResourceRequest(models.Model):
     res_type = models.ForeignKey(ResourceType, on_delete=models.PROTECT)
     desired_value = models.TextField()
 
-    def __unicode__(self):
-        return 'Resource request of %s for %s: %s' % (unicode(self.res_type), self.target.emailcode(), self.desired_value)
+    def __str__(self):
+        return 'Resource request of %s for %s: %s' % (six.text_type(self.res_type), self.target.emailcode(), self.desired_value)
 
+@python_2_unicode_compatible
 class ResourceGroup(models.Model):
     """ A hack to make the database handle resource group ID creation """
 
-    def __unicode__(self):
+    def __str__(self):
         return 'Resource group %d' % (self.id,)
 
+@python_2_unicode_compatible
 class Resource(models.Model):
     """ An individual resource, such as a class room or piece of equipment.  Categorize by
     res_type, attach to a user if necessary. """
@@ -173,14 +185,14 @@ class Resource(models.Model):
     # field of ResourceRequest.
     attribute_value = models.TextField(default="", blank=True)
 
-    def __unicode__(self):
+    def __str__(self):
         if self.user is not None:
-            return 'For %s: %s (%s)' % (unicode(self.user), self.name, unicode(self.res_type))
+            return 'For %s: %s (%s)' % (six.text_type(self.user), self.name, six.text_type(self.res_type))
         else:
             if self.num_students != -1:
-                return 'For %d students: %s (%s)' % (self.num_students, self.name, unicode(self.res_type))
+                return 'For %d students: %s (%s)' % (self.num_students, self.name, six.text_type(self.res_type))
             else:
-                return '%s (%s)' % (self.name, unicode(self.res_type))
+                return '%s (%s)' % (self.name, six.text_type(self.res_type))
 
     def save(self, *args, **kwargs):
         if self.res_group is None:
@@ -205,9 +217,22 @@ class Resource(models.Model):
     __sub__ = distance
 
 
-    def identical_resources(self):
+    def identical_resources(self, prog = None):
         res_list = Resource.objects.filter(name=self.name)
+        if prog:
+            res_list = res_list.filter(event__program=prog)
         return res_list
+
+    def identical_id(self, prog=None):
+        res_list = self.identical_resources(prog=prog)
+        return min(res_list.values_list("id", flat = True))
+
+    def duplicates(self):
+        res_list = Resource.objects.filter(name=self.name, event = self.event)
+        return res_list
+
+    def number_duplicates(self):
+        return self.duplicates().count()
 
     def satisfies_requests(self, req_class):
         #   Returns a list of 2 items.  The first element is boolean and the second element is a list of the unsatisfied requests.
@@ -238,16 +263,19 @@ class Resource(models.Model):
     def associated_resources(self):
         return self.grouped_resources().exclude(id=self.id).exclude(res_type__name='Classroom')
 
-    def assign_to_section(self, section, check_constraint=True, override=False):
+    def assign_to_section(self, section, check_constraint=True, override=False, group=None):
         if override:
             self.clear_assignments()
         if self.is_available():
             new_ra = ResourceAssignment()
             new_ra.resource = self
             new_ra.target = section
+            if group is not None:
+                new_ra.assignment_group = group
             new_ra.save()
         else:
             raise ESPError('Attempted to assign class section %d to conflicted resource; and constraint check was on.' % section.id, log=True)
+        return new_ra
 
     assign_to_class = assign_to_section
 
@@ -288,10 +316,10 @@ class Resource(models.Model):
         return (len(self.available_times(program)) > 0)
 
     def available_times_html(self, program=None):
-        return '<br /> '.join([unicode(e) for e in Event.collapse(self.available_times(program))])
+        return '<br /> '.join([six.text_type(e) for e in Event.collapse(self.available_times(program))])
 
     def available_times(self, program=None):
-        event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times(program)))
+        event_list = [x for x in list(self.matching_times(program)) if self.is_available(timeslot=x)]
         return event_list
 
     def matching_times(self, program=None):
@@ -323,6 +351,14 @@ class Resource(models.Model):
             collision = ResourceAssignment.objects.filter(resource=self)
             return (collision.count() > 0)
 
+@python_2_unicode_compatible
+class AssignmentGroup(models.Model):
+    """ A hack to make the database handle assignment group ID creation """
+
+    def __str__(self):
+        return 'Assignment group %d' % (self.id,)
+
+@python_2_unicode_compatible
 class ResourceAssignment(models.Model):
     """ The binding of a resource to the class that it belongs to. """
 
@@ -332,12 +368,21 @@ class ResourceAssignment(models.Model):
     target = models.ForeignKey('program.ClassSection', null=True)
     target_subj = models.ForeignKey('program.ClassSubject', null=True)
     lock_level = models.IntegerField(default=0)
+    returned = models.BooleanField(default=False) # Only really relevant for floating resources
+    assignment_group = models.ForeignKey(AssignmentGroup, null=True, blank=True)
 
-    def __unicode__(self):
-        result = u'Resource assignment for %s' % unicode(self.getTargetOrSubject())
+    def __str__(self):
+        result = 'Resource assignment for %s' % six.text_type(self.getTargetOrSubject())
         if self.lock_level > 0:
-            result += u' (locked)'
+            result += ' (locked)'
         return result
+
+    def save(self, *args, **kwargs):
+        if self.assignment_group is None:
+            #   Make a new group for this
+            new_group = AssignmentGroup.objects.create()
+            self.assignment_group = new_group
+        super(ResourceAssignment, self).save(*args, **kwargs)
 
     def getTargetOrSubject(self):
         """ Returns the most finely specified target. (target if it's set, target_subj otherwise) """
@@ -348,6 +393,11 @@ class ResourceAssignment(models.Model):
     def resources(self):
         return Resource.objects.filter(res_group=self.resource.res_group)
 
+    def grouped_assignments(self):
+        if self.assignment_group is None:
+            return ResourceAssignment.objects.filter(id=self.id)
+        return ResourceAssignment.objects.filter(assignment_group=self.assignment_group)
+
 
 def install():
     #   Create default resource types.
@@ -356,29 +406,29 @@ def install():
         ResourceType.objects.create(
             name='Classroom',
             description='Type of classroom',
-            attributes_pickled='Lecture|Discussion|Outdoor|Lab|Open space',
+            attributes_dumped='Lecture|Discussion|Outdoor|Lab|Open space',
         )
     if not ResourceType.objects.filter(name='A/V').exists():
         ResourceType.objects.create(
             name='A/V',
             description='A/V equipment',
-            attributes_pickled='LCD projector|Overhead projector|Amplified speaker|VCR|DVD player',
+            attributes_dumped='LCD projector|Overhead projector|Amplified speaker|VCR|DVD player',
         )
     if not ResourceType.objects.filter(name='Computer[s]').exists():
         ResourceType.objects.create(
             name='Computer[s]',
             description='Computer[s]',
-            attributes_pickled='ESP laptop|Athena workstation|Macs for students|Windows PCs for students|Linux PCs for students',
+            attributes_dumped='ESP laptop|Athena workstation|Macs for students|Windows PCs for students|Linux PCs for students',
         )
     if not ResourceType.objects.filter(name='Seating').exists():
         ResourceType.objects.create(
             name='Seating',
             description='Seating arrangement',
-            attributes_pickled="Don't care|Fixed seats|Movable desks",
+            attributes_dumped="Don't care|Fixed seats|Movable desks",
         )
     if not ResourceType.objects.filter(name='Light control').exists():
         ResourceType.objects.create(
             name='Light control',
             description='Light control',
-            attributes_pickled="Don't care|Darkenable",
+            attributes_dumped="Don't care|Darkenable",
         )

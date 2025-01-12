@@ -22,16 +22,18 @@ Please enter the information for the new student:
 </p>
 <br />
 
-<table width="550">
 <form autocomplete="off" name="reg" method="POST" action="{{request.path}}">
+<table width="550">
 {{ form }}
 <tr>
  <th colspan="2">
   <input type="submit" value="Save Registration" class="btn btn-primary" />
  </th>
 </tr>
-</form>
 </table>
+</form>
 <br />
+
+{% include "program/modules/onsitecore/returnlink.html" %}
 
 {% endblock %}

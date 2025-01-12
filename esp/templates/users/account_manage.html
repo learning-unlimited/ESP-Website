@@ -1,0 +1,23 @@
+{% extends "main.html" %}
+
+{% block title %}Change Account Password{% endblock %}
+
+{% block content %}
+<h1>Manage Your Account</h1>
+{% load render_qsd %}
+{% inline_qsd_block "contact_password_recovery_check" %}
+<h2>You can do the following things with your account:</h2>
+<center>
+<ul class="nav nav-tabs nav-stacked">
+<li style="width: 50%;"><a href="/myesp/profile" title="Edit your profile" style="text-decoration: none;">Edit your profile</a></li>{% if request.user.isTeacher %}
+<li style="width: 50%;"><a href="/teach/teachers/{{ request.user.username }}/bio.edit.html" title="Edit your teacher biography" style="text-decoration: none;">Edit your teacher biography</a></li>
+{% endif %}<li style="width: 50%;"><a href="/myesp/passwd" title="Change your password" style="text-decoration: none;">Change your password</a></li>
+<li style="width: 50%;"><a href="/myesp/disableaccount" title="Disable your account" style="text-decoration: none;">Disable your account</a></li>
+</ul>
+</center>
+<p>Please note, if you disable your account, you will no longer receive email and/or mail notifications from us.</p>
+{% end_inline_qsd_block %}
+
+<p>By creating an account, you agreed to the <a href="https://www.learningu.org/about/tos/" target="_blank">terms of service</a>
+  set forth by Learning Unlimited, the umbrella organization of which we are a member.</p>
+{% endblock %}

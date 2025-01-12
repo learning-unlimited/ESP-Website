@@ -17,13 +17,8 @@
 Congratulations, {{user.name}} was registered for {{program.niceName}}
 <br />
 An account, with username <strong>{{user.username}}</strong> was created for this user. An email has been sent to <tt>{{user.email}}</tt> with further instructions on how to access this account.
-<br /><br />
-<br />
-<a href="/onsite/{{program.getUrlBase}}/main">(click here to return to onsite reg.)</a>
 </p>
 
-
-
-
+{% include "program/modules/onsitecore/returnlink.html" %}
 
 {% endblock %}

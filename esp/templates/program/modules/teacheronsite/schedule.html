@@ -1,0 +1,46 @@
+{% extends "program/modules/teacheronsite/webapp.html" %}
+
+{% block body %}
+
+<center>
+
+  <div class="main">
+    <table class="teacherschedule">
+      <colgroup>
+       <col span="1" class="time">
+       <col span="1" class="cls">
+       <col span="1" class="edit">
+      </colgroup>
+      <thead>
+        <th colspan="3" class="user_info">
+            <i>Classes for {{user.first_name}} {{user.last_name}} - ID: {{user.id}}</i>
+            {% if not checked_in %}
+                <p class="checkinnote">{{ checkin_note }}</p>
+            {% endif %}
+        </th>
+      </thead>
+      <tbody>
+        {% for cls in classes %}
+            {% ifchanged cls.get_meeting_times.0.start.day %}
+                <tr>
+                    <th colspan="3" class="day">{{ cls.get_meeting_times.0.pretty_date }}</th>
+                </tr>
+            {% endifchanged %}
+            <tr class="schedule_row">
+                <td class="time">{{ cls.time_blocks.0.short_time }}</td>
+                <td class="cls">
+                    <b>{{ cls.parent_class.title }}</b>{% if request.user in cls.get_moderators %}</br>({{ program.getModeratorTitle }}){% endif %}
+                    <br>{% if cls.initial_lat_long %}<a class="no-dec" title="Directions" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination={{ cls.initial_lat_long }}&travelmode=walking">{% endif %}{{ cls.prettyrooms|join:", " }}{% if cls.initial_lat_long %}&nbsp;<i class="material-icons md-3">directions</i></a>{% endif %}
+                </td>
+                <td class="list">
+                    <a class="no-dec" title="More Details" href="/teach/{{one}}/{{two}}/onsitedetails/{{ cls.id }}"><i class="material-icons md-4">list</i></a>
+                    <a class="no-dec" title="Class Roster" href="/teach/{{one}}/{{two}}/onsiteroster/{{ cls.id }}"><i class="material-icons md-4">assignment</i></a>
+                </td>
+            </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</center>
+
+{% endblock %}

@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+from __future__ import division
+import six
+from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -39,6 +43,7 @@ logger = logging.getLogger(__name__)
 import os
 import os.path
 import shutil
+import random
 import re
 import subprocess
 import tempfile
@@ -46,6 +51,8 @@ import textwrap
 import distutils.dir_util
 import json
 import hashlib
+import copy
+from six.moves.urllib.parse import quote, unquote
 
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -94,7 +101,7 @@ class ThemeController(object):
 
     def get_theme_names(self):
         return [name for name in os.listdir(THEME_PATH)
-            if os.path.isdir(os.path.join(THEME_PATH, name))]
+            if name != '__pycache__' and os.path.isdir(os.path.join(THEME_PATH, name))]
 
     def get_template_settings(self):
         """
@@ -225,12 +232,59 @@ class ThemeController(object):
 
         return results
 
-    def compile_css(self, theme_name, variable_data, output_filename):
+    def compile_less(self, less_data):
         #   Hack to make things work on Windows systems
         INCLUDE_PATH_SEP = ':'
         if os.name == 'nt':
             INCLUDE_PATH_SEP = ';'
 
+        less_search_path = INCLUDE_PATH_SEP.join(settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])
+        logger.debug('LESS search path is "%s"', less_search_path)
+
+        #   Compile to CSS
+        lessc_args = ['lessc', '--include-path="%s"' % less_search_path, '-']
+        lessc_process = subprocess.Popen(' '.join(lessc_args), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        css_data = lessc_process.communicate(less_data.encode())[0]
+
+        if lessc_process.returncode != 0:
+            raise ESPError('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.<br />LESS compile command was: <pre>%s</pre>' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support'], ' '.join(lessc_args)), log=True)
+
+        return css_data
+
+    def get_variable_defaults(self, theme_name=None):
+        # This is particularly important for themes that have variables files with LESS (e.g., darken())
+        # Otherwise it basically does the same thing as find_less_variables()
+        if theme_name is None:
+            theme_name = self.get_current_theme()
+
+        less_data = ''
+        # load variable LESS from files
+        for filename in self.list_filenames(os.path.join(self.base_dir(theme_name), 'less'), r'variables.*\.less$'):
+            less_file = open(filename)
+            logger.debug('Including LESS source %s', filename)
+            less_data += '\n' + less_file.read()
+            less_file.close()
+
+        # add list of variables
+        # this is a hack to convert the less variables to pseudo-css compiled variables
+        # which we can then extract as a python dictionary
+        less_data += '\ndiv {'
+        for item in re.findall(r'@([a-zA-Z0-9_]+):\s*(.*?);', less_data):
+            less_data += '\n' + item[0]
+            less_data += ': @' + item[0] + ';'
+        less_data += '\n}'
+
+        # compile to CSS
+        css_data = self.compile_less(less_data)
+
+        # extract the newly compiled variables
+        compiled_defaults = dict(re.findall(r'\s([a-zA-Z0-9_]+):\s*(.*?);', css_data.decode('UTF-8')))
+        defaults = self.find_less_variables(flat=True)
+        defaults.update(compiled_defaults)
+
+        return defaults
+
+    def compile_css(self, theme_name, variable_data, output_filename):
         #   Load LESS files in order of search path
         less_data = ''
         for filename in self.get_less_names(theme_name):
@@ -239,40 +293,21 @@ class ThemeController(object):
             less_data += '\n' + less_file.read()
             less_file.close()
 
-        if themes_settings.THEME_DEBUG:
-            # TODO(benkraft): should this and its friend below get removed now?
-            # I think they're the last users of THEME_DEBUG.
-            tf1 = open('debug_1.less', 'w')
-            tf1.write(less_data)
-            tf1.close()
-
         #   Make icon image path load from the CDN by default
         if 'iconSpritePath' not in variable_data:
             variable_data['iconSpritePath'] = '"%s/bootstrap/img/glyphicons-halflings.png"' % settings.CDN_ADDRESS
 
         #   Replace all variable declarations for which we have a value defined
-        for (variable_name, variable_value) in variable_data.iteritems():
+        for (variable_name, variable_value) in variable_data.items():
             less_data = re.sub(r'@%s:(\s*)(.*?);' % variable_name, r'@%s: %s;' % (variable_name, variable_value), less_data)
 
-        if themes_settings.THEME_DEBUG:
-            tf1 = open('debug_2.less', 'w')
-            tf1.write(less_data)
-            tf1.close()
-
-        less_search_path = INCLUDE_PATH_SEP.join(settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])
-        logger.debug('LESS search path is "%s"', less_search_path)
-
         #   Compile to CSS
-        lessc_args = ['lessc', '--include-path="%s"' % less_search_path, '-']
-        lessc_process = subprocess.Popen(' '.join(lessc_args), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-        css_data = lessc_process.communicate(less_data)[0]
-
-        if lessc_process.returncode != 0:
-            raise ESPError('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.<br />LESS compile command was: <pre>%s</pre>' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support'], ' '.join(lessc_args)), log=True)
+        css_data = self.compile_less(less_data)
 
         with open(output_filename, 'w') as output_file:
-            output_file.write(THEME_COMPILED_WARNING + css_data)
+            output_file.write(six.text_type(THEME_COMPILED_WARNING) + css_data.decode('UTF-8'))
         logger.debug('Wrote %.1f KB CSS output to %s', len(css_data) / 1000., output_filename)
+        Tag.setTag("current_theme_version", value = hex(random.getrandbits(16)))
 
     def recompile_theme(self, theme_name=None, customization_name=None, keep_files=None):
         """
@@ -330,15 +365,6 @@ class ThemeController(object):
         if theme_name is None:
             theme_name = self.get_current_theme()
 
-        #   Remove template overrides matching the theme name
-        logger.debug('Clearing theme: %s', theme_name)
-        for template_name in self.get_template_names(theme_name):
-            TemplateOverride.objects.filter(name=template_name).delete()
-            logger.debug('-- Removed template override: %s', template_name)
-
-        #   Clear template override cache
-        TemplateOverrideLoader.get_template_hash.delete_all()
-
         #   If files are to be preserved, copy them to temporary locations
         #   and return a record of those locations (backup_info).
         #   This is much easier than writing new functions for removing and
@@ -356,6 +382,7 @@ class ThemeController(object):
         Tag.unSetTag('current_theme_name')
         Tag.unSetTag('current_theme_params')
         Tag.unSetTag('current_theme_palette')
+        Tag.unSetTag('current_theme_version')
         self.unset_current_customization()
 
         #   Clear the Varnish cache
@@ -370,6 +397,8 @@ class ThemeController(object):
 
         result = []
         for filename in os.listdir(dir):
+            if filename == '__pycache__':
+                continue
             full_filename = os.path.join(dir, filename)
             if os.path.isdir(filename):
                 result += self.get_file_summaries(full_filename)
@@ -401,7 +430,7 @@ class ThemeController(object):
                 if hash_src != hash_dest:
                     differences.append({
                         'filename': rel_filename_dest,
-                        'filename_hash': hashlib.sha1(rel_filename_dest).hexdigest(),
+                        'filename_hash': hashlib.sha1(rel_filename_dest.encode("UTF-8")).hexdigest(),
                         'source_size': filesize_src,
                         'dest_size': filesize_dest,
                     })
@@ -439,22 +468,6 @@ class ThemeController(object):
 
         #   Create template overrides using data provided (our models handle versioning)
         logger.debug('Loading theme: %s', theme_name)
-        for template_name in self.get_template_names(theme_name):
-            #   Read default template override contents provided by theme
-            to = TemplateOverride(name=template_name)
-            template_filename = os.path.join(self.base_dir(theme_name), 'templates', template_name)
-            template_file = open(template_filename, 'r')
-            to.content = template_file.read()
-
-            #   Add a Django template comment tag indicating theme type to the main.html override (for tests)
-            if to.name == 'main.html':
-                to.content += ('\n{%% comment %%} Theme: %s {%% endcomment %%}\n' % theme_name)
-
-            to.save()
-            logger.debug('-- Created template override: %s', template_name)
-
-        #   Clear template override cache
-        TemplateOverrideLoader.get_template_hash.delete_all()
 
         #   Collect LESS files from appropriate sources and compile CSS
         self.compile_css(theme_name, {}, self.css_filename)
@@ -504,10 +517,11 @@ class ThemeController(object):
         if vars is None:
             vars = self.get_current_params()
         if palette is None:
-            palette = self.get_palette()
+            palette = self.get_palette()['custom']
 
         vars_orig = self.find_less_variables(theme_name, flat=True)
-        for key in vars.keys():
+        keys = copy.copy(list(vars.keys()))
+        for key in keys:
             if key not in vars_orig:
                 del vars[key]
 
@@ -517,13 +531,13 @@ class ThemeController(object):
         context['save_name'] = save_name
         context['palette'] = palette
 
-        f = open(os.path.join(themes_settings.themes_dir, '%s.less' % save_name), 'w')
+        f = open(os.path.join(themes_settings.themes_dir, '%s.less' % quote(save_name, safe = "")), 'w')
         f.write(render_to_string('themes/custom_vars.less', context))
         f.close()
 
     def load_customizations(self, save_name):
 
-        f = open(os.path.join(themes_settings.themes_dir, '%s.less' % save_name), 'r')
+        f = open(os.path.join(themes_settings.themes_dir, '%s.less' % quote(save_name, safe = "")), 'r')
         data = f.read()
         f.close()
 
@@ -532,15 +546,23 @@ class ThemeController(object):
         for match in re.findall(r'@(\w+):\s*(.*?);', data):
             vars[match[0]] = match[1]
 
+        #   Substitute LESS variables
+        for key, val in vars.items():
+            if val[1:len(val)] in list(vars.keys()):
+                vars[key] = vars[val[1:len(val)]]
+
         #   Collect save name stored in file
         save_name_match = re.search(r'// Theme Name: (.+?)\n', data)
         if save_name_match:
             assert(save_name == save_name_match.group(1))
 
         #   Collect palette
-        palette = []
+        palette = set()
         for match in re.findall(r'palette:(#?\w+?);', data):
-            palette.append(match)
+            if len(match) == 4: # Convert to long form
+                match = '#' + match[1] + match[1] + match[2] + match[2] + match[3] + match[3]
+            palette.add(match)
+        palette = list(palette)
 
         self.set_current_customization(save_name)
 
@@ -549,33 +571,48 @@ class ThemeController(object):
         return (vars, palette)
 
     def delete_customizations(self, save_name):
-        os.remove(os.path.join(themes_settings.themes_dir, '%s.less' % save_name))
+        os.remove(os.path.join(themes_settings.themes_dir, '%s.less' % quote(save_name, safe = "")))
 
     def get_customization_names(self):
         result = []
         filenames = os.listdir(os.path.join(themes_settings.themes_dir))
         for fn in filenames:
             if fn.endswith('.less'):
-                result.append(fn[:-5])
+                result.append(unquote(fn[:-5]))
         return result
 
     ##  Palette getter/setter -- palette is a list of strings which each contain
     ##  HTML color codes, e.g. ["#FFFFFF", "#3366CC"]
 
+    ## Returns a dictionary with the theme's base palette and the custom tag-defined palette
     def get_palette(self):
-        palette_base = json.loads(Tag.getTag('current_theme_palette', default='[]'))
+        palette_custom = json.loads(Tag.getTag('current_theme_palette', default='[]'))
 
-        #   Augment with the colors from any global LESS variables
-        palette = set(palette_base)
+        #   Collect colors from any global LESS variables
+        palette_base = set()
         base_vars = self.find_less_variables()
         for varset in base_vars.values():
             for val in varset.values():
-                if isinstance(val, basestring) and val.startswith('#'):
-                    palette.add(val)
+                if isinstance(val, six.string_types) and val.startswith('#'):
+                    if len(val) == 4: # Convert to long form
+                        val = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3]
+                    palette_base.add(val)
 
-        palette = list(palette)
-        palette.sort()
-        return palette
+        palette_base = sorted(palette_base)
+
+        return {'base': palette_base, 'custom': palette_custom}
 
     def set_palette(self, palette):
+        #   Remove global LESS variables from the palette
+        palette = set(palette)
+        base_vars = self.find_less_variables()
+        for varset in base_vars.values():
+            for val in varset.values():
+                if isinstance(val, six.string_types) and val.startswith('#'):
+                    if len(val) == 4: # Convert to long form
+                        val = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3]
+                    if val in palette:
+                        palette.remove(val)
+
+        palette = sorted(palette)
         Tag.setTag('current_theme_palette', value=json.dumps(palette))

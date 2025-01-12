@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -44,6 +46,8 @@ from django.db.models.query import Q
 from esp.tagdict.models import Tag
 
 class VolunteerSignup(ProgramModuleObj, CoreModule):
+    doc = """Provides a form for volunteers to signup for particular timeslots."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -51,16 +55,23 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             "link_title": "Sign Up to Volunteer",
             "module_type": "volunteer",
             "seq": 0,
+            "choosable": 1,
             }
 
     def require_auth(self):
-        return Tag.getBooleanTag('volunteer_require_auth', self.program, default=False)
+        return Tag.getBooleanTag('volunteer_require_auth', self.program)
 
     @main_call
     @no_auth
     @meets_deadline("/Signup")
     def signup(self, request, tl, one, two, module, extra, prog):
+        return self.signupForm(request, tl, one, two, prog, request.user)
+
+    @staticmethod
+    def signupForm(request, tl, one, two, prog, volunteer, isAdmin=False):
         context = {}
+        context['one'] = one
+        context['two'] = two
 
         if request.method == 'POST':
             form = VolunteerOfferForm(request.POST, program=prog)
@@ -78,16 +89,24 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             form = VolunteerOfferForm(program=prog)
 
         #   Pre-fill information if possible
-        if hasattr(request.user, 'email'):
-            form.load(request.user)
+        if hasattr(volunteer, 'email'):
+            form.load(volunteer)
 
-        #   Override default appearance; template doesn't mind taking a string instead
-        context['form'] = form._html_output(
-            normal_row = u'<tr%(html_class_attr)s><th>%(label)s</th><td>%(errors)s%(field)s%(help_text)s</td></tr>',
-            error_row = u'<tr><td colspan="2">%s</td></tr>',
-            row_ender = u'</td></tr>',
-            help_text_html = u'%s',
-            errors_on_separate_row = False)
+        context['form'] = form
+
+        vrs = prog.getVolunteerRequests()
+        time_options = [v.timeslot for v in vrs]
+        time_options_dict = dict(list(zip(time_options, vrs)))
+
+        #   Group contiguous blocks
+        if not Tag.getBooleanTag('availability_group_timeslots'):
+            time_groups = [list(time_options)]
+        else:
+            time_groups = prog.getTimeGroups(types = ["Volunteer"])
+
+        context['groups'] = [[{'slot': t, 'id': time_options_dict[t].id} for t in group] for group in time_groups]
+
+        context['isAdmin'] = isAdmin
 
         return render_to_response('program/modules/volunteersignup/signup.html', request, context)
 
@@ -107,7 +126,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         return result
 
     def volunteerDesc(self):
-        base_dict = {'volunteer_all': 'All on-site volunteers for %s' % self.program.niceName()}
+        base_dict = {'volunteer_all': 'All onsite volunteers for %s' % self.program.niceName()}
         requests = self.program.volunteerrequest_set.all()
         for req in requests:
             key = 'volunteer_%d' % req.id
@@ -120,7 +139,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         #   Use the template defined in ProgramPrintables
         from esp.program.modules.handlers import ProgramPrintables
         context = {'module': self}
-        pmos = ProgramModuleObj.objects.filter(program=prog,module__handler__icontains='printables')
+        pmos = ProgramModuleObj.objects.filter(program=prog, module__handler__icontains='printables')
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
             if request.user.isAdmin() and 'user' in request.GET:

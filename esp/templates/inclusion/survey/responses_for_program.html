@@ -1,0 +1,10 @@
+{% for q in display_data %}
+    {% if forloop.first %}
+        <h2><a name="survey{{ survey.id }}-individual"></a>Individual Questions<span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span></h2>
+        <table class="fullwidth bordered">
+    {% endif %}
+    {% with survey.num_participants as num_participants %}
+        <tr><td>{% include "survey/answers.html" %}</td></tr>
+    {% endwith %}
+{% endfor %}
+</table></br></br>

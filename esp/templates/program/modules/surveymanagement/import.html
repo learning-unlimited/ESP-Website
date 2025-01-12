@@ -1,0 +1,79 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Survey Administration{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/survey_manage.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+{% load survey %}
+<h1>Survey Management for {{ program.niceName }}</h1>
+
+<h2>Confirm Survey Import</h2>
+
+<p>
+You have chosen to import {{ survey.name }} ({{ survey.category }}) from {{ survey.program.niceName }} to {{ program.niceName }}. Please choose which questions you would like to keep, then press the "Complete Import" button.
+</p>
+
+<div id="program_form">
+<form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=survey&op=import">
+<input type="hidden" name="import_confirm" value="yes" />
+<input type="hidden" name="survey_id" value="{{ survey.id }}" />
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
+    <tr><th colspan="6">Questions for {{ survey.name }} ({{ survey.category }})</th></tr>
+    <tr>
+        <th class="selector active" colspan="3" width="50%" data-panel="details">Question Details</th>
+        <th class="selector" colspan="3" width="50%" data-panel="rendered">Rendered Questions</th>
+    </tr>
+    <tr id="details-panel"><td colspan="6"><table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+        <th width="5%">Seq</th>
+        <th width="30%">Name</th>
+        <th width="25%">Question Type</b></th>
+        <th width="25%">Parameter Values</th>
+        <th width="5%">Per Class</th>
+        <th width="10%" align="center">Import? <input type="checkbox" class="toggleall" onclick=toggleAll(this) checked></th>
+    </tr>
+    {% for question in questions %}
+        <tr>
+            <td class="underline">{{ question.seq }}</td>
+            <td class="underline">{{ question.name }}</td>
+            <td class="underline">{{ question.question_type.name }}</td>
+            <td class="underline">
+                {% for key, value in question.get_params.items %}
+                    {{ key }}: {% if value %}{{ value }}{% endif %}
+                    {% if not forloop.last %}<br />{% endif %}
+                {% endfor %}
+            </td>
+            <td class="underline">{% if question.per_class %}&#10003;{% endif %}</td>
+            <td class="underline" align="center"><input type="checkbox" name="to_import" value="{{ question.id }}" onclick=toggle(this) checked></td>
+        </tr>
+    {% endfor %}
+    </table></td></tr>
+    <tr hidden id="rendered-panel"><td colspan="6"><table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+        <th width="5%">Seq</th>
+        <th width="85%" colspan="4" align="center">Rendered Question</th>
+        <th width="10%" align="center">Import? <input type="checkbox" class="toggleall" onclick=toggleAll(this) checked></th>
+    </tr>
+    {% for question in questions %}
+        <tr>
+            <td class="underline">{{ question.seq }}</td>
+            <td class="underline" colspan="4">{% if question.per_class %}{{ question.render|substitute:section }}{% else %}{{ question.render|uselist:classes }}{% endif %}</td>
+            <td class="underline" align="center"><input type="checkbox" name="to_import" value="{{ question.id }}" onclick=toggle(this) checked></td>
+        </tr>
+    {% endfor %}
+    </table></td></tr>
+    <tr><td colspan="6" align="center"><input class="fancybutton" type="submit" value="Complete Import" /></td></tr>
+</table>
+</form>
+</div>
+
+<a class="btn" href="/manage/{{ program.getUrlBase }}/surveys">Return to the main survey page</a>
+
+<script type="text/javascript" src="/media/scripts/program/modules/survey_manage.js"></script>
+
+{% endblock %}

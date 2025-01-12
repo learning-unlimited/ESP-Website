@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+import six
+from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -36,11 +39,13 @@ Learning Unlimited, Inc.
 from django import forms
 from django.core import validators
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.safestring import mark_safe
 from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 import re
 from esp.program.models import ClassCategories, ClassSubject, ClassSection, ClassSizeRange
 from esp.program.modules.module_ext import ClassRegModuleInfo
+from esp.users.models import UserAvailability
 from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from django.conf import settings
@@ -66,28 +71,27 @@ class TeacherClassRegForm(FormWithRequiredCss):
     #     [["Lecture", "Lecture Style Class"], ["Seminar", "Seminar Style Class"]]
     style_choices = []
 
-    # Grr, TypedChoiceField doesn't seem to exist yet
+    # Grr, TypedChoiceField doesn't seem to exist yet # Update as of 1.11 -- it does, but it doesn't coerce until after validation. Need Django 3 for individual type fields
     title          = StrippedCharField(    label='Course Title', length=50, max_length=200 )
     category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget() )
     class_info     = StrippedCharField(   label='Course Description', widget=forms.Textarea(),
-                                        help_text='<span class="tex2jax_ignore">Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &pi;)</span>' )
+                                        help_text=mark_safe('<span class="tex2jax_ignore">Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &pi;)</span>'))
     prereqs        = forms.CharField(   label='Course Prerequisites', widget=forms.Textarea(attrs={'rows': 4}), required=False,
                                         help_text='If your course does not have prerequisites, leave this box blank.')
 
     duration       = forms.ChoiceField( label='Duration of a Class Meeting', help_text='(hours:minutes)', choices=[('0.0', 'Program default')], widget=BlankSelectWidget() )
-    num_sections   = forms.ChoiceField( label='Number of Sections', choices=[(1,1)], widget=BlankSelectWidget(),
+    num_sections   = forms.ChoiceField( label='Number of Sections', choices=[(1, 1)], widget=BlankSelectWidget(),
                                         help_text='(How many independent sections (copies) of your class would you like to teach?)' )
-    session_count  = forms.ChoiceField( label='Number of Days of Class', choices=[(1,1)], widget=BlankSelectWidget(),
+    session_count  = forms.ChoiceField( label='Number of Days of Class', choices=[(1, 1)], widget=BlankSelectWidget(),
                                         help_text='(How many days will your class take to complete?)' )
 
     # To enable grade ranges, admins should set the Tag grade_ranges.
     # e.g. [[7,9],[9,10],[9,12],[10,12],[11,12]] gives five grade ranges: 7-9, 9-10, 9-12, 10-12, and 11-12
-    grade_range    = forms.ChoiceField( label='Grade Range', choices=[], required=False, widget=BlankSelectWidget() )
+    grade_range    = forms.ChoiceField( label='Grade Range', choices=[], widget=BlankSelectWidget() )
     grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 7)], widget=BlankSelectWidget() )
     grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget() )
-    class_size_max = forms.ChoiceField( label='Maximum Number of Students',
-                                        choices=[(0, 0)],
-                                        widget=BlankSelectWidget(),
+    class_size_max = forms.IntegerField(label='Maximum Number of Students',
+                                        widget=BlankSelectWidget(choices=[(0, 0)]),
                                         validators=[validators.MinValueValidator(1)],
                                         help_text='The above class-size and grade-range values are absolute, not the "optimum" nor "recommended" amounts. We will not allow any more students than you specify, nor allow any students in grades outside the range that you specify. Please contact us later if you would like to make an exception for a specific student.' )
     class_size_optimal = forms.IntegerField( label='Optimal Number of Students', help_text="This is the number of students you would have in your class in the most ideal situation.  This number is not a hard limit, but we'll do what we can to try to honor this." )
@@ -95,7 +99,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     allowable_class_size_ranges = forms.MultipleChoiceField( label='Allowable Class Size Ranges', choices=[(0, 0)], widget=forms.CheckboxSelectMultiple(),
                                                              help_text="Please select all class size ranges you are comfortable teaching." )
     class_style = forms.ChoiceField( label='Class Style', choices=style_choices, required=False, widget=BlankSelectWidget())
-    hardness_rating = forms.ChoiceField( label='Difficulty',choices=hardness_choices, initial="**",
+    hardness_rating = forms.ChoiceField( label='Difficulty', choices=hardness_choices, initial="**",
         help_text="Which best describes how hard your class will be for your students?")
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
 
@@ -129,13 +133,13 @@ class TeacherClassRegForm(FormWithRequiredCss):
         prog = crmi.program
 
         section_numbers = crmi.allowed_sections_actual
-        section_numbers = zip(section_numbers, section_numbers)
+        section_numbers = list(zip(section_numbers, section_numbers))
 
         class_sizes = crmi.getClassSizes()
-        class_sizes = zip(class_sizes, class_sizes)
+        class_sizes = list(zip(class_sizes, class_sizes))
 
         class_grades = crmi.getClassGrades()
-        class_grades = zip(class_grades, class_grades)
+        class_grades = list(zip(class_grades, class_grades))
 
         class_ranges = ClassSizeRange.get_ranges_for_program(prog)
         class_ranges = [(range.id, range.range_str()) for range in class_ranges]
@@ -148,23 +152,20 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # grade_min, grade_max: crmi.getClassGrades
         self.fields['grade_min'].choices = class_grades
         self.fields['grade_max'].choices = class_grades
-        if Tag.getTag('grade_ranges'):
-            grade_ranges = json.loads(Tag.getTag('grade_ranges'))
-            self.fields['grade_range'].choices = [(range,str(range[0]) + " - " + str(range[1])) for range in grade_ranges]
-            self.fields['grade_range'].required = True
-            hide_field( self.fields['grade_min'] )
-            self.fields['grade_min'].required = False
-            hide_field( self.fields['grade_max'] )
-            self.fields['grade_max'].required = False
+        if Tag.getProgramTag('grade_ranges', prog):
+            grade_ranges = json.loads(Tag.getProgramTag('grade_ranges', prog))
+            self.fields['grade_range'].choices = [(range, str(range[0]) + " - " + str(range[1])) for range in grade_ranges]
+            del self.fields['grade_min']
+            del self.fields['grade_max']
         else:
-            hide_field( self.fields['grade_range'] )
+            del self.fields['grade_range']
         if crmi.use_class_size_max:
             # class_size_max: crmi.getClassSizes
-            self.fields['class_size_max'].choices = class_sizes
+            self.fields['class_size_max'].widget.choices = class_sizes
         else:
             del self.fields['class_size_max']
 
-        if Tag.getBooleanTag('use_class_size_optimal', default=False):
+        if Tag.getBooleanTag('use_class_size_optimal'):
             if not crmi.use_class_size_optimal:
                 del self.fields['class_size_optimal']
 
@@ -199,7 +200,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # session_count
         if crmi.session_counts:
             session_count_choices = crmi.session_counts_ints
-            session_count_choices = zip(session_count_choices, session_count_choices)
+            session_count_choices = list(zip(session_count_choices, session_count_choices))
             self.fields['session_count'].choices = session_count_choices
         hide_choice_if_useless( self.fields['session_count'] )
 
@@ -217,13 +218,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
         for field_name in custom_fields:
             self.fields[field_name] = custom_fields[field_name]
 
-        #   Modify help text on these fields if necessary.
-        #   TODO(benkraft): Is there a reason not to allow this on all fields?
-        custom_helptext_fields = [
-            'duration', 'class_size_max', 'num_sections', 'requested_room',
-            'message_for_directors', 'purchase_requests', 'class_info',
-            'grade_max', 'grade_min'] + custom_fields.keys()
-        for field in custom_helptext_fields:
+        #   Modify help text and labels on fields if necessary.
+        for field in self.fields.keys():
             tag_data = Tag.getProgramTag('teacherreg_label_%s' % field, prog)
             if tag_data:
                 self.fields[field].label = tag_data
@@ -234,7 +230,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         #   Hide fields as desired.
         tag_data = Tag.getProgramTag('teacherreg_hide_fields', prog)
         if tag_data:
-            for field_name in tag_data.split(','):
+            for field_name in [x.strip().lower() for x in tag_data.split(',')]:
                 hide_field(self.fields[field_name])
 
         tag_data = Tag.getProgramTag('teacherreg_default_min_grade', prog)
@@ -272,7 +268,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             grade_min = int(grade_min)
             grade_max = int(grade_max)
             if grade_min > grade_max:
-                msg = u'Minimum grade must be less than the maximum grade.'
+                msg = six.u('Minimum grade must be less than the maximum grade.')
                 self.add_error('grade_min', msg)
                 self.add_error('grade_max', msg)
 
@@ -283,7 +279,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             class_size_optimal = int(class_size_optimal)
             class_size_max = int(class_size_max)
             if class_size_optimal > class_size_max:
-                msg = u'Optimal class size must be less than or equal to the maximum class size.'
+                msg = six.u('Optimal class size must be less than or equal to the maximum class size.')
                 self.add_error('class_size_optimal', msg)
                 self.add_error('class_size_max', msg)
 
@@ -324,10 +320,14 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
         # Modify some help texts to be form-specific.
         self.fields['duration'].help_text = "For how long are you willing to teach this class?"
 
-        del self.fields['grade_range']
+        if self.fields.get('grade_min') and self.fields.get('grade_max'):
+            del self.fields['grade_min']
+            del self.fields['grade_max']
+        else:
+            del self.fields['grade_range']
 
         fields = [('category', open_class_category.id),
-                  ('prereqs', ''), ('session_count', 1), ('grade_min', program.grade_min), ('grade_max', program.grade_max),
+                  ('prereqs', ''), ('session_count', 1),
                   ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''),
                   ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True),
                   ('requested_room', '')]
@@ -344,11 +344,11 @@ class TeacherEventSignupForm(FormWithRequiredCss):
 
     def _slot_is_taken(self, event):
         """ Determine whether an interview slot is taken. """
-        return self.module.entriesBySlot(event).count() > 0
+        return UserAvailability.entriesBySlot(event).count() > 0
 
     def _slot_is_mine(self, event):
         """ Determine whether an interview slot is taken by you. """
-        return self.module.entriesBySlot(event).filter(user=self.user).count() > 0
+        return UserAvailability.entriesBySlot(event).filter(user=self.user).count() > 0
 
     def _slot_too_late(self, event):
         """ Determine whether it is too late to register for a time slot. """

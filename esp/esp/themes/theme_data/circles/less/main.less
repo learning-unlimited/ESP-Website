@@ -1,6 +1,5 @@
 #chicago_main p {
   color: #141414;
-  font-family: georgia;
   font-size: 11pt;
   line-height: 125%;
 }
@@ -10,26 +9,25 @@ a img {
 }
 
 a:link {
-  color: #497CCA;
+  color: @linkColor;
   text-decoration: none;
 }
 
 a:visited {
-  color: #497CCA
+  color: @linkColor;
 }
 
 a:hover {
-  color: #CC66FF
+  color: @linkColorHover;
 }
 
 a:active {
-  color: #497CCA
+  color: @linkColor;
 }
 
 h1, h2 {
   font-size: 18pt;
-  color: #00003C;
-  font-family: georgia;
+  color: @headingsColor;
   font-style: bold;
 }
 h2 {
@@ -39,19 +37,18 @@ h2 {
 body {
   margin: 0;
   padding: 0;
-  font-family: georgia, serif;
 }
 
 #content {
   width: 800px;
   margin-left: auto;
   margin-right: auto;
-  background: #141414;
+  background: @contentBackground;
 /*  overflow: hidden; */
 }
 
 #topleft {
-  background: #141414;
+  background: @sidebarBackground;
   width: 200px;
   height: 180px;
   float: left;
@@ -70,7 +67,6 @@ div.nav_button {
     vertical-align: middle;
     font-size: 30px;
     line-height: 40px;
-    font-family: Arial, Helvetica, sans-serif;
 }
 
 div.nav_button_spacer {
@@ -81,12 +77,11 @@ div.nav_button_spacer {
 }
 
 div.nav_button :hover {
-    background: white;
+    background: @circle_hover_color;
 }
 
 .nav_button_text {
     font-size: 26px;
-    font-family: Arial, Helvetica, sans-serif;
     text-anchor: middle;
     text-rendering: geometricPrecision;
     -webkit-backface-visibility: hidden;
@@ -169,8 +164,7 @@ div.nav_button :hover {
   float: right;
   width: 600px;
   min-height: 30px;
-  color: #FFFFFF;
-  font-family: georgia;
+  color: @headingsColor;
   font-style: italic;
   font-size: 11pt;
   text-align: center;
@@ -186,10 +180,6 @@ div.nav_button :hover {
   margin-bottom: -250cm;
   padding-bottom: 250cm;
 */
-}
-
-#navbar_content {
-  margin: 15px;
 }
 
 #loginbox {
@@ -212,22 +202,6 @@ div.nav_button :hover {
     margin: 0px;
 }
 
-#loginbox input.gobutton {
-    margin-left: 5px;
-    padding: 2px;
-    background-color: #666666;
-    text-align: center;
-    vertical-align: center;
-    border: 1px solid black;
-    color: #000000;
-}
-
-#loginbox input.gobutton:hover {
-    background-color: #CCCCCC;
-    border: 1px solid black;
-}
-
-
 #chicago_main {
   background: @bodyBackground;
   float: right;
@@ -239,25 +213,27 @@ div.nav_button :hover {
 }
 
 #chicago_main_content {
+  background: @contentBackground;
   clear: both;
   margin: 15px;
 }
 
 .announcementlink_title {
   color: @sidebarActive;
+  background: @sidebarActiveBackground;
   font-size: 11pt;
   line-height: 140%;
   font-weight: bold;
 }
 
 #navbar {
-  color: #FFFFFF;
+  color: @sidebarText;
   font-size: 90%;
   line-height: 130%;
 }
 
 #navbar p {
-  color: #FFFFFF;
+  color: @sidebarText;
   margin: 0pt;
 //  margin-bottom: pt;
 }
@@ -292,7 +268,6 @@ div .note, .info, .warning, .error
 {
   text-align: left;
   font-size: .9em;
-  font-family: arial;
   padding: 5px 5px 5px 20px;
   border: 1px solid #999999;
   margin: 10px;
@@ -318,12 +293,6 @@ div .error
     color: #666666;
 }
 
-#usersearchform
-{
-    border: 1px solid #999999;
-    padding: 6px;
-}
-
 #usersearchform h3
 {
     font-size: 1.0em;
@@ -340,7 +309,7 @@ div .error
 #usersearchform .usersearchbox
 {
     font-size: 0.8em;
-    width: 150px;
+    width: ~"calc(100% - 10px)";
     background-color: #333333;
     border: 1px solid #666666;
     color: white;
@@ -377,6 +346,5 @@ div .error
 }
 
 #user_data {
-    color: #444;
     font-style: italic;
 }

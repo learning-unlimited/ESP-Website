@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import sys
 import os
 import fcntl
+import logging
+from io import open
+logger = logging.getLogger('esp.dbmail_cron')   # __name__ is not very useful
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
 import os.path
@@ -18,7 +22,7 @@ sys.path.insert(0, project)
 if os.environ.get('VIRTUAL_ENV') is None:
     root = os.path.dirname(project)
     activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
-    execfile(activate_this, dict(__file__=activate_this))
+    exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'), dict(__file__=activate_this))
 
 import django
 django.setup()
@@ -28,6 +32,8 @@ from esp.dbmail.cronmail import process_messages, send_email_requests
 # esp.settings modifies tempfile to avoid collisions between sites.
 import tempfile
 
+logger.info('dbmail_cron: starting!')
+
 # lock to ensure only one cron instance runs at a time
 lock_file_path = os.path.join(tempfile.gettempdir(), 'espweb.dbmailcron.lock')
 lock_file_handle = open(lock_file_path, 'w')
@@ -35,12 +41,21 @@ try:
     fcntl.lockf(lock_file_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
 except IOError:
     # another instance has the lock
+    logger.info('dbmail_cron: exiting because another instance has the lock.')
     sys.exit(0)
 
-process_messages()
-send_email_requests()
+try:
+    logger.info('dbmail_cron: beginning to process messages.')
+    process_messages()
+    logger.info('dbmail_cron: message processing complete; sending emails.')
+    send_email_requests()
+    logger.info('dbmail_cron: sent emails.')
+except Exception as e:
+    logger.info('dbmail_cron: fatal error!')
+    logger.exception(e)
+finally:
+    # Release the lock when message sending is complete.
+    fcntl.lockf(lock_file_handle, fcntl.LOCK_UN)
+    lock_file_handle.close()
 
-# Release the lock when message sending is complete.
-fcntl.lockf(lock_file_handle, fcntl.LOCK_UN)
-lock_file_handle.close()
-
+logger.info('dbmail_cron: done.')

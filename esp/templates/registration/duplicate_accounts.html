@@ -12,8 +12,8 @@
 
 <p>
 Warning:  It looks like other accounts already exist for this
-e-mail address.  Do you already have an esp.mit.edu account?  If so,
-could you try logging in with one of the following username(s):
+email address.  Do you already have an account for {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}?
+If so, could you try logging in with one of the following username(s):
 </p>
 
 <ul>
@@ -58,7 +58,7 @@ are errors{% endif %} in the below form. Please fix and resubmit.
 {{ form }}
 <tr>
   <th colspan="2" class="submit">
-    <input type="submit" value="Create account, proceed to profile creation" name="submit" />
+    <input type="submit" value="Create account, proceed to profile creation" name="submit_btn" />
   </th>
 </tr>
 </tbody>

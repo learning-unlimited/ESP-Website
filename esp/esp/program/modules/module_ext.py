@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -36,6 +40,7 @@ Learning Unlimited, Inc.
 from datetime import timedelta
 import time
 
+from django.core.validators import RegexValidator
 from django.db import models
 
 from esp.db.fields import AjaxForeignKey
@@ -52,7 +57,7 @@ from esp.users.models import ESPUser
 # when the corresponding program modules get added to a program (see
 # esp.program.models.maybe_create_module_ext), but that's about it.
 # TODO(benkraft): rename this to "program settings" or something.
-
+@python_2_unicode_compatible
 class DBReceipt(models.Model):
     """ Per-program Receipt templates """
     #   Allow multiple receipts per program.  Which one is used depends on the action.
@@ -60,9 +65,10 @@ class DBReceipt(models.Model):
     program = models.ForeignKey(Program)
     receipt = models.TextField()
 
-    def __unicode__(self):
+    def __str__(self):
         return 'Registration (%s) receipt for %s' % (self.action, self.program)
 
+@python_2_unicode_compatible
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
@@ -79,11 +85,13 @@ class StudentClassRegModuleInfo(models.Model):
     apply_multiplier_to_room_cap = models.BooleanField(default=False, help_text='Apply class cap multipler and offset to room capacity instead of class capacity.')
 
     #   Whether to use priority
-    use_priority         = models.BooleanField(default=False, help_text='Check this box to enable priority registration.')
+    use_priority         = models.BooleanField(default=False, help_text='Check this box to enable priority registration. Note, this is NOT for the two-phase student registration module. This will remove \
+                                                                         the ability for students to enroll in classes during normal student registration (i.e., first-come first-served).')
     #   Number of choices a student can make for each time block (1st choice, 2nd choice, ...Nth choice.)
-    priority_limit       = models.IntegerField(default=3, help_text='The maximum number of choices a student can make per timeslot when priority registration is enabled.')
+    priority_limit       = models.IntegerField(default=3, help_text='The maximum number of choices a student can make per timeslot when priority registration is enabled. Also, the \
+                                                                     number of priority slots listed in the rank classes interface for the two-phase student registration module.')
     #   Whether to use grade range exceptions
-    use_grade_range_exceptions = models.BooleanField(default=False, help_text='Check this box to enable grade range exceptions.')
+    use_grade_range_exceptions = models.BooleanField(default=False, help_text='Check this box to enable grade range exceptions for the two-phase class lottery.')
 
     #   Set to true to allow classes to be added (via Ajax) using buttons on the catalog
     register_from_catalog = models.BooleanField(default=False, help_text='Check this box to allow students to add classes from the catalog page if they are logged in.')
@@ -107,11 +115,11 @@ class StudentClassRegModuleInfo(models.Model):
     #   ((0, 'None'),(1, 'Checkboxes'), (2, 'Progress Bar'))
     progress_mode = models.IntegerField(default=1, help_text='Select which to use on student reg: 1=checkboxes, 2=progress bar, 0=neither.')
 
-    #   Choose whether an e-mail is sent the first time a student confirms registration.
-    send_confirmation = models.BooleanField(default=False, help_text='Check this box to send each student an e-mail the first time they confirm their registration.  You must define an associated DBReceipt of type "confirmemail".')
+    #   Choose whether an email is sent the first time a student confirms registration.
+    send_confirmation = models.BooleanField(default=True, help_text='Check this box to send each student an email each time they confirm their registration. You can customize the text of the email using the "Confirmemail" registration receipt below.')
 
     #   Choose whether class IDs are shown on catalog.
-    show_emailcodes = models.BooleanField(default=True, help_text='Uncheck this box to prevent e-mail codes (i.e. E534, H243) from showing up on catalog and fillslot pages.')
+    show_emailcodes = models.BooleanField(default=True, help_text='Uncheck this box to prevent email codes (i.e. E534, H243) from showing up on catalog and fillslot pages.')
 
     #   Choose whether users have to fill out "required" modules before they can see the main StudentReg page
     #   (They still have to fill them out before confirming their registration, regardless of this setting)
@@ -140,9 +148,10 @@ class StudentClassRegModuleInfo(models.Model):
 
         return verb_list
 
-    def __unicode__(self):
+    def __str__(self):
         return 'Student Class Reg Ext. for %s' % str(self.module)
 
+@python_2_unicode_compatible
 class ClassRegModuleInfo(models.Model):
     program = models.OneToOneField(Program)
 
@@ -169,7 +178,8 @@ class ClassRegModuleInfo(models.Model):
     #   An HTML color code for the program.  All classes will appear in some variant
     #   of this color in the catalog and registration pages.  If null, the default
     #   ESP colors will be used.
-    color_code           = models.CharField(max_length=6, blank=True, null=True)
+    color_code           = models.CharField(max_length=7, blank=True, null=True, help_text='The background color for class titles in the catalog and registration pages. If no color is chosen, the default light blue will be used.',
+                                            validators = [RegexValidator(r'^#([a-zA-Z0-9]{3}){1,2}$', message = 'Value must be a valid 3-character or 6-character hex color starting with "#".')])
 
     #   If this is true, teachers will be allowed to specify that students may
     #   come to their class late.
@@ -206,7 +216,7 @@ class ClassRegModuleInfo(models.Model):
         if self.allowed_sections:
             return [int(s) for s in self.allowed_sections.split(',') if s.strip()]
         else:
-            return range(1, self.program.getTimeSlots().count()+1)
+            return list(range(1, self.program.getTimeSlots().count()+1))
 
     @property
     def session_counts_ints(self):
@@ -217,7 +227,7 @@ class ClassRegModuleInfo(models.Model):
         min_size = 5
         max_size = 30
         size_step = 1
-        other_sizes = range(40, 210, 10)
+        other_sizes = list(range(40, 210, 10))
 
         if self.class_max_size:
             max_size = self.class_max_size
@@ -231,7 +241,7 @@ class ClassRegModuleInfo(models.Model):
         if self.class_other_sizes and len(self.class_other_sizes) > 0:
             other_sizes = [int(x) for x in self.class_other_sizes.split(',')]
 
-        ret_range = sorted(range(min_size, max_size + 1, size_step) + other_sizes)
+        ret_range = sorted(list(range(min_size, max_size + 1, size_step)) + other_sizes)
 
         return ret_range
 
@@ -242,12 +252,12 @@ class ClassRegModuleInfo(models.Model):
         if self.program.grade_max:
             max_grade = self.program.grade_max
 
-        return range(min_grade, max_grade+1)
+        return list(range(min_grade, max_grade+1))
 
     def getDurations(self):
         return self.program.getDurations()
 
-    def __unicode__(self):
+    def __str__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
 
 class AJAXChangeLogEntry(models.Model):
@@ -255,14 +265,24 @@ class AJAXChangeLogEntry(models.Model):
     # unique index in change_log of this entry
     index = models.IntegerField()
 
-    # whether this is a scheduling entry (or comment entry)
+    # if neither of the following are true, this is a comment entry
+    # whether this is a scheduling entry
     is_scheduling = models.BooleanField(default=True)
+
+    # whether this is a moderator entry
+    is_moderator = models.BooleanField(default=False)
 
     # scheduling entry: comma-separated list of integer timeslots
     timeslots = models.CharField(max_length=256)
 
     # scheduling entry: name of the room involved in scheduling update
     room_name = models.CharField(max_length=256)
+
+    # moderator entry: ID of moderator
+    moderator = models.IntegerField(blank=True, null=True)
+
+    # moderator entry: add or remove moderator?
+    assigned = models.NullBooleanField()
 
     # comment entry: comment text
     comment = models.CharField(max_length=256)
@@ -285,8 +305,16 @@ class AJAXChangeLogEntry(models.Model):
         self.room_name = room_name
         self.cls_id = cls_id
 
+    def setModerator(self, moderator, cls_id, assigned = True):
+        self.is_scheduling = False
+        self.is_moderator = True
+        self.assigned = assigned
+        self.moderator = moderator
+        self.cls_id = cls_id
+
     def setComment(self, comment, lock, cls_id):
         self.is_scheduling = False
+        self.is_moderator = False
         self.comment = comment
         self.locked = lock
         self.cls_id = cls_id
@@ -312,9 +340,13 @@ class AJAXChangeLogEntry(models.Model):
         d['id'] = self.cls_id
         d['user'] = self.getUserName()
         d['is_scheduling'] = self.is_scheduling
+        d['is_moderator'] = self.is_moderator
         if self.is_scheduling:
             d['room_name'] = self.room_name
             d['timeslots'] = self.getTimeslots()
+        elif self.is_moderator:
+            d['assigned'] = self.assigned
+            d['moderator'] = self.moderator
         else:
             d['comment'] = self.comment
             d['locked'] = self.locked
@@ -357,6 +389,11 @@ class AJAXChangeLog(models.Model):
     def appendComment(self, comment, lock, cls_id, user=None):
         entry = AJAXChangeLogEntry()
         entry.setComment(comment, lock, cls_id)
+        self.append(entry, user)
+
+    def appendModerator(self, moderator, cls_id, assigned = True, user=None):
+        entry = AJAXChangeLogEntry()
+        entry.setModerator(moderator, cls_id, assigned = assigned)
         self.append(entry, user)
 
     def get_latest_index(self):

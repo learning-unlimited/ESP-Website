@@ -1,30 +1,34 @@
 <!-- Begin Student Info Portion -->
-<h3>Student Information</h3>
+<h3>Additional Student Information</h3>
 
 {{ form.errors }}
 
-{% if not form.allow_change_grade_level %}
+{% if not user.getGrade or form.allow_change_grade_level %}
 <div class="alert">
 <button type="button" class="close" data-dismiss="alert">x</button>
-You will only be able to set your age and grade level ONCE. 
-After you click "Update Your Information!" below, or if you've already
-done so in the past, you will not be able to change your age or grade level. 
-<br /> <br />
 Please fill out your current age and grade accurately and honestly.
 We trust our students to represent themselves honestly, but
 students have abused this trust in the past to circumvent grade
-requirements for higher-level classes.  Lying about your age is fraud
+requirements for higher-level classes. Lying about your age is fraud
 and is extremely frustrating for our teachers, who set these grade
 requirements with full knowledge of the outstanding students in the
-program.  Please be honest and support the community. 
+program. Please be honest and support the community.
 <br /> <br />
-Your grade level updates automatically every August; if you skip a grade or 
-take a year off, please email us and we will fix your grade. For a more 
-detailed explanation of our age and grade level policy, please click 
-<a href="/learn/parents/agelimit.html">here</a>.
+{% if not user.getGrade and not form.allow_change_grade_level %}
+You will only be able to set your age and grade level ONCE. 
+After you click "Update Your Information!" below, you will not be
+able to change your age or grade level.
+<br /> <br />
+{% endif %}
+Your grade level will update automatically every August.
 </div>
 {% endif %}
 
+{% if user.getGrade and not form.allow_change_grade_level %}
+    {% include "users/profiles/gradechangerequestinfo.html" %}
+{% endif %}
+
+{% if form.dob %}
 <div class="control-group">
     <label for="id_dob_0" class="control-label">Date of Birth:</label>
     <div class="controls controls-row">
@@ -33,7 +37,9 @@ detailed explanation of our age and grade level policy, please click
     {% endif %}
     </div>
 </div>
+{% endif %}
 
+{% if form.graduation_year %}
 <div class="control-group">
     <label for="id_graduation_year" class="control-label">Grade / Graduation Year:</label>
     <div class="controls">
@@ -42,10 +48,11 @@ detailed explanation of our age and grade level policy, please click
     {% endif %}
     </div>
 </div>
+{% endif %}
 
 {% if form.gender %}
 <div class="control-group">
-    <label for="id_dob">Gender:</label>
+    <label for="id_dob"  class="control-label">Gender:</label>
     <div class="controls">
     {{ form.gender }} {% if form.gender.errors %}
     <br /><span class="form_error">{{ form.gender.errors|join:", " }}</span>
@@ -54,15 +61,29 @@ detailed explanation of our age and grade level policy, please click
 </div>
 {% endif %}
 
+{% if form.pronoun %}
+<div class="control-group">
+    <label for="id_pronoun"  class="control-label">Preferred pronouns:</label>
+    <div class="controls">
+    <p style="font-size: 0.8em; font-style: italic;">(Anyone with access to your account will be able to see this on your profile. Teachers and administrators will also have access to this information. This field is not required.)</p>
+    {{ form.pronoun }} {% if form.pronoun.errors %}
+    <br /><span class="form_error">{{ form.pronoun.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% if form.k12school %}
 <div class="control-group">
     <label for="id_k12school" class="control-label">School:</label>
     <div class="controls controls-row">
-    <span style="font-size: 0.8em; font-style: italic;">(Begin to type your school's name and select your school when it comes up.)</span>
+    <p style="font-size: 0.8em; font-style: italic;">(Begin to type your school's name and select your school if it comes up, otherwise enter the full school name.)</p>
     {{ form.k12school }} {% if form.k12school.errors %}
     <br /><span class="form_error">{{ form.k12school.errors|join:", " }}</span>
     {% endif %}
     </div>
 </div>
+{% endif %}
 
 {% if form.unmatched_school %}
 <div class="control-group">
@@ -76,16 +97,18 @@ detailed explanation of our age and grade level policy, please click
 </div>
 {% endif %}
 
+{% if form.heard_about %}
 <div class="control-group">
     <label for="id_heardofesp" class="control-label">How did you hear of this program?
     </label>
     <div class="controls controls-row">
-    <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the right-hand box.)</span><br />
+    <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the lower box.)</span><br />
     {{ form.heard_about }} {% if form.heard_about.errors %}
     <br /><span class="form_error">{{ form.heard_about.errors|join:", " }}</span>
     {% endif %}
     </div>
 </div>
+{% endif %}
 
 {% if form.fields.studentrep %}
 <div class="control-group">
@@ -162,7 +185,8 @@ T-shirts are available at some of our programs. When you reserve a t-shirt, this
 {% if form.transportation %}
 <div class="control-group">
     <label for="id_transportation" class="control-label">How do you plan to get to/from the program?</label>
-    <div class="controls">
+    <div class="controls controls-row">
+    <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the lower box.)</span><br />
     {{ form.transportation }} {% if form.transportation.errors %}
     <br /><span class="form_error">{{ form.transportation.errors|join:", " }}</span>
     {% endif %}

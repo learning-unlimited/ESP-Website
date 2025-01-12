@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -34,9 +35,12 @@ Learning Unlimited, Inc.
 """
 
 from django.core.management import call_command
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
+from django.conf import settings
 
-class Command(NoArgsCommand):
+import os
+
+class Command(BaseCommand):
     """Update the site.
 
     - Clean out old .pyc files.
@@ -44,17 +48,34 @@ class Command(NoArgsCommand):
     - Install initial data (happens automatically after running migrations).
     - Collect static files.
     - Recompile the theme.
+    - Clear memcache
     """
-    def handle_noargs(self, **options):
+    def handle(self, *args, **options):
         default_options = {
             'verbosity': 1,
             'interactive': False,
             'merge': True,
             'delete_ghosts': True,
+            'clear': True,
         }
         default_options.update(options)
         options = default_options
+
+        root = os.path.dirname(os.path.abspath(settings.BASE_DIR))
+        file = os.path.join(root, 'esp.wsgi')
+
+        user = os.getenv('USER')
+        sudo_user = os.getenv('SUDO_USER')
+        # If sudo, we are probably on the live server,
+        # so we always want to use www-data
+        if sudo_user:
+            if user != "www-data":
+                raise Exception("Looks like you tried to run this with sudo but without '-u www-data'. Please try again!")
+            elif not os.access(file, os.W_OK):
+                raise Exception("www-data doesn't have write access for esp.wsgi. Please fix this with chown, then try again!")
         call_command('clean_pyc', **options)
         call_command('migrate', **options)
         call_command('collectstatic', **options)
         call_command('recompile_theme', **options)
+        call_command('flushcache', **options)
+        os.system("touch " + file)

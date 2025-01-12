@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -34,32 +35,31 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules         import module_ext
-from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
+from esp.program.models          import ClassSection
 from esp.utils.web               import render_to_response
-from django                      import forms
-from django.http                 import HttpResponseRedirect, HttpResponse
-from django.template.loader      import render_to_string
+from django.http                 import HttpResponse
 from esp.cal.models              import Event
-from esp.users.models            import User, ESPUser, UserAvailability
+from esp.users.models            import ESPUser
 from esp.middleware              import ESPError
-from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
-from datetime                    import timedelta, time
-import json
-from collections                 import defaultdict
+from esp.resources.models        import Resource, ResourceAssignment
+from esp.tagdict.models          import Tag
 from argcache                    import cache_function
 from uuid                        import uuid4 as get_uuid
-from esp.utils.decorators         import json_response
-import calendar, time, datetime
+from esp.utils.decorators        import json_response
+
+import json
+import time
 
 class AJAXSchedulingModule(ProgramModuleObj):
-    """ This program module allows teachers to indicate their availability for the program. """
+    doc = """Provides an application to use for scheduling classes."""
 
     @classmethod
     def module_properties(cls):
         return {
             "link_title": "AJAX Scheduling",
             "module_type": "manage",
-            "seq": 7
+            "seq": 7,
+            "choosable": 1,
             }
     def prepare(self, context={}):
         if context is None: context = {}
@@ -85,8 +85,10 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         #actually return the page
         context = {
-            "has_autoscheduler_frontend":
-                prog.hasModule("AutoschedulerFrontendModule")}
+            "has_autoscheduler_frontend": prog.hasModule("AutoschedulerFrontendModule"),
+            "has_moderator_module": prog.hasModule("TeacherModeratorModule"),
+            "contiguous_tolerance": Tag.getProgramTag('timeblock_contiguous_tolerance', program = prog)
+            }
 
         return render_to_response(self.baseDir()+'ajax_scheduling.html', request, context)
 
@@ -117,15 +119,15 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         return self.makeret(prog, ret=True, msg="Schedule removed for Class Section '%s'" % cls.emailcode())
 
-    def ajax_schedule_assignreg(self, prog, cls, timeslot_ids, classroom_names, user=None):
+    def ajax_schedule_assignreg(self, prog, cls, timeslot_ids, classroom_ids, user=None, override=False):
         if len(timeslot_ids) < 1:
             return self.makeret(prog, ret=False, msg="No times specified!, can't assign to a timeblock")
 
-        if len(classroom_names) < 1:
+        if len(classroom_ids) < 1:
             return self.makeret(prog, ret=False, msg="No classrooms specified!, can't assign to a timeblock")
 
-        basic_cls = classroom_names[0]
-        for c in classroom_names:
+        basic_cls = classroom_ids[0]
+        for c in classroom_ids:
             if c != basic_cls:
                 return self.makeret(prog, ret=False, msg="Assigning one section to multiple rooms.  This interface doesn't support this feature currently; assign it to one room for now and poke a Webmin to do this for you manually.")
 
@@ -133,13 +135,15 @@ class AJAXSchedulingModule(ProgramModuleObj):
         if len(times) < 1:
             return self.makeret(prog, ret=False, msg="Specified Events not found in the database")
 
-        classrooms = Resource.objects.filter(name=basic_cls, res_type__name="Classroom")
+        classrooms = Resource.objects.filter(id=basic_cls, res_type__name="Classroom")
         if len(classrooms) < 1:
             return self.makeret(prog, ret=False, msg="Specified Classrooms not found in the database")
 
         classroom = classrooms[0]
 
-        cannot_schedule = cls.cannotSchedule(times, ignore_classes=False)
+        cannot_schedule = False
+        if not override:
+            cannot_schedule = cls.cannotSchedule(times, ignore_classes=False)
         if cannot_schedule:
             return self.makeret(prog, ret=False, msg=cannot_schedule)
 
@@ -151,9 +155,28 @@ class AJAXSchedulingModule(ProgramModuleObj):
             return self.makeret(prog, ret=False, msg=" | ".join(errors))
 
         #add things to the change log here
-        self.get_change_log(prog).appendScheduling([int(t.id) for t in times], classroom_names[0], int(cls.id), user)
+        self.get_change_log(prog).appendScheduling([int(t.id) for t in times], classroom_ids[0], int(cls.id), user)
 
         return self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
+
+    def ajax_schedule_swap(self, prog, assignments, user=None, override=False):
+        # assignments: the list of new assignments for the section(s) in json format
+        # Unschedule all of the section(s)
+        for asmt in assignments:
+            cls = ClassSection.objects.get(id=asmt['section'])
+            retval = self.ajax_schedule_deletereg(prog, cls, user)
+            if not json.loads(retval.content)['ret']:
+                return retval
+
+        # Reschedule all of the section(s)
+        for asmt in assignments:
+            if asmt['room_id']:
+                cls = ClassSection.objects.get(id=asmt['section'])
+                retval = self.ajax_schedule_assignreg(prog, cls, asmt['timeslots'], [asmt['room_id']], user, override)
+                if not json.loads(retval.content)['ret']:
+                    return retval
+
+        return self.makeret(prog, ret=True, msg="Class sections successfully swapped")
 
     @aux_call
     @needs_admin
@@ -210,16 +233,17 @@ class AJAXSchedulingModule(ProgramModuleObj):
             raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
 
         # Pull relevant data out of the JSON structure
-        cls_id = request.POST['cls']
-        cls = ClassSection.objects.get(id=cls_id)
         action = request.POST['action']
 
         if action == 'deletereg':
+            cls_id = request.POST['cls']
+            cls = ClassSection.objects.get(id=cls_id)
             times = []
             classrooms = [ None ]
             retval =  self.ajax_schedule_deletereg(prog, cls, request.user)
-
         elif action == 'assignreg':
+            cls_id = request.POST['cls']
+            cls = ClassSection.objects.get(id=cls_id)
             blockrooms = request.POST['block_room_assignments'].split("\n")
             times = []
             classrooms = []
@@ -227,11 +251,49 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 timeslot, classroom = br.split(",", 1)
                 times.append(timeslot)
                 classrooms.append(classroom)
-            retval = self.ajax_schedule_assignreg(prog, cls, times, classrooms, request.user)
+            override = request.POST['override'] == "true"
+            retval = self.ajax_schedule_assignreg(prog, cls, times, classrooms, request.user, override)
+        elif action == 'swap':
+            assignments = json.loads(request.POST['assignments'])
+            override = request.POST['override'] == "true"
+            retval = self.ajax_schedule_swap(prog, assignments, request.user, override)
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
 
         return retval
+
+    @aux_call
+    @needs_admin
+    def ajax_assign_moderator(self, request, tl, one, two, module, extra, prog):
+        # DON'T CACHE this function!
+        # It's supposed to have side effects, that's the whole point!
+        if not 'action' in request.POST:
+            raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
+
+        # Pull relevant data out of the JSON structure
+        sec_id = request.POST['sec']
+        sec = ClassSection.objects.get(id=sec_id)
+        mod_id = request.POST['mod']
+        mod = ESPUser.objects.get(id=mod_id)
+        action = request.POST['action']
+
+        if action == 'removemod':
+            sec.moderators.remove(mod)
+            self.get_change_log(prog).appendModerator(mod_id, sec_id, False, request.user)
+            return self.makeret(prog, ret=True, msg="Moderator '%s' removed from Class Section '%s'" % (mod.name(), sec.emailcode()))
+        elif action == 'assignmod':
+            override = request.POST['override'] == "true"
+            if not override:
+                # check availability
+                avail_times = [time.id for time in mod.getAvailableTimes(prog)]
+                for time in sec.meeting_times.all():
+                    if time.id not in avail_times:
+                        return self.makeret(prog, ret=False, msg="Moderator '%s' is not available to moderate Class Section '%s'" % (mod.name(), sec.emailcode()))
+            sec.moderators.add(mod)
+            self.get_change_log(prog).appendModerator(mod_id, sec_id, True, request.user)
+            return self.makeret(prog, ret=True, msg="Moderator '%s' assigned to Class Section '%s'" % (mod.name(), sec.emailcode()))
+        else:
+            return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
 
     @aux_call
     @needs_admin
@@ -345,6 +407,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
             num_affected_sections += 1
 
         return num_affected_sections
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

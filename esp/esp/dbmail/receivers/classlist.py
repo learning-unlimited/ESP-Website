@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from esp.dbmail.base import BaseHandler
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject
@@ -22,22 +23,20 @@ class ClassList(BaseHandler):
         except ESPUser.DoesNotExist:
             return
 
+        self.emailcode = cls.emailcode()
+
         program = cls.parent_program
-        self.recipients = ['%s Directors <%s>' % (program.niceName(), program.director_email)]
+        self.recipients = [ESPUser.email_sendto_address(program.director_email, '%s Directors' % (program.niceName()))]
 
         user_type = user_type.strip().lower()
 
-        if user_type in ('teachers','class'):
-            self.recipients += ['%s %s <%s>' % (user.first_name,
-                                                user.last_name,
-                                                user.email)
+        if user_type in ('teachers', 'class'):
+            self.recipients += [user.get_email_sendto_address()
                                 for user in cls.get_teachers()     ]
 
-        if user_type in ('students','class'):
+        if user_type in ('students', 'class'):
             for section in sections:
-                self.recipients += ['%s %s <%s>' % (user.first_name,
-                                                    user.last_name,
-                                                    user.email)
+                self.recipients += [user.get_email_sendto_address()
                                     for user in section.students()     ]
 
         if len(self.recipients) > 0:
@@ -45,7 +44,7 @@ class ClassList(BaseHandler):
 
 
     def process_mailman(self, user, class_id, user_type):
-        if not (settings.USE_MAILMAN and 'mailman_moderator' in settings.DEFAULT_EMAIL_ADDRESSES.keys()):
+        if not (settings.USE_MAILMAN and 'mailman_moderator' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys())):
             return
         try:
             cls = ClassSubject.objects.get(id = class_id)
@@ -54,7 +53,7 @@ class ClassList(BaseHandler):
             return
 
         # Create a class list in Mailman,
-        # then bounce this e-mail off to it
+        # then bounce this email off to it
 
         list_name = "%s-%s" % (cls.emailcode(), user_type)
 
@@ -99,5 +98,4 @@ class ClassList(BaseHandler):
         self.recipients = ["%s@%s" % (list_name, Site.objects.get_current().domain)]
 
         self.send = True
-
 

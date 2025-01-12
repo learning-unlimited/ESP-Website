@@ -45,9 +45,9 @@
 {% end_inline_program_qsd_block %}
 
 {% render_inline_program_qsd program "learn:studentregheader" %}
-<div class="alert alert-info">
+<div class="alert alert-block">
 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-<b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.
+<big><b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.</big>
 </div>
     
 {% ifequal scrmi.progress_mode 1 %}
@@ -57,12 +57,33 @@
     {% include "program/modules/progressbar.html" %}
 {% endifequal %}
 
+{% if records %}
+{% render_inline_program_qsd program record_steps %}
+<div class="row-fluid">
+<div class="span10 offset1">
+<table class="table table-condensed" align="center" width="400">
+<tr class="well"><th>Other Registration Requirements</th><th>Done?</th></tr>
+{% for record in records %}
+    <tr>
+        <td>{{ record.full_event }}</td>
+        <td>
+            {% if record.isCompleted %}
+                <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+            {% else %}
+                <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+            {% endif %}
+        </td>
+    </tr>
+{% endfor %}
+</table>
+</div>
+</div>
+{% endif %}
+
 {% endif %}
 
 {% load render_qsd %}
 {% render_inline_program_qsd program "learn:studentreg" %}
-
-<form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
 
 {% for module in modules %}
 {% if module.useTemplate %}
@@ -92,12 +113,12 @@
     <center>
     <a name="confirmreg"></a>
     {% if program.isFull and program.program_allow_waitlist and not isConfirmed %}
-        </form>
         <form action="/learn/{{one}}/{{two}}/waitlist_subscribe" method="post">
         <input class="button" type="submit" value="Join Waiting List"/>
         </form>
     {% else %}
         {% if can_confirm %}
+            <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
             {# disable if (you haven't completed all requirements) OR (you can't register for the program because it's full) #}
             {% if not completedAll or program.isFull and not canRegToFullProgram and not isConfirmed %}
                 <button id="confirmbutton" type="submit"
@@ -118,7 +139,7 @@
                     {% endif %}
                 </button>
             {% endif %}
-        </form>
+            </form>
             {% if isConfirmed or scrmi.cancel_button_dereg %}{% if not have_paid %}
                 <form action="/learn/{{one}}/{{two}}/cancelreg" method="get" onsubmit="return submit_cancel();" >
                     <button type="submit" id="cancelbutton" class="btn btn-danger btn-large">

@@ -6,10 +6,13 @@ VAGRANTFILE_API_VERSION = '2'
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
-  # Build off the basic Ubuntu 12.04 64-bit VM.
-  config.vm.box = 'ubuntu-14.04'
-  config.vm.box_url = 'https://s3.amazonaws.com/learningu-static/ubuntu-14.04.box'
+  # Build off the basic Ubuntu 64-bit VM.
+  config.vm.box = 'ubuntu-24.04'
+  config.vm.box_url = 'https://learningu-static.s3.amazonaws.com/ubuntu-24.04.box'
   config.vm.hostname = 'ludev'
+  config.ssh.forward_agent = true
+  config.ssh.forward_x11 = true
+  config.ssh.insert_key = false
 
   # Forward port for Django dev server
   config.vm.network :forwarded_port, guest: 8000, host: 8000
@@ -26,6 +29,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provider :virtualbox do |vb|
     # vb.gui = true
     vb.customize ['modifyvm', :id, '--memory', '2048']
+    vb.customize ["modifyvm", :id, "--cpus", "2"]
   end
 
 end

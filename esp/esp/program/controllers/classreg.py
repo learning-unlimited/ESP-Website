@@ -1,10 +1,12 @@
+from __future__ import absolute_import
 from esp.mailman import add_list_member
 from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
 from esp.middleware import ESPError
-from esp.program.modules.forms.teacherreg import TeacherClassRegForm
+from esp.program.modules.forms.teacherreg import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.resources.forms import ResourceRequestFormSet
 from esp.resources.models import ResourceType, ResourceRequest
 from esp.tagdict.models import Tag
+from esp.users.models import ESPUser
 
 from esp.dbmail.models import send_mail
 from django.core.exceptions import ValidationError
@@ -16,6 +18,8 @@ from datetime import timedelta, datetime
 from decimal import Decimal
 import json
 from django.conf import settings
+import six
+from six.moves import range
 
 def get_custom_fields():
     result = OrderedDict()
@@ -44,6 +48,10 @@ class ClassCreationController(object):
     def makeaclass(self, user, reg_data, form_class=TeacherClassRegForm):
 
         reg_form, resource_formset = self.get_forms(reg_data, form_class=form_class)
+
+        if form_class == TeacherOpenClassRegForm:
+            reg_form.cleaned_data['grade_min'] = self.program.grade_min
+            reg_form.cleaned_data['grade_max'] = self.program.grade_max
 
         self.require_teacher_has_time(user, user, reg_form._get_total_time_requested())
 
@@ -88,7 +96,7 @@ class ClassCreationController(object):
 
         if not reg_form.is_valid() or (resource_formset and not
                                        resource_formset.is_valid()):
-            raise ClassCreationValidationError, (reg_form, resource_formset, "Invalid form data.  Please make sure you are using the official registration form, on esp.mit.edu.  If you are, please let us know how you got this error.")
+            raise ClassCreationValidationError(reg_form, resource_formset, "Invalid form data.  Please make sure you are using the official registration form, on esp.mit.edu.  If you are, please let us know how you got this error.")
 
         return reg_form, resource_formset
 
@@ -172,7 +180,7 @@ class ClassCreationController(object):
                          'note': note,
                          'DEFAULT_HOST': settings.DEFAULT_HOST}
         email_contents = render_to_string('program/modules/availabilitymodule/update_email.txt', email_context)
-        email_to = ['%s <%s>' % (teacher.name(), teacher.email)]
+        email_to = [teacher.get_email_sendto_address()]
         send_mail(email_title, email_contents, email_from, email_to, False)
 
     def teacher_has_time(self, user, hours):
@@ -216,7 +224,7 @@ class ClassCreationController(object):
 
     def generate_director_mail_context(self, cls):
         new_data = cls.__dict__
-        mail_ctxt = dict(new_data.iteritems())
+        mail_ctxt = dict(six.iteritems(new_data))
 
         mail_ctxt['title'] = cls.title
         mail_ctxt['one'] = cls.parent_program.program_type
@@ -244,7 +252,7 @@ class ClassCreationController(object):
             teacher_ctxt = {'teacher': teacher}
             # Provide information about whether or not teacher's from MIT.
             last_profile = teacher.getLastProfile()
-            if last_profile.teacher_info != None:
+            if last_profile.teacher_info is not None:
                 teacher_ctxt['from_here'] = last_profile.teacher_info.from_here
                 teacher_ctxt['college'] = last_profile.teacher_info.college
             else: # This teacher never filled out their teacher profile!
@@ -252,7 +260,7 @@ class ClassCreationController(object):
                 teacher_ctxt['college'] = "[Teacher hasn't filled out teacher profile!]"
 
             # Get a list of the programs this person has taught for in the past, if any.
-            teacher_ctxt['taught_programs'] = u', '.join([prog.niceName() for prog in teacher.getTaughtPrograms().order_by('pk').exclude(id=self.program.id)])
+            teacher_ctxt['taught_programs'] = six.u(', ').join([prog.niceName() for prog in teacher.getTaughtPrograms().order_by('pk').exclude(id=self.program.id)])
             mail_ctxt['teachers'].append(teacher_ctxt)
         return mail_ctxt
 
@@ -270,13 +278,13 @@ class ClassCreationController(object):
         recipients = [teacher.email for teacher in cls.get_teachers()]
         if recipients:
             send_mail(subject, \
-                      render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
-                      ('%s Class Registration <%s>' % (self.program.program_type, self.program.director_email)), \
+                      render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt), \
+                      (ESPUser.email_sendto_address(self.program.director_email, '%s Class Registration' % (self.program.program_type))), \
                       recipients, False)
 
         if self.program.director_email:
             mail_ctxt['admin'] = True
             send_mail(subject, \
-                      render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
-                      ('%s Class Registration <%s>' % (self.program.program_type, self.program.director_email)), \
+                      render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt), \
+                      (ESPUser.email_sendto_address(self.program.director_email, '%s Class Registration' % (self.program.program_type))), \
                       [self.program.getDirectorCCEmail()], False)

@@ -1,3 +1,6 @@
+{% load users %}
+{% load getTag %}
+
 <div style="page-break-after: always;">&nbsp;</div>
 <div class="classroster">
   <div class="classtitle">{{ section }}</div>
@@ -13,7 +16,7 @@
   </tr>
   </table>
   <br />
-  <div class="teachername"><span>{{ item.teacher.name }}</span></div>
+  <div class="teachername"><span>{% if bymoderator %}{{ program.getModeratorTitle }}{% else %}Teacher{% endif %}: {{ item.teacher.name }}</span></div>
   <br />
   <div class="teachername">Class Email: <tt>{{ section.emailcode }}-class@{{ EMAIL_HOST_SENDER }}</tt><br />
 Students Email: <tt>{{ section.emailcode }}-students@{{ EMAIL_HOST_SENDER }}</tt>
@@ -22,20 +25,30 @@ Students Email: <tt>{{ section.emailcode }}-students@{{ EMAIL_HOST_SENDER }}</tt
   <br />
   <table align="center" class="pretty" cellspacing="0" cellpadding="3px">
     <tr>
-      <th colspan="4" align="center">Students</th>
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+        <th colspan="5" align="center">Students</th>
+      {% else %}
+        <th colspan="4" align="center">Students</th>
+      {% endif %}
     </tr>
     <tr>
       <th>#</th>
       <th>Student ID</th>
       <th>Student Name</th>
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <th>Pronouns</th>
+      {% endif %}
       <th>Grade</th>
     </tr>{% for student in section.students %}
     <tr>
       <td align="right">{{ forloop.counter }}</td>
       <td>{{ student.id }}</td>
       <td>{{ student.name }}</td>
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+         <td>{{ student.getLastProfile.student_info.pronoun }}</td>
+      {% endif %}
       <td>
-          {{ student.getGrade }}</td>
+          {{ student|getGradeForProg:program.id }}</td>
     </tr>
     {% endfor %}
   </table>

@@ -1,11 +1,22 @@
 
 {% extends "main.html" %}
+{% load getTag %}
 
 {% block title %}{{program.niceName}}{% endblock %}
 
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet">
+      
+<style>
+a.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    cursor: default;
+}
+</style>
 {% endblock %}
 
 {% block xtrajs %}
@@ -16,7 +27,13 @@
 
 <script type="text/javascript">
 {% include "program/modules/studentclassregmodule/common-js.html.js" %}
+// set some variables for catalog.js
+const INJECTED_DIFFICULTIES = "{{ "teacherreg_difficulty_choices"|getTag|escapejs }}";
+const register_from_catalog = {{ register_from_catalog|yesno:"true,false" }};
+const hide_empty_cats = {{ "hide_empty_categories"|getBooleanTag|yesno:"true,false" }};
 </script>
+
+
 {% endblock %}
 
 {% block content %}
@@ -34,19 +51,40 @@ Viewing classes for: {{ timeslot.friendly_name }}
 {% endif %}
 
 <div id="catalog">
-
-<br>
-<div align="right">
-<b>Filter Catalog by Grade:</b><br>
-<select id = "grade_filter" style="width:auto !important">
-  <option value="all" selected="selected">All Grades</option>
-  {% for grade in program.grades %}
-    <option value="{{ grade }}">Grade {{ grade }}</option>
-  {% endfor %}
-</select>
+<div style="display: flex;justify-content: space-between">
+    <div>
+        <b>Filter by Grade:</b><br>
+        <select id = "grade_filter" style="width:auto !important">
+        <option value="all" selected="selected">Any Grades</option>
+        {% for grade in program.grades %}
+            <option value="{{ grade }}">Grade {{ grade }}</option>
+        {% endfor %}
+        </select>
+    </div>
+    <div>
+        <b>Filter by Class Length:</b><br>
+        <select id = "duration_filter" style="width:auto !important">
+            <option value="all" selected="selected">Any Durations</option>
+        </select>
+    </div>
+    <div>
+        <b>Filter by Difficulty:</b><br>
+        <select id = "difficulty_filter" style="width:auto !important">
+            <option value="all" selected="selected">Any Difficulties</option>
+        </select>
+    </div>
+    <div>
+        <b>Filter by Open/Closed Status:</b><br>
+        <select id = "status_filter" style="width:auto !important">
+            <option value="all" selected="selected">Any Statuses</option>
+            <option value="open">Open</option>
+            <option value="closed">Closed</option>
+        </select>
+    </div>
 </div>
 <br>
 
+{% if categories %}
 <table align="center" style="text-align: center; margin: auto;" width="60%" border="0">
  <tr>
   <th colspan="2">
@@ -58,10 +96,7 @@ Viewing classes for: {{ timeslot.friendly_name }}
 {% if forloop.counter0|divisibleby:2 %}
 <tr>{% endif %}
   <td style="width: 50%; vertical-align: top;" valign="top" align="center">
-
-    <a href="#cat{{ category.id }}" title="Click to skip down to `{{ category.category }}'">
-              {{category.category}}
-    </a>
+    <a href="#cat{{ category.id }}" data-category="{{ category.id }}" title="Click to skip down to `{{ category.category }}'">{{category.category}}</a>
   </td>
  {% if forloop.counter|divisibleby:2 %}
 </tr>{% endif %} 
@@ -70,6 +105,7 @@ Viewing classes for: {{ timeslot.friendly_name }}
 </tr>
 {% endif %}
 </table>
+{% endif %}
 
 {% load render_qsd %}
 {% render_inline_program_qsd program "learn:catalog" %}
@@ -85,42 +121,8 @@ if (document.getElementById("student_schedule")) {
 {% autoescape off %}{{ class_descs }}{% endautoescape %}
 </div>
 
-<script type="text/javascript">
-function hideOtherGrades(grade){
-    if(grade == "all"){
-        $j('.show_class').show();
-    }else{
-    	$j('.show_class').hide();
-        $j('.grade_' + grade).show();
-    }
-}
+<script type="text/javascript" src="/media/scripts/program/modules/catalog.js"></script>
 
-$j(document).ready(function() {
-    var student_grade = esp_user.cur_grade;
-    if (student_grade != "" && student_grade != null) {
-        student_grade = parseInt(student_grade);
-        if($j("#grade_filter").find('option[value="'+student_grade +'"]').length > 0){
-            $j("#grade_filter").val(student_grade);
-        }
-    }
-    hideOtherGrades($j("#grade_filter").find('option:selected').val());
-});
-
-$j("#grade_filter").change(function(){
-	hideOtherGrades($j(this).find('option:selected').val());
-});
-</script>
-
-
-<script type="text/javascript">
-function configure_addbuttons()
-{
-    {% if register_from_catalog %}
-    //  Registration from the catalog is allowed
-    $j("input.addbutton").show();
-    {% endif %}
-}
-$j(document).ready(configure_addbuttons);
-</script>
+<button onclick="topFunction()" id="topBtn" title="Go to top"><i class="material-icons">arrow_upward</i></button>
 
 {% endblock %}

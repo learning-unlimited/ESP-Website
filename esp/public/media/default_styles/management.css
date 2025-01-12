@@ -1,3 +1,7 @@
+div .module_group {
+    margin-bottom: 10px;
+}
+
 div .module_group_body {
     padding-left: 10px;
     padding-right: 10px;
@@ -8,19 +12,27 @@ div .module_group_body ul {
     margin-top: 0px;
 }
 
-div .module_group_header {
-    width: 90%;
+div .module_group_header, div .module_group_header_half {
+    width: calc(100% - 20px);
     background-color: #f3ecc4;
     font-size: 0.95em;
     font-weight: bold;
     padding: 5px;
+    margin-left: 5px;
+    margin-right: 5px;
     margin-bottom: 8px;
     box-shadow: 3px 3px 5px #CCCCCC;
 }
 
+div .button_wrapper {
+    width: 100%;
+    padding: 0px;
+    margin: 0px;
+}
+
 div .module_link_large {
-    width: 200px;
-    margin: 8px;
+    width: calc(50% - 20px);
+    margin: 10px;
     padding: 6px;
     text-align: center;
     float: left;
@@ -41,4 +53,9 @@ div .module_group_expandable + .module_group_body {
 
 .expand_collapse_text {
     font-weight: normal;
+}
+
+.helpbox {
+    margin-right: 0px;
+    width: inherit;
 }

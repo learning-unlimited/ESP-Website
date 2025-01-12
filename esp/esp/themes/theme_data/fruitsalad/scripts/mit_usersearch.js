@@ -60,23 +60,32 @@ content_html:
     displayName: 'User Search'
 });
 
-if (currentProgram) {
-    ESP.registerAdminModule({
-        content_html:
-            '<form id="class_search_form" name="class_search_form" method="get" action="/manage/' + currentProgram.urlBase + '/classsearch">' +
-            '<div class="input-append">' +
-            '<input type="text" id="class_search_field" name="namequery" placeholder="Find Class by Title" />' +
-            '<button type="submit" id="class_search_submit" name="class_search_submit" aria-label="Search" class="btn btn-default"><span class="glyphicon glyphicon-search glyphicon-btn-height" aria-hidden="true"></span></button>' +
-            '</div>' +
-            '</form>',
-        name: 'class_search',
-        displayName: 'Class Search' +
-            ' <small>(' + currentProgram.name + ')</small>'
+if (currentPrograms && currentPrograms.forEach) {
+    currentPrograms.forEach(function (currentProgram) {
+        if (currentProgram.class_search) {
+            ESP.registerAdminModule({
+                content_html:
+                    '<form id="class_search_form" name="class_search_form" method="get" action="/manage/' + currentProgram.urlBase + '/classsearch">' +
+                    '<div class="input-append">' +
+                    '<input type="text" id="class_search_field" name="namequery" placeholder="Find Class by Title" />' +
+                    '<button type="submit" id="class_search_submit" name="class_search_submit" aria-label="Search" class="btn btn-default"><span class="glyphicon glyphicon-search glyphicon-btn-height" aria-hidden="true"></span></button>' +
+                    '</div>' +
+                    '</form>',
+                name: 'class_search',
+                displayName: 'Class Search' +
+                    ' <small>(' + currentProgram.name + ')</small>'
+            });
+            ESP.registerAdminModule({
+            content_html: '    <a href="/manage/' + currentProgram.urlBase +'/main">Main Management Page</a><br /><a href="/manage/' + currentProgram.urlBase +'/dashboard">Program Dashboard</a><br /><a href="/onsite/' + currentProgram.urlBase +'/main">Main Onsite Page</a>',
+            name: 'Manage',
+            displayName: 'Manage ' + currentProgram.name
+});
+        };
     });
 }
 
 ESP.registerAdminModule({
-    content_html: '    <a href="/admin/">Administration pages</a><br /><a href="/admin/filebrowser/browse/">Manage media files</a><br /><a href="/themes/">Theme settings</a>',
+    content_html: '    <a href="/manage/programs/">Manage other programs</a><br/><a href="/manage/pages">Manage static pages</a><br /><a href="/admin/">Administration pages</a><br /><a href="/admin/filebrowser/browse/">Manage media files</a><br /><a href="/themes/">Manage theme settings</a>',
     name: 'Links',
     displayName: 'Links'
 });

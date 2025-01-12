@@ -22,18 +22,34 @@
 
 <h1>Setting Coteachers for &quot;<u>{{ class|escape }}</u>&quot;</h1>
 
-<p>Please list all others that will be helping you teach this class.  They will need to create accounts and mark their available times through the teacher registration page (for scheduling purposes).</p>
+<h2>To add a co-teacher, please follow these steps:</h2>
+<ol>
+<li>Have your co-teacher register a teacher account on our website (if they do not have one already).</li>
+
+<li>Have your co-teacher update their teacher profile at <a href="/teach/{{ program.getUrlBase }}/profile">this page</a>.</li>
+
+<li>Have your co-teacher update their availability for {{ program.name }} at  <a href="/teach/{{ program.getUrlBase }}/availability">this page</a>. Please make sure that your co-teacher and you share an overlapping schedule that is able to cover the entire duration of your class(es) that you are co-teaching.</li>
+
+<li>Finally, return to this co-teachers page and add your co-teacher using the tool below.</li>
+</ol>
 
 {% if conflict %}
-    <p>
-    <b><font color="red">{{ conflict }}</font> has a conflicting schedule.</b><br />
-    </p>
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {{ conflict.name }} has a conflicting schedule.
+    </div>
+{% elif unavailableuser %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {{ unavailableuser.name }}</font> is not available when this class is scheduled ({{ unavailabletimes|join:", " }}).
+    </div>
 {% endif %}
 
 {% if error %}
-<p style="color:red; font-weight: bold;">
-{{ error }}
-</p>
+<div class="alert alert-danger">
+    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        {{ error }}
+</div>
 {% endif %}
 <div id="program_form">
 {% if not coteachers|length %}
@@ -68,7 +84,7 @@ You currently have no coteachers for this class.
 </table>
 </form>
 {% endif %}
-<form action="{{request.path}}" method="post" name="addteacher" onsubmit="cleanTeacherSubmit($j(this))">
+<form action="{{request.path}}" method="post" name="addteacher">
 <table align="center" width="500">
     <tr>
         <th colspan="2">Add a coteacher</th>

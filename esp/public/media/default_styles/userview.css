@@ -1,5 +1,6 @@
 #user-sidebar {
   float: right;
+  width: 44%;
 }
 
 #user-sidebar .change-program {
@@ -12,18 +13,41 @@
   line-height: normal;
 }
 
+#user-sidebar table.modules {
+  border: 1px solid #3366cc;
+  margin-top: 5px;
+  width: 100%;
+}
+
+#user-sidebar table.modules tr:not(:first-child) {
+  border-top: 1px solid #dddddd;
+}
+
+#user-sidebar table.modules tr {
+  border-left: 1px solid #3366cc;
+  border-right: 1px solid #3366cc;
+}
+
 #user-sidebar a.sidelink:link {
   text-decoration: none;
   
   display: block;
   border: 1px solid #3366cc;
-  border-right: none;
   
   padding: 7px;
-  margin-right: -20px;
   padding-right: 27px;
   padding-left: 10px;
   margin-top: 5px;
+}
+
+#user-sidebar a.stripes:not(:hover) {
+  background: repeating-linear-gradient(
+    45deg,
+    lightgrey,
+    lightgrey 5px,
+    transparent 5px,
+    transparent 10px
+  );
 }
 
 #user-sidebar a.sidelink:hover {
@@ -39,6 +63,9 @@
 table.dottedtable {
   border-spacing: 0;
   border-collapse: collapse;
+  width: 55%;
+  table-layout: fixed;
+  word-wrap: break-word;
 }
 
 table.dottedtable tr {
@@ -53,14 +80,24 @@ table.dottedtable td {
 table.dottedtable .key {
   font-size: 90%;
   color: #444;
-  width: 150px;
+  width: 40%;
   padding-right: 20px;
   
   vertical-align: top;
 }
 
-table.dottedtable.long td:nth-child(even) {
-  min-width: 210px;
+select {
+  width: auto !important;
+}
+
+.biophoto {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.change-program {
+  text-align: center;
 }
 
 .yes {

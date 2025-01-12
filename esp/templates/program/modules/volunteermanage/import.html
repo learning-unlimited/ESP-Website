@@ -1,0 +1,77 @@
+{% extends "main.html" %}
+
+{% block title %}Manage Volunteers for {{ program.niceName }}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% block xtrajs %}
+<script>
+function toggle(source) {
+  $j('input[name=to_import]').prop('checked', source.checked);
+}
+</script>
+{% endblock %}
+
+{% block content %}
+
+<h1>Manage Volunteers for {{ program.niceName }}</h1>
+
+{% if new_requests %}
+    <h2>Confirm Volunteer Shift Import</h2>
+
+    {% load render_qsd %}
+    {% inline_program_qsd_block program "volunteer_import_instructions" %}
+    <p>
+    You have chosen to import the volunteer shifts from {{ past_program.niceName }} to {{ prog.niceName }}.  Please review the table below carefully before clicking "Submit" to complete the import.  In particular, check that each shift has the appropriate start and end times, descriptions, and number of volunteers.  If any of this data is not correct, please <a href="/manage/{{ prog.getUrlBase }}/volunteering">GO BACK</a>; add the volunteer shifts manually or contact <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}">technical support</a> for assistance in automating the process.
+    </p>
+    {% end_inline_program_qsd_block %}
+
+    <div id="program_form">
+        <form method="post" action="{{ request.path }}">
+            <input type="hidden" name="import_confirm" value="yes" />
+            <input type="hidden" name="program" value="{{ past_program.id }}" />
+            <input type="hidden" name="start_date" value="{{ start_date }}" />
+            <table align="center" cellpadding="0" cellspacing="0" width="550">
+                <tr><th colspan="3">Proposed volunteer shifts for {{ prog.niceName }}</th></tr>
+                <tr><td colspan="3"><table cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                    <td width="30%"><b>Time</b></td>
+                    <td width="55%"><b>Description</b></td>
+                    <td><b>Import? <input type="checkbox" onclick=toggle(this) checked></b></td>
+                </tr>
+                {% for vr in new_requests %}
+                {% ifchanged vr.timeslot.start.date %}
+                <th colspan="3" align="center">{{ vr.timeslot.pretty_date }}</th>
+                {% endifchanged %}
+                <tr>
+                    <td>{{ vr.timeslot.short_time }}</td>
+                    <td>{{ vr.timeslot.description }}: {{ vr.num_offers }} / {{ vr.num_volunteers }} volunteers</td>
+                    <td><input type="checkbox" name="to_import" value="{{ vr.old_id }}" checked></td>
+                </tr>
+                {% endfor %}
+                </table></td></tr>
+                <tr><td colspan="3" align="center"><input class="fancybutton" type="submit" value="Complete Import" /></td></tr>
+            </table>
+        </form>
+    </div>
+
+{% else %}
+
+    <h2>Volunteer Shift Import Not Available</h2>
+
+    {% load render_qsd %}
+    {% inline_program_qsd_block program "volunteer_import_empty" %}
+    <p>
+    You have chosen to import the volunteer shifts from {{ past_program.niceName }}, but this program does not have any volunteer shifts to import. Please <a href="/manage/{{ prog.getUrlBase }}/volunteering">go back</a> and add volunteer shifts manually or select a different program from which to import volunteer shifts.
+    </p>
+    {% end_inline_program_qsd_block %}
+
+{% endif %}
+
+<br>
+<a class="btn btn-primary" href="/manage/{{ prog.getUrlBase }}/volunteering">Return to the volunteer management page</a>
+
+{% endblock %}

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import json
 
 from esp.program.modules.base import \
@@ -11,6 +12,7 @@ from esp.utils.decorators import json_response
 
 
 class AutoschedulerFrontendModule(ProgramModuleObj):
+    doc = """Augments the AJAX scheduler, adding an interface to automatically schedule individual sections."""
 
     @classmethod
     def module_properties(cls):
@@ -18,7 +20,8 @@ class AutoschedulerFrontendModule(ProgramModuleObj):
             "admin_title": "Autoscheduler Frontend",
             "link_title": "Use the automatic scheduling tool",
             "module_type": "manage",
-            "seq": 50
+            "seq": 50,
+            "choosable": 2,
             }
 
     @main_call
@@ -79,7 +82,7 @@ class AutoschedulerFrontendModule(ProgramModuleObj):
         try:
             schedulerObj = AutoschedulerController(prog, **options)
             schedulerObj.compute_assignments()
-        except (SchedulingError, ValueError), e:
+        except (SchedulingError, ValueError) as e:
             return {'response': [{'error_msg': str(e)}]}
 
         info = schedulerObj.get_scheduling_info()
@@ -101,7 +104,7 @@ class AutoschedulerFrontendModule(ProgramModuleObj):
             schedulerObj = AutoschedulerController(prog, **options)
             schedulerObj.import_assignments(data)
             schedulerObj.save_assignments()
-        except SchedulingError, e:
+        except SchedulingError as e:
             return {'response': [{'error_msg': str(e)}]}
         return {'response': [{'success': 'yes'}]}
 
@@ -110,6 +113,9 @@ class AutoschedulerFrontendModule(ProgramModuleObj):
     @needs_admin
     def autoscheduler_clear(self, request, tl, one, two, module, extra, prog):
         return {'response': [{'success': 'yes'}]}
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

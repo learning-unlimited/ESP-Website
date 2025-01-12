@@ -2,17 +2,33 @@
 
 {% load render_qsd %}
 
-<h3>Teacher Information</h3>
+<h3>Additional Teacher Information</h3>
 
+{% if form.pronoun %}
 <div class="control-group">
-<label for="id_affiliation" class="control-label">{{ form.affiliation.label }}</label>
-<div class="controls">
-    {{ form.affiliation }} {% if form.affiliation.errors %}
-  <br /><span class="form_error">{{ form.affiliation.errors|join:", " }}</span>
-  {% endif %}
+    <label for="id_pronoun"  class="control-label">Preferred pronouns:</label>
+    <div class="controls">
+    <p style="font-size: 0.8em; font-style: italic;">(Please note that students, other teachers, and administrators may be shown this information if you provide it. This field is not required.)</p>
+    {{ form.pronoun }} {% if form.pronoun.errors %}
+    <br /><span class="form_error">{{ form.pronoun.errors|join:", " }}</span>
+    {% endif %}
+    </div>
 </div>
-</div>
+{% endif %}
 
+{% if form.affiliation %}
+<div class="control-group">
+    <label for="id_affiliation" class="control-label">{{ form.affiliation.label }}<font color="red">*</font></label>
+    <div class="controls controls-row">
+    <span style="font-size: 0.8em; font-style: italic;">(If you select "Other" or "No affiliation," please explain in the lower box.)</span><br />
+    {{ form.affiliation }} {% if form.affiliation.errors %}
+    <br /><span class="form_error">{{ form.affiliation.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% if form.graduation_year %}
 <div class="control-group">
 <label for="id_graduation_year" class="control-label">Graduation Year:</label>
 <div class="controls">
@@ -23,7 +39,9 @@
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.major %}
 <div class="control-group">
  <label for="id_major" class="control-label">Major/Department:</label>
  <div class="controls">
@@ -31,7 +49,8 @@
    <br /><span class="form_error">{{ form.major.errors|join:", " }}</span>
    {% endif %}
 </div>
-</div> 
+</div>
+{% endif %}
 
 {% if form.shirt_size %}
 

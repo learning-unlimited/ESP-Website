@@ -4,6 +4,7 @@ This should be the only place (other than the controller itself) where any
 database interaction happens.
 """
 
+from __future__ import absolute_import
 import json
 import logging
 
@@ -13,7 +14,7 @@ from django.db import transaction
 from esp.resources.models import \
     ResourceType, Resource, ResourceAssignment, ResourceRequest
 from esp.program.models import ClassSection
-from esp.program.models.class_ import ACCEPTED
+from esp.program.class_status import ClassStatus
 from esp.users.models import ESPUser, UserAvailability
 from esp.cal.models import Event
 from esp.program.modules import module_ext
@@ -25,6 +26,8 @@ from esp.program.controllers.autoscheduler.data_model import \
     AS_Timeslot, AS_RoomSlot, AS_ResourceType
 from esp.program.controllers.autoscheduler import \
     util, config, resource_checker
+import six
+from six.moves import zip
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +82,7 @@ def load_sections_and_teachers_and_classrooms(
             ).select_related()
 
     if require_approved:
-        sections = sections.filter(status=ACCEPTED)
+        sections = sections.filter(status=ClassStatus.ACCEPTED)
     if exclude_scheduled:
         # Exclude all already-scheduled classes
         sections = sections.annotate(
@@ -89,7 +92,7 @@ def load_sections_and_teachers_and_classrooms(
     if exclude_lunch:
         sections = sections.exclude(
                 parent_class__category__category="Lunch")
-    if exclude_walkins:
+    if exclude_walkins and schedule.program.open_class_registration:
         sections = sections.exclude(
                 parent_class__category=schedule.program.open_class_category)
     if exclude_locked:
@@ -185,7 +188,7 @@ def save(schedule, check_consistency=True, check_constraints=True):
 
     # Find all sections which we've actually moved.
     changed_sections = set(
-        section for section in schedule.class_sections.itervalues()
+        section for section in six.itervalues(schedule.class_sections)
         if section.initial_state
         != section.scheduling_hash())
     # Note: we need to be careful not to cache anything after we save
@@ -493,8 +496,7 @@ def load_constraints(program, constraints_overrides=None):
         constraints_overrides = {}
 
     tag_value = Tag.getProgramTag(config.CONSTRAINT_TAG,
-                                  program=program,
-                                  default="{}")
+                                  program=program)
 
     try:
         tag_overrides = json.loads(tag_value)
@@ -516,8 +518,7 @@ def load_scorers(program, scorer_overrides=None):
         scorer_overrides = {}
 
     tag_value = Tag.getProgramTag(config.SCORER_TAG,
-                                  program=program,
-                                  default="{}")
+                                  program=program)
 
     try:
         tag_overrides = json.loads(tag_value)
@@ -537,13 +538,12 @@ def load_resource_constraints(
         specification_overrides = {}
 
     tag_value = Tag.getProgramTag(config.RESOURCE_CONSTRAINTS_TAG,
-                                  program=program,
-                                  default="{}")
+                                  program=program)
     try:
         tag_overrides = json.loads(tag_value)
         if ignore_comments:
             tag_overrides = {
-                k: v for k, v in tag_overrides.iteritems()
+                k: v for k, v in six.iteritems(tag_overrides)
                 if "_comment" not in k}
     except ValueError as e:
         raise SchedulingError(
@@ -555,7 +555,7 @@ def load_resource_constraints(
     if specs_only:
         return {
             name: spec for name, spec
-            in util.override(specs).iteritems()
+            in six.iteritems(util.override(specs))
             if spec != "None" and spec is not None}
     else:
         valid_res_types = ResourceType.objects.filter(
@@ -572,13 +572,12 @@ def load_resource_scoring(
         specification_overrides = {}
 
     tag_value = Tag.getProgramTag(config.RESOURCE_SCORING_TAG,
-                                  program=program,
-                                  default="{}")
+                                  program=program)
     try:
         tag_overrides = json.loads(tag_value)
         if ignore_comments:
             tag_overrides = {
-                k: v for k, v in tag_overrides.iteritems()
+                k: v for k, v in six.iteritems(tag_overrides)
                 if "_comment" not in k}
     except ValueError as e:
         raise SchedulingError(
@@ -591,7 +590,7 @@ def load_resource_scoring(
     if specs_only:
         return {
             name: (spec, weight) for name, (spec, weight)
-            in util.override(specs).iteritems()
+            in six.iteritems(util.override(specs))
             if spec != "None" and spec is not None}
     else:
         valid_res_types = ResourceType.objects.filter(

@@ -1,6 +1,9 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from esp.program.models import *
 from esp.survey.models import *
 from esp.datatree.models import *
+from io import open
 
 splash = Program.objects.get(id=11)
 auri = splash.anchor.uri
@@ -8,7 +11,7 @@ auri = splash.anchor.uri
 # create survey
 survey, created = Survey.objects.get_or_create(name = 'Splash Student Survey', anchor=splash.anchor, category='learn')
 survey.save()
-print survey
+print(survey)
 
 infile = open('/home/pricem/survey_learn_out.txt')
 
@@ -22,8 +25,8 @@ for entry in entries:
     qt = QuestionType.objects.get(id=qlist[3])
     name = qlist[4]
     q, c = Question.objects.get_or_create(survey=survey, name=name, question_type=qt, _param_values=pv, anchor=anchor, seq=seq)
-    print q
-    print q.__dict__
+    print(q)
+    print(q.__dict__)
     q.save()
 
 infile.close()

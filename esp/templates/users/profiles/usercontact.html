@@ -1,7 +1,10 @@
 <!-- User ContactInfo -->
 
-<h3>Contact Information</h3>
+{% load render_qsd %}
 
+<h3>{{ profiletype|capfirst }} Contact Information</h3>
+
+{% if form.first_name %}
  <div class="control-group">
  <label class="control-label" for="id_first_name">First Name:</label>
  <div class="controls">
@@ -10,7 +13,9 @@
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.last_name %}
 <div class="control-group">
  <label class="control-label" for="id_last_name">Last Name:</label>
  <div class="controls">
@@ -19,27 +24,33 @@
    {% endif %}
 </div>
 </div>
+{% endif %}
 
+{% if form.e_mail %}
 {% ifequal profiletype "student" %}
 <div class="alert">
     <button type="button" class="close" data-dismiss="alert">x</button>
-    <strong>Students:</strong> Please enter your primary e-mail address.  It is important that you check your e-mail at this address regularly, since it is our only means of contacting you with important information for each program you participate in.  Enter your parents' e-mail address in the parent/guardian section below.
+    {% inline_program_qsd_block program "student_email_instructions" %}
+    <strong>Students:</strong> Please enter your primary email address.  It is important that you check your email at this address regularly, since it is our only means of contacting you with important information for each program you participate in.  Enter your parents' email address in the parent/guardian section below.
+    {% end_inline_program_qsd_block %}
 </div>
 {% endifequal %}
 
 <div class="control-group">
- <label class="control-label" for="id_e_mail">E-mail address:</label>
+ <label class="control-label" for="id_e_mail">Email address:</label>
  <div class="controls">
  {{ form.e_mail }} {% if form.e_mail.errors %}
    <br /><span class="form_error">{{ form.e_mail.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
+{% endif %}
+
+{% if form.address_street or form.address_city or form.address_state or form.address_zip %}
+<h4>Address:</h4>
+{% endif %}
 
 {% if form.address_street %}
-
-<h4>Address:</h4>
-
 <div class="control-group">
     <label class="control-label" for="id_address_street">
     <small><i>street</i></small>
@@ -50,10 +61,12 @@
     {% endif %}
     </div>
 </div>
+{% endif %}
 
+{% if form.address_city or form.address_state or form.address_zip %}
 <div class="control-group">
     <label class="control-label" for="id_address_city">
-    <small><i>city/state/zip</i></small>
+    <small><i>{% if form.address_city %}city/{% endif %}{% if form.address_state %}state/{% endif %}{% if form.address_zip %}zip{% endif %}</i></small>
     </label>
     <div class="controls controls-row">
         {{ form.address_city }} {% if form.address_city.errors %}
@@ -67,14 +80,27 @@
         {{ form.address_zip }} {% if form.address_zip.errors %}
         <br /><span class="form_error">{{ form.address_zip.errors|join:", " }}</span>
         {% endif %}
+        
+        {{ form.address_country }} {% if form.address_country.errors %}
+        <br /><span class="form_error">{{ form.address_country.errors|join:", " }}</span>
+        {% endif %}
     </div>
 </div>
-    
 {% endif %}
 
 {{ form.address_postal }}
 
-<h4>Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}:</h4>
+{% if form.phone_day or form.phone_cell %}
+<h4>Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}:{% if profiletype == "teacher" or profiletype == "student" and require_student_phonenum %}<font color="red">*</font>{% endif %}</h4>
+
+{% if profiletype == "student" %}
+<div class="alert">
+    <button type="button" class="close" data-dismiss="alert">x</button>
+    {% inline_program_qsd_block program "student_phone_instructions" %}
+    <strong>Students:</strong> Please enter <b>your</b> phone numbers below.{% if not require_student_phonenum %} If you do not have {% if form.phone_day %}a home phone {% endif %}{% if form.phone_day and form.phone_cell %}nor {% endif %}{% if form.phone_cell %}a personal cell phone{% endif %}, please leave this blank.{% endif %} You will enter your guardian and emergency contact phone numbers in the sections below.
+    {% end_inline_program_qsd_block %}
+</div>
+{% endif %}
 
 {% if form.phone_day %}
 <div class="control-group">
@@ -97,14 +123,17 @@
 </div>
 </div>
 {% endif %}
+{% endif %}
 
-{% if form.receive_txt_message %}
-
- <small><i><label = "id_receive_txt_message">I would like to receive text-message reminders about the program:</label></i></small>
+{% if form.receive_txt_message and form.phone_cell %}
+<div class="control-group">
+ <small><i><label class="control-label" for="id_receive_txt_message">I would like to receive text-message reminders about the program:</label></i></small>
+ <div class="controls">
  {{ form.receive_txt_message }} {% if form.receive_txt_message.errors %}
    <br /><span class="form_error">{{ form.receive_txt_message.errors|join:", " }}</span>
    {% endif %}
- 
+ </div>
+</div>
 {% endif %}
 
 <!-- End User ContactInfo -->

@@ -11,7 +11,10 @@
 <h1>Please Select a Survey:</h1>
 
 {% if error %}
-<font color="red"><p>Error: We lost track of your survey!  Please try again.</p></font>
+<div class="alert alert-danger">
+    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        Error: We lost track of your survey!  Please try again.
+</div>
 {% else %}
 <p> Several surveys were found for this program:</p>
 {% endif %}
@@ -21,5 +24,9 @@
 <li><a href="?survey_id={{ s.id }}">{{ s.name }}</a></li>
 {% endfor %}
 </ul>
+
+{% if student_results %}
+<p class="message">Alternatively, you can view the results of the student survey(s) for your class(es) by <a href="{{ request.path }}/review">going here</a>.
+{% endif %}
 
 {% endblock %}

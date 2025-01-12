@@ -10,39 +10,48 @@
 <!-- meta -->
 <meta http-equiv="Content-Script-Type" content="text/javascript" />
 
-<title>ESP Scheduling Application</title>
+<title>{{ settings.ORGANIZATION_SHORT_NAME }} Scheduling Application</title>
 
 <!-- LIBS -->
 <!-- STYLE -->
 <link id='sch_css' href='/media/default_styles/scheduling.css' type='text/css' rel='stylesheet' />
 <link id='tooltip_css' href='/media/default_styles/tooltips.css' type='text/css' rel='stylesheet' />
-<link rel="stylesheet" href='/media/default_styles/jquery-ui/jquery-ui.css'/>
-<link rel="stylesheet" type="text/css" href="/media/default_styles/scheduling.css" />
+<link href="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
 <link rel="stylesheet" type="text/css" href="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.css" />
 
 <!-- 3rd party -->
-<script type='text/javascript' src='/media/scripts/jquery.js'></script>
-<script type='text/javascript' src='/media/scripts/jquery-ui.js'></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/{{ settings.JQUERY_VERSION }}/jquery.min.js" integrity="{{ settings.JQUERY_HASH }}" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-migrate-3.3.2.{% if not settings.DEBUG %}min.{% endif %}js"></script>
+<script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/jquery-ui.js"></script>
 <script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
 <script type='text/javascript' src='/media/scripts/common.js'></script>
 <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/google/palette.js@8418158452401c15d276d9632b88933aa581718f/palette.js"></script>
+<script type="text/javascript" src="/media/scripts/lodash.compat.min.js"></script>
+<script type="text/javascript" src="/media/scripts/print.min.js"></script>
 
 <!--Scheduler-->
 <script type="text/javascript">
   var base_url = "{{ program.getUrlBase }}";
+  var prog_id = "{{ program.id }}";
   var program_base_url = "/json/"+base_url+"/";
   var has_autoscheduler_frontend = "{{ has_autoscheduler_frontend }}";
+  var has_moderator_module = "{{ has_moderator_module }}";
+  var contiguous_tolerance = "{{ contiguous_tolerance }}";
+  var moderator_title = "{{ program.getModeratorTitle }}";
+  var jqueryui_version = "{{ settings.JQUERY_UI_VERSION }}";
 </script>
 
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/CellColors.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Timeslots.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/ApiClient.js"></script>
-<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Helpers.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Cell.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Sections.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Directory.js"></script>
+<script type="text/javascript" src="/media/scripts/sorttable.js"></script> <!-- For the moderator directory -->
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Moderators.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Matrix.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/MessagePanel.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/SectionCommentDialog.js"></script>
@@ -61,18 +70,84 @@
     </td>
     <td class="no-border">
       <div id="side-panel-wrapper" class="ui-widget">
-        <div id="section-info-div" class="component-div ui-widget ui-corner-all ui-helper-hidden"></div>
-        <div id="message-div" class="component-div ui-widget-content ui-corner-all"></div>
-
+        <div id="info-panel">
+          <div id="section-info-and-message-wrapper">
+            <div id="section-info-div" class="component-div ui-widget ui-corner-all ui-helper-hidden"></div>
+            <div id="message-div" class="component-div ui-widget-content ui-corner-all"></div>
+          </div>
+          <div id="separator" class="ui-resizable-handle ui-resizable-s"></div>
+        </div>
         <div id="side-panel" class="component-div ui-widget">
           <ul>
             <li><a href="#classes">Classes</a></li>
-            <li><a href="#filters">Filters</a></li>
+            <li><a href="#filters2">Room Filters</a></li>
+            <li><a href="#checks">Checks</a></li>
+            {% if has_moderator_module %}
+            <li><a href="#moderators">{{ program.getModeratorTitle }}s</a></li>
+            {% endif %}
           </ul>
           <div id="side-panel-inner">
                 <div id="classes">
+                    <div id="filters-accordion">
+                        <h3>Class Filters</h3>
+                        <div id="filters">
+                            <form>
+                                <div id="section-filter-unapproved-wrapper">
+                                    <input id="section-filter-unapproved" type="checkbox"></input>
+                                    <label for="section-filter-unapproved">Hide unapproved classes</label>
+                                </div>
+                                <br />
+                                <label for="section-filter-length"><b>Class Length</b></label><br />
+                                <div id="section-filter-length">
+                                    <label for="section-filter-length-min">Min:</label>
+                                    <input id="section-filter-length-min" class="numeric"></input> Hours
+                                    <br />
+                                    <label for="section-filter-length-max">Max:</label>
+                                    <input id="section-filter-length-max" class="numeric"></input> Hours
+                                </div>
+                                <br />
+                                <label for="section-filter-capacity"><b>Class Capacity</b></label><br />
+                                <div id="section-filter-capacity">
+                                    <label for="section-filter-capacity-min">Min:</label>
+                                    <input id="section-filter-capacity-min" class="numeric"></input> Students
+                                    <br />
+                                    <label for="section-filter-capacity-max">Max:</label>
+                                    <input id="section-filter-capacity-max" class="numeric"></input> Students
+                                </div>
+                                <br />
+                                <label for="section-filter-grade"><b>Class Grades</b></label><br />
+                                <div id="section-filter-grade">
+                                    <label for="section-filter-grade-min">Min:</label>
+                                    <input id="section-filter-grade-min" class="numeric"></input>
+                                    <br />
+                                    <label for="section-filter-grade-max">Max:</label>
+                                    <input id="section-filter-grade-max" class="numeric"></input>
+                                </div>
+                                <br />
+                                <div id="section-filter-teacher">
+                                    <label for="section-filter-teacher-text"><b>Teacher</b></label><br />
+                                    <input id="section-filter-teacher-text"></input>
+                                </div>
+                                <div id="section-filter-admin-wrapper">
+                                    <input id="section-filter-admin" type="checkbox"></input>
+                                    <label for="section-filter-admin">Has admin teacher</label>
+                                </div>
+                                <br />
+                                <div id="section-filter-flags">
+                                    <label for="section-filter-flags-text"><b>Flag(s)</b></label><br />
+                                    <input id="section-filter-flags-text"></input>
+                                </div>
+                                <br />
+                                <div id="section-filter-resources">
+                                    <label for="section-filter-resources-text"><b>Resource(s)</b></label><br />
+                                    <input id="section-filter-resources-text"></input>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <br>
                     <div id="class-search">
-                        <form>
+                        <form action="javascript:void(0)">
                             <label for="class-search-text">Search:</label>
                             <input id="class-search-text"
                                    style="width: 8em;"></input>
@@ -85,47 +160,134 @@
                             <input type="radio" name="class-search-type" value="emailcode">code</input>
                         </form>
                     </div>
+                    <div id="class-sort">
+                        <form>
+                            <label for="class-sort-field">Sort by:</label>
+                            <select id="class-sort-field">
+                                <option value="id" selected>ID</option>
+                                <option value="category">Category</option>
+                                <option value="availability">Teacher availability</option>
+                                <option value="hosedness">Teacher hosedness</option>
+                                <option value="capacity">Capacity</option>
+                                <option value="length">Length</option>
+                            </select>
+
+                            <label for="class-sort-type" class="ui-helper-hidden">Sort Type</label>
+                            <input type="radio" name="class-sort-type" value="asc"
+                                   checked="checked">asc</input>
+                            <input type="radio" name="class-sort-type" value="des">des</input>
+                        </form>
+                    </div>
                     <div id="directory"></div>
                 </div>
-                <div id="filters">
+                <div id="filters2">
                   <form>
-                    <label for="section-filter-length"><b>Class Length</b></label><br />
-                    <div id="section-filter-length">
-                        <label for="section-filter-length-min">Min:</label>
-                        <input id="section-filter-length-min" class="numeric"></input> Hours
+                    <label for="room-filter-capacity"><b>Room Capacity</b></label><br />
+                    <div id="room-filter-capacity">
+                        <label for="room-filter-capacity-min">Min:</label>
+                        <input id="room-filter-capacity-min" class="numeric"></input> Students
                         <br />
-                        <label for="section-filter-length-max">Max:</label>
-                        <input id="section-filter-length-max" class="numeric"></input> Hours
+                        <label for="room-filter-capacity-max">Max:</label>
+                        <input id="room-filter-capacity-max" class="numeric"></input> Students
                     </div>
                     <br />
-                    <label for="section-filter-capacity"><b>Class Capacity</b></label><br />
-                    <div id="section-filter-length">
-                        <label for="section-filter-capacity-min">Min:</label>
-                        <input id="section-filter-capacity-min" class="numeric"></input> Students
-                        <br />
-                        <label for="section-filter-capacity-max">Max:</label>
-                        <input id="section-filter-capacity-max" class="numeric"></input> Students
+                    <div id="room-filter-resource">
+                        <label for="room-filter-resource-text"><b>Resource</b></label><br />
+                        <input id="room-filter-resource-text"></input>
                     </div>
                     <br />
-                    <label for="section-filter-grade"><b>Class Grades</b></label><br />
-                    <div id="section-filter-length">
-                        <label for="section-filter-grade-min">Min:</label>
-                        <input id="section-filter-grade-min" class="numeric"></input>
-                        <br />
-                        <label for="section-filter-grade-max">Max:</label>
-                        <input id="section-filter-grade-max" class="numeric"></input>
-                    </div>
-                    <br />
-                    <div id="section-filter-teacher">
-                        <label for="section-filter-teacher-text"><b>Teacher</b></label><br />
-                        <input id="section-filter-teacher-text"></input>
-                    </div>
-                    <div id="section-filter-unapproved">
-                        <input id="section-filter-unapproved" type="checkbox"></input>
-                        <label for="section-filter-unapproved">Hide unapproved classes</label>
+                    <div id="room-filter-name">
+                        <label for="room-filter-name-text"><b>Name</b></label><br />
+                        <input id="room-filter-name-text"></input>
                     </div>
                   </form>
                 </div>
+                <div id="checks">
+                  <form>
+                    <label for="scheduling-checks"><b>Scheduling Checks</b></label><br />
+                    <div id="scheduling-checks">
+                        <input type="radio" name="scheduling-checks" value="" checked id="scheduling-checks-none"></input><label for="scheduling-checks-none"> None</label>
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="capacity" id="scheduling-checks-capacity"></input><label for="scheduling-checks-capacity"> Room Capacity Mismatch</label>
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="category" id="scheduling-checks-category"></input><label for="scheduling-checks-category"> Color by Class Category</label>
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="unapproved" id="scheduling-checks-unapproved"></input><label for="scheduling-checks-unapproved"> Unapproved Classes</label>
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="requests" id="scheduling-checks-requests"></input><label for="scheduling-checks-requests"> Unfulfilled Resource Requests</label>
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="lunch" id="scheduling-checks-lunch"></input><label for="scheduling-checks-lunch"> Classes Scheduled Over Lunch</label>
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="hungry" id="scheduling-checks-hungry"></input><label for="scheduling-checks-hungry"> Hungry Teachers</label>
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="running" id="scheduling-checks-running"></input><label for="scheduling-checks-running"> Running Teachers</label>
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="double_booked" id="scheduling-checks-double_booked"></input><label for="scheduling-checks-double_booked"> Double-Booked Teachers</label>
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="unavailable" id="scheduling-checks-unavailable"></input><label for="scheduling-checks-unavailable"> Unavailable Teachers</label>
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="num_teachers" id="scheduling-checks-num_teachers"></input><label for="scheduling-checks-num_teachers"> Number of Teachers</label>
+                        <br />
+                        {% if has_moderator_module %}
+                        <input type="radio" name="scheduling-checks" value="num_moderators" id="scheduling-checks-num_moderators"></input><label for="scheduling-checks-num_moderators"> Number of {{ program.getModeratorTitle|capfirst }}s</label>
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="num_both" id="scheduling-checks-num_both"></input><label for="scheduling-checks-num_both"> Number of Teachers and {{ program.getModeratorTitle|capfirst }}s</label>
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="mod_unavailable" id="scheduling-checks-mod_unavailable"></input><label for="scheduling-checks-mod_unavailable"> Unavailable {{ program.getModeratorTitle|capfirst }}s</label>
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="mod_cats" id="scheduling-checks-mod_cats"></input><label for="scheduling-checks-mod_cats"> {{ program.getModeratorTitle|capfirst }}s with Mismatched Categories</label>
+                        <br />
+                        {% endif %}
+                    </div>
+                  </form>
+                </div>
+                {% if has_moderator_module %}
+                <div id="moderators">
+                    <div id="mod-filters-accordion">
+                        <h3>{{ program.getModeratorTitle }} Filters</h3>
+                        <div id="mod-filters">
+                            <form>
+                                <label for="mod-filter-avail"><b>Available Slots</b></label><br />
+                                <div id="mod-filter-avail">
+                                    <label for="mod-filter-avail-min">Min:</label>
+                                    <input id="mod-filter-avail-min" class="numeric"></input> Slots
+                                    <br />
+                                    <label for="mod-filter-avail-max">Max:</label>
+                                    <input id="mod-filter-avail-max" class="numeric"></input> Slots
+                                </div>
+                                <br />
+                                <label for="mod-filter-remain"><b>Remaining Slots</b></label><br />
+                                <div id="mod-filter-remain">
+                                    <label for="mod-filter-remain-min">Min:</label>
+                                    <input id="mod-filter-remain-min" class="numeric"></input> Slots
+                                    <br />
+                                    <label for="mod-filter-remain-max">Max:</label>
+                                    <input id="mod-filter-remain-max" class="numeric"></input> Slots
+                                </div>
+                                <br />
+                                <div id="mod-filter-category">
+                                    <label for="mod-filter-category-text"><b>Category</b></label><br />
+                                    <input id="mod-filter-category-text"></input>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <br>
+                    <div id="mod-search">
+                        <form action="javascript:void(0)">
+                            <label for="mod-search-text">Search:</label>
+                            <input id="mod-search-text"
+                                   style="width: 8em;"></input>
+                            <br />
+                            <div id="mod-category-match-wrapper">
+                                <input id="mod-category-match" type="checkbox"></input>
+                                <label for="mod-category-match">Hide sections that don't match preferred categories</label>
+                            </div>
+                        </form>
+                    </div>
+                    <div id="moderator-directory"></div>
+                </div>
+                {% endif %}
           </div>
         </div>
       </div>
@@ -143,6 +305,86 @@
     </fieldset>
   </form>
 </div>
+
+<div id="legend">
+  <table width="100%">
+    <tr>
+      <td class="matrix-cell available-cell"></td><td>Classroom is available</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell disabled-cell"></td><td>Classroom is not available</td>
+    </tr>
+    <tr>
+      <td class="selected-section"></td><td>Selected section{% if has_moderator_module %}/{{ program.getModeratorTitle|lower }}{% endif %}</td>
+    </tr>
+    <tr>
+      <td class="locked-cell"></td><td>Locked section</td>
+    </tr>
+  </table>
+  <h3>When scheduling sections:</h3>
+  <table width="100%">
+    <tr>
+      <td class="matrix-cell teacher-available-cell"></td><td>All teachers{% if has_moderator_module %}/{{ program.getModeratorTitle|lower }}s{% endif %} available</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell teacher-available-not-first-cell"></td><td>All teachers{% if has_moderator_module %}/{{ program.getModeratorTitle|lower }}s{% endif %} available, but class can not start in this block</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell teacher-teaching-cell"></td><td>At least one teacher{% if has_moderator_module %}/{{ program.getModeratorTitle|lower }}{% endif %} already busy</td>
+    </tr>
+    <tr>
+      <td class="teacher-is-teaching-this-cell"></td><td>At least one teacher is teaching this section</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell available-cell"></td><td>At least one teacher{% if has_moderator_module %}/{{ program.getModeratorTitle|lower }}{% endif %} unavailable</td>
+    </tr>
+  </table>
+  {% if has_moderator_module %}
+  <h3>When assigning moderators:</h3>
+  <table width="100%">
+    <tr>
+      <td class="matrix-cell moderator-available-cell"></td><td>{{ program.getModeratorTitle }} available</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell moderator-moderating-or-teaching-cell"></td><td>Moderator already assigned during this block</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell moderator-moderating-or-teaching-cell moderator-is-moderating-this-cell"></td><td>Moderator is assigned to this section</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell moderator-teaching-cell"></td><td>Moderator already teaching</td>
+    </tr>
+    <tr>
+      <td class="matrix-cell moderator-unavailable-cell"></td><td>{{ program.getModeratorTitle }} unavailable</td>
+    </tr>
+  </table>
+  {% endif %}
+</div>
+
+<div id="loadingOverlay"></div>
+
+<script>
+$j("#info-panel").resizable({
+  handles: {s: '#separator'},
+  containment: '#side-panel-wrapper',
+  resize: function() {
+    $j("#side-panel").outerHeight($j("#side-panel-wrapper").innerHeight() - $j("#info-panel").outerHeight());
+  }
+});
+$j(function() {
+    $j("#filters-accordion").accordion({
+        active: false,
+        collapsible: true
+    });
+});
+
+$j(function() {
+    $j("#mod-filters-accordion").accordion({
+        active: false,
+        collapsible: true
+    });
+});
+</script>
 
 </body>
 </html>

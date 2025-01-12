@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,12 +34,9 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web import render_to_response
-from django.contrib.auth.decorators import login_required
-from esp.program.models import ClassSubject, Program
-from esp.users.models import ESPUser
+from esp.program.models import ClassSubject
 
 class AdminMaterials(ProgramModuleObj):
     doc = """ This allows you to view the submitted documents for all classes
@@ -51,16 +50,18 @@ class AdminMaterials(ProgramModuleObj):
             "admin_title": "Course Materials",
             "link_title": "Manage Documents",
             "module_type": "manage",
-            "seq": -9999
+            "seq": -9999,
+            "choosable": 1,
             }
 
     @main_call
     @needs_admin
     def get_materials(self, request, tl, one, two, module, extra, prog):
-        from esp.web.forms.fileupload_form import FileUploadForm_Admin
+        from esp.web.forms.fileupload_form import FileUploadForm_Admin, FileRenameForm
         from esp.qsdmedia.models import Media
         context_form = FileUploadForm_Admin()
-        new_choices = [(a.id, a.emailcode() + ': ' + unicode(a)) for a in prog.classes()]
+        context_rename_form = FileRenameForm()
+        new_choices = [(a.id, a.emailcode() + ': ' + six.text_type(a)) for a in prog.classes()]
         new_choices.append((0, 'Document pertains to program'))
         new_choices.reverse()
         context_form.set_choices(new_choices)
@@ -95,15 +96,25 @@ class AdminMaterials(ProgramModuleObj):
                     media.save()
                 else:
                     context_form = form
+            elif request.POST['command'] == 'rename':
+                form = FileRenameForm(request.POST, request.FILES)
+                if form.is_valid():
+                    docid = request.POST['docid']
+                    media = Media.objects.get(id = docid)
+                    media.rename(form.cleaned_data['title'])
+                    media.save()
+                else:
+                    context_rename_form = form
 
-        context = {'prog': self.program, 'module': self, 'uploadform': context_form}
+
+        context = {'prog': self.program, 'module': self, 'uploadform': context_form, 'renameform': context_rename_form}
 
         classes = ClassSubject.objects.filter(parent_program = prog)
 
         return render_to_response(self.baseDir()+'listmaterials.html', request, context)
 
-
-
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True
