@@ -45,7 +45,7 @@ from esp.tagdict.models import Tag
 from django.template import Template
 from django.template import Context as DjangoContext
 from esp.middleware import ESPError
-from django.template import loader
+from django.template.loader import render_to_string
 
 import re
 
@@ -137,10 +137,10 @@ class CommModule(ProgramModuleObj):
                        'program': ActionHandler(self.program, firstuser),
                        'request': ActionHandler(MessageRequest(), firstuser)}
 
-        htmlbody = unicode(loader.get_template('email/default_email.html'
-                    ).render(DjangoContext({'msgbdy': htmlbody,
-                     'user': ActionHandler(firstuser, firstuser),
-                     'program': ActionHandler(self.program, firstuser)})))
+        htmlbody = loader.get_template('email/default_email.html').render_to_string(
+                {'msgbdy': htmlbody,
+                 'user': ActionHandler(firstuser, firstuser),
+                 'program': ActionHandler(self.program, firstuser)})
         renderedtext = Template(htmlbody).render(DjangoContext(contextdict))
 
         return render_to_response(self.baseDir()+'preview.html', request,
@@ -216,10 +216,10 @@ class CommModule(ProgramModuleObj):
                                                       sendto_fn_name  = sendto_fn_name,
                                                       sender     = fromemail,
                                                       creator    = request.user,
-                                                      msgtext = unicode(loader.get_template('email/default_email.html').render(DjangoContext(
-                                                                                                                                       {'msgbdy': htmlbody,
-                                                                                                                                        'user': request.user,
-                                                                                                                                        'program': self.program }))),
+                                                      msgtext = render_to_string('email/default_email.html', 
+                                                                                 {'msgbdy': body,
+                                                                                  'user': request.user,
+                                                                                  'program': self.program }),
                                                       public = public_view,
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )
