@@ -223,7 +223,6 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         #   Honor several possible Tags for customizing the fields that are displayed.
         if Tag.getBooleanTag('show_student_graduation_years_not_grades'):
-            current_grad_year = self.ESPUser.current_schoolyear()
             new_choices = []
             for x in self.fields['graduation_year'].choices:
                 if len(x[0]) > 0:
