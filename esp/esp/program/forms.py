@@ -244,7 +244,7 @@ class StatisticsQueryForm(forms.Form):
     @staticmethod
     def get_school_choices():
         k12schools = K12School.objects.all().order_by('name')
-        schools = list(set(StudentInfo.objects.all().values_list('school', flat=True)))
+        schools = list(set(StudentInfo.objects.all().exclude(school__isnull=True).exclude(school='').values_list('school', flat=True)))
         result = []
         for school in k12schools:
             result.append(('K12:%d' % school.id, school.name))
@@ -287,7 +287,7 @@ class StatisticsQueryForm(forms.Form):
 
         school_choices = StatisticsQueryForm.get_school_choices()
         if len(school_choices) > 0:
-            self.fields['school_query_type'].choices.append(('list', 'Select school(s) from list'))
+            self.fields['school_query_type'].choices = (('all', 'Match any school'), ('name', 'Enter partial school name'), ('list', 'Select school(s) from list'))
             self.fields['school_multisel'].choices = school_choices
 
     def clean(self):
