@@ -1648,63 +1648,6 @@ class ProgramPrintables(ProgramModuleObj):
 
     @aux_call
     @needs_admin
-    def adminbinder(self, request, tl, one, two, module, extra, prog):
-
-        if extra not in ['teacher', 'classid', 'timeblock']:
-            return self.goToCore(tl)
-        context = {'module': self}
-
-        scheditems = []
-
-
-        if extra == 'teacher':
-            teachers = sorted(self.program.teachers())
-            list(map(ESPUser, teachers))
-
-            scheditems = []
-
-            for teacher in teachers:
-                classes = [ cls for cls in teacher.getTaughtClasses()
-                            if cls.isAccepted() and
-                               cls.parent_program == self.program     ]
-                for cls in classes:
-                    scheditems.append({'teacher': teacher,
-                                       'class'  : cls})
-
-            context['scheditems'] = scheditems
-            return render_to_response(self.baseDir()+'adminteachers.html', request, context)
-
-
-
-        if extra == 'classid':
-            classes = [cls for cls in self.program.classes()
-                       if cls.isAccepted()                   ]
-
-            classes.sort(key=ClassSubject.idcmp)
-
-            for cls in classes:
-                for teacher in cls.get_teachers():
-                    scheditems.append({'teacher': teacher,
-                                      'class'  : cls})
-            context['scheditems'] = scheditems
-            return render_to_response(self.baseDir()+'adminclassid.html', request, context)
-
-
-        if extra == 'timeblock':
-            classes = sorted([cls for cls in self.program.classes()
-                       if cls.isAccepted()                   ])
-
-
-            for cls in classes:
-                for teacher in cls.get_teachers():
-                    scheditems.append({'teacher': teacher,
-                                      'cls'  : cls})
-
-            context['scheditems'] = scheditems
-            return render_to_response(self.baseDir()+'adminclasstime.html', request, context)
-
-    @aux_call
-    @needs_admin
     def certificate(self, request, tl, one, two, module, extra, prog):
         user, found = search_for_user(request, self.program.students_union(), add_to_context = {'module': 'Completion Certificate'})
         if not found:
