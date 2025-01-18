@@ -2803,7 +2803,7 @@ class Permission(ExpirableModel):
         #      /section/<Program.url>/Classes/<x>/<any url>.html
         if url.endswith(".html"):
             url = url[-5]
-        if user is None:
+        if user is None or isinstance(user, AnonymousESPUser):
             return False
         if user.isAdmin():
             return True
