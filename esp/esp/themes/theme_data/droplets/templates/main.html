@@ -1,0 +1,120 @@
+{% extends "elements/html" %}
+
+{% block fulltitle %}{{ theme.titlebar_prefix }} - {% block title %}Home{% endblock %}{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<style>
+.jumbotron {
+    background-image: url(/media/images/theme/header.png?v={{ current_header_version }});
+}
+</style>
+{% endblock stylesheets %}
+
+{% block body %}
+
+{% block navbar %}
+<div class="navbar navbar-fixed-top">
+  <div class="navbar-inner">
+    <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+    <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </a>
+    <!-- Everything you want hidden at 940px or less, place within here -->
+    <div class="nav-collapse collapse">
+      {% include "sidebar/admin.html" %}
+      {% include "users/loginbox_content.html" %}
+      {% include "sidebar/nav.html" %}
+    </div>
+  </div>
+</div>
+{% endblock navbar%}
+
+{% block heading %}  
+<header class="jumbotron subhead" id="overview">
+  <div>
+    <div class="header-cell">
+      <a href="/">
+          <img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{theme.full_group_name}}" class="logo">
+      </a>
+       <div id="contact_info">
+        {% if theme.show_group_name %}
+        <span class="title accentcolor">{{ theme.full_group_name }}</span></br>
+        {% endif %}
+        {% if theme.contact_info %}
+        <span class="normal">{{ theme.contact_info|linebreaksbr }}</span></br>
+        {% endif %}
+        {% if theme.show_email %}
+        <span class="normal">Email: <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></span></br>
+        {% endif %}
+        {% if theme.contact_links %}
+        <span class="normal">
+          {% for link in theme.contact_links %}
+          <a href="{{ link.link }}">{{ link.text }}</a>
+          {% if forloop.counter|divisibleby:3 %}<br />
+          {% elif not forloop.last %} | {% endif %}
+          {% endfor %}
+        </span></br>
+        {% endif %}
+        {% if theme.faq_link or theme.facebook_link %}
+        <span class="normal">
+          {% if theme.faq_link %}
+            <a href="{{ theme.faq_link }}">FAQ</a>
+          {% endif %}
+          {% if theme.faq_link and theme.facebook_link %} | {% endif %}
+          {% if theme.facebook_link %}
+            <a href="{{ theme.facebook_link }}">facebook</a>
+          {% endif %}
+        </span></br>
+        {% endif %}
+        <span class="normal"><a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a></span>
+      </div>
+    </div>
+    <div class="header-cell jumbotron-announcements">
+      {% load render_qsd %}
+      {% inline_qsd_block "jumbotron" %}
+      {% end_inline_qsd_block %}
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block main %}
+
+<div class="container">
+  <div id="main" class="resizable">
+    {% if request.mod_required %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
+    </div>
+    {% endif %}
+    {% if request.show_perm_info %}
+    <div class="alert alert-info">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <a href="/manage/{{ request.one }}/{{ request.two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
+        <br />
+        {% if request.roles_with_perm %}
+            Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
+        {% else %}
+            <strong>No (non-admin) roles have permission to view this page!</strong>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% block content %}
+    {% endblock content %}
+  </div>
+</div>
+</div>
+</br>
+</br>
+<script>
+  {# TODO(benkraft): this is ugly, find a better way #}
+  $j('.button').addClass('btn').removeClass('button');
+  $j('.fancybutton').addClass('btn').addClass('btn-primary');
+</script>
+{% endblock main %}
+  
+{% endblock body %}
