@@ -127,7 +127,30 @@ input, textarea, select, .uneditable-input {
 }
 
 #adminbar_content .title {
-    padding: 3px 3px !important;
+    padding: 3px 6px !important;
+}
+
+#adminbar_Manage_content, #adminbar_Other_content {
+    padding: 0px 2px !important;
+}
+
+#adminbar_content .content {
+    padding: 3px 5px;
+}
+
+#adminbar_content a {
+    color: #333333; /* should match the other navbar dropdowns */
+}
+
+@media (max-width: 979px) {
+    #adminbar_content a {
+        color: #999999;
+    }
+}
+
+.admin .dropdown-menu {
+    padding: 0px;
+    overflow: hidden;
 }
 
 .logo {
