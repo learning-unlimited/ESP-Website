@@ -137,10 +137,10 @@ class CommModule(ProgramModuleObj):
                        'program': ActionHandler(self.program, firstuser),
                        'request': ActionHandler(MessageRequest(), firstuser)}
 
-        htmlbody = loader.get_template('email/default_email.html').render_to_string(
-                {'msgbdy': htmlbody,
-                 'user': ActionHandler(firstuser, firstuser),
-                 'program': ActionHandler(self.program, firstuser)})
+        htmlbody = render_to_string('email/default_email.html',
+                                    {'msgbdy': htmlbody,
+                                     'user': ActionHandler(firstuser, firstuser),
+                                     'program': ActionHandler(self.program, firstuser)})
         renderedtext = Template(htmlbody).render(DjangoContext(contextdict))
 
         return render_to_response(self.baseDir()+'preview.html', request,
