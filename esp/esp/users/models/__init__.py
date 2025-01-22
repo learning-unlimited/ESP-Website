@@ -300,6 +300,14 @@ class BaseESPUser(object):
         return ESPUser.email_sendto_address(self.email, self.name())
 
     def __cmp__(self, other):
+        # two anonymous users are equal
+        if isinstance(self, AnonymousESPUser) and isinstance(other, AnonymousESPUser):
+            return 0
+        # otherwise, rank the signed-in user higher
+        elif isinstance(other, AnonymousESPUser):
+            return 1
+        elif isinstance(self, AnonymousESPUser):
+            return -1
         lastname = cmp(self.last_name.upper(), other.last_name.upper())
         if lastname == 0:
            return cmp(self.first_name.upper(), other.first_name.upper())
@@ -2803,7 +2811,7 @@ class Permission(ExpirableModel):
         #      /section/<Program.url>/Classes/<x>/<any url>.html
         if url.endswith(".html"):
             url = url[-5]
-        if user is None:
+        if user is None or isinstance(user, AnonymousESPUser):
             return False
         if user.isAdmin():
             return True
