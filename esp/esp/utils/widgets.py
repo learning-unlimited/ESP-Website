@@ -324,7 +324,7 @@ function {{ name }}_add_link(obj, data)
     var delete_button = $j("<button class='btn btn-mini btn-danger'>Delete link</button>");
     delete_button.on("click", {{ name }}_delete_link);
     entry.append(delete_button);
-    $j("#{{ name }}_entries input").on("change", {{ name }}_save);
+    $j("#{{ name }}_entries input, #{{ name }}_entries select").on("change", {{ name }}_save);
 }
 
 function {{ name }}_add_tab(obj, data)
