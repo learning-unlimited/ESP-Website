@@ -786,7 +786,7 @@ class NavStructureWidgetWithIcons(NavStructureWidget):
     add_link_body = """
         entry.append($j("<span>Icon: </span>"));
         var select = $j("<select class='data_icon nav_secondary_field input-medium glyphicon' />");
-        select.append($j("<option value=''" +
+        select.append($j("<option style='font-family: Glyphicons Halflings' value=''" +
                          (data.icon ? "" : " selected") +
                          ">(none)</option>"));
         %(entries)s
@@ -795,7 +795,7 @@ class NavStructureWidgetWithIcons(NavStructureWidget):
     """ % {
         'super_add_link_body': NavStructureWidget.add_link_body,
         'entries': '\n'.join('''
-            select.append($j("<option value='%(icon)s'" +
+            select.append($j("<option style='font-family: Glyphicons Halflings' value='%(icon)s'" +
                              (data.icon === "%(icon)s" ? " selected" : "") +
                              ">%(unicode)s (%(icon)s)</option>"));'''
             % {'icon': icon, 'unicode': text_unicode}
