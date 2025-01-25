@@ -175,12 +175,12 @@ class CommModule(ProgramModuleObj):
         from esp.dbmail.models import MessageRequest
         from esp.users.models import PersistentQueryFilter
 
-        filterid, fromemail, replytoemail, subject, body = [
+        filterid, fromemail, replytoemail, subject, rendered_text = [
                                     request.POST['filterid'],
                                     request.POST['from'],
                                     request.POST['replyto'],
                                     request.POST['subject'],
-                                    request.POST['body']    ]
+                                    request.POST['rendered_text']    ]
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         public_view = 'public_view' in request.POST
 
@@ -203,26 +203,13 @@ class CommModule(ProgramModuleObj):
                                                       sendto_fn_name  = sendto_fn_name,
                                                       sender     = fromemail,
                                                       creator    = request.user,
-                                                      msgtext = body,
+                                                      msgtext = rendered_text,
                                                       public = public_view,
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )
 
         newmsg_request.save()
 
-        # now we're going to process everything
-        # nah, we'll do this later.
-        #newmsg_request.process()
-        # old code that prints out an estimated time
-        # numusers = self.approx_num_of_recipients(filterobj, sendto_fn)
-
-        # from django.conf import settings
-        # if hasattr(settings, 'EMAILTIMEOUT') and \
-        #        settings.EMAILTIMEOUT is not None:
-        #     est_time = settings.EMAILTIMEOUT * numusers
-        # else:
-        #     est_time = 1.5 * numusers
-        # context = {'time': est_time}
         context = {}
         if public_view:
             context['req_id'] = newmsg_request.id
