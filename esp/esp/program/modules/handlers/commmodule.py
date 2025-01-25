@@ -44,6 +44,7 @@ from esp.dbmail.models import ActionHandler
 from esp.tagdict.models import Tag
 from django.template import Template
 from django.template import Context as DjangoContext
+from django.template.loader import render_to_string
 from esp.middleware import ESPError
 
 import re
@@ -124,9 +125,13 @@ class CommModule(ProgramModuleObj):
 
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
                        'program': ActionHandler(self.program, firstuser),
-                       'request': ActionHandler(MessageRequest(), firstuser)}
+                       'request': ActionHandler(MessageRequest(), firstuser),
+                       'EMAIL_HOST_SENDER': settings.EMAIL_HOST_SENDER}
 
-        renderedtext = Template(body).render(DjangoContext(contextdict))
+        # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
+        rendered_text = render_to_string('email/{}_email.html'.format(request.POST.get('template', 'default')),
+                                        {'msgbody': body})
+        rendered_text = Template(rendered_text).render(DjangoContext(contextdict))
 
         return render_to_response(self.baseDir()+'preview.html', request,
                                               {'filterid': filterid,
@@ -138,7 +143,7 @@ class CommModule(ProgramModuleObj):
                                                'replyto': replytoemail,
                                                'public_view': public_view,
                                                'body': body,
-                                               'renderedtext': renderedtext})
+                                               'rendered_text': rendered_text})
 
     @staticmethod
     def approx_num_of_recipients(filterObj, sendto_fn):
