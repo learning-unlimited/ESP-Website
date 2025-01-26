@@ -236,7 +236,7 @@ class UserSearchController(object):
                 Q_exclude |= Q(id__in=exclude_user_list)
                 self.updated = True
 
-            if criteria.get('target_user', '').strip():
+            if criteria.get('target_user') is not None:
                 student_id = criteria['target_user']
                 if student_id == "invalid":
                     raise ESPError('Please select a valid student whose teachers to email.', log=False)

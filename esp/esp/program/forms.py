@@ -82,7 +82,7 @@ class ProgramCreationForm(BetterModelForm):
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current modules. """
         # These modules are the "choosable" ones that admins will usually want to choose to select or exclude (i.e. not automatically include or exclude)
-        self.program_module_question_ids = OrderedDict([('Will you charge for items such as shirts or lunch?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Optional Fees', 'Accounting', 'Financial Aid Application', 'Easily Approve Financial Aid Requests'])]),
+        self.program_module_question_ids = OrderedDict([('Will you charge for items such as shirts or lunch?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Optional Fees', 'Accounting', 'Financial Aid Application', 'Easily Approve Financial Aid Requests', 'Line Items Module'])]),
                                                         ('If you will charge for admission or other costs, will you accept payment by credit card?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Credit Card Payment Module (Stripe)', 'Credit Card View Module'])]),
                                                         ('Do you want a pre-program quiz for teachers?', [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Logistics Quiz')]),
                                                         ('Will you have any additional non-survey forms that teachers should fill out?', [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Custom Form')]),
@@ -244,7 +244,7 @@ class StatisticsQueryForm(forms.Form):
     @staticmethod
     def get_school_choices():
         k12schools = K12School.objects.all().order_by('name')
-        schools = list(set(StudentInfo.objects.all().values_list('school', flat=True)))
+        schools = list(set(StudentInfo.objects.all().exclude(school__isnull=True).exclude(school='').values_list('school', flat=True)))
         result = []
         for school in k12schools:
             result.append(('K12:%d' % school.id, school.name))
@@ -287,7 +287,7 @@ class StatisticsQueryForm(forms.Form):
 
         school_choices = StatisticsQueryForm.get_school_choices()
         if len(school_choices) > 0:
-            self.fields['school_query_type'].choices.append(('list', 'Select school(s) from list'))
+            self.fields['school_query_type'].choices = (('all', 'Match any school'), ('name', 'Enter partial school name'), ('list', 'Select school(s) from list'))
             self.fields['school_multisel'].choices = school_choices
 
     def clean(self):

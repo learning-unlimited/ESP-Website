@@ -208,7 +208,6 @@ function initialize()
         set_step("basic_step_container", "recipient_list_select");
         return false;
     });
-    recipient_type_change();
 
     //  Handle clicks on show/hide email list links
     $j("button.commpanel_show_all").on('click', function () {
@@ -352,6 +351,7 @@ function initialize()
     $j("#prev_select_done").on('click', submit_prev_selection);
 
     populate_get();
+    recipient_type_change(clear = false);
 }
 
 $j(document).ready(initialize);
