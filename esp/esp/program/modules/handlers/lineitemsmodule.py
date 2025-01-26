@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -48,7 +49,7 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
             "link_title": "Line Items Management",
             "module_type": "manage",
             "seq": -9999,
-            "choosable": 1,
+            "choosable": 0,
             }
 
     @main_call

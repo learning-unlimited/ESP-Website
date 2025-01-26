@@ -1,5 +1,6 @@
 """ Local system-specific settings. """
 
+from __future__ import absolute_import
 import os
 
 SITE_INFO = (1, 'devsite.learningu.org', 'LU Dev Site')

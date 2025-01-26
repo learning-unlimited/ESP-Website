@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -81,17 +82,17 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
 
         #   Extract filter ID from response
-        s = re.search(r'<input type="hidden" name="filterid" value="([0-9]+)" />', response.content)
+        s = re.search(r'<input type="hidden" name="filterid" value="([0-9]+)" />', response.content.decode('UTF-8'))
         filterid = s.groups()[0]
-        s = re.search(r'<input type="hidden" name="listcount" value="([0-9]+)" />', response.content)
+        s = re.search(r'<input type="hidden" name="listcount" value="([0-9]+)" />', response.content.decode('UTF-8'))
         listcount = s.groups()[0]
 
         #   Enter email information
         post_data = {
             'subject': 'Test Subject 123',
             'body':    'Test Body 123',
-            'from':    'from@email-server',
-            'replyto': 'replyto@email-server',
+            'from':    'info@testserver.learningu.org',
+            'replyto': 'replyto@testserver.learningu.org',
             'filterid': filterid,
         }
         response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commfinal'), post_data)
@@ -113,8 +114,8 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         msg = mail.outbox[0]
         self.assertEqual(msg.subject, 'Test Subject 123')
         self.assertEqual(msg.body, 'Test Body 123')
-        self.assertEqual(msg.from_email, 'from@email-server')
-        self.assertEqual(msg.extra_headers.get('Reply-To', ''), 'replyto@email-server')
+        self.assertEqual(msg.from_email, 'info@testserver.learningu.org')
+        self.assertEqual(msg.extra_headers.get('Reply-To', ''), 'replyto@testserver.learningu.org')
 
         #   Check that the MessageRequest was marked as processed
         m = MessageRequest.objects.filter(recipients__id=filterid, subject='Test Subject 123')

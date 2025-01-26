@@ -1,12 +1,18 @@
 # django dependencies
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 from django.db import models
 
 # esp dependencies
 from esp.db.fields import AjaxForeignKey
 from esp.users.models import ESPUser
+import six
+from six.moves import range
 
 MAX_DEPTH = 5
 
+@python_2_unicode_compatible
 class UserForwarder(models.Model):
     """
     Links source user to target user, to make all login sessions under target.
@@ -51,7 +57,7 @@ class UserForwarder(models.Model):
             rewrites.extend(self.source.forwarders_in.all())
         # Find the real target
         original_target = target
-        for i in xrange(MAX_DEPTH):
+        for i in range(MAX_DEPTH):
             # Get the next forwarder if it exists
             if target.forwarders_out.count() == 0:
                 break
@@ -106,5 +112,5 @@ class UserForwarder(models.Model):
         else:
             return (user, False)
 
-    def __unicode__(self):
-        return u'%s to %s' % (unicode(self.source), unicode(self.target))
+    def __str__(self):
+        return '%s to %s' % (six.text_type(self.source), six.text_type(self.target))

@@ -123,3 +123,80 @@ Minor bug fixes
 - Removed the ``use_grade_range_exceptions`` option from the Student Class Registration settings form
 - Fixed the boolean logic of the line item user search controller filters
 - Fixed the Onsite New Student Registration form
+
+January 2024 Patch
+===================
+
+Themes
+~~~~~~
+- Increased the color customizability of the fruitsalad and bigpicture themes (buttons, text, links)
+- Fixed edge cases where the dropdown menus on the logo picker page would break
+- New logos, headers, and favicons are now loaded immediately when changed
+- Added the ability to reset and remove optional fruit salad variables
+- Added the ability to reset required fruit salad variables
+- Added functionality to prevent the same optional fruit salad variable from being added more than once
+- Made the contact info header/footer sections MUCH more customizable in the theme editor
+
+  - The contact info can even be completely blank, that's how customizable it is
+- Fixed the caching of the logos on /themes/
+- Fixed the styling of /themes/setup
+- Changed some of the help text on the theme customization page to be more relevant to the current theme
+
+AJAX Scheduler
+~~~~~~~~~~~~~~
+- Added the ability to unassign moderators from unscheduled sections in the ajax scheduler
+- The selected moderator is now highlighted in the ajax scheduler
+- Added a moderator availability scheduling check to the ajax scheduler and the scheduling checks page
+- Fixed the moderator title for all checks in the ajax scheduler and the scheduling checks page
+- Adjusted the coloration of the cells for the teacher/moderator availability checks to be based on the proportion of teachers that are unavailable as opposed to the raw number
+- Fixed errors caused by duplicate room resources when scheduling classes
+
+Minor new features
+~~~~~~~~~~~~~~~~~~
+- Added a "return to profile" button to the grade change request form
+- When approving, cancelling, or rejecting a class, you will now always be redirected to that class's /manageclass page (when deleting a class, you will always go to the /dashboard)
+- Improved the download button on the customform response page (made it larger and added a legend)
+- Added ability to enable/disable contact form (see the "contact_form_enabled" tag)
+- Added a default page at /contact.html (falls back to QSD if it existed before)
+- Added simple validation for JSON-formatted tags
+- Empty categories in the catalog are now hidden (including when catalog filters are used)
+
+  - This can be disabled by unchecking the "hide_empty_categories" tag
+
+Minor bug fixes
+~~~~~~~~~~~~~~~
+- Fixed the lists of permissions in the custom form builder
+- Fixed the loading of previously set permissions in the custom form builder
+- Fixed edge cases when submitting the volunteer or class registration forms
+- Fixed the moderator titles throughout the dashboard
+- Fixed the formatting of blank nametags
+- Fixed receipt template loading
+- Fixed a bug that allowed teachers to access open class registration even when it was disabled
+- Fixed the caching of the open class registration setting
+- Fixed a very rare bug caused by using the autoscheduler when open class registration was disabled
+- Fixed the /faq.html page to now show all theme-related bits
+- Fixed a bug that caused links in the admin toolbar to not update when a program name was changed
+- Fixed the categories and flags links on the program settings page
+- Fixed an oversight where some student modules did not check the grade level of a student
+- Fixed the rapid checkin page
+
+March 2024 Patch
+================
+Due to changes in how Gmail and other email clients are now handling certain kinds of emails, we have made the following changes:
+
+- Emails from the Comm Panel can now only be sent from email addresses ending in @learningu.org or @subdomain.learningu.org (e.g., @yale.learningu.org)
+  
+  - If you have a custom domain that should work too (e.g., stanfordesp.org)
+  - Each site now has a "info@yoursitehere" redirect that should redirect to your chapter's email address (e.g., info@yale.learningu.org now redirects to yalesplash@gmail.com) and will be used by default in the Comm Panel
+  - As always, you can put whatever you want in the "Reply-to" field
+- All Comm Panel emails will now be sent with a customized one-click unsubscribe link that email clients can now show to the recipients
+
+  - Clicking on this link will instantly deactivate their account (effectively unsubscribing them from emails)
+- If you would like to include a similar unsubscribe link in the text of your emails, you can use the `{{ }}` dropdown menu
+
+  - This unsubscribe link will take recipients to a page where they will need to confirm that they would like to deactivate their account and unsubscribe from emails
+
+Minor bug fixes
+~~~~~~~~~~~~~~~
+- Program links now work after changing a program's name
+- The "Signup" button text color is fixed on the fruitsalad theme

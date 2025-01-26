@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 """Script to dump zip code data to CSV.
 
 Writes a CSV with a column for each of various sets of students, and a row for
@@ -6,6 +6,7 @@ each zip code, with the number of students from that zip code at that program
 in the cell.
 """
 
+from __future__ import absolute_import
 from script_setup import *
 
 import collections
@@ -17,6 +18,7 @@ from django.conf import settings
 from esp.users.models import ESPUser
 from esp.program.models import ProgramModule
 from esp.utils.query_utils import nest_Q
+from io import open
 
 filename = os.path.join(settings.PROJECT_ROOT, 'zip_data.csv')
 
@@ -64,8 +66,7 @@ for set_name, user_set in student_sets:
             zipcode_freqs[user_zipcodes[user_id]] += 1
     zip_data.append((set_name, zipcode_freqs))
 
-all_zipcodes = list(set(user_zipcodes.values()))
-all_zipcodes.sort()
+all_zipcodes = sorted(set(user_zipcodes.values()))
 # CSV has format:
 #     , name1, name2, ...
 # zip1, num11, num12, ...

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -46,8 +47,8 @@ from esp.program.models import Program
 class VolunteerRequestForm(forms.Form):
 
     vr_id = forms.IntegerField(required=False, widget=forms.HiddenInput)
-    start_time = forms.DateTimeField(help_text="Enter a time in the form DD/MM/YYYY hh:mm.", widget=DateTimeWidget)
-    end_time = forms.DateTimeField(help_text="Enter a time in the form DD/MM/YYYY hh:mm.", widget=DateTimeWidget)
+    start_time = forms.DateTimeField(help_text="Enter a time in the form MM/DD/YYYY hh:mm.", widget=DateTimeWidget)
+    end_time = forms.DateTimeField(help_text="Enter a time in the form MM/DD/YYYY hh:mm.", widget=DateTimeWidget)
     num_volunteers = forms.IntegerField(label='Number of volunteers needed')
     description = forms.CharField(max_length=128, help_text='What would volunteers do during this timeslot?  (Examples: Registration, Security)')
 
@@ -122,8 +123,8 @@ class VolunteerOfferForm(forms.Form):
         super(VolunteerOfferForm, self).__init__(*args, **kwargs)
         vrs = self.program.getVolunteerRequests()
         self.fields['requests'].choices = [(v.id, '%s: %s (%s more needed)' % (v.timeslot.pretty_time(), v.timeslot.description, positive_or_no(v.num_volunteers - v.num_offers()))) for v in vrs]
-        self.fields['shirt_size'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('volunteer_shirt_sizes').split(',')]
-        self.fields['shirt_type'].choices = [('','')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types').split(',')]
+        self.fields['shirt_size'].choices = [('', '')]+[(x.strip(), x.strip()) for x in Tag.getTag('volunteer_shirt_sizes').split(',')]
+        self.fields['shirt_type'].choices = [('', '')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types').split(',')]
 
         #   Show t-shirt fields if specified by Tag (disabled by default)
         if not Tag.getBooleanTag('volunteer_tshirt_options'):

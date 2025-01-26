@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -58,7 +59,7 @@ class UserGroupModule(ProgramModuleObj):
     @needs_admin
     def usergroupfinal(self, request, tl, one, two, module, extra, prog):
         if request.method != 'POST' or 'filterid' not in request.GET or (request.POST.get('group_name_new', '') and request.POST.get('group_name_old', '')):
-            raise ESPError(), 'Filter and/or group has not been properly set'
+            raise ESPError()('Filter and/or group has not been properly set')
 
         # get the filter to use and text message to send from the request; this is set in grouptextpanel form
         filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
@@ -105,7 +106,7 @@ class UserGroupModule(ProgramModuleObj):
             pass
 
         if not users:
-            raise ESPError(), "Your query did not match any users"
+            raise ESPError()("Your query did not match any users")
 
         group, created = Group.objects.get_or_create(name = group_name)
 

@@ -1,7 +1,7 @@
 ESP Email Setup
 ===============
 
-This document describes how email, both incoming and outgoing, makes its way where it's going on the ESP website.  The code will serve as a more specific reference for the details, but this is an overview of the high-level setup.  Note: this document describes the setup on diogenes; the parts of the setup outside the ESP-Website codebase may vary slightly on sites hosted elsewhere (i.e. esp.mit.edu).
+This document describes how email, both incoming and outgoing, makes its way where it's going on the ESP website.  The code will serve as a more specific reference for the details, but this is an overview of the high-level setup.  Note: this document describes the setup on the LU production server; the parts of the setup outside the ESP-Website codebase may vary slightly on sites hosted elsewhere (in particular, esp.mit.edu).
 
 .. contents:: :local:
 
@@ -20,3 +20,9 @@ Incoming email
 Incoming email is received by Exim via SMTP, and handled according to the settings in ``/etc/exim4``.  For mail at chapter-site domains, this mail is passed to the site's ``esp/mailgates/mailgate.py``.  This, in turn, consults the ``EmailList`` objects in the database (which on most sites are just the autocreated ones).
 
 Each ``EmailList`` matches some regular expression of email addresses, and forwards the email to some list of users based on that.  (For example, class email lists match ``<emailcode>-students@``, and send to the class's students, teachers, and the admin archive list.)  Once we determine to whom to forward the email, we again use the standard Django facilities to send a copy to Exim, which passes it on to the world.
+
+
+SendGrid Configuration
+----------------------
+Modern email providers require us to prove we are who we say we are by authenticating our domains (registered with Gandi and/or Amazon Web Services (AWS)) with our email provider(s), currently SendGrid. This process requires two steps: telling the email provider what domains we own and confirming that we own them by posting a unique record (that the email service gives us) to the domain registrar. See ``/lu/scripts/sendgrid_authentication.py`` to set everything up automatically with SendGrid and AWS.
+

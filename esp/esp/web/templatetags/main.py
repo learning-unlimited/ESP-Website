@@ -1,9 +1,11 @@
+from __future__ import absolute_import
 from esp.themes.controllers import ThemeController
 
 from django import template
 
 import os.path
 import json
+from six.moves import range
 
 register = template.Library()
 
@@ -18,7 +20,7 @@ def count_matching_chars(str1, str2):
     return min(len(str1), len(str2))
 
 @register.filter
-def mux_tl(str,type):
+def mux_tl(str, type):
     splitstr = str.split("/") # String should be of the format "/learn/foo/bar/index.html"
     if len(splitstr) < 2 or splitstr[0] != "":
         return str
@@ -28,39 +30,43 @@ def mux_tl(str,type):
         return str
 
 @register.filter
-def split(str,splitter):
+def split(str, splitter):
     return str.split(splitter)
 
 @register.filter
-def index(arr,index):
+def index(arr, index):
     try:
         return arr[index]
     except IndexError:
         return ''
 
 @register.filter
-def concat(str,text):
+def concat(str, text):
     return str + text
 
 @register.filter
-def equal(obj1,obj2):
+def equal(obj1, obj2):
     return obj1 == obj2
 
 @register.filter
-def notequal(obj1,obj2):
+def notequal(obj1, obj2):
     return obj1 != obj2
 
 @register.filter
-def bool_or(obj1,obj2):
+def bool_or(obj1, obj2):
     return obj1 or obj2
 
 @register.filter
-def bool_and(obj1,obj2):
+def bool_and(obj1, obj2):
     return obj1 and obj2
 
 @register.filter
 def get_field(object, field):
     return getattr(object, field)
+
+@register.filter
+def regexsite(str):
+    return str.replace(".", "\.")
 
 @register.filter
 def extract_theme(url):

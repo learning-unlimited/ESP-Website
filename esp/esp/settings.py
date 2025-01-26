@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -46,10 +47,10 @@ BASE_DIR = PROJECT_ROOT
 IS_IN_SCRIPT = os.environ.get("DJANGO_IS_IN_SCRIPT", "False") == "True"
 
 # Configure Django to support ESP
-from django_settings import *
+from .django_settings import *
 
 # Import system-specific settings
-from local_settings import *
+from .local_settings import *
 
 # Do this here so we have access to PROJECT_ROOT
 TEMPLATES[0]['DIRS'].append(os.path.join(PROJECT_ROOT, 'templates'))
@@ -221,8 +222,8 @@ MANAGERS = ADMINS
 DEFAULT_HOST = SITE_INFO[1]
 ALLOWED_HOSTS.append(DEFAULT_HOST)
 
-for (key,value) in CONTACTFORM_EMAIL_CHOICES:
-    if (key in ('esp','general','esp-web','relations')) and not (key in CONTACTFORM_EMAIL_ADDRESSES):
+for (key, value) in CONTACTFORM_EMAIL_CHOICES:
+    if (key in ('esp', 'general', 'esp-web', 'relations')) and not (key in CONTACTFORM_EMAIL_ADDRESSES):
         CONTACTFORM_EMAIL_ADDRESSES[key] = DEFAULT_EMAIL_ADDRESSES[{'esp':'default','general':'default','esp-web':'support','relations':'default'}[key]]
 
 

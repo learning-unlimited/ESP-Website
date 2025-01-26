@@ -1,4 +1,10 @@
 
+from __future__ import absolute_import
+from __future__ import division
+from six.moves import filter
+from six.moves import map
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -46,8 +52,8 @@ from esp.tagdict.models import Tag
 from esp.cal.models import Event
 from esp.middleware import ESPError
 from esp.utils.query_utils import nest_Q
+from esp.utils import cmp
 from esp.program.models import VolunteerOffer
-from esp.survey.views import _encode_ascii
 
 from django import forms
 from django.conf import settings
@@ -59,6 +65,7 @@ from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
 
 from datetime import timedelta
+from functools import cmp_to_key
 import collections
 import copy
 import csv
@@ -100,24 +107,19 @@ class ProgramPrintables(ProgramModuleObj):
                 ids = None
                 single_select = False
 
-            if ids == None:
-                transfers = pac.all_transfers().exclude(line_item__text__in=exclude_line_items).order_by('line_item','user').select_related()
+            if ids is None:
+                transfers = pac.all_transfers().exclude(line_item__text__in=exclude_line_items).order_by('line_item', 'user').select_related()
             else:
-                lineitems = pac.all_transfers().filter(line_item__id__in=ids).order_by('line_item','user').select_related()
+                lineitems = pac.all_transfers().filter(line_item__id__in=ids).order_by('line_item', 'user').select_related()
         else:
             single_select = False
-            lineitems = pac.all_transfers().exclude(line_item__text__in=exclude_line_items).order_by('line_item','user').select_related()
+            lineitems = pac.all_transfers().exclude(line_item__text__in=exclude_line_items).order_by('line_item', 'user').select_related()
 
         for lineitem in lineitems:
             lineitem.has_financial_aid = lineitem.user.hasFinancialAid(prog)
 
-        def sort_fn(a,b):
-            if a.user.last_name.lower() > b.user.last_name.lower():
-                return 1
-            return -1
-
         lineitems_list = list(lineitems)
-        lineitems_list.sort(sort_fn)
+        lineitems_list.sort(key=lambda li: li.user.last_name.lower())
 
         context = { 'lineitems': lineitems_list,
                     'hide_paid': request.GET.get('hide_paid') == 'True',
@@ -152,7 +154,7 @@ class ProgramPrintables(ProgramModuleObj):
         sort_name_list = []
         grade_min = prog.grade_min
         grade_max = prog.grade_max
-        grade_options = range(grade_min, grade_max + 1)
+        grade_options = list(range(grade_min, grade_max + 1))
         category_options = prog.class_categories.all().values_list('category', flat=True)
         categories = category_options
 
@@ -205,7 +207,7 @@ class ProgramPrintables(ProgramModuleObj):
             found  = False
 
             if request.GET['op'] == 'up':
-                for i in range(1,len(clsids)):
+                for i in range(1, len(clsids)):
                     if not found and str(clsids[i]) == request.GET['clsid']:
                         tmp         = str(clsids[i-1])
                         clsids[i-1] = str(clsids[i])
@@ -230,7 +232,7 @@ class ProgramPrintables(ProgramModuleObj):
             clsids = ','.join(clsids)
             return render_to_response(self.baseDir()+'catalog_order.html',
                                       request,
-                                      {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories })
+                                      {'clsids': clsids, 'classes': classes, 'sorting_options': list(cmp_fn.keys()), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories })
 
         if "only_nonfull" in request.GET:
             classes = [x for x in classes if not x.isFull()]
@@ -238,13 +240,13 @@ class ProgramPrintables(ProgramModuleObj):
         sort_list_reversed = sort_list
         sort_list_reversed.reverse()
         for sort_fn in sort_list_reversed:
-            classes.sort(sort_fn)
+            classes.sort(key=cmp_to_key(sort_fn))
 
         clsids = ','.join([str(cls.id) for cls in classes])
 
         return render_to_response(self.baseDir()+'catalog_order.html',
                                   request,
-                                  {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories  })
+                                  {'clsids': clsids, 'classes': classes, 'sorting_options': list(cmp_fn.keys()), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories  })
 
 
     @aux_call
@@ -275,7 +277,7 @@ class ProgramPrintables(ProgramModuleObj):
         if '_num_students' in sort_order:
             sort_order.remove('_num_students')
         #   Replace incorrect 'timeblock' sort field with sorting by meeting times start field.
-        for i in xrange(len(sort_order)):
+        for i in range(len(sort_order)):
             if sort_order[i] == 'timeblock':
                 sort_order[i] = 'meeting_times__start'
         classes = classes.order_by(*sort_order)
@@ -327,7 +329,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def classpopularity(self, request, tl, one, two, module, extra, prog):
         classes = ClassSubject.objects.filter(parent_program = prog)
-        priorities = range(1, prog.studentclassregmoduleinfo.priority_limit + 1)
+        priorities = list(range(1, prog.studentclassregmoduleinfo.priority_limit + 1))
 
         # We'll get the SRs and SSIs separately because otherwise we're joining two potentially large tables in a single query,
         # which can result in an absurd number of rows for even moderate programs
@@ -354,7 +356,7 @@ class ProgramPrintables(ProgramModuleObj):
                 by_id[subject.id] = subject
 
         # Sort
-        classes = sorted(by_id.values(), key=lambda s: s.ssi, reverse = True)
+        classes = sorted(list(by_id.values()), key=lambda s: s.ssi, reverse = True)
 
         context = {'classes': classes, 'program': prog, 'priorities': [str(priority) for priority in priorities]}
 
@@ -390,7 +392,7 @@ class ProgramPrintables(ProgramModuleObj):
                     type_dict[flag.flag_type] = [flag]
             cls.flag_list = []
             for type in flag_types:
-                if type in type_dict.keys():
+                if type in list(type_dict.keys()):
                     comms = [flag.comment for flag in type_dict[type] if flag.comment]
                     if len(comms) > 0 and comments:
                         cls.flag_list.append(comms)
@@ -405,7 +407,7 @@ class ProgramPrintables(ProgramModuleObj):
         return render_to_response(self.baseDir()+'classes_flags.html', request, context)
 
     @needs_admin
-    def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, split_teachers = False, template_file='classes_list.html'):
+    def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x, y: cmp(x, y), filt_exp = lambda x: True, split_teachers = False, template_file='classes_list.html'):
         classes = ClassSubject.objects.filter(parent_program = self.program)
 
         if 'clsids' in request.GET:
@@ -428,7 +430,7 @@ class ProgramPrintables(ProgramModuleObj):
         if 'scheduled' in request.GET:
             classes = [cls for cls in classes if cls.all_meeting_times.count() > 0]
 
-        classes = filter(filt_exp, classes)
+        classes = list(filter(filt_exp, classes))
 
         if split_teachers:
             classes_temp = []
@@ -439,7 +441,7 @@ class ProgramPrintables(ProgramModuleObj):
                     classes_temp.append(cls_split)
             classes = classes_temp
 
-        classes.sort(sort_exp)
+        classes.sort(key=cmp_to_key(sort_exp))
 
         context = {'classes': classes, 'program': self.program}
 
@@ -453,7 +455,7 @@ class ProgramPrintables(ProgramModuleObj):
             return render_to_response(self.baseDir()+template_file, request, context)
 
     @needs_admin
-    def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file='sections_list.html'):
+    def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x, y: cmp(x, y), filt_exp = lambda x: True, template_file='sections_list.html'):
         sections = self.program.sections()
 
         if 'secids' in request.GET:
@@ -480,9 +482,9 @@ class ProgramPrintables(ProgramModuleObj):
         if 'scheduled' in request.GET:
             sections = [sec for sec in sections if sec.meeting_times.count() > 0]
 
-        sections = filter(filt_exp, sections)
+        sections = list(filter(filt_exp, sections))
 
-        sections.sort(sort_exp)
+        sections.sort(key=cmp_to_key(sort_exp))
 
         context = {'sections': sections, 'program': self.program}
 
@@ -569,10 +571,13 @@ class ProgramPrintables(ProgramModuleObj):
 
     @needs_admin
     def teachersbyFOO(self, request, tl, one, two, module, extra, prog,
-                      sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True,
+                      sort_exp = None, filt_exp = lambda x: True,
                       template_file = 'teacherlist.html', extra_func = lambda x: {},
                       teaching = True, moderating = False, display_name = 'Teacher List'):
         from esp.users.models import ContactInfo
+
+        if sort_exp is None:
+            sort_exp = lambda x, y: self.cmpsortname(x, y)
 
         if extra and 'secondday' in extra:
             display_name = display_name + ' (second day only)'
@@ -610,10 +615,9 @@ class ProgramPrintables(ProgramModuleObj):
                 class_objects = teacher.getTaughtSections(self.program)
             else:
                 class_objects = teacher.getModeratingSectionsFromProgram(self.program)
-            classes = [ cls for cls in class_objects
-                    if cls.isAccepted() and cls.meeting_times.count() > 0 ]
+            classes = sorted([ cls for cls in class_objects
+                    if cls.isAccepted() and cls.meeting_times.count() > 0 ])
             # now we sort them by time/title
-            classes.sort()
 
             if  extra and 'secondday' in extra:
                 new_classes = []
@@ -644,8 +648,8 @@ class ProgramPrintables(ProgramModuleObj):
                                'cls' : classes[0],
                                'res_values': [classes[0].resourcerequest_set.filter(res_type__name=x).values_list('desired_value', flat=True) for x in resource_types]})
 
-        scheditems = filter(filt_exp, scheditems)
-        scheditems.sort(sort_exp)
+        scheditems = list(filter(filt_exp, scheditems))
+        scheditems.sort(key=cmp_to_key(sort_exp))
 
         context['res_types'] = resource_types
         context['records'] = records
@@ -686,7 +690,7 @@ class ProgramPrintables(ProgramModuleObj):
         return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=False, moderating=True, display_name = '%s List' % (prog.getModeratorTitle()))
 
     @staticmethod
-    def cmpsorttime(one,other):
+    def cmpsorttime(one, other):
         if (one['cls'].meeting_times.count() > 0 and other['cls'].meeting_times.count() > 0):
             cmp0 = cmp(one['cls'].meeting_times.all()[0].start, other['cls'].meeting_times.all()[0].start)
         else:
@@ -695,6 +699,11 @@ class ProgramPrintables(ProgramModuleObj):
         if cmp0 != 0:
             return cmp0
 
+        if isinstance(one, dict) or isinstance(other, dict):
+            # In Python 3, dicts don't have a canonical ordering
+            # If this is being called from teachersbyFOO (and we're already at this line so the times are the same,
+            # let's use cmpsortname as a default
+            return ProgramPrintables.cmpsortname(one, other)
         return cmp(one, other)
 
     @aux_call
@@ -739,15 +748,15 @@ class ProgramPrintables(ProgramModuleObj):
         return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = False, moderating = True, display_name = '%s List by Name' % (prog.getModeratorTitle()))
 
     @needs_admin
-    def roomsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'roomlist.html', extra_func = lambda x: {}):
+    def roomsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x, y: cmp(x, y), filt_exp = lambda x: True, template_file = 'roomlist.html', extra_func = lambda x: {}):
 
         rooms = self.program.groupedClassrooms()
-        rooms = filter(filt_exp, rooms)
+        rooms = list(filter(filt_exp, rooms))
         for s in rooms:
             extra_dict = extra_func(s)
             for key in extra_dict:
                 setattr(s, key, extra_dict[key])
-        rooms.sort(sort_exp)
+        rooms.sort(key=cmp_to_key(sort_exp))
 
         context = {'rooms': rooms, 'program': self.program}
 
@@ -768,18 +777,18 @@ class ProgramPrintables(ProgramModuleObj):
 
 
     @needs_admin
-    def studentsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'studentlist.html', extra_func = lambda x: {}, display_name = 'Student List'):
+    def studentsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x, y: cmp(x, y), filt_exp = lambda x: True, template_file = 'studentlist.html', extra_func = lambda x: {}, display_name = 'Student List'):
         filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': display_name})
         if not found:
             return filterObj
 
         context = {'module': self, 'program': prog}
-        students = filter(filt_exp, filterObj.getList(ESPUser).distinct())
+        students = list(filter(filt_exp, filterObj.getList(ESPUser).distinct()))
         for s in students:
             extra_dict = extra_func(s)
             for key in extra_dict:
                 setattr(s, key, extra_dict[key])
-        students.sort(sort_exp)
+        students.sort(key=cmp_to_key(sort_exp))
         context['students'] = students
 
         return render_to_response(self.baseDir()+template_file, request, context)
@@ -821,19 +830,17 @@ class ProgramPrintables(ProgramModuleObj):
             return filterObj
 
         context = {'module': self     }
-        teachers = list(filterObj.getList(ESPUser).distinct())
-        teachers.sort()
+        teachers = sorted(filterObj.getList(ESPUser).distinct())
 
         scheditems = []
 
         for teacher in teachers:
             # get list of valid classes
-            classes = [cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
+            classes = sorted([cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
                     if cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0]
+                    and cls.status > 0])
             # now we sort them by time/title
-            classes.sort()
             for cls in classes:
                 if teacher in cls.parent_class.get_teachers():
                     role = 'Teacher'
@@ -860,19 +867,17 @@ class ProgramPrintables(ProgramModuleObj):
             return filterObj
 
         context = {'module': self     }
-        teachers = list(filterObj.getList(ESPUser).distinct())
-        teachers.sort()
+        teachers = sorted(filterObj.getList(ESPUser).distinct())
 
         scheditems = []
 
         for teacher in teachers:
             # get list of valid classes
-            classes = [cls for cls in teacher.getTaughtSectionsFromProgram(self.program)
+            classes = sorted([cls for cls in teacher.getTaughtSectionsFromProgram(self.program)
                     if cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0]
+                    and cls.status > 0])
             # now we sort them by time/title
-            classes.sort()
             for cls in classes:
                 scheditems.append({'name': teacher.name(),
                                    'teacher': teacher,
@@ -894,19 +899,17 @@ class ProgramPrintables(ProgramModuleObj):
             return filterObj
 
         context = {'module': self     }
-        teachers = list(filterObj.getList(ESPUser).distinct())
-        teachers.sort()
+        teachers = sorted(filterObj.getList(ESPUser).distinct())
 
         scheditems = []
 
         for teacher in teachers:
             # get list of valid classes
-            classes = [cls for cls in teacher.getModeratingSectionsFromProgram(self.program)
+            classes = sorted([cls for cls in teacher.getModeratingSectionsFromProgram(self.program)
                     if cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0]
+                    and cls.status > 0])
             # now we sort them by time/title
-            classes.sort()
             for cls in classes:
                 scheditems.append({'name': teacher.name(),
                                    'teacher': teacher,
@@ -928,8 +931,7 @@ class ProgramPrintables(ProgramModuleObj):
             return filterObj
 
         context = {'module': self     }
-        volunteers = list(filterObj.getList(ESPUser).distinct())
-        volunteers.sort()
+        volunteers = sorted(filterObj.getList(ESPUser).distinct())
 
         scheditems = []
 
@@ -973,25 +975,25 @@ class ProgramPrintables(ProgramModuleObj):
             #   Generic schedule function kept for backwards compatibility
             return ProgramPrintables.getSchedule(self.program, user)
         elif key == 'student_schedule':
-            return ProgramPrintables.getSchedule(self.program, user, u'Student')
+            return ProgramPrintables.getSchedule(self.program, user, six.u('Student'))
         elif key == 'student_schedule_norooms':
-            return ProgramPrintables.getSchedule(self.program, user, u'Student', room_numbers=False)
+            return ProgramPrintables.getSchedule(self.program, user, six.u('Student'), room_numbers=False)
         elif key == 'teacher_schedule':
-            return ProgramPrintables.getSchedule(self.program, user, u'Teacher')
+            return ProgramPrintables.getSchedule(self.program, user, six.u('Teacher'))
         elif key == 'teacher_schedule_dates':
-            return ProgramPrintables.getSchedule(self.program, user, u'Teacher', include_date=True)
+            return ProgramPrintables.getSchedule(self.program, user, six.u('Teacher'), include_date=True)
         elif key == 'teachermoderator_schedule':
-            return ProgramPrintables.getSchedule(self.program, user, u'TeacherModerator')
+            return ProgramPrintables.getSchedule(self.program, user, six.u('TeacherModerator'))
         elif key == 'teachermoderator_schedule_dates':
-            return ProgramPrintables.getSchedule(self.program, user, u'TeacherModerator', include_date=True)
+            return ProgramPrintables.getSchedule(self.program, user, six.u('TeacherModerator'), include_date=True)
         elif key == 'moderator_schedule':
-            return ProgramPrintables.getSchedule(self.program, user, u'Moderator')
+            return ProgramPrintables.getSchedule(self.program, user, six.u('Moderator'))
         elif key == 'moderator_schedule_dates':
-            return ProgramPrintables.getSchedule(self.program, user, u'Moderator', include_date=True)
+            return ProgramPrintables.getSchedule(self.program, user, six.u('Moderator'), include_date=True)
         elif key == 'volunteer_schedule':
-            return ProgramPrintables.getSchedule(self.program, user, u'Volunteer')
+            return ProgramPrintables.getSchedule(self.program, user, six.u('Volunteer'))
         elif key == 'volunteer_schedule_dates':
-            return ProgramPrintables.getSchedule(self.program, user, u'Volunteer', include_date=True)
+            return ProgramPrintables.getSchedule(self.program, user, six.u('Volunteer'), include_date=True)
         elif key == 'transcript':
             return ProgramPrintables.getTranscript(self.program, user, 'text')
         elif key == 'transcript_html':
@@ -999,14 +1001,13 @@ class ProgramPrintables(ProgramModuleObj):
         elif key == 'transcript_latex':
             return ProgramPrintables.getTranscript(self.program, user, 'latex')
 
-        return u''
+        return six.u('')
 
     @staticmethod
     def get_student_classlist(program, student, verbs = ['Enrolled'], valid_only = True):
         # get list of valid classes
         classes = [ cls for cls in student.getSections(program = program, verbs = verbs, valid_only = valid_only)]
-        classes = [ cls for cls in classes if cls.isAccepted() ]
-        classes.sort()
+        classes = sorted([ cls for cls in classes if cls.isAccepted() ])
         return classes
 
     @staticmethod
@@ -1017,10 +1018,9 @@ class ProgramPrintables(ProgramModuleObj):
             classes += [ cls for cls in teacher.getTaughtSectionsFromProgram(program)]
         if moderating:
             classes += [ cls for cls in teacher.getModeratingSectionsFromProgram(program)]
-        classes = [ cls for cls in classes
+        classes = sorted([ cls for cls in classes
                     if cls.meeting_times.exists()
-                    and cls.status >= 0 ]
-        classes.sort()
+                    and cls.status >= 0 ])
 
         scheditems = []
         for cls in classes:
@@ -1059,30 +1059,30 @@ class ProgramPrintables(ProgramModuleObj):
 
         if schedule_type is None:
             if user.isStudent():
-                schedule_type = u'Student'
+                schedule_type = six.u('Student')
             elif user.isTeacher():
-                schedule_type = u'Teacher'
+                schedule_type = six.u('Teacher')
             elif user.isVolunteer():
-                schedule_type = u'Volunteer'
+                schedule_type = six.u('Volunteer')
 
         include_roles = False
         pretty_schedule_type = schedule_type
-        if schedule_type == u'Student':
+        if schedule_type == six.u('Student'):
             template = get_template('program/modules/programprintables/studentschedule_email.html')
             sched_items = ProgramPrintables.get_student_classlist(program, user)
-        elif schedule_type == u'Teacher':
+        elif schedule_type == six.u('Teacher'):
             template = get_template('program/modules/programprintables/teacherschedule_email.html')
             sched_items = ProgramPrintables.get_teacher_classlist(program, user, teaching = True, moderating = False)
-        elif schedule_type == u'TeacherModerator':
+        elif schedule_type == six.u('TeacherModerator'):
             include_roles = True
-            pretty_schedule_type = u'Teacher and ' + program.getModeratorTitle().lower()
+            pretty_schedule_type = six.u('Teacher and ') + program.getModeratorTitle().lower()
             template = get_template('program/modules/programprintables/teacherschedule_email.html')
             sched_items = ProgramPrintables.get_teacher_classlist(program, user, teaching = True, moderating = True)
-        elif schedule_type == u'Moderator':
+        elif schedule_type == six.u('Moderator'):
             pretty_schedule_type = program.getModeratorTitle()
             template = get_template('program/modules/programprintables/teacherschedule_email.html')
             sched_items = ProgramPrintables.get_teacher_classlist(program, user, teaching = False, moderating = True)
-        elif schedule_type == u'Volunteer':
+        elif schedule_type == six.u('Volunteer'):
             template = get_template('program/modules/programprintables/volunteerschedule_email.html')
             sched_items = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
 
@@ -1256,7 +1256,7 @@ class ProgramPrintables(ProgramModuleObj):
                 else:
                     days[date]=[cls]
 
-            for day,day_classes in days.items():
+            for day, day_classes in days.items():
                 last_classes.append(day_classes[-1])
             last_classes.sort()
 
@@ -1326,9 +1326,8 @@ class ProgramPrintables(ProgramModuleObj):
             return render_to_response(basedir+'studentschedule.html', request, context)
         elif file_type == 'pdf':
             if len(students) > 1:
-                response = HttpResponse(content_type='application/pdf')
+                response = render_to_latex(basedir+'studentschedule.tex', context, 'pdf')
                 response['Content-Disposition'] = 'attachment; filename="studentschedules.pdf"'
-                response.write(render_to_latex(basedir+'studentschedule.tex', context, 'pdf'))
                 return response
             else:
                 return render_to_latex(basedir+'studentschedule.tex', context, 'pdf')
@@ -1345,19 +1344,17 @@ class ProgramPrintables(ProgramModuleObj):
             return filterObj
 
         context = {'module': self }
-        students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
+        students = sorted(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
-        students.sort()
 
         scheditems = []
 
         for student in students:
             # get list of valid classes
-            classes = [ cls for cls in student.getEnrolledSections()
+            classes = sorted([ cls for cls in student.getEnrolledSections()
                     if cls.parent_program == self.program
-                    and cls.isAccepted()                       ]
+                    and cls.isAccepted()                       ])
             # now we sort them by time/title
-            classes.sort()
 
             for cls in classes:
                 scheditems.append({'name': student.name(),
@@ -1423,7 +1420,7 @@ class ProgramPrintables(ProgramModuleObj):
                         else:
                             rooms_dict[room.name] = [update_dict]
 
-        for room_name in prog.natural_sort(rooms_dict.keys()):
+        for room_name in prog.natural_sort(list(rooms_dict.keys())):
             rooms_dict[room_name].sort(key=lambda x: x['timeblock'].start)
             for val in rooms_dict[room_name]:
                 scheditems.append(val)
@@ -1492,7 +1489,7 @@ class ProgramPrintables(ProgramModuleObj):
             for item in context['name_groups'][i]:
                 student_tuples.append((line_num, color, item))
         num_students = len(student_tuples)
-        num_pages = (num_students - 1) / num_per_page + 1
+        num_pages = (num_students - 1) // num_per_page + 1
         pages = [[] for i in range(num_pages)]
         #   Deal the list out into pages of [num_per_page] stacks
         for i in range(num_students):
@@ -1515,8 +1512,7 @@ class ProgramPrintables(ProgramModuleObj):
 
 
         context = {'module': self, 'program': prog}
-        teachers = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
-        teachers.sort()
+        teachers = sorted(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
         scheditems = []
 
@@ -1548,8 +1544,7 @@ class ProgramPrintables(ProgramModuleObj):
 
 
         context = {'module': self, 'program': prog}
-        teachers = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
-        teachers.sort()
+        teachers = sorted(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
         scheditems = []
 
@@ -1572,8 +1567,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def teacherlabels(self, request, tl, one, two, module, extra, prog):
         context = {'module': self}
-        teachers = list(self.program.teachers()['class_approved'])
-        teachers.sort()
+        teachers = sorted(self.program.teachers()['class_approved'])
         context['teachers'] = teachers
         context['settings'] = settings
         return render_to_response(self.baseDir()+'teacherlabels.html', request, context)
@@ -1587,8 +1581,7 @@ class ProgramPrintables(ProgramModuleObj):
             return filterObj
 
 
-        students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
-        students.sort()
+        students = sorted(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
         records = []
         tag_data = Tag.getProgramTag('student_reg_records', prog)
@@ -1611,7 +1604,7 @@ class ProgramPrintables(ProgramModuleObj):
                                 'paid': iac.has_paid(in_full=True),
                                 'amount_due': iac.amount_due(),
                                 'finaid': finaid_status,
-                                'checked_in': Record.user_completed(student, "attended",self.program),
+                                'checked_in': Record.user_completed(student, "attended", self.program),
                                 'med': Record.user_completed(student, "med", self.program),
                                 'liab': Record.user_completed(student, "liab", self.program),
                                 'other': [Record.user_completed(student, rec, self.program) for rec in records]})
@@ -1629,8 +1622,7 @@ class ProgramPrintables(ProgramModuleObj):
             of a program. """
         context = {'module': self, 'program': prog}
 
-        students= [ user for user in self.program.students()['confirmed']]
-        students.sort()
+        students= sorted([ user for user in self.program.students()['confirmed']])
 
         class_list = []
 
@@ -1658,7 +1650,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def adminbinder(self, request, tl, one, two, module, extra, prog):
 
-        if extra not in ['teacher','classid','timeblock']:
+        if extra not in ['teacher', 'classid', 'timeblock']:
             return self.goToCore(tl)
         context = {'module': self}
 
@@ -1666,9 +1658,8 @@ class ProgramPrintables(ProgramModuleObj):
 
 
         if extra == 'teacher':
-            teachers = self.program.teachers()
-            teachers.sort()
-            map(ESPUser, teachers)
+            teachers = sorted(self.program.teachers())
+            list(map(ESPUser, teachers))
 
             scheditems = []
 
@@ -1689,7 +1680,7 @@ class ProgramPrintables(ProgramModuleObj):
             classes = [cls for cls in self.program.classes()
                        if cls.isAccepted()                   ]
 
-            classes.sort(ClassSubject.idcmp)
+            classes.sort(key=ClassSubject.idcmp)
 
             for cls in classes:
                 for teacher in cls.get_teachers():
@@ -1700,10 +1691,9 @@ class ProgramPrintables(ProgramModuleObj):
 
 
         if extra == 'timeblock':
-            classes = [cls for cls in self.program.classes()
-                       if cls.isAccepted()                   ]
+            classes = sorted([cls for cls in self.program.classes()
+                       if cls.isAccepted()                   ])
 
-            classes.sort()
 
             for cls in classes:
                 for teacher in cls.get_teachers():
@@ -1749,11 +1739,11 @@ class ProgramPrintables(ProgramModuleObj):
                 response = HttpResponse(content_type="text/csv")
                 write_cvs = csv.writer(response)
                 selected_fields = form.cleaned_data['subject_fields']
-                csv_headings = [_encode_ascii(converter.field_dict[fieldname]) for fieldname in selected_fields]
+                csv_headings = [converter.field_dict[fieldname] for fieldname in selected_fields]
                 write_cvs.writerow(csv_headings)
 
                 for cls in ClassSubject.objects.filter(parent_program=prog):
-                    write_cvs.writerow([_encode_ascii(converter.fieldvalue(cls,f)) for f in selected_fields])
+                    write_cvs.writerow([converter.fieldvalue(cls, f) for f in selected_fields])
 
                 response['Content-Disposition'] = 'attachment; filename=all_classes.csv'
                 return response
@@ -1899,7 +1889,7 @@ class ProgramPrintables(ProgramModuleObj):
             teachers = section.parent_class.get_teachers()
             conflicts = []
             for teacher in teachers:
-                conflicts.extend(filter(lambda x: x not in conflicts and x != section.parent_class, teacher.getTaughtClassesFromProgram(prog)))
+                conflicts.extend([x for x in teacher.getTaughtClassesFromProgram(prog) if x not in conflicts and x != section.parent_class])
             conflicts = sorted(conflicts, key = lambda x: x.id)
 
             write_csv.writerow([section.parent_class.emailcode(), int(round(section.duration))] + \
@@ -1924,8 +1914,7 @@ class ProgramPrintables(ProgramModuleObj):
         response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
 
-        sections = list(self.program.sections().filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED))
-        sections.sort()
+        sections = sorted(self.program.sections().filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED))
 
         rooms = {}
 

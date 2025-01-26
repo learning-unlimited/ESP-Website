@@ -5,7 +5,7 @@ function set_step(base_div, step_name)
     //  Special case for the basic list step, which needs to clear the buttons
     if ((base_div == "basic_step_container") && (step_name == "recipient_type_select"))
     {
-        $j("input[name=recipient_type]").removeAttr("checked");
+        $j("input[name=recipient_type]").prop("checked", false);
         $j("input[name=recipient_type]").button("refresh");
     }
 
@@ -112,7 +112,7 @@ function populate_get()
     var items = location.search.substr(1).split("&").filter(Boolean);
     for (var index = 0; index < items.length; index++) {
         var key_val = items[index].split("=");
-        var field = $j("[name=" + key_val[0] + "]");
+        var field = $j("#tabs [name=" + key_val[0] + "]");
         if(field.length >= 1){
             switch (field[0].type) {
                 case 'checkbox':
@@ -137,7 +137,7 @@ function clear_filters()
     //  Remove any existing data in the "user filtering options" part of a comm panel form
     var $form = $j("#filter_accordion");
     // Don't set the grade fields if we are in the combo list form
-    var set_grade = $form.parent().attr('id') != "combo_filter_accordion";
+    var set_grade = $form.parent().attr('id') != "combo_filter_accordion" && window.location.href.includes("commpanel");
     var form_fields = $form.find(':input');
     form_fields.each(function(i, form_field) {
         if(set_grade && form_field.name == "grade_min" && $j("select[name=recipient_type]").val() == "Student"){
@@ -158,7 +158,6 @@ function clear_filters()
         }
     });
     $j("#filter_accordion").accordion("option", "active", false);
-    populate_get(); // Repopulate any filters with GET parameters
 }
 
 function move_filters(wrapper_name)
@@ -192,31 +191,32 @@ function initialize()
     //  Handle changes in the recipient type
     recipient_type_change = function (clear = true) {
         var rb_selected = $j("select[name=recipient_type]").val();
-        $j("#recipient_type_name").html("Which set of " + rb_selected + " would you like to contact?");
+        $j("#recipient_type_name").html("Which set of <b>" + $j("option[value=" + rb_selected +"]").html() + "</b> would you like to contact?");
         $j("#recipient_list_select").children("div").addClass("commpanel_hidden");
         $j("#recipient_list_select").children("div.step_header").removeClass("commpanel_hidden");
         $j("#recipient_list_options_" + rb_selected).removeClass("commpanel_hidden");
         $j(".sendto_fn_select").addClass("commpanel_hidden");
         $j("." + rb_selected + ".sendto_fn_select").removeClass("commpanel_hidden");
-        if(clear) clear_filters();
+        if(clear) {
+            $j("[name=base_list]").prop('checked', false); // Clear the selected radio button
+            clear_filters(); // Clear the filters
+        }
         prepare_accordion(rb_selected);
     }
-    $j("select[name=recipient_type]").change(recipient_type_change);
-    $j("#recipient_type_next").click(function () {
-        recipient_type_change();
+    $j("select[name=recipient_type]").on('change', recipient_type_change);
+    $j("#recipient_type_next").on('click', function () {
         set_step("basic_step_container", "recipient_list_select");
         return false;
     });
-    recipient_type_change();
 
     //  Handle clicks on show/hide email list links
-    $j("button.commpanel_show_all").click(function () {
+    $j("button.commpanel_show_all").on('click', function () {
         $j("li.commpanel_list_entry").removeClass("commpanel_hidden");
         $j("button.commpanel_show_all").addClass("commpanel_hidden");
         $j("button.commpanel_show_preferred").removeClass("commpanel_hidden");
         return false;
     });
-    $j("button.commpanel_show_preferred").click(function () {
+    $j("button.commpanel_show_preferred").on('click', function () {
         $j("li.commpanel_list_entry").addClass("commpanel_hidden");
         $j("li.commpanel_list_entry.commpanel_list_preferred").removeClass("commpanel_hidden");
         $j("button.commpanel_show_all").removeClass("commpanel_hidden");
@@ -226,23 +226,23 @@ function initialize()
     $j("#recipient_list_select").children("div").addClass("commpanel_hidden");
 
     //  Handle the outer level tabs
-    $j("#tab_select_basic").click(function () {
+    $j("#tab_select_basic").on('click', function () {
         move_filters("base_filter_accordion");
         recipient_type_change();
         set_step("basic_step_container", "recipient_type_select"); return false;
     });
 
     //  Prepare "back" buttons
-    $j("#recipient_list_back").click(function () {set_step("basic_step_container", "recipient_type_select"); return false;});
-    $j("#recipient_filter_back").click(function () {set_step("basic_step_container", "recipient_list_select"); return false;});
+    $j("#recipient_list_back").on('click', function () {set_step("basic_step_container", "recipient_type_select"); return false;});
+    $j("#recipient_filter_back").on('click', function () {set_step("basic_step_container", "recipient_list_select"); return false;});
 
     //  Prepare "next" buttons
-    $j("#recipient_list_next").click(function () {set_step("basic_step_container", "recipient_filter_select"); return false;});
+    $j("#recipient_list_next").on('click', function () {set_step("basic_step_container", "recipient_filter_select"); return false;});
 
     //  Prepare "done" buttons
-    $j("#recipient_list_done").click(submit_basic_selection);
-    $j("#recipient_filter_done").click(submit_basic_selection);
-    $j("#recipient_filter_checklist").click(function () {
+    $j("#recipient_list_done").on('click', submit_basic_selection);
+    $j("#recipient_filter_done").on('click', submit_basic_selection);
+    $j("#recipient_filter_checklist").on('click', function () {
         set_field("form_basic_list", "use_checklist", "1");
         return submit_basic_selection();
     });
@@ -259,18 +259,18 @@ function initialize()
         with ({list_name: list_names[i]})
         {
             //  Make the ANDs turn off the ORs and vice versa
-            $j("input[name=checkbox_and_" + list_name + "]").change(function () {
+            $j("input[name=checkbox_and_" + list_name + "]").on('change', function () {
                 if ($j("input[name=checkbox_and_" + list_name + "]").prop("checked")
                     && $j("input[name=checkbox_or_" + list_name + "]").prop("checked"))
                     $j("input[name=checkbox_or_" + list_name + "]").click();
             });
-            $j("input[name=checkbox_or_" + list_name + "]").change(function () {
+            $j("input[name=checkbox_or_" + list_name + "]").on('change', function () {
                 if ($j("input[name=checkbox_and_" + list_name + "]").prop("checked")
                     && $j("input[name=checkbox_or_" + list_name + "]").prop("checked"))
                     $j("input[name=checkbox_and_" + list_name + "]").click();
             });
             //  NOT can't be selected by itself
-            $j("input[name=checkbox_not_" + list_name + "]").change(function () {
+            $j("input[name=checkbox_not_" + list_name + "]").on('change', function () {
                 if ($j("input[name=checkbox_not_" + list_name + "]").prop("checked")
                     && !$j("input[name=checkbox_and_" + list_name + "]").prop("checked")
                     && !$j("input[name=checkbox_or_" + list_name + "]").prop("checked"))
@@ -292,14 +292,14 @@ function initialize()
         prepare_accordion("combo");
     }
     combo_base_list_change();
-    $j("select[name=combo_base_list]").change(combo_base_list_change);
+    $j("select[name=combo_base_list]").on('change', combo_base_list_change);
 
-    $j("#combo_base_done").change(function () {
+    $j("#combo_base_done").on('change', function () {
         set_step("combo_step_container", "combo_list_select");
     });
 
     //  Handle the outer level tabs
-    $j("#tab_select_combo").click(function () {
+    $j("#tab_select_combo").on('click', function () {
         move_filters("combo_filter_accordion");
         prepare_accordion("combo");
         $j("[name=base_list]").prop('checked', false);
@@ -307,24 +307,24 @@ function initialize()
     });
 
     //  Prepare "back" buttons
-    $j("#combo_options_back").click(function () {set_step("combo_step_container", "starting_list_select"); return false;});
-    $j("#combo_filter_back").click(function () {set_step("combo_step_container", "combo_list_select"); return false;});
+    $j("#combo_options_back").on('click', function () {set_step("combo_step_container", "starting_list_select"); return false;});
+    $j("#combo_filter_back").on('click', function () {set_step("combo_step_container", "combo_list_select"); return false;});
 
     //  Prepare "next" buttons
-    $j("#combo_base_next").click(function(){
+    $j("#combo_base_next").on('click', function(){
         combo_base_list_change();
         set_step("combo_step_container", "combo_list_select");
         return false;
     });
-    $j("#combo_options_next").click(function () {set_step("combo_step_container", "combo_filter_select"); return false;});
+    $j("#combo_options_next").on('click', function () {set_step("combo_step_container", "combo_filter_select"); return false;});
 
     //  Prepare "done" buttons
-    $j("#combo_options_done").click(submit_combo_selection);
-    $j("#combo_filter_checklist").click(function () {
+    $j("#combo_options_done").on('click', submit_combo_selection);
+    $j("#combo_filter_checklist").on('click', function () {
         set_field("form_combo_list", "use_checklist", "1");
         return submit_combo_selection();
     });
-    $j("#combo_filter_done").click(submit_combo_selection);
+    $j("#combo_filter_done").on('click', submit_combo_selection);
 
     /*  Previous emails tab    */
 
@@ -348,9 +348,10 @@ function initialize()
     });
 
     //  Handle submit button
-    $j("#prev_select_done").click(submit_prev_selection);
+    $j("#prev_select_done").on('click', submit_prev_selection);
 
     populate_get();
+    recipient_type_change(clear = false);
 }
 
 $j(document).ready(initialize);

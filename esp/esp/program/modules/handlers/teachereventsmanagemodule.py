@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -128,7 +129,7 @@ class TeacherEventsManageModule(ProgramModuleObj):
     setup_title = "Set up events for teachers to attend before the program"
 
     def isCompleted(self):
-        return Event.objects.filter(program=self.program, event_type__in=EventType.teacher_event_types().values()).exists()
+        return Event.objects.filter(program=self.program, event_type__in=list(EventType.teacher_event_types().values())).exists()
 
     class Meta:
         proxy = True

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -36,8 +37,8 @@ from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, n
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.tagdict.models import Tag
-from esp.utils.web import render_to_response
-from esp.users.models    import ESPUser, Record, RecordType
+from esp.utils.web import render_to_response, esp_context_stuff
+from esp.users.models    import ESPUser, Record, RecordType, Permission
 from esp.utils.models import Printer
 from esp.accounting.controllers import IndividualAccountingController
 from django.db.models.query import Q
@@ -90,7 +91,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
 
             if self.program.program_allow_waitlist:
-                retVal['waitlisted_students'] = Q(record__event__name="waitlist",record__program=self.program)
+                retVal['waitlisted_students'] = Q(record__event__name="waitlist", record__program=self.program)
 
             return retVal
 
@@ -101,7 +102,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                   'studentrep': ESPUser.objects.filter(q_studentrep).distinct()}
 
         if self.program.program_allow_waitlist:
-            retVal['waitlisted_students'] = ESPUser.objects.filter(Q(record__event__name="waitlist",record__program=self.program)).distinct()
+            retVal['waitlisted_students'] = ESPUser.objects.filter(Q(record__event__name="waitlist", record__program=self.program)).distinct()
 
         return retVal
 
@@ -142,7 +143,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @aux_call
     @needs_student_in_grade
     def confirmreg(self, request, tl, one, two, module, extra, prog):
-        if Record.objects.filter(user=request.user, event__name="reg_confirmed",program=prog).count() > 0:
+        if Record.objects.filter(user=request.user, event__name="reg_confirmed", program=prog).count() > 0:
             return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=False)
         return self.confirmreg_new(request, tl, one, two, module, extra, prog)
 
@@ -159,8 +160,10 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         self.request = request
 
         from esp.program.modules.module_ext import DBReceipt
+        from esp.program.modules.forms.admincore import get_template_source
 
-        iac = IndividualAccountingController(prog, request.user)
+        user = request.user
+        iac = IndividualAccountingController(prog, user)
 
         context = {}
         context['one'] = one
@@ -168,7 +171,12 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         context['itemizedcosts'] = iac.get_transfers()
 
-        user = request.user
+        # attach payment information to student
+        user.meals = iac.get_transfers(optional_only=True)  # catch everything that's not admission to the program.
+        user.required = iac.get_transfers(required_only=True).exclude(line_item=iac.default_admission_lineitemtype())
+        user.itemizedcosttotal = iac.amount_due()
+
+        context['user'] = user
         context['finaid'] = user.hasFinancialAid(prog)
         if user.appliedFinancialAid(prog):
             context['finaid_app'] = user.financialaidrequest_set.filter(program=prog).order_by('-id')[0]
@@ -181,7 +189,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         if not prog.user_can_join(user):
             raise ESPError("This program has filled!  It can't accept any more students.  Please try again next session.", log=False)
 
-        modules = prog.getModules(request.user, tl)
+        modules = prog.getModules(user, tl)
         completedAll = True
         for module in modules:
             if hasattr(module, 'onConfirm'):
@@ -198,18 +206,27 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         else:
             raise ESPError("You must finish all the necessary steps first, then click on the Save button to finish registration.", log=False)
 
+        # when does class registration close for this user?
+        context['deadline'] = Permission.user_deadline_when(user, "Student/Classes", prog)
+
         cfe = ConfirmationEmailController()
-        cfe.send_confirmation_email(request.user, self.program)
+        # this email includes the student's schedule (by default), so send a new email each time they confirm their reg
+        cfe.send_confirmation_email(user, self.program, context = context, repeat = True)
 
         context["request"] = request
         context["program"] = prog
+        context.update(esp_context_stuff())
 
+        receipt = select_template(['program/receipts/%s_custom_receipt.html' %(prog.id), 'program/receipts/default.html'])
+
+        # render the custom pretext first
         try:
-            receipt_text = DBReceipt.objects.get(program=self.program, action='confirm').receipt
-            return HttpResponse( Template(receipt_text).render( Context(context) ) )
+            pretext = DBReceipt.objects.get(program=self.program, action='confirm').receipt
         except DBReceipt.DoesNotExist:
-            receipt = select_template(['program/receipts/%s_custom_receipt.html' %(prog.id), 'program/receipts/default.html'])
-            return HttpResponse( receipt.render( AutoRequestContext(context, autoescape=False) ) )
+            pretext = get_template_source(['program/receipts/%s_custom_pretext.html' %(self.program.id), 'program/receipts/default_pretext.html'])
+        context['pretext'] = Template(pretext).render( Context(context, autoescape=False) )
+
+        return HttpResponse( receipt.render( AutoRequestContext(context, autoescape=False) ) )
 
     @aux_call
     @needs_student_in_grade

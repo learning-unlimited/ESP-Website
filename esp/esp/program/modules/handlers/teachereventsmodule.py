@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -41,6 +42,7 @@ from esp.cal.models import Event, EventType
 from esp.users.models import ESPUser, UserAvailability
 from esp.middleware.threadlocalrequest import get_current_request
 from django.contrib.auth.models import Group
+from django.conf import settings
 
 class TeacherEventsModule(ProgramModuleObj):
     doc = """Allows teachers to sign up for one or more teacher events (e.g. interviews, training)."""
@@ -121,7 +123,7 @@ class TeacherEventsModule(ProgramModuleObj):
             if form.is_valid():
                 data = form.cleaned_data
                 # Remove old bits
-                event_types = EventType.teacher_event_types().values()
+                event_types = list(EventType.teacher_event_types().values())
                 UserAvailability.objects.filter(user=request.user, event__event_type__in=event_types).delete()
                 # Register for interview
                 if data['interview']:
@@ -131,9 +133,9 @@ class TeacherEventsModule(ProgramModuleObj):
                         event_name = data['interview'].description
                         send_mail('['+self.program.niceName()+'] Teacher Interview for ' + request.user.first_name + ' ' + request.user.last_name + ': ' + event_name, \
                               """Teacher Interview Registration Notification\n--------------------------------- \n\nTeacher: %s %s\n\nTime: %s\n\n""" % \
-                              (request.user.first_name, request.user.last_name, event_name) , \
-                              (request.user.get_email_sendto_address()), \
-                              [self.program.getDirectorCCEmail()], True)
+                              (request.user.first_name, request.user.last_name, event_name), \
+                              '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER), \
+                              [self.program.getDirectorCCEmail()], True, extra_headers = {'Reply-To': request.user.get_email_sendto_address()})
 
                 # Register for training
                 if data['training']:
@@ -150,7 +152,7 @@ class TeacherEventsModule(ProgramModuleObj):
         return render_to_response( self.baseDir()+'event_signup.html', request, {'prog':prog, 'form': form} )
 
     def isStep(self):
-        return Event.objects.filter(program=self.program, event_type__in=EventType.teacher_event_types().values()).exists()
+        return Event.objects.filter(program=self.program, event_type__in=list(EventType.teacher_event_types().values())).exists()
 
     class Meta:
         proxy = True

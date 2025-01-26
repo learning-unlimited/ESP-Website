@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -35,14 +36,17 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
-from esp.dbmail.models import MessageRequest
+from esp.dbmail.models import MessageRequest, PlainRedirect
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_checklist
 from esp.dbmail.models import ActionHandler
+from esp.tagdict.models import Tag
 from django.template import Template
 from django.template import Context as DjangoContext
 from esp.middleware import ESPError
+
+import re
 
 class CommModule(ProgramModuleObj):
     doc = """Email users that match specific search criteria."""
@@ -78,9 +82,18 @@ class CommModule(ProgramModuleObj):
         # Set From address
         if request.POST.get('from', '').strip():
             fromemail = request.POST['from']
+            if not re.match(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', '\.')), fromemail):
+                raise ESPError("Invalid 'From' email address. The 'From' email address must " +
+                               "end in @" + settings.SITE_INFO[1] + " (your website), " +
+                               "@learningu.org, or a valid subdomain of learningu.org " +
+                               "(i.e., @subdomain.learningu.org).")
         else:
-            # String together an address like username@esp.mit.edu
-            fromemail = '%s@%s' % (request.user.username, settings.SITE_INFO[1])
+            # Use the info redirect (make one for the default email address if it doesn't exist)
+            prs = PlainRedirect.objects.filter(original = "info")
+            if not prs.exists():
+                redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
+            fromemail = '%s <%s@%s>' % (Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME),
+                                        "info", settings.SITE_INFO[1])
 
         # Set Reply-To address
         if request.POST.get('replyto', '').strip():
@@ -233,6 +246,7 @@ class CommModule(ProgramModuleObj):
     @main_call
     @needs_admin
     def commpanel(self, request, tl, one, two, module, extra, prog):
+        from django.conf import settings
 
         usc = UserSearchController()
 
@@ -242,7 +256,8 @@ class CommModule(ProgramModuleObj):
         if request.method == 'POST':
             #   Turn multi-valued QueryDict into standard dictionary
             data = ListGenModule.processPost(request)
-
+            context['default_from'] = '%s <%s@%s>' % (Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME),
+                                                      "info", settings.SITE_INFO[1])
             ##  Handle normal list selecting submissions
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
 
@@ -259,6 +274,11 @@ class CommModule(ProgramModuleObj):
                 context['sendto_fn_name'] = sendto_fn_name
                 context['listcount'] = self.approx_num_of_recipients(filterObj, sendto_fn)
                 context['selected'] = selected
+                # Use the info redirect (make one for the default email address if it doesn't exist)
+                prs = PlainRedirect.objects.filter(original = "info")
+                if not prs.exists():
+                    redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
+                context['from'] = context['default_from']
                 return render_to_response(self.baseDir()+'step2.html', request, context)
 
             ##  Prepare a message starting from an earlier request

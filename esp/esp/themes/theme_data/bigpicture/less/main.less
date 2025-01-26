@@ -1,50 +1,41 @@
 
 #main {
     h1 {
-        color: @identityBlue;
+        color: @accent2;
         font-size: 42px;
         font-weight: normal;
         margin-bottom: 0.5em;
     }
     h2 {
-        color: @identityBlue;
+        color: @accent2;
         font-size: 32px;
         font-weight: normal;
         margin-bottom: 0.3em;
     }
     a {
-        color: @identityBlue;
+        color: @accent2;
         text-decoration: underline;
     }
     .btn {
-        background: @btnBackground;
-        border: 1px solid @identityBlue;
+        border: 1px solid @accent2;
 		background-image: none;
         &:active, &:focus {
             outline: none;
-            border-color: @highlightOrange;
+            border-color: @accent1;
         }
     }
 	.module_link_large {
-        border: 1px solid @identityBlue;
-        background: @pale;
+        border: 1px solid @accent2;
+        background: @btnBackground;
         &:active, &:focus {
             outline: none;
-            border-color: @highlightOrange;
+            border-color: @accent1;
         }
     }
-    .btn-primary,
-    .btn-inverse {
-        border-color: transparent;
-    }
     .btn-primary {
-        background: @btnPrimaryBackground;
-		color: white;
-		text-decoration: none;
+		    text-decoration: none;
     }
-    .btn-inverse {
-        background: @btnInverseBackground;
-    }
+
     .control-group .controls > ul {
         list-style: none;
     }
@@ -61,9 +52,9 @@
         -webkit-appearance: none;
         color: black;
         background-color: #fdfdfd;
-        border: 1px solid @identityBlue;
+        border: 1px solid @accent2;
         &:focus {
-            border-color: @highlightOrange;
+            border-color: @accent1;
             outline: none;
             -webkit-box-shadow: none;
                -moz-box-shadow: none;

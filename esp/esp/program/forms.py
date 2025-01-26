@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+from six.moves import map
+import six
+from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -36,6 +40,8 @@ Learning Unlimited, Inc.
 import re
 import unicodedata
 
+from django.conf import settings
+from esp.middleware import ESPError
 from esp.users.models import StudentInfo, K12School, RecordType
 from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories
 from esp.dbmail.models import PlainRedirect
@@ -76,7 +82,7 @@ class ProgramCreationForm(BetterModelForm):
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current modules. """
         # These modules are the "choosable" ones that admins will usually want to choose to select or exclude (i.e. not automatically include or exclude)
-        self.program_module_question_ids = OrderedDict([('Will you charge for items such as shirts or lunch?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Optional Fees', 'Accounting', 'Financial Aid Application', 'Easily Approve Financial Aid Requests'])]),
+        self.program_module_question_ids = OrderedDict([('Will you charge for items such as shirts or lunch?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Optional Fees', 'Accounting', 'Financial Aid Application', 'Easily Approve Financial Aid Requests', 'Line Items Module'])]),
                                                         ('If you will charge for admission or other costs, will you accept payment by credit card?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Credit Card Payment Module (Stripe)', 'Credit Card View Module'])]),
                                                         ('Do you want a pre-program quiz for teachers?', [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Logistics Quiz')]),
                                                         ('Will you have any additional non-survey forms that teachers should fill out?', [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Custom Form')]),
@@ -95,7 +101,7 @@ class ProgramCreationForm(BetterModelForm):
                                                        ])
         # Include additional or new modules that haven't been added to the list
         for x in ProgramModule.objects.filter(choosable=0):
-            if x.id not in sum(self.program_module_question_ids.values(), []): # flatten list of modules
+            if x.id not in sum(list(self.program_module_question_ids.values()), []): # flatten list of modules
                 self.program_module_question_ids['Would you like to include the {} module?'.format(x.admin_title)] = [x.id]
         # Now initialize the form
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
@@ -108,21 +114,8 @@ class ProgramCreationForm(BetterModelForm):
 
 
     def save(self, commit=True):
-        '''
-        Takes the program creation form's program_type, term, and term_friendly
-        fields, and constructs the url and name fields on the Program instance;
-        then calls the superclass's save() method.
-        '''
-        #   Filter out unwanted characters from program type to form URL
-        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
-        self.instance.url = u'%(type)s/%(instance)s' \
-            % {'type': ptype_slug
-              ,'instance': self.cleaned_data['term']
-              }
-        self.instance.name = u'%(type)s %(instance)s' \
-            % {'type': self.cleaned_data['program_type']
-              ,'instance': self.cleaned_data['term_friendly']
-              }
+        self.instance.url = self.cleaned_data['new_url']
+        self.instance.name = self.cleaned_data['new_name']
         return super(ProgramCreationForm, self).save(commit=commit)
 
 
@@ -136,23 +129,48 @@ class ProgramCreationForm(BetterModelForm):
         mods.extend(ProgramModule.objects.filter(choosable=1))
         return list(set(mods)) # Database wants a unique collection, so take set
 
+    def clean(self):
+        '''
+        Takes the program creation form's program_type, term, and term_friendly
+        fields, and constructs the url and name fields on the Program instance.
+        '''
+        super(ProgramCreationForm, self).clean()
+        if 'term' in self.cleaned_data and 'term_friendly' in self.cleaned_data:
+            #   Filter out unwanted characters from program type to form URL
+            ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
+            new_url = six.u('%(type)s/%(term)s') \
+                % {'type': ptype_slug
+                  ,'term': self.cleaned_data['term']
+                  }
+            new_name = six.u('%(type)s %(term)s') \
+                % {'type': self.cleaned_data['program_type']
+                  ,'term': self.cleaned_data['term_friendly']
+                  }
+            self.cleaned_data['new_url'] = new_url
+            self.cleaned_data['new_name'] = new_name
+            # Check that there isn't another program with this URL or name
+            if Program.objects.filter(url=new_url).exclude(id=self.instance.id).exists():
+                self.add_error('term', "A %s program already exists with this URL. Please choose a new URL or change the URL of the old program." % self.cleaned_data['program_type'])
+            if Program.objects.filter(name=new_name).exclude(id=self.instance.id).exists():
+                self.add_error('term_friendly', "A %s program already exists with this name. Please choose a new name or change the name of the old program." % self.cleaned_data['program_type'])
 
     class Meta:
         fieldsets = [
                      ('Program Title', {'fields': ['term', 'term_friendly'] }),
-                     ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
-                     ('About Program Creator',{'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
-                     ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
-                     ('Program Internal Details' ,{'fields':['program_type','program_modules','program_module_questions','class_categories','flag_types']}),
-                     ('Registration Dates',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
+                     ('Program Constraints', {'fields':['grade_min', 'grade_max', 'program_size_max', 'program_allow_waitlist']}),
+                     ('About Program Creator', {'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
+                     ('Financial Details', {'fields':['base_cost', 'sibling_discount']}),
+                     ('Program Internal Details', {'fields':['program_type', 'program_modules', 'program_module_questions', 'class_categories', 'flag_types']}),
+                     ('Registration Dates', {'fields': ['teacher_reg_start', 'teacher_reg_end', 'student_reg_start', 'student_reg_end'],}),
         ]                      # Here You can also add description for each fieldset.
         widgets = {
             'program_modules': forms.SelectMultiple(attrs={'class': 'hidden-field'}),
         }
         model = Program
-ProgramCreationForm.base_fields['director_email'].widget = forms.TextInput(attrs={'size': 40})
-ProgramCreationForm.base_fields['director_cc_email'].widget = forms.TextInput(attrs={'size': 40})
-ProgramCreationForm.base_fields['director_confidential_email'].widget = forms.TextInput(attrs={'size': 40})
+ProgramCreationForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'size': 40,
+                                                                                   'pattern': r'(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)' % settings.SITE_INFO[1].replace('.', '\.')})
+ProgramCreationForm.base_fields['director_cc_email'].widget = forms.EmailInput(attrs={'size': 40})
+ProgramCreationForm.base_fields['director_confidential_email'].widget = forms.EmailInput(attrs={'size': 40})
 '''
 ProgramCreationForm.base_fields['term'].line_group = -4
 ProgramCreationForm.base_fields['term_friendly'].line_group = -4
@@ -167,8 +185,6 @@ ProgramCreationForm.base_fields['teacher_reg_start'].line_group = 2
 ProgramCreationForm.base_fields['teacher_reg_end'].line_group = 2
 ProgramCreationForm.base_fields['student_reg_start'].line_group = 3
 ProgramCreationForm.base_fields['student_reg_end'].line_group = 3
-ProgramCreationForm.base_fields['publish_start'].line_group = 1
-ProgramCreationForm.base_fields['publish_end'].line_group = 1
 
 ProgramCreationForm.base_fields['base_cost'].line_group = 4
 ProgramCreationForm.base_fields['sibling_discount'].line_group = 4
@@ -212,9 +228,8 @@ class StatisticsQueryForm(forms.Form):
     @staticmethod
     def get_program_type_choices():
         programs = Program.objects.all()
-        names_url = list(set([x.program_type for x in programs]))
-        names_url.sort()
-        result = zip(names_url, names_url)
+        names_url = sorted({x.program_type for x in programs})
+        result = list(zip(names_url, names_url))
         return result
 
     @staticmethod
@@ -223,13 +238,13 @@ class StatisticsQueryForm(forms.Form):
         names_url = [x.url for x in programs]
         names_friendly = [x.name for x in programs]
         result = sorted(zip(names_url, names_friendly), key=lambda pair: pair[0])
-        result = filter(lambda x: len(x[1]) > 0, result)
+        result = [x for x in result if len(x[1]) > 0]
         return result
 
     @staticmethod
     def get_school_choices():
         k12schools = K12School.objects.all().order_by('name')
-        schools = list(set(StudentInfo.objects.all().values_list('school', flat=True)))
+        schools = list(set(StudentInfo.objects.all().exclude(school__isnull=True).exclude(school='').values_list('school', flat=True)))
         result = []
         for school in k12schools:
             result.append(('K12:%d' % school.id, school.name))
@@ -272,7 +287,7 @@ class StatisticsQueryForm(forms.Form):
 
         school_choices = StatisticsQueryForm.get_school_choices()
         if len(school_choices) > 0:
-            self.fields['school_query_type'].choices.append(('list', 'Select school(s) from list'))
+            self.fields['school_query_type'].choices = (('all', 'Match any school'), ('name', 'Enter partial school name'), ('list', 'Select school(s) from list'))
             self.fields['school_multisel'].choices = school_choices
 
     def clean(self):
@@ -414,12 +429,12 @@ class StatisticsQueryForm(forms.Form):
 class ClassFlagForm(forms.ModelForm):
     class Meta:
         model = ClassFlag
-        fields = ['subject','flag_type','comment']
+        fields = ['subject', 'flag_type', 'comment']
 
 class FlagTypeForm(forms.ModelForm):
     class Meta:
         model = ClassFlagType
-        fields = ['name','color','seq','show_in_scheduler','show_in_dashboard']
+        fields = ['name', 'color', 'seq', 'show_in_scheduler', 'show_in_dashboard']
 
 class RecordTypeForm(forms.ModelForm):
     def clean_name(self):
@@ -430,12 +445,12 @@ class RecordTypeForm(forms.ModelForm):
             return name
     class Meta:
         model = RecordType
-        fields = ['name','description']
+        fields = ['name', 'description']
 
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = ClassCategories
-        fields = ['category','symbol','seq']
+        fields = ['category', 'symbol', 'seq']
         widgets = {
             'symbol': forms.TextInput(attrs={'pattern': '[A-Za-z]{1}', 'title': 'Single letter'})
         }
@@ -490,7 +505,7 @@ class TagSettingsForm(BetterForm):
                 self.fields[key].initial = self.fields[key].default = tag_info.get('default')
                 self.fields[key].required = False
                 set_val = Tag.getBooleanTag(key) if tag_info.get('is_boolean', False) else Tag.getTag(key)
-                if set_val != None and set_val != self.fields[key].initial:
+                if set_val is not None and set_val != self.fields[key].initial:
                     if isinstance(self.fields[key], forms.MultipleChoiceField):
                         set_val = set_val.split(",")
                     self.fields[key].initial = set_val
