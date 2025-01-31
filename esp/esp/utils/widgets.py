@@ -785,7 +785,8 @@ _ICONS = OrderedDict([
 class NavStructureWidgetWithIcons(NavStructureWidget):
     add_link_body = """
         entry.append($j("<span>Icon: </span>"));
-        var select = $j("<select class='data_icon nav_secondary_field input-medium glyphicon' />");
+        var select = $j("<select style='font-family: Glyphicons Halflings'" +
+                        "class='data_icon nav_secondary_field input-medium glyphicon' />");
         select.append($j("<option style='font-family: Glyphicons Halflings' value=''" +
                          (data.icon ? "" : " selected") +
                          ">(none)</option>"));
