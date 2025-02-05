@@ -324,7 +324,7 @@ function {{ name }}_add_link(obj, data)
     var delete_button = $j("<button class='btn btn-mini btn-danger'>Delete link</button>");
     delete_button.on("click", {{ name }}_delete_link);
     entry.append(delete_button);
-    $j("#{{ name }}_entries input").on("change", {{ name }}_save);
+    $j("#{{ name }}_entries input, #{{ name }}_entries select").on("change", {{ name }}_save);
 }
 
 function {{ name }}_add_tab(obj, data)
@@ -785,8 +785,9 @@ _ICONS = OrderedDict([
 class NavStructureWidgetWithIcons(NavStructureWidget):
     add_link_body = """
         entry.append($j("<span>Icon: </span>"));
-        var select = $j("<select class='data_icon nav_secondary_field input-medium glyphicon' />");
-        select.append($j("<option value=''" +
+        var select = $j("<select style='font-family: Glyphicons Halflings'" +
+                        "class='data_icon nav_secondary_field input-medium glyphicon' />");
+        select.append($j("<option style='font-family: Glyphicons Halflings' value=''" +
                          (data.icon ? "" : " selected") +
                          ">(none)</option>"));
         %(entries)s
@@ -795,7 +796,7 @@ class NavStructureWidgetWithIcons(NavStructureWidget):
     """ % {
         'super_add_link_body': NavStructureWidget.add_link_body,
         'entries': '\n'.join('''
-            select.append($j("<option value='%(icon)s'" +
+            select.append($j("<option style='font-family: Glyphicons Halflings' value='%(icon)s'" +
                              (data.icon === "%(icon)s" ? " selected" : "") +
                              ">%(unicode)s (%(icon)s)</option>"));'''
             % {'icon': icon, 'unicode': text_unicode}
