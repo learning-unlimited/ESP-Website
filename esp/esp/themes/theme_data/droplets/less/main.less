@@ -84,6 +84,7 @@ body {
     body {
         padding: 0px;
         padding-top: 40px;
+        margin-bottom: -40px;
         width: 100%;
     }
 }
@@ -114,6 +115,19 @@ input, textarea, select, .uneditable-input {
 .logged_in.nav.hidden {
     display: none;
     visibility: hidden;
+}
+
+.not_logged_in.nav.hidden {
+    display: none;
+    visibility: hidden;
+}
+
+ul.nav-collapse {
+    margin: 0;
+}
+
+.navbar-fixed-bottom > .navbar-inner > ul > li > a {
+    padding: 0px;
 }
 
 .btn:hover {

@@ -14,7 +14,7 @@
 {% block body %}
 
 {% block navbar %}
-<div class="navbar navbar-fixed-top">
+<div class="navbar navbar-fixed-top navbar-inverse">
   <div class="navbar-inner">
     <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
     <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
@@ -22,12 +22,17 @@
       <span class="icon-bar"></span>
       <span class="icon-bar"></span>
     </a>
+    <!-- Be sure to leave the brand out there if you want it shown -->
+    <a class="brand" href="/">{{ theme.full_group_name }}</a>
     <!-- Everything you want hidden at 940px or less, place within here -->
-    <div class="nav-collapse collapse">
+    <ul class="nav-collapse collapse">
       {% include "navbar/admin.html" %}
+      {% if theme.show_group_name %}
+      {% endif %}
+      {% include "navbar/contact.html" %}
       {% include "users/loginbox_content.html" %}
       {% include "navbar/nav.html" %}
-    </div>
+    </ul>
   </div>
 </div>
 {% endblock navbar%}
@@ -39,38 +44,6 @@
       <a href="/">
           <img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{theme.full_group_name}}" class="logo">
       </a>
-       <div id="contact_info">
-        {% if theme.show_group_name %}
-        <span class="title accentcolor">{{ theme.full_group_name }}</span></br>
-        {% endif %}
-        {% if theme.contact_info %}
-        <span class="normal">{{ theme.contact_info|linebreaksbr }}</span></br>
-        {% endif %}
-        {% if theme.show_email %}
-        <span class="normal">Email: <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></span></br>
-        {% endif %}
-        {% if theme.contact_links %}
-        <span class="normal">
-          {% for link in theme.contact_links %}
-          <a href="{{ link.link }}">{{ link.text }}</a>
-          {% if forloop.counter|divisibleby:3 %}<br />
-          {% elif not forloop.last %} | {% endif %}
-          {% endfor %}
-        </span></br>
-        {% endif %}
-        {% if theme.faq_link or theme.facebook_link %}
-        <span class="normal">
-          {% if theme.faq_link %}
-            <a href="{{ theme.faq_link }}">FAQ</a>
-          {% endif %}
-          {% if theme.faq_link and theme.facebook_link %} | {% endif %}
-          {% if theme.facebook_link %}
-            <a href="{{ theme.facebook_link }}">facebook</a>
-          {% endif %}
-        </span></br>
-        {% endif %}
-        <span class="normal"><a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a></span>
-      </div>
     </div>
     <div class="header-cell jumbotron-announcements">
       {% load render_qsd %}
@@ -116,5 +89,18 @@
   $j('.fancybutton').addClass('btn').addClass('btn-primary');
 </script>
 {% endblock main %}
+
+{% block footer %}
+<div class="navbar navbar-fixed-bottom navbar-inverse">
+  <div class="navbar-inner">
+    <ul class="nav" style="width: 100%">
+      <li style="width: 100%" class="text-center">
+        <a>&copy; {{ theme.full_group_name }}, {{ theme.mtime.year }}</a>
+        <a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
+      </li>
+    </ul>
+  </div>
+</div>
+{% endblock footer %}
   
 {% endblock body %}

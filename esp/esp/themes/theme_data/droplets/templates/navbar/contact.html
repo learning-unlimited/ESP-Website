@@ -1,0 +1,27 @@
+<ul class="nav pull-left">
+  <li class="dropdown">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+      About Us
+      <b class="caret"></b>
+    </a>
+    <ul class="dropdown-menu pull-left">
+      {% if theme.contact_info %}
+      <li>{{ theme.contact_info|linebreaksbr }}</li>
+      {% endif %}
+      {% if theme.show_email %}
+      <li><a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">Email: {{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></li>
+      {% endif %}
+      {% if theme.contact_links %}
+      {% for link in theme.contact_links %}
+      <li><a href="{{ link.link }}">{{ link.text }}</a></li>
+      {% endfor %}
+      {% endif %}
+      {% if theme.faq_link %}
+      <li><a href="{{ theme.faq_link }}">FAQ</a></li>
+      {% endif %}
+      {% if theme.facebook_link %}
+      <li><a href="{{ theme.facebook_link }}" target="_blank">Facebook</a></li>
+      {% endif %}
+    </ul>
+  </li>
+</ul>
