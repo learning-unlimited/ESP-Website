@@ -23,15 +23,15 @@
       <span class="icon-bar"></span>
     </a>
     <!-- Be sure to leave the brand out there if you want it shown -->
+    {% if theme.show_group_name %}
     <a class="brand" href="/">{{ theme.full_group_name }}</a>
+    {% endif %}
     <!-- Everything you want hidden at 940px or less, place within here -->
     <ul class="nav-collapse collapse">
       {% include "navbar/admin.html" %}
-      {% if theme.show_group_name %}
-      {% endif %}
+      {% include "navbar/nav.html" %}
       {% include "navbar/contact.html" %}
       {% include "users/loginbox_content.html" %}
-      {% include "navbar/nav.html" %}
     </ul>
   </div>
 </div>
