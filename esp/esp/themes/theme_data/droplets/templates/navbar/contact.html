@@ -6,7 +6,7 @@
     </a>
     <ul class="dropdown-menu pull-left">
       {% if theme.contact_info %}
-      <li>{{ theme.contact_info|linebreaksbr }}</li>
+      <li style="padding: 3px 20px;">{{ theme.contact_info|linebreaksbr }}</li>
       {% endif %}
       {% if theme.show_email %}
       <li><a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">Email: {{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></li>
