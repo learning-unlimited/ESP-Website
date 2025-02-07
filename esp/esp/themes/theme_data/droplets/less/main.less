@@ -134,10 +134,22 @@ ul.nav-collapse {
     background-position: 0;
 }
 
-.navbar .navbar-inner {
-    padding-left: 1rem;
-    padding-right: 1rem;
-    font-size: @navFontSize;
+.navbar {
+    .navbar-inner {
+        padding-left: 1rem;
+        padding-right: 1rem;
+        font-size: @navFontSize;
+        background: @navbarBackground;
+    }
+}
+
+.navbar-inverse {
+    .brand {
+        color: @navbarLinkColor;
+    }
+    .brand:hover {
+        color: @navbarLinkColorHover;
+    }
 }
 
 @media (max-width: 979px) {
