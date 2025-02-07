@@ -26,7 +26,7 @@ ESP = (function(){
         var module_class = "adminbar_" + module.name;
         module_wrap.className = module_class;
         module_wrap.innerHTML =
-            "<div class='title' onclick='ESP.toggleDisplay(\""+module_class+"_content"+"\");'>" + module.displayName + "</div>";
+            "<div class='title'>" + module.displayName + "</div>";
         var module_content = document.createElement("div");
         module_content.id = module_class+"_content";
         module_content.className = "content";
