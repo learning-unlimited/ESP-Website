@@ -4,27 +4,22 @@
 
 <ul class="logged_in nav hidden pull-right">
   <li>
-      <a id="loginbox_user_name">
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="loginbox_user_name">
           Hello, <span id="user_first_name"></span>
           <span id="user_last_name"></span>!
-      </a>
+          <b class="caret"></b>
+        </a>
+        <ul class="dropdown-menu pull-right">
+          <li><a href="/myesp/accountmanage/">Manage Account</a></li>
+        </ul>
+      </li>
   </li>
   <li>
     <form class="navbar-form form-inline" action="/myesp/signout">
       <a href="/myesp/signout"><button class="btn btn-inverse" style="margin-right:0px;">Logout</button></a>
     </form>
   </li>
-  <li class="dropdown">
-    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-      Account
-      <b class="caret"></b>
-    </a>
-    
-    <ul class="dropdown-menu pull-right">
-      <li><a href="/myesp/accountmanage/">Manage Account</a></li>
-      <li><a href="/myesp/loginhelp.html">Help</a></li>
-    </ul>
-  </li> 
 </ul>
 
 
