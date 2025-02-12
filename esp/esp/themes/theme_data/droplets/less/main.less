@@ -161,10 +161,35 @@ ul.nav-collapse {
     }
 }
 
+@media (max-width: 979px) {
+    .navbar .nav > li.dropdown {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+    .navbar .nav > li > a.caret-wrapper {
+        text-align: right;
+    }
+    .navbar .nav > li > ul.dropdown-menu {
+        flex-basis: 100%;
+    }
+}
+
 @media (min-width:980px) {
     .dropdown:hover .dropdown-menu {
         display: block;
         margin-top: 0; /* remove the gap so it doesn't close */
+    }
+    .navbar .nav > li > a.caret-wrapper {
+        float: left;
+        padding-left: 5px;
+        cursor: pointer;
+    }
+    .navbar .nav > li > a.navbar-header {
+        float: left;
+        clear: left;
+        margin-right: -10px;
+        cursor: pointer;
     }
 }
 

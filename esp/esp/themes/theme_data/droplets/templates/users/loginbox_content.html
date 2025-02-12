@@ -5,11 +5,11 @@
 <ul class="logged_in nav hidden pull-right">
   <li>
       <li class="dropdown">
-        <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="loginbox_user_name">
+        <a class="navbar-header" id="loginbox_user_name">
           Hello, <span id="user_first_name"></span>
           <span id="user_last_name"></span>!
-          <b class="caret"></b>
         </a>
+        <a class="dropdown-toggle caret-wrapper" data-toggle="dropdown"><b class="caret"></b></a>
         <ul class="dropdown-menu pull-right">
           <li><a href="/myesp/accountmanage/">Manage Account</a></li>
         </ul>
@@ -35,10 +35,11 @@
     </form>
   </li>
   <li class="dropdown">
-    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+    <a class="navbar-header">
       Account
       <b class="caret"></b>
     </a>
+    <a class="dropdown-toggle caret-wrapper" data-toggle="dropdown"><b class="caret"></b></a>
 
     <ul class="dropdown-menu pull-right">
       <li><a href="/myesp/register">Register</a></li>
