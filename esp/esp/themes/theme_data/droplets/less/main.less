@@ -76,27 +76,15 @@
 
 body {
     background: @bodyBackground;
-    position: relative;
-    padding-top: 40px;
-    width: 100%;
-}
-@media (max-width: 767px) {
-    body {
-        padding: 0px;
-        padding-top: 40px;
-        margin-bottom: -40px;
-        width: 100%;
-    }
-}
-.container {
-    margin: 0;
-    width: ~"calc(100% - 2rem)";
-    padding-left: 1rem;
-    padding-right: 1rem;
-}
-body, .jumbotron {
     box-sizing: border-box;
 }
+
+@media (min-width: 980px) {
+    body {
+        padding-top: 40px;
+    }
+}
+
 .header-cell {
     display: inline-block;
     vertical-align: bottom;
@@ -122,6 +110,11 @@ input, textarea, select, .uneditable-input {
     visibility: hidden;
 }
 
+.admin.nav.hidden {
+    display: none;
+    visibility: hidden;
+}
+
 ul.nav-collapse {
     margin: 0;
 }
@@ -136,8 +129,6 @@ ul.nav-collapse {
 
 .navbar {
     .navbar-inner {
-        padding-left: 1rem;
-        padding-right: 1rem;
         font-size: @navFontSize;
         background: @navbarBackground;
     }
@@ -152,12 +143,9 @@ ul.nav-collapse {
     }
 }
 
-@media (max-width: 979px) {
-    .navbar-fixed-top {
-        position: fixed;
-        margin-left: 0px;
-        margin-bottom: 20px;
-        padding-right: 20px;
+@media (min-width: 768px) and (max-width: 979px) {
+    .header-container, .footer-container {
+        width: 100%;
     }
 }
 
@@ -176,6 +164,11 @@ ul.nav-collapse {
 }
 
 @media (min-width:980px) {
+    .navbar-fixed-top .navbar-inner, .navbar-fixed-bottom .navbar-inner {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+        
     .dropdown:hover .dropdown-menu {
         display: block;
         margin-top: 0; /* remove the gap so it doesn't close */
@@ -230,6 +223,12 @@ ul.nav-collapse {
     max-height: 300px;
     margin: 0;
 }
+
+.logo.nav {
+    max-height: 36px;
+    margin: 2px 10px 2px 0px;
+}
+
 .jumbotron {
     margin-bottom: 30px;
     position: relative;
