@@ -112,29 +112,79 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     <div class="module_group_header">
         Configure Your Program
     </div>
-    <div style="display: inline-block;" class="button_wrapper">
+    <div class="button_wrapper">
         {% if manage_resources %}
-        <a href="/manage/{{ program.getUrlBase }}/resources"><button type="button" class="module_link_large btn btn-default btn-lg">
-            <div class="module_link_main">Resources</div>
-            <div class="module_link_caption">timeslots, classrooms</div>
-        </button></a>
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/resources"><button type="button" class="module_link_large">
+                <div class="module_link_main">Resources</div>
+                <div class="module_link_caption">timeslots, classrooms</div>
+            </button></a>
+        </div>
         {% endif %}
         {% if manage_deadlines %}
-        <a href="/manage/{{ program.getUrlBase }}/deadlines"><button type="button" class="module_link_large btn btn-default btn-lg">
-            <div class="module_link_main">Deadlines</div>
-            <div class="module_link_caption">open/close registration</div>
-        </button></a>
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/deadlines"><button type="button" class="module_link_large">
+                <div class="module_link_main">Deadlines</div>
+                <div class="module_link_caption">open/close registration</div>
+            </button></a>
+        </div>
         {% endif %}
-    </div>
-    <div class="module_group_body">
-        <ul>
-            {% if manage_teacher_events %}<li><a href="/manage/{{ program.getUrlBase }}/teacher_events">Teacher Training and Interviews</a>: Teachers signed up for each slot</li>{% endif %}
-            {% if manage_lunch_constraints %}<li><a href="/manage/{{ program.getUrlBase }}/lunch_constraints">Lunch Constraints</a>: Rules for your students' schedules</li>{% endif %}
-            {% if manage_registrationtype_management %}<li><a href="/manage/{{ program.getUrlBase }}/registrationtype_management">Student Registration Types</a>: What students see on their schedule after a lottery</li>{% endif %}
-            {% if manage_surveys %}<li><a href="/manage/{{ program.getUrlBase }}/surveys">View and Manage Surveys</a>: Create new surveys, edit existing surveys, and review survey results</li>{% endif %}
-            {% if manage_settings %}<li><a href="/manage/{{ program.getUrlBase }}/settings/">Modify Settings for This Program</a>: Emails, program caps and modules, class categories, flag types, and registration receipts</li>{% endif %}
-            {% if manage_modules %}<li><a href="/manage/{{ program.getUrlBase }}/modules/">Manage Registration Modules for This Program</a>: Sequence and requiredness of student and teacher modules</li>{% endif %}
-            {% if manage_tags %}<li><a href="/manage/{{ program.getUrlBase }}/tags">Modify Tag Settings for This Program</a>: Generic miscellaneous settings, for experts only</li>{% endif %}
+        {% if manage_teacher_events %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/teacher_events"><button type="button" class="module_link_large">
+                <div class="module_link_main">Teacher Training/Interviews</div>
+                <div class="module_link_caption">edit/monitor teacher events</div>
+            </button></a>
+        </div>
+        {% endif %}
+        {% if manage_lunch_constraints %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/lunch_constraints"><button type="button" class="module_link_large">
+                <div class="module_link_main">Lunch Constraints</div>
+                <div class="module_link_caption">rules for your students' schedules</div>
+            </button></a>
+        </div>
+        {% endif %}
+        {% if manage_registrationtype_management %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/registrationtype_management"><button type="button" class="module_link_large">
+                <div class="module_link_main">Student Reg. Types</div>
+                <div class="module_link_caption">what classes students see on their schedule</div>
+            </button></a>
+        </div>
+        {% endif %}
+        {% if manage_surveys %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/surveys"><button type="button" class="module_link_large">
+                <div class="module_link_main">Surveys</div>
+                <div class="module_link_caption">create/edit surveys; review results</div>
+            </button></a>
+        </div>
+        {% endif %}
+        {% if manage_settings %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/settings"><button type="button" class="module_link_large">
+                <div class="module_link_main">Program Settings</div>
+                <div class="module_link_caption">manage settings for the program/registration</div>
+            </button></a>
+        </div>
+        {% endif %}
+        {% if manage_modules %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/modules"><button type="button" class="module_link_large">
+                <div class="module_link_main">Manage Modules</div>
+                <div class="module_link_caption">sequence/requiredness of student/teacher modules</div>
+            </button></a>
+        </div>
+        {% endif %}
+        {% if manage_tags %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/tags"><button type="button" class="module_link_large">
+                <div class="module_link_main">Tag Settings</div>
+                <div class="module_link_caption">miscellaneous settings, for experts only</div>
+            </button></a>
+        </div>
+        {% endif %}
         </ul>
     </div>
 </div>
@@ -143,18 +193,30 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     <div class="module_group_header">
         Coordinate with Participants
     </div>
-    <div style="display: inline-block;" class="button_wrapper">
+    <div class="button_wrapper">
         {% if manage_commpanel %}
-        <a href="/manage/{{ program.getUrlBase }}/commpanel"><button type="button" class="module_link_large btn btn-default btn-lg">
-            <div class="module_link_main">Email</div>
-            <div class="module_link_caption">communications panel</div>
-        </button></a>
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/commpanel"><button type="button" class="module_link_large">
+                <div class="module_link_main">Email</div>
+                <div class="module_link_caption">communications panel</div>
+            </button></a>
+        </div>
         {% endif %}
         {% if manage_admin_morph %}
-        <a href="/manage/{{ program.getUrlBase }}/admin_morph"><button type="button" class="module_link_large btn btn-default btn-lg">
-            <div class="module_link_main">Morph into User</div>
-            <div class="module_link_caption">&nbsp;</div>
-        </button></a>
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/admin_morph"><button type="button" class="module_link_large">
+                <div class="module_link_main">Morph into User</div>
+                <div class="module_link_caption">see the website from a user's point of view</div>
+            </button></a>
+        </div>
+        {% endif %}
+        {% if manage_selectList %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/selectList"><button type="button" class="module_link_large">
+                <div class="module_link_main">Arbitrary User List</div>
+                <div class="module_link_caption">get a list of users</div>
+            </button></a>
+        </div>
         {% endif %}
     </div>
 </div>
@@ -163,30 +225,38 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     <div class="module_group_header">
         Manage Logistics
     </div>
-    <div style="display: inline-block;" class="button_wrapper">
+    <div class="button_wrapper">
         {% if manage_dashboard %}
-        <a href="/manage/{{ program.getUrlBase }}/dashboard"><button type="button" class="module_link_large btn btn-default btn-lg">
-            <div class="module_link_main">Dashboard</div>
-            <div class="module_link_caption">review classes and stats</div>
-        </button></a>
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/dashboard"><button type="button" class="module_link_large">
+                <div class="module_link_main">Dashboard</div>
+                <div class="module_link_caption">review classes and stats</div>
+            </button></a>
+        </div>
         {% endif %}
         {% if manage_ajax_scheduling %}
-        <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling"><button type="button" class="module_link_large btn btn-default btn-lg">
-            <div class="module_link_main">Scheduling</div>
-            <div class="module_link_caption">assign rooms and times</div>
-        </button></a>
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling"><button type="button" class="module_link_large">
+                <div class="module_link_main">Scheduling</div>
+                <div class="module_link_caption">assign rooms and times</div>
+            </button></a>
+        </div class="module_button">
         {% endif %}
         {% if manage_get_materials %}
-        <a href="/manage/{{ program.getUrlBase }}/get_materials"><button type="button" class="module_link_large btn btn-default btn-lg">
-            <div class="module_link_main">Documents</div>
-            <div class="module_link_caption">upload and view files</div>
-        </button></a>
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/get_materials"><button type="button" class="module_link_large">
+                <div class="module_link_main">Documents</div>
+                <div class="module_link_caption">upload and view files</div>
+            </button></a>
+        </div class="module_button">
         {% endif %}
         {% if manage_volunteering %}
-        <a href="/manage/{{ program.getUrlBase }}/volunteering"><button type="button" class="module_link_large btn btn-default btn-lg">
-            <div class="module_link_main">Volunteers</div>
-            <div class="module_link_caption">create shifts, view signups</div>
-        </button></a>
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/volunteering"><button type="button" class="module_link_large">
+                <div class="module_link_main">Volunteers</div>
+                <div class="module_link_caption">create shifts, view signups</div>
+            </button></a>
+        </div>
         {% endif %}
     </div>
 </div>
@@ -216,9 +286,9 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     <div class="module_group_body">
     <ul>
         {% if manage_catalog %}<li><a href="/manage/{{ program.getUrlBase }}/catalog">PDF Catalog</a></li>{% endif %}
-        {% if manage_studentschedules %}<li><a href="/manage/{{ program.getUrlBase }}/studentschedules">Student Schedules</a> (<a href="/manage/{{ program.getUrlBase }}/studentscheduleform">Schedule Formatter</a>)</li>{% endif %}
+        {% if manage_studentschedules %}<li><a href="/manage/{{ program.getUrlBase }}/studentschedules">Student Schedules</a></li>
+        <li><a href="/manage/{{ program.getUrlBase }}/studentscheduleform">Student Schedule Formatter</a></li>{% endif %}
         {% if manage_selectidoptions %}<li><a href="/manage/{{ program.getUrlBase }}/selectidoptions">Nametags</a></li>{% endif %}
-        {% if manage_selectList %}<li><a href="/manage/{{ program.getUrlBase }}/selectList">Arbitrary User List</a></li>{% endif %}
         {% if manage_printoptions %}<li><a href="/manage/{{ program.getUrlBase }}/printoptions">All Printables</a></li>{% endif %}
     </ul>
     </div>
