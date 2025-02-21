@@ -16,8 +16,8 @@ class ConfigForm(ThemeConfigurationForm):
                                 label='Contact links below contact info (use absolute or relative URLs)',
                                 initial=[{"text": "contact us", "link": "/contact.html"}])
     nav_structure = forms.Field(widget=NavStructureWidgetWithIcons,
-                                help_text="Note that header links are not clickable. However, if the first 5 characters of a user's\
-                                           request path match the first 5 characters of a header's link, then that header will be highlighted.")
+                                help_text="Note: If the first 5 characters of a user's request path match the first 5 characters of\
+                                           a header's link, then that header will be highlighted.")
     facebook_link = forms.URLField(required=False, help_text='Leave blank to omit a Facebook link.')
     # URLField requires an absolute URL, here we probably want relative.
     faq_link = forms.CharField(required=False, initial='/faq.html',
