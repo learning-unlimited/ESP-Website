@@ -2,6 +2,7 @@
 
 {% block fulltitle %}{{ theme.titlebar_prefix }} - {% block title %}Home{% endblock %}{% endblock %}
 
+{% load getTag %}
 {% load main %} {# helpful functions #}
 {% load modules %}
 
@@ -65,7 +66,9 @@
 <!--[if lt IE 9]>
 <script src="/media/scripts/IE9.js"></script>
 <![endif]-->
+{% if "fruitsalad_sounds"|getBooleanTag %}
 <script type="text/javascript" src="/media/scripts/theme/piano.js"></script>
+{% endif %}
 {% endblock %}
 
 {% block body %}
