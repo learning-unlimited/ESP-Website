@@ -135,13 +135,22 @@ ul.nav-collapse {
 }
 
 .navbar-inverse {
-    .brand {
-        color: @navbarLinkColor;
+    .nav > li > a {
+        color: @navbarText;
     }
-    .brand:hover {
-        color: @navbarLinkColorHover;
+    .nav .active > a {
+        color: @navbarText;
+        background-color: @navbarBackgroundHighlight;
     }
 }
+
+.dropdown-menu > li > a {
+    color: @navbarLinkColor;
+}
+.dropdown-menu > li > a:hover {
+    color: @navbarLinkColorHover;
+}
+
 
 @media (min-width: 768px) and (max-width: 979px) {
     .header-container, .footer-container {
