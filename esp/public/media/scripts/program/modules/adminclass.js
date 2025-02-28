@@ -267,14 +267,14 @@ function createTeacherListTd(clsObj) {
 
 function createDeleteButtonTd(clsObj) {
     var action = '/manage/' + base_url + '/deleteclass/' + clsObj.id;
-    return $j("<td/>", {'class': 'clsmiddle'}).append(
+    return $j("<div/>", {'class': 'clsmiddle'}).append(
         $j("<form/>", {
             'method': 'post',
             'action': action,
             'onsubmit': 'return deleteClass();',
         }).append(
             $j("<input/>", {
-                'class': 'button',
+                'class': 'btn btn-inverse',
                 'type': 'submit',
                 'value': 'Delete',
             })
@@ -284,11 +284,11 @@ function createDeleteButtonTd(clsObj) {
 
 function createLinkButtonTd(clsObj, type, verb) {
     var href = '/manage/' + base_url + '/' + type + '/' + clsObj.id;
-    return $j("<td/>", {'class': 'clsmiddle'}).append(
+    return $j("<div/>", {'class': 'clsmiddle'}).append(
         $j("<a/>", {
             'href': href,
             'title': verb + ' ' + getShortTitle(clsObj),
-            'class': 'abutton',
+            'class': 'btn',
             'style': 'white-space: nowrap;',
         }).text(verb)
     );
@@ -297,16 +297,24 @@ function createStatusButtonTd(clsObj) {
     var clickjs = ('show_approve_class_popup('
             + clsObj.id + '); return false;');
 
-    return $j("<td/>", {
-        'class': 'clsmiddle rapid_approval_button'
-    }).append(
+    return $j("<div/>", {'class': 'clsmiddle'}).append(
         $j("<a/>", {
             'href': '#',
             'title': 'Set the status of ' + getShortTitle(clsObj),
-            'class': 'abutton',
+            'class': 'btn',
             'style': 'white-space: nowrap;',
             'onclick': clickjs,
         }).text('Status')
+    );
+}
+
+function createButtonTd(clsObj)
+{
+    return $j("<td/>", {'class': 'button_td'}).append(
+        createDeleteButtonTd(clsObj),
+        createLinkButtonTd(clsObj, 'editclass', 'Edit'),
+        createLinkButtonTd(clsObj, 'manageclass', 'Manage'),
+        createStatusButtonTd(clsObj)
     );
 }
 
@@ -317,10 +325,8 @@ function createClassRow(clsObj)
     tr.append(
         createClassTitleTd(clsObj),
         createTeacherListTd(clsObj),
-        createDeleteButtonTd(clsObj),
-        createLinkButtonTd(clsObj, 'editclass', 'Edit'),
-        createLinkButtonTd(clsObj, 'manageclass', 'Manage'),
-        createStatusButtonTd(clsObj));
+        createButtonTd(clsObj)
+    );
 
     // Add in the CSRF onsubmit checker
     tr.find("form[method=post]").submit(function() { return check_csrf_cookie(this); });

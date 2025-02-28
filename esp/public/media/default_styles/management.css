@@ -13,13 +13,12 @@ div .module_group_body ul {
 }
 
 div .module_group_header, div .module_group_header_half {
-    width: calc(100% - 20px);
+    width: 100%;
+    box-sizing: border-box;
     background-color: #f3ecc4;
     font-size: 0.95em;
     font-weight: bold;
     padding: 5px;
-    margin-left: 5px;
-    margin-right: 5px;
     margin-bottom: 8px;
     box-shadow: 3px 3px 5px #CCCCCC;
 }
@@ -68,4 +67,22 @@ div .module_group_expandable + .module_group_body {
 .helpbox {
     margin-right: 0px;
     width: inherit;
+}
+
+.module_group_body .info {
+    display: table;
+    margin: 0 auto;
+}
+
+#listclasses .module_group_body {
+    padding: 10px;
+    display: table;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 950px;
+    box-sizing: border-box;
+}
+
+#dashboard_class_table {
+    width: 100%;
 }
