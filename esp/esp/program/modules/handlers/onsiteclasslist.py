@@ -471,9 +471,12 @@ class OnSiteClassList(ProgramModuleObj):
 
     def makeButtonLink(self):
         calls = [("classchange_grid", "Grid-based Class Changes Interface"), ("classList", "Scrolling Class List"), (self.get_main_view(), self.module.link_title)]
-        strings = [six.u('<a href="%s"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">%s</div></button></a>') % \
-                ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1]) for call in calls]
-        return "<br>".join(strings)
+        strings = [six.u("""<div class="module_button">\
+                                <a href="%s"><button type="button" class="module_link_large">
+                                    <div class="module_link_main">%s</div>
+                                </button></a>
+                            </div>""") % ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1]) for call in calls]
+        return "".join(strings)
 
 
 
