@@ -34,10 +34,14 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.tests import ProgramFrameworkTest
-from esp.dbmail.models import MessageRequest
+from esp.dbmail.models import ActionHandler, MessageRequest
 from esp.dbmail.cronmail import process_messages, send_email_requests
 
 from django.core import mail
+from django.template import Context as DjangoContext
+from django.template import Template
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 from datetime import datetime, timedelta
 import re
@@ -87,11 +91,13 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         s = re.search(r'<input type="hidden" name="listcount" value="([0-9]+)" />', response.content.decode('UTF-8'))
         listcount = s.groups()[0]
 
+        rendered_text = Template(render_to_string('email/default_email.html', {'msgbody': 'Test Body 123',})).render(
+                DjangoContext({'user': self.students[0], 'EMAIL_HOST_SENDER': 'testserver.learningu.org'}))
         #   Enter email information
         post_data = {
             'subject': 'Test Subject 123',
-            'body':    'Test Body 123',
-            'from':    'info@testserver.learningu.org',
+            'rendered_text': rendered_text,
+            'from': 'info@testserver.learningu.org',
             'replyto': 'replyto@testserver.learningu.org',
             'filterid': filterid,
         }
@@ -113,9 +119,18 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         #   Check that the emails matched the entered information
         msg = mail.outbox[0]
         self.assertEqual(msg.subject, 'Test Subject 123')
-        self.assertEqual(msg.body, 'Test Body 123')
         self.assertEqual(msg.from_email, 'info@testserver.learningu.org')
         self.assertEqual(msg.extra_headers.get('Reply-To', ''), 'replyto@testserver.learningu.org')
+
+        #   Check that the HTML-templated email renders correctly
+        context_dict = {'user'   : ActionHandler(self.students[0], self.students[0]),
+                        'program': ActionHandler(self.program, self.students[0]),
+                        'request': ActionHandler(MessageRequest(), self.students[0]),
+                        'EMAIL_HOST_SENDER': 'testserver.learningu.org'}
+        rendered_text = render_to_string('email/default_email.html', {'msgbody': 'Test Body 123',})
+        rendered_text = Template(rendered_text).render(DjangoContext(context_dict))
+        self.assertEqual(msg.body, strip_tags(rendered_text).strip())
+
 
         #   Check that the MessageRequest was marked as processed
         m = MessageRequest.objects.filter(recipients__id=filterid, subject='Test Subject 123')
