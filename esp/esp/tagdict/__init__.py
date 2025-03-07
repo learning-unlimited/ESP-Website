@@ -52,6 +52,13 @@ all_global_tags = {
         'category': 'teach',
         'is_setting': True,
     },
+    'fruitsalad_sounds': {
+        'is_boolean': True,
+        'help_text': 'Play sounds when the user enters cheat codes and hovers over elements in the Fruitsalad theme (just for fun)',
+        'default': False,
+        'category': 'theme',
+        'is_setting': True,
+    },
     'full_group_name': {
         'is_boolean': False,
         'help_text': 'For places that demand an official-sounding name for the group that goes beyond the INSTITUTION_NAME and ORGANIZATION_SHORT_NAME settings.',
