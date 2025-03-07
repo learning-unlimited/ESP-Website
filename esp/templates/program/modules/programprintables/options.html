@@ -4,15 +4,7 @@
 
 {% block stylesheets %}
     {{ block.super }}
-    <style type="text/css">
-    .nocheckmark { border: 1px solid black; }
-    select {
-        width: auto;
-    }
-    table {
-        width: 100%;
-    }
-    </style>
+    <link rel="stylesheet" href="/media/styles/printoptions.css" type="text/css" />
 {% endblock %}
 
 {% block javascript %}
@@ -147,58 +139,52 @@ Please select from options below.
 </ul>
 
 <h3>Class and Section Lists</h3>
-<form id="class_list_options">
-    <table>
-        <tr>
-            <td width = "50%">
-            Class Status:
-            <select id="class_status">
-                <option value="all">Any</option>
-                <option value="accepted">Accepted</option>
-                <option value="" selected>Accepted/Unreviewed</option>
-                <option value="cancelled">Cancelled</option>
-            </select>
-            </td>
-            <td width = "50%">
-            Scheduling Status:
-            <select id="sched_status">
-                <option value="" selected>Any</option>
-                <option value="scheduled">Scheduled</option>
-            </select>
-            </td>
-        </tr>
-        <tr>
-            <td>
-            Grade Min:
-            <select id="grade_min">
-                {% for grade in program.grades %}
-                    <option value="grade_min={{ grade }}"{% if forloop.first %} selected{% endif %}>{{ grade }}</option>
-                {% endfor %}
-            </select>
-            Grade Max:
-            <select id="grade_max">
-                {% for grade in program.grades %}
-                    <option value="grade_max={{ grade }}"{% if forloop.last %} selected{% endif %}>{{ grade }}</option>
-                {% endfor %}
-            </select>
-            </td>
-            <td>
-            Output as:
-            <select id="output_type">
-                <option value="" selected>Web page</option>
-                <option value="csv">CSV</option>
-            </select>
-            </td>
-        </tr>
-    </table>
-</form>
+<div id="class_list_options">
+    <div>
+        <div>Class Status:</div>
+        <select id="class_status">
+            <option value="all">Any</option>
+            <option value="accepted">Accepted</option>
+            <option value="" selected>Accepted/Unreviewed</option>
+            <option value="cancelled">Cancelled</option>
+        </select>
+    </div>
+    <div>
+        <div>Scheduling Status:</div>
+        <select id="sched_status">
+            <option value="" selected>Any</option>
+            <option value="scheduled">Scheduled</option>
+        </select>
+    </div>
+    <div class="grade_grid">
+        <div>Grade Min:</div>
+        <select id="grade_min">
+            {% for grade in program.grades %}
+                <option value="grade_min={{ grade }}"{% if forloop.first %} selected{% endif %}>{{ grade }}</option>
+            {% endfor %}
+        </select>
+        <div>Grade Max:</div>
+        <select id="grade_max">
+            {% for grade in program.grades %}
+                <option value="grade_max={{ grade }}"{% if forloop.last %} selected{% endif %}>{{ grade }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <div>Output as:</div>
+        <select id="output_type">
+            <option value="" selected>Web page</option>
+            <option value="csv">CSV</option>
+        </select>
+    </div>
+</div>
 
-<ul id="class_lists">
-<li><a href="./classesbytime" title="Classes by Time">Class Sections Sorted by Time</a></li>
-<li><a href="./classesbyid" title="Classes by ID">Class Subjects Sorted by ID</a></li>
-<li><a href="./classesbytitle" title="Classes by Name">Class Subjects Sorted by Title</a></li>
-<li><a href="./classesbyteacher" title="Classes by Teacher">Class Subjects Sorted by Teacher</a></li>
-</ul>
+<div id="class_lists">
+<div><a href="./classesbytime" title="Classes by Time"><button type="button">Class Sections Sorted by Time</button></a></div>
+<div><a href="./classesbyid" title="Classes by ID"><button type="button">Class Subjects Sorted by ID</button></a></div>
+<div><a href="./classesbytitle" title="Classes by Name"><button type="button">Class Subjects Sorted by Title</button></a></div>
+<div><a href="./classesbyteacher" title="Classes by Teacher"><button type="button">Class Subjects Sorted by Teacher</button></a></div>
+</div>
 
 <h3>Other Printables</h3>
 <ul>
