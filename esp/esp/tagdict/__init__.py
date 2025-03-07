@@ -54,7 +54,7 @@ all_global_tags = {
     },
     'fruitsalad_sounds': {
         'is_boolean': True,
-        'help_text': 'Play sounds when the user enters cheat codes and hovers over elements in the Angry Fruitsalad theme (just for fun)',
+        'help_text': 'Play sounds when the user enters cheat codes and hovers over elements in the Fruitsalad theme (just for fun)',
         'default': False,
         'category': 'theme',
         'is_setting': True,
