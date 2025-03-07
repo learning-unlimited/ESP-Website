@@ -188,6 +188,7 @@ class ThemeController(object):
         if not theme_only:
             result += self.global_less()
             result.append(os.path.join(themes_settings.less_dir, 'bootstrap.less'))
+            result.append(os.path.join(themes_settings.less_dir, 'responsive.less'))
             result.append(os.path.join(themes_settings.less_dir, 'variables_custom.less'))
             result.append(os.path.join(themes_settings.less_dir, 'main.less'))
 

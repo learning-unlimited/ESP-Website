@@ -56,31 +56,33 @@ color: #3333FF;
   <div class="module_group_header">
     Manage Classes -- {{program.niceName}}
   </div>
-  <div class="module_group_body" style="padding: 10px">
-    <div class="info" style="margin-left: 0; margin-right: 0">
-      If you need to email a class, students, or teachers, just use its code!<br />
-      For instance, if the code is M100:<br />
-      <tt>M100-students@{{ EMAIL_HOST_SENDER }}</tt> will email the students,<br />
-      <tt>M100-teachers@{{ EMAIL_HOST_SENDER }}</tt> will email the teachers,<br />
-      and <tt>M100-class@{{ EMAIL_HOST_SENDER }}</tt> will email everyone in the class.
+  <div class="module_group_body">
+    <div class="info">
+      <p>
+        If you need to email a class, students, or teachers, just use its code!<br />
+        For instance, if the code is M100:<br />
+        <tt>M100-students@{{ EMAIL_HOST_SENDER }}</tt> will email the students,<br />
+        <tt>M100-teachers@{{ EMAIL_HOST_SENDER }}</tt> will email the teachers,<br />
+        and <tt>M100-class@{{ EMAIL_HOST_SENDER }}</tt> will email everyone in the class.
+      </p>
+      
+      <p>Notes: 
+        <ul>
+          <li><span class="unapproved dashboard_blue">Blue</span> stands for unreviewed classes and <span class="dashboard_red">Red</span> for rejected classes.</li>
+          <li>You may click on the column headers to sort the classes in ascending or descending order.<br />
+              Select a sorting option for the leftmost column: 
+            <select id="dashboard_sort_control">
+              <option value="id">ID</option>
+              <option value="category">Category</option>
+              <option value="name">Class Name</option>
+              <option value="status">Status</option>
+              <option value="size">Size</option>
+              <option value="special">Special Requests</option>
+            </select>
+          </li>
+        </ul>
+      </p>
     </div>
-
-    <p>Notes: 
-      <ul>
-	<li><span class="unapproved dashboard_blue">Blue</span> stands for unreviewed classes and <span class="dashboard_red">Red</span> for rejected classes.</li>
-	<li>You may click on the column headers to sort the classes in ascending or descending order. <br />
-    Select a sorting option for the leftmost column: 
-    <select id="dashboard_sort_control">
-        <option value="id">ID</option>
-        <option value="category">Category</option>
-        <option value="name">Class Name</option>
-        <option value="status">Status</option>
-        <option value="size">Size</option>
-        <option value="special">Special Requests</option>
-    </select>
-    </li>
-      </ul>
-    </p>
 
     <div id="battlescreen">
 
@@ -96,7 +98,7 @@ color: #3333FF;
 	  <tr id="header-row">
 	    <th class="dashboard_colheader"><div style="cursor: pointer; display: inline;">Class Code/Title</div></th>
 	    <th class="dashboard_colheader"><div style="cursor: pointer; display: inline;">Teachers</div></th>
-	    <th class="dashboard_colheader sorttable_nosort" colspan="4">Management Options</th>
+	    <th class="dashboard_colheader sorttable_nosort">Management Options</th>
 	  </tr>
 	</thead>
 	<tbody id="classes_anchor">
