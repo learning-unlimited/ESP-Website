@@ -12,11 +12,7 @@ padding-left: 24px;
 font-family: Arial;
 font-size: 12px;
 }
-#battlescreen .admin_options {
-text-indent: 0px;
-font-family: Arial;
-font-size: 12px;
-}
+
 #battlescreen .class_title {
 color: #006600;
 }
@@ -42,7 +38,7 @@ color: #006600;
    font-size:12px;
    border-width: 1px;
    border-color: #000000;
-   background-color: #ffffff;
+   background-color: #fefef8fff;
 }
 
 #archives table.innertable
@@ -57,13 +53,9 @@ color: #006600;
 }
 
 #battlescreen table {
-   background-color: #FFE;
+   background-color: #fefef8;
    border: 2px solid #99F;
    border-width: 0 2px 6px 2px;
-}
-
-#battlescreen table.welcomebox {
-   border: 0;
 }
 
 #battlescreen th {
@@ -71,17 +63,7 @@ color: #006600;
    text-align: center;
    font-size: 1.1em;
    background-color: #339;
-   color: #FFC;
-}
-
-#battlescreen .welcomebox th {
-   background-color: #CCF;
-   color: black;
-}
-
-#battlescreen .progTitle {
-   font-weight: bolder;
-   font-size: 110%;
+   color: white;
 }
 
 #battlescreen a.btn {
@@ -89,7 +71,7 @@ color: #006600;
 }
 
 #battlescreen a:hover {
-   background: #FFF;
+   background: #fefef8;
    text-decoration: none;
 }
 
@@ -101,28 +83,14 @@ color: #006600;
    padding: 0;
    margin: 0 0 20px 0;
    height: 20px
-   
 }
+
 #battlescreen .clsright {
    text-align: right;
    font-size: 80%;
 }
 #battlescreen .clsleft {
    margin-left: 19px;
-}
-
-#battlescreen .borderTop {
-   border: 1px groove #999; border-width: 4px 0 0 0;
-}
-
-#battlescreen .borderTopRight {
-   border: 1px groove #999; border-width: 4px 0 0 0;
-   text-align: right;
-   font-size: 75%;
-}
-
-#battlescreen .announcementBullets {
-   position: relative; left: 10px;
 }
 
 #battlescreen h2 {
@@ -168,10 +136,6 @@ color: #006600;
 
 .create-class-link:hover {
     background-color: inherit;
-}
-
-.teachbutton {
-    margin: 0 !important;
 }
 
 td.button_td {
