@@ -58,8 +58,8 @@ function make_attrib_para(field, content) {
 
 function getShortTitle(clsObj) {
     var shortTitle = clsObj.title;
-    if (shortTitle.length > 40) {
-        shortTitle = shortTitle.substring(0, 40);
+    if (shortTitle.length > 60) {
+        shortTitle = shortTitle.substring(0, 60);
         shortTitle = shortTitle.concat("...");
     }
     return shortTitle;
