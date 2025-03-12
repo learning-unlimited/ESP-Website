@@ -86,3 +86,30 @@ div .module_group_expandable + .module_group_body {
 #dashboard_class_table {
     width: 100%;
 }
+
+@media (min-width:980px) {
+    #program_vitals_wrapper .module_group_body:not(.flex) {
+        columns: 2;
+        
+        div {
+            min-width: max(200px, 40%);
+        }
+    }
+}
+
+#program_vitals_wrapper .module_group_body.flex {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 20px;
+    justify-content: space-between;
+        
+    div, table {
+        flex: 1 1 0px;
+        min-width: max(200px, 40%);
+    }
+}
+
+
+#stats_tshirts .module_group_body {
+    row-gap: 10px;
+}
