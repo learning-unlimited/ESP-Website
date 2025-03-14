@@ -17,6 +17,7 @@ from esp.users.views.password_reset import *
 from esp.users.views.registration import *
 from esp.users.views.usersearch import *
 from esp.utils.web import render_to_response
+from esp.web.views.main import DefaultQSDView
 import six
 
 
@@ -232,3 +233,6 @@ def morph_into_user(request):
         return HttpResponseRedirect('/learn/%s/studentreg' % onsite.getUrlBase())
     else:
         return HttpResponseRedirect('/')
+
+class LoginHelpView(DefaultQSDView):
+    template_name = "users/loginhelp.html"
