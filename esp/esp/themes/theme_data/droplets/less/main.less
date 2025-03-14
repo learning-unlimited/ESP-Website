@@ -13,8 +13,11 @@
         margin-bottom: 0.3em;
     }
     a {
-        color: @accent2;
+        color: @linkColor;
         text-decoration: underline;
+    }
+    a:hover {
+        color: @linkColorHover;
     }
     .btn {
         border: 1px solid @accent2;
@@ -140,6 +143,9 @@ ul.nav-collapse {
     .nav .active > a {
         color: @navbarText;
         background-color: @navbarBackgroundHighlight;
+    }
+    nav li.dropdown.active > .dropdown-toggle {
+        color: @navbarBackgroundHighlight
     }
 }
 
