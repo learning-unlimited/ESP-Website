@@ -79,7 +79,6 @@ div .module_group_expandable + .module_group_body {
     display: table;
     margin: 0 auto;
     width: 100%;
-    max-width: 950px;
     box-sizing: border-box;
 }
 

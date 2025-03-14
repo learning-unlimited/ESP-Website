@@ -1,3 +1,5 @@
+{% load modules %}
+
 {% block xtrajs %}
 
 <script type="text/javascript">
@@ -9,7 +11,9 @@ json_data = {};
 
 <script type="text/javascript">
 /* <![CDATA[ */
-
+  var has_moderator_module = "{{ program|hasModule:"TeacherModeratorModule" }}";
+  var moderator_title = "{{ program.getModeratorTitle }}";
+  
   // Create the class description popup for the Status button
   class_desc_popup = $j('<div></div>').attr('id', "class_status_popup")
     .dialog({
@@ -74,10 +78,7 @@ color: #3333FF;
             <select id="dashboard_sort_control">
               <option value="id">ID</option>
               <option value="category">Category</option>
-              <option value="name">Class Name</option>
-              <option value="status">Status</option>
               <option value="size">Size</option>
-              <option value="special">Special Requests</option>
             </select>
           </li>
         </ul>
@@ -87,25 +88,30 @@ color: #3333FF;
     <div id="battlescreen">
 
       <table id="dashboard_class_table" cellpadding="4px" cellspacing="0" class="sortable">
-	{% if noclasses %}
-	<tr>
-	  <td class="clsleft classname">
-	    <em>(None available)</em>
-	  </td>
-	</tr>
-	{% endif %}
-	<thead>
-	  <tr id="header-row">
-	    <th class="dashboard_colheader"><div style="cursor: pointer; display: inline;">Class Code/Title</div></th>
-	    <th class="dashboard_colheader"><div style="cursor: pointer; display: inline;">Teachers</div></th>
-	    <th class="dashboard_colheader sorttable_nosort">Management Options</th>
-	  </tr>
-	</thead>
-	<tbody id="classes_anchor">
-	  <tr>
+    {% if noclasses %}
+    <tr>
+      <td class="clsleft classname">
+        <em>(None available)</em>
+      </td>
+    </tr>
+    {% endif %}
+    <thead>
+      <tr id="header-row">
+        <th class="dashboard_colheader"><div style="cursor: pointer; display: inline;">Code</div></th>
+        <th class="dashboard_colheader"><div style="cursor: pointer; display: inline;">Title</div></th>
+        <th class="dashboard_colheader"><div style="cursor: pointer; display: inline;">Status</div></th>
+        <th class="dashboard_colheader"><div style="cursor: pointer; display: inline;">Teachers</div></th>
+        {% if program|hasModule:"TeacherModeratorModule" %}
+        <th class="dashboard_colheader"><div style="cursor: pointer; display: inline;">{{ program.getModeratorTitle }}s</div></th>
+        {% endif %}
+        <th class="dashboard_colheader sorttable_nosort">Management Options</th>
+      </tr>
+    </thead>
+    <tbody id="classes_anchor">
+      <tr>
         <td colspan="7">Loading classes...</td>
       </tr>
-	</tbody>
+    </tbody>
       </table>
     </div>
 

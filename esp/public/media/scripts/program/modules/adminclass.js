@@ -230,21 +230,41 @@ function fillClasses(data)
     classes_global = classes;
 }
 
+function createClassIdTd(clsObj) {
+    return $j('<td/>', {
+      'class': 'clsleft classname',
+      'style': 'text-align: center;',
+      'title': clsObj.emailcode,
+    }).append(
+        $j('<strong/>').text(clsObj.emailcode)
+    ).attr("data-st-key", clsObj.id);
+}
+
 function createClassTitleTd(clsObj) {
+    var status_details = getStatusDetails(clsObj.status);
+    var title_css_class = status_details.classes.join(" ");
+    return $j('<td/>', {
+      'class': 'clsleft classname',
+      'style': 'word-wrap: break-word; max-width: 35%;',
+      'title': clsObj.title,
+    }).append(
+        $j('<span/>', {'class': title_css_class})
+            .text(clsObj.title)
+    ).attr("data-st-key", clsObj.title);
+}
+
+function createClassStatusTd(clsObj) {
     var status_details = getStatusDetails(clsObj.status);
     var title_css_class = status_details.classes.join(" ");
     var clsStatus = status_details.text;
     var statusStrong = $j('<strong/>').text('[' + clsStatus + ']');
     return $j('<td/>', {
       'class': 'clsleft classname',
-      'title': clsObj.title,
+      'title': clsStatus,
     }).append(
-        $j('<strong/>').text(clsObj.emailcode + '.'),
-        ' ',
         $j('<span/>', {'class': title_css_class})
-            .text(getShortTitle(clsObj) + ' ')
             .append(statusStrong)
-    ).attr("data-st-key", clsObj.id);
+    ).attr("data-st-key", clsObj.clsStatus);
 }
 
 function createTeacherListTd(clsObj) {
@@ -261,6 +281,24 @@ function createTeacherListTd(clsObj) {
         var href = '/manage/userview?username=' + teacher.username + '&program=' + program_id;
         td.append($j('<a/>', {href: href}).text(
             teacher.first_name + ' ' + teacher.last_name));
+    });
+    return td;
+}
+
+function createModeratorListTd(clsObj) {
+    var td = $j('<td/>', {
+        'class': 'clsleft classname',
+        'style': 'font-style: italic',
+        'title': moderator_title + ' names',
+    });
+    $j.each(clsObj.moderators, function(index, val) {
+        if (index) {
+            td.append(', ');
+        }
+        var moderator = json_data.moderators[val];
+        var href = '/manage/userview?username=' + moderator.username + '&program=' + program_id;
+        td.append($j('<a/>', {href: href}).text(
+            moderator.first_name + ' ' + moderator.last_name));
     });
     return td;
 }
@@ -323,13 +361,18 @@ function createClassRow(clsObj)
     var tr = $j(document.createElement('tr'));
     tr.attr("id", clsObj.id);
     tr.append(
+        createClassIdTd(clsObj),
         createClassTitleTd(clsObj),
+        createClassStatusTd(clsObj),
         createTeacherListTd(clsObj),
-        createButtonTd(clsObj)
     );
+    if (has_moderator_module === "True") {
+        tr.append(createModeratorListTd(clsObj));
+    }
+    tr.append(createButtonTd(clsObj));
 
     // Add in the CSRF onsubmit checker
-    tr.find("form[method=post]").submit(function() { return check_csrf_cookie(this); });
+    tr.find("form[method=post]").on("submit", function() { return check_csrf_cookie(this); });
 
     // Return the jQuery node
     return tr;
@@ -351,14 +394,8 @@ function handle_sort_control()
             $j(this).children("td").first().attr("data-st-key", cls.id);
         else if (method == "category")
             $j(this).children("td").first().attr("data-st-key", cls.emailcode);
-        else if (method == "name")
-            $j(this).children("td").first().attr("data-st-key", cls.title);
-        else if (method == "status")
-            $j(this).children("td").first().attr("data-st-key", cls.status);
         else if (method == "size")
             $j(this).children("td").first().attr("data-st-key", cls.class_size_max);
-        else if (method == "special")
-            $j(this).children("td").first().attr("data-st-key", (cls.message_for_directors || "").length + (cls.requested_special_resources || "").length);
     });
     
     $j("#header-row > th").first().removeClass("sorttable_sorted sorttable_sorted_reverse");
@@ -369,6 +406,6 @@ function handle_sort_control()
 
 function setup_sort_control()
 {
-    $j("#dashboard_sort_control").change(handle_sort_control);
+    $j("#dashboard_sort_control").on("change", handle_sort_control);
     handle_sort_control();
 }
