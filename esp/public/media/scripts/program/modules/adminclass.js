@@ -15,17 +15,6 @@ function assignRoom(clsid){
 var handleSubmit = function () { this.submit(); }
 var handleCancel = function () { this.cancel(); }
 
-function show_loading_class_popup() {
-  class_desc_popup
-    .dialog('option', 'title', 'Loading')
-    .dialog('option', 'width', 400)
-    .dialog('option', 'height', 200)
-    .dialog('option', 'position', 'center')
-    .dialog('option', 'buttons', [])
-    .html('Loading class info...')
-    .dialog('open');
-}
-
 function show_saving_popup() {
   class_desc_popup
     .dialog('option', 'title', 'Saving')
@@ -51,7 +40,7 @@ function getStatusDetails(statusCode) {
 }
 
 function make_attrib_para(field, content) {
-    return $j("<p></p>")
+    return $j("<div/>")
         .append("<b>"+field+":</b>")
         .append($j("<div/>").text(content));
 }
@@ -65,12 +54,13 @@ function getShortTitle(clsObj) {
     return shortTitle;
 }
 
-function fill_class_popup(clsid, classes_data) {
+function fill_status_row(clsid, classes_data) {
   var class_info = classes_data.classes[clsid];
   // Get the status from our local data in case we've changed it
   var status_details = getStatusDetails(classes_global[clsid].status);
   var status_string = status_details['text'];
 
+  // TODO: make this into a table
   var sections_list = $j('<ul>')
   for (var i = 0; i < class_info.sections.length; i++)
   {
@@ -80,6 +70,7 @@ function fill_class_popup(clsid, classes_data) {
     else
         sections_list.append($j('<li>').html('Section ' + (i + 1) + ': not scheduled'));
   }
+  
   if (class_info.is_scheduled) {
     var buttons = [
     {
@@ -121,58 +112,88 @@ function fill_class_popup(clsid, classes_data) {
       }
     }]
   }
-
-  class_desc_popup
-    .dialog('option', 'title', class_info.emailcode + ": " +class_info.title)
-    .dialog('option', 'width', 600)
-    .dialog('option', 'height', 400)
-    .dialog('option', 'position', 'center')
-    .dialog('option', 'buttons', buttons)
-    .html('')
-    .append(make_attrib_para("Status", status_string))
-    .append(make_attrib_para("Teachers", class_info.teacher_names))
-  if (class_info.moderator_names.length) class_desc_popup.append(make_attrib_para(class_info.moderator_title, class_info.moderator_names));
-  class_desc_popup
-    .append(make_attrib_para("Sections", class_info.sections.length))
-    .append(sections_list)
+  
+  var vitals_div = $j("<div/>")
     .append(make_attrib_para("Max Size", class_info.class_size_max))
     .append(make_attrib_para("Duration", class_info.duration))
     .append(make_attrib_para("Location", class_info.location))
     .append(make_attrib_para("Grade Range", class_info.grade_range))
-    .append(make_attrib_para("Category", class_info.category))
-    .append(make_attrib_para("Style", class_info.class_style))
-    //.append("<p>Difficulty: " + class_info.difficulty))
-    .append(make_attrib_para("Prereqs", class_info.prereqs))
+    .append(make_attrib_para("Category", class_info.category));
+  if (class_info.class_style) vitals_div.append(make_attrib_para("Style", class_info.class_style));
+  if (class_info.difficulty) vitals_div.append(make_attrib_para("Difficulty", class_info.difficulty));
+  if (class_info.prereqs) vitals_div.append(make_attrib_para("Prereqs", class_info.prereqs));
+
+  var sections_div = $j("<div><b>Sections</b></div>")
+    .append($j("Sections", class_info.sections.length))
+    .append(sections_list)
+    .css("max-width", "45%")
+    .css("flex", "1 1 0px");
+  var desc_div = make_attrib_para("Description", class_info.class_info)
+    .css("max-width", "45%")
+    .css("flex", "1 1 0px");
+
+  var status_wrapper = $j("#status_wrapper");
+  status_wrapper
+    .html('')
+    .attr('clsid', clsid)
+    .append(vitals_div);
     // Ensure the class description gets HTML-escaped
-    .append(make_attrib_para("Description", class_info.class_info))
-    .append(make_attrib_para("Requests", class_info.special_requests))
-    .append(make_attrib_para("Planned Purchases", class_info.purchases))
-    .append(make_attrib_para("Comments", class_info.comments))
-    .attr('clsid', clsid);
+    status_wrapper.append(
+      $j("<div/>")
+        .css("padding-top", "10px")
+        .append(desc_div)
+        .append(sections_div)
+    );
+    if (class_info.special_requests) status_wrapper.append(make_attrib_para("Requests", class_info.special_requests));
+    if (class_info.purchases) status_wrapper.append(make_attrib_para("Planned Purchases", class_info.purchases));
+    if (class_info.comments) status_wrapper.append(make_attrib_para("Comments", class_info.comments));
 }
 
-function show_approve_class_popup(clsid) {
-  // Show an intermediate screen while we load class data
-  show_loading_class_popup();
-
-  // Load the class data and fill the popup using it
-    json_get('class_admin_info', {'class_id': clsid},
-    function(data) {
-      fill_class_popup(clsid, data);
-    },
-    function(jqXHR, status, errorThrown) {
-      if (errorThrown == "NOT FOUND") {
-        class_desc_popup.dialog('option', 'title', 'Error');
-        class_desc_popup.html("Error: JSON view not found.<br/>Possible fix: Enable the JSON Data Module.");
-        class_desc_popup.dialog('option', 'buttons', [{
-          text: "Ok",
-          click: function() {
-            $j(this).dialog("close");
-          }
-        }]);
+function show_status_row(clsid) {
+  var status_row = $j("#status_row");
+  if (status_row.length > 0) {
+      var status_id = status_row.data("cls");
+      status_row.remove();
+      if (status_id == clsid) {
+          return false;
       }
-    });
+  }
+  var $target = $j("#" + clsid);
+  // Show an intermediate screen while we load class data
+  $target.after(createClassStatusRow(clsid));
+  
+  var status_wrapper = $j("#status_wrapper");
+  
+  // Load the class data and fill the new row using it
+  json_get('class_admin_info', {'class_id': clsid},
+  function(data) {
+    fill_status_row(clsid, data);
+  },
+  function(jqXHR, status, errorThrown) {
+    if (errorThrown == "NOT FOUND") {
+      status_wrapper.dialog('option', 'title', 'Error');
+      status_wrapper.html("Error: JSON view not found.<br/>Possible fix: Enable the JSON Data Module.");
+      status_wrapper.dialog('option', 'buttons', [{
+        text: "Ok",
+        click: function() {
+          $j("#status_row").remove();
+        }
+      }]);
+    }
+  });
+}
 
+function createClassStatusRow(clsid) {
+    var tr = $j(document.createElement('tr'));
+    tr.data("cls", clsid);
+    tr.attr("id", "status_row");
+    var td = $j(document.createElement('td'));
+    td.attr("colspan", has_moderator_module === "True" ? 6 : 5);
+    td.append($j("<div/>").attr("id", "status_wrapper").html('Loading class info...'));
+    tr.append(td);
+
+    // Return the jQuery node
+    return tr;
 }
 
 // status should be the status integer
@@ -201,7 +222,7 @@ function update_class(clsid, statusId) {
   classes_global[clsid].status = statusId;
 
   // Set the appropriate styling and tag text
-  var el = $j("#"+clsid).find("td.classname > span");
+  var el = $j("#" + clsid).find("td.classname > span");
   el.removeClass("unapproved").removeClass("approved").removeClass("dashboard_blue").removeClass("dashboard_red");
 
   for(var i = 0; i < status_details['classes'].length; ++i)
@@ -332,8 +353,7 @@ function createLinkButtonTd(clsObj, type, verb) {
     );
 }
 function createStatusButtonTd(clsObj) {
-    var clickjs = ('show_approve_class_popup('
-            + clsObj.id + '); return false;');
+    var clickjs = ('show_status_row(' + clsObj.id + '); return false;');
 
     return $j("<div/>", {'class': 'clsmiddle'}).append(
         $j("<a/>", {
@@ -408,4 +428,7 @@ function setup_sort_control()
 {
     $j("#dashboard_sort_control").on("change", handle_sort_control);
     handle_sort_control();
+    
+    // whenever table is sorted, remove any status row(s)
+    $j('#dashboard_class_table')[0].addEventListener('sorttable.sorted', (e) => $j(".status_row").remove());
 }

@@ -144,3 +144,10 @@ td.button_td {
     row-gap: 5px;
     gap: 5px;
 }
+
+#status_wrapper > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-around;
+}
