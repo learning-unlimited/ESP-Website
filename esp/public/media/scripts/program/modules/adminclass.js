@@ -60,15 +60,33 @@ function fill_status_row(clsid, classes_data) {
   var status_details = getStatusDetails(classes_global[clsid].status);
   var status_string = status_details['text'];
 
-  // TODO: make this into a table
-  var sections_list = $j('<ul>')
+  var sections_table = $j('<table>').css("width", "100%")
+  sections_table.append(
+    $j("<tr/>").append(
+        $j("<th/>"),
+        $j("<th class='smaller'>Time</th>"),
+        $j("<th class='smaller'>Room</th>"),
+        $j("<th class='smaller'>Priority</th>"),
+        $j("<th class='smaller'>Interested</th>"),
+        $j("<th class='smaller'>Enrolled</th>")
+    )
+  );
   for (var i = 0; i < class_info.sections.length; i++)
   {
     var sec = class_info.sections[i];
-    if (sec.time.length > 0)
-        sections_list.append($j('<li>').html(sec.time + " in " + sec.room + ": " + sec.num_students_priority + " priority, " + sec.num_students_interested + " interested, " + sec.num_students_enrolled + " enrolled"));
-    else
-        sections_list.append($j('<li>').html('Section ' + (i + 1) + ': not scheduled'));
+    var sec_row = $j("<tr/>")
+    sec_row.append($j("<td>" + (i + 1) + "</td>"))
+    if (sec.time.length > 0) {
+        sec_row.append($j("<td>" + sec.time + "</td>"))
+        sec_row.append($j("<td>" + sec.room + "</td>"))
+    }
+    else {
+        sec_row.append($j("<td colspan='2'>not scheduled</td>"))
+    }
+    sec_row.append($j("<td>" + sec.num_students_priority + "</td>"))
+    sec_row.append($j("<td>" + sec.num_students_interested + "</td>"))
+    sec_row.append($j("<td>" + sec.num_students_enrolled + "</td>"))
+    sections_table.append(sec_row)
   }
   
   if (class_info.is_scheduled) {
@@ -123,30 +141,32 @@ function fill_status_row(clsid, classes_data) {
   if (class_info.difficulty) vitals_div.append(make_attrib_para("Difficulty", class_info.difficulty));
   if (class_info.prereqs) vitals_div.append(make_attrib_para("Prereqs", class_info.prereqs));
 
-  var sections_div = $j("<div><b>Sections</b></div>")
-    .append($j("Sections", class_info.sections.length))
-    .append(sections_list)
-    .css("max-width", "45%")
+  sections_table
+    .css("min-width", "max(200px, 40%)")
     .css("flex", "1 1 0px");
   var desc_div = make_attrib_para("Description", class_info.class_info)
-    .css("max-width", "45%")
+    .css("min-width", "max(200px, 40%)")
     .css("flex", "1 1 0px");
 
   var status_wrapper = $j("#status_wrapper");
   status_wrapper
     .html('')
     .attr('clsid', clsid)
-    .append(vitals_div);
-    // Ensure the class description gets HTML-escaped
-    status_wrapper.append(
+    .append(vitals_div)
+    .append(
       $j("<div/>")
         .css("padding-top", "10px")
         .append(desc_div)
-        .append(sections_div)
+        .append(sections_table)
     );
-    if (class_info.special_requests) status_wrapper.append(make_attrib_para("Requests", class_info.special_requests));
-    if (class_info.purchases) status_wrapper.append(make_attrib_para("Planned Purchases", class_info.purchases));
-    if (class_info.comments) status_wrapper.append(make_attrib_para("Comments", class_info.comments));
+  
+  if (class_info.special_requests || class_info.purchases || class_info.comments) {
+      var comments_div = $j("<div/>").css("padding-top", "10px");
+      if (class_info.special_requests) comments_div.append(make_attrib_para("Requests", class_info.special_requests));
+      if (class_info.purchases) comments_div.append(make_attrib_para("Planned Purchases", class_info.purchases));
+      if (class_info.comments) comments_div.append(make_attrib_para("Comments", class_info.comments));
+      status_wrapper.append(comments_div);
+  }
 }
 
 function show_status_row(clsid) {
@@ -162,25 +182,18 @@ function show_status_row(clsid) {
   // Show an intermediate screen while we load class data
   $target.after(createClassStatusRow(clsid));
   
-  var status_wrapper = $j("#status_wrapper");
-  
   // Load the class data and fill the new row using it
   json_get('class_admin_info', {'class_id': clsid},
-  function(data) {
-    fill_status_row(clsid, data);
-  },
-  function(jqXHR, status, errorThrown) {
-    if (errorThrown == "NOT FOUND") {
-      status_wrapper.dialog('option', 'title', 'Error');
-      status_wrapper.html("Error: JSON view not found.<br/>Possible fix: Enable the JSON Data Module.");
-      status_wrapper.dialog('option', 'buttons', [{
-        text: "Ok",
-        click: function() {
-          $j("#status_row").remove();
-        }
-      }]);
+    function(data) {
+      fill_status_row(clsid, data);
+    },
+    function(jqXHR, status, errorThrown) {
+      if (errorThrown == "NOT FOUND") {
+        $j("#status_wrapper")
+          .html("Error: JSON view not found. Possible fix: Enable the JSON Data Module.");
+      }
     }
-  });
+  );
 }
 
 function createClassStatusRow(clsid) {
