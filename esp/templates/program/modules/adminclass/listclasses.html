@@ -15,11 +15,11 @@ json_data = {};
   var moderator_title = "{{ program.getModeratorTitle }}";
   
   // Create the class description popup for the Status button
-  class_desc_popup = $j('<div></div>').attr('id', "class_status_popup")
+  saving_popup = $j('<div></div>').attr('id', "saving_popup")
     .dialog({
       autoOpen: false,
-      minWidth: 400,
-      minHeight: 300,
+      minWidth: 250,
+      minHeight: 100,
       modal: true
     });
 

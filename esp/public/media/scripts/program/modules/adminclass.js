@@ -16,7 +16,7 @@ var handleSubmit = function () { this.submit(); }
 var handleCancel = function () { this.cancel(); }
 
 function show_saving_popup() {
-  class_desc_popup
+  saving_popup
     .dialog('option', 'title', 'Saving')
     .html('Saving the class status...')
     .dialog('option', 'buttons', [])
@@ -93,18 +93,21 @@ function fill_status_row(clsid, classes_data) {
     var buttons = [
     {
       text: "Approve (all sections)",
+      cls: ["btn", "btn-success"],
       click: function() {
-        update_class($j(this).attr('clsid'), 10);
+        update_class(clsid, 10);
       }
     },
     {
       text: "Unreview",
+      cls: ["btn", "btn-inverse"],
       click: function() {
-        update_class($j(this).attr('clsid'), 0);
+        update_class(clsid, 0);
       }
     },
     {
       text: "Cancel on class management page",
+      cls: ["btn", "btn-warning"],
       click: function() {
         window.open("/manage/"+base_url+"/manageclass/"+clsid);
       }
@@ -113,33 +116,37 @@ function fill_status_row(clsid, classes_data) {
     var buttons = [
     {
       text: "Approve (all sections)",
+      cls: ["btn", "btn-success"],
       click: function() {
-        update_class($j(this).attr('clsid'), 10);
+        update_class(clsid, 10);
       }
     },
     {
       text: "Unreview",
+      cls: ["btn", "btn-inverse"],
       click: function() {
-        update_class($j(this).attr('clsid'), 0);
+        update_class(clsid, 0);
       }
     },
     {
       text: "Reject (all sections)",
+      cls: ["btn", "btn-warning"],
       click: function() {
-        update_class($j(this).attr('clsid'), -10);
+        update_class(clsid, -10);
       }
     }]
   }
+  var button_els = buttons.map((item) => $j("<button/>").text(item.text).addClass(item.cls).on("click", item.click))
   
   var vitals_div = $j("<div/>")
-    .append(make_attrib_para("Max Size", class_info.class_size_max))
-    .append(make_attrib_para("Duration", class_info.duration))
-    .append(make_attrib_para("Location", class_info.location))
-    .append(make_attrib_para("Grade Range", class_info.grade_range))
-    .append(make_attrib_para("Category", class_info.category));
-  if (class_info.class_style) vitals_div.append(make_attrib_para("Style", class_info.class_style));
-  if (class_info.difficulty) vitals_div.append(make_attrib_para("Difficulty", class_info.difficulty));
-  if (class_info.prereqs) vitals_div.append(make_attrib_para("Prereqs", class_info.prereqs));
+    .css("justify-content", "space-around")
+    .append(make_attrib_para("Max Size", class_info.class_size_max).css("text-align", "center"))
+    .append(make_attrib_para("Duration", class_info.duration).css("text-align", "center"))
+    .append(make_attrib_para("Grade Range", class_info.grade_range).css("text-align", "center"))
+    .append(make_attrib_para("Category", class_info.category).css("text-align", "center"));
+  if (class_info.class_style) vitals_div.append(make_attrib_para("Style", class_info.class_style).css("text-align", "center"));
+  if (class_info.difficulty) vitals_div.append(make_attrib_para("Difficulty", class_info.difficulty).css("text-align", "center"));
+  if (class_info.prereqs) vitals_div.append(make_attrib_para("Prereqs", class_info.prereqs).css("text-align", "center"));
 
   sections_table
     .css("min-width", "max(200px, 40%)")
@@ -156,17 +163,24 @@ function fill_status_row(clsid, classes_data) {
     .append(
       $j("<div/>")
         .css("padding-top", "10px")
+        .css("padding-left", "20px")
+        .css("padding-right", "20px")
         .append(desc_div)
         .append(sections_table)
     );
   
   if (class_info.special_requests || class_info.purchases || class_info.comments) {
-      var comments_div = $j("<div/>").css("padding-top", "10px");
+      var comments_div = $j("<div/>").css("padding-top", "10px").css("justify-content", "space-around");
       if (class_info.special_requests) comments_div.append(make_attrib_para("Requests", class_info.special_requests));
       if (class_info.purchases) comments_div.append(make_attrib_para("Planned Purchases", class_info.purchases));
       if (class_info.comments) comments_div.append(make_attrib_para("Comments", class_info.comments));
       status_wrapper.append(comments_div);
   }
+  status_wrapper.append(
+    $j("<div/>")
+      .css("padding-top", "10px")
+      .css("justify-content", "center")
+      .append(button_els));
 }
 
 function show_status_row(clsid) {
@@ -227,23 +241,24 @@ function update_class(clsid, statusId) {
       csrfmiddlewaretoken: csrf_token()
     },
     complete: function() {
-      class_desc_popup.dialog("close");
+      // Update our local data
+      classes_global[clsid].status = statusId;
+
+      // Set the appropriate styling and tag text
+      var el = $j("#" + clsid).find("td.classname > span");
+      el.removeClass("unapproved").removeClass("approved").removeClass("dashboard_blue").removeClass("dashboard_red");
+
+      for(var i = 0; i < status_details['classes'].length; ++i)
+      {
+        el.addClass(status_details['classes'][i]);
+      }
+
+      el.find("strong").text('[' + status_details['text'] + ']');
+      
+      // Close the dialog box
+      saving_popup.dialog("close");
     }
   });
-
-  // Update our local data
-  classes_global[clsid].status = statusId;
-
-  // Set the appropriate styling and tag text
-  var el = $j("#" + clsid).find("td.classname > span");
-  el.removeClass("unapproved").removeClass("approved").removeClass("dashboard_blue").removeClass("dashboard_red");
-
-  for(var i = 0; i < status_details['classes'].length; ++i)
-  {
-    el.addClass(status_details['classes'][i]);
-  }
-
-  el.find("strong").text('[' + status_details['text'] + ']');
 }
 
 function fillClasses(data)
@@ -443,5 +458,5 @@ function setup_sort_control()
     handle_sort_control();
     
     // whenever table is sorted, remove any status row(s)
-    $j('#dashboard_class_table')[0].addEventListener('sorttable.sorted', (e) => $j(".status_row").remove());
+    $j('#dashboard_class_table')[0].addEventListener('sorttable.sorted', (e) => $j("#status_row").remove());
 }

@@ -21,6 +21,7 @@ div .module_group_header, div .module_group_header_half {
     padding: 5px;
     margin-bottom: 8px;
     box-shadow: 3px 3px 5px #CCCCCC;
+    border-radius: 5px;
 }
 
 div .button_wrapper {

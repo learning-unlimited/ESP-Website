@@ -54,8 +54,11 @@ color: #006600;
 
 #battlescreen > table {
    background-color: #fefef8;
-   border: 2px solid #99F;
    border-width: 0 2px 6px 2px;
+   border-radius: 5px;
+   outline: 2px solid #99F;
+   outline-offset: -1px;
+   overflow: hidden;
 }
 
 #battlescreen > table > thead th {
@@ -64,6 +67,12 @@ color: #006600;
    font-size: 1.1em;
    background-color: #339;
    color: white;
+}
+
+#status_wrapper > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 #status_wrapper table {
@@ -100,6 +109,10 @@ color: #006600;
    color: #000000;
    text-align: left;
    vertical-align: top;
+}
+
+#status_row {
+    background-color: aliceblue;
 }
 
 #battlescreen a.btn {
@@ -179,11 +192,4 @@ td.button_td {
     flex-wrap: wrap;
     row-gap: 5px;
     gap: 5px;
-}
-
-#status_wrapper > div {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: space-around;
 }
