@@ -116,7 +116,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if manage_resources %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/resources"><button type="button" class="module_link_large">
-                <div class="module_link_main">Resources</div>
+                <div class="module_link_main"><i class="glyphicon glyphicon-th"></i> Resources</div>
                 <div class="module_link_caption">timeslots, classrooms</div>
             </button></a>
         </div>
@@ -124,7 +124,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if manage_deadlines %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/deadlines"><button type="button" class="module_link_large">
-                <div class="module_link_main">Deadlines</div>
+                <div class="module_link_main"><i class="glyphicon glyphicon-time"></i> Deadlines</div>
                 <div class="module_link_caption">open/close registration</div>
             </button></a>
         </div>
@@ -132,7 +132,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if manage_teacher_events %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/teacher_events"><button type="button" class="module_link_large">
-                <div class="module_link_main">Teacher Training/Interviews</div>
+                <div class="module_link_main"><i class="glyphicon glyphicon-comment"></i> Teacher Training/Interviews</div>
                 <div class="module_link_caption">edit/monitor teacher events</div>
             </button></a>
         </div>
@@ -140,7 +140,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if manage_lunch_constraints %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/lunch_constraints"><button type="button" class="module_link_large">
-                <div class="module_link_main">Lunch Constraints</div>
+                <div class="module_link_main"><i class="glyphicon glyphicon-cutlery"></i> Lunch Constraints</div>
                 <div class="module_link_caption">rules for your students' schedules</div>
             </button></a>
         </div>
@@ -148,7 +148,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if manage_registrationtype_management %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/registrationtype_management"><button type="button" class="module_link_large">
-                <div class="module_link_main">Student Reg. Types</div>
+                <div class="module_link_main"><i class="glyphicon glyphicon-blackboard"></i> Student Reg. Types</div>
                 <div class="module_link_caption">what classes students see on their schedule</div>
             </button></a>
         </div>
@@ -156,7 +156,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if manage_surveys %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/surveys"><button type="button" class="module_link_large">
-                <div class="module_link_main">Surveys</div>
+                <div class="module_link_main"><i class="glyphicon glyphicon-edit"></i> Surveys</div>
                 <div class="module_link_caption">create/edit surveys; review results</div>
             </button></a>
         </div>
@@ -164,7 +164,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if manage_settings %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/settings"><button type="button" class="module_link_large">
-                <div class="module_link_main">Program Settings</div>
+                <div class="module_link_main"><i class="glyphicon glyphicon-wrench"></i> Program Settings</div>
                 <div class="module_link_caption">manage settings for the program/registration</div>
             </button></a>
         </div>
@@ -172,7 +172,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if manage_modules %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/modules"><button type="button" class="module_link_large">
-                <div class="module_link_main">Manage Modules</div>
+                <div class="module_link_main"><i class="glyphicon glyphicon-list"></i> Manage Modules</div>
                 <div class="module_link_caption">sequence/requiredness of student/teacher modules</div>
             </button></a>
         </div>
@@ -180,7 +180,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if manage_tags %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/tags"><button type="button" class="module_link_large">
-                <div class="module_link_main">Tag Settings</div>
+                <div class="module_link_main"><i class="glyphicon glyphicon-cog"></i> Tag Settings</div>
                 <div class="module_link_caption">miscellaneous settings, for experts only</div>
             </button></a>
         </div>
@@ -197,7 +197,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if manage_commpanel %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/commpanel"><button type="button" class="module_link_large">
-                <div class="module_link_main">Email</div>
+                <div class="module_link_main"><i class="glyphicon glyphicon-envelope"></i> Email</div>
                 <div class="module_link_caption">communications panel</div>
             </button></a>
         </div>
@@ -205,7 +205,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if manage_admin_morph %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/admin_morph"><button type="button" class="module_link_large">
-                <div class="module_link_main">Morph into User</div>
+                <div class="module_link_main"><i class="glyphicon glyphicon-user"></i> Morph into User</div>
                 <div class="module_link_caption">see the website from a user's point of view</div>
             </button></a>
         </div>
@@ -213,7 +213,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if manage_selectList %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/selectList"><button type="button" class="module_link_large">
-                <div class="module_link_main">Arbitrary User List</div>
+                <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Arbitrary User List</div>
                 <div class="module_link_caption">get a list of users</div>
             </button></a>
         </div>
@@ -229,7 +229,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if manage_dashboard %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/dashboard"><button type="button" class="module_link_large">
-                <div class="module_link_main">Dashboard</div>
+                <div class="module_link_main"><i class="glyphicon glyphicon-dashboard"></i> Dashboard</div>
                 <div class="module_link_caption">review classes and stats</div>
             </button></a>
         </div>
@@ -237,7 +237,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if manage_ajax_scheduling %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling"><button type="button" class="module_link_large">
-                <div class="module_link_main">Scheduling</div>
+                <div class="module_link_main"><i class="glyphicon glyphicon-calendar"></i> Scheduling</div>
                 <div class="module_link_caption">assign rooms and times</div>
             </button></a>
         </div class="module_button">
@@ -245,7 +245,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if manage_get_materials %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/get_materials"><button type="button" class="module_link_large">
-                <div class="module_link_main">Documents</div>
+                <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> Documents</div>
                 <div class="module_link_caption">upload and view files</div>
             </button></a>
         </div class="module_button">
@@ -253,7 +253,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if manage_volunteering %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/volunteering"><button type="button" class="module_link_large">
-                <div class="module_link_main">Volunteers</div>
+                <div class="module_link_main"><i class="glyphicon glyphicon-bullhorn"></i> Volunteers</div>
                 <div class="module_link_caption">create shifts, view signups</div>
             </button></a>
         </div>
