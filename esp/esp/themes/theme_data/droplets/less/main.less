@@ -1,38 +1,27 @@
 
 #main {
     h1 {
-        color: @accent2;
         font-size: 42px;
         font-weight: normal;
         margin-bottom: 0.5em;
     }
     h2 {
-        color: @accent2;
         font-size: 32px;
         font-weight: normal;
         margin-bottom: 0.3em;
     }
     a {
-        color: @linkColor;
         text-decoration: underline;
     }
-    a:hover {
-        color: @linkColorHover;
-    }
     .btn {
-        border: 1px solid @accent2;
 		background-image: none;
         &:active, &:focus {
             outline: none;
-            border-color: @accent1;
         }
     }
 	.module_link_large {
-        border: 1px solid @accent2;
-        background: @btnBackground;
         &:active, &:focus {
             outline: none;
-            border-color: @accent1;
         }
     }
     .btn-primary {
@@ -54,9 +43,7 @@
         display: inline-block;
         color: black;
         background-color: #fdfdfd;
-        border: 1px solid @accent2;
         &:focus {
-            border-color: @accent1;
             outline: none;
             -webkit-box-shadow: none;
                -moz-box-shadow: none;
@@ -77,7 +64,6 @@
 
 
 body {
-    background: @bodyBackground;
     box-sizing: border-box;
 }
 
@@ -128,34 +114,6 @@ ul.nav-collapse {
 .btn:hover {
     background-position: 0;
 }
-
-.navbar {
-    .navbar-inner {
-        font-size: @navFontSize;
-        background: @navbarBackground;
-    }
-}
-
-.navbar-inverse {
-    .nav > li > a {
-        color: @navbarText;
-    }
-    .nav .active > a {
-        color: @navbarText;
-        background-color: @navbarBackgroundHighlight;
-    }
-    nav li.dropdown.active > .dropdown-toggle {
-        color: @navbarBackgroundHighlight
-    }
-}
-
-.dropdown-menu > li > a {
-    color: @navbarLinkColor;
-}
-.dropdown-menu > li > a:hover {
-    color: @navbarLinkColorHover;
-}
-
 
 @media (min-width: 768px) and (max-width: 979px) {
     .header-container, .footer-container {
