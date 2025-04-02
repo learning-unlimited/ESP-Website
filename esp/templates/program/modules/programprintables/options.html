@@ -5,13 +5,14 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/printoptions.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/management.css" type="text/css">
 {% endblock %}
 
 {% block javascript %}
     {{ block.super }}
     <script>
     $j(function () {
-        $j("#class_list_options :input").change(function (){
+        $j("#class_list_options :input").on("change", function (){
             // Get user-selected options
             var fields = $j("#class_list_options :input");
             var get = "";
@@ -48,70 +49,198 @@ Please select from options below.
 
 {% include "program/modules/admincore/returnlink.html" %}
 
-<h3>Schedules</h3>
-<ul>
-<li><a href="./studentschedules?recipient_type=Student&base_list=enrolled" title="Student Schedules">Student Schedules</a> (by students) -- multiple formats available: 
-    <a href="./studentschedules/tex/?recipient_type=Student&base_list=enrolled">TEX</a>
-    <a href="./studentschedules/pdf/?recipient_type=Student&base_list=enrolled">PDF</a>
-    <a href="./studentschedules/svg/?recipient_type=Student&base_list=enrolled">SVG (1 schedule max)</a> 
-    <a href="./studentschedules/png/?recipient_type=Student&base_list=enrolled">PNG (1 schedule max)</a>
-    <ul>
-        <li>
-            <a href="/manage/{{ program.getUrlBase }}/studentscheduleform">PDF Schedule Formatter</a>
-        </li>
-    </ul>
-</li>
-<li><a href="./flatstudentschedules?recipient_type=Student&base_list=enrolled" title="Student Schedules">Flat Student Schedules</a> (by students)</li>
-<li><a href="./teacherschedules?recipient_type=Teacher&base_list=class_approved" title="Teacher Schedules">Teacher Schedules</a> (by teachers)</li>
-{% if program|hasModule:"TeacherModeratorModule" %}
-    <li><a href="./teachermoderatorschedules?combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo" title="Teacher and Moderator Schedules">Combined Teacher and {{ program.getModeratorTitle }} Schedules</a> (by teachers)</li>
-    <li><a href="./moderatorschedules?recipient_type=Teacher&base_list=assigned_moderator" title="Moderator Schedules">{{ program.getModeratorTitle }} Schedules</a> (by teachers)</li>
-{% endif %}
-<li><a href="./volunteerschedules?recipient_type=Volunteer&base_list=volunteer_all" title="Volunteer Schedules">Volunteer Schedules</a> (by volunteers)</li>
-<li><a href="./roomschedules" title="Room Schedules">Room Schedules</a> (<a href="./roomschedules/all_blocks" title="Room Schedules with All Blocks">with all blocks</a>)</li>
-{% if program|hasModule:"TeacherModeratorModule" %}
-    <li><a href="./moderator_rooms_spr" title="Complete Moderator Schedule by Room">Complete Moderator Schedule by Room</a> (CSV format)</li>
-{% endif %}
-</ul>
+<div class="module_group" id="module_group_1">
+    <div class="module_group_header">
+        Schedules and Nametags
+    </div>
+    <div class="button_wrapper">
+        <div class="module_button">
+            <a href="./studentschedules/pdf/?recipient_type=Student&base_list=enrolled" title="Student Schedules (PDF)">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> Student Schedules (PDF)</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="./studentschedules/tex/?recipient_type=Student&base_list=enrolled" title="Student Schedules (TEX)">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> Student Schedules (TEX)</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="./studentschedules/svg/?recipient_type=Student&base_list=enrolled" title="Student Schedules (SVG)">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-file"></i> Student Schedules (SVG)</div>
+                    <div class="module_link_caption">(1 schedule max)</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="./studentschedules/png/?recipient_type=Student&base_list=enrolled" title="Student Schedules (PNG)">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-file"></i> Student Schedules (PNG)</div>
+                    <div class="module_link_caption">(1 schedule max)</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/studentscheduleform" title="PDF Student Schedule Formatter">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-edit"></i> Student Schedule Formatter</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="./flatstudentschedules?recipient_type=Student&base_list=enrolled" title="Flat Student Schedules">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-th"></i> Flat Student Schedules</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="./teacherschedules?recipient_type=Teacher&base_list=class_approved" title="Teacher Schedules">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> Teacher Schedules</div>
+                </button>
+            </a>
+        </div>
+        {% if program|hasModule:"TeacherModeratorModule" %}
+        <div class="module_button">
+            <a href="./moderatorschedules?recipient_type=Teacher&base_list=assigned_moderator" title="{{ program.getModeratorTitle }} Schedules">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> {{ program.getModeratorTitle }} Schedules</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="./teachermoderatorschedules?combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo" title="Teacher and Moderator Schedules">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> Combined Teacher and {{ program.getModeratorTitle }} Schedules</div>
+                </button>
+            </a>
+        </div>
+        {% endif %}
+        <div class="module_button">
+            <a href="./volunteerschedules?recipient_type=Volunteer&base_list=volunteer_all" title="Volunteer Schedules">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> Volunteer Schedules</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="./roomschedules" title="Room Schedules">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Room Schedules</div>
+                </button>
+            </a>
+        </div>
+        {% if program|hasModule:"TeacherModeratorModule" %}
+        <div class="module_button">
+            <a href="./moderator_rooms_spr" title="Complete Moderator Schedule by Room">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-th"></i> Complete Moderator Schedule by Room</div>
+                    <div class="module_link_caption">(CSV format)</div>
+                </button>
+            </a>
+        </div>
+        {% endif %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/selectidoptions" title="Nametags">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-modal-window"></i> Nametags</div>
+                </button>
+            </a>
+        </div>
+    </div>
+</div>
 
-<h3>Nametags</h3>
-<ul>
-<li><a href="/manage/{{ program.getUrlBase }}/selectidoptions">Nametags</a></li>
-</ul>
+<div class="module_group" id="module_group_1">
+    <div class="module_group_header">
+        Student Lists
+    </div>
+    <div class="button_wrapper">
+        <div class="module_button">
+            <a href="./classrosters?recipient_type=Teacher&base_list=class_approved" title="Class Rosters by Teachers">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Class Rosters by Teachers</div>
+                </button>
+            </a>
+        </div>
+        {% if program|hasModule:"TeacherModeratorModule" %}
+        <div class="module_button">
+            <a href="./classrostersbymoderator?recipient_type=Teacher&base_list=assigned_moderator" title="Class Rosters by {{ program.getModeratorTitle }}s">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Class Rosters by {{ program.getModeratorTitle }}s</div>
+                </button>
+            </a>
+        </div>
+        {% endif %}
+        <div class="module_button">
+            <a href="./classrosters/attendance?recipient_type=Teacher&base_list=class_approved" title="Attendance Sheets by Teachers">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Attendance Sheets by Teachers</div>
+                </button>
+            </a>
+        </div>
+        {% if program|hasModule:"TeacherModeratorModule" %}
+        <div class="module_button">
+            <a href="./classrostersbymoderator/attendance?recipient_type=Teacher&base_list=assigned_moderator" title="Attendance Sheets by {{ program.getModeratorTitle }}s">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Attendance Sheets by {{ program.getModeratorTitle }}s</div>
+                </button>
+            </a>
+        </div>
+        {% endif %}
+        <div class="module_button">
+            <a href="./classchecklists" title="Class Checlists">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-check"></i> Class Checklists</div>
+                    <div class="module_link_caption">(all confirmed students)</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="./studentchecklist?recipient_type=Student&base_list=enrolled" title="Student Checklist">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-check"></i> Student Checklist</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="./student_financial_spreadsheet?recipient_type=Student&base_list=enrolled" title="Student Financial Spreadsheet">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-th"></i> Student Financial Spreadsheet</div>
+                    <div class="module_link_caption">(used by the check-scanning app)</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="./studentsbyname?recipient_type=Student&base_list=enrolled" title="Students by Name">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-th-list"></i> Students by Name</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="./emergencycontacts?recipient_type=Student&base_list=enrolled" title="Students' Emergency Contact Info">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-phone"></i> Students' Emergency Contact Info</div>
+                </button>
+            </a>
+        </div>
+    </div>
+</div>
 
-<h3>Student Lists</h3>
-<ul>
-{% if program|hasModule:"TeacherModeratorModule" %}
-    <li>Class Rosters</li>
-    <ul>
-        <li><a href="./classrosters?recipient_type=Teacher&base_list=class_approved" title="Class Rosters">By teachers</a></li>
-        <li><a href="./classrostersbymoderator?recipient_type=Teacher&base_list=assigned_moderator" title="Class Rosters">By {{ program.getModeratorTitle|lower }}s</a></li>
-    </ul>
-    <li>Attendance Sheets</li>
-    <ul>
-        <li><a href="./classrosters/attendance?recipient_type=Teacher&base_list=class_approved" title="Attendance Sheets">By teachers</a></li>
-        <li><a href="./classrostersbymoderator/attendance?recipient_type=Teacher&base_list=assigned_moderator" title="Attendance Sheets">By {{ program.getModeratorTitle|lower }}s</a></li>
-    </ul>
-{% else %}
-    <li><a href="./classrosters?recipient_type=Teacher&base_list=class_approved" title="Class Rosters">Class Rosters</a> (by teachers)</li>
-    <li><a href="./classrosters/attendance?recipient_type=Teacher&base_list=class_approved" title="Attendance Sheets">Attendance Sheets</a> (by teachers)</li>
-{% endif %}
-<li><a href="./classchecklists" title="Class Checlists">Class Checklists</a> (all confirmed students)</li>
-<li><a href="./studentchecklist?recipient_type=Student&base_list=enrolled" title="Student Checklist">Student Checklist</a> (by students)</li>
-<li><a href="./student_financial_spreadsheet?recipient_type=Student&base_list=enrolled">Student Financial Spreadsheet</a> (used by the check-scanning app)</li>
-<li><a href="./studentsbyname?recipient_type=Student&base_list=enrolled" title="Student List">Students by Name</a> (by students)</li>
-<li><a href="./emergencycontacts?recipient_type=Student&base_list=enrolled" title="Student List">Students' Emergency Contact Info</a> (by students)</li>
 {% if not li_types|length_is:0 %}
-<li>Students who have ordered/reserved line items:
-    <ul>
-    {% for li_type in li_types %}
-        <li><a href="./selectList?recipient_type=Student&base_list=extracosts_{{ li_type.id }}">{{ li_type.text }}</a>{% if li_type.options %}:{% for option in li_type.options %} <a href="./selectList?recipient_type=Student&base_list=extracosts_{{ li_type.id }}_{{ option|id }}">{{ option|description }}</a>{% endfor %}
-        {% endif %}</li>
-    {% endfor %}
-    </ul>
-</li>
-{% endif %}
+<h3>Students who have ordered/reserved line items:</h3>
+<ul>
+{% for li_type in li_types %}
+    <li><a href="./selectList?recipient_type=Student&base_list=extracosts_{{ li_type.id }}">{{ li_type.text }}</a>{% if li_type.options %}:{% for option in li_type.options %} <a href="./selectList?recipient_type=Student&base_list=extracosts_{{ li_type.id }}_{{ option|id }}">{{ option|description }}</a>{% endfor %}
+    {% endif %}</li>
+{% endfor %}
 </ul>
+{% endif %}
 
 <br>
 <h3 style="line-height:normal;">Teacher{% if program|hasModule:"TeacherModeratorModule" %} and/or {{ program.getModeratorTitle }}{% endif %} Check-in Sheets</h3>
