@@ -15,10 +15,11 @@ div .module_group_body ul {
 div .module_group_header, div .module_group_header_half {
     width: 100%;
     box-sizing: border-box;
-    background-color: #f3ecc4;
-    font-size: 0.95em;
+    background-color: #000;
+    color: #FFF;
+    font-size: 1.3em;
     font-weight: bold;
-    padding: 5px;
+    padding: 7px;
     margin-bottom: 8px;
     box-shadow: 3px 3px 5px #CCCCCC;
     border-radius: 5px;
@@ -49,7 +50,6 @@ div .module_link_large {
 }
 
 div .module_link_main {
-    font-size: 1.1em;
     font-weight: bold;
 }
 

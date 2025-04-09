@@ -10,13 +10,18 @@ table {
     width: 100%;
 }
 
+#class_list_options {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border: 2px grey dashed;
+}
+
 #class_list_options, #class_lists {
     display: flex;
     align-content: center;
     align-items: flex-end;
     flex-wrap: wrap;
     gap: 10px;
-    padding-bottom: 10px;
     
     div {
         flex: 1 1 0;
@@ -41,5 +46,6 @@ table {
         float: left;
         height: 75px;
         border-radius: 4px;
+        font-weight: bold;
     }
 }
