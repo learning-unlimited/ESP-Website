@@ -226,7 +226,43 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     </div>
                 </div>
 
-                {% if theme_name != "fruitsalad" %}
+                {% if theme_name == "droplets" %}
+                <div class="accordion-group">
+                    <div class="accordion-heading">
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#navbar_inverse_edit_group" rel="popover" data-original-title="NavbarInverse" data-content="Use this section to control the colors for the various elements of the navigation bar.">Navbar</h3>
+
+                    </div>
+                    <div class="collapse" id="navbar_inverse_edit_group">
+                        <div class="control-group">
+                            <label class="control-label" for="navbarInverseBackground">Background:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="navbarInverseBackground" name="navbarInverseBackground" value="{{ navbarInverseBackground }}" data-default="{{ variable_defaults|index:'navbarInverseBackground' }}"/>
+                            </div>
+                        </div>
+
+                        <div class="control-group">
+                            <label class="control-label" for="navbarInverseBackgroundHighlight">Highlight:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="navbarInverseBackgroundHighlight" name="navbarInverseBackgroundHighlight" value="{{ navbarInverseBackgroundHighlight }}" data-default="{{ variable_defaults|index:'navbarInverseBackgroundHighlight' }}"/>
+                            </div>
+                        </div>
+
+                        <div class="control-group">
+                            <label class="control-label" for="navbarInverseLinkColor">Links:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="navbarInverseLinkColor" name="navbarInverseLinkColor" value="{{ navbarInverseLinkColor }}" data-default="{{ variable_defaults|index:'navbarInverseLinkColor' }}"/>
+                            </div>
+                        </div>
+
+                        <div class="control-group">
+                            <label class="control-label" for="navbarInverseLinkColorHover">Link Hover:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="navbarInverseLinkColorHover" name="navbarInverseLinkColorHover" value="{{ navbarInverseLinkColorHover }}" data-default="{{ variable_defaults|index:'navbarInverseLinkColorHover' }}"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% elif theme_name != "fruitsalad" %}
                 <div class="accordion-group">
                     <div class="accordion-heading">
                         <h3 class="accordion-toggle" data-toggle="collapse" href="#navbar_edit_group" rel="popover" data-original-title="Navbar" data-content="Use this section to control the colors for the various elements of the navigation bar{% if theme_name == 'bigpicture' %} in the upper right hand corner. The highlight controls the color of the logout button and the dropdown menu{% elif theme_name == 'circles' %}. The circle colors can be changed in the 'Advanced' category{% elif theme_name != 'floaty' %}. The background fades into the highlight{% endif %}.">Navbar</h3>
@@ -240,7 +276,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                             </div>
                         </div>
 
-                {% if theme_name != "circles" %}
+                    {% if theme_name != "circles" %}
                         <div class="control-group">
                             <label class="control-label" for="navbarBackgroundHighlight">Highlight:</label>
                             <div class="controls">
@@ -248,14 +284,14 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                             </div>
                         </div>
 
-                    {% if theme_name != "floaty" %}
+                        {% if theme_name != "floaty" %}
                         <div class="control-group">
                             <label class="control-label" for="navbarText">Text:</label>
                             <div class="controls">
                                 <input type="text" class="color" id="navbarText" name="navbarText" value="{{ navbarText }}" data-default="{{ variable_defaults|index:'navbarText' }}"/>
                             </div>
                         </div>
-                    {% endif %}
+                        {% endif %}
 
                         <div class="control-group">
                             <label class="control-label" for="navbarLinkColor">Links:</label>
@@ -270,10 +306,9 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                 <input type="text" class="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}" data-default="{{ variable_defaults|index:'navbarLinkColorHover' }}"/>
                             </div>
                         </div>
-                {% endif %}
-
                     </div>
                 </div>
+                {% endif %}
 
                 <div class="accordion-group">
                     <div class="accordion-heading">
@@ -412,7 +447,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     </div>
                 </div>
 
-                {% if theme_name != "barebones" %}
+                {% if theme_name != "barebones" and theme_name != "droplets" %}
                 <div class="accordion-group">
                     <div class="accordion-heading">
                         <h3 class="accordion-toggle" data-toggle="collapse" href="#advanced" rel="popover" data-original-title="Advanced" data-content="These are additional parameters specific to the currently selected theme.">{% if theme_name == "fruitsalad" %}Fruitsalad Tabs{% else %}Advanced{% endif %}</h3>
