@@ -10,7 +10,7 @@ table {
     width: 100%;
 }
 
-#class_list_options {
+#class_list_options, #teacher_list_options {
     padding-top: 10px;
     padding-bottom: 10px;
     border: 2px grey dashed;
@@ -49,3 +49,36 @@ table {
         font-weight: bold;
     }
 }
+
+#line_item_list_wrapper, #teacher_list_wrapper, #teacher_list_options {
+    display: flex;
+    align-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    
+    div {
+        flex: 1 1 0;
+        text-align: center;
+        font-weight: bold;
+    }
+}
+
+#teacher_list_wrapper #teacher_list_options {
+    flex-grow: 3;
+    min-width: 250px;
+}
+
+#line_item_list_wrapper, #teacher_list_wrapper {
+    column-gap: 20px;
+}
+
+#line_item_list, #teacher_list {
+    .module_link_large {
+        width: 100%;
+        margin-left: 0px;
+        margin-right: 0px;
+    }
+}
+
+

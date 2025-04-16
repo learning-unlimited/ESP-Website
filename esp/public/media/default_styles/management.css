@@ -24,6 +24,9 @@ div .module_group_header, div .module_group_header_half {
     box-shadow: 3px 3px 5px #CCCCCC;
     border-radius: 5px;
 }
+.module_group_body .module_group .module_group_header {
+    background-color: #737373;
+}
 
 div .button_wrapper {
     display: flex;

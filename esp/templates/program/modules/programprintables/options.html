@@ -10,30 +10,7 @@
 
 {% block javascript %}
     {{ block.super }}
-    <script>
-    $j(function () {
-        $j("#class_list_options :input").on("change", function (){
-            // Get user-selected options
-            var fields = $j("#class_list_options :input");
-            var get = "";
-            // Create GET string
-            fields.each(function (index, element) {
-                var val = $j(this).val();
-                if (val != "") {
-                    if (get != "" & get.charAt(get.length - 1) != "&") {
-                        get += "&";
-                    }
-                    get += val;
-                }
-            });
-            // Add GET string to all links
-            $j("#class_lists a").each(function (){
-                var base_url = $j(this).attr('href').split('?')[0];
-                $j(this).attr('href', base_url + "?" + get)
-            });
-        });
-    });
-    </script>
+    <script type="text/javascript" src="/media/scripts/program/modules/printoptions.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -98,6 +75,8 @@ Please select from options below.
                 </button>
             </a>
         </div>
+    </div>
+    <div class="button_wrapper">
         <div class="module_button">
             <a href="./teacherschedules?recipient_type=Teacher&base_list=class_approved" title="Teacher Schedules">
                 <button type="button" class="module_link_large">
@@ -240,27 +219,33 @@ Please select from options below.
     <div class="module_group_header">
         Students who have ordered/reserved line items
     </div>
-    <div class="button_wrapper">
-        {% for li_type in li_types %}
-        <div class="module_button">
-            <a href="./selectList?recipient_type=Student&base_list=extracosts_{{ li_type.id }}" title="{{ li_type.text }} (all)">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> {{ li_type.text }} (all)</div>
-                </button>
-            </a>
+    <div style="padding-left: 10px; padding-right: 10px;" id="line_item_list_wrapper">
+        <div>
+            <div>Line item (choice):</div>
+            <select id="item_type">
+                {% for li_type in li_types %}
+                <option value="{{ li_type.id }}">
+                    {{ li_type.text }} (all)
+                </option>
+                {% if li_type.options %}
+                {% for option in li_type.options %}
+                <option value="{{ li_type.id }}_{{ option|id }}">
+                    {{ li_type.text }} ({{ option|description }})
+                </option>
+                {% endfor %}
+                {% endif %}
+                {% endfor %}
+            </select>
         </div>
-        {% if li_type.options %}
-        {% for option in li_type.options %}
-        <div class="module_button">
-            <a href="./selectList?recipient_type=Student&base_list=extracosts_{{ li_type.id }}_{{ option|id }}" title="{{ li_type.text }} ({{ option|description }})">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> {{ li_type.text }} ({{ option|description }})</div>
-                </button>
-            </a>
+        <div class="button_wrapper">
+            <div class="module_button" id="line_item_list">
+                <a href="./selectList?recipient_type=Student&base_list=extracosts_{{ li_types.0.id }}" title="Generate List">
+                    <button type="button" class="module_link_large">
+                        <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Generate List</div>
+                    </button>
+                </a>
+            </div>
         </div>
-        {% endfor %}
-        {% endif %}
-        {% endfor %}
     </div>
 </div>
 {% endif %}
@@ -269,107 +254,55 @@ Please select from options below.
 
 <div class="module_group" id="module_group_4">
     <div class="module_group_header">
-        Teacher{% if program|hasModule:"TeacherModeratorModule" %} and/or {{ program.getModeratorTitle }}{% endif %} Check-in Sheets
+        Teacher{% if program|hasModule:"TeacherModeratorModule" %} and/or {{ program.getModeratorTitle }}{% endif %} List
     </div>
     <h4 style="line-height:normal;">(filtered to Teachers{% if program|hasModule:"TeacherModeratorModule" %}/{{ program.getModeratorTitle }}s{% endif %} of approved and scheduled classes)</h4>
-    <div class="button_wrapper">
-        <div class="module_button">
-            <a href="./teachersbyname?recipient_type=Teacher&base_list=class_approved" title="Teacher List">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Teacher List</div>
-                    <div class="module_link_caption">(can be sorted by name, class, or start time)</div>
-                </button>
-            </a>
-        </div>
-        <div class="module_button">
-            <a href="./teachersbyname/csv?recipient_type=Teacher&base_list=class_approved" title="Teacher List CSV">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-th"></i> Teacher List (CSV)</div>
-                </button>
-            </a>
-        </div>
-        <div class="module_button">
-            <a href="./teachersbyname/secondday?recipient_type=Teacher&base_list=class_approved" title="Teachers for second day of classes only">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Teachers for second day of classes only</div>
-                    <div class="module_link_caption">(can be sorted by name, class, or start time)</div>
-                </button>
-            </a>
-        </div>
-        <div class="module_button">
-            <a href="./teachersbyname/seconddaycsv?recipient_type=Teacher&base_list=class_approved" title="Teachers for second day of classes only CSV">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-th"></i> Teachers for second day of classes only (CSV)</div>
-                </button>
-            </a>
-        </div>
-    </div>
-    {% if program|hasModule:"TeacherModeratorModule" %}
-    <div class="button_wrapper">
-        <div class="module_button">
-            <a href="./teachermoderatorsbyname?combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo" title="Combined Teacher and {{ program.getModeratorTitle }} List">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Combined Teacher and {{ program.getModeratorTitle }} List</div>
-                    <div class="module_link_caption">(can be sorted by name, class, or start time)</div>
-                </button>
-            </a>
-        </div>
-        <div class="module_button">
-            <a href="./teachermoderatorsbyname/csv?combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo" title="Combined Teacher and {{ program.getModeratorTitle }} List CSV">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-th"></i> Combined Teacher and {{ program.getModeratorTitle }} List (CSV)</div>
-                </button>
-            </a>
-        </div>
-        <div class="module_button">
-            <a href="./teachermoderatorsbyname/secondday?combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo" title="{{ program.getModeratorTitle }}s and teachers for second day of classes only">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> {{ program.getModeratorTitle }}s and teachers for second day of classes only</div>
-                    <div class="module_link_caption">(can be sorted by name, class, or start time)</div>
-                </button>
-            </a>
-        </div>
-        <div class="module_button">
-            <a href="./teachermoderatorsbyname/seconddaycsv?combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo" title="{{ program.getModeratorTitle }}s and teachers for second day of classes only CSV">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-th"></i> {{ program.getModeratorTitle }}s and teachers for second day of classes only (CSV)</div>
-                </button>
-            </a>
+    <div style="padding-left: 10px; padding-right: 10px;">
+        <div id="teacher_list_wrapper">
+            <div id="teacher_list_options">
+                <div>
+                    <div>Users:</div>
+                    <select id="user_type"{% if not program|hasModule:"TeacherModeratorModule" %} disabled{% endif %}>
+                        <option value="teachersbyname" selected data-get="recipient_type=Teacher&base_list=class_approved">
+                            Teachers
+                        </option>
+                        {% if program|hasModule:"TeacherModeratorModule" %}
+                        <option value="moderatorsbyname" data-get="recipient_type=Teacher&base_list=assigned_moderator">
+                            {{ program.getModeratorTitle }}s
+                        </option>
+                        <option value="teachermoderatorsbyname" data-get="combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo">
+                            Teachers and {{ program.getModeratorTitle }}s
+                        </option>
+                        {% endif %}
+                    </select>
+                </div>
+                
+                <div>
+                    <div>Program Days:</div>
+                    <select id="day_type"{% if program.dates|length == 0 %} disabled{% endif %}>
+                        <option value="" selected>All Days</option>
+                        {% if program.dates|length > 1 %}
+                        <option value="secondday">Second Day Only</option>
+                        {% endif %}
+                    </select>
+                </div>
+                <div>
+                    <div>Output as:</div>
+                    <select id="output_type">
+                        <option value="" selected title="(can be sorted by name, class, or start time)">Web page</option>
+                        <option value="csv">CSV</option>
+                    </select>
+                </div>
+            </div>
+            <div class="module_button" id="teacher_list">
+                <a href="./teachersbyname?recipient_type=Teacher&base_list=class_approved" title="Generate List">
+                    <button type="button" class="module_link_large">
+                        <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Generate List</div>
+                    </button>
+                </a>
+            </div>
         </div>
     </div>
-    <div class="button_wrapper">
-        <div class="module_button">
-            <a href="./moderatorsbyname?recipient_type=Teacher&base_list=assigned_moderator" title="{{ program.getModeratorTitle }} List">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> {{ program.getModeratorTitle }} List</div>
-                    <div class="module_link_caption">(can be sorted by name, class, or start time)</div>
-                </button>
-            </a>
-        </div>
-        <div class="module_button">
-            <a href="./moderatorsbyname/csv?recipient_type=Teacher&base_list=assigned_moderator" title="{{ program.getModeratorTitle }} List CSV">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-th"></i> {{ program.getModeratorTitle }} List (CSV)</div>
-                </button>
-            </a>
-        </div>
-        <div class="module_button">
-            <a href="./moderatorsbyname/secondday?recipient_type=Teacher&base_list=assigned_moderator" title="{{ program.getModeratorTitle }}s for second day of classes only">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> {{ program.getModeratorTitle }}s for second day of classes only</div>
-                    <div class="module_link_caption">(can be sorted by name, class, or start time)</div>
-                </button>
-            </a>
-        </div>
-        <div class="module_button">
-            <a href="./moderatorsbyname/seconddaycsv?recipient_type=Teacher&base_list=assigned_moderator" title="{{ program.getModeratorTitle }}s for second day of classes only CSV">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-th"></i> {{ program.getModeratorTitle }}s for second day of classes only (CSV)</div>
-                </button>
-            </a>
-        </div>
-    </div>
-    {% endif %}
 </div>
 
 <br />
