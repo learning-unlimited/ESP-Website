@@ -1,4 +1,20 @@
 $j(function () {
+    $j("#student_format").on("change", function (){
+        // Get user-selected options
+        var url = "./studentschedules/" + $j("#student_format").val() + "/?recipient_type=Student&base_list=enrolled";
+        
+        // Update href
+        $j("#student_schedules a").attr('href', url);
+    });
+    
+    $j("#schedule_user_type").on("change", function (){
+        // Get user-selected options
+        var url = "./" + $j("#schedule_user_type").val() + "?" + $j("#schedule_user_type option:selected").data("get");
+        
+        // Update href
+        $j("#other_schedules a").attr('href', url);
+    });
+    
     $j("#class_list_options :input").on("change", function (){
         // Get user-selected options
         var fields = $j("#class_list_options :input");

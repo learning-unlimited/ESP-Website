@@ -50,7 +50,7 @@ table {
     }
 }
 
-#line_item_list_wrapper, #teacher_list_wrapper, #teacher_list_options {
+#student_schedule_wrapper, #other_schedule_wrapper, #line_item_list_wrapper, #teacher_list_wrapper, #teacher_list_options {
     display: flex;
     align-content: center;
     align-items: center;
@@ -69,11 +69,11 @@ table {
     min-width: 250px;
 }
 
-#line_item_list_wrapper, #teacher_list_wrapper {
+#student_schedule_wrapper, #other_schedule_wrapper, #line_item_list_wrapper, #teacher_list_wrapper {
     column-gap: 20px;
 }
 
-#line_item_list, #teacher_list {
+#student_schedule_wrapper, #other_schedule_wrapper, #line_item_list, #teacher_list {
     .module_link_large {
         width: 100%;
         margin-left: 0px;

@@ -28,41 +28,35 @@ Please select from options below.
 
 <div class="module_group" id="module_group_1">
     <div class="module_group_header">
-        Schedules and Nametags
+        Student Schedules and Nametags
     </div>
-    <div class="button_wrapper">
-        <div class="module_button">
-            <a href="./studentschedules/pdf/?recipient_type=Student&base_list=enrolled" title="Student Schedules (PDF)">
+    <div style="padding-left: 10px; padding-right: 10px;" id="student_schedule_wrapper">
+        <div>
+            <div>Format:</div>
+            <select id="student_format">
+                <option value="pdf" selected>
+                    PDF
+                </option>
+                <option value="tex">
+                    LaTeX
+                </option>
+                <option value="svg">
+                    SVG (1 schedule max)
+                </option>
+                <option value="png">
+                    PNG (1 schedule max)
+                </option>
+            </select>
+        </div>
+        <div class="module_button" id="student_schedules">
+            <a href="./studentschedules/pdf/?recipient_type=Student&base_list=enrolled" title="Generate Student Schedules">
                 <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> Student Schedules (PDF)</div>
+                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Generate Student Schedules</div>
                 </button>
             </a>
         </div>
         <div class="module_button">
-            <a href="./studentschedules/tex/?recipient_type=Student&base_list=enrolled" title="Student Schedules (TEX)">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> Student Schedules (TEX)</div>
-                </button>
-            </a>
-        </div>
-        <div class="module_button">
-            <a href="./studentschedules/svg/?recipient_type=Student&base_list=enrolled" title="Student Schedules (SVG)">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-file"></i> Student Schedules (SVG)</div>
-                    <div class="module_link_caption">(1 schedule max)</div>
-                </button>
-            </a>
-        </div>
-        <div class="module_button">
-            <a href="./studentschedules/png/?recipient_type=Student&base_list=enrolled" title="Student Schedules (PNG)">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-file"></i> Student Schedules (PNG)</div>
-                    <div class="module_link_caption">(1 schedule max)</div>
-                </button>
-            </a>
-        </div>
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/studentscheduleform" title="PDF Student Schedule Formatter">
+            <a href="/manage/{{ program.getUrlBase }}/studentscheduleform" title="Student Schedule Formatter">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-edit"></i> Student Schedule Formatter</div>
                 </button>
@@ -76,34 +70,38 @@ Please select from options below.
             </a>
         </div>
     </div>
-    <div class="button_wrapper">
-        <div class="module_button">
-            <a href="./teacherschedules?recipient_type=Teacher&base_list=class_approved" title="Teacher Schedules">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> Teacher Schedules</div>
-                </button>
-            </a>
+</div>
+
+<br />
+
+<div class="module_group" id="module_group_1b">
+    <div class="module_group_header">
+        Other Schedules and Nametags
+    </div>
+    <div style="padding-left: 10px; padding-right: 10px;" id="other_schedule_wrapper">
+        <div>
+            <div>Users:</div>
+            <select id="schedule_user_type">
+                <option value="teacherschedules" selected data-get="recipient_type=Teacher&base_list=class_approved">
+                    Teachers
+                </option>
+                {% if program|hasModule:"TeacherModeratorModule" %}
+                <option value="moderatorschedules" data-get="recipient_type=Teacher&base_list=assigned_moderator">
+                    {{ program.getModeratorTitle }}s
+                </option>
+                <option value="teachermoderatorschedules" data-get="combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo">
+                    Teachers and {{ program.getModeratorTitle }}s
+                </option>
+                {% endif %}
+                <option value="volunteerschedules" data-get="recipient_type=Volunteer&base_list=volunteer_all">
+                    Volunteers
+                </option>
+            </select>
         </div>
-        {% if program|hasModule:"TeacherModeratorModule" %}
-        <div class="module_button">
-            <a href="./moderatorschedules?recipient_type=Teacher&base_list=assigned_moderator" title="{{ program.getModeratorTitle }} Schedules">
+        <div class="module_button" id="other_schedules">
+            <a href="./teacherschedules?recipient_type=Teacher&base_list=class_approved" title="Generate Schedules">
                 <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> {{ program.getModeratorTitle }} Schedules</div>
-                </button>
-            </a>
-        </div>
-        <div class="module_button">
-            <a href="./teachermoderatorschedules?combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo" title="Teacher and Moderator Schedules">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> Combined Teacher and {{ program.getModeratorTitle }} Schedules</div>
-                </button>
-            </a>
-        </div>
-        {% endif %}
-        <div class="module_button">
-            <a href="./volunteerschedules?recipient_type=Volunteer&base_list=volunteer_all" title="Volunteer Schedules">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> Volunteer Schedules</div>
+                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Generate Schedules</div>
                 </button>
             </a>
         </div>
@@ -237,14 +235,12 @@ Please select from options below.
                 {% endfor %}
             </select>
         </div>
-        <div class="button_wrapper">
-            <div class="module_button" id="line_item_list">
-                <a href="./selectList?recipient_type=Student&base_list=extracosts_{{ li_types.0.id }}" title="Generate List">
-                    <button type="button" class="module_link_large">
-                        <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Generate List</div>
-                    </button>
-                </a>
-            </div>
+        <div class="module_button" id="line_item_list">
+            <a href="./selectList?recipient_type=Student&base_list=extracosts_{{ li_types.0.id }}" title="Generate List">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Generate List</div>
+                </button>
+            </a>
         </div>
     </div>
 </div>
