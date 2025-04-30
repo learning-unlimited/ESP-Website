@@ -104,11 +104,12 @@ div .module_group_expandable + .module_group_body {
     display: flex;
     flex-wrap: wrap;
     column-gap: 20px;
-    justify-content: space-between;
+    justify-content: center;
         
     div, table {
         flex: 1 1 0px;
-        min-width: max(200px, 40%);
+        min-width: max(225px, 40%);
+        max-width: 550px;
     }
 }
 
