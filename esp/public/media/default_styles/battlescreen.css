@@ -194,3 +194,24 @@ td.button_td {
     row-gap: 5px;
     gap: 5px;
 }
+
+@media (max-width: 700px) {
+    #battlescreen .no_mobile {
+        display: none !important;
+    }
+}
+
+.unapproved {
+    font-style: italic;
+    color: #900;
+}
+
+.dashboard_red {
+    font-style:italic;
+    color : #FF0000;
+}
+
+.dashboard_blue {
+  font-weight:bold;
+  color: #3333FF;
+}

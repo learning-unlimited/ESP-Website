@@ -163,8 +163,8 @@ function fill_status_row(clsid, classes_data) {
     .append(
       $j("<div/>")
         .css("padding-top", "10px")
-        .css("padding-left", "20px")
-        .css("padding-right", "20px")
+        .css("padding-left", "10px")
+        .css("padding-right", "10px")
         .append(desc_div)
         .append(sections_table)
     );
@@ -308,7 +308,7 @@ function createClassStatusTd(clsObj) {
     var clsStatus = status_details.text;
     var statusStrong = $j('<strong/>').text('[' + clsStatus + ']');
     return $j('<td/>', {
-      'class': 'clsleft classname',
+      'class': 'clsleft classname no_mobile',
       'title': clsStatus,
     }).append(
         $j('<span/>', {'class': title_css_class})

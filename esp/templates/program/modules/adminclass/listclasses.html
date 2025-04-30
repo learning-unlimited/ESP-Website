@@ -37,23 +37,6 @@ json_data = {};
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
 <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
 
-<style type="text/css">
-.unapproved {
-  font-style: italic;
-  color: #900;
-}
-.dashboard_red
-{
-font-style:italic;
-color : #FF0000;
-}
-.dashboard_blue
-{
-font-weight:bold;
-color: #3333FF;
-}
-</style>
-
 <hr />
 
 <div class="module_group" id="listclasses">
@@ -97,14 +80,14 @@ color: #3333FF;
     {% endif %}
     <thead>
       <tr id="header-row">
-        <th class="dashboard_colheader"><div style="cursor: pointer; display: inline;">Code</div></th>
+        <th class="dashboard_colheader"><div style="cursor: pointer; display: inline;" class="no_mobile">Code</div></th>
         <th class="dashboard_colheader"><div style="cursor: pointer; display: inline;">Title</div></th>
-        <th class="dashboard_colheader"><div style="cursor: pointer; display: inline;">Status</div></th>
+        <th class="dashboard_colheader no_mobile"><div style="cursor: pointer; display: inline;">Status</div></th>
         <th class="dashboard_colheader"><div style="cursor: pointer; display: inline;">Teachers</div></th>
         {% if program|hasModule:"TeacherModeratorModule" %}
         <th class="dashboard_colheader"><div style="cursor: pointer; display: inline;">{{ program.getModeratorTitle }}s</div></th>
         {% endif %}
-        <th class="dashboard_colheader sorttable_nosort">Management Options</th>
+        <th class="dashboard_colheader sorttable_nosort"><div class="no_mobile">Management Options</div></th>
       </tr>
     </thead>
     <tbody id="classes_anchor">
