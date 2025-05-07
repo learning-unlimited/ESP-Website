@@ -70,6 +70,7 @@ body {
 @media (min-width: 980px) {
     body {
         padding-top: 40px;
+        padding-bottom: 40px;
     }
 }
 
@@ -116,7 +117,7 @@ ul.nav-collapse {
 }
 
 @media (min-width: 768px) and (max-width: 979px) {
-    .header-container, .footer-container {
+    .navbar-container, .footer-container {
         width: 100%;
     }
 }
@@ -279,7 +280,7 @@ ul.nav-collapse {
     font-size: 13px;
 }
 
-input:not(.inputbox), textarea, .uneditable-input {
+input:not(.inputbox):not(.input-small):not(.input-mini), textarea, .uneditable-input {
     width: 94%;
 }
 
