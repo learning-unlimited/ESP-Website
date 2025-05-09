@@ -280,8 +280,14 @@ ul.nav-collapse {
     font-size: 13px;
 }
 
-input:not(.inputbox):not(.input-small):not(.input-mini):not([type="radio"]):not([type="button"]), textarea, .uneditable-input {
-    width: 94%;
+input:not(.inputbox):not([type="radio"]):not([type="button"]):not(
+    .input-mini
+  ):not(.input-small):not(.input-medium):not(.input-large):not(
+    .input-xlarge
+  ):not(.input-xxlarge):not([class*="span"]),
+textarea:not([class*="span"]),
+.uneditable-input:not([class*="span"]) {
+  width: 94%;
 }
 
 select {
