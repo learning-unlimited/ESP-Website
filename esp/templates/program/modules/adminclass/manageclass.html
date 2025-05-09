@@ -29,7 +29,7 @@
 <br /><br />
 </center>
 
-<table align="center" width="500">
+<table align="center">
     <tr>
         <th colspan="2" align="center">Information about {{ class.emailcode }}: {{ class.title }}</th>
     </tr>
@@ -112,7 +112,7 @@
 
 {% if cls_cancel_form %}
 <form name="class_cancel" action="{{ request.path }}?action=cancel_cls" method="POST">
-<table align="center" width="500">
+<table align="center">
     <tr>
         <th colspan="2" align="center">Cancel class {{ class.emailcode }}: {{ class.title }}</th>
     </tr>
@@ -125,7 +125,7 @@
 </table>
 </form>
 {% else %}
-    <table align="center" width="500">
+    <table align="center">
     <tr>
         <th colspan="2" align="center">{% if class.isCancelled %}Class {{ class.emailcode }} is already cancelled.{% else %}Class {{ class.emailcode }} has no scheduled sections and can not be cancelled. You can delete sections or reject the entire class below.{% endif %}</th>
     </tr>
@@ -134,14 +134,14 @@
 
 {% if cls_cancel_form %}
 {% if sec_cancel_forms.fields.target.choices|length == 0 %}
-    <table align="center" width="500">
+    <table align="center">
     <tr>
         <th colspan="2" align="center">All sections for  {{ class.emailcode }} are already cancelled.</th>
     </tr>
     </table>
 {% else %}
     <form name="sec_cancel" action="{{ request.path }}?action=cancel_sec" method="POST">
-    <table align="center" width="500">
+    <table align="center">
     <tr>
         <th colspan="2" align="center">Cancel sections for {{ class.emailcode }}: {{ class.title }}</th>
     </tr>
@@ -164,7 +164,7 @@ Please use the form below to alter {{ class.title }}.  Note that changes made to
 </p>
 
 <form name="classmanage" action="{{ request.path }}?action=modify_cls" method="POST">
-<table align="center" width="500">
+<table align="center">
 
 <tr>
     <th colspan="2" style="text-align: center;">
@@ -191,7 +191,7 @@ Please use the form below to alter {{ class.title }}.  Note that changes made to
 {% for form in sec_forms %}
 <form name="classmanage" action="{{ request.path }}?action=modify_sec" method="POST">
 <input type="hidden" name="sec_id" value="{{ form.sec.id }}">
-<table align="center" width="500">
+<table align="center">
 <tr>
     <th colspan="2" style="text-align: center;">
         Information for section {{ form.index }} of class {{ class.emailcode }} (section ID: {{ form.sec.id }})
