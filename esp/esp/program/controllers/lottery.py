@@ -779,7 +779,7 @@ class LotteryAssignmentController(object):
         student_sections = export_array(self.student_sections)
         student_ids = export_array(self.student_ids)
         section_ids = export_array(self.section_ids)
-        return base64.b64encode(zlib.compress(student_sections + '|' + student_ids + '|' + section_ids))
+        return base64.b64encode(zlib.compress(student_sections + b'|' + student_ids + b'|' + section_ids))
 
     def import_assignments(self, data):
         data_parts = zlib.decompress(base64.b64decode(data)).split('|')
