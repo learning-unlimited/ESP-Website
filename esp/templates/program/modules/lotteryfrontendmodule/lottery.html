@@ -32,7 +32,7 @@ var program_url_base = '{{ program.getUrlBase }}';
 
     <h3>Run</h3>
     <p>You will be able to review the generated schedules below before saving them.</p>
-    <button id="lotteryRun" type="submit" class="btn btn-primary btn-large">Generate Student Schedules</button>
+    <button id="lotteryRun" type="submit" class="btn btn-primary btn-large custom-action">Generate Student Schedules</button>
 </form>
 
 <h1>Save Student Schedules</h1>
@@ -42,7 +42,7 @@ var program_url_base = '{{ program.getUrlBase }}';
 <button
 	id="lotterySaveSafe"
 	type="button"
-	class="btn btn-success lotterySave"
+	class="btn btn-success lotterySave custom-action"
 	disabled
 	{% if has_old_schedules %}style="display:none;"{% endif %}
 	>
@@ -51,7 +51,7 @@ var program_url_base = '{{ program.getUrlBase }}';
 <button
 	id="lotterySaveOverwrite"
 	type="button"
-	class="btn btn-danger lotterySave"
+	class="btn btn-danger lotterySave custom-action"
 	disabled
 	{% if not has_old_schedules %}style="display:none;"{% endif %}
 	>

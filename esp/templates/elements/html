@@ -80,7 +80,7 @@
     <!-- prevent forms from being submitted twice -->
     <script text="text/javascript">
       $j(function() {
-        $j('[type=submit]:not(.stripe-button-el):not(.save)').on('click', function(event){
+        $j('[type=submit]:not(.stripe-button-el):not(.save):not(.custom-action)').on('click', function(event){
           <!-- prevent any other behaviors -->
           event.preventDefault();
           event.stopPropagation();
