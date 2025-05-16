@@ -448,7 +448,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     </div>
                 </div>
 
-                {% if theme_name != "barebones" and theme_name != "droplets" %}
+                {% if theme_name != "barebones" %}
                 <div class="accordion-group">
                     <div class="accordion-heading">
                         <h3 class="accordion-toggle" data-toggle="collapse" href="#advanced" data-original-title="Advanced">{% if theme_name == "fruitsalad" %}Fruitsalad Tabs{% else %}Advanced{% endif %}</h3>
