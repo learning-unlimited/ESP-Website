@@ -6,7 +6,7 @@
     <a class="dropdown-toggle caret-wrapper" data-toggle="dropdown"><b class="caret"></b></a>
     <ul class="dropdown-menu pull-left">
       {% if theme.contact_info %}
-      <li style="padding: 3px 20px;">{{ theme.contact_info|linebreaksbr }}</li>
+      <li><div>{{ theme.contact_info|linebreaksbr }}</div></li>
       {% endif %}
       {% if theme.show_email %}
       <li><a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">Email: {{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></li>
