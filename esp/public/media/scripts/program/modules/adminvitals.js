@@ -6,11 +6,7 @@ function fillData(ID, stats)
     $field.html('');
     for (var i = 0; i < stats.length; i++)
     {
-	$field.append("<strong>"+stats[i][0]+"</strong> &ndash; "+stats[i][1]);
-	if (i != stats.length - 1)
-	{
-	    $field.append("<br />");
-	}
+	$field.append("<div><strong>"+stats[i][0]+"</strong> &ndash; "+stats[i][1]+"</div>");
     }
     
 }
@@ -47,7 +43,7 @@ function fillStats(data)
 
     // Fill in the categories table
     $categories = $j("#stats_categories > .module_group_body");
-    $categories.html("(Note: Totals include unreviewed classes)"+
+    $categories.html("<div style='min-width: 100%;'>(Note: Totals include unreviewed classes)</div>"+
 		     "<table><tr><th><b>Category</b></th>"+
 		     "<th class='smaller'># of subjects</th>"+
 		     "<th class='smaller'># of sections</th>"+
@@ -63,7 +59,7 @@ function fillStats(data)
 
     // Fill in the grades table
     $grades = $j("#stats_grades > .module_group_body");
-    $grades.html("(Note: students counted are enrolled in at least one class)"+
+    $grades.html("<div style='min-width: 100%;'>(Note: students counted are enrolled in at least one class)</div>"+
 	         "<table><tr><th><b>Grade</b></th>"+
 		 "<th class='smaller'># of students</th>"+
 		 "<th class='smaller'># of subjects</th>"+
@@ -82,13 +78,15 @@ function fillStats(data)
 
     // Fill in the timeslots table
     $timeslots = $j("#stats_timeslots > .module_group_body");
-    $timeslots.html('');
+    $timeslots.html("<table><tr><th><b>Timeslot</b></th>"+
+		     "<th class='smaller'># students</th>"+
+		     "<th class='smaller'># of classes</th></tr></table>");
+    $timeslotstable = $timeslots.children("table");
     for (var i = 0; i < vitals.timeslots.length; i++)
     {
-	$timeslots.append("<strong>"+vitals.timeslots[i].slotname+"</strong> &ndash; <br />"+
-		      "<p>Students: "+vitals.timeslots[i].studentcount.count+" / "+vitals.timeslots[i].studentcount.max_count+"<br />"+
-		      "Classes: "+vitals.timeslots[i].classcount+
-		      "</p>");
+    $timeslotstable.append("<tr><th class='smaller'>"+vitals.timeslots[i].slotname+"</th>"+
+		"<td>"+vitals.timeslots[i].studentcount.count+" / "+vitals.timeslots[i].studentcount.max_count+"</td>"+
+		"<td>"+vitals.timeslots[i].classcount+"</td></tr>");
     }
 
     // Fill in the t-shirts table
@@ -124,14 +122,14 @@ function fillStats(data)
             }
             html_string = html_string.concat("</tr>");
         }
-        html_string = html_string.concat("</table><br>");
+        html_string = html_string.concat("</table>");
     }
     $tshirts.html(html_string);
     
     //  Fill in the accounting table
     $accounting = $j("#stats_accounting > .module_group_body");
-    $accounting.html("<strong>Number of credit card payments</strong>: " + accounting.data.num_payments + "<br />");
-    $accounting.append("<strong>Total amount of credit card payments</strong>: $" + accounting.data.total_payments.toFixed(2));
+    $accounting.html("<div><strong>Number of credit card payments</strong>: " + accounting.data.num_payments + "</div>");
+    $accounting.append("<div><strong>Total amount of credit card payments</strong>: $" + accounting.data.total_payments.toFixed(2) + "</div>");
 }
 
 function getStats()
