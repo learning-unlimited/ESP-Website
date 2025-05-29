@@ -448,19 +448,23 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         else:
             raise Http404
         teacher_dict = {}
+        moderator_dict = {}
         teachers = []
+        moderators = []
         classes = []
         qs = prog.classes().prefetch_related(
             'category', 'sections', 'teachers')
 
         for c in qs:
             class_teachers = c.get_teachers()
+            class_moderators = c.moderators()
             cls = {
                 'id': c.id,
                 'status': c.status,
                 'title': c.title,
                 'category': c.category.symbol,
                 'category_id': c.category.id,
+                'class_size_max': c.class_size_max,
                 'grade_max': c.grade_max,
                 'grade_min': c.grade_min,
             }
@@ -488,12 +492,26 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 }
                 teachers.append(teacher)
                 teacher_dict[t.id] = teacher
+            cls['moderators'] = [m.id for m in class_moderators]
+            for m in class_moderators:
+                if m.id in moderator_dict:
+                    moderator_dict[m.id]['sections'] += cls['sections']
+                    continue
+                moderator = {
+                    'id': m.id,
+                    'username': m.username,
+                    'first_name': m.first_name,
+                    'last_name': m.last_name,
+                    'sections': list(cls['sections'])
+                }
+                moderators.append(moderator)
+                moderator_dict[m.id] = moderator
 
         # Build up teacher availability
         for teacher in teachers:
             teacher['availability'] = [event.id for event in ESPUser.objects.get(id=teacher['id']).getAvailableTimes(prog, ignore_classes=True)]
 
-        return {'classes': classes, 'teachers': teachers}
+        return {'classes': classes, 'teachers': teachers, 'moderators': moderators}
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_subjects.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda cls=wildcard, **kwargs: {'prog': cls.parent_program})
 
