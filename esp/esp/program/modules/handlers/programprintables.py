@@ -71,6 +71,8 @@ import copy
 import csv
 import json
 
+from numpy import array_split
+
 class ProgramPrintables(ProgramModuleObj):
     doc = """A wide variety of printable documents that are useful for a program."""
 
@@ -1449,16 +1451,16 @@ class ProgramPrintables(ProgramModuleObj):
         except:
             context['colors'] = ['Yellow', 'Blue', 'Pink', 'Green', 'Turquoise', 'Purple', 'Yellow', 'Blue']
 
-        get_data = request.GET.copy()
-        try:
-            name_groups = get_data['name_groups']
-        except:
-            name_groups = 'a,c,e,h,k,o,s,u'
-            get_data['name_groups'] = name_groups
+        if extra:
+            num_name_groups = int(extra)
+            context['name_groups'] = [x.tolist() for x in array_split(list(students), num_name_groups)]
 
-
-        if 'name_groups' in get_data:
-            name_group_start = get_data['name_groups'].split(',')
+        else:
+            if 'name_groups' in request.GET:
+                name_groups = request.GET['name_groups']
+            else:
+                name_groups = 'a,c,e,h,k,o,s,u'
+            name_group_start = name_groups.split(',')
             for i in range(len(name_group_start)):
                 gs = name_group_start[i]
                 if i < len(name_group_start) - 1:
@@ -1466,19 +1468,6 @@ class ProgramPrintables(ProgramModuleObj):
                     context['name_groups'].append(students.filter(last_name__gte=gs, last_name__lt=gs_end))
                 else:
                     context['name_groups'].append(students.filter(last_name__gte=gs))
-
-        else:
-
-            try:
-                num_name_groups = int(extra)
-            except:
-                num_name_groups = 7
-
-            names_per_set = float(num_lastnames) / num_name_groups
-            for i in range(num_name_groups):
-                start_index = int(i * names_per_set)
-                end_index = int((i + 1) * names_per_set)
-                context['name_groups'].append(students[start_index:end_index])
 
         num_per_page = 12
         student_tuples = []
