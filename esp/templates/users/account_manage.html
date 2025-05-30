@@ -5,7 +5,7 @@
 {% block content %}
 <h1>Manage Your Account</h1>
 {% load render_qsd %}
-{% inline_qsd_block "contact_password_recovery_check" %}
+
 <h2>You can do the following things with your account:</h2>
 <center>
 <ul class="nav nav-tabs nav-stacked">
@@ -16,6 +16,8 @@
 </ul>
 </center>
 <p>Please note, if you disable your account, you will no longer receive email and/or mail notifications from us.</p>
+
+{% inline_qsd_block "contact_password_recovery_check" %}
 {% end_inline_qsd_block %}
 
 <p>By creating an account, you agreed to the <a href="https://www.learningu.org/about/tos/" target="_blank">terms of service</a>
