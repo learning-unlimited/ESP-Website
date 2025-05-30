@@ -129,7 +129,7 @@ class TeacherEventsManageModule(ProgramModuleObj):
     setup_title = "Set up events for teachers to attend before the program"
 
     def isCompleted(self):
-        return False
+        return Event.objects.filter(program=self.program, event_type__in=list(EventType.teacher_event_types().values())).exists()
 
     class Meta:
         proxy = True
