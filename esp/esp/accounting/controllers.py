@@ -189,6 +189,13 @@ class ProgramAccountingController(BaseAccountingController):
             return lineitems[0]
         return None
 
+    def donation_lineitemtype(self):
+        for module_name in ['CreditCardModule_Stripe', 'DonationModule']:
+            other_module = self.program.getModule(module_name)
+            if other_module and other_module.get_setting('offer_donation', default=True):
+                return LineItemType.objects.get_or_create(program=self.program, text=other_module.get_setting('donation_text'))[0]
+        return None
+
     def get_lineitemtypes_Q(self, include_donations=True, required_only=False, optional_only=False, payment_only=False, lineitemtype_id=None):
         if lineitemtype_id:
             return Q(id=lineitemtype_id)
@@ -327,7 +334,7 @@ class IndividualAccountingController(ProgramAccountingController):
         result = []
         program_account = self.default_program_account()
         source_account = self.default_source_account()
-        line_items = self.get_lineitemtypes().exclude(text__in=self.admission_items)
+        line_items = self.get_lineitemtypes(include_donations=False).exclude(text__in=self.admission_items)
 
         #   Clear existing transfers
         Transfer.objects.filter(user=self.user, line_item__in=line_items).delete()
@@ -564,6 +571,13 @@ class IndividualAccountingController(ProgramAccountingController):
                 aid_amount += discount_aid_amount
 
         return aid_amount
+
+    def amount_donation(self):
+        lit = self.donation_lineitemtype()
+        if lit is not None and Transfer.objects.filter(user=self.user, line_item=lit).exists():
+            return Transfer.objects.filter(user=self.user, line_item=lit).aggregate(Sum('amount_dec'))['amount_dec__sum']
+        else:
+            return Decimal('0')
 
     def amount_siblingdiscount(self):
         if self.program.sibling_discount and SplashInfo.getForUser(self.user, self.program).siblingdiscount:

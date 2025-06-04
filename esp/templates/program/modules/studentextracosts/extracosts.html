@@ -104,6 +104,9 @@ td>ul { list-style-type: none; padding: 0px }
         {% if not program.sibling_discount %}
         <p>Program admission: <span style="font-weight: bold;" id="amount_cost" data-total="{{ program.base_cost|floatformat:2 }}">${{ program.base_cost|floatformat:2 }}</span></p>
         {% endif %}
+        {% if amount_donation > 0 %}
+        <p>Donation: <span style="font-weight: bold;" id="amount_donation" data-donation="{{ amount_donation|floatformat:2 }}">${{ amount_donation|floatformat:2 }}</span></p>
+        {% endif %}
         {% if paid_for %}
         <p>Total amount previously paid: <span style="font-weight: bold;" id="amount_paid" data-total="{{ amount_paid|floatformat:2 }}">-${{ amount_paid|floatformat:2 }}</span></p>
         {% endif %}

@@ -8,6 +8,8 @@ var prog_cost = 0;
 $j(function() {
     // the amount that has already been paid
     amount_paid = parseFloat($j("#amount_paid").data("total")) || 0;
+    // the amount of donations that were promised
+    amount_donation = parseFloat($j("#amount_donation").data("donation")) || 0;
     // the dollar amount of financial aid that is provided
     finaid_max_dec = parseFloat($j("#amount_finaid").data("max_dec")) || 0;
     // the percent of remaining cost that is covered by financial aid
@@ -59,7 +61,7 @@ function updateTotalCost() {
     // update the financial aid total on the page (should always be negative)
     if (amount_finaid > 0) $j("#amount_finaid").html("-$" + Number(amount_finaid).toFixed(2));
     // calculate the amount due after accounting for what has already been paid and what financial aid covers
-    amount_due = total_extras + prog_cost - amount_paid - amount_finaid;
+    amount_due = total_extras + prog_cost + amount_donation - amount_paid - amount_finaid;
     // update the amount due on the page
     if (amount_due < 0) {
         $j("#amount_due").html("-$" + Number(-amount_due).toFixed(2)).css("color", "red");
