@@ -109,7 +109,11 @@ class StudentCustomFormModule(ProgramModuleObj):
         if custom_form_id:
             cf = Form.objects.get(id=int(custom_form_id))
         else:
-            raise ESPError('Cannot find an appropriate form for this module. Please ask your administrator to create a form and set the learn_extraform_id Tag.', log=False)
+            if request.user.isAdmin():
+                error = 'Cannot find an appropriate form for this module. You should <a href="/customforms" target="_blank">create one</a> and link it to the "Student Custom Form" module of the %s program.' % (self.program)
+            else:
+                error = 'Cannot find an appropriate form for this module. Please ask your administrator to create a form and link it to the "Student Custom Form" module.'
+            raise ESPError(error, log=False)
 
         #   If the user already filled out the form, use their earlier response for the initial values
         if self.isCompleted():
