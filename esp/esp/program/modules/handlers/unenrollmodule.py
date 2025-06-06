@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 import datetime
 import logging
 from django.db.models import signals
+from esp.users.models import Record
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.models import StudentRegistration, RegistrationType
 from esp.users.models import ESPUser
@@ -132,8 +133,8 @@ class UnenrollModule(ProgramModuleObj):
         # students not checked in
         students = ESPUser.objects.filter(
             id__in=enrollments.values('user'))
-        students = students.exclude(
-            record__program=prog, record__event__name='attended')
+        records = Record.objects.filter(program=prog, event__name='attended')
+        students = students.exclude(id__in=records.values('user'))
 
         # enrollments for those students
         relevant = enrollments.filter(user__in=students).values_list(
