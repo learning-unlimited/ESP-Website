@@ -33,14 +33,10 @@ if os.environ.get('VIRTUAL_ENV') is None:
 
 import django
 django.setup()
-from esp.dbmail.models import EmailList
+from esp.dbmail.models import EmailList, send_mail
 from django.conf import settings
 
-host = socket.gethostname()
 import_location = 'esp.dbmail.receivers.'
-MAIL_PATH = '/usr/sbin/sendmail'
-server = smtplib.SMTP('localhost')
-ARCHIVE = settings.DEFAULT_EMAIL_ADDRESSES['archive']
 SUPPORT = settings.DEFAULT_EMAIL_ADDRESSES['support']
 ORGANIZATION_NAME = settings.INSTITUTION_NAME + '_' + settings.ORGANIZATION_SHORT_NAME
 
@@ -48,10 +44,6 @@ ORGANIZATION_NAME = settings.INSTITUTION_NAME + '_' + settings.ORGANIZATION_SHOR
 DEBUG=False
 
 user = "UNKNOWN USER"
-
-def send_mail(message):
-    p = os.popen("%s -i -t" % MAIL_PATH, 'w')
-    p.write(message)
 
 try:
     user = os.environ['LOCAL_PART']
@@ -76,47 +68,35 @@ try:
         if not instance.send:
             continue
 
-        if hasattr(instance, "direct_send") and instance.direct_send:
-            if message['Bcc']:
-                bcc_recipients = [x.strip() for x in message['Bcc'].split(',')]
-                del(message['Bcc'])
-                message['Bcc'] = ", ".join(bcc_recipients)
+        # Catch sender's message and grab the data fields (To, From, Subject, Body, etc.)
+        data = dict()
+        for field in ['to', 'from', 'cc', 'bcc', 'subject', 'body']:
+            data[field] = message[field].split(',')
 
-            send_mail(str(message))
-            continue
-
-        del(message['to'])
-        del(message['cc'])
-        message['X-ESP-SENDER'] = 'version 2'
-        message['X-FORWARDED-FOR'] = message['X-CLIENT-IP'] if message['X-Client-IP'] else message['Client-IP']
-
-        subject = message['subject']
-        del(message['subject'])
-        if hasattr(instance, 'emailcode') and instance.emailcode:
-            subject = '[%s] %s' % (instance.emailcode, subject)
-        if handler.subject_prefix:
-            subject = '[%s] %s' % (handler.subject_prefix, subject)
-        message['Subject'] = subject
-
-        if handler.from_email:
-            del(message['from'])
-            message['From'] = handler.from_email
-
-        del message['Message-ID']
-
-        # get a new message id
-        message['Message-ID'] = '<%s@%s>' % (hashlib.sha1(str(random.random()).encode()).hexdigest(), host)
-
-        if handler.cc_all:
-            # send one mass-email
-            message['To'] = ', '.join(instance.recipients)
-            send_mail(str(message))
-        else:
-            # send an email for each recipient
-            for recipient in instance.recipients:
-                del(message['To'])
-                message['To'] = recipient
-                send_mail(str(message))
+       # If the sender's email is not associated with an account on the site,
+       # do not forward the email 
+       if not data['from']:
+           continue
+       else:
+           users = ESPUser.objects.filter(email=data['from'])
+           if len(users) == 0:
+               logger.warning('Received email from {}, which is not associated with a user'.format(data['from'])
+               # TODO: send the user a bounce message but limit to one bounce message per day/week/something using
+               # something similar to dbmail.MessageRequests to keep track
+               continue
+           # If the sender's email is associated with an account on the website,
+           # use SendGrid to send an email to each recipient of the original message (To, Cc, Bcc) individually from
+           # the sender's site email
+           elif len(users) == 1:
+               for recipient in data['to'] + data['cc'] + data['bcc']:
+                   send_mail(subject=data['subject'], message=data['body'],
+                   from_email='{}@{}'.format(users[0], settings.EMAIL_HOST_SENDER),
+                   recipient_list=[recipient], fail_silently=False)
+           # If there is more than one associated account, choose one by prefering admin > teacher > volunteer >
+           # student then choosing the earliest account created. Then send as before using the unique account.
+           if len(users) > 1:
+               # TODO: <logic to find unique account>
+               send()
 
         sys.exit(0)
 
