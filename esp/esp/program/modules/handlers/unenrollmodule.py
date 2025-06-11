@@ -72,11 +72,20 @@ class UnenrollModule(ProgramModuleObj):
 
         """
         if request.method == 'POST':
-            selected_enrollments = request.POST['selected_enrollments']
-            ids = [int(id) for id in selected_enrollments.split(',')]
-            registrations = StudentRegistration.objects.filter(id__in=ids)
-            registrations.update(end_date=datetime.datetime.now())
-            logger.info("Expired student registrations: %s", ids)
+            context = {}
+            if 'undo' in request.POST:
+                selected_enrollments = request.POST['selected_enrollments']
+                ids = [int(id) for id in selected_enrollments.split(',')]
+                registrations = StudentRegistration.objects.filter(id__in=ids)
+                registrations.update(end_date=None)
+                logger.info("Unexpired student registrations: %s", ids)
+                context['undo'] = True
+            else:
+                selected_enrollments = request.POST['selected_enrollments']
+                ids = [int(id) for id in selected_enrollments.split(',')]
+                registrations = StudentRegistration.objects.filter(id__in=ids)
+                registrations.update(end_date=datetime.datetime.now())
+                logger.info("Expired student registrations: %s", ids)
             # send signal to expire caches
             # XXX: sending all of them is actually kind of
             # expensive and mostly redundant; it would be
@@ -85,7 +94,6 @@ class UnenrollModule(ProgramModuleObj):
             for reg in registrations:
                 signals.post_save.send(
                     sender=StudentRegistration, instance=reg)
-            context = {}
             context['ids'] = ids
             return render_to_response(
                 self.baseDir()+'result.html', request, context)
