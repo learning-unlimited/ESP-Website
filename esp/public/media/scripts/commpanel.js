@@ -15,9 +15,9 @@ function set_step(base_div, step_name)
     {
         //  console.log(step_divs[i]);
         if (step_divs[i].id == step_name)
-            $j("#" + step_divs[i].id).removeClass("commpanel_hidden");
+            $j("#" + step_divs[i].id).show();
         else
-            $j("#" + step_divs[i].id).addClass("commpanel_hidden");
+            $j("#" + step_divs[i].id).hide();
     }
 }
 
@@ -192,11 +192,11 @@ function initialize()
     recipient_type_change = function (clear = true) {
         var rb_selected = $j("select[name=recipient_type]").val();
         $j("#recipient_type_name").html("Which set of <b>" + $j("option[value=" + rb_selected +"]").html() + "</b> would you like to contact?");
-        $j("#recipient_list_select").children("div").addClass("commpanel_hidden");
-        $j("#recipient_list_select").children("div.step_header").removeClass("commpanel_hidden");
-        $j("#recipient_list_options_" + rb_selected).removeClass("commpanel_hidden");
-        $j(".sendto_fn_select").addClass("commpanel_hidden");
-        $j("." + rb_selected + ".sendto_fn_select").removeClass("commpanel_hidden");
+        $j("#recipient_list_select").children("div").hide();
+        $j("#recipient_list_select").children("div.step_header").show();
+        $j("#recipient_list_options_" + rb_selected).show();
+        $j(".sendto_fn_select").hide();
+        $j("." + rb_selected + ".sendto_fn_select").show();
         if(clear) {
             $j("[name=base_list]").prop('checked', false); // Clear the selected radio button
             clear_filters(); // Clear the filters
@@ -211,24 +211,25 @@ function initialize()
 
     //  Handle clicks on show/hide email list links
     $j("button.commpanel_show_all").on('click', function () {
-        $j("li.commpanel_list_entry").removeClass("commpanel_hidden");
-        $j("button.commpanel_show_all").addClass("commpanel_hidden");
-        $j("button.commpanel_show_preferred").removeClass("commpanel_hidden");
+        $j("li.commpanel_list_entry").show();
+        $j("button.commpanel_show_all").hide();
+        $j("button.commpanel_show_preferred").show();
         return false;
     });
     $j("button.commpanel_show_preferred").on('click', function () {
-        $j("li.commpanel_list_entry").addClass("commpanel_hidden");
-        $j("li.commpanel_list_entry.commpanel_list_preferred").removeClass("commpanel_hidden");
-        $j("button.commpanel_show_all").removeClass("commpanel_hidden");
-        $j("button.commpanel_show_preferred").addClass("commpanel_hidden");
+        $j("li.commpanel_list_entry").hide();
+        $j("li.commpanel_list_entry.commpanel_list_preferred").show();
+        $j("button.commpanel_show_all").show();
+        $j("button.commpanel_show_preferred").hide();
         return false;
     });
-    $j("#recipient_list_select").children("div").addClass("commpanel_hidden");
+    $j("#recipient_list_select").children("div").hide();
 
     //  Handle the outer level tabs
     $j("#tab_select_basic").on('click', function () {
         move_filters("base_filter_accordion");
         recipient_type_change();
+        combo_base_list_change();
         set_step("basic_step_container", "recipient_type_select"); return false;
     });
 
@@ -303,6 +304,7 @@ function initialize()
         move_filters("combo_filter_accordion");
         prepare_accordion("combo");
         $j("[name=base_list]").prop('checked', false);
+        combo_base_list_change();
         set_step("combo_step_container", "starting_list_select"); return false;
     });
 
@@ -352,6 +354,9 @@ function initialize()
 
     populate_get();
     recipient_type_change(clear = false);
+    if (location.search.indexOf("combo_base_list") != -1) {
+        combo_base_list_change();
+    }
 }
 
 $j(document).ready(initialize);
