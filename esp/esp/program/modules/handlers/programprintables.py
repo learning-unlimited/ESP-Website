@@ -1449,7 +1449,7 @@ class ProgramPrintables(ProgramModuleObj):
         try:
             context['colors'] = request.GET['colors'].split(',')
         except:
-            context['colors'] = ['Yellow', 'Blue', 'Pink', 'Green', 'Turquoise', 'Purple', 'Yellow', 'Blue']
+            context['colors'] = ['Yellow', 'Blue', 'Pink', 'Green', 'Turquoise', 'Purple', 'Brown', 'Black']
 
         if extra:
             num_name_groups = int(extra)
