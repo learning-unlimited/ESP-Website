@@ -172,6 +172,7 @@ Minor new features
 - Added a small hover effect to the left-side tabs in the fruitsalad theme
 - Added a `robots.txt <https://en.wikipedia.org/wiki/Robots.txt>`_ file to prevent various AI bot crawlers from accessing the website
 - Replaced the very specific "Planned Purchases" help text in the class registration form with much more generic help text (which can still be changed using the 'teacherreg_help_text_purchase_requests' tag)
+- Improved the error messages when trying to access a custom form module during student/teacher registration that isn't properly configured
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -185,3 +186,5 @@ Minor bug fixes
 - Fixed the class lottery to run in Python 3
 - Fixed the size of the "Sign Up" text in the fruitsalad theme
 - Fixed the Teacher Events Management Module erroneously appearing in the "Additional Modules" list when it already appears above
+- Fixed a bug that occurred when a student opted to make a donation, then paid via credit card, then revisited the extra costs page (these donations are now shown on the extra costs page to reduce confusion)
+- Fixed a bug that occurred when the QSD field on the /myesp/accountmanage/ page was edited (this editable field has now been moved beneath the important buttons on this page)
