@@ -1,5 +1,5 @@
 <div class="label">
    <br />
-   {{ student.2.last_name }}, {{ student.2.first_name }}<br />
+   {{ student.2.last_name }}{% if student.2.last_name and student.2.first_name %}, {% endif %}{{ student.2.first_name }}<br />
    <b>Line {{ student.0 }}: {{ student.1 }}</b>
 </div>
