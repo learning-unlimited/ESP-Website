@@ -118,6 +118,8 @@ function populate_get()
                 case 'checkbox':
                     // don't need a value for a checkbox, just check it
                     field[0].checked = true;
+                    // update the jquery UI buttons if necessary
+                    field.parents(".checkbox_wrapper").buttonset("refresh");
                     break;
                 default:
                     if(key_val.length == 2){
