@@ -4,12 +4,25 @@
 
 {% block content %}
 
-<p>Expired {{ ids|length }} student registrations. If this was a mistake, you can ask a webmin to undo it by running:</p>
+<div class="alert alert-info">
+  <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+  {% if undo %}
+  <b>Unexpired {{ ids|length }} student registrations.</b>
+  {% else %}
+  <b>Expired {{ ids|length }} student registrations. If this was a mistake, click the button below:</b>
 
-<pre><code>ids = {{ ids }}
-StudentRegistration.objects.filter(id__in=ids).update(end_date=None)
-</code></pre>
+  <form id="program_form" method="post" action="{{ request.path }}">
+  <input type="hidden" name="selected_enrollments" value="{{ ids|join:"," }}" />
+  <input type="hidden" name="undo" value="" />
 
-<p><a href="/onsite/{{ program.getUrlBase }}/unenroll_students">Back</a></p>
+  <input class="fancybutton" value="Undo Unenroll" type="submit">
+  </form>
+  {% endif %}
+</div>
 
+<br />
+<br />
+<p>
+<a class="btn btn-primary" href="/onsite/{{ program.getUrlBase }}/unenroll_students">Back to Unenroll Module</a>
+</p>
 {% endblock %}
