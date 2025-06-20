@@ -188,3 +188,6 @@ Minor bug fixes
 - Fixed the Teacher Events Management Module erroneously appearing in the "Additional Modules" list when it already appears above
 - Fixed a bug that occurred when a student opted to make a donation, then paid via credit card, then revisited the extra costs page (these donations are now shown on the extra costs page to reduce confusion)
 - Fixed a bug that occurred when the QSD field on the /myesp/accountmanage/ page was edited (this editable field has now been moved beneath the important buttons on this page)
+- Fixed the generation of the meal tickets printable
+- Fixed various bugs in the UserSearchController (the UI that is used for the comm panel), mostly related to when a user is directed here with a custom link
+- Fixed the functionality of the unenroll module and made some UI improvements (this module hadn't been touched in 9 years)
