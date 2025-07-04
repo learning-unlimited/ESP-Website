@@ -71,7 +71,10 @@ try:
         # Catch sender's message and grab the data fields (To, From, Subject, Body, etc.)
         data = dict()
         for field in ['to', 'from', 'cc', 'bcc', 'subject', 'body', 'attachments']:
-            data[field] = message[field].split(',')
+            if field == 'to':
+                data[field] = [x for x in instance.recipients.split(',') if not x.endswith(settings.EMAIL_HOST_SENDER)]
+            else:
+                data[field] = message[field].split(',')
 
        # If the sender's email is not associated with an account on the site,
        # do not forward the email 
@@ -105,10 +108,9 @@ try:
            # the sender's site email
            logger.info('Sending email as {}'.format(sender))
            for recipient in data['to'] + data['cc'] + data['bcc']:
-               # TODO: per Will's comment, resolve any recipients who are address@site.learningu.org
                send_mail(subject=data['subject'], message=data['body'],
-               from_email='{}@{}'.format(users[0], settings.EMAIL_HOST_SENDER),
-               recipient_list=[recipient], fail_silently=False)
+                         from_email='{}@{}'.format(users[0], settings.EMAIL_HOST_SENDER),
+                         recipient_list=[recipient], fail_silently=False)
            del sender, recipient, users
         sys.exit(0)
 
