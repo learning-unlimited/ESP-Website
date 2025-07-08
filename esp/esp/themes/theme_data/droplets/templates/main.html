@@ -1,0 +1,116 @@
+{% extends "elements/html" %}
+
+{% block fulltitle %}{{ theme.titlebar_prefix }} - {% block title %}Home{% endblock %}{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<style>
+.jumbotron {
+    background-image: url(/media/images/theme/header.png?v={{ current_header_version }});
+}
+</style>
+{% endblock stylesheets %}
+
+{% block body %}
+
+{% block navbar %}
+<div class="container navbar-container">
+  <div class="navbar navbar-fixed-top navbar-inverse">
+    <div class="navbar-inner">
+      <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+      <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </a>
+      <!-- Be sure to leave the brand out there if you want it shown -->
+      {% if theme.show_logo_navbar %}
+      <a href="/"><img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{theme.full_group_name}}" class="logo nav"></a>
+      {% endif %}
+      {% if theme.show_group_name %}
+      <a class="brand" href="/">{{ theme.full_group_name }}</a>
+      {% endif %}
+      <!-- Everything you want hidden at 940px or less, place within here -->
+      <ul class="nav-collapse collapse">
+        {% include "navbar/admin.html" %}
+        {% include "navbar/nav.html" %}
+        {% include "navbar/contact.html" %}
+        {% include "users/loginbox_content.html" %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock navbar%}
+
+{% block heading %}
+{% if request.path == '/' and theme.show_header_home or request.path != '/' and theme.show_header_other %}
+<header class="jumbotron subhead" id="overview">
+  <div>
+    {% if theme.show_logo_header %}
+    <div class="header-cell">
+      <a href="/">
+          <img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{theme.full_group_name}}" class="logo">
+      </a>
+    </div>
+    {% endif %}
+    <div class="header-cell jumbotron-announcements">
+      {% load render_qsd %}
+      {% inline_qsd_block "jumbotron" %}
+      {% end_inline_qsd_block %}
+    </div>
+  </div>
+</header>
+{% endif %}
+{% endblock %}
+
+{% block main %}
+
+<div class="container">
+  <div id="main" class="resizable">
+    {% if request.mod_required %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
+    </div>
+    {% endif %}
+    {% if request.show_perm_info %}
+    <div class="alert alert-info">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <a href="/manage/{{ request.one }}/{{ request.two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
+        <br />
+        {% if request.roles_with_perm %}
+            Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
+        {% else %}
+            <strong>No (non-admin) roles have permission to view this page!</strong>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% block content %}
+    {% endblock content %}
+  </div>
+</div>
+</br>
+</br>
+<script>
+  {# TODO(benkraft): this is ugly, find a better way #}
+  $j('.button').addClass('btn').removeClass('button');
+  $j('.fancybutton').addClass('btn').addClass('btn-primary');
+</script>
+{% endblock main %}
+
+{% block footer %}
+<div class="container footer-container">
+  <div class="navbar navbar-fixed-bottom navbar-inverse">
+    <div class="navbar-inner">
+      <ul class="nav" style="width: 100%">
+        <li style="width: 100%" class="text-center">
+          <a>&copy; {{ theme.full_group_name }}, {{ theme.mtime.year }}</a>
+          <a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock footer %}
+  
+{% endblock body %}

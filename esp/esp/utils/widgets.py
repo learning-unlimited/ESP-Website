@@ -205,7 +205,7 @@ function {{ name }}_add_link(obj, data)
     var entry = obj.children().last();
     %(add_link_body)s
 
-    var delete_button = $j("<button class='btn btn-mini btn-danger'>Delete link</button>");
+    var delete_button = $j("<br/><button class='btn btn-mini btn-danger'>Delete link</button>");
     delete_button.on("click", {{ name }}_delete_link);
     entry.append(delete_button);
     $j("#{{ name }}_entries input").on("change", {{ name }}_save);
@@ -273,8 +273,8 @@ $j(document).ready(function() {
     add_link_body = """
         entry.append($j("<span>Text: </span>"));
         entry.append($j("<input class='data_text nav_secondary_field input-small' type='text' value='" + data.text + "' />"));
-        entry.append($j("<span>Link: </span>"));
-        entry.append($j("<input class='data_link nav_secondary_field' type='text' value='" + data.link + "' />"));
+        entry.append($j("<br/><span>Link: </span>"));
+        entry.append($j("<input class='data_link nav_secondary_field input-medium' type='text' value='" + data.link + "' />"));
     """
 
     def render(self, name, value, attrs=None):
@@ -321,7 +321,7 @@ function {{ name }}_add_link(obj, data)
     var entry = entry_list.children().last();
     %(add_link_body)s
 
-    var delete_button = $j("<button class='btn btn-mini btn-danger'>Delete link</button>");
+    var delete_button = $j("<br/><button class='btn btn-mini btn-danger'>Delete link</button>");
     delete_button.on("click", {{ name }}_delete_link);
     entry.append(delete_button);
     $j("#{{ name }}_entries input, #{{ name }}_entries select").on("change", {{ name }}_save);
@@ -333,9 +333,9 @@ function {{ name }}_add_tab(obj, data)
     obj.append($j("<li />").addClass("ui-sortable-handle"));
     var category_li = obj.children("li").last();
     category_li.append($j("<span>Header text: </span>"));
-    category_li.append($j("<input class='data_header nav_header_field input-mini' type='text' value='" + data.header + "' />"));
-    category_li.append($j("<span>Header link: </span>"));
-    category_li.append($j("<input class='data_header_link nav_header_field' type='text' value='" + data.header_link + "' />"));
+    category_li.append($j("<input class='data_header nav_header_field input-small' type='text' value='" + data.header + "' />"));
+    category_li.append($j("<br/><span>Header link: </span>"));
+    category_li.append($j("<input class='data_header_link nav_header_field input-large' type='text' value='" + data.header_link + "' />"));
 
     category_li.append($j("<ul />"));
     var entry_list = category_li.children("ul");
@@ -434,10 +434,10 @@ $j(document).ready(function() {
 
     # We separate out this part so subclasses can override it.
     add_link_body = """
-        entry.append($j("<span>Text: </span>"));
+        entry.append($j("<br/><span>Text: </span>"));
         entry.append($j("<input class='data_text nav_secondary_field input-small' type='text' value='" + data.text + "' />"));
-        entry.append($j("<span>Link: </span>"));
-        entry.append($j("<input class='data_link nav_secondary_field' type='text' value='" + data.link + "' />"));
+        entry.append($j("<br/><span>Link: </span>"));
+        entry.append($j("<input class='data_link nav_secondary_field input-large' type='text' value='" + data.link + "' />"));
     """
 
     def render(self, name, value, attrs=None):

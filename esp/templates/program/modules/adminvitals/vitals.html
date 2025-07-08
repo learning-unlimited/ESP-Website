@@ -26,7 +26,7 @@ var has_moderator_module = "{{ program|hasModule:"TeacherModeratorModule" }}"
         .add("#stats_tshirts")
         .add("#stats_accounting");
       $module_group_headers = $module_groups.children(".module_group_header");
-      $module_group_headers.click(getStats);
+      $module_group_headers.on("click", getStats);
     });
   </script>
 {% endblock %}
@@ -80,13 +80,13 @@ var has_moderator_module = "{{ program|hasModule:"TeacherModeratorModule" }}"
       </div>
       <div class="module_group" id="stats_categories">
         <div class="module_group_header module_group_expandable">Categories <span class="expand_collapse_text">(click to expand)</span></div>
-        <div class="module_group_body" style="display:none">
+        <div class="module_group_body flex" style="display:none">
           Loading data...
         </div>
       </div>
       <div class="module_group" id="stats_grades">
         <div class="module_group_header module_group_expandable">Grades <span class="expand_collapse_text">(click to expand)</span></div>
-        <div class="module_group_body" style="display:none">
+        <div class="module_group_body flex" style="display:none">
           Loading data...
         </div>
       </div>
@@ -98,13 +98,13 @@ var has_moderator_module = "{{ program|hasModule:"TeacherModeratorModule" }}"
       </div>
       <div class="module_group" id="stats_timeslots">
         <div class="module_group_header module_group_expandable">Timeslots <span class="expand_collapse_text">(click to expand)</span></div>
-        <div class="module_group_body" style="display:none">
+        <div class="module_group_body flex" style="display:none">
           Loading data...
         </div>
       </div>
       <div class="module_group" id="stats_tshirts">
         <div class="module_group_header module_group_expandable">T-Shirts <span class="expand_collapse_text">(click to expand)</span></div>
-        <div class="module_group_body" style="display:none">
+        <div class="module_group_body flex" style="display:none">
           Loading data...
         </div>
       </div>

@@ -14,6 +14,12 @@ select.fqb-type {
     width: 6em;
 }
 
+.fqr-class-flags-detail {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
 .datetime-input {
     width: 12em;
 }
@@ -24,7 +30,6 @@ select.fqb-type {
 
 .fqr-class {
     margin: 5px;
-    border: 1px solid lightgray;
 }
 
 .fqr-class-header {
@@ -80,11 +85,16 @@ select.fqb-type {
 }
 
 .flag-detail {
+    flex: 1 1 0px;
+    max-width: 500px;
+    min-width: 300px;
     cursor: pointer;
 }
 
 .flag-detail div {
     padding: 2px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .flag-detail table, .flag-detail form {
@@ -93,7 +103,7 @@ select.fqb-type {
 }
 
 .class-flag-list {
-    width: 500px;
+    width: 100%;
     margin-left: auto;
     margin-right: auto;
 }

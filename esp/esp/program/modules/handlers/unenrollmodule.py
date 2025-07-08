@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 import datetime
 import logging
 from django.db.models import signals
+from esp.users.models import Record
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.models import StudentRegistration, RegistrationType
 from esp.users.models import ESPUser
@@ -71,11 +72,20 @@ class UnenrollModule(ProgramModuleObj):
 
         """
         if request.method == 'POST':
-            selected_enrollments = request.POST['selected_enrollments']
-            ids = [int(id) for id in selected_enrollments.split(',')]
-            registrations = StudentRegistration.objects.filter(id__in=ids)
-            registrations.update(end_date=datetime.datetime.now())
-            logger.info("Expired student registrations: %s", ids)
+            context = {}
+            if 'undo' in request.POST:
+                selected_enrollments = request.POST['selected_enrollments']
+                ids = [int(id) for id in selected_enrollments.split(',')]
+                registrations = StudentRegistration.objects.filter(id__in=ids)
+                registrations.update(end_date=None)
+                logger.info("Unexpired student registrations: %s", ids)
+                context['undo'] = True
+            else:
+                selected_enrollments = request.POST['selected_enrollments']
+                ids = [int(id) for id in selected_enrollments.split(',')]
+                registrations = StudentRegistration.objects.filter(id__in=ids)
+                registrations.update(end_date=datetime.datetime.now())
+                logger.info("Expired student registrations: %s", ids)
             # send signal to expire caches
             # XXX: sending all of them is actually kind of
             # expensive and mostly redundant; it would be
@@ -84,7 +94,6 @@ class UnenrollModule(ProgramModuleObj):
             for reg in registrations:
                 signals.post_save.send(
                     sender=StudentRegistration, instance=reg)
-            context = {}
             context['ids'] = ids
             return render_to_response(
                 self.baseDir()+'result.html', request, context)
@@ -132,8 +141,8 @@ class UnenrollModule(ProgramModuleObj):
         # students not checked in
         students = ESPUser.objects.filter(
             id__in=enrollments.values('user'))
-        students = students.exclude(
-            record__program=prog, record__event__name='attended')
+        records = Record.objects.filter(program=prog, event__name='attended')
+        students = students.exclude(id__in=records.values('user'))
 
         # enrollments for those students
         relevant = enrollments.filter(user__in=students).values_list(

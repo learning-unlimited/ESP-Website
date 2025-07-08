@@ -9,13 +9,13 @@
     <meta name="description" content="{% block description %}{% endblock %}" />
     <meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
     <meta http-equiv="X-UA-Compatible" content="chrome=1"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
   {% endblock meta %}
 
     {% block stylesheets %}
     <link rel="shortcut icon" href="/media/images/favicon.ico?v={{ current_favicon_version }}">
     <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
 
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap-responsive.css" rel="stylesheet"/>
     <link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css?v={{ current_theme_version }}"/>
     <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet"/>
 
@@ -80,7 +80,7 @@
     <!-- prevent forms from being submitted twice -->
     <script text="text/javascript">
       $j(function() {
-        $j('[type=submit]:not(.stripe-button-el):not(.save)').on('click', function(event){
+        $j('[type=submit]:not(.stripe-button-el):not(.save):not(.custom-action)').on('click', function(event){
           <!-- prevent any other behaviors -->
           event.preventDefault();
           event.stopPropagation();

@@ -81,7 +81,7 @@ class UnenrollModuleTest(ProgramFrameworkTest):
 
         r = self.client.post('/onsite/' + self.program.url + '/unenroll_students', {'selected_enrollments': ','.join(enrollment_ids)})
         self.assertContains(r, 'Expired %d student registrations' % len(enrollment_ids))
-        self.assertContains(r, ', '.join(enrollment_ids))
+        self.assertContains(r, ','.join(enrollment_ids))
 
         enrollments = StudentRegistration.objects.filter(id__in=enrollment_ids)
         self.assertFalse(enrollments.filter(StudentRegistration.is_valid_qobject()).exists())

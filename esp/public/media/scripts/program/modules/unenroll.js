@@ -51,7 +51,7 @@ function handle_update(event) {
     $j('#program_form [type=submit]').prop('disabled', _.isEmpty(enrollments));
 
     // display a message
-    $j('#message').text("You have selected " + _.size(students) + " students to be dropped from " + _.size(sections) + " sections (" + _.size(enrollments) + " enrollments total)");
+    $j('#message').html("You have selected <b>" + _.size(students) + " students</b> to be dropped from <b>" + _.size(sections) + " classes</b> (" + _.size(enrollments) + " enrollments total)");
 
     // show "refresh data" link if data is non-stale
     $j('#refresh').toggle(this.stale);

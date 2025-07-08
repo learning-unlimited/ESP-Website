@@ -1,6 +1,7 @@
 #divmaintext form table {
     vertical-align: top;
     border-collapse: collapse;
+    
 }
 
 /* Profile editor */
@@ -176,6 +177,14 @@ input.fancybutton:active
    border: 1px solid #CCC;
    border-width: 1px;
    border-collapse: collapse;
+}
+
+#program_form > table, #program_form > form table {
+   max-width: 900px;
+   width: 100%;
+   th:has(+ td) {
+      width: 200px;
+   }
 }
 
 #program_form td {

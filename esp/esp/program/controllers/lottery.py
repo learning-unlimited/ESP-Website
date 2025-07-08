@@ -62,7 +62,7 @@ import os
 import operator
 import zlib
 import base64
-from io import StringIO
+from io import BytesIO
 
 class LotteryException(Exception):
     """ Top level exception class for lottery related problems.  """
@@ -772,17 +772,17 @@ class LotteryAssignmentController(object):
 
     def export_assignments(self):
         def export_array(arr):
-            s = StringIO()
+            s = BytesIO()
             numpy.savetxt(s, arr)
             return s.getvalue()
 
         student_sections = export_array(self.student_sections)
         student_ids = export_array(self.student_ids)
         section_ids = export_array(self.section_ids)
-        return base64.b64encode(zlib.compress(student_sections + '|' + student_ids + '|' + section_ids))
+        return base64.b64encode(zlib.compress(student_sections + b'|' + student_ids + b'|' + section_ids)).decode()
 
     def import_assignments(self, data):
-        data_parts = zlib.decompress(base64.b64decode(data)).split('|')
+        data_parts = zlib.decompress(base64.b64decode(data.encode())).split(b'|')
 
         if len(data_parts) != 3:
             raise ValueError('provided lottery_data is corrupted (doesn\'t contain three parts)')
@@ -790,9 +790,9 @@ class LotteryAssignmentController(object):
         # ndmin is for corner cases where one of the array dimensions is 1.  If you don't include the ndmin parameter,
         # then "mono-dimensional axes will be squeezed" (see the numpy documentation), and the resulting array
         # would not have the right shape.
-        self.student_sections = numpy.loadtxt(StringIO(data_parts[0]), ndmin=2)
-        self.student_ids = numpy.loadtxt(StringIO(data_parts[1]), ndmin=1)
-        self.section_ids = numpy.loadtxt(StringIO(data_parts[2]), ndmin=1)
+        self.student_sections = numpy.loadtxt(BytesIO(data_parts[0]), ndmin=2)
+        self.student_ids = numpy.loadtxt(BytesIO(data_parts[1]), ndmin=1)
+        self.section_ids = numpy.loadtxt(BytesIO(data_parts[2]), ndmin=1)
 
     def clear_mailman_list(self, list_name):
         contents = list_contents(list_name)
