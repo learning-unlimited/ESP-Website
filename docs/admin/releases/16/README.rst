@@ -173,6 +173,7 @@ Minor new features
 - Added a `robots.txt <https://en.wikipedia.org/wiki/Robots.txt>`_ file to prevent various AI bot crawlers from accessing the website
 - Replaced the very specific "Planned Purchases" help text in the class registration form with much more generic help text (which can still be changed using the 'teacherreg_help_text_purchase_requests' tag)
 - Improved the error messages when trying to access a custom form module during student/teacher registration that isn't properly configured
+- The admin toolbar is now visible even when morphed
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
