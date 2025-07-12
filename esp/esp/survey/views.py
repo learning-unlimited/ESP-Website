@@ -51,7 +51,7 @@ from esp.middleware import ESPError
 from esp.tagdict.models import Tag
 from esp.users.forms.generic_search_form import ApprovedTeacherSearchForm
 from django.http import Http404, HttpResponse
-from django.core.servers.basehttp import FileWrapper
+from wsgiref.util import FileWrapper
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q, Min

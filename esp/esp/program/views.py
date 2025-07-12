@@ -54,6 +54,7 @@ from django.db import transaction
 from django.core.mail import mail_admins
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
+from django.forms.models import model_to_dict
 from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
 from django.http import HttpResponse
@@ -463,11 +464,9 @@ def newprogram(request):
         tprogram = Program.objects.get(id=template_prog_id)
         request.session['template_prog'] = template_prog_id
         template_prog = {}
-        template_prog.update(tprogram.__dict__)
+        template_prog.update(model_to_dict(tprogram))
         del template_prog["id"]
         template_prog["program_type"] = tprogram.program_type
-        template_prog["program_modules"] = tprogram.program_modules.all().values_list("id", flat=True)
-        template_prog["class_categories"] = tprogram.class_categories.all().values_list("id", flat=True)
         '''
         As Program Name should be new for each new program created then it is better to not to show old program names in input box .
         template_prog["term"] = tprogram.program_instance()
