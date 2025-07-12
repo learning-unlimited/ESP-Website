@@ -7,10 +7,10 @@ from esp.program.models import RegistrationType, StudentRegistration, Registrati
 class RegistrationTypeManagementTest(ProgramFrameworkTest):
     def setUp(self):
         modules = []
-        modules.append(ProgramModule.objects.get(handler='TeacherClassRegModule').id)
-        modules.append(ProgramModule.objects.get(handler='StudentClassRegModule').id)
-        modules.append(ProgramModule.objects.get(handler='StudentRegCore').id)
-        modules.append(ProgramModule.objects.get(handler='AdminCore').id)
+        modules.append(ProgramModule.objects.get(handler='TeacherClassRegModule'))
+        modules.append(ProgramModule.objects.get(handler='StudentClassRegModule'))
+        modules.append(ProgramModule.objects.get(handler='StudentRegCore'))
+        modules.append(ProgramModule.objects.get(handler='AdminCore'))
 
         super(RegistrationTypeManagementTest, self).setUp(modules=modules)
         self.schedule_randomly()

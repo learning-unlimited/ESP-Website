@@ -570,7 +570,7 @@ class ProgramFrameworkTest(TestCase):
                     'sections_per_class': 1,
                     'num_students': 10,
                     'num_admins': 1,
-                    'modules': [x.id for x in ProgramModule.objects.all()],
+                    'modules': ProgramModule.objects.all(),
                     'program_type': 'TestProgram',
                     'program_instance_name': '2222_Summer',
                     'program_instance_label': 'Summer 2222',

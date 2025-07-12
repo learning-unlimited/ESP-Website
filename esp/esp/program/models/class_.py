@@ -55,11 +55,11 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 
+from django_extensions.db.fields.json import JSONField
 
 # ESP Util
 from esp.db.fields import AjaxForeignKey
 from esp.utils.property import PropertyDict
-from esp.utils.fields import JSONField
 from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
 from esp.mailman import add_list_member, remove_list_member
