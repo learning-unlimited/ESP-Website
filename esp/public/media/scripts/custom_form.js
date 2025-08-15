@@ -1832,7 +1832,7 @@ var rebuild=function(metadata) {
         $j("#cat_selector").children("[value="+model+"]").prop("disabled", true).css("color", "lightgrey").prop("title", "Can not add linked fields to existing forms");
     });
     // Reset add field form
-	$j("#cat_selector").val('Generic').trigger("change");
+	deSelectField($j());
     // Set up permissions if needed
     if(metadata['perms']!=""){
         clearPermsArea();
