@@ -17,7 +17,17 @@ barebones
    "barebones" theme on a sample site
 
 True to its name, "barebones" is the simplest of the available themes.  It's
-not fancy, but it requires little configuration and looks reasonably modern.
+not fancy, but it requires little configuration.
+
+droplets
+==========
+
+.. figure:: images/themes/droplets.png
+
+   "droplets" theme on Splash at Yale's site
+
+Our newest theme, "droplets", looks the most modern and is the most reactive.  It requires a bit of
+setup (for the picture at the top and the navbars), but is still great for new chapters. 
 
 bigpicture
 ==========
@@ -26,10 +36,10 @@ bigpicture
 
    "bigpicture" theme on Splash at Berkeley's site
 
-Our newest theme, "bigpicture", looks the most modern.  It requires a bit more
-setup (for the picture at the top and the navbars) than some of the simpler
-themes, but is still great for new chapters.  It's based the Splash at Berkeley
-theme, written by Sean Zhu.
+Based on the Splash at Berkeley theme and written by Sean Zhu,
+"bigpicture" is a popular and modern theme.  It requires a bit of
+setup (for the picture at the top and the navbars), 
+but is still great for new chapters.  
 
 circles
 =======
@@ -42,17 +52,6 @@ Originally used by Chicago Splash, "circles" has historically been one of the
 more popular themes for small chapters.  It has a fairly simple navigation
 structure and several options to customize the look to the chapter's
 preferences.
-
-floaty
-======
-
-.. figure:: images/themes/floaty.png
-
-   "floaty" theme on a sample site
-
-The "floaty" theme has a somewhat fancier design than "barebones", and one
-that's somewhat more modern than "circles", but also allows enough structure to
-support somewhat more complex navigation.
 
 fruitsalad
 ==========
@@ -69,3 +68,15 @@ side, often for programs or different pages; and the navbar below the page
 title within each of those sections, not shown on the Yale site).  However, it
 tends to be needlessly complicated for smaller sites that just want to show a
 few pages.
+
+floaty
+======
+
+.. figure:: images/themes/floaty.png
+
+   "floaty" theme on a sample site
+
+The "floaty" theme has a somewhat fancier design than "barebones", and one
+that's somewhat more modern than "circles", but also allows enough structure to
+support somewhat more complex navigation. This theme is the least common and 
+is the least well-maintained.
