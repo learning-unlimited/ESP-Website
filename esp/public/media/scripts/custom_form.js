@@ -559,8 +559,6 @@ var removeField = function(field) {
             alert("You can't delete the only page of this form!");
             return;
         }
-        //If it's a page, remove the page-break text as well
-		field.parent().prev().remove();
 	}
 	field.parent().remove();
 };
