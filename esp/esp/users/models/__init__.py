@@ -2395,7 +2395,7 @@ class RecordType(models.Model):
 class Record(models.Model):
     event = models.ForeignKey("RecordType", blank=True, null=True)
     program = models.ForeignKey("program.Program", blank=True, null=True)
-    user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, models.CASCADE, blank=True, null=True)
 
     time = models.DateTimeField(blank=True, default = datetime.now)
 
