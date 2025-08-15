@@ -26,8 +26,10 @@ droplets
 
    "droplets" theme on Splash at Yale's site
 
-Our newest theme, "droplets", looks the most modern and is the most reactive.  It requires a bit of
-setup (for the picture at the top and the navbars), but is still great for new chapters. 
+Our newest theme, "droplets", looks the most modern and is the most reactive. 
+It uses the screen width better than bigpicture and is mobile-friendly.
+It requires a bit of setup (for the picture at the top and the navbars), 
+but is still great for new chapters. 
 
 bigpicture
 ==========
