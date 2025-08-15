@@ -201,7 +201,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
         Clears the change log for this program. """
 
         self.get_change_log(prog).entries.all().delete()
-        #TODO: change to a page saying cache has been cleared
         context = {}
         return render_to_response(self.baseDir()+'clear_cache_confirmation.html', request, context)
 
