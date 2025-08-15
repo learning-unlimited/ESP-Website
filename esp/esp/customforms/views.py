@@ -23,12 +23,12 @@ from esp.utils.web import render_to_response, zip_download
 import six
 
 def test_func(user):
-    return user.is_authenticated() and (user.isTeacher() or user.isAdministrator())
+    return user.is_authenticated() and (user.is_morphed() or user.isTeacher() or user.isAdministrator())
 
 @user_passes_test(test_func)
 def landing(request):
     forms = Form.objects.all().order_by('-link_type', '-link_id', '-id')
-    if not request.user.isAdministrator():
+    if not (request.user.isAdministrator() or request.user.is_morphed()):
         forms = forms.filter(created_by=request.user)
     for form in forms:
         if form.link_type in list(cf_cache.only_fkey_models.keys()):
@@ -42,7 +42,7 @@ def landing(request):
 def formBuilder(request):
     prog_list = Program.objects.all()
     form_list = Form.objects.all().order_by('-id')
-    if not request.user.isAdministrator():
+    if not (request.user.isAdministrator() or request.user.is_morphed()):
         form_list = form_list.filter(created_by=request.user)
     context = {'prog_list': prog_list, 'form_list': form_list, 'only_fkey_models': list(cf_cache.only_fkey_models.keys())}
     if 'edit' in request.GET and request.GET.get('edit'):
