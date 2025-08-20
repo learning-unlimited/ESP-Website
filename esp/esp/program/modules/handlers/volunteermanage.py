@@ -82,7 +82,7 @@ class VolunteerManage(ProgramModuleObj):
             write_csv.writerow(("Activity", "Time", "Name", "Phone Number", "Email Address", "Comments"))
             for request in requests:
                 for offer in request.get_offers():
-                    write_csv.writerow([codecs.encode(entry, 'utf-8') if entry is not None else '' for entry in
+                    write_csv.writerow([entry if entry is not None else '' for entry in
                         (request.timeslot.description, request.timeslot.pretty_time(), offer.name, offer.phone, offer.email, offer.comments)])
             response['Content-Disposition'] = 'attachment; filename=volunteers.csv'
             return response
