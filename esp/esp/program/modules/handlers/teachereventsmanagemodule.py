@@ -99,12 +99,12 @@ class TeacherEventsManageModule(ProgramModuleObj):
                     new_timeslot = Event()
 
                     # decide type
-                    type = "training"
+                    event_type = "training"
 
-                    if data.get('submit') == "Add Interview":
-                        type = "interview"
+                    if data.get('submit_btn') == "Add Interview":
+                        event_type = "interview"
 
-                    form.save_timeslot(self.program, new_timeslot, type)
+                    form.save_timeslot(self.program, new_timeslot, event_type)
                 else:
                     context['timeslot_form'] = form
 
