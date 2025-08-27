@@ -185,6 +185,9 @@ input.fancybutton:active
    th:has(+ td) {
       width: 200px;
    }
+   th.program_form_narrow:has(+ td) {
+      width: 20px;
+   }
 }
 
 #program_form td {
