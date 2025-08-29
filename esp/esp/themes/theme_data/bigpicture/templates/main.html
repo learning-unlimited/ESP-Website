@@ -80,10 +80,8 @@
   <div class="row">
     {% block sidebar %}
     <div id="sidebar" class="span3">
-      <ul class="nav nav-list sidebar">
-        {% include "sidebar/nav.html" %}
-        {% include "sidebar/admin.html" %}
-      </ul>
+      {% include "sidebar/nav.html" %}
+      {% include "sidebar/admin.html" %}
 
       {% load preview %}
       {% if request.path == "/teach/index.html" %}

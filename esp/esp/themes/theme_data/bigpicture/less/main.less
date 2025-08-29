@@ -80,14 +80,13 @@ body {
 }
 .container {
     margin: 0 auto;
-    width: 1180px;
 }
 body, .jumbotron {
     box-sizing: border-box;
-    min-width: 940px;
+    width: 100%;
 }
 .header-cell {
-    display: table-cell;
+    display: inline-block;
     vertical-align: bottom;
 }
 
@@ -107,7 +106,7 @@ div.nav-collapse.collapse {
 
 .sidebar {
     & {
-      color: @navbarText;
+        color: @navbarText;
         background: @sidebarBackground;
         margin-bottom: 2em;
     }
@@ -122,7 +121,7 @@ div.nav-collapse.collapse {
         &, &:hover {
             color: @sidebarActive;
             background-color: @sidebarActiveBackground;
-    }
+        }
     }
     > li > a {
         padding: 8px 18px;
@@ -141,6 +140,44 @@ div.nav-collapse.collapse {
     }
 }
 
+#nav_accordion {
+    & {
+        border-radius: 4px;
+    }
+    .accordion-heading {
+        & a {
+            color: @sidebarLink;
+            font-size: 17px;
+            &:active, &:hover, &:focus {
+                text-decoration: none;
+            }
+        }
+    }
+    .accordion-body {
+        .sidebar {
+            margin-bottom: 0px;
+            border-top: white 1px solid;
+        }
+    }
+}
+
+@media (max-width: 767px) {
+    #nav_sidebar {
+        display: none;
+    }
+    #nav_accordion {
+        display: block;
+    }
+}
+
+@media (min-width: 768px) {
+    #nav_sidebar {
+        display: block;
+    }
+    #nav_accordion {
+        display: none;
+    }
+}
 
 .btn:hover {
     background-position: 0;
@@ -204,7 +241,7 @@ div.nav-collapse.collapse {
 
 
 .logo {
-    max-width: 300px;
+    max-width: ~"min(100%, 300px)";
     max-height: 300px;
     margin: 0 80px 0 0;
 }
