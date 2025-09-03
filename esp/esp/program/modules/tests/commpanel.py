@@ -91,12 +91,10 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         s = re.search(r'<input type="hidden" name="listcount" value="([0-9]+)" />', response.content.decode('UTF-8'))
         listcount = s.groups()[0]
 
-        rendered_text = Template(render_to_string('email/default_email.html', {'msgbody': 'Test Body 123',})).render(
-                DjangoContext({'user': self.students[0], 'EMAIL_HOST_SENDER': 'testserver.learningu.org'}))
         #   Enter email information
         post_data = {
             'subject': 'Test Subject 123',
-            'rendered_text': rendered_text,
+            'body': 'Test Body 123',
             'from': 'info@testserver.learningu.org',
             'replyto': 'replyto@testserver.learningu.org',
             'filterid': filterid,
