@@ -37,6 +37,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.dbmail.models import ActionHandler, MessageRequest
 from esp.dbmail.cronmail import process_messages, send_email_requests
 
+from django.conf import settings
 from django.core import mail
 from django.template import Context as DjangoContext
 from django.template import Template
@@ -124,7 +125,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         context_dict = {'user'   : ActionHandler(self.students[0], self.students[0]),
                         'program': ActionHandler(self.program, self.students[0]),
                         'request': ActionHandler(MessageRequest(), self.students[0]),
-                        'EMAIL_HOST_SENDER': 'testserver.learningu.org'}
+                        'EMAIL_HOST_SENDER': settings.EMAIL_HOST_SENDER}
         rendered_text = render_to_string('email/default_email.html', {'msgbody': 'Test Body 123',})
         rendered_text = Template(rendered_text).render(DjangoContext(context_dict))
         self.assertEqual(msg.body, strip_tags(rendered_text).strip())
