@@ -123,14 +123,15 @@ class CommModule(ProgramModuleObj):
         if '<html>' not in body:
             body = '<html>' + body + '</html>'
 
+        # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
+        template = request.POST.get('template', 'default')
+        rendered_text = render_to_string('email/{}_email.html'.format(template),
+                                        {'msgbody': body})
+        # Render the text for the first user
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
                        'program': ActionHandler(self.program, firstuser),
                        'request': ActionHandler(MessageRequest(), firstuser),
                        'EMAIL_HOST_SENDER': settings.EMAIL_HOST_SENDER}
-
-        # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
-        rendered_text = render_to_string('email/{}_email.html'.format(request.POST.get('template', 'default')),
-                                        {'msgbody': body})
         rendered_text = Template(rendered_text).render(DjangoContext(contextdict))
 
         return render_to_response(self.baseDir()+'preview.html', request,
@@ -143,6 +144,7 @@ class CommModule(ProgramModuleObj):
                                                'replyto': replytoemail,
                                                'public_view': public_view,
                                                'body': body,
+                                               'template': template,
                                                'rendered_text': rendered_text})
 
     @staticmethod
@@ -175,14 +177,19 @@ class CommModule(ProgramModuleObj):
         from esp.dbmail.models import MessageRequest
         from esp.users.models import PersistentQueryFilter
 
-        filterid, fromemail, replytoemail, subject, rendered_text = [
+        filterid, fromemail, replytoemail, subject, body = [
                                     request.POST['filterid'],
                                     request.POST['from'],
                                     request.POST['replyto'],
                                     request.POST['subject'],
-                                    request.POST['rendered_text']    ]
+                                    request.POST['body']    ]
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         public_view = 'public_view' in request.POST
+
+        # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
+        template = request.POST.get('template', 'default')
+        rendered_text = render_to_string('email/{}_email.html'.format(template),
+                                        {'msgbody': body})
 
         try:
             filterid = int(filterid)
