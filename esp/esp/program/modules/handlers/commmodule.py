@@ -212,10 +212,7 @@ class CommModule(ProgramModuleObj):
                                                       sender     = fromemail,
                                                       creator    = request.user,
                                                       public = public_view,
-                                                      msgtext = loader.get_template('email/default_email_html.txt').render(
-                                                                   {'msgbdy': body,
-                                                                    'user': request.user,
-                                                                    'program': self.program }),
+                                                      msgtext = rendered_text,
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )
 
