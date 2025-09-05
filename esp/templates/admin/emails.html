@@ -75,9 +75,9 @@ tr.email-details {
             <td style="text-align:center;">{{ req.num_sent }}</td>
         </tr>
         <tr class="email-details">
-            {% autoescape off %}
-            <td colspan="3" style="vertical-align:top;">{{ req.msgtext }}</td>
-            {% endautoescape %}
+            <td colspan="3" style="vertical-align:top;">
+                <iframe srcdoc="{{ req.msgtext|join:""|escape }}" style="width: 100%; max-height: 600px;"></iframe>
+            </td>
             <td colspan="2" style="vertical-align:top;padding:0;"><table>
                 <tr><td><i>Sent by:</i><br /><a href="/manage/userview?username={{ req.creator|urlencode }}">{{ req.creator }}</a></td></tr>
                 <tr><td><i>Sending address:</i><br />{{ req.sender }}</td></tr>
