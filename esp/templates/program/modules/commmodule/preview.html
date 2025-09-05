@@ -95,4 +95,14 @@ users to whom you are sending this email.
 <input type="submit" value="Send Message!" id="submitform" class="btn btn-primary" />
 </form>
 
+<script>
+$j(function() {
+    $j("iframe").each(function(index, element) {
+        element.onload = function() {
+            element.style.height = element.contentWindow.document.body.scrollHeight + 16 + 'px';
+        }
+    });
+});
+</script>
+
 {% endblock %}

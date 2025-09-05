@@ -30,4 +30,14 @@
 <iframe srcdoc="{{ email_req.msgtext|join:""|escape }}" style="width: 100%; max-height: 800px;"></iframe>
 </div>
 
+<script>
+$j(function() {
+    $j("iframe").each(function(index, element) {
+        element.onload = function() {
+            element.style.height = element.contentWindow.document.body.scrollHeight + 16 + 'px';
+        }
+    });
+});
+</script>
+
 {% endblock %}
