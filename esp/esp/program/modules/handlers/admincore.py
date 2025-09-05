@@ -574,15 +574,16 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 pmo.seq = 0
                 pmo.required = True
                 pmo.save()
-            # Credit card modules should never be required and always last
+            # Credit card modules should never be required and always be after everything except confirm reg
             pmos = ProgramModuleObj.objects.filter(program = prog, module__handler__contains = "CreditCardModule_")
             for pmo in pmos:
                 pmo.seq = 10000
                 pmo.required = False
                 pmo.save()
-            # The confirm reg module should never be required
+            # The confirm reg module should never be required and should always be last
             pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "StudentRegConfirm")
             for pmo in pmos:
+                pmo.seq = 99999
                 pmo.required = False
                 pmo.save()
             # The availability module should always be required
