@@ -119,7 +119,7 @@ table {
     overflow-x: auto;
 }
 
-input[name="refresh_interval"] {
+#refresh_interval {
     width: 40px;
     float: right;
     margin-right: 10px;
