@@ -67,7 +67,7 @@ body {
     box-sizing: border-box;
 }
 
-@media (min-width: 980px) {
+@media (min-width: @navbarCollapseDesktopWidth) {
     body {
         padding-top: 40px;
         padding-bottom: 40px;
@@ -116,13 +116,13 @@ ul.nav-collapse {
     background-position: 0;
 }
 
-@media (min-width: 768px) and (max-width: 979px) {
+@media (min-width: 768px) and (max-width: @navbarCollapseWidth) {
     .navbar-container, .footer-container {
         width: 100%;
     }
 }
 
-@media (max-width: 979px) {
+@media (max-width: @navbarCollapseWidth) {
     .navbar .nav > li.dropdown {
         display: flex;
         justify-content: space-between;
@@ -196,7 +196,7 @@ ul.nav-collapse {
     color: #333333; /* should match the other navbar dropdowns */
 }
 
-@media (max-width: 979px) {
+@media (max-width: @navbarCollapseWidth) {
     #adminbar_content a {
         color: #999999;
     }
