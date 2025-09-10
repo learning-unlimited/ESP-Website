@@ -255,10 +255,6 @@ class CommModule(ProgramModuleObj):
         
         return render_to_response(self.baseDir()+'step2.html', request, context)
         
-        #return render_to_response(self.baseDir()+'step2.html', request,
-        #                                      {'listcount': listcount,
-        #                                       'filterid': filterObj.id,
-        #                                       'sendto_fn_name': sendto_fn_name })
 
     @main_call
     @needs_admin
