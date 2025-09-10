@@ -116,7 +116,7 @@ $j(function(){
                 var $me = $j(this);
                 var $td = $j(this.parentNode);
                 var $msg = $td.children('.message');
-                var $txtbtn = $j(this).closest('tr').find('.text');
+                var $txtbtn = $j(this).closest('tr').find('.text:not(.not-configured)');
                 
                 $msg.text(response.message);
                 $td.prev().prop('class', 'checked-in');
@@ -271,7 +271,7 @@ $j(function(){
             }
             for (var $td of $tds) {
                 $td.children('.checkin').show().prop('disabled', false);
-                $td.closest('tr').find('.text').prop('disabled', false).removeAttr("title");
+                $td.closest('tr').find('.text:not(.not-configured)').prop('disabled', false).removeAttr("title");
                 $td.prev().prop('class', 'not-checked-in');
                 $td.children('.message').html("");
             }
