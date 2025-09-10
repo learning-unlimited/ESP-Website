@@ -18,7 +18,7 @@ $j(function(){
     $j(".room").map(changeHyphens);
     $j(".phone").map(changeHyphens);
 
-    $j('.section-detail-header').click(function () {
+    $j('.section-detail-header').on("click", function () {
         $j(this).toggleClass('active');
         var info = $j(this).closest("tr").nextAll(".section-detail-tr").first().find('.section-detail-info');
         var class_id = info.attr('data-class-id');
@@ -79,8 +79,8 @@ $j(function(){
         var data = {teacher: username, csrfmiddlewaretoken: csrf_token()};
         if(undo)
             data.undo = true;
-        $j.post('ajaxteachercheckin', data, "json").success(callback)
-        .error(function(){
+        $j.post('ajaxteachercheckin', data, "json").done(callback)
+        .fail(function(){
             alert("An error occurred while atempting to " + (undo?"un-check-in ":"check-in ") + username + ".");
             if (errorCallback) {
                 errorCallback();
@@ -93,8 +93,8 @@ $j(function(){
         var data = {teacherid: id, csrfmiddlewaretoken: csrf_token()};
         if(undo)
             data.undo = true;
-        $j.post('ajaxteachercheckin', data, "json").success(callback)
-        .error(function(){
+        $j.post('ajaxteachercheckin', data, "json").done(callback)
+        .fail(function(){
             alert("An error occurred while atempting to " + (undo?"un-check-in ":"check-in ") + username + ".");
             if (errorCallback) {
                 errorCallback();
@@ -106,7 +106,7 @@ $j(function(){
         checkIn(username, callback, true, errorCallback);
     }
 
-    $j(".checkin:enabled").click(function(){
+    $j(".checkin:enabled").on("click", function(){
         var username = $j(this).data("username").replace("checkin_", "");
         var $td = $j(this.parentNode);
         var $msg = $td.children('.message');
@@ -116,7 +116,7 @@ $j(function(){
                 var $me = $j(this);
                 var $td = $j(this.parentNode);
                 var $msg = $td.children('.message');
-                var $txtbtn = $j(this).closest('tr').find('.text');
+                var $txtbtn = $j(this).closest('tr').find('.text:not(.not-configured)');
                 
                 $msg.text(response.message);
                 $td.prev().prop('class', 'checked-in');
@@ -128,7 +128,7 @@ $j(function(){
                 var $undoButton = $j(document.createElement('button'));
                 $undoButton.prop('class', 'btn btn-default btn-mini undo-button');
                 $undoButton.text('Undo');
-                $undoButton.click(function () {
+                $undoButton.on("click", function () {
                     undoLiveCheckIn(username);
                 });
                 $msg.append(' ', $undoButton);
@@ -141,8 +141,8 @@ $j(function(){
 
     function sendText(user, sec, callback, errorCallback){
         var data = {username: user, section: sec, csrfmiddlewaretoken: csrf_token()};
-        $j.post('ajaxteachertext', data, "json").success(callback)
-        .error(function(){
+        $j.post('ajaxteachertext', data, "json").done(callback)
+        .fail(function(){
             alert("An error occurred while atempting to text " + user + ".");
             if (errorCallback) {
                 errorCallback();
@@ -162,16 +162,16 @@ $j(function(){
         $j(msg).text('Texting teacher...');
     }
 
-    $j(".text").click(function(){
+    $j(".text").on("click", function(){
         textTeacher($j(this))
     });
 
     var skip_semi_checked_in_teachers = false
-    $j("#skip-semi-checked-in-teachers").click(function() {
+    $j("#skip-semi-checked-in-teachers").on("click", function() {
         skip_semi_checked_in_teachers = this.checked;
     });
 
-    $j(".text-all-teachers").click(function(){
+    $j(".text-all-teachers").on("click", function(){
         var $buttons = $j(".checkin:visible").closest('tr[data-role="teacher"]').find('.text:enabled');
         if (skip_semi_checked_in_teachers) {
             var keep = [];
@@ -194,11 +194,11 @@ $j(function(){
     });
 
     var skip_semi_checked_in_moderators = false
-    $j("#skip-semi-checked-in-moderators").click(function() {
+    $j("#skip-semi-checked-in-moderators").on("click", function() {
         skip_semi_checked_in_moderators = this.checked;
     });
 
-    $j(".text-all-moderators").click(function(){
+    $j(".text-all-moderators").on("click", function(){
         var $buttons = $j(".checkin:visible").closest('tr[data-role="moderator"]').find('.text:enabled');
         if (skip_semi_checked_in_moderators) {
             var keep = [];
@@ -220,7 +220,7 @@ $j(function(){
         }
     });
 
-    $j(".uncheckin:enabled").click(function(){
+    $j(".uncheckin:enabled").on("click", function(){
         var username = $j(this).data("username").replace("uncheckin_", "");
         undoCheckIn(username, function(response) {
             alert(response.message);
@@ -271,7 +271,7 @@ $j(function(){
             }
             for (var $td of $tds) {
                 $td.children('.checkin').show().prop('disabled', false);
-                $td.closest('tr').find('.text').prop('disabled', false).removeAttr("title");
+                $td.closest('tr').find('.text:not(.not-configured)').prop('disabled', false).removeAttr("title");
                 $td.prev().prop('class', 'not-checked-in');
                 $td.children('.message').html("");
             }
@@ -284,7 +284,7 @@ $j(function(){
         });
     }
 
-    $j(document).keydown(function(e){
+    $j(document).on("keydown", function(e){
         if(e.target.nodeName !== "TEXTAREA" && e.target.id !== "user_search_field" && e.target.id !== "class_search_field") { // Prevent capturing textarea typing
             if(/^[a-z0-9]$/i.test(e.key) && !e.ctrlKey) { // Normal text
                 if(e.target !== input[0]) // Reset input if not target
@@ -308,7 +308,7 @@ $j(function(){
                 e.preventDefault();
             }
             else if(e.which==13 && e.shiftKey){ // Shift + Enter
-                $j(".selected .checkin").click(); // Check in teacher
+                $j(".selected .checkin").trigger("click"); // Check in teacher
                 e.preventDefault();
                 input.val("");
             }
@@ -332,7 +332,7 @@ $j(function(){
                             var $undoButton = $j(document.createElement('button'));
                             $undoButton.prop('class', 'btn btn-default btn-mini undo-button');
                             $undoButton.text('Undo');
-                            $undoButton.click(function () {
+                            $undoButton.on("click", function () {
                                 undoLiveCheckIn(username);
                             });
                             $msg.append(' ', $undoButton);
@@ -352,13 +352,13 @@ $j(function(){
                 e.preventDefault();
             }
         }
-    }).keyup(function(e){
+    }).on("keyup", function(e){
         if(e.target.nodeName !== "TEXTAREA" && e.target.id !== "user_search_field" && e.target.id !== "class_search_field")
-            input.change();
+            input.trigger("change");
     });
 
     var lastLength=0;
-    input.change(function(e){
+    input.on("change", function(e){
         if(input.val().length == 0)
             input.removeClass();
         else if(input.val().length > lastLength || input.hasClass("not-found")){
@@ -414,7 +414,7 @@ $j(function(){
                         var $undoButton = $j(document.createElement('button'));
                         $undoButton.prop('class', 'btn btn-default btn-mini undo-button');
                         $undoButton.text('Undo');
-                        $undoButton.click(function () {
+                        $undoButton.on("click", function () {
                             undoLiveCheckIn(username);
                         });
                         $msg.append(' ', $undoButton);
