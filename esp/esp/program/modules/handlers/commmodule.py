@@ -243,16 +243,14 @@ class CommModule(ProgramModuleObj):
         context['from'] = context['default_from']                                      
 
         context['listcount'] = self.approx_num_of_recipients(filterObj, context['sendto_fn'])
-        
         context['filterid'] = filterObj.id
-        
+
         # Use the info redirect (make one for the default email address if it doesn't exist)
-        prs = PlainRedirect.objects.filter(original = "info")
-        
+        prs = PlainRedirect.objects.filter(original = "info")  
 
         if not prs.exists():
            redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
-        
+
         return render_to_response(self.baseDir()+'step2.html', request, context)
         
 
