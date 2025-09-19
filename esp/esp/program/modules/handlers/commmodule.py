@@ -228,31 +228,31 @@ class CommModule(ProgramModuleObj):
     def commpanel_old(self, request, tl, one, two, module, extra, prog):
         from esp.users.views     import get_user_list
         from django.conf import settings
-        
+
         filterObj, found = get_user_list(request, self.program.getLists(True))
 
         if not found:
             return filterObj
         context = {}
-        
+
         context['sendto_fn_name'] = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         context['sendto_fn'] = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(context['sendto_fn_name'])
-        
+
         context['default_from'] = '%s <%s@%s>' % (Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME),
                                               "info", settings.SITE_INFO[1])
-        context['from'] = context['default_from']                                      
+        context['from'] = context['default_from']
 
         context['listcount'] = self.approx_num_of_recipients(filterObj, context['sendto_fn'])
         context['filterid'] = filterObj.id
 
         # Use the info redirect (make one for the default email address if it doesn't exist)
-        prs = PlainRedirect.objects.filter(original = "info")  
+        prs = PlainRedirect.objects.filter(original = "info")
 
         if not prs.exists():
            redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
 
         return render_to_response(self.baseDir()+'step2.html', request, context)
-        
+
 
     @main_call
     @needs_admin
