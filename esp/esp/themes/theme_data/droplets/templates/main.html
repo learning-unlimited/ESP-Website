@@ -102,11 +102,16 @@
 <div class="container footer-container">
   <div class="navbar navbar-fixed-bottom navbar-inverse">
     <div class="navbar-inner">
-      <ul class="nav" style="width: 100%">
-        <li style="width: 100%" class="text-center">
-          <a>&copy; {{ theme.full_group_name }}, {{ theme.mtime.year }}</a>
-          <a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
-        </li>
+		<div>
+			{% load render_qsd %}
+			{% inline_qsd_block "footer_text" %}
+			{% end_inline_qsd_block %}
+		</div>
+		<ul class="nav" style="width: 100%">
+		<li style="width: 100%" class="text-center">
+			<a>&copy; {{ theme.full_group_name }}, {{ theme.mtime.year }}</a>
+			<a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
+       </li>
       </ul>
     </div>
   </div>
