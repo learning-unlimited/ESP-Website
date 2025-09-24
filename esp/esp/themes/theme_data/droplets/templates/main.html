@@ -94,7 +94,7 @@
 </br>
 <script>
 	function footerResize() {
-		if (window.innerWidth > 980){
+		if (window.innerWidth > parseInt($j(":root").css("--width-breakpoint"))){
 			$j('#main').css('padding-bottom', $j("#footer").innerHeight());
 		} else {
 			$j('#main').css('padding-bottom', "inherit");
