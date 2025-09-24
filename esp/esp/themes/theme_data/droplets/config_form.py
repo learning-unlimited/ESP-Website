@@ -16,6 +16,7 @@ class ConfigForm(ThemeConfigurationForm):
     contact_info = forms.CharField(required = False, widget=forms.Textarea,
                                    help_text='Generic text to include in the "About Us" dropdown in the navigation bar. Leave blank to omit this field.')
     show_email = forms.BooleanField(required = False, help_text='Should the group email address be shown in the "About Us" dropdown in the navigation bar?')
+    show_footer_textbox = forms.BooleanField(initial = False, required = False, help_text='Should there be an editable text field in the footer?')
     contact_links = forms.Field(required = False, widget=ContactFieldsWidget,
                                 label='Contact links below contact info (use absolute or relative URLs)',
                                 initial=[{"text": "contact us", "link": "/contact.html"}])
