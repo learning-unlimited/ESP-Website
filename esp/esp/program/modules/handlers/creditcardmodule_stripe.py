@@ -154,7 +154,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         #   Check for setup of module.  This is also required to initialize settings.
         if not self.check_setup():
-            raise ESPError('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href="mailto:{{settings.SUPPORT}}">websupport team to get it set up.', True)
+            raise ESPError('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href="mailto:{{settings.SUPPORT}}">websupport team</a> to get it set up.', True)
 
         user = request.user
 
