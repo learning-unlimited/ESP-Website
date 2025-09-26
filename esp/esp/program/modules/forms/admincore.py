@@ -89,6 +89,8 @@ class ProgramSettingsForm(ProgramCreationForm):
                     ]# Here you can also add description for each fieldset.
         widgets = {
             'program_modules': forms.SelectMultiple(attrs={'class': 'hidden-field'}),
+            'class_categories': forms.CheckboxSelectMultiple(),
+            'flag_types': forms.CheckboxSelectMultiple(),
         }
         model = Program
 ProgramSettingsForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'pattern': r'(^.+@{0}$)|(^.+@(\w+\.)?learningu\.org$)'.format(settings.SITE_INFO[1].replace('.', '\.'))})
