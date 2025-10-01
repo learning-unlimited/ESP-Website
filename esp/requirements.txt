@@ -17,6 +17,7 @@ git+https://github.com/learning-unlimited/django-admin-tools.git@esp # Extends D
 
 
 # Non-Django-specific packages
+bleach==6.0.0 # For sanitizing QSD content
 dill # For migrating Python 2 pickles in the database
 docutils==0.12 # Needed for django.contrib.admindocs
 flake8==3.9.2 # Required for linter
