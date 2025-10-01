@@ -49,7 +49,7 @@ user = "UNKNOWN USER"
 try:
     user = os.environ['LOCAL_PART']
 
-    message = email.message_from_file(sys.stdin)
+    message = email.message_from_file(sys.stdin, policy=email.policy.default)
 
     handlers = EmailList.objects.all()
 
@@ -72,23 +72,19 @@ try:
 
         # Catch sender's message and grab the data fields (To, From, Subject, Body, etc.)
         data = dict()
-        for field in ['to', 'from', 'cc', 'bcc', 'subject', 'body', 'attachments']:
-            if field == 'to':
-                # TODO: in the long term, it would be better to implement polymorphism so that class lists and individual user aliases both have `recipients`
-                if hasattr(instance, 'recipients'):
-                    data[field] = [x for x in instance.recipients if not x.endswith(settings.EMAIL_HOST_SENDER)] # TODO: make sure to expand the `to` field as needed so sendgrid doesn't just forward in a loop
-                elif hasattr(instance, 'message'):
-                    data[field] = instance.message['to']
-                else:
-                    raise TypeError("Unknown receiver type for `{}`".format(instance))
-
-            else:
-                if message[field] is None:
-                    data[field] = ''
-                elif field in ['subject', 'body', 'attachments']:
-                    data[field] = message[field]
-                else:
-                    data[field] = message[field].split(',')
+        # TODO: in the long term, it would be better to implement polymorphism so that class lists and individual user aliases both have `recipients`
+        if hasattr(instance, 'recipients'):
+            data['to'] = [x for x in instance.recipients if not x.endswith(settings.EMAIL_HOST_SENDER)] # TODO: make sure to expand the `to` field as needed so sendgrid doesn't just forward in a loop
+        elif hasattr(instance, 'message'):
+            data['to'] = instance.message['to']
+        else:
+            raise TypeError("Unknown receiver type for `{}`".format(instance))
+        data['subject'] = message['subject'] or ''
+        data['from'] = message['from'].split(',') or ''
+        data['body'] = '<html>{}</html>'.format(message.get_body(preferencelist=('html', 'plain')).get_content())
+        logger.debug(f"Body has type `{type(data['body'])}` and is `{data['body']}`")
+        data['attachments'] = list(message.iter_attachments())
+        logger.debug(f"Attachments are `{data['attachments']}`")
 
 
        # If the sender's email is not associated with an account on the site,
