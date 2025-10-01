@@ -34,6 +34,7 @@ if os.environ.get('VIRTUAL_ENV') is None:
 import django
 django.setup()
 from esp.dbmail.models import EmailList, send_mail
+from esp.users.models import ESPUser
 from django.conf import settings
 
 import_location = 'esp.dbmail.receivers.'
@@ -66,15 +67,29 @@ try:
         instance.process(user, *match.groups(), **match.groupdict())
 
         if not instance.send:
+            logger.debug("Instance did not send")
             continue
 
         # Catch sender's message and grab the data fields (To, From, Subject, Body, etc.)
         data = dict()
         for field in ['to', 'from', 'cc', 'bcc', 'subject', 'body', 'attachments']:
             if field == 'to':
-                data[field] = [x for x in instance.recipients.split(',') if not x.endswith(settings.EMAIL_HOST_SENDER)]
+                # TODO: in the long term, it would be better to implement polymorphism so that class lists and individual user aliases both have `recipients`
+                if hasattr(instance, 'recipients'):
+                    data[field] = [x for x in instance.recipients if not x.endswith(settings.EMAIL_HOST_SENDER)] # TODO: make sure to expand the `to` field as needed so sendgrid doesn't just forward in a loop
+                elif hasattr(instance, 'message'):
+                    data[field] = instance.message['to']
+                else:
+                    raise TypeError("Unknown receiver type for `{}`".format(instance))
+
             else:
-                data[field] = message[field].split(',')
+                if message[field] is None:
+                    data[field] = ''
+                elif field in ['subject', 'body', 'attachments']:
+                    data[field] = message[field]
+                else:
+                    data[field] = message[field].split(',')
+
 
        # If the sender's email is not associated with an account on the site,
        # do not forward the email 
@@ -116,14 +131,15 @@ try:
 
 
 except Exception as e:
-    # we dont' want to care if it's an exit
+    # we don't want to care if it's an exit
     if isinstance(e, SystemExit):
         raise
 
     if DEBUG:
         raise
     else:
-        logger.warning("Couldn't find user '%s'", user)
+        logger.warning("On user '{}', got error `{}`".format(user, e))
+
         print("""
 %s MAIL SERVER
 ===============
