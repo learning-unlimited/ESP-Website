@@ -159,7 +159,7 @@ def qsd(request, url):
             raise Http403("Sorry, you do not have permission to edit this page.")
 
         nav_category_target = NavBarCategory.objects.get(id=request.POST['nav_category'])
-        
+
         data = request.POST['content']
         if class_qsd:
             data = clean(data, strip = True)
@@ -237,12 +237,12 @@ def ajax_qsd(request):
             return HttpResponse(content='The edit you are submitting is not based on the newest version!\n(Is someone else editing? Did you get here by a back button?)\nCopy out your work if you need it. Then refresh the page to get the latest version.', status=409)
 
         data = post_dict['data']
-    
+
         # Get the URL from the request information
         referer = request.META.get('HTTP_REFERER')
         path = urlparse(referer).path
         path_parts = [el for el in path.split('/') if el != '']
-        
+
         # Santize if this is for a class QSD
         if len(path_parts) > 3 and path_parts[3] == "Classes":
             data = clean(data, strip = True)
@@ -268,12 +268,12 @@ def ajax_qsd_preview(request):
     import json
     from markdown import markdown
     data = request.POST['data']
-    
+
     # Get the URL from the request information
     referer = request.META.get('HTTP_REFERER')
     path = urlparse(referer).path
     path_parts = [el for el in path.split('/') if el != '']
-    
+
     # Santize if this is for a class QSD
     if len(path_parts) > 3 and path_parts[3] == "Classes":
         data = clean(data, strip = True)
