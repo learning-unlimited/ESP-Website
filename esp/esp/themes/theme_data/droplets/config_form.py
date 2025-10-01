@@ -28,4 +28,3 @@ class ConfigForm(ThemeConfigurationForm):
     # URLField requires an absolute URL, here we probably want relative.
     show_footer_textbox = forms.BooleanField(initial = False, required = False,
                                              help_text='Should there be an editable text field in the footer?')
-    
