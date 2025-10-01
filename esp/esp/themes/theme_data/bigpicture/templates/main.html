@@ -129,6 +129,18 @@
       {% endif %}
       {% block content %}
       {% endblock content %}
+	  
+	  {% if theme.show_footer_textbox %}
+		<div>
+			{% load render_qsd %}
+			{% inline_qsd_block "footer_text" %}
+			{% end_inline_qsd_block %}
+		</div>
+	  {% endif %}
+	  <div>
+		<a>&copy; {{ theme.full_group_name }}, {{ theme.mtime.year }}</a>
+		<a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
+	  </div>
     </div>
   </div>
 </div>

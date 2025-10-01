@@ -14,6 +14,7 @@ class ConfigForm(ThemeConfigurationForm):
     contact_links = forms.Field(required = False, widget=ContactFieldsWidget,
                                 label='Contact links below contact info (use absolute or relative URLs)',
                                 initial=[{"text": "contact us", "link": "/contact.html"}])
+    show_footer_textbox = forms.BooleanField(initial = False, required = False, help_text='Should there be an editable text field in the footer?')
     nav_structure = forms.Field(widget=NavStructureWidgetWithIcons)
     facebook_link = forms.URLField(required=False, help_text='Leave blank to omit a Facebook link.')
     # URLField requires an absolute URL, here we probably want relative.
