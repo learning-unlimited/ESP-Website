@@ -92,41 +92,50 @@ try:
 
 
        # If the sender's email is not associated with an account on the site,
-       # do not forward the email 
-       if not data['from']:
-           continue
-       else:
-           users = ESPUser.objects.filter(email=data['from']).order_by('date_joined') # sort by oldest to newest
-           if len(users) == 0:
-               logger.warning('Received email from {}, which is not associated with a user'.format(data['from'])
-               # TODO: send the user a bounce message but limit to one bounce message per day/week/something using
-               # something similar to dbmail.MessageRequests to keep track
-               continue
-           elif len(users) == 1:
-               sender = users[0]
-           # If there is more than one associated account, choose one by prefering admin > teacher > volunteer >
-           # student then choosing the earliest account created. Then send as before using the unique account.
-           elif len(users) > 1:
-               for group_name in ['Administrator', 'Teacher', 'Volunteer', 'Student', 'Educator']
-                   group_users = [x for x in users if len(x.groups.filter(name=group_name)) > 0]
-                   if len(group_users) > 0:
-                       sender = group_users[0] # choose the first (oldest) account if there is still more than
-                       # one; it won't matter because they all go to the same email by construction
-                       break
-               finally: # if the users aren't in any of the standard groups above, ...
-                   sender = users[0] # ... then just pick the oldest account created by selecting users[0] as above
-           else:
-               logger.error('Negative number of possible senders in supposed list `{}`. Skipping....'.format(users))
-               continue
-           # Having identified the sender, if the sender's email is associated with an account on the website,
-           # use SendGrid to send an email to each recipient of the original message (To, Cc, Bcc) individually from
-           # the sender's site email
-           logger.info('Sending email as {}'.format(sender))
-           for recipient in data['to'] + data['cc'] + data['bcc']:
-               send_mail(subject=data['subject'], message=data['body'],
-                         from_email='{}@{}'.format(users[0], settings.EMAIL_HOST_SENDER),
-                         recipient_list=[recipient], fail_silently=False)
-           del sender, recipient, users
+       # do not forward the email
+        if not data['from']:
+            logger.debug(f"User has no account: `from` field is `{data['from']}`")
+            continue
+        else:
+            if len(data['from']) != 1:
+                raise AttributeError(f"More than one sender: `{data['from']}`")
+            email_address = data['from'][0].split('<')[1].split('>')[0]
+            users = ESPUser.objects.filter(email=email_address).order_by('date_joined') # sort oldest to newest
+            if len(users) == 0:
+                logger.warning('Received email from {}, which is not associated with a user'.format(data['from']))
+                # TODO: send the user a bounce message but limit to one bounce message per day/week/something using
+                # something similar to dbmail.MessageRequests to keep track
+                continue
+            elif len(users) == 1:
+                sender = users[0]
+            # If there is more than one associated account, choose one by prefering admin > teacher > volunteer >
+            # student then choosing the earliest account created. Then send as before using the unique account.
+            elif len(users) > 1:
+                for group_name in ['Administrator', 'Teacher', 'Volunteer', 'Student', 'Educator']:
+                    group_users = [x for x in users if len(x.groups.filter(name=group_name)) > 0]
+                    if len(group_users) > 0:
+                        sender = group_users[0] # choose the first (oldest) account if there is still more than
+                        # one; it won't matter because they all go to the same email by construction
+                        break
+                else: # if the users aren't in any of the standard groups above, ...
+                    sender = users[0] # ... then just pick the oldest account created by selecting users[0] as above
+                logger.debug(f"Group selection: {group_name} -> {group_users}")
+            else:
+                logger.error('Negative number of possible senders in supposed list `{}`. Skipping....'.format(users))
+                continue
+            # Having identified the sender, if the sender's email is associated with an account on the website,
+            # use SendGrid to send an email to each recipient of the original message (To, Cc, Bcc) individually from
+            # the sender's site email
+            logger.info('Sending email as {}'.format(sender))
+            # TODO: to avoid loops, remove any @site.learningu.org addresses? There's probably a better way
+            if isinstance(data['to'], str):
+                data['to'] = [data['to']]
+            for recipient in data['to']: # + data['cc'] + data['bcc']:
+                logger.debug(f"Sending to `{recipient}`")
+                send_mail(subject=data['subject'], message=data['body'],
+                         from_email='{}@{}'.format(sender, settings.EMAIL_HOST_SENDER),
+                          recipient_list=[recipient], fail_silently=False)
+            del sender, recipient, users
         sys.exit(0)
 
 
