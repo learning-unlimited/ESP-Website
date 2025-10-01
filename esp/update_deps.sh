@@ -42,10 +42,10 @@ xargs sudo apt install -y < $BASEDIR/esp/packages_base.txt
 
 # This nodejs/less installation only works on Ubuntu 16+
 # The versions on the production server don't seem to break anything, so we'll just skip it
-#if [ $((${UBUNTU_VERSION%.*}+0)) -ge 16 ]
-#then
-#$BASEDIR/esp/packages_base_manual_install.sh
-#fi
+if [ $((${UBUNTU_VERSION%.*}+0)) -ge 16 ]
+then
+$BASEDIR/esp/packages_base_manual_install.sh
+fi
 
 if [[ "$MODE_PROD" ]]
 then
