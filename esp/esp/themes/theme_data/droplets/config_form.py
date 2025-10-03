@@ -26,3 +26,5 @@ class ConfigForm(ThemeConfigurationForm):
                                help_text='Supply this to link to an FAQ page in the "About Us" dropdown in the navigation bar. Leave blank to omit an FAQ link.')
     facebook_link = forms.URLField(required=False, help_text='Supply this to link to Facebook in the "About Us" dropdown in the navigation bar. Leave blank to omit a Facebook link.')
     # URLField requires an absolute URL, here we probably want relative.
+    show_footer_textbox = forms.BooleanField(initial = False, required = False,
+                                             help_text='Should there be an editable text field in the footer?')

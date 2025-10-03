@@ -1,3 +1,7 @@
+:root {
+	/* this is to pass the less-defined navbarCollapseWidth to Javascript */
+	--width-breakpoint: @navbarCollapseWidth;
+}
 
 #main {
     h1 {
@@ -136,7 +140,7 @@ ul.nav-collapse {
     }
 }
 
-@media (min-width:980px) {
+@media (min-width: @navbarCollapseDesktopWidth) {
     .navbar-fixed-top .navbar-inner, .navbar-fixed-bottom .navbar-inner {
         padding-left: 1rem;
         padding-right: 1rem;
@@ -178,7 +182,7 @@ ul.nav-collapse {
     padding: 3px 6px !important;
 }
 
-@media (min-width:980px) {
+@media (min-width: @navbarCollapseDesktopWidth) {
     .adminbar_user_search .title {
         border-radius: 6px 6px 0px 0px;
     }
