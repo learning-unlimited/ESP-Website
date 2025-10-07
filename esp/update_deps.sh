@@ -14,6 +14,8 @@
 # Parse options
 OPTSETTINGS=`getopt -o 'pv:' -l 'prod,virtualenv:' -- "$@"`
 
+UBUNTU_VERSION=$(lsb_release -sr)
+
 eval set -- "$OPTSETTINGS"
 
 while [ ! -z "$1" ]
@@ -29,21 +31,48 @@ done
 
 BASEDIR=$(dirname $(dirname $(readlink -e $0)))
 
-pythonversion=`python -V 2>&1`
-if [[ $pythonversion != "Python 2.7.18" ]]
+sudo apt update
+if ! find /etc/apt/ -name *.list | xargs cat | grep  '^[[:space:]]*deb' | grep -q 'deadsnakes'
 then
-    $BASEDIR/esp/update_python_2.7.18.sh
-    deactivate || :
-    unset VIRTUAL_ENV || :
-    rm -rf ${VIRTUALENV_DIR:-$BASEDIR/env} || :
+    sudo add-apt-repository ppa:deadsnakes/ppa
+    sudo apt update
 fi
 
-sudo apt-get update
-sudo apt-get install -y $(<"$BASEDIR/esp/packages_base.txt")
+xargs sudo apt install -y < $BASEDIR/esp/packages_base.txt
+
+# This nodejs/less installation only works on Ubuntu 16+
+# The versions on the production server don't seem to break anything, so we'll just skip it
+if [ $((${UBUNTU_VERSION%.*}+0)) -ge 16 ]
+then
 $BASEDIR/esp/packages_base_manual_install.sh
+fi
+
 if [[ "$MODE_PROD" ]]
 then
-    sudo apt-get install -y $(<"$BASEDIR/esp/packages_prod.txt")
+    if [ $((${UBUNTU_VERSION%.*}+0)) -ge 20 ]
+    then
+    xargs sudo apt install -y < $BASEDIR/esp/packages_prod.txt
+    else
+    xargs sudo apt-get install -y < $BASEDIR/esp/packages_prod_u12.txt
+    fi
+fi
+
+# Install universe and curl 
+# How we add the repository depends on the version of Ubuntu
+if [ $((${UBUNTU_VERSION%.*}+0)) -gt 12 ]
+then
+sudo add-apt-repository -y universe
+else
+sudo add-apt-repository "deb http://old-releases.ubuntu.com/ubuntu $(lsb_release -sc) universe"
+fi
+
+if [ $((${UBUNTU_VERSION%.*}+0)) -ge 20 ]
+then
+sudo apt update
+sudo apt install -y curl
+else
+sudo apt-get update
+sudo apt-get install -y curl
 fi
 
 # Ensure that the virtualenv exists and is activated.
@@ -57,7 +86,7 @@ then
     source "$VIRTUALENV_DIR/bin/activate"
 fi
 
-# Upgrade/install pip, setuptools, wheel, and application dependencies.
+# Install/upgrade pip and Python dependencies.
 python -m pip install -U pip
-python -m pip install -U setuptools wheel
 python -m pip install -U -r "$BASEDIR/esp/requirements.txt"
+
