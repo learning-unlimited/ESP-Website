@@ -82,9 +82,8 @@ try:
         data['subject'] = message['subject'] or ''
         data['from'] = message['from'].split(',') or ''
         data['body'] = '<html>{}</html>'.format(message.get_body(preferencelist=('html', 'plain')).get_content())
-        logger.debug(f"Body has type `{type(data['body'])}` and is `{data['body']}`")
-        data['attachments'] = list(message.iter_attachments())
-        logger.debug(f"Attachments are `{data['attachments']}`")
+        data['attachments'] = [extract_attachments_for_sendgrid(x) for x in message.iter_attachments()]
+        logger.debug(f"Attachments are `{data['attachments']}` of types `{[type(x) for x in data['attachments']]}`")
 
 
        # If the sender's email is not associated with an account on the site,
@@ -130,7 +129,7 @@ try:
                 logger.debug(f"Sending to `{recipient}`")
                 send_mail(subject=data['subject'], message=data['body'],
                          from_email='{}@{}'.format(sender, settings.EMAIL_HOST_SENDER),
-                          recipient_list=[recipient], fail_silently=False)
+                          recipient_list=[recipient], attachments=data['attachments'], fail_silently=False)
             del sender, recipient, users
         sys.exit(0)
 
