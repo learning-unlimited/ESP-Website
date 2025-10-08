@@ -70,8 +70,9 @@ try:
             logger.info("Instance did not send")
             continue
 
-        # Catch sender's message and grab the data fields (To, From, Subject, Body, etc.)
+        # Catch sender's message and grab the data fields (to, from, subject, body, and attachments)
         data = dict()
+        # TODO: (1) sort out why the email_address.split() breaks when it's a list of users; (2) consider prepending the class code to the subject
         # TODO: in the long term, it would be better to implement polymorphism so that class lists and individual user aliases both have `recipients`
         if hasattr(instance, 'recipients'):
             data['to'] = [x for x in instance.recipients if not x.endswith(settings.EMAIL_HOST_SENDER)] # TODO: make sure to expand the `to` field as needed so sendgrid doesn't just forward in a loop
@@ -79,8 +80,8 @@ try:
             data['to'] = instance.message['to']
         else:
             raise TypeError("Unknown receiver type for `{}`".format(instance))
-        data['subject'] = message['subject'] or ''
         data['from'] = message['from'].split(',') or ''
+        data['subject'] = message['subject'] or ''
         data['body'] = '<html>{}</html>'.format(message.get_body(preferencelist=('html', 'plain')).get_content())
         data['attachments'] = [extract_attachments_for_sendgrid(x) for x in message.iter_attachments()]
         logger.debug(f"Attachments are `{data['attachments']}` of types `{[type(x) for x in data['attachments']]}`")
