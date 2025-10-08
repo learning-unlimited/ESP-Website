@@ -9,7 +9,7 @@ class FlatListItem:
 class PropertyDict(dict):
     def merge(self, other_dict):
         for key in other_dict:
-            if key not in self.keys():
+            if key not in list(self.keys()):
                 self[key] = other_dict[key]
             else:
                 val = other_dict[key]

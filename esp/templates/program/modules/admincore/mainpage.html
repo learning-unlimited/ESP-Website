@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}{{program.niceName}} Management{% endblock %}
+{% block title %}{{program.niceName}} Admin Dashboard{% endblock %}
 
 {% block xtrajs %}
 {{block.super }}
@@ -13,8 +13,9 @@ function updateDocs(docs) {
 //-->
 </script>
 
-<script type="text/javascript"> var base_url = "{{ program.getUrlBase }}" </script>
+<script type="text/javascript"> var base_url = "{{ program.getUrlBase }}"; </script>
 <script type="text/javascript"> var program_base_url = "/json/"+base_url+"/"; </script>
+<script type="text/javascript"> var program_id = "{{ program.id }}"; </script>
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
 <script type="text/javascript" src="/media/scripts/sorttable.js"></script>
 <script type="text/javascript" src="/media/scripts/program/modules/admincore.js"></script>
@@ -33,7 +34,6 @@ function updateDocs(docs) {
 <br />
 <br />
 
-<br /><br />
 <h1>Admin Dashboard for {{program.niceName}} </h1>
 
 {% include "program/modules/admincore/returnlink.html" %}

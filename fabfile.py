@@ -18,6 +18,8 @@
 #     local files, since fab may be invoked from anywhere in the source tree.
 #
 
+from __future__ import absolute_import
+from __future__ import print_function
 from fabric.api import *
 from fabric.contrib import files
 
@@ -27,8 +29,10 @@ import pipes
 import platform
 import random
 import string
+import sys
 
 from os.path import join
+from six.moves import range
 
 # Remote base directory, with trailing /
 env.rbase = "/home/vagrant/devsite/"
@@ -38,9 +42,6 @@ env.venv = "/home/vagrant/venv/"
 
 # Local base directory, e.g. C:\Users\Tim\ESP-Website
 env.lbase = os.path.dirname(env.real_fabfile)
-
-# Name of the encrypted volume group in the Vagrant VM
-env.encvg = "ubuntu--12--vg-keep_1"
 
 # Name of the Postgres database
 env.dbname = "devsite_django"
@@ -60,14 +61,14 @@ if not env.hosts:
         from fabtools.vagrant import vagrant
         vagrant()
     except SystemExit:
-        print ""
-        print "***** "
-        print "***** Fabric encountered a fatal exception when loading the Vagrant configuration!"
-        print "***** Make sure that Vagrant is running:"
-        print "*****"
-        print "*****   $ vagrant status"
-        print "*****   $ vagrant up"
-        print "***** "
+        print("")
+        print("***** ")
+        print("***** Fabric encountered a fatal exception when loading the Vagrant configuration!")
+        print("***** Make sure that Vagrant is running:")
+        print("*****")
+        print("*****   $ vagrant status")
+        print("*****   $ vagrant up")
+        print("***** ")
 
         raise
 
@@ -87,10 +88,22 @@ def setup():
     from fabtools import require
     require.deb.package("cryptsetup")
 
-    print "***** "
-    print "***** Creating the encrypted partition for data storage."
-    print "***** Please choose a passphrase and type it at the prompts."
-    print "***** "
+    print("***** ")
+    print("***** Creating the encrypted partition for data storage.")
+    print("***** Please choose a passphrase and type it at the prompts.")
+    print("***** ")
+
+    # Name of the encrypted volume group in the Vagrant VM based on which VM is loaded
+    ubuntu_version = run("lsb_release -r | awk '{print $2}'", warn_only=True)
+    try:
+        env.encvg = {"24.04": "ubuntu--vg-keep_1",
+                     "22.04": "ubuntu--vg-keep_1",
+                     "20.04": "vgvagrant-keep_1",
+                     "12.04": "ubuntu--12--vg-keep_1"}[ubuntu_version]
+    except KeyError:
+        raise ValueError("Unrecognized version of Ubuntu: " + ubuntu_version +
+                         ". Web Team needs to update fabfile.py to add the "
+                         "partition name for this VM.")
 
     sudo("cryptsetup luksFormat -q /dev/mapper/%s" % env.encvg)
     sudo("cryptsetup luksOpen /dev/mapper/%s encrypted" % env.encvg)
@@ -155,28 +168,40 @@ def ensure_environment():
 
     # Has setup() been run?
     if not files.exists("/fab-setup-done"):
-        print ""
-        print "***** "
-        print "***** The Vagrant VM has not been configured. Please run:"
-        print "***** "
-        print "*****   $ fab setup"
-        print "***** "
+        print("")
+        print("***** ")
+        print("***** The Vagrant VM has not been configured. Please run:")
+        print("***** ")
+        print("*****   $ fab setup")
+        print("***** ")
         exit(-1)
+
+    # Name of the encrypted volume group in the Vagrant VM based on which VM is loaded
+    ubuntu_version = run("lsb_release -r | awk '{print $2}'", warn_only=True)
+    try:
+        env.encvg = {"24.04": "ubuntu--vg-keep_1",
+                     "22.04": "ubuntu--vg-keep_1",
+                     "20.04": "vgvagrant-keep_1",
+                     "12.04": "ubuntu--12--vg-keep_1"}[ubuntu_version]
+    except KeyError:
+        raise ValueError("Unrecognized version of Ubuntu: " + ubuntu_version +
+                         ". Web Team needs to update fabfile.py to add the "
+                         "partition name for this VM.")
 
     # Ensure that the encrypted partition has been mounted (must be done after
     # every boot, and can't be done automatically by Vagrant :/)
-    if sudo("df | grep encrypted | wc -l").strip() != "1":
+    if sudo("df | grep encrypted | wc -l", warn_only=True).strip() != "1":
         if sudo("ls -l /dev/mapper/encrypted &> /dev/null ; echo $?").strip() != "0":
-            print "***** "
-            print "***** Opening the encrypted partition for data storage."
-            print "***** Please enter your passphrase when prompted."
-            print "***** "
+            print("***** ")
+            print("***** Opening the encrypted partition for data storage.")
+            print("***** Please enter your passphrase when prompted.")
+            print("***** ")
             sudo("cryptsetup luksOpen /dev/mapper/%s encrypted" % env.encvg)
             sudo("mount /dev/mapper/encrypted /mnt/encrypted")
         else:
-            print "***** "
-            print "***** Something went wrong when mounting the encrypted partition."
-            print "***** Aborting."
+            print("***** ")
+            print("***** Something went wrong when mounting the encrypted partition.")
+            print("***** Aborting.")
             exit(-1)
 
     # Are we running emptydb() or loaddb() right now? If so, skip the database
@@ -184,25 +209,38 @@ def ensure_environment():
     if env.get("db_running", False):
         return
 
+    run("chmod 755 /home/vagrant", warn_only=True)
+
+    # Make sure the postgresql service is running
+    sudo("service postgresql start")
+
     # Has some database been loaded?
-    dbs = int(psql("SELECT COUNT(*) FROM pg_stat_database;").strip())
+    dbs = int(psql("SELECT COUNT(*) FROM pg_stat_database;", warn_only=True).strip())
     if dbs < 4:
-        print ""
-        print "***** "
-        print "***** A database has not been loaded. Please run either:"
-        print "***** "
-        print "*****   $ fab emptydb"
-        print "***** "
-        print "***** to install an empty database, or:"
-        print "***** "
-        print "*****   $ fab loaddb"
-        print "***** "
-        print "***** to load a database dump."
-        print "***** "
+        print("")
+        print("***** ")
+        print("***** A database has not been loaded. Please run either:")
+        print("***** ")
+        print("*****   $ fab emptydb")
+        print("***** ")
+        print("***** to install an empty database, or:")
+        print("***** ")
+        print("*****   $ fab loaddb")
+        print("***** ")
+        print("***** to load a database dump.")
+        print("***** ")
+        exit(-1)
+
+    # Did `setup()` fail to create the symlinked folders?
+    fp = env.rbase + "esp/public/media/"
+    if not files.exists(fp + "images") or not files.exists(fp + "styles"):
+        print("One of the symlinks `esp/public/media/images` or ")
+        print("`.../styles` failed to be created. Try re-running with ")
+        print("escalated privileges or contact the web team for more help.")
         exit(-1)
 
 @task
-def psql(cmd=None, *args):
+def psql(cmd=None, *args, **kwargs):
     """
     Run the given Postgres command as user postgres. If no command is
     specified, open an interactive psql shell.
@@ -212,9 +250,9 @@ def psql(cmd=None, *args):
     """
     ensure_environment()
     if cmd:
-        return sudo("psql -AXqt -c " + pipes.quote(cmd % args), user="postgres")
+        return sudo("psql -AXqt -c " + pipes.quote(cmd % args), user="postgres", **kwargs)
     else:
-        interactive("sudo -u postgres psql; exit")
+        interactive("sudo -i -u postgres psql; exit")
 
 @task
 def emptydb(owner="esp", interactive=True):
@@ -253,10 +291,10 @@ def emptydb(owner="esp", interactive=True):
     # Run Django migrations, etc. (unless being called from loaddb, below)
     if interactive:
         refresh()
-        print "***** "
-        print "***** Creating the first admin account on the website."
-        print "***** Please configure credentials when prompted."
-        print "***** "
+        print("***** ")
+        print("***** Creating the first admin account on the website.")
+        print("***** Please configure credentials when prompted.")
+        print("***** ")
         manage("createsuperuser")
 
 @task
@@ -329,8 +367,24 @@ def loaddb(filename=None):
     # Cleanup
     run("rm -f " + env.encfab + "dbdump")
 
+@task
+def dumpdb(filename="devsite_django.sql"):
+    """
+    Creates a dump of a database.
+    This has not been tested on the production server.
+    """
+    ensure_environment()
+
+    sys.path.insert(0, 'esp/esp/')
+    from settings import DATABASES
+    default_db = DATABASES['default']
+
+    sudo("PGHOST=%s PGPORT=%s PGDATABASE=%s PGUSER=%s PGPASSWORD=%s pg_dump > %s%s" %
+         (pipes.quote(default_db['HOST']), pipes.quote(default_db['PORT']), pipes.quote(env.dbname),
+         pipes.quote(default_db['USER']), pipes.quote(default_db['PASSWORD']), pipes.quote(env.rbase), pipes.quote(filename)))
+
 def gen_password(length):
-    return "".join([random.choice(string.letters + string.digits) for i in range(length)])
+    return "".join([random.choice(string.ascii_letters + string.digits) for i in range(length)])
 
 @task
 def refresh():
@@ -370,8 +424,8 @@ def manage(cmd):
         interactive(env.rbase + "esp/manage.py " + cmd)
     else:
         if basecmd.startswith("runserver") and cmd == basecmd:
-            print "*** WARNING: 'fab manage:runserver' won't work right. ***"
-            print "***            use 'fab runserver' instead.           ***"
+            print("*** WARNING: 'fab manage:runserver' won't work right. ***")
+            print("***            use 'fab runserver' instead.           ***")
         with cd(env.rbase + "esp"):
             run("python manage.py " + cmd)
 

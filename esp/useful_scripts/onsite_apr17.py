@@ -1,11 +1,15 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from esp.program.models import *
 from esp.datatree.models import *
 from esp.users.models import *
 
 import string
+from io import open
+from six.moves import range
 
 def ascii_sanitize(s):
-    return filter(lambda x: x in string.printable, s)
+    return [x for x in s if x in string.printable]
 
 def dateonly(d):
     return d.strftime('%Y-%m-%d')
@@ -30,9 +34,9 @@ for sec in appropriate_sections:
     print ' -> %s: %s' % (sec.teachers, sec.title())
 """
 
-bits = UserBit.valid_objects().filter(verb=filter_verb,qsc=splash.anchor).order_by('startdate')
+bits = UserBit.valid_objects().filter(verb=filter_verb, qsc=splash.anchor).order_by('startdate')
 
-outfile.write('"Checkin date","Checkin time","Student first name","Student last name","Student e-mail","Teacher","Class code","Subject","Parent first name","Parent last name","Parent e-mail","Street","City","State","Zip code"\n')
+outfile.write('"Checkin date","Checkin time","Student first name","Student last name","Student email","Teacher","Class code","Subject","Parent first name","Parent last name","Parent email","Street","City","State","Zip code"\n')
 student_list = [ESPUser(bit.user) for bit in bits]
 for i in range(len(student_list)):
     student = student_list[i]
@@ -41,8 +45,8 @@ for i in range(len(student_list)):
     for sec in student.getEnrolledSections(splash):
         if sec in appropriate_sections:
             prof = student.getLastProfile()
-            print 'Found %s in %s' % (student, sec)
-            #   First, last, student e-mail,
+            print('Found %s in %s' % (student, sec))
+            #   First, last, student email,
             if prof.contact_user:
                 cu = prof.contact_user
             else:

@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -116,6 +119,7 @@ class BaseAppElement(object):
                 setattr(self, field_name, form.cleaned_data[field_name])
         self.save()
 
+@python_2_unicode_compatible
 class StudentAppQuestion(BaseAppElement, models.Model):
     """ A question for a student application form, a la Junction or Delve.
     Questions pertaining to the program or to classes the student has
@@ -130,7 +134,7 @@ class StudentAppQuestion(BaseAppElement, models.Model):
     question = models.TextField(help_text='The prompt that your students will see.')
     directions = models.TextField(help_text='Specify any additional notes (such as the length of response you desire) here.', blank=True, null=True)
 
-    def __unicode__(self):
+    def __str__(self):
         if self.subject is not None:
             return '%s (%s)' % (self.question[:80], self.subject.title)
         else:
@@ -140,6 +144,7 @@ class StudentAppQuestion(BaseAppElement, models.Model):
         app_label = 'program'
         db_table = 'program_studentappquestion'
 
+@python_2_unicode_compatible
 class StudentAppResponse(BaseAppElement, models.Model):
     """ A response to an application question. """
     question = models.ForeignKey(StudentAppQuestion, editable=False)
@@ -149,14 +154,14 @@ class StudentAppResponse(BaseAppElement, models.Model):
     _element_name = 'response'
     _field_names = ['response', 'complete']
 
-    def __unicode__(self):
+    def __str__(self):
         return 'Response to %s: %s...' % (self.question.question, self.response[:80])
 
     class Meta:
         app_label = 'program'
         db_table = 'program_studentappresponse'
 
-
+@python_2_unicode_compatible
 class StudentAppReview(BaseAppElement, models.Model):
     """ An individual review for a student application question.
     The application can be reviewed by any director of the program or
@@ -171,14 +176,14 @@ class StudentAppReview(BaseAppElement, models.Model):
     _element_name = 'review'
     _field_names = ['score', 'comments', 'reject']
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s by %s: %s...' % (self.score, self.reviewer.username, self.comments[:80])
 
     class Meta:
         app_label = 'program'
         db_table = 'program_studentappreview'
 
-
+@python_2_unicode_compatible
 class StudentApplication(models.Model):
     """ Student applications for Junction and any other programs that need them. """
     from esp.program.models import Program
@@ -190,14 +195,14 @@ class StudentApplication(models.Model):
     responses = models.ManyToManyField(StudentAppResponse)
     reviews = models.ManyToManyField(StudentAppReview)
 
-    done = models.BooleanField(default=False,editable = False)
+    done = models.BooleanField(default=False, editable = False)
 
     #   Legacy fields
-    teacher_score = models.PositiveIntegerField(editable=False,null=True,blank=True)
-    director_score = models.PositiveIntegerField(editable=False,null=True,blank=True)
-    rejected       = models.BooleanField(default=False,editable=False)
+    teacher_score = models.PositiveIntegerField(editable=False, null=True, blank=True)
+    director_score = models.PositiveIntegerField(editable=False, null=True, blank=True)
+    rejected       = models.BooleanField(default=False, editable=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return str(self.user)
 
     def __init__(self, *args, **kwargs):

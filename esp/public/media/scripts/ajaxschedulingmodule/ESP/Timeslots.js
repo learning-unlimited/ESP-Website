@@ -4,8 +4,36 @@
  * @param timeslots_data: The raw timeslot data
  */
 function Timeslots(timeslots_data, lunch_timeslots){
-    // TODO: move helper to add timeslot order here
-    this.timeslots_sorted = helpers_add_timeslots_order(timeslots_data);
+    /**
+     * Add the "order" property to each timeslot which is equal to its rank when
+     * sorted by start time.
+     */
+    this.helpers_add_timeslots_order = function(timeslot_object){
+        var timeslot_array = [];
+        $j.each(timeslot_object, function(timeslot_id, timeslot){
+                timeslot_array.push(timeslot);
+                });
+
+        // Sort timeslots by start time
+        var sorted_timeslot_array = timeslot_array.sort(function(a,b){
+            for (i=0; i<a.start.length; i++) {
+                var comp = a.start[i] - b.start[i];
+                if (comp != 0) {
+                    return comp;
+                }
+            }
+            return 0;
+        });
+
+        // Update the order in the original timeslot_object
+        for (i=0; i<sorted_timeslot_array.length; i++){
+            var t = sorted_timeslot_array[i];
+            timeslot_object[t.id].order = i;
+        }
+
+        return sorted_timeslot_array;
+    };
+    this.timeslots_sorted = this.helpers_add_timeslots_order(timeslots_data);
     this.timeslots = timeslots_data;
     this.lunch_timeslots = {};
 
@@ -64,9 +92,7 @@ function Timeslots(timeslots_data, lunch_timeslots){
             var last_timeslot = this.get_by_id(last_timeslot_id);
             next_timeslot = this.get_by_order(last_timeslot.order + 1);
 
-            if (!this.are_timeslots_contiguous([last_timeslot, next_timeslot])){
-                console.log("timeslot " + last_timeslot.id + " and timeslot " +
-                        next_timeslot.id +" are not contiguous");
+            if (next_timeslot === undefined || !this.are_timeslots_contiguous([last_timeslot, next_timeslot])){
                 return null;
             }
             last_timeslot_id = next_timeslot.id;
@@ -79,29 +105,25 @@ function Timeslots(timeslots_data, lunch_timeslots){
      * Get the number of hours spanned by the two timeslots with ids id_1 and id_2
      */
     this.get_hours_spanned = function(id_1, id_2) {
-        var start = this.timeslots[id_1].start;
-        var end = this.timeslots[id_2].end;
+        var start = new Date(...this.timeslots[id_1].start);
+        var end = new Date(...this.timeslots[id_2].end);
 
-        var hours = end[3] - start[3];
-        var minutes = end[4] - start[4];
-
-        if (minutes > 0){
-            hours = hours + 1;
-        }
-        return hours;
+        return Math.round((((end - start)/3600000) + Number.EPSILON) * 100) / 100;
     };
 
     /**
      * Get the number of minutes between the two timeslots with ids id_1 and id_2
      */
     this.get_minutes_between = function(id_1, id_2) {
-        var end = this.timeslots[id_1].end;
-        var start = this.timeslots[id_2].start;
+        var end = new Date(...this.timeslots[id_1].end);
+        var start = new Date(...this.timeslots[id_2].start);
 
-        var hours = start[3] - end[3];
-        var minutes = start[4] - end[4];
-        return hours * 60 + minutes;
+        return (start - end)/60000;
     };
+
+    // the minimum time difference between timeslots
+    // defined by the "timeblock_contiguous_tolerance" program tag
+    this.minimumDifference = parseInt(contiguous_tolerance);    
 
     /**
      * Returns a guess of whether the specified timeslots are contiguous in time
@@ -128,20 +150,4 @@ function Timeslots(timeslots_data, lunch_timeslots){
         }
         return true;
     };
-
-    // compute the minimum time difference between timeslots
-    //  (this is used in this.are_timeslots_contiguous)
-    var minimumDifference = false;
-    for(var i = 0; i < this.timeslots_sorted.length - 1; i++) {
-        var currentTimeslot = this.timeslots_sorted[i];
-        var nextTimeslot = this.timeslots_sorted[i + 1];
-        if (!this.on_same_day(currentTimeslot, nextTimeslot)){
-            continue;
-        }
-        var difference = this.get_minutes_between(currentTimeslot.id, nextTimeslot.id);
-        if (minimumDifference === false || difference < minimumDifference){
-            minimumDifference = difference;
-        }
-    }
-    this.minimumDifference = minimumDifference;
 };

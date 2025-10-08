@@ -1,99 +1,176 @@
 {% extends "main.html" %}
 {% load render_qsd %}
+{% load users %}
 
 {% block title %} Manage Phase Zero for {{program.niceName}} {% endblock %}
 
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
 
 <style>
-.button1 {
-    text-align: center !important;
-    float: none !important;
-    height: 40px !important;
-    width: 250px !important;
-    font-size: 13px !important;
-}
-
-#applicants
-{
-    list-style-type: none;
-    counter-reset: section;
-
-    -moz-column-count: 3;
-    -moz-column-gap: 20px;
-    -webkit-column-count: 3;
-    -webkit-column-gap: 20px;
-    column-count: 3;
-    column-gap: 20px;
-}
-
-#record
-{
-    padding-left: 30px;
-    position: relative;
-}
-
-#lotteryentries{
-  display:none;
-}
-#lotteryentries.show{
-  display:block;
+#highcharts-placeholder {
+  width: 100%;
+  height: 250px;
 }
 
 table {
     border-collapse: collapse;
 }
 
-table, th, td {
+table, th, td, .option {
     border: 1px solid black;
+}
+
+.option th {
+    padding-top: 10px;
+}
+
+.option tr:last-child td:last-child {
+    padding-bottom: 10px;
+}
+
+.addstudent,
+.addstudent th,
+.addstudent td {
+    border: none;
 }
 
 td {
     text-align: center;
 }
+.dsphead {
+    text-align: center !important;
+}
 </style>
 {% endblock %}
+
+{% block xtrajs %}
+  <script type="text/javascript" src="//code.highcharts.com/highcharts.js"></script>
+  <script type="text/javascript" src="//code.highcharts.com/highcharts-more.js"></script>
+  <script type="text/javascript" src="//code.highcharts.com/modules/no-data-to-display.js"></script>
+  <script type="text/javascript">base_url = "{{ program.getUrlBase }}"</script>
+  <script type="text/javascript">prog_id = "{{ program.id }}"</script>
+  <script type="text/javascript" src="/media/scripts/program/modules/studentregphasezero.js"></script>
+  <script type="text/javascript">
+    // Set up the student input autocomplete
+    $j(document).ready(function() {
+      setup_autocomplete();
+    });
+  </script>
+{% endblock xtrajs %}
 
 {% block content %}
 <h1>Manage Phase Zero (Student Lottery) for {{program.niceName}}</h1>
 
 <center>
-<h2>
-Number of students that have entered the student lottery:
-</h2>
-<h2 style="font-family:sans-serif">
-<u>{{ nentrants }}</u>
-</h2>
+{% include "program/modules/bigboardmodule/bigboard_graph.html" %}
+</center>
 
-</br>
-<center><input type="button" class="button1" value="Show/Hide Lottery Entrants" id="toggle" /></center>
+<center>
+<hr>
+{% if error %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {{ error }}
+    </div>
+{% endif %}
+{% if success %}
+    <div class="alert alert-success">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {{ success }}
+    </div>
+{% endif %}
+{% if invalid_grades %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            The following students have invalid grades:</br>{% for student in invalid_grades %}{{ student }}</br>{% endfor %}
+    </div>
+{% endif %}
+{% autoescape off %}
+{% if lottery_succ_msg %}
+    <div class="alert alert-success">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {{ lottery_succ_msg|join:"<br/>" }}
+    </div>
+{% elif lottery_err_msg %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {{ lottery_err_msg|join:"<br/>" }}
+    </div>
+{% endif %}
+{% endautoescape %}
 
-<div id="lotteryentries">
-</br>
-<ul id="applicants">
-{% for entrant in entrants %}
-<li>{{entrant}} - {{entrant.getGrade}}</li>
-{% endfor %}
-</ul>
+<button class="dsphead">
+    <b><u>Run Default Student Lottery Algorithm:</u></b>
+</button>
+<div class="dspcont">
+    (Do not do this unless you know what you are doing)<br/><br/>
+    <form action="#" method="POST">
+        <input type="hidden" name="mode" value="default">
+        {% if grade_caps %}
+            The following grade capacities will be used</br>(as specified by the <i>program_size_by_grade</i> <a href="/manage/{{ program.getUrlBase }}/tags/learn">tag</a>):</br>
+            <table align="center" width="200">
+                <tr>
+                    <th>Grade(s)</th>
+                    <th>Capacity</th>
+                </tr>
+                {% for grades, cap in grade_caps %}
+                    <tr>
+                        <td>
+                            {{ grades|join:" - " }}
+                        </td>
+                        <td>
+                            {{ cap }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            You must set the <i>program_size_by_grade</i> <a href="/manage/{{ program.getUrlBase }}/tags">tag</a>.
+        {% endif %}
+        <!--<b>Specify Role Name for Winners: </b>--><input type="hidden" name="rolename" value="{{role}}"></br></br>
+        <input type="checkbox" name="perms" id="perms_default_checkbox" checked>  <label for="perms_default_checkbox">Open all student registration deadlines for lottery winners.</label></br></br>
+        <input type="checkbox" name="confirm" id="confirm_default_checkbox">  <label for="confirm_default_checkbox">I confirm that I would like to run the default student lottery algorithm.<label></label></br></br>
+        <input {% if lottery_run or not grade_caps or invalid_grades %}disabled {% endif %}{% if lottery_run %}title="Lottery has already been run" 
+        {% elif invalid_grades %}title="Lottery can not be run with students with invalid grades" 
+        {% elif not grade_caps %}title="The grade cap tag must be set to run the lottery" {% endif %}type="submit" style="float:none" value="Run Default Student Lottery Algorithm" />
+    </form>
 </div>
 
-<hr>
-<center>
-<h2>
-<u>To Run Student Lottery:</u>
-</h2>
-(Do not do this unless you know what you are doing)
 
-</br></br>
-{% if error %}<p><font color="red">{{ error }}</font></p>{% endif %}
-{% if success %}<p><font color="blue">{{ success }}</font></p>{% endif %}
-<form action="#" method="POST">
-<!--<b>Specify Role Name for Winners: </b>--><input type="hidden" name="rolename" value="{{role}}"></br></br>
-<input type="checkbox" name="confirm">  I confirm that I would like to run the student lottery.</br></br>
-<input type="submit" value="Run Student Lottery" />
-</form>
+<button class="dsphead">
+    <b><u>Run Manual Student Lottery:</u></b>
+</button>
+<div class="dspcont">
+    (Do not do this unless you know what you are doing)<br/><br/>
+    <form action="#" method="POST">
+        <input type="hidden" name="mode" value="manual">
+        <textarea name="usernames" rows="6" placeholder="Enter comma-separated or space-separated student usernames here"></textarea>
+        <!--<b>Specify Role Name for Winners: </b>--><input type="hidden" name="rolename" value="{{role}}"></br></br>
+        <input type="checkbox" name="groups" id="groups_checkbox">  <label for="groups_checkbox">I would also like to accept any students in the same lottery groups.</label></br></br>
+        <input type="checkbox" name="perms" id="perms_manual_checkbox" checked>  <label for="perms_manual_checkbox">Open all student registration deadlines for lottery winners.</label></br></br>
+        <input type="checkbox" name="confirm" id="confirm_manual_checkbox">  <label for="confirm_manual_checkbox">I confirm that I would like to use the above list of students for a manual student lottery.</label></br></br>
+        <input {% if lottery_run or invalid_grades %}disabled {% endif %}{% if lottery_run %}title="Lottery has already been run" 
+        {% elif invalid_grades %}title="Lottery can not be run with students with invalid grades" {% endif %}type="submit" style="float:none" value="Run Manual Student Lottery" />
+    </form>
+</div>
+
+{% if lottery_run %}
+<button class="dsphead">
+    <b><u>Undo the Student Lottery:</u></b>
+</button>
+<div class="dspcont">
+    This will UNDO the student lottery, which will delete the winners group and remove any permissions that were created for the group. This can NOT be undone.<br/><br/>
+    <form action="#" method="POST">
+        <input type="hidden" name="mode" value="undo">
+        <input type="checkbox" name="confirm" id="confirm_undo_checkbox">  <label for="confirm_undo_checkbox">I confirm that I would like to UNDO the student lottery.</label></br></br>
+        <input type="submit" style="float:none" value="Undo the Student Lottery" />
+    </form>
+</div>
+{% endif %}
+
 </center>
 
 {% if stats %}
@@ -123,15 +200,99 @@ Number of students that have entered the student lottery:
         </tr>
     {% endfor %}
 </table>
+<br/><br/>
 {% endif %}
 
+<button class="dsphead">
+    <b><u>Manually Add a Student to the Lottery:</u></b>
+</button>
+<div class="dspcont">
+    <table width=100% cellpadding="0" cellspacing="0" class="addstudent">
+        <td width=46% class="option">
+            <form action="#" method="POST">
+                <table width="100%">
+                    <tr>
+                        <th>{% if num_allowed_users > 1 %}Create a New Lottery Group{% else %}Add a Student to the Lottery{% endif %}</th>
+                    </tr>
+                    {% if num_allowed_users > 1 %}
+                    <tr>
+                        <td>(Use this option if you want to start a new lottery group for a student)<br><br></td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td>
+                            <input type="hidden" name="mode" value="addnew">
+                            <label for="student_search1">Student to be added to {% if num_allowed_users > 1 %}new lottery group{% else %}the lottery{% endif %}:</label>
+                            <input type="text" class="student_search" name="student_search1" id="student_search1" placeholder="username/name" />
+                            <input type="hidden" class="student_selected" name="student_selected1" id="student_selected1" /><br><br>
+                            <input type="submit" class="button" value="{% if num_allowed_users > 1 %}Create New Lottery Group{% else %}Add Student to Lottery{% endif %}" {% if lottery_run %}disabled title="Lottery has already been run"{% endif %} />
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </td>
 
-<script>
-var toggle  = document.getElementById("toggle");
-var content = document.getElementById("lotteryentries");
+        {% if num_allowed_users > 1 %}
+        <td width=8%><b><i>OR</i></b></td>
 
-toggle.addEventListener("click", function(){
-  content.classList.toggle("show");
-}, false);
-</script>
+        <td width=46% class="option">
+            <form action="#" method="POST">
+                <table width="100%">
+                    <tr>
+                        <th>Add To Existing Lottery Group</th>
+                    </tr>
+                    <tr>
+                        <td>(Use this option if you want to add a student to an existing lottery group)<br><br></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="hidden" name="mode" value="addtoexisting">
+                            <label for="student_search2">Student to be added to existing lottery group:</label>
+                            <input type="text" class="student_search" name="student_search2" id="student_search2" placeholder="username/name" />
+                            <input type="hidden" class="student_selected" name="student_selected2" id="student_selected2" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label for="student_search3">Student in existing lottery group:</label>
+                            <input type="text" class="lottery_student_search" name="student_search3" id="student_search3" placeholder="username/name" />
+                            <input type="hidden" class="student_selected" name="student_selected3" id="student_selected3" /><br><br>
+                            <input type="submit" class="button" value="Add to Existing Lottery Group" {% if lottery_run %}disabled title="Lottery has already been run"{% endif %} />
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </td>
+        {% endif %}
+    </table>
+</div>
+
+<button class="dsphead">
+    <b><u>Manually Remove a Student from the Lottery:</u></b>
+</button>
+<div class="dspcont">
+    <table width=50% cellpadding="0" cellspacing="0" class="addstudent" style="margin: auto;">
+        <td width=46% class="option">
+            <form action="#" method="POST">
+                <table width="100%">
+                    <tr>
+                        <th>Remove a Student from the Lottery</th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="hidden" name="mode" value="remove">
+                            <label for="student_search4">Student in the lottery:</label>
+                            <input type="text" class="lottery_student_search" name="student_search4" id="student_search4" placeholder="username/name" />
+                            <input type="hidden" class="student_selected" name="student_selected4" id="student_selected4" /><br><br>
+                            <input type="submit" class="button" value="Remove from Lottery" {% if lottery_run %}disabled title="Lottery has already been run"{% endif %} />
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </td>
+    </table>
+</div>
+
+{% include "program/modules/admincore/returnlink.html" %}
+<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 {% endblock %}

@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -72,10 +75,11 @@ class JSONDataModuleTest(ProgramFrameworkTest):
             student_labels_dict.update(module.studentDesc())
         students_dict = self.program.students()
         student_display_dict = {}
-        for key in students_dict.iterkeys():
-            student_display_dict[student_labels_dict.get(key, key)] = students_dict[key]
+        for key in six.iterkeys(students_dict):
+            if key not in ['attended_past', 'enrolled_past']:
+                student_display_dict[student_labels_dict.get(key, key)] = students_dict[key]
 
-        for query_label, query in student_display_dict.iteritems():
+        for query_label, query in six.iteritems(student_display_dict):
             value = query.count()
             json_str = "[\"%s\", %d]" % (query_label, value)
             self.assertContains(self.stats_response, json_str)
@@ -87,10 +91,11 @@ class JSONDataModuleTest(ProgramFrameworkTest):
             teacher_labels_dict.update(module.teacherDesc())
         teachers_dict = self.program.teachers()
         teacher_display_dict = {}
-        for key in teachers_dict.iterkeys():
-            teacher_display_dict[teacher_labels_dict.get(key, key)] = teachers_dict[key]
+        for key in six.iterkeys(teachers_dict):
+            if key not in ['taught_before']:
+                teacher_display_dict[teacher_labels_dict.get(key, key)] = teachers_dict[key]
 
-        for query_label, query in teacher_display_dict.iteritems():
+        for query_label, query in six.iteritems(teacher_display_dict):
             value = query.count()
             json_str = "[\"%s\", %d]" % (query_label, value)
             self.assertContains(self.stats_response, json_str)
@@ -100,17 +105,24 @@ class JSONDataModuleTest(ProgramFrameworkTest):
         ## Note: Depends on add_user_profiles() always creating 10th graders
         ## and all classes being open to all grades in the program
         expected_response = {"data": [], "id": "grades"}
-        for g in xrange(self.program.grade_min, self.program.grade_max + 1):
+        for g in range(self.program.grade_min, self.program.grade_max + 1):
             expected_response["data"].append({"grade": g,
                                               "num_subjects": 10,
                                               "num_sections": 10,
                                               "num_students": 10 if g==10 else 0})
-        json_str = json.dumps(expected_response)
-        self.assertContains(self.stats_response, json_str)
+        self.assertContains(self.stats_response, 'stats', status_code=200)
+        self.assertIn('stats', list(self.stats_response.json().keys()))
+        grades_count = 0
+        for res in self.stats_response.json()['stats']:
+            self.assertIn('id', list(res.keys()))
+            if res['id'] == 'grades':
+                grades_count += 1
+                self.assertJSONEqual(json.dumps(res), expected_response)
+        self.assertEqual(grades_count, 1)
 
     def testClasses(self):
         ## Make sure all classes are listed
-        json_classes = json.loads(str(self.classes_response.content))
+        json_classes = self.classes_response.json()
         classes = ClassSubject.objects.filter(parent_program=self.program)
         self.assertEquals(len(json_classes["classes"]), classes.count())
 
@@ -121,3 +133,4 @@ class JSONDataModuleTest(ProgramFrameworkTest):
             # Very basic check that we're getting the data correctly
             self.assertTrue(cls.id in json_classes_dict)
             self.assertEquals(json_classes_dict[cls.id]['emailcode'], cls.emailcode())
+

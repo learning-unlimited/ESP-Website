@@ -5,15 +5,18 @@
 {% block content %}
 <h1>Please log in</h1>
 
-{% if next %}
-
-<p>
+<div class="row-fluid">
+<br>
+{% if next and not initiated_login %}
+<div class="alert alert-info span10">
+{% if "unsubscribe" in next %}
+Unsubscribe token is invalid or has expired (>7 days old). Please login or use an unexpired unsubscribe token.
+{% else %}
 You need to log in before you can access <tt>{{ next }}</tt>.
-</p>
-
+{% endif %}
+</div>
 {% endif %}
 
-<div class="row-fluid">
 <div class="alert span10">
 Both the username and password are <b>case-sensitive</b>: capitalization matters!
 </div>
@@ -24,9 +27,13 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
 
 <div class="control-group">
     {% if form.username.errors %}
-       <div class="errors">
+       <ul class="errorlist">
             {{ form.username.errors|last }}
-       </div>
+       </ul>
+    {% elif wrong_user %}
+       <ul class="errorlist">
+            The username you entered is not valid. Keep in mind the username is case sensitive.
+       </ul>
     {% endif %}
 
     <label class="control-label required" for="id_username">Username:</label>
@@ -40,6 +47,10 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
     {% if form.password.errors %}
         <ul class="errorlist">
             {% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+    {% elif wrong_pw %}
+        <ul class="errorlist">
+            The password you entered is not valid.
         </ul>
     {% endif %}
 

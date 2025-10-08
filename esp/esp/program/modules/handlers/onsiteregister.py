@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,25 +33,25 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
 from esp.utils.web import render_to_response
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
-from django.http import HttpResponseRedirect
 from esp.program.models import RegistrationProfile
 from esp.program.modules.forms.onsite import OnSiteRegForm
 from esp.accounting.controllers import IndividualAccountingController
 
 class OnSiteRegister(ProgramModuleObj):
+    doc = """Register a new student onsite."""
+
     @classmethod
     def module_properties(cls):
         return {
             "admin_title": "Onsite New Registration",
             "link_title": "New Student Registration",
             "module_type": "onsite",
-            "seq": 30
+            "seq": 30,
+            "choosable": 1,
             }
 
 
@@ -68,7 +69,7 @@ class OnSiteRegister(ProgramModuleObj):
                                 last_name  = new_data['last_name'],
                                 email      = new_data['email'])
 
-                self.student = new_user
+                self.user = new_user
 
                 regProf = RegistrationProfile.getLastForProgram(new_user,
                                                                 self.program)
@@ -99,10 +100,9 @@ class OnSiteRegister(ProgramModuleObj):
                 regProf.save()
 
                 if new_data['paid']:
-                    Record.createBit('paid', self.program, self.user)
-                    IndividualAccountingController.updatePaid(True, self.program, self.user)
+                    IndividualAccountingController.updatePaid(self.program, self.user, True)
                 else:
-                    IndividualAccountingController.updatePaid(False, self.program, self.user)
+                    IndividualAccountingController.updatePaid(self.program, self.user, False)
 
                 Record.createBit('Attended', self.program, self.user)
 

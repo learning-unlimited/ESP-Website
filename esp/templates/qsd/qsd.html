@@ -18,9 +18,13 @@
 {% block content %}
 
 {% load render_qsd %}
+{% if class_qsd %}
+{% autoescape off %}{% render_qsd_md qsdrec %}{% endautoescape %}
+{% else %}
 {% autoescape off %}{% render_qsd qsdrec %}{% endautoescape %}
+{% endif %}
 
 <div class="qsd_bits hidden">
-    <a href="{{ edit_url }}">Edit this page</a>
+    <a class="btn btn-primary" href="{{ edit_url }}">Edit this page</a>
 </div>
 {% endblock %}

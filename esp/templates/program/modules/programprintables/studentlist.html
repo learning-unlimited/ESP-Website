@@ -1,39 +1,9 @@
+{% load users %}
+{% load getTag %}
 <html>
 <head>
 <title>Student List</title>
-<style type="text/css" media="print,screen">
-body { font-family: georgia; }
-.classtitle { text-align: center; font-size: 15pt; font-weight: bold; font-family: georgia; padding: .3in;}
-
-.classroster { text-align: center; }
-.title span { font-weight:bolder; text-decoration: underline;
-              font-size:16pt; }
-
-.blocks { padding: 4px; font-size: 10pt; font-weight: bold; }
-.classroom { padding: 8px; font-size: 10pt; font-weight: bold; }
-.pretty {border: 1px solid black; }
-.pretty td { border: 1px solid black; }
-.pretty th { border: 1px solid black; }
-.pretty td { vertical-align: top; }
-.teachername { font-size: 9pt; }
-.teachername span { border: 1px solid black; padding: 3px;
-               width: auto; }
-.classroom { vertical-align: top; }
-.blokcs { vertical-align: top; }
-.pretty td.oldnew { border-bottom: 0; border-top: 2px; }
-.pretty td.old { border-bottom: 0;
-                      border-top: 0;}
-#pagebreak {page-break-after: always; }
-.box { width: 15px; height: 15px; border: 2px solid black; 
-   font-weight: bold; text-align: center; vertical-align: middle;
-}
-table.sortable thead {
-    background-color:#eee;
-    color:#666666;
-    font-weight: bold;
-    cursor: default;
-}
-</style>
+<link rel="stylesheet" type="text/css" href="/media/styles/rosters.css" media="print,screen">
 <script src="/media/scripts/sorttable.js"></script>
 </head>
 <body>
@@ -42,6 +12,9 @@ table.sortable thead {
 <tr>
    <th>#</th>
    <th>Name</th>
+   {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <th>Pronouns</th>
+   {% endif %}
    <th>Email</th>
    <th>DOB</th>
    <th>Grade</th>
@@ -55,9 +28,12 @@ table.sortable thead {
 <tr>
    <td>{{ forloop.counter }}</td>
    <td>{{ student.last_name }}, {{ student.first_name}}</td>
+   {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <td>{{ student.getLastProfile.student_info.pronoun }}</td>
+   {% endif %}
    <td>{{ student.email}}</td>
    <td>{{ student.getLastProfile.student_info.dob|date:"m/d/Y" }}</td>
-   <td>{{ student.getGrade }}</td>
+   <td>{{ student|getGradeForProg:program.id }}</td>
    <td>{{ student.getLastProfile.contact_emergency.phone_day }}&nbsp;</td>
    <td>{{ student.getLastProfile.contact_emergency.phone_cell }}&nbsp;</td>
    <td>{{ student.id }}</td>

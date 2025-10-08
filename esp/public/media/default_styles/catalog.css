@@ -152,14 +152,16 @@ input.addbutton_added {
 }
 
 input.addbutton_disabled {
-    color: #ffffff;
-    background-color: #ed1c24;
+    color: #000000;
+    background-color: #ffcccc;
     border: 0px solid black;
     font-weight: bold;
-    font-size: 0.9em;
+    font-size: 1.0em;
     padding: 3px;
+    margin: 0px !important;
     width: 100%;
     font-family: Helvetica, Arial, sans-serif;
+    border-radius: 0px;
 }
 
 input .addbutton_error {
@@ -172,4 +174,5 @@ input .addbutton_error {
     margin: 0px !important;
     width: 100%;
     font-family: Helvetica, Arial, sans-serif;
+    border-radius: 0px;
 }

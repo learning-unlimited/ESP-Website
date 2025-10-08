@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,29 +33,32 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, needs_account, usercheck_usetl, main_call, aux_call, meets_deadline
+from esp.program.modules.base import ProgramModuleObj, usercheck_usetl, main_call, meets_deadline
 from esp.program.models import RegistrationProfile
 from esp.users.models   import ESPUser
 from django.db.models.query import Q
-from django.contrib.auth.decorators import login_required
 from esp.middleware.threadlocalrequest import get_current_request
 
 # reg profile module
 class RegProfileModule(ProgramModuleObj):
+    doc = """Serves the profile editor during student and/or teacher registration."""
+
     @classmethod
     def module_properties(cls):
         return [ {
             "admin_title": "Student Profile Editor",
             "link_title": "Update Your Profile",
             "module_type": "learn",
-            "seq": 1,
-            "required": True
+            "seq": 0,
+            "required": True,
+            "choosable": 1
         }, {
             "admin_title": "Teacher Profile Editor",
             "link_title": "Update Your Profile",
             "module_type": "teach",
-            "seq": 1,
-            "required": True
+            "seq": 0,
+            "required": True,
+            "choosable": 1,
         } ]
 
     def students(self, QObject = False):
@@ -95,7 +99,7 @@ class RegProfileModule(ProgramModuleObj):
         else:
             role = user_roles[0]
 
-        #   Reset e-mail address for program registrations.
+        #   Reset email address for program registrations.
         if prog is None:
             regProf = RegistrationProfile.getLastProfile(request.user)
         else:
@@ -114,7 +118,11 @@ class RegProfileModule(ProgramModuleObj):
         return response
 
     def isCompleted(self):
-        regProf = RegistrationProfile.getLastForProgram(get_current_request().user, self.program)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        regProf = RegistrationProfile.getLastForProgram(user, self.program, self.module.module_type)
         return regProf.id is not None
 
     class Meta:

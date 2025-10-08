@@ -13,10 +13,7 @@
   border: 1px solid black; border-collapse: collapse;
 }
 </style>
-<br />
-<br />
 
-<br /><br />
 <h1>Catalog order for {{program.niceName}}</h1>
 
 <p>
@@ -27,8 +24,6 @@ Before you can print off the catalog, please verify the order of the classes, th
 <br /><br />
 Get Catalog: 
 (<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">pdf</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/dvi?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">dvi</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/ps?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">ps</a>, 
 <a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">tex</a>, 
 <a href="/manage/{{program.getUrlBase}}/coursecatalog/log?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">log</a>)
 
@@ -127,11 +122,10 @@ Get Catalog:
 <p>
 Get Catalog: 
 (<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">pdf</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/dvi?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">dvi</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/ps?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">ps</a>, 
 <a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">tex</a>, 
 <a href="/manage/{{program.getUrlBase}}/coursecatalog/log?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">log</a>)
 </p>
 
+{% include "program/modules/admincore/returnlink.html" %}
 
 {% endblock %}

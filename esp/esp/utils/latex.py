@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -63,15 +65,15 @@ FILE_MIME_TYPES = {
 }
 
 
-def render_to_latex(filepath, context_dict=None, filetype='pdf'):
+def render_to_latex(filepath, context_dict=None, file_type='pdf'):
     """Render some tex source to latex.
 
     This will run the latex interpreter and generate the necessary file type,
     which must be one of those from FILE_MIME_TYPES.
     """
-    if filetype not in FILE_MIME_TYPES:
+    if file_type not in FILE_MIME_TYPES:
         raise ESPError('Invalid type received for latex generation: %s should '
-                       'be one of %s' % (filetype, ', '.join(FILE_MIME_TYPES)))
+                       'be one of %s' % (file_type, ', '.join(FILE_MIME_TYPES)))
 
     context_dict = context_dict or {}
 
@@ -83,15 +85,16 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf'):
         t = loader.get_template(filepath)
 
     context_dict['MEDIA_ROOT'] = settings.MEDIA_ROOT
-    context_dict['file_type'] = filetype
+    context_dict['file_type'] = file_type
+    context_dict['settings'] = settings
 
     rendered_source = t.render(context_dict)
 
-    contents = gen_latex(rendered_source, filetype)
-    return HttpResponse(contents, content_type=FILE_MIME_TYPES[filetype])
+    contents = gen_latex(rendered_source, file_type)
+    return HttpResponse(contents, content_type=FILE_MIME_TYPES[file_type])
 
 
-def gen_latex(texcode, type='pdf', stdout=_devnull_sentinel, stderr=subprocess.STDOUT):
+def gen_latex(texcode, file_type='pdf', stdout=_devnull_sentinel, stderr=subprocess.STDOUT):
     """Generate the latex code.
 
     :param texcode:
@@ -130,18 +133,18 @@ def gen_latex(texcode, type='pdf', stdout=_devnull_sentinel, stderr=subprocess.S
         # parameter for `stderr`.
         stdout, stderr = [devnull_file if f is _devnull_sentinel else f for f in [stdout, stderr]]
 
-        return _gen_latex(texcode, stdout=stdout, stderr=stderr, type=type)
+        return _gen_latex(texcode, stdout=stdout, stderr=stderr, file_type=file_type)
 
 
-def _gen_latex(texcode, stdout, stderr, type='pdf'):
+def _gen_latex(texcode, stdout, stderr, file_type='pdf'):
     file_base = os.path.join(TEX_TEMP, get_rand_file_base())
 
-    if type == 'tex':
+    if file_type == 'tex':
         return texcode
 
     # write to the LaTeX file
     with open(file_base+TEX_EXT, 'w') as texfile:
-        texfile.write(texcode.encode('utf-8'))
+        texfile.write(texcode)
 
     # All command calls will use the same values for the cwd, stdout, and
     # stderr arguments, so we define a partially-applied callable call() that
@@ -163,7 +166,7 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
         raise ESPError('Could not read log file; something has gone horribly '
                        'wrong.  Error details: %s' % e)
 
-    if type == 'log':
+    if file_type == 'log':
         # If we're getting the log, an error is fine -- we're probably trying
         # to debug one!
         return tex_log
@@ -184,18 +187,18 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
         raise ESPError('LaTeX generated no output.  Are you sure you selected '
                        'any users?')
 
-    if type == 'svg':
+    if file_type == 'svg':
         retcode = call(['inkscape', '%s.pdf' % file_base, '-l',
                         '%s.svg' % file_base])
-    elif type == 'png':
+    elif file_type == 'png':
         retcode = call(['convert', '-density', '192', '%s.pdf' % file_base,
                         '%s.png' % file_base])
 
     if retcode:
         raise ESPError("Postprocessing failed; try downloading as PDF.")
 
-    out_file = file_base + '.' + type
-    if type is 'png' and not os.path.isfile(out_file):
+    out_file = file_base + '.' + file_type
+    if file_type == 'png' and not os.path.isfile(out_file):
         # If the schedule is multiple pages (such as a schedule if the program
         # is using barcode check-in), ImageMagick will generate files of the
         # form file_base-n.png.  In this case, we will just return the first
@@ -209,14 +212,14 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
         # handle above.  But we'll at least return a specific error.
         raise ESPError('No output file %s found; try looking at the log '
                        'file.' % out_file)
-    with open(out_file) as f:
+    with open(out_file, 'rb') as f:
         return f.read()
 
 
 def get_rand_file_base():
-    rand = hashlib.md5(str(random())).hexdigest()
+    rand = hashlib.md5(str(random()).encode("UTF-8")).hexdigest()
 
     while os.path.exists(os.path.join(TEX_TEMP, rand+TEX_EXT)):
-        rand = hashlib.md5(str(random())).hexdigest()
+        rand = hashlib.md5(str(random()).encode("UTF-8")).hexdigest()
 
     return rand

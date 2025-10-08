@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,10 +33,8 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call, meets_cap
 from esp.utils.web       import render_to_response
-from datetime            import datetime
 from django.conf         import settings
 from django.db.models.query     import Q
 from esp.users.models    import ESPUser
@@ -44,18 +43,25 @@ from esp.middleware      import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
 class CreditCardModule_Cybersource(ProgramModuleObj):
+    doc = """Accept credit card payments via Cybersource."""
+
     @classmethod
     def module_properties(cls):
         return {
             "admin_title": "Credit Card Payment Module (Cybersource)",
             "link_title": "Credit Card Payment",
             "module_type": "learn",
-            "seq": 10000
+            "seq": 10000,
+            "choosable": 2,
             }
 
     def isCompleted(self):
         """ Whether the user has paid for this program or its parent program. """
-        return IndividualAccountingController(self.program, get_current_request().user).has_paid()
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return IndividualAccountingController(self.program, user).has_paid()
     have_paid = isCompleted
 
     def students(self, QObject = False):
@@ -69,10 +75,10 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
             return {'creditcard':ESPUser.objects.filter(QObj).distinct()}
 
     def studentDesc(self):
-        return {'creditcard': """Students who have filled out the credit card form."""}
+        return {'creditcard': """Students who have filled out the credit card form"""}
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/Payment')
     @meets_cap
     def cybersource(self, request, tl, one, two, module, extra, prog):
@@ -107,6 +113,9 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
             raise ESPError("The Cybersource module is not configured")
 
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
+
+    def isStep(self):
+        return settings.CYBERSOURCE_CONFIG['post_url'] and settings.CYBERSOURCE_CONFIG['merchant_id']
 
     class Meta:
         proxy = True

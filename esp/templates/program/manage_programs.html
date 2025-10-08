@@ -3,36 +3,121 @@
 
 {% block title %}Manage a Program{% endblock %}
 
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/management.css" type="text/css">
+{% endblock %}
+
 {% block content %}
 
 <h2>Manage a Program</h2>
 
-<table class="table" width="100%" align="center">
-<thead>
-  <tr>
-    <th align="center">
-        Welcome, {{ user.first_name }}!
-    </th>
-  </tr>
-</thead>
-<tbody>
-  <tr>
-    <td>
-        {% render_inline_qsd "manage/programs" %}
-    </td>
-  </tr>
-  <tr>
-    <td>
-Select a program to manage it.
-    </td>
-  </tr>
-</tbody>
-</table>
+<div class="module_group" id="module_group_1">
+    <div class="module_group_header">
+        Useful Management Pages
+    </div>
+    <div class="button_wrapper">
+        <div class="module_button">
+            <a href="/manage/pages/" title="Manage Static Pages">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-edit"></i> Manage Static Pages</div>
+                    <div class="module_link_caption">(create and manage pages with only static text)</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="/myesp/makeadmin/" title="Make someone a website admin">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-user"></i> Make someone a website admin</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="/manage/mergeaccounts/" title="Merge two accounts">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> Merge two accounts</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="/customforms/" title="Manage Custom Survey Forms">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-edit"></i> Manage Custom Forms</div>
+                    <div class="module_link_caption">(create, edit, and view responses to custom form surveys)</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="/manage/emails/" title="Comm Panel Email Status">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-envelope"></i> Email Status</div>
+                    <div class="module_link_caption">(check the status of emails sent through the communications panel)</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="/manage/catsflagsrecs/" title="Manage class categories, flag types, and record types">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-cog"></i> Manage class categories, flag types, and record types</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="/manage/redirects/" title="Manage class categories, flag types, and record types">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-share-alt"></i> Manage URL and email redirects</div>
+                </button>
+            </a>
+        </div>
+		<div class="module_button">
+            <a href="/manage/statistics/" title="Statistics">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-stats"></i> View Statistics</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="/manage/tags/" title="Manage class categories, flag types, and record types">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-wrench"></i> Modify tag settings</div>
+                    <div class="module_link_caption">(generic miscellaneous settings, for experts only)</div>
+                </button>
+            </a>
+        </div>
+        <div class="module_button">
+            <a href="/manage/flushcache/" title="Flush Cache">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-refresh"></i> Flush Cache</div>
+                    <div class="module_link_caption">(may fix certain visual bugs, for experts only)</div>
+                </button>
+            </a>
+        </div>
+    </div>
+</div>
+
+<p>Here are some tips:
+  <ul>
+    <li>If you want to create a new page, just go to the URL you want (such as https://yoursite.learningu.org/newpage.html). If you are logged in as an admin, you should see an option that says "change that." Click, and edit the new page.</li>
+
+    <li><a href="https://wiki.learningu.org/How_to_use_the_website">LU website tips</a></li>
+              
+    <li><a href="https://github.com/learning-unlimited/ESP-Website/tree/main/docs/admin">Limited LU website documentation</a></li>
+
+    <li><a href="https://docs.google.com/document/d/10WZVUf3y_ajc3f7Ur-QSd0B9i_7derNczcTh24Oa3LM/view">LU website guide (in progress)</a></li>
+
+    <li>If you're not sure how to do something contact your mentor(s). If you are an associate or full Chapter, contact <a href="mailto:websupport@learningu.org">websupport</a> (or Chapter Services, as appropriate) with questions, problems, or requests.</li>
+    <li>Want to request a new website feature? See the LU wiki <a href="https://wiki.learningu.org/How_to_use_the_website#Feature_Requests">Feature Requests page.</a></li>
+  </ul>
+</p>
+
+{% load render_qsd %}
+{% inline_qsd_block "manage/programs" %}
+{% end_inline_qsd_block %}
 
 <table class="table table-striped table-condensed" align="center">
 <thead>
   <tr>
-    <th align="center">Programs you are an Administrator of:</th>
+    <th align="center">Select a program to manage it:</th>
   </tr>
 </thead>
 <tbody>
@@ -45,13 +130,11 @@ Select a program to manage it.
 </tbody>
 <thead>
   <tr>
-    <th align="center"><b><a href="/manage/newprogram" title="Create a New Program">
+    <th align="center"><b><a class="btn btn-primary" href="/manage/newprogram" title="Create a New Program">
    Create a New Program...
 </a></b></th>
   </tr>
 </thead>
 </table>
-
-</div> <!-- div#battlescreen -->
 
 {% endblock %}

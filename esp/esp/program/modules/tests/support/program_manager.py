@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import json
 
 class TestProgramManager():
@@ -10,15 +11,15 @@ class TestProgramManager():
         self.schedule_class_url = '/manage/%s/' % self.program.getUrlBase() + 'ajax_schedule_class'
 
     def getClassToSchedule(self, section=None, teacher=None, timeslots=None, rooms=None):
-        if section == None:
-            if teacher == None:
+        if section is None:
+            if teacher is None:
                 teacher = self.teachers[0]
             section = teacher.getTaughtSections(self.program)[0]
 
-        if rooms == None:
+        if rooms is None:
             rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
 
-        if timeslots == None:
+        if timeslots is None:
             timeslots = self.program.getTimeSlots().order_by('start')
 
         return (section, timeslots, rooms)
@@ -31,8 +32,8 @@ class TestProgramManager():
         (section, timeslots, rooms) = self.getClassToSchedule(section=section, teacher=teacher, timeslots=timeslots, rooms=rooms)
 
         #schedule the class
-        blocks = '\n'.join(['%s,%s' % (r.event.id, r.name) for r in rooms[0:2]])
-        response = self.client.post(self.schedule_class_url, {'action': 'assignreg', 'cls': section.id, 'block_room_assignments': blocks})
+        blocks = '\n'.join(['%s,%s' % (r.event.id, r.identical_id()) for r in rooms[0:2]])
+        response = self.client.post(self.schedule_class_url, {'action': 'assignreg', 'cls': section.id, 'block_room_assignments': blocks, 'override': 'false'})
         assert response.status_code == 200
 
         #make sure the scheduling had the expected result

@@ -55,8 +55,6 @@ Here is a list of the items that were reserved online for {{student.name}}:
 </table>
 
 <br />
-<br />
-<br />
-<a href="/onsite/{{ program.getUrlBase }}/main">Back to Onsite Registration</a>
+{% include "program/modules/onsitecore/returnlink.html" %}
 
 {% endblock %}

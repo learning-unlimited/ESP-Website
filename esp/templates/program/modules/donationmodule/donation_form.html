@@ -1,0 +1,73 @@
+{% load i18n %}
+
+{% block xtrajs %}
+<script type="text/javascript">
+<!--
+function toggleDonationAmount() {
+    var donationAmount = parseFloat($j("input:radio[name='amount_donation']:checked").val());
+    if (donationAmount == -1) {
+        $j('#custom_amount_section').removeClass('hide')
+    } else {
+        $j('#custom_amount_section').addClass('hide')
+    }
+
+}
+
+$j(document).ready(function () {
+    toggleDonationAmount();
+    $j("input:radio[name='amount_donation']").click(toggleDonationAmount);
+});
+-->
+</script>
+{% endblock %}
+
+<style type="text/css">
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+#custom_amount_section {
+    text-align: center;
+}
+
+label input {
+    display: inline-block;
+}
+
+#donation_choices_wrapper > ul {
+    list-style: none;
+}
+
+.errorlist {
+    list-style: none;
+}
+
+</style>
+
+<div id="donation_choices_wrapper">
+    <h3>{% trans "Donation amount:" %}</h3>
+        {{form.amount_donation.errors}}
+        {{form.amount_donation}}
+        <div id="custom_amount_section" class="alert hide">
+            {{form.custom_amount.errors}}
+            {{form.custom_amount}}
+            {% if form.custom_amount.errors %}
+                <script type="text/javascript">
+                    $j('#custom_amount_section').removeClass('hide')
+                </script>
+            {% endif %}
+        </div>
+
+    <div class="btn-group text-center">
+         <button type="submit" id="id_submit_donation" class="btn btn-default">Submit</button>
+    </div>
+</div>

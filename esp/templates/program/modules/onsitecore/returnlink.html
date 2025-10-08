@@ -1,0 +1,11 @@
+<br />
+<br />
+<p>
+{% if prog %}
+<a class="btn" href="/onsite/{{ prog.getUrlBase }}/main">Return to the main onsite page</a>
+{% else %}
+{% if program %}
+<a class="btn" href="/onsite/{{ program.getUrlBase }}/main">Return to the main onsite page</a>
+{% endif %}
+{% endif %}
+</p>

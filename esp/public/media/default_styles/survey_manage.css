@@ -1,0 +1,20 @@
+.selector {
+    border-bottom: solid 5px #ccc;
+}
+
+.selector.active {
+    border-bottom: solid 5px #007dff;
+    background-color: #80bdfd !important;
+}
+
+#id__param_values {
+    display: none !important;
+}
+
+select {
+    width: auto;
+}
+
+.subheader {
+    background-color: #ccc !important;
+}

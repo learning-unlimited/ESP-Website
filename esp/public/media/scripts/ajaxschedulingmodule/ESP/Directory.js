@@ -1,5 +1,6 @@
 /**
  * This is the directory of classes that has yet to be scheduled
+ * Made up of multiple TableRows
  *
  * @param sections
  * @param el
@@ -13,7 +14,7 @@ function Directory(sections, el, schedule_assignments, matrix) {
     this.matrix = matrix;
 
     /**
-     * Render the directory.
+     * Render the directory. If an old directory exists, remove it, then re-render it.
      */
     this.render = function(){
         // Remove old classes from the directory
@@ -40,10 +41,11 @@ function Directory(sections, el, schedule_assignments, matrix) {
     };
 
     /**
-     * Initialize the direcotry
+     * Initialize the directory
      */
     this.init = function(){
         // set up handlers
+        // Whenever the schedule is changed, re-render the entire directory
         $j("body").on("schedule-changed", this.render.bind(this));
     }
     this.init();
@@ -52,6 +54,7 @@ function Directory(sections, el, schedule_assignments, matrix) {
 
 /**
  * This is one row in the directory containing a section to be scheduled
+ * Includes a Cell that functions as a handle for scheduling the section
  *
  * @param section: The section represented by that row
  * @param el: The element that will form the row
@@ -59,8 +62,6 @@ function Directory(sections, el, schedule_assignments, matrix) {
  *
  * Public methods:
  * @method render()
- * @method hide()
- * @method unHide()
  */
 function TableRow(section, el, directory){
     this.el = el;
@@ -74,25 +75,19 @@ function TableRow(section, el, directory){
      */
     this.render = function(){
         var baseURL = directory.sections.getBaseUrlString();
+        var autoschedulerLink = "";
+        if (has_autoscheduler_frontend === "True") {
+            autoschedulerLink = " <a target='_blank' href='" + baseURL +
+                "autoscheduler?section=" + this.section.id + "'>Optimize</a>";
+        }
         this.el[0].innerHTML = "<td>" + this.section.title +
             " <a target='_blank' href='" + baseURL +
             "manageclass/" + this.section.parent_class +
             "'>Manage</a>" + " <a target='_blank' href='" + baseURL +
-            "editclass/" + this.section.parent_class + "'>Edit</a></td>";
+            "editclass/" + this.section.parent_class + "'>Edit</a>" +
+            " <a target='_blank' href='" + baseURL +
+            "classavailability/" + this.section.parent_class + "'>Class Availability</a>" +
+            autoschedulerLink + "</td>";
         this.el.append(this.cell.el);
-    };
-
-    /**
-     * Hide the table row
-     */
-    this.hide = function(){
-        this.el.css("display", "none");
-    };
-
-    /**
-     * Show the table row
-     */
-    this.unHide = function(){
-        this.el.css("display", "table-row");
     };
 }

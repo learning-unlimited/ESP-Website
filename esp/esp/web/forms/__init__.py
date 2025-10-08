@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -56,16 +57,16 @@ class ResizeImageField(forms.ImageField):
         file = super(forms.ImageField, self).clean(file, initial)
         if file and self.size is not None:
             from PIL import Image
-            from cStringIO import StringIO
+            from io import BytesIO
 
             filename = file.name
 
-            picturefile = StringIO()
+            picturefile = BytesIO()
             if hasattr(file, 'temporary_file_path'):
                 file = file.temporary_file_path()
             #   Check that there was indeed something submitted.  Otherwise give up.
             elif hasattr(file, 'read'):
-                file = StringIO(file.read())
+                file = BytesIO(file.read())
             else:
                 raise forms.ValidationError('Image unreadable.')
 

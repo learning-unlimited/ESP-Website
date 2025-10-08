@@ -2,35 +2,76 @@
 
 {% block title %}{{program.niceName}} Survey Administration{% endblock %}
 
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/management.css" type="text/css" />
+
+    <style type="text/css">
+    .nocheckmark { border: 1px solid black; }
+    </style>
+{% endblock %}
+
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 </style>
-<br />
-<br />
 
-<br /><br />
 <h1>Surveys for {{ program.niceName }}</h1>
 
 <p>
 Surveys for students and teachers can be associated with {{ program.program_type }} or with individual classes.  Use this page to create, edit, and review surveys.  Follow the links below for individual functions.
 </p>
+<div id="module_group_1" class="module_group">
+	<div class="module_group_header">
+		Possibilities
+	</div>
+	<div class="button_wrapper">
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/surveys/manage"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-tasks"></i> Create a new survey</div>
+            </button></a>
+        </div>
+		<div class="module_button">
+			<a href="/manage/{{ program.getUrlBase }}/surveys/review"><button type="button" class="module_link_large">
+				<div class="module_link_main"><i class="glyphicon glyphicon-stats"></i> Review all survey results</div>
+			</button></a>
+        </div>
+		<div class="module_button">
+			<a href="/manage/{{ program.getUrlBase }}/surveys/review_pdf"><button type="button" class="module_link_large">
+				<div class="module_link_main"><i class="glyphicon glyphicon-file"></i> Review all survey results (PDF format)</div>
+			</button></a>
+        </div>
+		<div class="module_button">
+			<a href="/manage/{{ program.getUrlBase }}/surveys/dump"><button type="button" class="module_link_large">
+				<div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Export all survey results (XLS format)</div>
+			</button></a>
+        </div>
+		<div class="module_button">
+			<a href="/manage/{{ program.getUrlBase }}/surveys/top_classes"><button type="button" class="module_link_large">
+				<div class="module_link_main"><i class="glyphicon glyphicon-heart"></i> List the favorite classes</div>
+			</button></a>
+        </div>
+	</div>
+</div>
 
-<h3>Possibilities</h3>
-<ul>
-<li><a href="/manage/{{ program.getUrlBase }}/surveys/create" title="Create">Create a new survey</a></li>
-<li><a href="/manage/{{ program.getUrlBase }}/surveys/review" title="Review">Review survey results</a></li>
-<li><a href="/manage/{{ program.getUrlBase }}/surveys/review_pdf" title="Review PDF">Review survey results (PDF format)</a></li>
-<li><a href="/manage/{{ program.getUrlBase }}/surveys/dump" title="Dump XLS">Export survey results (XLS format)</a></li>
-<li><a href="/manage/{{ program.getUrlBase }}/surveys/top_classes" title="Top Classes">List the favorite classes</a></li>
-</ul>
-
-<h3>Existing Surveys</h3>
-<ul>
-{% for s in program.getSurveys %}
-    <li><a href="/manage/{{ program.getUrlBase }}/surveys/edit?id={{ s.id }}">{{ s.name }}</a> (click to edit)
-{% endfor %}
-</ul>
+<div id="module_group_1" class="module_group">
+	<div class="module_group_header">
+		Existing Surveys
+	</div>
+	<ul>
+	{% for s in surveys %}
+		<li><a href="/manage/{{ program.getUrlBase }}/surveys/manage?obj=survey&op=edit&id={{ s.id }}">{{ s.name }}</a> (click to edit)
+		<ul>
+		{% if s.category == "teach" %}
+			<li><a href="/teach/{{ program.getUrlBase }}/survey{% if counts.teach > 1 %}?survey_id={{ s.id }}{% endif %}">Link for teachers</a></li>
+		{% elif s.category == "learn" %}
+			<li><a href="/learn/{{ program.getUrlBase }}/survey{% if counts.learn > 1 %}?survey_id={{ s.id }}{% endif %}">Link for students</a></li>
+			<li><a href="/teach/{{ program.getUrlBase }}/survey/review{% if counts.learn > 1 %}?survey_id={{ s.id }}{% endif %}">Link for teachers to review results</a></li>
+		{% endif %}
+		</ul>
+		{% endfor %}
+	</ul>
+</div>
 
 {% include "program/modules/admincore/returnlink.html" %}
 

@@ -1,0 +1,152 @@
+{% extends "main.html" %}
+
+{% block title %}Approve Financial Aid Requests for {{program.niceName}}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+    <style>
+    #program_form {
+      overflow: auto;
+      max-height: 500px;
+      max-width: 800px;
+      margin: 0px 0px 15px 0px;
+    }
+    #approve_blanks_checkbox {
+      margin-left: 10px;
+    }
+    #finaid_table {
+      width: 100% !important;
+      margin: 0px !important;
+      position: relative;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 10000;
+    }
+    td {
+      border-bottom: 1px dashed grey !important;
+    }
+    tr.req-basics:hover {
+      background-color: #f5f5f5;
+    }
+
+    tr.req-details {
+      display: none;
+      border-left: 1px solid #ddd;
+      border-right: 1px solid #ddd;
+      border-bottom: 1px solid #ddd;
+    }
+    </style>
+{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript" language="javascript">
+function toggle(source) {
+  $j('input[name=user]').prop('checked', source.checked);
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div style="padding-bottom: 1.1em;">
+  <h1>Financial Aid Requests for {{ program.niceName }}</h1>
+  <p>Below is a list of users that have requested financial aid.</p>
+  <p>Please select the requests that you would like to approve.</p>
+  <p>Click on a row to see further information about a student's financial situation (if it was provided).</p>
+
+  <form action="/manage/{{ program.getUrlBase }}/finaidapprove/" method="post">
+    <div id="program_form">
+      <table align="center" id="finaid_table">
+        <tr>
+          <th title="Toggle All Checkboxes"><input type="checkbox" onClick="toggle(this)" /></th>
+          <th>Approved?</th>
+          <th>Name</th>
+          <th width="20%">Free/<wbr>Reduced Lunch?</th>
+          <th style="width:5.3em">Household Income</th>
+          <th width="20%">Filled Out Only by Student?</th>
+        </tr>
+        {% for req in requests %}
+        <tr class="req-basics">
+          <td><input type="checkbox" name="user" value={{ req.user.id }}></td>
+          <td align="center">
+            {% if req.approved %}
+            <i align="center" class="glyphicon glyphicon-ok-sign" style="color:green; width:100%; font-size:1.5em;"></i>
+            <span>({% if req.financialaidgrant_set.all.0.amount_max_dec %}${{ req.financialaidgrant_set.all.0.amount_max_dec }}{% endif %}{% if req.financialaidgrant_set.all.0.amount_max_dec and req.financialaidgrant_set.all.0.percent %} + {% endif %}{% if req.financialaidgrant_set.all.0.percent %}{{ req.financialaidgrant_set.all.0.percent }}%{% endif %})</span>
+            {% else %}
+            <i align="center" class="glyphicon glyphicon-minus-sign" style="color:firebrick; width:100%; font-size:1.5em;" />
+            {% endif %}
+          </td>
+          <td align="center" style="max-width: 70px; overflow-wrap:break-word;"><a href="/manage/userview?username={{ req.user.username|urlencode }}&program={{ program.id }}">{{ req.user.name }}</a></td>
+          <td align="center">
+            {% if req.reduced_lunch %}
+            <i align="center" class="glyphicon glyphicon-ok-sign" style="color:green; width:100%; font-size:1.5em;" />
+            {% else %}
+            <i align="center" class="glyphicon glyphicon-minus-sign" style="color:firebrick; width:100%; font-size:1.5em;" />
+            {% endif %}
+          </td>
+          <td align="center">${% if req.household_income %}{{ req.household_income }}{% endif %}</td>
+          <td align="center">
+            {% if not req.student_prepare %}
+            <i align="center" class="glyphicon glyphicon-ok-sign" style="color:green; width:100%; font-size:1.5em;" />
+            {% else %}
+            <i align="center" class="glyphicon glyphicon-minus-sign" style="color:firebrick; width:100%; font-size:1.5em;" />
+            {% endif %}
+          </td>
+        </tr>
+        {% if req.extra_explaination %}
+        <tr class="req-details">
+            <td colspan="6" style="vertical-align:top;">{{ req.extra_explaination }}</td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </table>
+    </div>
+
+    <label for="amount_max_dec">{{ amount_max_dec_help_text }}</label>
+    <input name="amount_max_dec" type="number" min="0.00" step="0.01" max="2500" value="0.00" required>
+    <br />
+    <label for="amount_max_dec">{{ percent_help_text }}</label>
+    <input name="percent" type="number" min="0" step="1" max="100" value="100" required>
+    <br />
+    <input type="submit" value="Approve Requests" class="btn btn-primary" >
+    <input type="checkbox" id="approve_blanks_checkbox" name="approve_blanks"> Approve blank requests?
+  </form>
+
+  {% if error %}
+  <h3 style="padding-top: 10px;">{{ error }}</h3>
+  {% endif %}
+
+  {% if users_approved %}
+  <h3 style="padding-top: 10px;"> {{ users_approved|length }} New Approvals</h3>
+  <h4>
+    {{ users_approved|join:", " }}
+  </h4>
+  {% elif POST %}
+  <h3 style="padding-top: 10px;"> 0 New Approvals </h3>
+  {% endif %}
+
+  {% if users_error %}
+  <h3 style="padding-top: 10px; color: firebrick"> {{ users_error|length }} Errors</h3>
+  <h4>
+    {{ users_error|join:", " }}
+  </h4>
+  {% endif %}
+</div>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+<script>
+$j(function() {
+    $j("tr.req-basics").on("click", function(event) {
+        if (event.target.type != 'checkbox') {
+            var $target = $j(event.target).parents("tr.req-basics");
+            if ($target.next("tr").hasClass("req-details")) {
+                $target.next("tr").toggle();
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

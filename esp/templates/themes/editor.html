@@ -1,411 +1,559 @@
 {% extends "main.html" %}
 
-{#  Override the way jQuery is loaded so that Popovers can be included  #}
-{% block jquery %}
-    <script src="{{ settings.CDN_ADDRESS }}/jquery/jquery-1.7.2.js" type="text/javascript"> </script>
-    <script src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-tooltip.js" type="text/javascript"></script>
-    <script src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-popover.js" type="text/javascript"></script>
-    <script src="/media/scripts/jquery.cookie.js" type="text/javascript"> </script>
-    <script src="/media/scripts/common.js" type="text/javascript"> </script>
-{% endblock %}
-
 {% block xtrajs %}
-<script src="/media/theme_editor/spectrum.js" type="text/javascript"></script>
+<script src="https://cdn.jsdelivr.net/npm/spectrum-colorpicker2/dist/spectrum.min.js"></script>
 <script type="text/javascript">
-var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last %},{% endif %} {% endfor %}];
+var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% for color in palette.custom %} "{{color}}"{% if not forloop.last %},{% endif %} {% endfor %}];
 </script>
-<link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/css/bootstrap.css" type="text/css" />
-<link href="/media/theme_editor/spectrum.css" rel="stylesheet" />
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/spectrum-colorpicker2/dist/spectrum.min.css">
 <script src="/media/theme_editor/css_auto-reload.js" rel="text/javascript"></script>
 <script type="text/javascript">
   document.styleSheets.reload()
 </script>
 <style>
   form.centered-form div.control-group {
+      margin-left:10%;
+      margin-right:10%;
+  }
+  form.centered-form div.controls {
       margin-left:20%;
   }
   div.form-actions {
       border-top:None;
   }
   h5 {
-  margin-left:3%;
+      margin-left:3%;
+  }
+  .sp-palette-row {
+      max-width: 132px;
+  }
+  .sp-container button.sp-cancel {
+      background-color: red;
+      color: white;
+      margin-left: 5px;
+  }
+  .sp-palette .sp-thumb-inner {
+      border: 1px solid black;
+  }
+  .control-label {
+    padding-right: 10px;
   }
 </style>
 {% endblock %}
 {% block title %}Theme Editor{% endblock %}
-{% block content %} 
-<div class="row-fluid">
+{% block content %}
 
-<div class="span12">
-  <h1>Theme Editor</h1>
-  <div class="alert alert-info">
-    <p>New to the theme editor? <a href="#help-modal" data-toggle="modal">Click here</a>.</p>
-  </div>
-  <div id="help-modal" class="modal hide fade">
-    <div class="modal-header">
-      <button type="button" class="close" data-dismiss="modal">x</button>
-      <h3>Welcome to the theme editor! It's easy to get started</h3>
+{% load main %}
+
+<div class="row-fluid">
+    <div class="span12">
+        <h1>Theme Editor</h1>
+        <div class="alert alert-info">
+            <p>New to the theme editor? <a href="#help-modal" data-toggle="modal">Click here</a>.</p>
+        </div>
+        <div id="help-modal" class="modal hide fade">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">x</button>
+                <h3>Welcome to the theme editor! It's easy to get started!</h3>
+            </div>
+            <div class="modal-body">
+                <ol>
+                    <li><strong>Add colors</strong> to your Palette.</li>
+                    <li>Dive into the sections and <strong>customize</strong> at will. Press <strong>Apply Without Saving</strong> often to see your changes in action.</li>
+                    <li>When you're happy with your changes, just enter a name under "Save/Load Theme Settings" and press <strong>Save</strong>!</li>
+                </ol>
+                <p>For even more <strong>color picking power</strong>, we recommend using a full featured colour picker like <a href='http://colorschemedesigner.com' target="_blank">this one</a> to decide your colours, and enter the hex values when adding to your palette.</p>
+            </div>
+            <div class="modal-footer"></div>
+        </div>
     </div>
-    <div class="modal-body">
-      <ol>
-	<li><strong>Add colors</strong> to your Palette.</li>
-	<li>Dive into the sections and <strong>customize</strong> at will. Press <strong>Test</strong> often to see your changes in action.</li>
-	<li>When you're happy with your changes, just enter a name under Theme Properties and press <strong>Save</strong>!</li>
-      </ol>
-      <p>For even more <strong>color picking power</strong>, we recommend using a full featured colour picker like <a href='http://colorschemedesigner.com' target="_blank">this one</a> to decide your colours, and enter the hex values when adding to your palette.</p>
-    </div>
-    
-    <div class="modal-footer"></div>
-  </div>
-</p>
 </div>
 
 <br />
 <div class="row-fluid">
-  <div class="span12">
-    <form class="well form-horizontal centered-form" method="post" action="/themes/customize/">
-      {% csrf_token %} 
-      <div class="accordion">
+    <div class="span12">
+        <form class="form-horizontal centered-form" method="post" action="/themes/customize/">
+            {% csrf_token %} 
+            <div class="accordion">
+                <div class="accordion-group">
+                    <div class="accordion-heading">
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#theme_palette" data-original-title="Theme Palette">Palette</h3>
+                    </div>
+                    <div class="collapse" id="theme_palette">
+                        <h5>Your palette holds the colors that are used in your theme. Use this to control the colors available to you in the other sections. The theme has a built-in color palette available; however, if you would prefer other colors, you can add them to the custom palette.</h5>
+                        <div class="control-group">
+                            <div id="palette_base_div">
+                                <h3>Built-in Theme Palette:</h3>
+                                {% for color in palette.base %}
+                                <input type="text" name="palette" class="palette" value="{{color}}"/>
+                                {% endfor %}
+                            </div>
+                            <div id="palette_custom_div">
+                                <h3>Custom Palette:</h3>
+                                {% for color in palette.custom %}
+                                <input type="text" name="palette" class="palette" value="{{color}}"/>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="controls">
+                            <button type="button" class="btn btn-default" id="addToPalette">Add Another Color</button>
+                            <button type="submit" class="btn btn-primary" name="apply" value="apply">Update Custom Palette</button>
+                        </div>
+                    </div>
+                </div>
 
-	<div class="accordion-group">
-	  <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#theme_palette" data-content="Your theme palette holds the colors that are used in your theme. Use this to control the colors available to you in the other sections." data-original-title="Theme Palette" rel="popover">Palette</h3></div>
+                <div class="accordion-group">
+                    <div class="accordion-heading">
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#scaffolding" data-original-title="Scaffolding">Scaffolding</h3>
+                    </div>
+                    <div class="collapse" id="scaffolding">
+                        <h5>Use this section to change the color of the text and background.</h5>
+                        <div class="control-group">
+                            <label class="control-label" for="bodybg">Background{% if theme_name == "fruitsalad" or theme_name == "floaty" %} (outside the frame){% endif %}:</label>
+                            <div class="controls">
+                                <input type="text" id="bodybg" name="bodyBackground" class="color" value="{{bodyBackground}}" data-default="{{ variable_defaults|index:'bodyBackground' }}"/>
+                            </div>
+                        </div>
 
-	  <div class="collapse" id="theme_palette">
+                    {% if theme_name != "bigpicture" and theme_name != "barebones" and theme_name != "droplets" %}
+                        <div class="control-group">
+                            <label class="control-label" for="contentbg">Content Background{% if theme_name == "fruitsalad" or theme_name == "floaty" %} (within the frame){% endif %}:</label>
+                            <div class="controls">
+                                <input type="text" id="contentbg" name="contentBackground" class="color" value="{{contentBackground}}" data-default="{{ variable_defaults|index:'contentBackground' }}"/>
+                            </div>
+                        </div>
+                    {% endif %}
 
-	    <div class="control-group">
-	      <div id="palette_div">
-		{% for color in palette %}
-		<input type="text" name="palette" class="palette" value="{{color}}" />
-		{% endfor %}
-	      </div>
-	    </div>
-	    <div class="controls">
-	      <button type="button" class="btn btn-default" id="addToPalette">Add Another Color</button>
-	      <button type="button" class="btn btn-default" id="removeFromPalette">Remove Last Color</button>
-	      <button type="submit" class="btn btn-primary" name="apply" value="apply">Update Palette</button> 
-	    </div>
-	  </div>
-	</div>
+                    {% if theme_name == "barebones" %}
+                        <div class="control-group">
+                            <label class="control-label" for="heroUnitBackground">Hero Unit Background:</label>
+                            <div class="controls">
+                                <input type="text" id="heroUnitBackground" name="heroUnitBackground" class="color" value="{{heroUnitBackground}}" data-default="{{ variable_defaults|index:'heroUnitBackground' }}"/>
+                            </div>
+                        </div>
+                    {% endif %}
 
-	<div class="accordion-group">
-	  <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#scaffolding" rel="popover" data-original-title="Scaffolding" data-content="Use this section to change the color of the text and background." >Scaffolding</h3></div>
+                        <div class="control-group">
+                            <label class="control-label" for="textColor">Text:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="textColor" name="textColor" value="{{ textColor }}" data-default="{{ variable_defaults|index:'textColor' }}"/>
+                            </div>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label class="control-label" for="headingsColor">Headings:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="headingsColor" name="headingsColor" value="{{ headingsColor }}" data-default="{{ variable_defaults|index:'headingsColor' }}"/>
+                            </div>
+                      </div>
+                      
+                      {% if theme_name == "fruitsalad" or theme_name == "floaty" %}
 
-	  <div class="collapse" id="scaffolding">
+                        <div class="control-group">
+                            <label class="control-label" for="titleColor">Content Page Titles:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="titleColor" name="titleColor" value="{{ titleColor }}" data-default="{{ variable_defaults|index:'titleColor' }}"/>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
 
-	    <div class="control-group">
-	      <label class="control-label" for="bodybg">Background :  </label>
-	      <div class="controls">
-		<input type="text" id="bodybg" name="bodyBackground" class="color" value="{{bodyBackground}}" />
-	      </div>
-	    </div>
+                <div class="accordion-group">
+                    <div class="accordion-heading">
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#links" data-original-title="Links">Links</h3>
+                    </div>
+                    <div class="collapse" id="links">
+                        <h5>Use this section to control the color of links normally, and when you hover on them.</h5>
+                        <div class="control-group">
+                            <label class="control-label" for="linkColor">Links:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="linkColor" name="linkColor" value="{{ linkColor }}" data-default="{{ variable_defaults|index:'linkColor' }}"/>
+                            </div>
+                        </div>
 
-	    <div class="control-group">
-	      <label class="control-label" for="wellbg">Well Background:  </label>
-	      <div class="controls">
-		<input type="text" id="wellbg" name="wellBackground" class="color" value="{{wellBackground}}" />
-	      </div>
-	    </div>
+                        <div class="control-group">
+                            <label class="control-label" for="linkColorHover">Link Hover Effect:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="linkColorHover" name="linkColorHover" value="{{ linkColorHover }}" data-default="{{ variable_defaults|index:'linkColorHover' }}"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-	    <div class="control-group">
-	      <label class="control-label" for="heroUnitBackground">Hero Unit Background:  </label>
-	      <div class="controls">
-		<input type="text" id="heroUnitBackground" name="heroUnitBackground" class="color" value="{{heroUnitBackground}}" />
-	      </div>
-	    </div>
+                <div class="accordion-group">
+                    <div class="accordion-heading">
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#typography" data-original-title="Typography">Typography</h3>
+                    </div>
+                    <div class="collapse" id="typography">
+                        <h5>Use this section to control the size (base font size), and the font family of your text.</h5>
+                        <div class="control-group">
+                            <label class="control-label" for="baseFontSize">Font Size:</label>
+                            <div class="controls">
+                                <select id="baseFontSize" name="baseFontSize">
+                                    <option value="{{ baseFontSize }}" style="font-size: {{ baseFontSize }};">Current: {{ baseFontSize }}</option>
+                                    <option value="10px" style="font-size: 10px;">10</option>
+                                    <option value="11px" style="font-size: 11px;">11</option>
+                                    <option value="12px" style="font-size: 12px;">12</option>
+                                    <option value="13px" style="font-size: 13px;">13</option>
+                                    <option value="14px" style="font-size: 14px;">14</option>
+                                    <option value="15px" style="font-size: 15px;">15</option>
+                                    <option value="16px" style="font-size: 16px;">16</option>
+                                    <option value="17px" style="font-size: 17px;">17</option>
+                                    <option value="18px" style="font-size: 18px;">18</option>
+                                </select>
+                            </div>
+                        </div>
 
-	    <div class="control-group">
-	      <label class="control-label" for="textColor">Text :  </label>
-	      <div class="controls">
-		<input type="text" class="color" id="textColor" name="textColor" value="{{ textColor }}"/>
-	      </div>
-	    </div>
+                        <div class="control-group">
+                            <label class="control-label" for="sansFontFamily">Font Family:</label>
+                            <div class="controls">
+                                <select id="sansFontFamily" name="sansFontFamily" type="text">
+                                    <option value="{{ sansFontFamily }}" style="font-family: {{sansFontFamily}};">Current: {{sansFontFamily}}</option>
+                                    {% for family_name, family in sans_fonts %}
+                                    <option value="{{family}}" style="font-family: {{family}};">{{family_name}}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-	  </div>
-	</div>
-      
-	
-	<div class="accordion-group">
-	  <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#links" rel="popover" data-original-title="Links" data-content="Use this section to control the color of links normally, and when you hover on them.">Links</h3></div>
-	  <div class="collapse" id="links">
-	    <div class="control-group">
-	      <label class="control-label" for="linkColor">Links :  </label>
-	      <div class="controls">
-		<input type="text" class="color" id="linkColor" name="linkColor" value="{{ linkColor }}"/>
-	      </div>
-	    </div>
+                {% if theme_name == "droplets" %}
+                <div class="accordion-group">
+                    <div class="accordion-heading">
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#navbar_inverse_edit_group" data-original-title="NavbarInverse">Navbar</h3>
+                    </div>
+                    <div class="collapse" id="navbar_inverse_edit_group">
+                        <h5>Use this section to control the colors for the various elements of the navigation bar.</h5>
+                        <div class="control-group">
+                            <label class="control-label" for="navbarInverseBackground">Background:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="navbarInverseBackground" name="navbarInverseBackground" value="{{ navbarInverseBackground }}" data-default="{{ variable_defaults|index:'navbarInverseBackground' }}"/>
+                            </div>
+                        </div>
 
-	    <div class="control-group">
-	      <label class="control-label" for="linkColorHover">Link Hover Effect:  </label>
-	      <div class="controls">
-		<input type="text" class="color" id="linkColorHover" name="linkColorHover" value="{{ linkColorHover }}"/>
-	      </div>
-	    </div>
-	  </div>
-	</div>
-	
+                        <div class="control-group">
+                            <label class="control-label" for="navbarInverseBackgroundHighlight">Highlight:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="navbarInverseBackgroundHighlight" name="navbarInverseBackgroundHighlight" value="{{ navbarInverseBackgroundHighlight }}" data-default="{{ variable_defaults|index:'navbarInverseBackgroundHighlight' }}"/>
+                            </div>
+                        </div>
 
-	<div class="accordion-group">
-	  <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#typography" rel="popover" data-original-title="Typography" data-content="Use this section to control the size (base font size), and the font family of your text.">Typography</h3></div>
-	  <div class="collapse" id="typography">
-	    <div class="control-group">
-	      <label class="control-label" for="baseFontSize">Font Size:  </label>
-	      <div class="controls">
-		<select id="baseFontSize" name="baseFontSize">
-		  <option value="{{ baseFontSize }}">Current: {{ baseFontSize }}</option>
-		  <option value="10px">10</option>
-		  <option value="11px">11</option>
-		  <option value="12px">12</option>
-		  <option value="13px">13</option>
-		  <option value="14px">14</option>
-		  <option value="15px">15</option>
-		  <option value="16px">16</option>
-		  <option value="17px">17</option>
-		  <option value="18px">18</option>
-		</select>
-	      </div>
-	    </div>
+                        <div class="control-group">
+                            <label class="control-label" for="navbarInverseLinkColor">Links:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="navbarInverseLinkColor" name="navbarInverseLinkColor" value="{{ navbarInverseLinkColor }}" data-default="{{ variable_defaults|index:'navbarInverseLinkColor' }}"/>
+                            </div>
+                        </div>
 
-	    <div class="control-group">
-	      <label class="control-label" for="sansFontFamily">Font Family:  </label>
-	      <div class="controls">
-		<select id="sansFontFamily" name="sansFontFamily" type="text">
-		  <option value="{{ sansFontFamily }}">Current: {{sansFontFamily}}</option>
-		  {% for family_name, family in sans_fonts %}
-		  <option value="{{family}}">{{family_name}}</option>
-		  {% endfor %}
-		</select>
-	      </div>
-	    </div>
-	  </div>
-	  </div>
+                        <div class="control-group">
+                            <label class="control-label" for="navbarInverseLinkColorHover">Link Hover:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="navbarInverseLinkColorHover" name="navbarInverseLinkColorHover" value="{{ navbarInverseLinkColorHover }}" data-default="{{ variable_defaults|index:'navbarInverseLinkColorHover' }}"/>
+                            </div>
+                        </div>
 
-	  <div class="accordion-group">
-	    <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#navbar_edit_group" rel="popover" data-original-title="Navbar" data-content="Use this section to control the colors for the various elements of the navigation bar. The background fades into the highlight.">Navbar</h3></div>
-	    <div class="collapse" id="navbar_edit_group">
+                        <div class="control-group">
+                            <label class="control-label" for="navbarInverseBrandColor">Group Name Color:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="navbarInverseBrandColor" name="navbarInverseBrandColor" value="{{ navbarInverseBrandColor }}" data-default="{{ variable_defaults|index:'navbarInverseBrandColor' }}"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% elif theme_name != "fruitsalad" %}
+                <div class="accordion-group">
+                    <div class="accordion-heading">
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#navbar_edit_group" data-original-title="Navbar">Navbar</h3>
+                    </div>
+                    <div class="collapse" id="navbar_edit_group">
+                        <h5>Use this section to control the colors for the various elements of the navigation bar{% if theme_name == 'bigpicture' %} in the upper right hand corner. The highlight controls the color of the logout button and the dropdown menu{% elif theme_name == 'circles' %}. The circle colors can be changed in the 'Advanced' category{% elif theme_name != 'floaty' %}. The background fades into the highlight{% endif %}.</h5>
+                        <div class="control-group">
+                            <label class="control-label" for="navbarBackground">Background:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="navbarBackground" name="navbarBackground" value="{{ navbarBackground }}" data-default="{{ variable_defaults|index:'navbarBackground' }}"/>
+                            </div>
+                        </div>
 
-	      <div class="control-group">
-		<label class="control-label" for="navbarBackground">Background :  </label>
-		<div class="controls">
-		  <input type="text" class="color" id="navbarBackground" name="navbarBackground" value="{{ navbarBackground }}"/>
-		</div>
-	      </div>
+                    {% if theme_name != "circles" %}
+                        <div class="control-group">
+                            <label class="control-label" for="navbarBackgroundHighlight">Highlight:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="navbarBackgroundHighlight" name="navbarBackgroundHighlight" value="{{ navbarBackgroundHighlight }}" data-default="{{ variable_defaults|index:'navbarBackgroundHighlight' }}"/>
+                            </div>
+                        </div>
 
-	      <div class="control-group">
-		<label class="control-label" for="navbarBackgroundHighlight">Highlight :  </label>
-		<div class="controls">
-		  <input type="text" class="color" id="navbarBackgroundHighlight" name="navbarBackgroundHighlight" value="{{ navbarBackgroundHighlight }}"/>
-		</div>
-	      </div>
+                        {% if theme_name != "floaty" %}
+                        <div class="control-group">
+                            <label class="control-label" for="navbarText">Text:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="navbarText" name="navbarText" value="{{ navbarText }}" data-default="{{ variable_defaults|index:'navbarText' }}"/>
+                            </div>
+                        </div>
+                        {% endif %}
 
-	      <div class="control-group">
-		<label class="control-label" for="navbarText">Text :  </label>
-		<div class="controls">
-		  <input type="text" class="color" id="navbarText" name="navbarText" value="{{ navbarText }}"/>
-		</div>
-	      </div>
+                        <div class="control-group">
+                            <label class="control-label" for="navbarLinkColor">Links:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}" data-default="{{ variable_defaults|index:'navbarLinkColor' }}"/>
+                            </div>
+                        </div>
 
-	      <div class="control-group">
-		<label class="control-label" for="navbarLinkColor">Links :  </label>
-		<div class="controls">
-		  <input type="text" class="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}"/>
-		</div>
-	      </div>
+                        <div class="control-group">
+                            <label class="control-label" for="navbarLinkColorHover">Link Hover:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}" data-default="{{ variable_defaults|index:'navbarLinkColorHover' }}"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
 
-	      <div class="control-group">
-		<label class="control-label" for="navbarLinkColorHover">Link Hover:  </label>
-		<div class="controls">
-		  <input type="text" class="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}"/>
-		</div>
-	      </div>
-	    </div>
-	  </div>
+                <div class="accordion-group">
+                    <div class="accordion-heading">
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#sidebar_theme" data-original-title="Sidebar">Sidebar</h3>
+                    </div>
+                    <div class="collapse" id="sidebar_theme">
+                        <h5>Use this section to control the colors used in the sidebar elements. A link is active in the sidebar when it points to the currently loaded page.</h5>
+                    {% if theme_name == "circles" or theme_name == "floaty" %}
+                        <div class="control-group">
+                            <label class="control-label" for="sidebarText">Text:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="sidebarText" name="sidebarText" value="{{ sidebarText }}" data-default="{{ variable_defaults|index:'sidebarText' }}"/>
+                            </div>
+                        </div>
+                    {% endif %}
 
-	  <div class="accordion-group">
-	    <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#sidebar_theme" rel="popover" data-original-title="Sidebar" data-content="Use this section to control the colors used in the sidebar elements. A link is active in the sidebar when it points to the currently loaded page.">Sidebar</h3></div>
-	    <div class="collapse" id="sidebar_theme">
+                        <div class="control-group">
+                            <label class="control-label" for="sidebarLink">Links:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="sidebarLink" name="sidebarLink" value="{{ sidebarLink }}" data-default="{{ variable_defaults|index:'sidebarLink' }}"/>
+                            </div>
+                        </div>
 
+                    {% if theme_name != "floaty" %}
+                        <div class="control-group">
+                            <label class="control-label" for="sidebarHeader">Headers:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="sidebarHeader" name="sidebarHeader" value="{{ sidebarHeader }}" data-default="{{ variable_defaults|index:'sidebarHeader' }}"/>
+                            </div>
+                        </div>
+                    {% endif %}
 
+                        <div class="control-group">
+                            <label class="control-label" for="sidebarBackground">Background:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="sidebarBackground" name="sidebarBackground" value="{{ sidebarBackground }}" data-default="{{ variable_defaults|index:'sidebarBackground' }}"/>
+                            </div>
+                        </div>
 
+                        <h5>Hover</h5>
+                        <div class="control-group">
+                            <label class="control-label" for="sidebarLinkHover">Links:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="sidebarLinkHover" name="sidebarLinkHover" value="{{ sidebarLinkHover }}" data-default="{{ variable_defaults|index:'sidebarLinkHover' }}"/>
+                            </div>
+                        </div>
 
-	      <div class="control-group">
-		<label class="control-label" for="sidebarLink">Links:  </label>
-		<div class="controls">
-		  <input type="text" class="color" id="sidebarLink" name="sidebarLink" value="{{ sidebarLink }}"/>
-		</div>
-	      </div>
+                    {% if theme_name != "circles" %}
+                        <div class="control-group">
+                            <label class="control-label" for="sidebarHover">Link Background:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="sidebarHover" name="sidebarHover" value="{{ sidebarHover }}" data-default="{{ variable_defaults|index:'sidebarHover' }}"/>
+                            </div>
+                        </div>
+                    {% endif %}
 
-	      <div class="control-group">
-		<label class="control-label" for="sidebarHeader">Headers:  </label>
-		<div class="controls">
-		  <input type="text" class="color" id="sidebarHeader" name="sidebarHeader" value="{{ sidebarHeader }}"/>
-		</div>
-	      </div>
+                    {% if theme_name != "floaty" %}
+                        <h5>Active</h5>
+                        <div class="control-group">
+                            <label class="control-label" for="sidebarActive">Links:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="sidebarActive" name="sidebarActive" value="{{ sidebarActive }}" data-default="{{ variable_defaults|index:'sidebarActive' }}"/>
+                            </div>
+                        </div>
 
-	      <div class="control-group">
-		<label class="control-label" for="sidebarBackground">Background :  </label>
-		<div class="controls">
-		  <input type="text" class="color" id="sidebarBackground" name="sidebarBackground" value="{{ sidebarBackground }}"/>
-		</div>
-	      </div>
+                        <div class="control-group">
+                            <label class="control-label" for="sidebarActiveBackground">Background:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="sidebarActiveBackground" name="sidebarActiveBackground" value="{{ sidebarActiveBackground }}" data-default="{{ variable_defaults|index:'sidebarActiveBackground' }}"/>
+                            </div>
+                        </div>
+                    {% endif %}
 
-	      <h5>Hover</h5>
+                        {% comment %}
+                        <div class="control-group">
+                            <label class="control-label" for="navbarLinkColor">Links:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}" data-default="{{ variable_defaults|index:'navbarLinkColor' }}"/>
+                            </div>
+                        </div>
 
-	      <div class="control-group">
-		<label class="control-label" for="sidebarLinkHover">Links:  </label>
-		<div class="controls">
-		  <input type="text" class="color" id="sidebarLinkHover" name="sidebarLinkHover" value="{{ sidebarLinkHover }}"/>
-		</div>
-	      </div>
-	      
-	      <div class="control-group">
-		<label class="control-label" for="sidebarHover">Background:  </label>
-		<div class="controls">
-		  <input type="text" class="color" id="sidebarHover" name="sidebarHover" value="{{ sidebarHover }}"/>
-		</div>
-	      </div>
+                        <div class="control-group">
+                            <label class="control-label" for="navbarLinkColorHover">Link Hover:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}" data-default="{{ variable_defaults|index:'navbarLinkColorHover' }}"/>
+                            </div>
+                        </div>
+                        {% endcomment %}
+                    </div>
+                </div>
+                {% endif %}
 
+                <div class="accordion-group">
+                    <div class="accordion-heading">
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#buttons" data-original-title="Buttons">Buttons</h3>
+                    </div>
+                    <div class="collapse" id="buttons">
+                        <h5>Buttons come in three types. You can see an example of each at the end of this form.</h5>
+                        <div class="control-group">
+                            <label class="control-label" for="btnBackground">Buttons:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="btnBackground" name="btnBackground" value="{{ btnBackground }}" data-default="{{ variable_defaults|index:'btnBackground' }}"/>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label" for="btnLinkColor">Button Text:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="btnLinkColor" name="btnLinkColor" value="{{ btnLinkColor }}" data-default="{{ variable_defaults|index:'btnLinkColor' }}"/>
+                            </div>
+                        </div>
 
+                        <div class="control-group">
+                            <label class="control-label" for="btnPrimaryBackground">Primary Buttons:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="btnPrimaryBackground" name="btnPrimaryBackground" value="{{ btnPrimaryBackground }}" data-default="{{ variable_defaults|index:'btnPrimaryBackground' }}"/>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label" for="btnPrimaryLinkColor">Primary Button Text:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="btnPrimaryLinkColor" name="btnPrimaryLinkColor" value="{{ btnPrimaryLinkColor }}" data-default="{{ variable_defaults|index:'btnPrimaryLinkColor' }}"/>
+                            </div>
+                        </div>
 
-	      <h5>Active</h5>
-	      
-	      <div class="control-group">
-		<label class="control-label" for="sidebarActive">Links:  </label>
-		<div class="controls">
-		  <input type="text" class="color" id="sidebarActive" name="sidebarActive" value="{{ sidebarActive }}"/>
-		</div>
-	      </div>
+                        <div class="control-group">
+                            <label class="control-label" for="btnInverseBackground">Inverse Buttons:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="btnInverseBackground" name="btnInverseBackground" value="{{ btnInverseBackground }}" data-default="{{ variable_defaults|index:'btnInverseBackground' }}"/>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label" for="btnInverseLinkColor">Inverse Button Text:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="btnInverseLinkColor" name="btnInverseLinkColor" value="{{ btnInverseLinkColor }}" data-default="{{ variable_defaults|index:'btnInverseLinkColor' }}"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-	      <div class="control-group">
-		<label class="control-label" for="sidebarActiveBackground">Background:  </label>
-		<div class="controls">
-		  <input type="text" class="color" id="sidebarActiveBackground" name="sidebarActiveBackground" value="{{ sidebarActiveBackground }}"/>
-		</div>
-	      </div>
+                {% if theme_name != "barebones" %}
+                <div class="accordion-group">
+                    <div class="accordion-heading">
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#advanced" data-original-title="Advanced">{% if theme_name == "fruitsalad" %}Fruitsalad Tabs{% else %}Advanced{% endif %}</h3>
+                    </div>
+                    <div class="collapse" id="advanced">
+                        <h5>These are additional parameters specific to the currently selected theme.</h5>
+                        {% if theme_name == "bigpicture" %}
+                            <div>
 
+                            <p>Accent 1 is the color of the border of a button while it is being pressed.</p>
+                            <p>Accent 2 is the color of the border for all buttons, certain text boxes, and page titles.</p>
 
+                            </div>
+                        {% endif %}
+						{% if theme_name == "droplets" %}
+							<div>
 
-{% comment %}
-	      <div class="control-group">
-		<label class="control-label" for="navbarLinkColor">Links :  </label>
-		<div class="controls">
-		  <input type="text" class="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}"/>
-		</div>
-	      </div>
+                            <p>navbarCollapseWidth is the width at which the navbar will collapse into a hamburger menu (behaves like the mobile site). Increase this value if the navbar goes onto two lines when the window is resized smaller.</p>
 
-	      <div class="control-group">
-		<label class="control-label" for="navbarLinkColorHover">Link Hover:  </label>
-		<div class="controls">
-		  <input type="text" class="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}"/>
-		</div>
-	      </div>
-{% endcomment %}
-	    </div>
-	  </div>
+                            </div>
+						{% endif %}
+                        {% for category, data in adv_vars.items %}{% if not data|length_is:0 %}
+                        <div id="adv_category_{{ forloop.counter0 }}">
+                            <h3>Category: {{ category }}<hr/></h3>
+                            {% if category == "variables_optional" %}
+                            <!-- Dropdown box for adding an optional variable override that is not yet defined -->
+                            <div class="control-group opt_var_div">
+                                <div> Accent 1 for each side tab refers to the accent on the left part of the side tab, the background color of the heading bar, and the unselected top tabs when the specified number side tab is selected.
+                                </div>
+                                </br>
+                                <div>
+                                Accent 2 for each side tab refers to the text color in the side and top tabs and the link color in the frame when the specified number side tab is selected. 
+                                </div>
+                                </br>
+                                <label class="control-label" for="new_opt_var_{{ forloop.counter0 }}">Add a variable:</label>
+                                <div class="controls">
+                                    <select id="new_opt_var_{{ forloop.counter0 }}" name="new_opt_var_{{ forloop.counter0 }}" class="select_opt_var">
+                                        {% for item in data %}
+                                        <option value="{{ item.0 }}" data-default="{{ variable_defaults|index:item.0 }}"{% if item.2 %} hidden{% endif %}>{{ item.0 }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button class="btn add_opt_var_button" id="add_opt_var_{{ forloop.counter0 }}">Add</button>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% for item in data %}{% if item.2 %}
+                            <div class="control-group" id="ctlgrp_{{ item.0 }}">
+                                <label class="control-label" for="{{ item.0 }}">{{ item.0 }}:</label>
+                                <div class="controls">
+                                    <input type="text" class="{{ item.1 }}" id="id_{{ item.0 }}" name="{{ item.0 }}" value="{{ item.2 }}" data-default="{{ variable_defaults|index:item.0 }}"/>
+                                </div>
+                            </div>
+                            {% endif %}{% endfor %}
+                        </div>
+                        {% endif %}{% endfor %}
+                    </div>
+                </div>
+                {% endif %}
 
-	  <div class="accordion-group">
-	      <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#buttons" rel="popover" data-original-title="Buttons" data-content="Buttons come in three types. You can see the normal and primary buttons at the end of this form, and the inverse buttons in the navbar.">Buttons</h3></div>
-	      <div class="collapse" id="buttons">
+                <div class="accordion-group">
+                    <div class="accordion-heading">
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#theme-properties" data-original-title="Saved Settings">Save/Load Theme Settings</h3>
+                    </div>
+                    <div class="in collapse" id="theme-properties">
+                        <h5>When you're finished making changes, enter a name and press Save! Enter the name of an existing configuration to overwrite it. If you just want to see your changes in action, you're probably looking for the "Apply Without Saving" button. You can also load or delete saved settings, or revert to the last configuration.</h5>
+                        <div class="control-group">
+                            <input id="save" type="text" value="" name="saveThemeName" placeholder="Current: {{ last_used_setting }}"/>
+                            <button type="submit" class="btn btn-primary" name="save" value="save">Save</button>
 
+                            <br/>
+                            <br/>
 
-		<div class="control-group">
-		  <label class="control-label" for="btnBackground">Buttons:  </label>
-		  <div class="controls">
-		    <input type="text" class="color" id="btnBackground" name="btnBackground" value="{{ btnBackground }}"/>
-		  </div>
-		</div>
+                            <select name="loadThemeName">
+                                <option value="">Select from saved settings...</option>
+                                <optgroup label="---------">
+                                    {% for theme in available_themes %}
+                                    <option value="{{theme}}">{{theme}}</option>
+                                    {% endfor %}
+                                </optgroup>
+                                <optgroup>
+                                    <option value="{{last_used_settings}}">Last used settings...</option>
+                                </optgroup>
+                            </select>
+                            <button type="submit" class="btn btn-default" name="load" value="load">Load</button>
+                            <button type="submit" class="btn btn-danger" name="delete" value="delete">Delete</button>
+                        </div>
+                    </div>
+                </div>
 
-		<div class="control-group">
-		  <label class="control-label" for="btnPrimaryBackground">Primary Buttons:  </label>
-		  <div class="controls">
-		    <input type="text" class="color" id="btnPrimaryBackground" name="btnPrimaryBackground" value="{{ btnPrimaryBackground }}"/>
-		  </div>
-		</div>
-
-		<div class="control-group">
-		  <label class="control-label" for="btnInverseBackground">Inverse Buttons:  </label>
-		  <div class="controls">
-		    <input type="text" class="color" id="btnInverseBackground" name="btnInverseBackground" value="{{ btnInverseBackground }}"/>
-		  </div>
-		</div>
-	      </div>
-	    </div>
-
-        <div class="accordion-group">
-	      <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#advanced" rel="popover" data-original-title="Advanced" data-content="These are additional parameters specific to the currently selected theme.">Advanced</h3></div>
-	      <div class="collapse" id="advanced">
-        {% for category, data in adv_vars.items %}{% if not data|length_is:0 %}
-        <div id="adv_category_{{ forloop.counter0 }}">
-        <h3>Category: {{ category }}<hr /></h3>
-        <!-- Dropdown box for adding an optional variable override that is not yet defined -->
-        <div class="control-group opt_var_div hidden">
-            <label class="control-label" for="new_opt_var_{{ forloop.counter0 }}">Add a variable: </label>
-            <div class="controls">
-                <select id="new_opt_var_{{ forloop.counter0 }}" name="new_opt_var_{{ forloop.counter0 }}" class="select_opt_var">
-                {% for item in data %}{% if not item.2 %}
-                    <option value="{{ item.0 }}">{{ item.0 }}</option>
-                {% endif %}{% endfor %}
-                </select>
-                <button class="btn add_opt_var_button" id="add_opt_var_{{ forloop.counter0 }}">Add</button>
+                <div class="form-actions" style="text-align:center;">
+                    <button type="submit" class="btn btn-primary" name="apply" value="apply">Apply Without Saving</button>
+                    <button type="submit" class="btn btn-default" name="reset" value="reset">Reset Without Saving</button>
+                </div>
             </div>
-        </div>
-        {% for item in data %}{% if item.2 %}
-		<div class="control-group" id="ctlgrp_{{ item.0 }}">
-            <label class="control-label" for="{{ item.0 }}">{{ item.0 }}: </label>
-            <div class="controls">
-                <input type="text" class="{{ item.1 }}" id="id_{{ item.0 }}" name="{{ item.0 }}" value="{{ item.2 }}"/>
-            </div>
-		</div>
-        {% endif %}{% endfor %}
-        </div>
-        {% endif %}{% endfor %}
-	      </div>
-	    </div>
-
-	    <div class="accordion-group">
-	      <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#theme-properties" rel='popover' data-original-title="Saved Settings" data-content="When you're finished making changes, enter a name and press Save! Enter the name of an existing configuration to overwrite it. If you just want to see your changes in action, you're probably looking for the Test button. You can also load or delete saved settings, or revert to the last configuration.">Theme Properties</h3></div>
-	      <div class="in collapse" id="theme-properties">
-
-		<div class="control-group">
-		  <input id="save" type="text" value="" name="saveThemeName" placeholder="Current: {{ last_used_setting }}" />
-		  <button type="submit" class="btn btn-primary" name="save" value="save"> Save </button> 
-
-		  <br />
-		  <br />
-
-		  <select name="loadThemeName" >
-		    <option value="">Select from saved settings...</option> 
-		    <optgroup label="---------">
-		      {% for theme in available_themes %}
-		      <option value="{{theme}}"> {{theme}} </option>
-		      {% endfor %}
-		    </optgroup>
-		    <optgroup>
-		      <option value="{{last_used_settings}}"> Last used settings... </option>
-		    </optgroup>
-		  </select>
-		  <button type="submit" class="btn btn-default" name="load" value="load"> Load </button>
-		  <button type="submit" class="btn btn-danger" name="delete" value="delete"> Delete </button>
-		</div>
-	      </div>
-	    </div>
-
-
-      <div class="form-actions" style="text-align:center;">
-	<button type="submit" class="btn btn-primary" name="apply" value="apply"> Test </button>
-
-	<button type="submit" class="btn btn-default" name="reset" value="reset"> Reset Without Saving </button>
-      </div>
-    </form>
-  </div>
-  <div align="center">
-    <a href="/themes/">
-    <button type="button" class="btn btn-large btn-primary">Return to themes page</button>
-    </a>
-    <a href="/">
-    <button type="button" class="btn btn-large btn-inverse">Return to home page</button>
-    </a>
-    <br /><br />
-  </div>
+        </form>
+    </div>
+    <div align="center">
+        <a href="/themes/">
+            <button type="button" class="btn btn-large btn-primary">Return to themes page</button>
+        </a>
+        <a href="/">
+            <button type="button" class="btn btn-large btn-inverse">Return to home page</button>
+        </a>
+        <br/><br/>
+    </div>
 </div>
 
 {% endblock %}  

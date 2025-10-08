@@ -1,5 +1,6 @@
 from __future__ import with_statement
 
+from __future__ import absolute_import
 import os
 from subprocess import call, Popen, PIPE
 from django.conf import settings
@@ -8,6 +9,7 @@ from esp.users.models import ESPUser
 from tempfile import NamedTemporaryFile
 from django.contrib.auth.models import User
 from django.db.models import Q
+import six
 
 
 if settings.USE_MAILMAN:
@@ -69,7 +71,7 @@ def apply_list_settings(list, data):
     """
 
     with NamedTemporaryFile() as f:
-        f.writelines( ( "%s = %s\n" % (key, repr(value)) for key, value in data.iteritems() ) )
+        f.writelines( ( "%s = %s\n" % (key, repr(value)) for key, value in six.iteritems(data) ) )
         f.file.flush()
         return call([MM_PATH + "config_list", "-i", f.name, list])
 
@@ -118,20 +120,20 @@ del sha
 def add_list_member(list_name, member):
     """Add the 'member' to the local Mailman mailing list 'list_name'.
 
-    'member' may be a User object, or an e-mail address.
+    'member' may be a User object, or an email address.
     """
     return add_list_members(list_name, [member])
 
 
 @enable_with_setting(settings.USE_MAILMAN)
 def add_list_members(list_name, members):
-    """Add e-mail addresses to the local Mailman mailing list 'list_name'.
+    """Add email addresses to the local Mailman mailing list 'list_name'.
 
-    'members' is an iterable of e-mail address strings or ESPUser objects.
+    'members' is an iterable of email address strings or ESPUser objects.
     """
-    members = [x.get_email_sendto_address() if isinstance(x, User) else unicode(x) for x in members]
+    members = [x.get_email_sendto_address() if isinstance(x, User) else six.text_type(x) for x in members]
 
-    members = u'\n'.join(members)
+    members = six.u('\n').join(members)
 
     # encode as iso-8859-1 to match Mailman's daft Unicode handling, see:
     # http://bazaar.launchpad.net/~mailman-coders/mailman/2.1/view/head:/Mailman/Defaults.py.in#L1584
@@ -145,9 +147,9 @@ def add_list_members(list_name, members):
 @enable_with_setting(settings.USE_MAILMAN)
 def remove_list_member(list, member):
     """
-    Remove the e-mail address 'member' from the local Mailman mailing list 'list'
+    Remove the email address 'member' from the local Mailman mailing list 'list'
 
-    "member" may be a list (or other iterable) of e-mail address strings,
+    "member" may be a list (or other iterable) of email address strings,
     in which case all addresses will be removed.
     """
     if isinstance(member, User):
@@ -156,17 +158,17 @@ def remove_list_member(list, member):
     if hasattr(member, "filter"):
         member = [x.email for x in member]
 
-    if not isinstance(member, basestring):
+    if not isinstance(member, six.string_types):
         member = "\n".join(member)
 
-    if isinstance(member, unicode):
+    if isinstance(member, six.text_type):
         member = member.encode('iso-8859-1', 'replace')
 
     return Popen([MM_PATH + "remove_members", "--nouserack", "--noadminack", "--file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(member)
 
 @enable_with_setting(settings.USE_MAILMAN)
 def list_contents(lst):
-    """ Return the list of e-mail addresses on the specified mailing list """
+    """ Return the list of email addresses on the specified mailing list """
     contents = Popen([MM_PATH + "list_members", lst], stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
 
     try:
@@ -199,7 +201,7 @@ def all_lists(show_nonpublic=False):
 @enable_with_setting(settings.USE_MAILMAN)
 def lists_containing(user):
     """ Return all lists that a user is a member of """
-    if isinstance(user, basestring):
+    if isinstance(user, six.string_types):
         search_regex="^%s$" % user
     else:
         search_regex = "^(%s|%s@%s)$" % (user.email, user.username, "esp.mit.edu")

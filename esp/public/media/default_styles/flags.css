@@ -14,6 +14,12 @@ select.fqb-type {
     width: 6em;
 }
 
+.fqr-class-flags-detail {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
 .datetime-input {
     width: 12em;
 }
@@ -22,18 +28,14 @@ select.fqb-type {
     border: 1px solid #ff0000;
 }
 
-#content th {
-    padding-top: 0;
-    padding-right: 20px;
-}
-
 .fqr-class {
     margin: 5px;
-    border: 1px solid lightgray;
 }
 
 .fqr-class-header {
     font-size: 1.2em;
+    cursor: pointer;
+    padding: 5px;
 }
 
 .fqr-class-header.accepted {
@@ -48,12 +50,51 @@ select.fqb-type {
     background: #f7c6de;
 }
 
-.fqr-class-flags {
-    padding: 1px 0px
+.fqr-class-header:not(.active):after {
+    content: '\002B';
+    color: black;
+    font-weight: bold;
+    float: right;
 }
 
-.flag-name {
-    margin: 1px;
+.fqr-class-header.active:after {
+    content: '\2212';
+    color: black;
+    font-weight: bold;
+    float: right;
+}
+
+.fqr-class-flags {
+    padding: 4px;
+}
+
+.flag-header {
+    margin: 2px;
+    padding: 2px;
+    cursor: pointer;
+}
+
+.flag-header:not(.active) .flag-name:after {
+    content: '\002B';
+    font-weight: 900;
+}
+
+.flag-header.active .flag-name:after {
+    content: '\2212';
+    font-weight: 900;
+}
+
+.flag-detail {
+    flex: 1 1 0px;
+    max-width: 500px;
+    min-width: 300px;
+    cursor: pointer;
+}
+
+.flag-detail div {
+    padding: 2px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .flag-detail table, .flag-detail form {
@@ -62,7 +103,7 @@ select.fqb-type {
 }
 
 .class-flag-list {
-    width: 500px;
+    width: 100%;
     margin-left: auto;
     margin-right: auto;
 }
@@ -70,4 +111,13 @@ select.fqb-type {
 input.flag-submit-new {
     margin-left: auto;
     margin-right: 0px;
+}
+
+.flag-remove:after {
+    content: "\00d7";
+    font-weight: 900;
+}
+
+.flag-remove:hover {
+    color: white;
 }

@@ -1,6 +1,9 @@
+from __future__ import absolute_import
 import logging
+from six.moves import filter
 logger = logging.getLogger(__name__)
 
+from esp.users.models import ESPUser
 from esp.dbmail.base import BaseHandler
 from esp.program.models import ClassSubject
 from esp.mailman import create_list, load_list_settings, add_list_member, add_list_members, set_list_moderator_password, apply_list_settings
@@ -22,41 +25,39 @@ class SectionList(BaseHandler):
     def process_nomailman(self, user, class_id, section_num, user_type):
         try:
             cls = ClassSubject.objects.get(id=int(class_id))
-            section = filter(lambda s: s.index() == int(section_num), cls.sections.all())[0]
+            section = [s for s in cls.sections.all() if s.index() == int(section_num)][0]
         except:
             return
 
+        self.emailcode = section.emailcode()
+
         program = cls.parent_program
-        self.recipients = ['%s Directors <%s>' % (program.niceName(), program.director_email)]
+        self.recipients = [ESPUser.email_sendto_address(program.director_email, '%s Directors' % (program.niceName()))]
 
         user_type = user_type.strip().lower()
 
-        if user_type in ('teachers','class'):
-            self.recipients += ['%s %s <%s>' % (user.first_name,
-                                                user.last_name,
-                                                user.email)
+        if user_type in ('teachers', 'class'):
+            self.recipients += [user.get_email_sendto_address()
                                 for user in section.parent_class.get_teachers()     ]
 
-        if user_type in ('students','class'):
-            self.recipients += ['%s %s <%s>' % (user.first_name,
-                                                user.last_name,
-                                                user.email)
+        if user_type in ('students', 'class'):
+            self.recipients += [user.get_email_sendto_address()
                                 for user in section.students()     ]
 
         if len(self.recipients) > 0:
             self.send = True
 
     def process_mailman(self, user, class_id, section_num, user_type):
-        if not (settings.USE_MAILMAN and 'mailman_moderator' in settings.DEFAULT_EMAIL_ADDRESSES.keys()):
+        if not (settings.USE_MAILMAN and 'mailman_moderator' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys())):
             return
         try:
             cls = ClassSubject.objects.get(id=int(class_id))
-            section = filter(lambda s: s.index() == int(section_num), cls.sections.all())[0]
+            section = [s for s in cls.sections.all() if s.index() == int(section_num)][0]
         except:
             return
 
         # Create a section list in Mailman,
-        # then bounce this e-mail off to it
+        # then bounce this email off to it
 
         list_name = "%s-%s" % (section.emailcode(), user_type)
 
@@ -102,4 +103,3 @@ class SectionList(BaseHandler):
 
         self.recipients = ["%s@%s" % (list_name, Site.objects.get_current().domain)]
         self.send = True
-

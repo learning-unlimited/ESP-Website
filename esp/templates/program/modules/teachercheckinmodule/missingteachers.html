@@ -1,4 +1,5 @@
 {% extends "main.html" %}
+{% load modules %}
 
 {% block title %}{{program.niceName}} Management{% endblock %}
 
@@ -6,128 +7,164 @@
     {{ block.super }}
     <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
     <link rel='stylesheet' type='text/css' href='/media/styles/flags.css' />
-    <style type="text/css">
-        #shortcuts-box {
-            position: fixed;
-            left: 10px;
-            top: 150px;
-            width: 200px;
-            border: 1px solid gray;
-            padding: 5px;
-            z-index: 100;
-            background-color: white;
-            opacity: 0.75;
-            transition: opacity 0.25s ease;
-        }
-        #shortcuts-box:hover {
-            opacity: 1;
-        }
-
-        .section-first-row {
-            border-top: 4px solid #ccc;
-        }
-
-        .section-code {
-            background-color: #c6def7;
-            background: linear-gradient(to bottom, white, #c6def7);
-        }
-
-        .not-checked-in a {
-            font-weight: bold;
-        }
-
-        .checked-in {
-            text-decoration: line-through;
-        }
-
-        .selected .checkin + span:after {
-            content: "◀"; font-weight: bold;
-        }
-
-        .selected .not-checked-in, .selected .checkin-column, .selected .phone, .selected .text-teacher {
-            background-color: #FFFF00;
-        }
-
-        .checkin-column {
-            min-width: 90px;
-        }
-
-        input.found {
-            background-color: #AAFFAA;
-        }
-
-        input.not-found {
-            background-color: #FFAAAA;
-        }
-
-        .section-detail-td {
-            background-color: #c6def7;
-        }
-
-        .section-detail {
-            display: inline-block;
-            border-width: 0;
-            margin: 0px;
-            width: 100%;
-        }
-
-        .section-detail-header {
-            background-color: #c6def7;
-            font-size: 1.2em;
-            width: 100%;
-        }
-
-        .flag-name-list {
-            display: inline-block;
-            width: 470px;
-            vertical-align: middle;
-        }
-
-        .section-detail-include {
-            background-color: white;
-        }
-    </style>
+    <link rel='stylesheet' type='text/css' href='/media/styles/assignments.css' />
+    <link rel='stylesheet' type='text/css' href='/media/styles/missingteachers.css' />
+    <link rel='stylesheet' type='text/css' href='/media/styles/barcodescanner.css' />
+    <link rel="stylesheet" type='text/css' href="https://use.fontawesome.com/releases/v5.0.9/css/all.css">
 {% endblock %}
 
 {% block javascript %}
     {{ block.super }}
+    <script>
+        var moderator_title = "{{ program.getModeratorTitle|lower }}";
+    </script>
     <script src="/media/scripts/program/modules/flag-edit.js"></script>
+    <script src="/media/scripts/onsite/assignment-edit.js"></script>
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/gh/serratus/quaggaJS@e96eb9f7888507689cf33f1e6ce325959dde314e/dist/quagga.min.js" type="text/javascript"></script>
+    <script src="/media/scripts/barcodescanner.js" type="text/javascript"></script>
     <script src="/media/scripts/onsite/teacher_checkin.js"></script>
 {% endblock %}
 
 {% block content %}
-<h1>Missing Teachers for {{ program.niceName }}</h1>
+<h1>Missing Teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle }}s{% endif %} for {{ program.niceName }}</h1>
 
 <div id="shortcuts-box">
     <input type="text" />
-    <p>Type to search</p>
+    <p class="message" hidden></p>
+    <p>Type to search by teacher or class (supports regex)</p>
     <p>Up/Down/PgUp/PgDown to select teacher</p>
     <p>'?' to view information about teacher</p>
     <p>'Shift-Enter' to check in teacher</p>
-    <p>'Ctrl-Z' to un-check-in <span id='last_checkin'></span></p>
-    <p>Click a class title for more info{% if show_flags %} and class flags{% endif %}</p>
+    <p>Type a user ID and hit 'Enter' to check in teacher</p>
+    <p hidden>'Ctrl-Z' to un-check-in <span id='last_checkin'></span></p>
+    <p>Click a class title for more info</p>
 </div>
 
 <div id='program_form'>
 
-<br/><a href="teachercheckin{% if when %}?when={{ url_when }}{% endif %}">&lt;&lt;Back</a>
+<br/>
+<a class="btn" style="float: left" href="teachercheckin{% if when %}?when={{ url_when }}{% endif %}">&lt;&lt;Back</a>
+{% if previous or next %}
+<div style="text-align:right">
+{% if start_time %}
+{% if previous %}<a class="btn" href="missingteachers?start={{ previous.id }}{% if when %}&when={{ url_when }}{% endif %}">&lt;&lt;Previous time slot</a>{% endif %}
+{% if next %}<a class="btn" href="missingteachers?start={{ next.id }}{% if when %}&when={{ url_when }}{% endif %}">Next time slot&gt;&gt;</a>{% endif %}
+{% elif date %}
+{% if previous %}<a class="btn" href="missingteachers?date={{ previous }}{% if when %}&when={{ url_when }}{% endif %}">&lt;&lt;Previous day</a>{% endif %}
+{% if next %}<a class="btn" href="missingteachers?date={{ next }}{% if when %}&when={{ url_when }}{% endif %}">Next day&gt;&gt;</a>{% endif %}
+{% endif %}
+</div>
+{% endif %}
+<div style="clear: both;"></div>
+<br>
 
-<p style="text-align: center">
+<div style="text-align:right; float: right; width: 225px; padding-bottom: 10px;">
+<input class="button text-all-teachers" type="button" value="Text All Unchecked-In Teachers"
+    {% if not text_configured %} disabled title="Twilio texting settings are not configured"{% endif %}/>
+</br>
+<input type="checkbox" id="skip-semi-checked-in-teachers" {% if not text_configured %} disabled{% endif %}/> Skip teachers of classes with at least one checked-in teacher
+</div>
 
+{% if program|hasModule:"TeacherModeratorModule" %}
+<div style="text-align:left; float: left; width: 225px; padding-bottom: 10px;">
+<input class="button text-all-moderators" type="button" value="Text All Unchecked-In {{ program.getModeratorTitle }}s"
+    {% if not text_configured %} disabled title="Twilio texting settings are not configured"{% endif %}/>
+</br>
+<input type="checkbox" id="skip-semi-checked-in-moderators" {% if not text_configured %} disabled{% endif %}/> Skip {{ program.getModeratorTitle|lower }}s of classes with at least one checked-in {{ program.getModeratorTitle|lower }}
+</div>
+{% endif %}
+
+<div class="controls">
+    <button type="button" class="scan"><i class="fas fa-barcode"></i>&ensp;Scan barcodes with your device</button>
+    <select style="display:none">
+        <option selected value="code_39_reader">Code 39</option>
+        <option value="codabar_reader">Codabar</option>
+        <option value="code_128_reader">Code 128</option>
+        <option value="i2of5_reader">Interleaved 2 of 5</option>
+    </select>
+</div>
+<div class="overlay overlay--inline">
+    <div class="overlay__content viewport" id="interactive">
+        <div id="scaninfo" class="scan_popup"></div>
+        <div class="overlay__close">X</div>
+    </div>
+</div>
+
+{% if missing_resources %}
+<br><br><br>
+<table width="100%">
+<tr>
+    <th colspan="5">
+        {% if start_time %}
+            Missing resources for sections ending before {{ start_time.pretty_start_time }}
+        {% else %}
+            Missing resources for all sections{% if date %} ending before {{ date|date:"D m/d/Y" }}{% endif %}
+        {% endif %}
+    </th>
+</tr>
+<tr>
+    <th>
+        Section
+    </th>
+    <th>
+        End Time and Location
+    </th>
+    <th colspan="2">
+        Teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle }}s{% endif %}
+    </th>
+    <th>
+        Missing Resources
+    </th>
+</tr>
+{% for section in missing_resources %}
+<tr class="section-first-row" data-sec-id="{{ section.emailcode }}">
+    <td rowspan="{{ section.teachers_list|length }}" class="section-code" style="border-bottom: 1px solid #ccc;">
+        {{ section }}
+    </td>
+    <td class="room" rowspan="{{ section.teachers_list|length }}" style="border-bottom: 1px solid #ccc;">
+        {{ section.end_time }} in {{ section.room }}
+    </td>
+    {% for teacher in section.teachers_list %}
+        <td{% if forloop.last %} style="border-bottom: 1px solid #ccc;"{% endif %}>
+            <a href="/manage/userview?username={{ teacher.username }}&program={{ program.id }}" target="_blank">{{ teacher.name }}</a>
+        </td>
+        <td class="phone"{% if forloop.last %} style="border-bottom: 1px solid #ccc;"{% endif %}> {{ teacher.phone }} </td>
+        {% if forloop.first %}
+            <td rowspan="{{ section.teachers_list|length }}" class="section-detail-td" style="border-bottom: 1px solid #ccc;">
+                <div class="section-detail fqr-class">
+                    <div class="assignment-name-list fqr-class-assignments" style="white-space:nowrap;">
+                        {% for assignment in section.missing_resources.all %}
+                            {% if not forloop.first %}<br/>{% endif %}
+                            {% include "program/modules/resourcemodule/assignment_name.html" %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </td>
+        {% endif %}
+        </tr>
+        <tr data-sec-id="{{ section.emailcode }}">
+    {% endfor %}
+</tr>
+{% endfor %}
+</table>
+{% endif %}
+
+<br><br><br>
 <table>
 <tr>
-    <th colspan="6">
+    <th colspan="5">
         {% if start_time %}
-            Missing teachers for classes starting at {{ start_time.pretty_start_time }}
+            Teachers {% if program|hasModule:"TeacherModeratorModule" %}and {{ program.getModeratorTitle|lower }}s {% endif %}for classes starting at {{ start_time.pretty_start_time }}
         {% else %}
-            Missing teachers for all classes{% if date %} on {{ date|date:"D m/d/Y" }}{% endif %}
+            Teachers {% if program|hasModule:"TeacherModeratorModule" %}and {{ program.getModeratorTitle }}s {% endif %}for all classes{% if date %} on {{ date|date:"D m/d/Y" }}{% endif %}
         {% endif %}
         {% if when %} as of {{ when }} {% endif %}
     </th>
 </tr>
 {% if sections|length_is:0 %}
 <tr>
-    <td colspan="6">
+    <td colspan="5">
         There are no class sections
         {% if start_time %} starting in this timeslot
         {% else %} scheduled for the program{% if date %} on {{ date|date:"D m/d/Y" }}{% endif %}
@@ -136,11 +173,44 @@
 </tr>
 {% endif %}
 {% for section in sections %}
-<tr class="section-first-row">
-    <td rowspan="{{ section.teachers|length }}" class="section-code">
-        {{ section.parent_class.emailcode }}: {{ section.name }}
+{% ifchanged section.any_arrived %}
+    {% if section.any_arrived == False %}
+    <tr>
+        <th colspan="5" style="border-top: 4px solid #ccc;">
+            Sections with no teachers{% if program|hasModule:"TeacherModeratorModule" %} or no {{ program.getModeratorTitle|lower }}s{% endif %} checked in
+        </th>
+    </tr>
+    {% elif section.any_arrived == True and section.all_arrived == False %}
+    </table>
+    <br><br><br>
+    <table>
+    <tr>
+        <th colspan="5" style="border-top: 4px solid #ccc;">
+            Sections with some teachers{% if program|hasModule:"TeacherModeratorModule" %} and some {{ program.getModeratorTitle|lower }}s{% endif %} checked in
+        </th>
+    </tr>
+    {% endif %}
+{% endifchanged %}
+{% ifchanged section.all_arrived %}
+    {% if section.all_arrived == True %}
+    </table>
+    <br><br><br>
+    <table>
+    <tr>
+        <th colspan="5" style="border-top: 4px solid #ccc;">
+            Sections with all teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle|lower }}s{% endif %} checked in
+        </th>
+    </tr>
+    {% endif %}
+{% endifchanged %}
+<tr class="section-first-row" data-sec-id="{{ section.emailcode }}">
+    <td class="section-detail-header" title="Click to toggle class details" colspan="5">
+        {{ section }}
+        (<a href="{{section.get_absolute_url|urlencode}}">manage</a> | <a href="{{section.get_edit_absolute_url|urlencode}}">edit</a>)
     </td>
-    <td class="room" rowspan="{{ section.teachers|length }}">
+</tr>
+<tr data-sec-id="{{ section.emailcode }}" data-role="teacher">
+    <td class="room" rowspan="{% if section.teachers %}{{ section.teachers|length }}{% else %}1{% endif %}">
         {% if start_time %}
             {{ section.room }}
         {% else %}
@@ -153,37 +223,111 @@
         {% else %}
         <td class="not-checked-in">
         {% endif %}
-            <a href="/manage/userview?username={{ teacher.username }}" target="_blank">{{ teacher.name }}</a>
+            <a href="/manage/userview?username={{ teacher.username }}&program={{ program.id }}" target="_blank">{{ teacher.name }}</a>
         </td>
         <td class="checkin-column">
             {% if teacher.id not in arrived %}
             <span class="message"></span>
-            <input id="checkin_{{ teacher.username }}" name="{{ section.parent_class.emailcode }}: {{ section.name }}"
+            <input data-username="checkin_{{ teacher.username }}" name="{{ section.parent_class.emailcode }}: {{ section.title }}"
                    class="button checkin" type="button" value="Check In" {% if when %}disabled="disabled"{% endif %} /><span />
             {% else %}
-            Already checked-in
+            <input data-username="uncheckin_{{ teacher.username }}" class="button uncheckin" type="button" value="Undo Check-In"
+               {% if when %}disabled="disabled"{% endif %} />
             {% endif %}
         </td>
         <td class="phone"> {{ teacher.phone }} </td>
         <td class="text-teacher">
             <span class="message"></span>
             <input data-username="{{ teacher.username }}" data-section="{{ section.id }}"
-                   class="button text" type="button" value="Text Teacher"
-                   {% if not text_configured %} disabled title="Twilio texting settings are not configured"{% endif %}/>
+                   class="button text{% if not text_configured %} not-configured{% endif %}" type="button" value="Text Teacher"
+                   {% if teacher.id in arrived %} disabled title="Teacher already checked in"
+                   {% elif not text_configured %} disabled title="Twilio texting settings are not configured"
+                   {% elif teacher.phone == default_phone %} disabled title="No contact info"{% endif %}/>
         </tr>
-        <tr>
+        <tr data-sec-id="{{ section.emailcode }}" {% if forloop.last %}{% if program|hasModule:"TeacherModeratorModule" %}data-role="moderator"{% else %}class="section-detail-tr"{% endif %}{% else %}data-role="teacher"{% endif %}>
+    {% empty %}
+        <td colspan="4">
+            No teachers for this class
+        </td>
+        </tr>
+        <tr data-sec-id="{{ section.emailcode }}" {% if program|hasModule:"TeacherModeratorModule" %}data-role="moderator"{% else %}class="section-detail-tr"{% endif %}>
     {% endfor %}
-    <td colspan="6" class="section-detail-td">
+    {% if program|hasModule:"TeacherModeratorModule" %}
+            <td rowspan="{% if section.moderators_list %}{{ section.moderators_list|length }}{% else %}1{% endif %}" style="border-top:1px solid #ccc;">
+                {{ program.getModeratorTitle }}s:
+            </td>
+        {% for teacher in section.moderators_list %}
+            {% if teacher.id in arrived %}
+            <td class="checked-in"{% if forloop.first %} style="border-top:1px solid #ccc;"{% endif %}>
+            {% else %}
+            <td class="not-checked-in"{% if forloop.first %} style="border-top:1px solid #ccc;"{% endif %}>
+            {% endif %}
+                <a href="/manage/userview?username={{ teacher.username }}&program={{ program.id }}" target="_blank">{{ teacher.name }}</a>
+            </td>
+            <td class="checkin-column"{% if forloop.first %} style="border-top:1px solid #ccc;"{% endif %}>
+                {% if teacher.id not in arrived %}
+                <span class="message"></span>
+                <input data-username="checkin_{{ teacher.username }}" name="{{ section.parent_class.emailcode }}: {{ section.title }}"
+                       class="button checkin" type="button" value="Check In" {% if when %}disabled="disabled"{% endif %} /><span />
+                {% else %}
+                <input data-username="uncheckin_{{ teacher.username }}" class="button uncheckin" type="button" value="Undo Check-In"
+                   {% if when %}disabled="disabled"{% endif %} />
+                {% endif %}
+            </td>
+            <td class="phone"{% if forloop.first %} style="border-top:1px solid #ccc;"{% endif %}> {{ teacher.phone }} </td>
+            <td class="text-teacher"{% if forloop.first %} style="border-top:1px solid #ccc;"{% endif %}>
+                <span class="message"></span>
+                <input data-username="{{ teacher.username }}" data-section="{{ section.id }}"
+                       class="button text" type="button" value="Text Teacher"
+                       {% if teacher.id in arrived %} disabled title="Teacher already checked in"
+                       {% elif not text_configured %} disabled title="Twilio texting settings are not configured"
+                       {% elif teacher.phone == default_phone %} disabled title="No contact info"{% endif %}/>
+            </tr>
+            <tr data-sec-id="{{ section.emailcode }}" {% if forloop.last %}class="section-detail-tr"{% else %}data-role="moderator"{% endif %}>
+        {% empty %}
+            <td colspan="4" style="border-top:1px solid #ccc;">
+                No {{ program.getModeratorTitle|lower }}s for this class
+            </td>
+            </tr>
+            <tr data-sec-id="{{ section.emailcode }}" class="section-detail-tr">
+        {% endfor %}
+    {% endif %}
+
+    <td colspan="5" class="section-detail-td">
         <div class="section-detail fqr-class">
-            <div class="section-detail-header">
-                {{section.title}}
-                (<a href="{{section.get_absolute_url|urlencode}}">manage</a> | <a href="{{section.get_edit_absolute_url|urlencode}}">edit</a>)
+            {% if show_flags %}
+                <div class="flag-name-list fqr-class-flags">
+                    {% for flag in section.parent_class.flags.all %}
+                        {% include "program/modules/classflagmodule/flag_name.html" %}
+                    {% endfor %}
+                </div>
+                <br />
+                <button class="add-flag btn">add flag</button>
+            {% endif %}
+            <div class="assignment-name-list fqr-class-assignments">
+                {% for assignment in section.unique_resources %}
+                    {% include "program/modules/resourcemodule/assignment_name.html" %}
+                {% endfor %}
             </div>
+            <button class="add-assignment btn" data-section="{{ section.id }}" data-geturl="/manage/{{program.getUrlBase}}/getavailableequipment/">checkout resource</button>
             <div class="section-detail-info"
                  style="display: none;"
                  data-class-id="{{section.parent_class.id}}"
                  data-show-flags="{% if show_flags %}1{% endif %}">
                 Loading...
+            </div>
+            {% if show_flags %}
+                <div class="fqr-class-flags-detail">
+                    {% for flag in section.parent_class.flags.all %}
+                        {% include "program/modules/classflagmodule/flag_detail.html" %}
+                    {% endfor %}
+                    {% with section.parent_class as class %}
+                        {% include "program/modules/classflagmodule/new_flag_form.html" %}
+                    {% endwith %}
+                </div>
+            {% endif %}
+            <div class="fqr-class-assignments-detail">
+                {% include "program/modules/resourcemodule/new_assignment_form.html" %}
             </div>
         </div>
     </td>
@@ -191,48 +335,15 @@
 {% endfor %}
 </table>
 
-<br/>
-
-<table>
-<tr>
-    <th colspan="3">
-        Teachers who have checked in
-        {% if start_time %} for classes starting at {{ start_time.pretty_start_time }}
-        {% else %} for classes{% if date %} on {{ date|date:"D m/d/Y" }}{% endif %}
-        {% endif %}
-        {% if when %} as of {{ when }} {% endif %}
-    </th>
-</tr>
-{% if arrived|length_is:0 %}
-<tr>
-    <td colspan="3">
-        There are no teachers yet checked in for
-        {% if start_time %} this timeslot
-        {% else %} the program{% if date %} on {{ date|date:"D m/d/Y" }}{% endif %}{% endif %}.
-    </td>
-</tr>    
-{% endif %}
-{% for teacher in arrived.values %}
-<tr>
-    <td class="checked-in">
-        <a href="/manage/userview?username={{ teacher.username }}" target="_blank">{{ teacher.name }}</a>
-    </td>
-    <td>
-        <input id="uncheckin_{{ teacher.username }}" class="button uncheckin" type="button" value="Undo Check-In"
-               {% if when %}disabled="disabled"{% endif %} />
-    </td>
-    <td class="phone"> {{ teacher.phone }} </td>
-</tr>
-{% endfor %}
-</table>
-
-<br/><a href="teachercheckin{% if when %}?when={{ url_when }}{% endif %}">&lt;&lt;Back</a><br/>
+<br/><a class="btn" style="float: left" href="teachercheckin{% if when %}?when={{ url_when }}{% endif %}">&lt;&lt;Back</a><br/>
 
 <br />
 {% load render_qsd %}
 {% render_inline_program_qsd program "onsite:status" %}
 
 </div>
+
+{% include "program/modules/onsitecore/returnlink.html" %}
 
 
 {% endblock %}

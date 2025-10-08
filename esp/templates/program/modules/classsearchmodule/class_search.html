@@ -7,17 +7,34 @@
     <link rel="stylesheet" type="text/css" href="/media/styles/forms.css"/>
     <link rel="stylesheet" type="text/css" href="/media/styles/flags.css"/>
     <link rel="stylesheet" type="text/css" href="/media/styles/query-builder.css"/>
+    <style>
+    .btn-group a {
+        color: #333333 !important;
+        text-decoration: none !important;
+    }
+    .dropdown-menu a:hover {
+        color: #ffffff !important;
+    }
+    </style>
 {% endblock %}
 
 {% block xtrajs %}
     <script type="text/jsx" src="/media/scripts/query-builder.jsx"></script>
     <script type="text/javascript" src="/media/scripts/program/modules/flag-results-page.js"></script>
     <script type="text/javascript" src="/media/scripts/program/modules/flag-edit.js"></script>
+    <!--jQuery.initialize plugin is created to help maintain dynamically created elements on the page-->
+    <script src="https://cdn.jsdelivr.net/gh/pie6k/jquery.initialize@eb28c24e2eef256344777b45a455173cba36e850/jquery.initialize.js"></script>
+    <script id="classsearchscript" src="/media/scripts/program/modules/classsearch.js" data-prog_url="{{ program.url }}"></script>
 {% endblock %}
 
 {% block content %}
+{% load modules %}
 
 <h1>Search Classes for {{ program.niceName }}</h1>
+
+{% if failed_id_search %}
+<p><strong>No class with ID {{ id_query }} found. Attempting as title search:</strong></p>
+{% endif %}
 
 {% load query_builder %}
 {% render_query_builder query_builder query %}
@@ -27,11 +44,79 @@
 Your query returned {{queryset|length}} of {{program.classsubject_set.count}} classes in {{program.niceName}}.  Click on a class or flag to see more detail (<a href="#" onclick="showAll()">show all</a> <a href="#" onclick="showWithComments()">show comments</a> <a href="#" onclick="hideAll()">hide all</a>).  Or <a href="?">search again</a>.
 </p>
 
+<div class="btn-group">
+    <button class="btn btn-approve" onclick="approveAll({{ IDs|escapejs }});">Approve All</button>
+    <button class="btn btn-unreview" onclick="unreviewAll({{ IDs|escapejs }});">Unreview All</button>
+    <button class="btn btn-reject" onclick="rejectAll({{ IDs|escapejs }});">Reject All</button>
+</div>
+<div class="btn-toolbar">
+    <div class="btn-group" id="catalog_links">
+        <a class="btn" href="./coursecatalog?clsids={{ IDs|join:',' }}" target="_blank" title="Change sorting with the 'catalog_sort_fields' tag">Course Catalog</a>
+    </div>
+    <div class="btn-group" id="spreadsheet_links">
+        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+            Class Spreadsheets
+            <span class="caret"></span>
+        </a>
+        <ul class="dropdown-menu">
+            <li><a href="./classesbyid?clsids={{ IDs|join:',' }}" target="_blank">By ID</a></li>
+            <li><a href="./classesbytitle?clsids={{ IDs|join:',' }}" target="_blank">By Title</a></li>
+            <li><a href="./classesbytime?clsids={{ IDs|join:',' }}" target="_blank">By Time</a></li>
+        </ul>
+    </div>
+    <div class="btn-group" id="flag_printable_links">
+        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+            Class Flag Printables
+            <span class="caret"></span>
+        </a>
+        <ul class="dropdown-menu">
+            <li><a href="./classflagdetails?clsids={{ IDs|join:',' }}" target="_blank">Without Comments</a></li>
+            <li><a href="./classflagdetails?comments&clsids={{ IDs|join:',' }}" target="_blank">With Comments</a></li>
+        </ul>
+    </div>
+</div>
+<div class="btn-toolbar">
+    <div id="reg_types_div" class="btn-group">
+        Select student registration type(s):</br>
+        <select name="regtypes" id="regtypes" multiple>
+            {% for regtype in regtypes %}
+            <option {% if regtype.description %}title="{{ regtype.description }}" {% endif %}value="{{ regtype.name }}"{% if regtype.name == "Enrolled" %} selected{% endif %}>{{ regtype }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="btn-group" id="student_links" data-clsids="{{ IDs|join:',' }}">
+        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+            Student Links
+            <span class="caret"></span>
+        </a>
+        <ul class="dropdown-menu">
+            <li><a href="./selectList?clsid={{ IDs|join:',' }}&regtypes=Enrolled" target="_blank">Get Student Information</a></li>
+            <li><a href="./commpanel?clsid={{ IDs|join:',' }}&regtypes=Enrolled" target="_blank">Email Students</a></li>
+            {% if program|hasModule:"GroupTextModule" %}
+            <li><a href="./grouptextpanel?clsid={{ IDs|join:',' }}&regtypes=Enrolled" target="_blank">Text Students</a></li>
+            {% endif %}
+        </ul>
+    </div>
+    <div class="btn-group" id="teacher_links">
+        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+            Teacher Links
+            <span class="caret"></span>
+        </a>
+        <ul class="dropdown-menu">
+            <li><a href="./selectList?recipient_type=Teacher&userid={% for cls in queryset %}{% for teacher in cls.teachers.all %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if cls.teachers.exists and not forloop.last %},{% endif %}{% endfor %}" target="_blank">Get Teacher Information</a></li>
+            <li><a href="./commpanel?recipient_type=Teacher&userid={% for cls in queryset %}{% for teacher in cls.teachers.all %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if cls.teachers.exists and not forloop.last %},{% endif %}{% endfor %}" target="_blank">Email Teachers</a></li>
+            {% if program|hasModule:"GroupTextModule" %}
+            <li><a href="./grouptextpanel?recipient_type=Teacher&userid={% for cls in queryset %}{% for teacher in cls.teachers.all %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if cls.teachers.exists and not forloop.last %},{% endif %}{% endfor %}" target="_blank">Text Teachers</a></li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+
 <div class="flag-query-results" id="program_form">
     {% for class in queryset %}
         <div class="fqr-class" id="fqr-class-{{class.id}}">
-            <div class="fqr-class-header {% if class.isReviewed %}{% if class.isAccepted %}accepted{% else %}rejected{% endif %}{% else %}unreviewed{% endif %}" onclick="$j(this).siblings('.fqr-class-detail').toggle('blink');">
-                {{class.emailcode}}: {{class.title}} <br/>
+            <div class="fqr-class-header {% if class.isReviewed %}{% if class.isAccepted %}accepted{% else %}rejected{% endif %}{% else %}unreviewed{% endif %}" title="Click to toggle class details" onclick="$j(this).siblings('.fqr-class-detail').toggle('blink');$j(this).toggleClass('active');">
+                {{class.emailcode}}: {{class.title}}
             </div>
             <div class="fqr-class-flags">
                 Flags: 
@@ -49,7 +134,7 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
                 <div class="btn-group">
                     <button class="btn btn-approve" onclick="approve({{class.id}});">approve</button>
                     <button class="btn btn-unreview" onclick="unreview({{class.id}});">unreview</button>
-                    <button class="btn btn-reject" onclick="reject({{class.id}});">reject</button>
+                    {% if not class.hasScheduledSections %}<button class="btn btn-reject" id="reject_{{ class.id }}" onclick="reject({{class.id}});">reject</button>{% endif %}
                 </div>
                 <div class="btn-group">
                     <button class="btn btn-danger" onclick="deleteClass({{class.id}}, '{{class.title}}');">delete</button>
@@ -76,4 +161,5 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
 {% elif query %}
 No classes were found.
 {% endif %}
+{% include "program/modules/admincore/returnlink.html" %}
 {% endblock %}

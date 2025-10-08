@@ -1,0 +1,135 @@
+<html>
+
+<head>
+<style type="text/css">
+    .Enrolled
+     {
+        color: red;
+        font-weight: bold;
+     }
+    .NotAccepted
+     {
+       color: red;
+     }
+    .table-bordered
+     {
+       border: 1px solid #dddddd;
+       border-collapse: separate;
+       -webkit-border-radius: 4px;
+       -moz-border-radius: 4px;
+       border-radius: 4px;
+     }
+    .table-bordered th, .table-bordered td
+     {
+       border-left: 1px solid #dddddd;
+     }
+    .table th, .table td
+     {
+       line-height: 20px;
+       text-align: left;
+       border-top: 1px solid #dddddd;
+     }
+</style>
+</head>
+
+{% autoescape off %}
+{{ pretext }}
+{% endautoescape %}
+
+<hr size="1" color="#000000" />
+
+<p>
+User Information: <br />
+<ul>
+<li>Username: {{ user.username }}</li>
+<li>Full Name: {{ user.first_name }} {{ user.last_name }}</li>
+<li>User ID: {{ user.id }}</li>
+</ul>
+</p>
+
+<p>
+Program Information: <br />
+<ul>
+<li>Name: {{ program.niceName }}</li>
+<li>Date{% if program.datetime_range.0.date != program.datetime_range.1.date %} Range{% endif %}: {{ program.datetime_range.0|date:"D M j Y" }}{% if program.datetime_range.0.date != program.datetime_range.1.date %} - {{ program.datetime_range.1|date:"D M j Y" }}{% endif %}</li>
+{% if deadline %}
+<li>Class Registration Closes: {{ deadline|date:"D M j Y" }} {{ deadline|time:"h:i A" }}</li>
+{% endif %}
+</ul>
+</p>
+
+<p>
+Payment Information: <br />
+<ul>
+<li>Amount Owed: ${{ user.itemizedcosttotal|floatformat:"-2" }}</li>
+{% if user.required %}
+<li>Required Choices:</li>
+<ul>
+{% for item in user.required %}
+<li>{{ item.line_item.text }}{% if item.option.description %} -- {{ item.option.description }}{% endif %}</li>
+{% endfor %}
+</ul>
+{% endif %}
+{% if user.meals %}
+<li>Optional Purchases:</li>
+<ul>
+{% for item in user.meals %}
+<li>{{ item.line_item.text }}{% if item.option.description %} -- {{ item.option.description }}{% endif %}</li>
+{% endfor %}
+</ul>
+{% endif %}
+</ul>
+</p>
+
+<br />
+<table cellpadding="3" class="table table-bordered">
+<tr style="background-color: #f9f9f9">
+    <th colspan="2" style="text-align: center;">
+    Classes for {{ user.first_name }} {{ user.last_name }} - ID: {{ user.id }}
+    </th>
+</tr>
+{% for timeslot in timeslots %}
+    {% ifchanged timeslot.0.start.day %}
+        <tr style="background-color: #f9f9f9"><th colspan="3" height="3" style="text-align: center;">Classes beginning on {{ timeslot.0.start|date:"D M j Y" }}</th></tr>
+    {% endifchanged %}
+    {% ifchanged timeslot.2 %}
+        <tr style="background-color: #f9f9f9"><th colspan="3" height="3" style="text-align: center;">Block {{ timeslot.2 }}</th></tr>
+    {% endifchanged %}
+    <tr>
+    {% ifequal timeslot.0.event_type.description "Compulsory" %}
+        <td width="25%" valign="middle" align="center" class="compulsory_event_time">{{ timeslot.0.short_description }}</td>
+        <td valign="middle" align="center" class="compulsory_event_desc">{{ timeslot.0.description }}</td>
+    </tr>
+    {% else %}
+        <td width="25%" valign="middle" align="center">{{ timeslot.0.short_description }}</td>
+        {% if timeslot.1|length_is:0 %}
+            <td style="vertical-align: middle !important;" align="center" class="class_desc">
+                No classes
+            </td>
+        {% elif timeslot.1.0.first_meeting_time %}
+            <td style="vertical-align: middle; border-left: 5px solid {% cycle 'black' 'lightgray' %}" align="center" rowspan="{{ timeslot.1.0.section.get_meeting_times|length }}" class="class_desc">
+            {% for cls in timeslot.1 %}
+                {% comment %}{% if use_priority %}{% endcomment %}
+                    {% if not cls.section.verbs|length_is:0 %}
+                        <i>{% for v in cls.section.verbs %}<span class="{{ v }}">{{ v }}</span>{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
+                    {% endif %}
+                {% comment %}{% endif %}{% endcomment %}
+                {{ cls.section }}{% if not cls.first_meeting_time %} <b>(continued)</b>{% endif %} 
+                
+                {% if request.user.onsite_local %}
+                    ({{ cls.section.prettyrooms|join:", " }})
+                {% endif %}
+                {% if not forloop.last %}<br />{% endif %}
+            {% endfor %}
+            </td>
+        {% endif %}
+    </tr>
+    {% endifequal %}
+{% endfor %}
+</table>
+
+<br />
+
+</div>
+
+</html>

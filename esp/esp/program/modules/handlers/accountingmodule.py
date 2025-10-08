@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,12 +33,15 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.accounting.controllers import IndividualAccountingController
-from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
-from esp.users.models import ESPUser
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.utils.web import render_to_response
+from esp.accounting.views import user_accounting
+from esp.users.models import ESPUser
 
 class AccountingModule(ProgramModuleObj):
+    doc = """Lists accounting information for the program for a single user."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -45,42 +49,33 @@ class AccountingModule(ProgramModuleObj):
             "link_title": "Accounting",
             "module_type": "manage",
             "seq": 253,
+            "choosable": 0,
             }
-
-    # TODO: create a user search page as main_call instead of this default
 
     @main_call
     @needs_admin
     def accounting(self, request, tl, one, two, module, extra, prog):
-        '''Lists accounting for a student.
-
-        Defaults to the current user, but can take the user ID in the extra
-        argument instead.'''
-
+        user = None
+        context = {}
         if extra:
             user = ESPUser.objects.get(id=extra)
+        elif 'target_user' in request.POST:
+            form = StudentSearchForm(request.POST)
+            if form.is_valid():
+                user = form.cleaned_data['target_user']
         else:
-            user = request.user
+            form = StudentSearchForm()
 
-        iac = IndividualAccountingController(prog, user)
-        classified_transfers = [
-            { 'transfer': t, 'type': iac.classify_transfer(t) }
-            for t in iac.get_transfers().select_related('line_item')
-        ]
-        context = {
-            'target_user': user,
-            'transfers': classified_transfers,
-            'identifier': iac.get_identifier(),
-            'grant': iac.latest_finaid_grant(),
-        }
-        if iac.transfers_to_program_exist():
-            context['transfers_exist'] = True
-            context['requested'] = iac.amount_requested(ensure_required=False)
-            context['finaid'] = iac.amount_finaid()
-            context['siblingdiscount'] = iac.amount_siblingdiscount()
-            context['paid'] = iac.amount_paid()
-            context['due'] = iac.amount_due()
+        if user:
+            form = StudentSearchForm(initial={'target_user': user.id})
+            context['prog_results'] = user_accounting(user, [prog])
+
+        context['target_user'] = user
+        context['form'] = form
         return render_to_response(self.baseDir()+'accounting.html', request, context)
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

@@ -1,12 +1,14 @@
-from esp.program.models import Program, ClassSection, StudentRegistration
+from __future__ import absolute_import
+import logging
+
+from esp.program.models import StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.controllers.lottery import LotteryAssignmentController, LotteryException
 from esp.utils.web import render_to_response
-from esp.users.models import ESPUser
 from esp.utils.decorators import json_response
-import numpy
 
 class LotteryFrontendModule(ProgramModuleObj):
+    doc = """Run the class lottery and assign students to classes."""
 
     @classmethod
     def module_properties(cls):
@@ -14,7 +16,8 @@ class LotteryFrontendModule(ProgramModuleObj):
             "admin_title": "Lottery Frontend",
             "link_title": "Run the Lottery Assignment Thing",
             "module_type": "manage",
-            "seq": 10
+            "seq": 10,
+            "choosable": 0,
             }
 
     @main_call
@@ -61,11 +64,11 @@ class LotteryFrontendModule(ProgramModuleObj):
 
                 options[key.split('_', 1)[1]] = value
 
-        error_msg = ''
         try:
             lotteryObj = LotteryAssignmentController(prog, **options)
             lotteryObj.compute_assignments(True)
-        except LotteryException, e:
+        except LotteryException as e:
+            logging.exception(e)
             return {'response': [{'error_msg': str(e)}]}
 
         stats = lotteryObj.extract_stats(lotteryObj.compute_stats())
@@ -83,6 +86,9 @@ class LotteryFrontendModule(ProgramModuleObj):
         lotteryObj.import_assignments(request.POST['lottery_data'])
         lotteryObj.save_assignments()
         return {'response': [{'success': 'yes'}]};
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

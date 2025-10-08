@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}Manage Class: {{ class.title }}{% endblock %}
+{% block title %}Manage Class: {{ class.emailcode }}{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
@@ -9,18 +9,27 @@
 {% endblock %}
 {% block xtrajs %}
     <script type="text/javascript" src="/media/scripts/program/modules/flag-edit.js"></script>
+    <script type="text/javascript" src="/media/scripts/program/modules/manageclass.js"></script>
 {% endblock %}
 {% block content %}
 
 {% load main %}
+{% load modules %}
 
 <div id="divmaintext">
 
-<h1>Manage Class {{ class.id }}: {{ class.title }}</h1>
+<h1>Manage Class {{ class.emailcode }}: {{ class.title }}</h1>
 
 <div id="program_form">
+<center>
+<a class="btn" title="Edit Class" href="/manage/{{ program.getUrlBase }}/editclass/{{ class.id }}">Edit Class</a>
+{% if program|hasModule:"TeacherPreviewModule" %}
+<a class="btn" title="Catalog Preview" href="/teach/{{ program.getUrlBase }}/catalogpreview/{{ class.id }}">Catalog Preview</a>
+{% endif %}
+<br /><br />
+</center>
 
-<table align="center" width="500">
+<table align="center">
     <tr>
         <th colspan="2" align="center">Information about {{ class.emailcode }}: {{ class.title }}</th>
     </tr>
@@ -39,7 +48,7 @@
         </td>
     </tr>
     <tr>
-        <th class="smaller">E-mail addresses: </th>
+        <th class="smaller">Email addresses: </th>
         <td>
             Whole Class: <a href="mailto:{{ class.emailcode }}-class@{{ EMAIL_HOST_SENDER }}">{{ class.emailcode }}-class@{{ EMAIL_HOST_SENDER }}</a><br />
             Teachers: <a href="mailto:{{ class.emailcode }}-teachers@{{ EMAIL_HOST_SENDER }}">{{ class.emailcode }}-teachers@{{ EMAIL_HOST_SENDER }}</a><br />
@@ -54,8 +63,30 @@
                 {{ sec.num_students }} enrolled / {{ sec.num_students_prereg }} preregistered
                 <br />
             {% endfor %}
-        <td>
+        </td>
     </tr>
+    <tr>
+        <th class="smaller">Document uploads: </th>
+        <td>
+            {% if class.documents.exists %}
+            <ul>
+                {% for doc in class.getDocuments %}
+                <li style="color: black;"><a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a></li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            There are no documents associated with this class
+            {% endif %}
+        </td>
+    </tr>
+    {% if class.got_index_qsd %}
+    <tr>
+        <th class="smaller">Class website: </th>
+        <td>
+            <a href="/learn/{{ class.url }}/index.html" title="{{ class }}...">Visit web page</a>
+        </td>
+    </tr>
+    {% endif %}
     <tr>
         <th class="smaller">Additional information specified by teacher: </th>
         <td>
@@ -77,11 +108,11 @@
 {% endif %}
 
 <br />
-<p>The table below allows you to cancel the class or any one of its sections.  Cancelling the class will cancel all of its sections.  It is recommended that you enter an explanation (which can be brief, such as "Teacher schedule conflict" or "No appropriate rooms available") to be included in an e-mail to the students.</p>
+<p>The table below allows you to cancel the class or any one of its sections.  Cancelling the class will cancel all of its sections.  It is recommended that you enter an explanation (which can be brief, such as "Teacher schedule conflict" or "No appropriate rooms available") to be included in an email to the students.</p>
 
 {% if cls_cancel_form %}
 <form name="class_cancel" action="{{ request.path }}?action=cancel_cls" method="POST">
-<table align="center" width="500">
+<table align="center">
     <tr>
         <th colspan="2" align="center">Cancel class {{ class.emailcode }}: {{ class.title }}</th>
     </tr>
@@ -94,48 +125,46 @@
 </table>
 </form>
 {% else %}
-    <table align="center" width="500">
+    <table align="center">
     <tr>
-        <th colspan="2" align="center">Class {{ class.emailcode }} is already cancelled.</th>
+        <th colspan="2" align="center">{% if class.isCancelled %}Class {{ class.emailcode }} is already cancelled.{% else %}Class {{ class.emailcode }} has no scheduled sections and can not be cancelled. You can delete sections or reject the entire class below.{% endif %}</th>
     </tr>
     </table>
 {% endif %}
 
 {% if cls_cancel_form %}
-{% for form in sec_cancel_forms %}
-{% if not form %}
-    <table align="center" width="500">
+{% if sec_cancel_forms.fields.target.choices|length == 0 %}
+    <table align="center">
     <tr>
-        <th colspan="2" align="center">Section {{ class.emailcode }}s{{ forloop.counter }} is already cancelled.</th>
+        <th colspan="2" align="center">All sections for  {{ class.emailcode }} are already cancelled.</th>
     </tr>
     </table>
 {% else %}
-    <form name="sec{{ forloop.counter }}_cancel" action="{{ request.path }}?action=cancel_sec_{{ forloop.counter }}" method="POST">
-    <table align="center" width="500">
+    <form name="sec_cancel" action="{{ request.path }}?action=cancel_sec" method="POST">
+    <table align="center">
     <tr>
-        <th colspan="2" align="center">Cancel section {{ class.emailcode }}s{{ forloop.counter }}: {{ class.title }}</th>
+        <th colspan="2" align="center">Cancel sections for {{ class.emailcode }}: {{ class.title }}</th>
     </tr>
-    {{ form }}
+    {{ sec_cancel_forms }}
     <tr>
         <th class="smaller" colspan="2" align="center">
-        <input type="submit" class="fancybutton" value="Cancel Section">
+        <input type="submit" class="fancybutton" value="Cancel Section(s)">
         </th>
     </tr>
     </table>
     </form>
 {% endif %}
-{% endfor %}
 {% endif %}
 
 <br />
 <br />
 
 <p>
-Please use the form below to alter {{ class.title }}.  Note that changes made to the class will propagate to each of the sections, but you can later change each section independently.
+Please use the form below to alter {{ class.title }}.  Note that changes made to the class will propagate to each of the sections (except the class status will not override a section's review status if it is already changed), but you can later change each section independently.
 </p>
 
-<form name="classmanage" action="{{ request.path }}?action=modify" method="POST">
-<table align="center" width="500">
+<form name="classmanage" action="{{ request.path }}?action=modify_cls" method="POST">
+<table align="center">
 
 <tr>
     <th colspan="2" style="text-align: center;">
@@ -157,22 +186,35 @@ Please use the form below to alter {{ class.title }}.  Note that changes made to
 </tr>
 
 </table>
+</form><br /><br />
 
 {% for form in sec_forms %}
-<table align="center" width="500">
+<form name="classmanage" action="{{ request.path }}?action=modify_sec" method="POST">
+<input type="hidden" name="sec_id" value="{{ form.sec.id }}">
+<table align="center">
 <tr>
     <th colspan="2" style="text-align: center;">
         Information for section {{ form.index }} of class {{ class.emailcode }} (section ID: {{ form.sec.id }})
     </th>
 </tr>
+{% if form.sec.moderators.count > 0 %}
 <tr>
-    <th class="smaller">Resources requested:</th>
+    <th>{{ program.getModeratorTitle }}(s)</th>
+    <td>
+        {% for mod in form.sec.get_moderators %}
+            <a href="/manage/userview?username={{ mod.username|urlencode }}&program={{ program.id }}">{{ mod.nonblank_name }}</a> (<a href="mailto:{{ mod.email }}" target="_blank">{{ mod.email }}</a>)<br/>
+        {% endfor %}
+    </td>
+</tr>
+{% endif %}
+<tr>
+    <th>Resources requested:</th>
     <td>
         {% if form.sec.getResourceRequests|length_is:0 %}
             None requested
         {% else %}
         {% for rr in form.sec.getResourceRequests %}
-            {{ rr.res_type.name }} <br />
+            {{ rr.res_type.name }}: {{ rr.desired_value }}<br />
         {% endfor %}
         {% endif %}
     </td>
@@ -196,6 +238,7 @@ Please use the form below to alter {{ class.title }}.  Note that changes made to
     </td>
 </tr>
 </table>
+</form><br /><br />
 {% endfor %}
 
 </form>

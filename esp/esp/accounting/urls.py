@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -34,8 +35,9 @@ Learning Unlimited, Inc.
 """
 
 from django.conf.urls import url
-from esp.accounting.views import summary
+from esp.accounting.views import summary, user_summary
 
 urlpatterns = [
     url(r'^$', summary),
+    url(r'^user$', user_summary),
 ]

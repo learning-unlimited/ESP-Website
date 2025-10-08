@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
@@ -7,10 +8,10 @@ from esp.program.models import RegistrationType, StudentRegistration, Registrati
 class RegistrationTypeManagementTest(ProgramFrameworkTest):
     def setUp(self):
         modules = []
-        modules.append(ProgramModule.objects.get(handler='TeacherClassRegModule').id)
-        modules.append(ProgramModule.objects.get(handler='StudentClassRegModule').id)
-        modules.append(ProgramModule.objects.get(handler='StudentRegCore').id)
-        modules.append(ProgramModule.objects.get(handler='AdminCore').id)
+        modules.append(ProgramModule.objects.get(handler='TeacherClassRegModule'))
+        modules.append(ProgramModule.objects.get(handler='StudentClassRegModule'))
+        modules.append(ProgramModule.objects.get(handler='StudentRegCore'))
+        modules.append(ProgramModule.objects.get(handler='AdminCore'))
 
         super(RegistrationTypeManagementTest, self).setUp(modules=modules)
         self.schedule_randomly()
@@ -25,6 +26,10 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         self.adminUser, created = ESPUser.objects.get_or_create(username='admin')
         self.adminUser.set_password('password')
         self.adminUser.makeAdmin()
+
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.force_show_required_modules = False
+        scrmi.save()
 
 
     def testAdminInterface(self):
@@ -52,10 +57,10 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         Tag.objects.filter(key='display_registration_names').delete()
         # Check the displayed types
         r = self.client.get("/learn/"+self.program.url+"/studentreg")
-        self.assertTrue(not self.testRT in r.content)
+        self.assertNotContains(r, self.testRT, status_code=200)
 
         # Then set the tag
         Tag.objects.get_or_create(key='display_registration_names', value='["Enrolled", "'+self.testRT+'"]')
         # Check the displayed types again
         r = self.client.get("/learn/"+self.program.url+"/studentreg")
-        self.assertTrue(self.testRT in r.content)
+        self.assertContains(r, self.testRT, status_code=200)

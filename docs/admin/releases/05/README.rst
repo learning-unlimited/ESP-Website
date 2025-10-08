@@ -25,7 +25,7 @@ Group texting with Twilio
 
 The new Twilio group texting module enables mass texting messages to users who
 have opted to receive text messages, under the same filtering constraints
-available in the e-mail communications panel. Currently the only supported
+available in the email communications panel. Currently the only supported
 back-end is Twilio, so a Twilio account is needed and Twilio configuration
 options need to be set.
 
@@ -169,8 +169,10 @@ Minor feature additions and bugfixes
 - By default, static QSD pages list the last modification time, as well as
   the username of the user who last modified the page.  To hide the username
   on all pages, go to /admin/tagdict/tag/ and set a Tag with key
-  qsd_display_date_author and value Date.  To hide the username and
-  modification time, set the value as False.
+  ``qsd_display_date_author`` and value ``Date``.  To hide the username and
+  modification time, set the value as ``None``. Note that these changes
+  only appear to non-administrator users; administrators will still
+  be able to see both the time and user.
 
 - Improvements to the student extra/optional costs module now allow
   equally-priced options, such as lunch or t-shirt options, to be used in

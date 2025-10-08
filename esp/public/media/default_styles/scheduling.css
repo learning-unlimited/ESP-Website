@@ -4,6 +4,29 @@ table,th,td
     border-collapse: collapse;
 }
 
+a {
+    cursor: pointer;
+}
+
+table.sortable thead th:not(.sorttable_sorted):not(.sorttable_sorted_reverse):not(.sorttable_nosort):after { 
+    content: " \25B4\25BE" 
+}
+
+.moderator-cell{
+    height: 40px;
+    min-width: 80%;
+    max-width: 80%;
+    width: 80%;
+    text-align: left;
+    cursor: pointer;
+}
+
+td.selected-moderator {
+    outline: 4px solid yellow;
+    position: relative;
+    z-index: 1000;
+}
+
 .matrix-cell{
     height: 40px;
     min-width: 80px;
@@ -26,6 +49,8 @@ table,th,td
 
 .locked-cell{
     outline: 4px #FF0000 solid !important;
+    position: relative;
+    z-index: 1000;
 }
 
 .ghost-section {
@@ -53,8 +78,33 @@ table,th,td
     opacity: .9;
 }
 
-td .selected-section {
-    outline: 1px solid yellow;
+td.moderator-available-cell, th.moderator-available-cell {
+    background: #32cd32 !important;
+    opacity: .9 !important;
+    color: white !important;
+}
+
+td.moderator-available-not-first-cell {
+    background: repeating-linear-gradient(
+                45deg,
+                #32cd32,
+                #32cd32 15px,
+                #555555 15px,
+                #555555 20px
+    ) !important;
+    opacity: .9 !important;
+}
+
+td.moderator-unavailable-cell, th.moderator-unavailable-cell {
+    background: #555555 !important;
+    opacity: .9 !important;
+    color: white !important;
+}
+
+td.selected-section {
+    outline: 4px solid yellow;
+    position: relative;
+    z-index: 1000;
 }
 
 td.matrix-cell > a {
@@ -66,6 +116,40 @@ td.matrix-cell > a:hover {
     text-decoration: underline;
 }
 
+td.lowOpacity {
+    opacity: .2 !important;
+}
+
+td.hiddenCell {
+    background: #222222 !important;
+    opacity: 0.35 !important;
+    color: #222222 !important;
+}
+
+td.moderator-moderating-or-teaching-cell {
+    background: #42b3f4 !important;
+    opacity: .9 !important;
+    color: black !important;
+}
+
+td.moderator-teaching-cell, th.moderator-teaching-cell {
+    background: yellow !important;
+    opacity: .9 !important;
+    color: black !important;
+}
+
+td.moderator-is-moderating-this-cell {
+    outline: 4px magenta solid !important;
+    position: relative;
+    z-index: 1000;
+}
+
+td.teacher-is-teaching-this-cell {
+    outline: 4px magenta solid !important;
+    position: relative;
+    z-index: 1000;
+}
+
 .component-div {
     overflow-y: scroll;
 }
@@ -75,20 +159,52 @@ input.numeric {
 }
 
 #class-search {
+    margin-bottom: 10px
+}
+
+#mod-search, #class-sort {
     margin-bottom: 20px;
 }
 
-#message-div {
-    height: 150px;
-    margin-top: 10px;
-    margin-bottom: 10px;
+#side-panel-wrapper {
+    height: 100%;
+}
+
+#info-panel {
+    height: 35%;
+    padding-bottom: 10px;
+    margin-bottom: calc(11px - .2em);
 }
 
 #section-info-div {
-    height: 150px;
     font-size: 1em;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    min-height: 50%;
+}
+
+#section-info-and-message-wrapper {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+#separator {
+    cursor: row-resize;
+    background-color: #e9e9e9;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='10'><path d='M0 2 h30 M0 5 h30 M0 8 h30' fill='none' stroke='black'/></svg>");
+    background-repeat: no-repeat;
+    background-position: center;
+    height: 10px;
+    width: 100%;
+
+/* prevent browser's built-in drag from interfering */
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+#side-panel {
+    height: 61%;
+    bottom: 0;
 }
 
 th {
@@ -106,6 +222,55 @@ button.sidetoolbar {
     border: 0px;
 }
 
+.room {
+    font-weight: bold;
+}
+
 .room-description {
 	font-size: .7em;
+}
+
+.ft_c {
+    height: unset !important; /* allows us to hide rows properly */
+}
+
+#message-div strong {
+    font-family: Courier New;
+    font-size: large;
+}
+
+#legend {
+    z-index: 100000;
+    max-width: 600px;
+    display: none;
+    border: #555 6px solid;
+    background-color: white;
+    color: black;
+    text-align: center;
+    border-radius: 6px;
+    padding: 1.5vh;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2.5vh;
+    font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
+    box-shadow: 0.5vh 0.5vh #888888;
+}
+
+#legend td {
+    height: 30px;
+    padding: .5vh;
+}
+
+#loadingOverlay {
+    z-index: 9999;
+    position: fixed; /*Important to cover the screen in case of scolling content*/
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    text-align: center;
+    background: rgba(200,200,200,0.5) url('/media/default_images/ajax_loader.gif') no-repeat center; /*.gif file or just div with message etc. however you like*/
 }

@@ -35,3 +35,5 @@ Learning Unlimited, Inc.
 """ This is the main esp code base.
  This directory should only include python. """
 
+default_app_config = 'esp.application.apps.ApplicationConfig'
+

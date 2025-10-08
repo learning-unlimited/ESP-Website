@@ -4,18 +4,22 @@
 
 {% block content %}
 
+<h1>{% if module %}{{ module }}{% else %}Select Users{% endif %}</h1>
+
 <h2>Select a list of users</h2>
 <p>This page requires that you select set of users in your database, with filtering options specific to {{ program.niceName }}.  Choose from three different approaches to select your users:
     <ul>
         <li><b>Basic list</b>: A set of users that all have something in common.</li>
         <li><b>Combination list</b>: A Boolean combination of basic lists.</li>
         {% if include_prev_list %}
-        <li><b>Previous e-mails</b>: Start from the settings that were used for a previous e-mail message.</li>
+        <li><b>Previous emails</b>: Start from the settings that were used for a previous email message.</li>
         {% endif %}
     </ul>
 </p>
 
 {% include "users/usersearch/list_selector.html" %}
+
+{% include "program/modules/admincore/returnlink.html" %}
 
 {% endblock %}
 

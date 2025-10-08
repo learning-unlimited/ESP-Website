@@ -1,11 +1,16 @@
+from __future__ import absolute_import
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.utils.web import render_to_response
 from esp.middleware import ESPError
 from esp.users.models import ESPUser
 from django.contrib.auth.models import Group
 import random
+import six
+from six.moves import map
+from six.moves import range
 
 class BulkCreateAccountModule(ProgramModuleObj):
+    doc = """Create a bulk set of accounts (e.g. for outreach)."""
 
     MAX_PREFIX_LENGTH = 30
     MAX_NUMBER_OF_ACCOUNTS = 1000  # backstop so that an errant request can't fill up the DB with accounts
@@ -16,7 +21,8 @@ class BulkCreateAccountModule(ProgramModuleObj):
             "admin_title": "Bulk Create Accounts",
             "link_title": "Bulk Create Accounts",
             "module_type": "manage",
-            "seq": 10
+            "seq": 10,
+            "choosable": 2,
         }
 
     @main_call
@@ -76,7 +82,26 @@ class BulkCreateAccountModule(ProgramModuleObj):
             return self.bulk_account_error(request, 'You must select either the Student or Teacher group, '
                             + 'in addition to any other groups you want.')
 
-        result = create_users_for_schools(prog, groups, prefix_dict)
+        result = {}
+        # check none of the prefixes have been used before
+        used_prefixes = []
+        for prefix in prefix_dict:
+            if ESPUser.objects.filter(username = prefix + "1").exists():
+                used_prefixes.append(prefix)
+        if len(used_prefixes) > 2:
+            return self.bulk_account_error(request, 'The prefixes ' + ', '.join(used_prefixes[:-1]) + ', and ' + used_prefixes[-1]
+                                                    + ' have been used before. Please choose different prefixes.')
+        if len(used_prefixes) == 2:
+            return self.bulk_account_error(request, 'The prefixes ' + ' and '.join(used_prefixes)
+                                                    + ' have been used before. Please choose different prefixes.')
+        elif len(used_prefixes) == 1:
+            return self.bulk_account_error(request, 'The prefix ' + used_prefixes[0]
+                                                    + ' has been used before. Please choose a different prefix.')
+        # create users
+        for prefix, number in six.iteritems(prefix_dict):
+            pw = prefix + str(random.randrange(1000000))
+            create_users_for_program(prog, prefix + '{}', pw, groups, number)
+            result[prefix] = {'password': pw, 'number': number}
         context = {'passwords': result}
 
         return render_to_response(self.baseDir() + 'bulk_create_response.html', request, context)
@@ -85,36 +110,12 @@ class BulkCreateAccountModule(ProgramModuleObj):
         context = {'bulk_account_error_message': message}
         return render_to_response(self.baseDir() + 'bulk_create_error.html', request, context)
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'
-
-
-def create_users_for_schools(program, groups, schools):
-    """
-    Create a sequentially numbered list of users for some schools, with a randomly generated
-    password for each school.
-
-    :param program:
-       The program for which we should create these users.
-    :param groups:
-       The groups that all of these users should be added to.  IN ADDITION TO ANY OTHER DESIRED
-       GROUPS, YOU MUST ADD EITHER THE "Student" or "Teacher" GROUP (probably the former in most
-       use cases of this script); OTHERWISE, THE PROFILE VIEWER MAY FAIL.
-    :param schools:
-       A dictionary where the key is a string indicating the school and is the prefix
-       for all the usernames; the value is the number of accounts desired for that school.  For
-       example, if there is an item 'xyz' : 20, then the usernames will be xyz1, xyz2, ..., xyz20.
-    :return:
-       A dictionary where the key is a school prefix, and the value is the randomly generated
-       password (which will start with the prefix).
-    """
-    ret = {}
-    for school, number in schools.iteritems():
-        pw = school + str(random.randrange(1000000))
-        create_users_for_program(program, school + '{}', pw, groups, number)
-        ret[school] = pw
-    return ret
 
 
 def create_users_for_program(program, username_format, password_format, groups, number=1):
@@ -157,9 +158,9 @@ def create_users_for_program(program, username_format, password_format, groups, 
     """
     if not isinstance(groups, (list, tuple)):
         groups = [groups]
-    groups = map(get_group, groups)
+    groups = list(map(get_group, groups))
     ret = []
-    for i in xrange(1, number + 1):
+    for i in range(1, number + 1):
         username = username_format.format(i)
         password = password_format.format(i)
         ret.append(create_user_with_profile(username, password, program, groups))
@@ -169,17 +170,17 @@ def create_users_for_program(program, username_format, password_format, groups, 
 def get_group(group):
     if isinstance(group, Group):
         return group
-    elif isinstance(group, basestring):
+    elif isinstance(group, six.string_types):
         try:
             return Group.objects.get(name=group)
         except Group.DoesNotExist:
             return None
     else:
-        raise ESPError('{} is not a Group or Group name'.format(unicode(group)))
+        raise ESPError('{} is not a Group or Group name'.format(six.text_type(group)))
 
 
 def create_user_with_profile(username, password, program, groups):
-    print "creating", username
+    # print "creating", username
     user = ESPUser.objects.create_user(username=username, password=password)
     user.groups.add(*groups)
     return {

@@ -1,5 +1,6 @@
 """ Local system-specific settings. """
 
+from __future__ import absolute_import
 import os
 
 SITE_INFO = (1, 'devsite.learningu.org', 'LU Dev Site')
@@ -29,3 +30,5 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 CLOSURE_COMPILER_PATH = '/usr/lib/closure/bin'
 
 SECRET_KEY = '%(secret_key)s'
+
+ALLOWED_HOSTS = ['localhost']

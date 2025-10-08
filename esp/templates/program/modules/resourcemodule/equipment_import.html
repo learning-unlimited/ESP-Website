@@ -1,0 +1,61 @@
+{% extends "main.html" %}
+
+{% block title %}Manage Resources for {{ prog.niceName }}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}
+
+{% block xtrajs %}
+<script>
+function toggle(source) {
+  $j('input[name=to_import]').prop('checked', source.checked);
+}
+</script>
+{% endblock %}
+
+{% block content %}
+
+<h1>Manage Resources for {{ prog.niceName }}</h1>
+
+<h2>Confirm Floating Resource Import</h2>
+
+{% load render_qsd %}
+{% inline_program_qsd_block program "restype_import_instructions" %}
+<p>
+You have chosen to import the floating resources from {{ past_program.niceName }} to {{ prog.niceName }}.  Please review the table below carefully before clicking "Submit" to complete the import. In particular, check that each floating resource has the appropriate type and available times.  If any of this data is not correct, please GO BACK; add the floating resources manually or contact <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}">technical support</a> for assistance in automating the process.
+</p>
+{% end_inline_program_qsd_block %}
+
+<div id="program_form">
+<form method="post" action="{{ request.path }}">
+<input type="hidden" name="import_confirm" value="yes" />
+<input type="hidden" name="program" value="{{ past_program.id }}" />
+<input type="hidden" name="complete_availability" value="{{ complete_availability }}" />
+<table align="center" cellpadding="0" cellspacing="0" width="550">
+    <tr><th colspan="5">Proposed floating resources for {{ prog.niceName }}</th></tr>
+    <tr><td colspan="5"><table cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+        <td class="underline"><b>Name</b></td>
+        <td class="underline"><b>Type</b></td>
+        <td class="underline"><b>Choice</b></td>
+        <td class="underline"><b>Available Times</b></td>
+        <td class="underline"><b>Import? <input type="checkbox" onclick=toggle(this) checked></b></td>
+    </tr>
+    {% for r in new_equipment %}
+    <tr>
+        <td class="underline">{{ r.name }}</td>
+        <td class="underline">{{ r.res_type.name }}{% if r.res_type.hidden %} (Hidden){% endif %}</td>
+        <td class="underline">{{ r.attribute_value }}</td>
+        <td class="underline">{% for t in r.timeslots %}{{ t }}<br />{% endfor %}</td>
+        <td class="underline"><input type="checkbox" name="to_import" value="{{ r.old_id }}" checked></td>
+    </tr>
+    {% endfor %}
+    </table></td></tr>
+    <tr><td colspan="5" align="center"><input class="fancybutton" type="submit" value="Complete Import" /></td></tr>
+</table>
+</form>
+</div>
+
+{% endblock %}

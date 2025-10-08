@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,46 +34,29 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.qsd.views import qsd
-from django.core.exceptions import PermissionDenied
 from django.contrib.sites.models import Site
-from esp.program.modules.base import LOGIN_URL
-from django.contrib.auth import REDIRECT_FIELD_NAME
 from esp.users.models import ESPUser, Permission
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.utils.datastructures import MultiValueDict
 from django.template import loader
+from django.views.generic.base import TemplateView
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
-from urllib import quote
-
-from Cookie import SimpleCookie
 
 import datetime
 import re
-import json
 
+from esp.dbmail.models import MessageRequest
 from esp.web.models import NavBarCategory
-from esp.utils.web import render_to_response
+from esp.utils.web import render_to_response, esp_context_stuff
 from esp.web.views.navBar import makeNavBar
 from esp.web.views.archives import archive_handlers
 from esp.middleware import ESPError
 from esp.web.forms.contact_form import ContactForm
 from esp.tagdict.models import Tag
 from esp.utils.no_autocookie import disable_csrf_cookie_update
-from esp.utils.query_utils import nest_Q
 
 from django.views.decorators.cache import cache_control
-from django.core.mail import mail_admins
 from django.conf import settings
-
-from django.views.decorators.csrf import csrf_exempt
-
-from pprint import pprint
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 
 @cache_control(max_age=180)
 @disable_csrf_cookie_update
@@ -85,6 +70,13 @@ def program(request, tl, one, two, module, extra = None):
     """ Return program-specific pages """
     from esp.program.models import Program
 
+    if two == "current":
+        try:
+            programs = Program.objects.all()
+            progs = [(program, program.dates()[-1]) for program in programs if program.program_type == one and len(program.dates()) > 0]
+            two = sorted(progs, key=lambda x: x[1], reverse = True)[0][0].program_instance
+        except:
+            raise Http404("No current program of the type '" + one + "'.")
     try:
         prog = Program.by_prog_inst(one, two)
     except Program.DoesNotExist:
@@ -105,6 +97,14 @@ def program(request, tl, one, two, module, extra = None):
 
     raise Http404
 
+@cache_control(max_age=180)
+def public_email(request, email_id):
+    email_req = MessageRequest.objects.filter(id=email_id, public=True)
+    if email_req.count() == 1:
+        return render_to_response('public_email.html', request, {'email_req': email_req[0]})
+    else:
+        raise ESPError('Invalid email id.', log=False)
+
 def archives(request, selection, category = None, options = None):
     """ Return a page with class archives """
 
@@ -121,11 +121,24 @@ def archives(request, selection, category = None, options = None):
 
     return render_to_response('users/construction', request, {})
 
+class DefaultQSDView(TemplateView):
+    def get_context_data(self, **kwargs):
+        return esp_context_stuff()
+
+class FAQView(DefaultQSDView):
+    template_name = "faq.html"
+
+class ContactUsView(DefaultQSDView):
+    template_name = "contact_qsd.html"
+
 def contact(request, section='esp'):
     """
     This view should take an email and post to those people.
     """
-    from django.core.mail import send_mail
+    from esp.dbmail.models import send_mail
+    # if not set up, immediately redirect
+    if not Tag.getBooleanTag('contact_form_enabled'):
+        return HttpResponseRedirect("/contact.html")
 
     if 'success' in request.GET:
         return render_to_response('contact_success.html', request, {})
@@ -137,31 +150,40 @@ def contact(request, section='esp'):
         ok_to_send = True
 
         if form.is_valid():
+            anonymous = form.cleaned_data['anonymous']
 
             to_email = []
+            bcc = []
             usernames = []
-            logged_in_as = request.user.username if hasattr(request, 'user') and request.user.is_authenticated() else "(not authenticated)"
+            logged_in_as = ""
             user_agent_str = request.META.get('HTTP_USER_AGENT', "(not specified)")
 
             email = form.cleaned_data['sender']
-            usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
+            if not anonymous:
+                logged_in_as = request.user.username if hasattr(request, 'user') and request.user.is_authenticated() else "(not authenticated)"
+                usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
 
-            if usernames and not form.cleaned_data['decline_password_recovery']:
-                m = 'password|account|log( ?)in'
-                if re.search(m, form.cleaned_data['message'].lower()) or re.search(m, form.cleaned_data['subject'].lower()):
-                    # Ask if they want a password recovery before sending.
-                    ok_to_send = False
-                    # If they submit again, don't ask a second time.
-                    form.data = MultiValueDict(form.data)
-                    form.data['decline_password_recovery'] = True
+                if usernames and not form.cleaned_data['decline_password_recovery']:
+                    m = 'password|account|log( ?)in'
+                    if re.search(m, form.cleaned_data['message'].lower()) or re.search(m, form.cleaned_data['subject'].lower()):
+                        # Ask if they want a password recovery before sending.
+                        ok_to_send = False
+                        # If they submit again, don't ask a second time.
+                        form.data = MultiValueDict(form.data)
+                        form.data['decline_password_recovery'] = True
 
-            if form.cleaned_data['cc_myself']:
-                to_email.append(email)
+                if len(form.cleaned_data['name'].strip()) > 0:
+                    email = ESPUser.email_sendto_address(email, form.cleaned_data['name'])
+
+                if form.cleaned_data['cc_myself']:
+                    to_email.append(email)
+            else:
+                if form.cleaned_data['cc_myself']:
+                    bcc.append(email)
+
+                email = settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()]
 
             to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
-
-            if len(form.cleaned_data['name'].strip()) > 0:
-                email = '%s <%s>' % (form.cleaned_data['name'], email)
 
             if ok_to_send:
                 t = loader.get_template('email/comment')
@@ -171,13 +193,14 @@ def contact(request, section='esp'):
                     'domain': domain,
                     'usernames': usernames,
                     'logged_in_as': logged_in_as,
-                    'user_agent_str': user_agent_str
+                    'user_agent_str': user_agent_str,
+                    'anonymous': anonymous
                 }
                 msgtext = t.render(Context(context))
 
                 send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
                     msgtext,
-                    email, to_email, fail_silently = True)
+                    email, to_email, fail_silently = True, bcc = bcc)
 
                 return HttpResponseRedirect(request.path + '?success')
 
@@ -208,29 +231,45 @@ def registration_redirect(request):
     # prepare the rendered page so it points them to open student/teacher reg's
     ctxt = {}
     userrole = {}
-    regperm = None
-    if user.isStudent():
-        userrole['name'] = 'Student'
-        userrole['base'] = 'learn'
-        userrole['reg'] = 'studentreg'
-        regperm = 'Student/Classes'
-    elif user.isTeacher():
+
+    if user.isTeacher():
         userrole['name'] = 'Teacher'
         userrole['base'] = 'teach'
         userrole['reg'] = 'teacherreg'
-        regperm = 'Teacher/Classes'
-    ctxt['userrole'] = userrole
-
-    if regperm:
-        progs = list(Permission.program_by_perm(user,regperm))
+        # first check for which programs they can still create a class
+        progs = list(set(Permission.program_by_perm(user, 'Teacher/Classes/Create/Class')) | set(Permission.program_by_perm(user, 'Teacher/Classes/Create/OpenClass')))
+        # then check for which programs they have already registered a class
+        for prog in user.getTaughtPrograms():
+            # only include the program if it hasn't finished yet
+            if prog not in progs and prog.datetime_range()[1] > datetime.datetime.now():
+                progs.append(prog)
+    elif user.isVolunteer():
+        userrole['name'] = 'Volunteer'
+        userrole['base'] = 'volunteer'
+        userrole['reg'] = 'signup'
+        progs = list(Permission.program_by_perm(user, 'Volunteer/Signup'))
+    elif user.isStudent():
+        userrole['name'] = 'Student'
+        userrole['base'] = 'learn'
+        userrole['reg'] = 'studentreg'
+        # first check for which program they can still register for a class
+        user_grade = user.getGrade()
+        progs = list(Permission.program_by_perm(user, 'Student/Classes').filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
+        # then check for which programs they have already registered for a class
+        for prog in user.getLearntPrograms():
+            # only include the program if it hasn't finished yet
+            if prog not in progs and prog.datetime_range()[1] > datetime.datetime.now():
+                progs.append(prog)
     else:
         progs = []
 
+    ctxt['userrole'] = userrole
+
     #   If we have 1 program, automatically redirect to registration for that program.
     #   Most chapters will want this, but it can be disabled by a Tag.
-    if len(progs) == 1 and Tag.getBooleanTag('automatic_registration_redirect', default=True):
+    if len(progs) == 1 and Tag.getBooleanTag('automatic_registration_redirect'):
         ctxt['prog'] = progs[0]
-        return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
+        return HttpResponseRedirect(six.u('/%s/%s/%s') % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
     else:
         if len(progs) > 0:
             #   Sort available programs newest first

@@ -4,8 +4,11 @@ Test cases for Django-ESP utilities
 
 from __future__ import with_statement
 
+from __future__ import absolute_import
 import datetime
 import doctest
+from six.moves import map
+from six.moves import range
 try:
     import pylibmc as memcache
 except:
@@ -69,7 +72,7 @@ class DependenciesTestCase(unittest.TestCase):
     def tryImport(self, mod):
         try:
             foo = __import__(mod)
-        except Exception, e:
+        except Exception as e:
             logger.info("Error importing required module '%s': %s", mod, e)
             self._failed_import = True
 
@@ -86,7 +89,7 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("PIL")  # Needed for Django Image fields, which we use for (among other things) teacher bio's
         self.tryImport("PIL._imaging")  # Internal PIL module; PIL will import without it, but it won't have a lot of the functionality that we need
         self.tryImport("pylibmc")  # We currently depend specifically on the "pylibmc" Python<->memcached interface library.
-        self.tryImport("DNS")  # Used for validating e-mail address hostnames.  Imports as DNS, but the package and egg are named "pydns".
+        self.tryImport("DNS")  # Used for validating email address hostnames.  Imports as DNS, but the package and egg are named "pydns".
         self.tryImport("json")  # Used for some of our AJAX magic
         self.tryImport("psycopg2")  # Used for talking with PostgreSQL.  Someday, we'll support psycopg2, but not today...
         self.tryImport("xlwt")  # Used in our giant statistics spreadsheet-generating code
@@ -134,7 +137,7 @@ class MemcachedTestCase(unittest.TestCase):
         for client in self.clients:
             client.disconnect_all()
 
-        if len(self.servers) > 0 and hasattr(self.servers[0], 'terminate'):  # You can't terminate processes prior to Python 2.6, they (hopefully) get killed off on their own when the test run finishes
+        if len(self.servers) > 0 and hasattr(self.servers[0], 'terminate'):
             for server in self.servers:
                 server.terminate()  # Sends SIGTERM, telling the servers to terminate
             for server in self.servers:
@@ -373,23 +376,24 @@ class QueryBuilderTest(DjangoTestCase):
         self.assertEqual(str(search_filter_1.as_q(['1', None])),
                          str(Q(a_db_field='1') & Q(a="b")))
         with self.assertRaises(ESPError_Log):
-            search_filter_1.as_q(['10000',None])
+            search_filter_1.as_q(['10000', None])
 
 
     def test_select_input(self):
+        options = {str(i): "option %s" % i for i in range(10)}
         select_input = query_builder.SelectInput(
-            "a_db_field", {str(i): "option %s" % i for i in range(10)})
+            "a_db_field", options)
         self.assertEqual(select_input.spec(),
                          {'reactClass': 'SelectInput',
                           'options': [{'name': i,
                                        'title': 'option %s' % i}
-                                      # do set(map(str, range(10))) to get the
+                                      # use options.keys() to get the
                                       # sort order the same as the dict sort
                                       # order.  It doesn't matter in reality,
                                       # but just making it the same is easier
                                       # than writing a thing to compare
                                       # correctly.
-                                      for i in set(map(str,range(10)))]})
+                                      for i in options.keys()]})
         # Q objects don't have an __eq__, so they don't compare as equal.  But
         # comparing their str()s seems to work reasonably well.
         self.assertEqual(str(select_input.as_q('5')), str(Q(a_db_field='5')))

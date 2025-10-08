@@ -1,4 +1,7 @@
+from __future__ import absolute_import
+from __future__ import division
 from django import forms
+from django.utils.safestring import mark_safe
 
 from datetime import timedelta
 
@@ -7,19 +10,29 @@ from esp.cal.models import EventType, Event
 from esp.program.models import Program
 from esp.utils.widgets import DateTimeWidget
 
+
 class TimeslotForm(forms.Form):
-    start = forms.DateTimeField(label='Start Time', help_text='Format: MM/DD/YYYY HH:MM:SS <br />Example: 10/14/2007 14:00:00', widget=DateTimeWidget)
+    start = forms.DateTimeField(label='Start Time', help_text=mark_safe('Format: MM/DD/YYYY HH:MM:SS <br />Example: 10/14/2007 14:00:00'), widget=DateTimeWidget)
     hours = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     minutes = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     description = forms.CharField(widget=forms.TextInput(attrs={'size':'100'}), required = False)
 
-    def save_timeslot(self, program, slot, type):
+    def load_timeslot(self, slot):
+        self.fields['start'].initial = slot.start
+        length = (slot.end - slot.start).seconds
+        self.fields['hours'].initial = int(length // 3600)
+        self.fields['minutes'].initial = int(length // 60 - 60 * self.fields['hours'].initial)
+        self.fields['description'].initial = slot.description
+
+    def save_timeslot(self, program, slot, event_type):
         slot.start = self.cleaned_data['start']
         slot.end = slot.start + timedelta(hours=self.cleaned_data['hours'], minutes=self.cleaned_data['minutes'])
 
-        if type == "training":
+        if isinstance(event_type, EventType):
+            slot.event_type = event_type
+        elif event_type == "training":
             slot.event_type = EventType.get_from_desc('Teacher Training')
-        elif type == "interview":
+        elif event_type == "interview":
             slot.event_type = EventType.get_from_desc('Teacher Interview')
         else:
             slot.event_type = EventType.get_from_desc("Class Time Block") # default event type

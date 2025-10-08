@@ -1,22 +1,25 @@
 #!/usr/bin/env python
 
-# Main mailgate for ESP.
+# Main mailgate
 # Handles incoming messages etc.
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys, os, email, re, smtplib, socket, sha, random
+from io import open
 new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
 sys.path.insert(0, "/usr/sbin/")
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
 import logging
-# Make sure we end up in our logger even though this file is outside esp
+# Make sure we end up in our logger even though this file is outside esp/esp/
 logger = logging.getLogger('esp.mailgate')
 
 import os.path
 project = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
-# Path for ESP code
+# Path for site code
 sys.path.insert(0, project)
 
 # Check if a virtualenv has been installed and activated from elsewhere.
@@ -26,7 +29,7 @@ sys.path.insert(0, project)
 if os.environ.get('VIRTUAL_ENV') is None:
     root = os.path.dirname(project)
     activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
-    execfile(activate_this, dict(__file__=activate_this))
+    exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'), dict(__file__=activate_this))
 
 import django
 django.setup()
@@ -39,11 +42,10 @@ MAIL_PATH = '/usr/sbin/sendmail'
 server = smtplib.SMTP('localhost')
 ARCHIVE = settings.DEFAULT_EMAIL_ADDRESSES['archive']
 SUPPORT = settings.DEFAULT_EMAIL_ADDRESSES['support']
+ORGANIZATION_NAME = settings.INSTITUTION_NAME + '_' + settings.ORGANIZATION_SHORT_NAME
 
-DEBUG=True
+#DEBUG=True
 DEBUG=False
-
-#os.environ['LOCAL_PART'] = 'axiak'
 
 user = "UNKNOWN USER"
 
@@ -77,11 +79,8 @@ try:
         if hasattr(instance, "direct_send") and instance.direct_send:
             if message['Bcc']:
                 bcc_recipients = [x.strip() for x in message['Bcc'].split(',')]
-                bcc_recipients += [ARCHIVE]
                 del(message['Bcc'])
                 message['Bcc'] = ", ".join(bcc_recipients)
-            else:
-                message['Bcc'] = ARCHIVE
 
             send_mail(str(message))
             continue
@@ -89,13 +88,15 @@ try:
         del(message['to'])
         del(message['cc'])
         message['X-ESP-SENDER'] = 'version 2'
-        message['Bcc'] = ARCHIVE
+        message['X-FORWARDED-FOR'] = message['X-CLIENT-IP'] if message['X-Client-IP'] else message['Client-IP']
 
+        subject = message['subject']
+        del(message['subject'])
+        if hasattr(instance, 'emailcode') and instance.emailcode:
+            subject = '[%s] %s' % (instance.emailcode, subject)
         if handler.subject_prefix:
-            subject = message['subject']
-            del(message['subject'])
-            message['Subject'] = '%s%s' % (handler.subject_prefix,
-                                           subject)
+            subject = '[%s] %s' % (handler.subject_prefix, subject)
+        message['Subject'] = subject
 
         if handler.from_email:
             del(message['from'])
@@ -130,16 +131,13 @@ except Exception as e:
         raise
     else:
         logger.warning("Couldn't find user '%s'", user)
-        print """
-ESP MAIL SERVER
+        print("""
+%s MAIL SERVER
 ===============
 
 Could not find user "%s"
 
 If you are experiencing difficulty, please email %s.
 
--Educational Studies Program
-
-
-""" % (user, SUPPORT)
+""" % (ORGANIZATION_NAME, user, SUPPORT))
         sys.exit(1)

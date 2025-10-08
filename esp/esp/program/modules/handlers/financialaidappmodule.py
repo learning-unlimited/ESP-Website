@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,31 +33,31 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call
+from esp.accounting.controllers import ProgramAccountingController
 from esp.utils.web import render_to_response, secure_required
 from esp.middleware      import ESPError
-from esp.users.models    import ESPUser, User
+from esp.users.models    import ESPUser
 from django.db.models.query       import Q
-from django.template.loader import get_template
 from django.utils.decorators import method_decorator
 from esp.program.models  import FinancialAidRequest
-from esp.accounting.controllers import IndividualAccountingController
 from esp.tagdict.models import Tag
 from django.conf import settings
 from esp.middleware.threadlocalrequest import get_current_request
 from django              import forms
 
 
-# student class picker module
 class FinancialAidAppModule(ProgramModuleObj):
+    doc = """Serve a financial aid application to students."""
+
     @classmethod
     def module_properties(cls):
         return {
             "admin_title": "Financial Aid Application",
             "link_title": "Financial Aid Application",
             "module_type": "learn",
-            "seq": 25
+            "seq": 25,
+            "choosable": 0,
             }
 
     def students(self, QObject = False):
@@ -81,15 +82,19 @@ class FinancialAidAppModule(ProgramModuleObj):
                 'studentfinaid_approved': """Students who have been granted financial aid"""}
 
     def isCompleted(self):
-        return get_current_request().user.appliedFinancialAid(self.program)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return user.appliedFinancialAid(self.program)
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/Finaid')
     @method_decorator(secure_required)
     # I didn't set @meets_cap here, because I don't want a bug in that to be
     # misinterpreted as "we are out of financial aid".
-    def finaid(self,request, tl, one, two, module, extra, prog):
+    def finaid(self, request, tl, one, two, module, extra, prog):
         """
         A way for a student to apply for financial aid.
         """
@@ -104,7 +109,7 @@ class FinancialAidAppModule(ProgramModuleObj):
                 model = FinancialAidRequest
                 tag_data = Tag.getTag('finaid_form_fields')
                 if tag_data:
-                    fields = tuple(tag_data.split(','))
+                    fields = tuple(field.strip() for field in tag_data.split(',') if hasattr(FinancialAidRequest(), field.strip()))
                 else:
                     fields = '__all__'
 
@@ -122,17 +127,10 @@ class FinancialAidAppModule(ProgramModuleObj):
 
                 app.save()
 
-                # Automatically accept apps for people with subsidized lunches
-                # Send an e-mail announcing the application either way
+                # Send an email announcing the application
                 date_str = str(datetime.now())
-                iac = IndividualAccountingController(self.program, request.user)
-                if app.reduced_lunch:
-                    iac.grant_full_financial_aid()
-                    subj_str = '%s %s received Financial Aid for %s' % (request.user.first_name, request.user.last_name, prog.niceName())
-                    msg_str = "\n%s %s received Financial Aid for %s on %s, for stating that they receive a free or reduced-price lunch."
-                else:
-                    subj_str = '%s %s applied for Financial Aid for %s' % (request.user.first_name, request.user.last_name, prog.niceName())
-                    msg_str = "\n%s %s applied for Financial Aid for %s on %s, but did not state that they receive a free or reduced-price lunch."
+                subj_str = '%s %s applied for Financial Aid for %s' % (request.user.first_name, request.user.last_name, prog.niceName())
+                msg_str = "\n%s %s applied for Financial Aid for %s on %s."
                 send_mail(subj_str, (msg_str +
                 """
 
@@ -171,7 +169,9 @@ This request can be (re)viewed at:
     str(app.id)),
                             settings.SERVER_EMAIL,
                             [ prog.getDirectorConfidentialEmail() ] )
-
+                # Automatically accept apps for people with subsidized lunches
+                if app.reduced_lunch:
+                    app.approve()
                 return self.goToCore(tl)
 
         else:
@@ -181,6 +181,10 @@ This request can be (re)viewed at:
                                   request,
                                   {'form': form, 'app': app})
 
+    def isStep(self):
+        # Only show this module if there are things (with costs) for financial aid to cover
+        pac = ProgramAccountingController(self.program)
+        return pac.get_lineitemtypes().filter(for_finaid=True, amount_dec__gt=0).exists()
 
     class Meta:
         proxy = True

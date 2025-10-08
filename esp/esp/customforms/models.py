@@ -1,6 +1,10 @@
 from __future__ import with_statement
 
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 import logging
+import six
 logger = logging.getLogger(__name__)
 
 from django.db import models, transaction, connection
@@ -8,6 +12,7 @@ from django.db.utils import DatabaseError
 from esp.users.models import ESPUser
 from esp.program.models import Program
 
+@python_2_unicode_compatible
 class Form(models.Model):
     title = models.CharField(max_length=40, blank=True)
     description = models.TextField(blank=True)
@@ -20,25 +25,28 @@ class Form(models.Model):
     success_message = models.CharField(max_length=500, blank=True)
     success_url = models.CharField(max_length=200, blank=True)
 
-    def __unicode__(self):
-        return u'%s (created by %s)' % (self.title, self.created_by.username)
+    def __str__(self):
+        return '%s (created by %s)' % (self.title, self.created_by.username)
 
+@python_2_unicode_compatible
 class Page(models.Model):
     form = models.ForeignKey(Form)
     seq = models.IntegerField(default=-1)
 
-    def __unicode__(self):
-        return u'Page %d of %s' % (self.seq, self.form.title)
+    def __str__(self):
+        return 'Page %d of %s' % (self.seq, self.form.title)
 
+@python_2_unicode_compatible
 class Section(models.Model):
     page = models.ForeignKey(Page)
     title = models.CharField(max_length=40)
     description = models.CharField(max_length=140, blank=True)
     seq = models.IntegerField()
 
-    def __unicode__(self):
-        return u'Sec. %d: %s' % (self.seq, unicode(self.title))
+    def __str__(self):
+        return 'Sec. %d: %s' % (self.seq, six.text_type(self.title))
 
+@python_2_unicode_compatible
 class Field(models.Model):
     form = models.ForeignKey(Form)
     section = models.ForeignKey(Section)
@@ -48,8 +56,8 @@ class Field(models.Model):
     help_text = models.TextField(blank=True)
     required = models.BooleanField(default=False)
 
-    def __unicode__(self):
-        return u'%s' % (self.label)
+    def __str__(self):
+        return '%s' % (self.label)
 
     def set_attribute(self, atype, value):
         from esp.customforms.models import Attribute
@@ -60,6 +68,10 @@ class Field(models.Model):
         else:
             attr = Attribute.objects.create(field=self, attr_type=atype, value=value)
         return attr
+
+    def clean_attributes(self, keep):
+        from esp.customforms.models import Attribute
+        Attribute.objects.filter(field=self).exclude(attr_type__in=keep).delete()
 
 class Attribute(models.Model):
     field = models.ForeignKey(Field)

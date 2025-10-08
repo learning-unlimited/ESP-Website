@@ -1,0 +1,84 @@
+.nocheckmark {
+    border: 1px solid black;
+}
+
+select {
+    width: auto;
+}
+
+table {
+    width: 100%;
+}
+
+#class_list_options, #teacher_list_options {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border: 2px grey dashed;
+}
+
+#class_list_options, #class_lists {
+    display: flex;
+    align-content: center;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+    
+    div {
+        flex: 1 1 0;
+        text-align: center;
+        font-weight: bold;
+    }
+    .grade_grid {
+        display: grid;
+        grid-template-columns: auto auto;
+        grid-template-rows: auto auto;
+        grid-auto-flow: column;
+        justify-items: center;
+        justify-content: center;
+        column-gap: 10px;
+    }
+    button {
+        width: calc(100% - 20px);
+        min-width: 200px;
+        margin: 10px;
+        padding: 6px;
+        text-align: center;
+        float: left;
+        height: 75px;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+}
+
+#student_schedule_wrapper, #other_schedule_wrapper, #line_item_list_wrapper, #teacher_list_wrapper, #teacher_list_options {
+    display: flex;
+    align-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    
+    div {
+        flex: 1 1 0;
+        text-align: center;
+        font-weight: bold;
+    }
+}
+
+#teacher_list_wrapper #teacher_list_options {
+    flex-grow: 3;
+    min-width: 250px;
+}
+
+#student_schedule_wrapper, #other_schedule_wrapper, #line_item_list_wrapper, #teacher_list_wrapper {
+    column-gap: 20px;
+}
+
+#student_schedule_wrapper, #other_schedule_wrapper, #line_item_list, #teacher_list {
+    .module_link_large {
+        width: 100%;
+        margin-left: 0px;
+        margin-right: 0px;
+    }
+}
+
+

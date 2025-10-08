@@ -1,6 +1,5 @@
 //  Global variables for storing the class and section data
 var classes_global = {};
-var sections_global = {};
 
 function deleteClass() {
     if (confirm('Are you sure you would like to delete this class? \n Since you are an admin, you can delete this class with students. \n Deleting is hard to undo, so consider instead marking it unreviewed or rejected.')) {
@@ -16,19 +15,8 @@ function assignRoom(clsid){
 var handleSubmit = function () { this.submit(); }
 var handleCancel = function () { this.cancel(); }
 
-function show_loading_class_popup() {
-  class_desc_popup
-    .dialog('option', 'title', 'Loading')
-    .dialog('option', 'width', 400)
-    .dialog('option', 'height', 200)
-    .dialog('option', 'position', 'center')
-    .dialog('option', 'buttons', [])
-    .html('Loading class info...')
-    .dialog('open');
-}
-
 function show_saving_popup() {
-  class_desc_popup
+  saving_popup
     .dialog('option', 'title', 'Saving')
     .html('Saving the class status...')
     .dialog('option', 'buttons', [])
@@ -52,102 +40,187 @@ function getStatusDetails(statusCode) {
 }
 
 function make_attrib_para(field, content) {
-    return $j("<p></p>")
+    return $j("<div/>")
         .append("<b>"+field+":</b>")
         .append($j("<div/>").text(content));
 }
 
 function getShortTitle(clsObj) {
     var shortTitle = clsObj.title;
-    if (shortTitle.length > 40) {
-        shortTitle = shortTitle.substring(0, 40);
+    if (shortTitle.length > 60) {
+        shortTitle = shortTitle.substring(0, 60);
         shortTitle = shortTitle.concat("...");
     }
     return shortTitle;
 }
 
-function fill_class_popup(clsid, classes_data) {
+function fill_status_row(clsid, classes_data) {
   var class_info = classes_data.classes[clsid];
-  var status_details = getStatusDetails(class_info.status);
+  // Get the status from our local data in case we've changed it
+  var status_details = getStatusDetails(classes_global[clsid].status);
   var status_string = status_details['text'];
 
-  var sections_list = $j('<ul>')
+  var sections_table = $j('<table>').css("width", "100%")
+  sections_table.append(
+    $j("<tr/>").append(
+        $j("<th/>"),
+        $j("<th class='smaller'>Time</th>"),
+        $j("<th class='smaller'>Room</th>"),
+        $j("<th class='smaller'>Priority</th>"),
+        $j("<th class='smaller'>Interested</th>"),
+        $j("<th class='smaller'>Enrolled</th>")
+    )
+  );
   for (var i = 0; i < class_info.sections.length; i++)
   {
     var sec = class_info.sections[i];
-    if (sec.time.length > 0)
-        sections_list.append($j('<li>').html(sec.time + " in " + sec.room + ": " + sec.num_students_priority + " priority, " + sec.num_students_interested + " interested, " + sec.num_students_enrolled + " enrolled"));
-    else
-        sections_list.append($j('<li>').html('Section ' + (i + 1) + ': not scheduled'));
+    var sec_row = $j("<tr/>")
+    sec_row.append($j("<td>" + (i + 1) + "</td>"))
+    if (sec.time.length > 0) {
+        sec_row.append($j("<td>" + sec.time + "</td>"))
+        sec_row.append($j("<td>" + sec.room + "</td>"))
+    }
+    else {
+        sec_row.append($j("<td colspan='2'>not scheduled</td>"))
+    }
+    sec_row.append($j("<td>" + sec.num_students_priority + "</td>"))
+    sec_row.append($j("<td>" + sec.num_students_interested + "</td>"))
+    sec_row.append($j("<td>" + sec.num_students_enrolled + "</td>"))
+    sections_table.append(sec_row)
   }
+  
+  if (class_info.is_scheduled) {
+    var buttons = [
+    {
+      text: "Approve (all sections)",
+      cls: ["btn", "btn-success"],
+      click: function() {
+        update_class(clsid, 10);
+      }
+    },
+    {
+      text: "Unreview",
+      cls: ["btn", "btn-inverse"],
+      click: function() {
+        update_class(clsid, 0);
+      }
+    },
+    {
+      text: "Cancel on class management page",
+      cls: ["btn", "btn-warning"],
+      click: function() {
+        window.open("/manage/"+base_url+"/manageclass/"+clsid);
+      }
+    }]
+  } else {
+    var buttons = [
+    {
+      text: "Approve (all sections)",
+      cls: ["btn", "btn-success"],
+      click: function() {
+        update_class(clsid, 10);
+      }
+    },
+    {
+      text: "Unreview",
+      cls: ["btn", "btn-inverse"],
+      click: function() {
+        update_class(clsid, 0);
+      }
+    },
+    {
+      text: "Reject (all sections)",
+      cls: ["btn", "btn-warning"],
+      click: function() {
+        update_class(clsid, -10);
+      }
+    }]
+  }
+  var button_els = buttons.map((item) => $j("<button/>").text(item.text).addClass(item.cls).on("click", item.click))
+  
+  var vitals_div = $j("<div/>")
+    .css("justify-content", "space-around")
+    .append(make_attrib_para("Max Size", class_info.class_size_max).css("text-align", "center"))
+    .append(make_attrib_para("Duration", class_info.duration).css("text-align", "center"))
+    .append(make_attrib_para("Grade Range", class_info.grade_range).css("text-align", "center"))
+    .append(make_attrib_para("Category", class_info.category).css("text-align", "center"));
+  if (class_info.class_style) vitals_div.append(make_attrib_para("Style", class_info.class_style).css("text-align", "center"));
+  if (class_info.difficulty) vitals_div.append(make_attrib_para("Difficulty", class_info.difficulty).css("text-align", "center"));
+  if (class_info.prereqs) vitals_div.append(make_attrib_para("Prereqs", class_info.prereqs).css("text-align", "center"));
 
-  class_desc_popup
-    .dialog('option', 'title', class_info.emailcode + ": " +class_info.title)
-    .dialog('option', 'width', 600)
-    .dialog('option', 'height', 400)
-    .dialog('option', 'position', 'center')
-    .dialog('option', 'buttons', [
-      {
-        text: "Approve (all sections)",
-        click: function() {
-          update_class($j(this).attr('clsid'), 10);
-        }
-      },
-      {
-        text: "Unreview",
-        click: function() {
-          update_class($j(this).attr('clsid'), 0);
-        }
-      },
-      {
-        text: "Reject (all sections)",
-        click: function() {
-          update_class($j(this).attr('clsid'), -10);
-        }
-      }])
+  sections_table
+    .css("min-width", "max(200px, 40%)")
+    .css("flex", "1 1 0px");
+  var desc_div = make_attrib_para("Description", class_info.class_info)
+    .css("min-width", "max(200px, 40%)")
+    .css("flex", "1 1 0px");
+
+  var status_wrapper = $j("#status_wrapper");
+  status_wrapper
     .html('')
-    .append(make_attrib_para("Status", status_string))
-    .append(make_attrib_para("Teachers", class_info.teacher_names))
-    .append(make_attrib_para("Sections", class_info.sections.length))
-    .append(sections_list)
-    .append(make_attrib_para("Max Size", class_info.class_size_max))
-    .append(make_attrib_para("Duration", class_info.duration))
-    .append(make_attrib_para("Location", class_info.location))
-    .append(make_attrib_para("Grade Range", class_info.grade_range))
-    .append(make_attrib_para("Category", class_info.category))
-    .append(make_attrib_para("Style", class_info.class_style))
-    //.append("<p>Difficulty: " + class_info.difficulty))
-    .append(make_attrib_para("Prereqs", class_info.prereqs))
-    // Ensure the class description gets HTML-escaped
-    .append(make_attrib_para("Description", class_info.class_info))
-    .append(make_attrib_para("Requests", class_info.special_requests))
-    .append(make_attrib_para("Planned Purchases", class_info.purchases))
-    .append(make_attrib_para("Comments", class_info.comments))
-    .attr('clsid', clsid);
+    .attr('clsid', clsid)
+    .append(vitals_div)
+    .append(
+      $j("<div/>")
+        .css("padding-top", "10px")
+        .css("padding-left", "10px")
+        .css("padding-right", "10px")
+        .append(desc_div)
+        .append(sections_table)
+    );
+  
+  if (class_info.special_requests || class_info.purchases || class_info.comments) {
+      var comments_div = $j("<div/>").css("padding-top", "10px").css("justify-content", "space-around");
+      if (class_info.special_requests) comments_div.append(make_attrib_para("Requests", class_info.special_requests));
+      if (class_info.purchases) comments_div.append(make_attrib_para("Planned Purchases", class_info.purchases));
+      if (class_info.comments) comments_div.append(make_attrib_para("Comments", class_info.comments));
+      status_wrapper.append(comments_div);
+  }
+  status_wrapper.append(
+    $j("<div/>")
+      .css("padding-top", "10px")
+      .css("justify-content", "center")
+      .append(button_els));
 }
 
-function show_approve_class_popup(clsid) {
+function show_status_row(clsid) {
+  var status_row = $j("#status_row");
+  if (status_row.length > 0) {
+      var status_id = status_row.data("cls");
+      status_row.remove();
+      if (status_id == clsid) {
+          return false;
+      }
+  }
+  var $target = $j("#" + clsid);
   // Show an intermediate screen while we load class data
-  show_loading_class_popup();
-
-  // Load the class data and fill the popup using it
-    json_get('class_admin_info', {'class_id': clsid},
+  $target.after(createClassStatusRow(clsid));
+  
+  // Load the class data and fill the new row using it
+  json_get('class_admin_info', {'class_id': clsid},
     function(data) {
-	fill_class_popup(clsid, data);
+      fill_status_row(clsid, data);
     },
     function(jqXHR, status, errorThrown) {
       if (errorThrown == "NOT FOUND") {
-        class_desc_popup.dialog('option', 'title', 'Error');
-        class_desc_popup.html("Error: JSON view not found.<br/>Possible fix: Enable the JSON Data Module.");
-        class_desc_popup.dialog('option', 'buttons', [{
-          text: "Ok",
-          click: function() {
-            $j(this).dialog("close");
-          }
-        }]);
+        $j("#status_wrapper")
+          .html("Error: JSON view not found. Possible fix: Enable the JSON Data Module.");
       }
-    });
+    }
+  );
+}
 
+function createClassStatusRow(clsid) {
+    var tr = $j(document.createElement('tr'));
+    tr.data("cls", clsid);
+    tr.attr("id", "status_row");
+    var td = $j(document.createElement('td'));
+    td.attr("colspan", has_moderator_module === "True" ? 6 : 5);
+    td.append($j("<div/>").attr("id", "status_wrapper").html('Loading class info...'));
+    tr.append(td);
+
+    // Return the jQuery node
+    return tr;
 }
 
 // status should be the status integer
@@ -168,30 +241,30 @@ function update_class(clsid, statusId) {
       csrfmiddlewaretoken: csrf_token()
     },
     complete: function() {
-      class_desc_popup.dialog("close");
+      // Update our local data
+      classes_global[clsid].status = statusId;
+
+      // Set the appropriate styling and tag text
+      var el = $j("#" + clsid).find("td.classname > span");
+      el.removeClass("unapproved").removeClass("approved").removeClass("dashboard_blue").removeClass("dashboard_red");
+
+      for(var i = 0; i < status_details['classes'].length; ++i)
+      {
+        el.addClass(status_details['classes'][i]);
+      }
+
+      el.find("strong").text('[' + status_details['text'] + ']');
+      
+      // Close the dialog box
+      saving_popup.dialog("close");
     }
   });
-
-  // Update our local data
-  classes[clsid].status = statusId;
-
-  // Set the appropriate styling and tag text
-  var el = $j("#clsid-"+clsid+"-row").find("td > span > span");
-  el.removeClass("unapproved").removeClass("approved").removeClass("dashboard_blue").removeClass("dashboard_red");
-
-  for(var i = 0; i < status_details['classes'].length; ++i)
-  {
-    el.addClass(status_details['classes'][i]);
-  }
-
-  el.find("strong").text('[' + status_details['text'] + ']');
 }
 
 function fillClasses(data)
 {
     // First pull out the data
-    sections = data.sections;
-    classes = data.classes;
+    var classes = data.classes;
 
     // Clear the current classes list (most likely just "Loading...")
     $j("#classes_anchor").html('');
@@ -204,24 +277,43 @@ function fillClasses(data)
 
     //  Save the data for later if we need it
     classes_global = classes;
-    sections_global = sections;
+}
+
+function createClassIdTd(clsObj) {
+    return $j('<td/>', {
+      'class': 'clsleft classname',
+      'style': 'text-align: center;',
+      'title': clsObj.emailcode,
+    }).append(
+        $j('<strong/>').text(clsObj.emailcode)
+    ).attr("data-st-key", clsObj.id);
 }
 
 function createClassTitleTd(clsObj) {
     var status_details = getStatusDetails(clsObj.status);
     var title_css_class = status_details.classes.join(" ");
+    return $j('<td/>', {
+      'class': 'clsleft classname',
+      'style': 'word-wrap: break-word; max-width: 35%;',
+      'title': clsObj.title,
+    }).append(
+        $j('<span/>', {'class': title_css_class})
+            .text(clsObj.title)
+    ).attr("data-st-key", clsObj.title);
+}
+
+function createClassStatusTd(clsObj) {
+    var status_details = getStatusDetails(clsObj.status);
+    var title_css_class = status_details.classes.join(" ");
     var clsStatus = status_details.text;
     var statusStrong = $j('<strong/>').text('[' + clsStatus + ']');
     return $j('<td/>', {
-      'class': 'clsleft classname',
-      'title': clsObj.title,
+      'class': 'clsleft classname no_mobile',
+      'title': clsStatus,
     }).append(
-        $j('<strong/>').text(clsObj.emailcode + '.'),
-        ' ',
         $j('<span/>', {'class': title_css_class})
-            .text(getShortTitle(clsObj) + ' ')
             .append(statusStrong)
-    );
+    ).attr("data-st-key", clsObj.clsStatus);
 }
 
 function createTeacherListTd(clsObj) {
@@ -235,23 +327,41 @@ function createTeacherListTd(clsObj) {
             td.append(', ');
         }
         var teacher = json_data.teachers[val];
-        var href = '/manage/userview?username=' + teacher.username;
+        var href = '/manage/userview?username=' + teacher.username + '&program=' + program_id;
         td.append($j('<a/>', {href: href}).text(
             teacher.first_name + ' ' + teacher.last_name));
     });
     return td;
 }
 
+function createModeratorListTd(clsObj) {
+    var td = $j('<td/>', {
+        'class': 'clsleft classname',
+        'style': 'font-style: italic',
+        'title': moderator_title + ' names',
+    });
+    $j.each(clsObj.moderators, function(index, val) {
+        if (index) {
+            td.append(', ');
+        }
+        var moderator = json_data.moderators[val];
+        var href = '/manage/userview?username=' + moderator.username + '&program=' + program_id;
+        td.append($j('<a/>', {href: href}).text(
+            moderator.first_name + ' ' + moderator.last_name));
+    });
+    return td;
+}
+
 function createDeleteButtonTd(clsObj) {
     var action = '/manage/' + base_url + '/deleteclass/' + clsObj.id;
-    return $j("<td/>", {'class': 'clsmiddle'}).append(
+    return $j("<div/>", {'class': 'clsmiddle'}).append(
         $j("<form/>", {
             'method': 'post',
             'action': action,
             'onsubmit': 'return deleteClass();',
         }).append(
             $j("<input/>", {
-                'class': 'button',
+                'class': 'btn btn-inverse',
                 'type': 'submit',
                 'value': 'Delete',
             })
@@ -261,45 +371,56 @@ function createDeleteButtonTd(clsObj) {
 
 function createLinkButtonTd(clsObj, type, verb) {
     var href = '/manage/' + base_url + '/' + type + '/' + clsObj.id;
-    return $j("<td/>", {'class': 'clsmiddle'}).append(
+    return $j("<div/>", {'class': 'clsmiddle'}).append(
         $j("<a/>", {
             'href': href,
             'title': verb + ' ' + getShortTitle(clsObj),
-            'class': 'abutton',
+            'class': 'btn',
             'style': 'white-space: nowrap;',
         }).text(verb)
     );
 }
 function createStatusButtonTd(clsObj) {
-    var clickjs = ('show_approve_class_popup('
-            + clsObj.id + '); return false;');
+    var clickjs = ('show_status_row(' + clsObj.id + '); return false;');
 
-    return $j("<td/>", {
-        'class': 'clsmiddle rapid_approval_button'
-    }).append(
+    return $j("<div/>", {'class': 'clsmiddle'}).append(
         $j("<a/>", {
             'href': '#',
             'title': 'Set the status of ' + getShortTitle(clsObj),
-            'class': 'abutton',
+            'class': 'btn',
             'style': 'white-space: nowrap;',
             'onclick': clickjs,
         }).text('Status')
     );
 }
 
-function createClassRow(clsObj)
+function createButtonTd(clsObj)
 {
-    var tr = $j(document.createElement('tr'));
-    tr.append(
-        createClassTitleTd(clsObj),
-        createTeacherListTd(clsObj),
+    return $j("<td/>", {'class': 'button_td'}).append(
         createDeleteButtonTd(clsObj),
         createLinkButtonTd(clsObj, 'editclass', 'Edit'),
         createLinkButtonTd(clsObj, 'manageclass', 'Manage'),
-        createStatusButtonTd(clsObj));
+        createStatusButtonTd(clsObj)
+    );
+}
+
+function createClassRow(clsObj)
+{
+    var tr = $j(document.createElement('tr'));
+    tr.attr("id", clsObj.id);
+    tr.append(
+        createClassIdTd(clsObj),
+        createClassTitleTd(clsObj),
+        createClassStatusTd(clsObj),
+        createTeacherListTd(clsObj),
+    );
+    if (has_moderator_module === "True") {
+        tr.append(createModeratorListTd(clsObj));
+    }
+    tr.append(createButtonTd(clsObj));
 
     // Add in the CSRF onsubmit checker
-    tr.find("form[method=post]").submit(function() { return check_csrf_cookie(this); });
+    tr.find("form[method=post]").on("submit", function() { return check_csrf_cookie(this); });
 
     // Return the jQuery node
     return tr;
@@ -311,22 +432,18 @@ function handle_sort_control()
     var method = $j("#dashboard_sort_control").prop("value");
     //  Update the sorttable_customkey of the first td in each row
     $j("#classes_anchor > tr").each(function (index) {
-        var clsid = parseInt($j(this).prop("id").split("-")[1])
-        if (!classes_global.hasOwnProperty(clsid))
+        var clsid = parseInt($j(this).attr("id"))
+        if (!classes_global.hasOwnProperty(clsid)) {
+            console.log("No class found with ID: " + clsid);
             return;
+        }
         var cls = classes_global[clsid];
         if (method == "id")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.id);
+            $j(this).children("td").first().attr("data-st-key", cls.id);
         else if (method == "category")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.emailcode);
-        else if (method == "name")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.title);
-        else if (method == "status")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.status);
+            $j(this).children("td").first().attr("data-st-key", cls.emailcode);
         else if (method == "size")
-            $j(this).children("td").first().attr("sorttable_customkey", cls.class_size_max);
-        else if (method == "special")
-            $j(this).children("td").first().attr("sorttable_customkey", (cls.message_for_directors || "").length + (cls.requested_special_resources || "").length);
+            $j(this).children("td").first().attr("data-st-key", cls.class_size_max);
     });
     
     $j("#header-row > th").first().removeClass("sorttable_sorted sorttable_sorted_reverse");
@@ -337,6 +454,9 @@ function handle_sort_control()
 
 function setup_sort_control()
 {
-    $j("#dashboard_sort_control").change(handle_sort_control);
+    $j("#dashboard_sort_control").on("change", handle_sort_control);
     handle_sort_control();
+    
+    // whenever table is sorted, remove any status row(s)
+    $j('#dashboard_class_table')[0].addEventListener('sorttable.sorted', (e) => $j("#status_row").remove());
 }

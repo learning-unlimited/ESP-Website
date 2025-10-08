@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+
+<head></head>
+
+<body>
+{% autoescape off %}{{msgbody|safe}}{% endautoescape %}
+<br /><br />
+<small>You received this email because you have signed up for an account on our website, <a href="https://{% templatetag openvariable %}EMAIL_HOST_SENDER{% templatetag closevariable %}">
+{% templatetag openvariable %}EMAIL_HOST_SENDER{% templatetag closevariable %}</a>. This email was sent to the address associated with the user `{% templatetag openvariable %}user.username{% templatetag closevariable %}`. If you received the same email message multiple times, you may have duplicate accounts; please reply to this email and request to merge them. If you no longer wish for {% templatetag openvariable %}user.username{% templatetag closevariable %} to receive emails from us, <a href="{% templatetag openvariable %}user.unsubscribe_link{% templatetag closevariable %}">click here</a>. This action will unsubscribe you from receiving emails to {% templatetag openvariable %}user.username{% templatetag closevariable %}. You will still receive messages to this email address if it is listed in the contact information for other accounts on our site.
+</small>
+</body>
+
+</html>

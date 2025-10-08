@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import datetime
 
 from django import forms
@@ -15,7 +16,10 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
-from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission, Record
+from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission, Record, RecordType
+import six
+from six.moves import map
+from six.moves import filter
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -39,7 +43,8 @@ class ESPUserTest(TestCase):
             def cycle_key(self):
                 pass
             def flush(self):
-                for i in self.keys():
+                keys = list(self.keys())
+                for i in keys:
                     del self[i]
 
         # Make up a fake request object
@@ -152,13 +157,17 @@ class PasswordRecoveryTicketTest(TestCase):
 
 class TeacherInfo__validationtest(TestCase):
     def setUp(self):
+        Tag.setTag('teacher_shirt_sizes', value='XS, S, M, L, XL, XXL')
+        Tag.setTag('student_shirt_sizes', value='XS, S, M, L, XL, XXL')
+        Tag.setTag('volunteer_shirt_sizes', value='XS, S, M, L, XL, XXL')
+        Tag.setTag('shirt_types', value='Straight cut, Fitted cut')
         self.user, created = ESPUser.objects.get_or_create(username='teacherinfo_teacher')
         self.user.profile = self.user.getLastProfile()
         self.info_data = {
             'graduation_year': '2000',
             'major': 'Underwater Basket Weaving',
             'shirt_size': 'XXL',
-            'shirt_type': 'M'
+            'shirt_type': 'Straight cut'
         }
 
     def useData(self, data):
@@ -230,12 +239,12 @@ class ValidHostEmailFieldTest(TestCase):
         # Hardcoding 'esp.mit.edu' here might be a bad idea
         # But at least it verifies that A records work in place of MX
         for domain in [ 'esp.mit.edu', 'gmail.com', 'yahoo.com' ]:
-            self.assertTrue( ValidHostEmailField().clean( u'fakeaddress@%s' % domain ) == u'fakeaddress@%s' % domain )
+            self.assertTrue( ValidHostEmailField().clean( six.u('fakeaddress@%s') % domain ) == six.u('fakeaddress@%s') % domain )
     def testFakeDomain(self):
         # If we have an internet connection, bad domains raise ValidationError.
         # This should be the *only* kind of error we ever raise!
         try:
-            ValidHostEmailField().clean( u'fakeaddress@idontex.ist' )
+            ValidHostEmailField().clean( six.u('fakeaddress@idontex.ist') )
         except forms.ValidationError:
             pass
 
@@ -305,12 +314,9 @@ class AjaxExistenceChecker(TestCase):
         if (not hasattr(self, 'path')) or (not hasattr(self, 'keys')):
             return
 
-        import json
         response = self.client.get(self.path)
-        self.assertEqual(response.status_code, 200)
-        content = json.loads(response.content)
         for key in self.keys:
-            self.assertTrue(key in content, "Key %s missing from Ajax response to %s" % (key, self.path))
+            self.assertContains(response, key, msg_prefix="Key %s missing from Ajax response to %s" % (key, self.path), status_code=200)
 
 class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
     def runTest(self):
@@ -328,9 +334,9 @@ class AccountCreationTest(TestCase):
     def test_phase_1(self):
         #There's a tag that affects phase 1 so we put the tests into a function
         #and call it twice here
-        Tag.setTag('ask_about_duplicate_accounts',value='true')
+        Tag.setTag('ask_about_duplicate_accounts', value='true')
         self.phase_1()
-        Tag.setTag('ask_about_duplicate_accounts',value='false')
+        Tag.setTag('ask_about_duplicate_accounts', value='false')
         self.phase_1()
 
 
@@ -338,16 +344,17 @@ class AccountCreationTest(TestCase):
         """Testing the phase 1 of registration, the email address page"""
         #first try an email that shouldn't have an account
         #first without follow, to see that it redirects correctly
-        response1 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com"})
-        if not Tag.getBooleanTag('ask_about_duplicate_accounts', default=False):
-            self.assertTemplateUsed(response1,"registration/newuser.html")
+        response1 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher"})
+        if not Tag.getBooleanTag('ask_about_duplicate_accounts'):
+            self.assertTemplateUsed(response1, "registration/newuser.html")
             return
 
-        self.assertRedirects(response1, "/myesp/register/information?email=tsutton125%40gmail.com")
+        self.assertRedirects(response1, "/myesp/register/information?email=tsutton125%40gmail.com&initial_role=Teacher")
 
-        #next, make a user with that email and try the same
+        #next, make a user with that email and same initial role and try the same
         u=ESPUser.objects.create(email="tsutton125@gmail.com")
-        response2 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com"},follow=True)
+        u.makeRole("Teacher")
+        response2 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher"}, follow=True)
         self.assertTemplateUsed(response2, 'registration/newuser_phase1.html')
         self.assertContains(response2, "do_reg_no_really")
 
@@ -355,28 +362,29 @@ class AccountCreationTest(TestCase):
         #(we check with a regex searching for _ in the password, since that
         #can't happen normally)
         u.password="blah_"
-        response3 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com"},follow=True)
+
+        response3 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher"}, follow=True)
         self.assertTemplateUsed(response3, 'registration/newuser_phase1.html')
         self.assertContains(response3, "do_reg_no_really")
 
         #check when you send do_reg_no_really it procedes
-        response4 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com","do_reg_no_really":""},follow=False)
-        self.assertRedirects(response4, "/myesp/register/information?email=tsutton125%40gmail.com")
-        response4 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com","do_reg_no_really":""},follow=True)
+        response4 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher", "do_reg_no_really":""}, follow=False)
+        self.assertRedirects(response4, "/myesp/register/information?email=tsutton125%40gmail.com&initial_role=Teacher")
+        response4 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher", "do_reg_no_really":""}, follow=True)
         self.assertContains(response4, "tsutton125@gmail.com")
 
     def test_phase_2(self):
         #similarly to phase_1, call helper function twice with tag settings
-        Tag.setTag('require_email_validation',value='True')
+        Tag.setTag('require_email_validation', value='True')
         self.phase_2()
-        Tag.setTag('require_email_validation',value='False')
+        Tag.setTag('require_email_validation', value='False')
         self.phase_2()
 
     def phase_2(self):
         """Testing phase 2, where user provides info, and we make the account"""
 
         url = "/myesp/register/"
-        if Tag.getBooleanTag("ask_about_duplicate_accounts", default=False):
+        if Tag.getBooleanTag("ask_about_duplicate_accounts"):
             url+="information/"
         response = self.client.post(url,
                                    data={"username":"username",
@@ -394,23 +402,24 @@ class AccountCreationTest(TestCase):
                                   first_name="first",
                                   last_name="last",
                                   email="tsutton125@gmail.com")
-        except ESPUser.DoesNotExist, ESPUser.MultipleObjectsReturned:
+        except ESPUser.DoesNotExist as xxx_todo_changeme:
+            ESPUser.MultipleObjectsReturned = xxx_todo_changeme
             self.fail("User not created correctly or created multiple times")
 
-        if not Tag.getBooleanTag('require_email_validation', default=False):
+        if not Tag.getBooleanTag('require_email_validation'):
             return
 
         self.assertFalse(u.is_active)
         self.assertTrue("_" in u.password)
 
-        self.assertEqual(len(mail.outbox),1)
-        self.assertEqual(len(mail.outbox[0].to),1)
-        self.assertEqual(mail.outbox[0].to[0],u.email)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(len(mail.outbox[0].to), 1)
+        self.assertEqual(mail.outbox[0].to[0], u.email)
         #note: will break if the activation email is changed too much
         import re
-        match = re.search("\?username=(?P<user>[^&]*)&key=(?P<key>\d+)",mail.outbox[0].body)
-        self.assertEqual(match.group("user"),u.username)
-        self.assertEqual(match.group("key"),u.password.rsplit("_")[-1])
+        match = re.search("\?username=(?P<user>[^&]*)&key=(?P<key>\d+)", mail.outbox[0].body)
+        self.assertEqual(match.group("user"), u.username)
+        self.assertEqual(match.group("key"), u.password.rsplit("_")[-1])
 
 from esp.users.models import GradeChangeRequest
 
@@ -432,7 +441,7 @@ class TestChangeRequestModel(TestCase):
         change_request.approved = True
         change_request.save()
 
-        self.assertIsInstance(change_request.acknowledged_time,datetime.datetime)
+        self.assertIsInstance(change_request.acknowledged_time, datetime.datetime)
 
     def test_acknowledged_time_not_set(self):
         """ Tests acknowledged_time not set if approved is None """
@@ -449,8 +458,8 @@ class TestChangeRequestModel(TestCase):
         student = change_request.requesting_student
         subject, message  = change_request._confirmation_email_content()
 
-        self.assertIn(student.first_name,message)
-        self.assertIn(student.last_name,message)
+        self.assertIn(student.first_name, message)
+        self.assertIn(student.last_name, message)
         self.assertIn('Grade Change Request Update', subject)
 
 
@@ -460,9 +469,9 @@ class TestChangeRequestModel(TestCase):
         student = change_request.requesting_student
         subject, message  = change_request._request_email_content()
 
-        self.assertIn(student.first_name,message)
-        self.assertIn(student.last_name,message)
-        self.assertIn(student.name(),subject)
+        self.assertIn(student.first_name, message)
+        self.assertIn(student.last_name, message)
+        self.assertIn(student.name(), subject)
 
 
 class TestChangeRequestView(TestCase):
@@ -494,9 +503,9 @@ class TestChangeRequestView(TestCase):
         c.login(username=self.user.username, password=self.password)
 
         #   Submit a valid grade change request
-        response = c.post("/myesp/grade_change_request", { "reason": 'I should not get this e-mail', 'claimed_grade': 10 })
+        response = c.post("/myesp/grade_change_request", { "reason": 'I should not get this email', 'claimed_grade': 10 })
 
-        #   Check that an e-mail was sent with the right from/to
+        #   Check that an email was sent with the right from/to
         self.assertEqual(len(mail.outbox), 1)
         msg = mail.outbox[0]
         self.assertEqual(msg.to, [settings.DEFAULT_EMAIL_ADDRESSES['default']])
@@ -508,12 +517,12 @@ class RecordTest(TestCase):
         self.past     = datetime.datetime(1970, 1, 1)
         self.future   = datetime.datetime.max
         self.user     = ESPUser.objects.create(username='RecordTest')
-        self.event    = Record.EVENT_CHOICES[0][0]
-        self.program1 = Program.objects.create(grade_min=7, grade_max=12)
-        self.program2 = Program.objects.create(grade_min=7, grade_max=12)
+        self.event    = "student_survey"
+        self.program1 = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program1')
+        self.program2 = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program2')
 
     def tearDown(self):
-        Record.filter(self.user, self.event, when=self.future).delete()
+        Record.filter(self.user, event = self.event, when=self.future).delete()
         self.user.delete()
         self.program1.delete()
         self.program2.delete()
@@ -532,7 +541,7 @@ class RecordTest(TestCase):
                 return Record.filter(self.user, self.event, program,
                                      when, only_today)
             def create(when=None):
-                kwargs = {'event'   : self.event,
+                kwargs = {'event'   : RecordType.objects.get(name=self.event),
                           'program' : program,
                           'user'    : self.user}
                 if when is not None:
@@ -594,7 +603,7 @@ class PermissionTestCase(TestCase):
         self.role = Group.objects.create(name='group')
         self.user = ESPUser.objects.create(username='user')
         self.user.makeRole(self.role)
-        self.program = Program.objects.create(grade_min=7, grade_max=12)
+        self.program = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program1')
 
     def create_perm(self, name, user_or_role, **kwargs):
         """Create Permission object of type `name`.
@@ -654,7 +663,7 @@ class PermissionTestCase(TestCase):
         self.assertTrue(self.user_has_perm('test'))
 
     def testImplications(self):
-        for base, implications in Permission.implications.iteritems():
+        for base, implications in six.iteritems(Permission.implications):
             perm = self.create_role_perm_for_program(base)
             for implication in implications:
                 self.assertTrue(self.user_has_perm_for_program(implication))
@@ -676,7 +685,7 @@ class PermissionTestCase(TestCase):
 
     def testProgramPerm(self):
         perm = 'Student/MainPage'
-        other_program = Program.objects.create(grade_min=7, grade_max=12)
+        other_program = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program2')
         self.create_role_perm_for_program(perm)
         self.assertTrue(self.user_has_perm_for_program(perm))
         self.assertFalse(self.user_has_perm(perm))

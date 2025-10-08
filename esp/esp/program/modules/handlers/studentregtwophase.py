@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import division
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -37,19 +40,20 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 
-from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Min, Q
-from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest, Http404
+from django.http import HttpResponse, HttpResponseBadRequest, Http404
 
 from esp.cal.models import Event
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
-from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap, no_auth
+from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_cap, no_auth
 from esp.users.models import Record, ESPUser
+from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
 from esp.utils.query_utils import nest_Q
 
 class StudentRegTwoPhase(ProgramModuleObj):
+    doc = """Allows students to set preferences for the class lottery."""
 
     def students(self, QObject = False):
         q_sr = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
@@ -66,8 +70,12 @@ class StudentRegTwoPhase(ProgramModuleObj):
                 'twophase_priority_students': "Students who have marked choices in the two-phase lottery"}
 
     def isCompleted(self):
-        records = Record.objects.filter(user=get_current_request().user,
-                                        event="twophase_reg_done",
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        records = Record.objects.filter(user=user,
+                                        event__name="twophase_reg_done",
                                         program=self.program)
         return records.count() != 0
 
@@ -78,12 +86,12 @@ class StudentRegTwoPhase(ProgramModuleObj):
             "admin_title": "Two-Phase Student Registration",
             "module_type": "learn",
             "seq": 3,
-            "required": True
+            "required": True,
+            "choosable": 0,
             }
 
     @main_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Classes/Lottery')
     @meets_cap
     def studentreg2phase(self, request, tl, one, two, module, extra, prog):
@@ -92,6 +100,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         for registration, and links to the phase1/phase2 sub-pages.
         """
 
+        context = {}
         timeslot_dict = {}
         # Populate the timeslot dictionary with the priority to class title
         # mappings for each timeslot.
@@ -100,7 +109,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         priority_regs = priority_regs.select_related(
             'relationship', 'section', 'section__parent_class')
         for student_reg in priority_regs:
-            rel = student_reg.relationship
+            rel = student_reg.relationship.name
             title = student_reg.section.parent_class.title
             sec = student_reg.section
             times = sec.meeting_times.all().order_by('start')
@@ -134,26 +143,36 @@ class StudentRegTwoPhase(ProgramModuleObj):
         blockCount = 0
         schedule = []
         timeslots = prog.getTimeSlots(types=['Class Time Block', 'Compulsory'])
+
+        context['num_priority'] = prog.priorityLimit()
+        context['num_star'] = int(Tag.getProgramTag("num_stars", program = prog))
+
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
-            if prevTimeSlot != None:
+            if prevTimeSlot is not None:
                 if not Event.contiguous(prevTimeSlot, timeslot):
                     blockCount += 1
 
             if timeslot.id in timeslot_dict:
                 priority_dict = timeslot_dict[timeslot.id]
-                # (relationship, class_title) -> relationship.name
-                priority_list = sorted(priority_dict.items(), key=lambda item: item[0].name)
             else:
-                priority_list = []
+                priority_dict = {}
+            temp_list = []
+            for i in range(1, context['num_priority'] + 1):
+                priority_name = 'Priority/%s' % i
+                reg_type, created = RegistrationType.objects.get_or_create(name = priority_name, category = "student")
+                if priority_name in priority_dict:
+                    temp_list.append((reg_type, priority_dict[priority_name]))
+                else:
+                    temp_list.append((reg_type, ""))
+            priority_list = temp_list
+            star_count = 0
             if timeslot.id in star_counts:
-                priority_list.append((
-                    'Starred', "(%d classes)" % star_counts[timeslot.id]))
-            schedule.append((timeslot, priority_list, blockCount + 1))
+                star_count = star_counts[timeslot.id]
+            schedule.append((timeslot, priority_list, blockCount + 1, star_count, float(star_count)/context['num_star']*100))
 
             prevTimeSlot = timeslot
 
-        context = {}
         context['timeslots'] = schedule
 
         return render_to_response(
@@ -209,14 +228,13 @@ class StudentRegTwoPhase(ProgramModuleObj):
         context['grade_choices'] = group_columns(grade_choices)
 
         catalog_context = self.catalog_context(
-            request, tl, one, two,module, extra, prog)
+            request, tl, one, two, module, extra, prog)
         context.update(catalog_context)
 
         return render_to_response(self.baseDir() + 'view_classes.html', request, context)
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Classes/Lottery')
     @meets_cap
     def mark_classes(self, request, tl, one, two, module, extra, prog):
@@ -246,14 +264,13 @@ class StudentRegTwoPhase(ProgramModuleObj):
         context['category_choices'] = group_columns(category_choices)
 
         catalog_context = self.catalog_context(
-            request, tl, one, two,module, extra, prog)
+            request, tl, one, two, module, extra, prog)
         context.update(catalog_context)
 
         return render_to_response(self.baseDir() + 'mark_classes.html', request, context)
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Classes/Lottery')
     @meets_cap
     def mark_classes_interested(self, request, tl, one, two, module, extra, prog):
@@ -310,8 +327,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             return self.goToCore(tl)
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Classes/Lottery')
     @meets_cap
     def rank_classes(self, request, tl, one, two, module, extra, prog):
@@ -336,15 +352,14 @@ class StudentRegTwoPhase(ProgramModuleObj):
             context['priorities'].append((rel_index, rel))
 
         catalog_context = self.catalog_context(
-            request, tl, one, two,module, extra, prog)
+            request, tl, one, two, module, extra, prog)
         context.update(catalog_context)
 
         return render_to_response(
             self.baseDir() + 'rank_classes.html', request, context)
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Classes/Lottery')
     @meets_cap
     def save_priorities(self, request, tl, one, two, module, extra, prog):
@@ -358,7 +373,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         except ValueError:
             return HttpResponseBadRequest('JSON data mis-formatted.')
         try:
-            [timeslot_id] = json_data.keys()
+            [timeslot_id] = list(json_data.keys())
         except ValueError:
             return HttpResponseBadRequest('JSON data mis-formatted.')
         if not isinstance(json_data[timeslot_id], dict):

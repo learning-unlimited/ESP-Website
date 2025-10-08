@@ -1,4 +1,6 @@
 {% extends "main.html" %}
+{% load users %}
+{% load getTag %}
 
 {% block title %}Class Status for {{cls.title }}{% endblock %}
 
@@ -29,12 +31,15 @@ Here are your class' students.  Only those who have enrolled will show up on you
 <table align="center" width="400px">
 <thead>
 <tr>
- <th>
+ <th class="program_form_narrow">
    #
  </th>
  <th>
   Student Name
  </th>
+  {% if "student_profile_pronoun_field"|getBooleanTag %}
+    <th>Pronouns</th>
+  {% endif %}
  <th>
   Student Grade
  </th>
@@ -46,13 +51,21 @@ Here are your class' students.  Only those who have enrolled will show up on you
 <tbody>
 {% for reg, students in cls.students_dict.items %}
     <tr>
-        <th colspan="4" class="small">Registration status: {{ reg }}</th>
+        {% if "student_profile_pronoun_field"|getBooleanTag %}
+            <th colspan="5" class="small">
+        {% else %}
+            <th colspan="4" class="small">
+        {% endif %}
+        Registration status: {{ reg }}</th>
     </tr>
     {% for student in students %}
     <tr>
-        <th class="small">{{ forloop.counter }}</th>
+        <th class="program_form_narrow">{{ forloop.counter }}</th>
         <td>{{ student.name }}</td>
-        <td>{{ student.getGrade }}</td>
+        {% if "student_profile_pronoun_field"|getBooleanTag %}
+            <td>{{ student.getLastProfile.student_info.pronoun }}</td>
+        {% endif %}
+        <td>{{ student|getGradeForProg:program.id }}</td>
         <td>{{ student.getLastProfile.student_info.getSchool }}</td>
     </tr>
     {% endfor %}

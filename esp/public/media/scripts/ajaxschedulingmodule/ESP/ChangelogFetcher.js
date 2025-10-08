@@ -3,15 +3,19 @@
  *
  * @param matrix: The matrix to apply the changes to
  * @param api_client: An API client which can interact with the server
- * @param start_index: Where to start applying changes
  *
  */
-function ChangelogFetcher(matrix, api_client, start_index){
+function ChangelogFetcher(matrix, api_client){
     this.api_client = api_client;
     this.matrix = matrix;
 
-    //changelog fetching
-    this.last_applied_index = start_index;
+    // Get the index of the last change in the changelog
+    this.last_applied_index = 0;
+    $j.getJSON('ajax_schedule_last_changed', function(data, status) {
+        if (status == "success") {
+            this.last_applied_index = data['latest_index'];
+        }
+    });
 
     /**
      * Poll for changes every interval milliseconds.
@@ -19,6 +23,8 @@ function ChangelogFetcher(matrix, api_client, start_index){
      * @param interval: The time in milliseconds between polling the server
      */
     this.pollForChanges = function(interval){
+        // run getChanges() immediately, then set up the recurring call
+        this.getChanges();
         window.setInterval(this.getChanges.bind(this), interval);
     };
 
@@ -47,12 +53,20 @@ function ChangelogFetcher(matrix, api_client, start_index){
                 if (change.timeslots.length == 0){
                     this.matrix.sections.unscheduleSectionLocal(section);
                 } else {
-                    this.matrix.sections.scheduleSectionLocal(section, change.room_name, change.timeslots);
+                    this.matrix.sections.scheduleSectionLocal(section, parseInt(change.room_name,10), change.timeslots);
+                }
+            } else if (change.is_moderator) {
+                this.matrix.moderatorDirectory.selectModerator(this.matrix.moderatorDirectory.getById(change.moderator));
+                if (change.assigned) {
+                    this.matrix.moderatorDirectory.assignModeratorLocal(section);
+                } else {
+                    this.matrix.moderatorDirectory.unassignModeratorLocal(section);
                 }
             } else {
                 this.matrix.sections.setComment(section, change.comment, change.locked, true);
             }
             this.last_applied_index = change.index;
         }.bind(this));
+        $j("#loadingOverlay").remove(); // remove the loading overlay
     };
 };

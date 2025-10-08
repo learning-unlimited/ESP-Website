@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -59,7 +61,7 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
         self.teacher2.makeRole("Teacher")
 
     def tearDown(self):
-        Record.objects.filter(program=self.program, event=self.event).delete()
+        Record.objects.filter(program=self.program, event__name=self.event).delete()
         super(TeacherCheckinModuleTest, self).tearDown()
 
     def addCoteacher(self, cls, coteacher):
@@ -131,13 +133,13 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
 
         # Test that you can't successfully call checkIn() or undoCheckIn()
         # for a user who is not teaching a class for the program.
-        self.assertIn('is not a teacher for',
+        self.assertIn('is not a teacher',
                       self.checkIn(teacher=self.teacher2))
         self.assertIn('was not checked in for',
                       self.undoCheckIn(teacher=self.teacher2))
 
     def test_phone_numbers_on_checkin_page(self):
         self.assertTrue(self.client.login(username=self.admin.username, password='password'), "Couldn't log in as admin %s" % self.admin.username)
-        response = self.client.get(u'%smissingteachers' % self.program.get_onsite_url())
+        response = self.client.get(six.u('%smissingteachers') % self.program.get_onsite_url())
         phone = self.teacher.getLastProfile().contact_user.phone_cell
-        self.assertIn(phone, response.content.decode('utf-8'))
+        self.assertIn(phone, six.text_type(response.content, encoding='UTF-8'))

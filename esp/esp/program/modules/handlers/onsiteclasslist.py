@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+from __future__ import division
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -34,9 +38,9 @@ Learning Unlimited, Inc.
 """
 
 import json
-import colorsys
 from datetime import datetime, timedelta
 
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Min
 from django.db.models.query import Q
 from django.http import HttpResponse
@@ -44,26 +48,24 @@ from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 
 
-from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
+from esp.users.models    import ESPUser, Record
 from esp.program.models import RegistrationProfile
+from esp.program.class_status import ClassStatus
 
-from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student_in_grade, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program
 from esp.utils.web import render_to_response
 from esp.cal.models import Event
 from argcache import cache_function
-from esp.users.models import ESPUser, Record
-from esp.resources.models import ResourceAssignment
 from esp.utils.models import Printer, PrintRequest
 from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
-
-def hsl_to_rgb(hue, saturation, lightness=0.5):
-    (red, green, blue) = colorsys.hls_to_rgb(hue, lightness, saturation)
-    return '%02x%02x%02x' % (min(1.0, red) * 255.0, min(1.0, green) * 255.0, min(1.0, blue) * 255.0)
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 
 class OnSiteClassList(ProgramModuleObj):
+    doc = """Display lists of classes for onsite registration purposes."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -71,6 +73,7 @@ class OnSiteClassList(ProgramModuleObj):
             "link_title": "List of Open Classes",
             "module_type": "onsite",
             "seq": 32,
+            "choosable": 1,
             }
 
     @cache_function
@@ -95,14 +98,17 @@ class OnSiteClassList(ProgramModuleObj):
     def catalog_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(content_type='application/json')
         #   Fetch a reduced version of the catalog to save time
+        sections = list(ClassSection.objects.filter(parent_class__parent_program=prog, status__gt=0).extra({'event_ids':  """ARRAY(SELECT "cal_event"."id" FROM "cal_event", "program_classsection_meeting_times" WHERE ("program_classsection_meeting_times"."event_id" = "cal_event"."id" AND "program_classsection_meeting_times"."classsection_id" = "program_classsection"."id"))"""}).values('id', 'parent_class__id', 'enrolled_students', 'event_ids', 'registration_status'))
+        for i in range(0, len(sections)):
+            sections[i]['capacity'] = ClassSection.objects.get(id=sections[i]['id']).capacity
         data = {
             #   Todo: section current capacity ? (see ClassSection.get_capacity())
             'classes': list(ClassSubject.objects.filter(parent_program=prog, status__gt=0).extra({'teacher_names': """array_to_string(ARRAY(SELECT auth_user.first_name || ' ' || auth_user.last_name FROM auth_user,program_class_teachers WHERE program_class_teachers.classsubject_id=program_class.id AND auth_user.id=program_class_teachers.espuser_id), ', ')""", 'class_size_max_optimal': """SELECT program_classsizerange.range_max FROM program_classsizerange WHERE program_classsizerange.id = optimal_class_size_range_id"""}).values('id', 'class_size_max', 'class_size_max_optimal', 'class_info', 'prereqs', 'hardness_rating', 'grade_min', 'grade_max', 'title', 'teacher_names', 'category__symbol', 'category__id')),
-            'sections': list(ClassSection.objects.filter(parent_class__parent_program=prog, status__gt=0).extra({'event_ids':  """ARRAY(SELECT "cal_event"."id" FROM "cal_event", "program_classsection_meeting_times" WHERE ("program_classsection_meeting_times"."event_id" = "cal_event"."id" AND "program_classsection_meeting_times"."classsection_id" = "program_classsection"."id"))"""}).values('id', 'max_class_capacity', 'parent_class__id', 'enrolled_students', 'event_ids', 'registration_status')),
-            'timeslots': list(prog.getTimeSlots().extra({'start_millis':"""EXTRACT(EPOCH FROM start) * 1000""",'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label','start_millis')),
+            'sections': sections,
+            'timeslots': list(prog.getTimeSlots().extra({'start_millis':"""EXTRACT(EPOCH FROM start) * 1000""",'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label', 'start_millis').order_by("start")),
             'categories': list(prog.class_categories.all().order_by('-symbol').values('id', 'symbol', 'category')),
         }
-        json.dump(data, resp)
+        json.dump(data, resp, cls=DjangoJSONEncoder)
 
         return resp
 
@@ -167,7 +173,7 @@ class OnSiteClassList(ProgramModuleObj):
         resp = HttpResponse(content_type='application/json')
         program = self.program
         success = False
-        student = get_object_or_404(ESPUser,pk=request.POST.get("student_id"))
+        student = get_object_or_404(ESPUser, pk=request.POST.get("student_id"))
 
         registration_profile = RegistrationProfile.getLastForProgram(student,
                                                                 program)
@@ -176,7 +182,7 @@ class OnSiteClassList(ProgramModuleObj):
         if success:
             registration_profile.save()
 
-            for extension in ['paid','Attended','medical','liability','OnSite']:
+            for extension in ['attended', 'med', 'liab', 'onsite']:
                 Record.createBit(extension, program, student)
 
             IndividualAccountingController.updatePaid(self.program, student, paid=True)
@@ -188,7 +194,8 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def checkin_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(content_type='application/json')
-        data = ESPUser.objects.filter(record__event="attended", record__program=prog).distinct().values_list('id')
+        students = prog.students(True)
+        data = ESPUser.objects.filter(students['attended'] & ~students['checked_out']).distinct().values_list('id')
         json.dump(list(data), resp)
         return resp
 
@@ -196,8 +203,18 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def counts_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(content_type='application/json')
-        data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).values_list('id', 'enrolled_students')
+        data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).values_list('id', 'enrolled_students', 'attending_students')
         json.dump(list(data), resp)
+        return resp
+
+    @aux_call
+    @needs_onsite
+    def full_status(self, request, tl, one, two, module, extra, prog):
+        resp = HttpResponse(content_type='application/json')
+        data = [[section.id, section.isFull(webapp=True)] for section in
+                     ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0,
+                                                 parent_class__parent_program=prog)]
+        json.dump(data, resp)
         return resp
 
     @aux_call
@@ -239,10 +256,10 @@ class OnSiteClassList(ProgramModuleObj):
             result['messages'].append('Error: could not parse requested sections %s' % request.GET.get('sections', None))
             desired_sections = None
 
-        #   Check in student, since if they're using this view they must be onsite
-        q = Record.objects.filter(user=user, program=prog, event='attended')
-        if not q.exists():
-            new_rec, created = Record.objects.get_or_create(user=user, program=prog, event='attended')
+        #   Check in student if not currently checked in, since if they're using this view they must be onsite
+        if not prog.isCheckedIn(user) and request.GET.get('check_in') == 'true':
+            rec = Record(user=user, program=prog, event='attended')
+            rec.save()
 
         if user and desired_sections is not None:
             override_full = (request.GET.get("override", "") == "true")
@@ -253,14 +270,15 @@ class OnSiteClassList(ProgramModuleObj):
 
             failed_add_sections = []
             for sec in sections_to_add:
-                if sec.isFull() and not override_full:
+                if sec.isFull(webapp=True) and not override_full:
                     result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, 'Class is currently full.'))
                     failed_add_sections.append(sec.id)
 
             if len(failed_add_sections) == 0:
+                verbs = RTC.getVisibleRegistrationTypeNames(prog)
                 #   Remove sections the student wants out of
                 for sec in sections_to_remove:
-                    sec.unpreregister_student(user)
+                    sec.unpreregister_student(user, verbs)
                     result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
 
                 #   Remove sections that conflict with those the student wants into
@@ -272,7 +290,7 @@ class OnSiteClassList(ProgramModuleObj):
                         #   We found something we need to remove
                         for sm_sec in sm.map[ts]:
                             if sm_sec.id not in sections_to_add:
-                                sm_sec.unpreregister_student(user)
+                                sm_sec.unpreregister_student(user, verbs)
                                 result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sm_sec.emailcode(), sm_sec.title(), sm_sec.id))
                             else:
                                 existing_sections.append(sm_sec)
@@ -280,9 +298,9 @@ class OnSiteClassList(ProgramModuleObj):
                 #   Add the sections the student wants
                 for sec in sections_to_add:
                     if sec not in existing_sections and sec.id not in failed_add_sections:
-                        error = sec.cannotAdd(user, not override_full)
+                        error = sec.cannotAdd(user, not override_full, webapp=True)
                         if not error:
-                            reg_result = sec.preregister_student(user, overridefull=override_full)
+                            reg_result = sec.preregister_student(user, overridefull=override_full, webapp=True)
                             if not reg_result:
                                 error = 'Class is currently full.'
                         else:
@@ -314,7 +332,7 @@ class OnSiteClassList(ProgramModuleObj):
         except:
             result['message'] = "Could not find user %s." % request.GET.get('user', None)
 
-        printer = request.GET.get('printer',None)
+        printer = request.GET.get('printer', None)
         if printer is not None:
             # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
             printer = Printer.objects.get(name=printer)
@@ -331,93 +349,13 @@ class OnSiteClassList(ProgramModuleObj):
         context['timeslots'] = prog.getTimeSlots()
         context['printers'] = Printer.objects.all().values_list('name', flat=True)
         context['initial_student'] = request.GET.get('student_id', '')
+        context['check_in_default'] = datetime.today().date() in prog.dates()
 
         open_class_category = prog.open_class_category
-        open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id','symbol','category'] ] )
+        open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id', 'symbol', 'category'] ] )
         context['open_class_category'] = mark_safe(json.dumps(open_class_category))
 
         return render_to_response(self.baseDir()+'ajax_status.html', request, context)
-
-    @aux_call
-    @needs_onsite
-    def status(self, request, tl, one, two, module, extra, prog):
-        context = {}
-        msgs = []
-        if request.method == 'POST':
-            if 'op' in request.GET and request.GET['op'] == 'add' and 'sec_id' in request.GET:
-                try:
-                    sec = ClassSection.objects.get(id=request.GET['sec_id'])
-                except:
-                    sec = None
-                user = None
-                if sec and 'add_%s' % sec.id in request.POST:
-                    try:
-                        user_id = int(request.POST['add_%s' % sec.id])
-                        user = ESPUser.objects.get(id=user_id)
-                    except:
-                        user = None
-                if sec and user:
-                    #   Find out what other classes the user was taking during the times of this section
-                    removed_classes = []
-                    schedule = user.getEnrolledSections(prog)
-                    if sec in schedule:
-                        #   If they were in the specified section, take them out.
-                        sec.unpreregister_student(user)
-                        msgs.append('Removed %s (%d) from %s' % (user.name(), user.id, sec))
-                    else:
-                        #   Otherwise take them out of whatever they were in and put them in.
-                        target_times = sec.meeting_times.all().values_list('id', flat=True)
-                        for s in schedule:
-                            if s.meeting_times.filter(id__in=target_times).count() > 0:
-                                s.unpreregister_student(user)
-                                msgs.append('Removed %s (%d) from %s' % (user.name(), user.id, s))
-                        sec.preregister_student(user, overridefull=True)
-                        msgs.append('Added %s (%d) to %s' % (user.name(), user.id, sec))
-        context['msgs'] = msgs
-
-        reg_counts = prog.student_counts_by_section_id()
-        capacity_counts = prog.capacity_by_section_id()
-        checkin_counts = prog.checked_in_by_section_id()
-        all_sections = prog.sections()
-
-        timeslots = []
-        for timeslot in prog.getTimeSlots():
-            item = {}
-            item['timeslot'] = timeslot
-            item['sections'] = []
-            sections = all_sections.filter(meeting_times=timeslot)
-            for sec in sections:
-                sect = OnSiteClassList.section_data(sec)
-
-                if sec.id in reg_counts and reg_counts[sec.id]:
-                    sect['reg_count'] = reg_counts[sec.id]
-                else:
-                    sect['reg_count'] = 0
-                if sec.id in capacity_counts:
-                    sect['capacity_count'] = capacity_counts[sec.id]
-                else:
-                    sect['capacity_count'] = 0
-                if sec.id in checkin_counts:
-                    sect['checkin_count'] = checkin_counts[sec.id]
-                else:
-                    sect['checkin_count'] = 0
-
-                if sect['capacity_count'] > 0:
-                    hue_redness = sect['reg_count'] / float(sect['capacity_count'])
-                else:
-                    hue_redness = 0.5
-                if sect['reg_count'] > 0:
-                    lightness = sect['checkin_count'] / float(sect['reg_count'])
-                else:
-                    lightness = 0.0
-                sect['color'] = hsl_to_rgb(min(1.0, 0.4 + 0.6 * hue_redness), 0.8, 0.9 - 0.5 * lightness)
-
-                item['sections'].append(sect)
-            timeslots.append(item)
-        context['timeslots'] = timeslots
-
-        response = render_to_response(self.baseDir()+'status.html', request, context)
-        return response
 
     @aux_call
     @needs_onsite
@@ -425,7 +363,7 @@ class OnSiteClassList(ProgramModuleObj):
         return self.classList_base(request, tl, one, two, module, extra, prog, template_name='classlist.html')
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def classlist_public(self, request, tl, one, two, module, extra, prog):
         return self.classList_base(request, tl, one, two, module, extra, prog, options={}, template_name='allclass_fragment.html')
 
@@ -438,7 +376,7 @@ class OnSiteClassList(ProgramModuleObj):
             options = request.GET.copy()
 
             #   Display options-selection page if this page is requested with no GET variables
-            if len(options.keys()) == 0:
+            if len(list(options.keys())) == 0:
                 return render_to_response(self.baseDir() + 'classlist_options.html', request, {'prog': prog})
 
         context = {}
@@ -457,6 +395,9 @@ class OnSiteClassList(ProgramModuleObj):
         else:
             window_start = time_now + timedelta(-1, 85200)  # 20 minutes ago
             curtime = Event.objects.filter(start__gte=window_start, event_type__description='Class Time Block').order_by('start')
+            # If there are no events after the current time, just pick the first event of the program
+            if curtime.count() == 0:
+                curtime = Event.objects.filter(program=self.program, event_type__description='Class Time Block').order_by('start')
 
         end_id = int(options.get('end', -1))
         if end_id != -1:
@@ -469,21 +410,22 @@ class OnSiteClassList(ProgramModuleObj):
             sort_spec = extra
 
         #   Enforce a maximum refresh speed to avoid server overload.
-        min_refresh = int(Tag.getTag('onsite_classlist_min_refresh', default='10'))
+        min_refresh = int(Tag.getTag('onsite_classlist_min_refresh'))
         if int(context['refresh']) < min_refresh:
             context['refresh'] = min_refresh
 
+        classes = []
         if curtime:
             curtime = curtime[0]
             if endtime:
                 endtime = endtime[0]
                 classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
-                    status=10, parent_class__status=10,
+                    status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED,
                     begin_time__gte=curtime.start, begin_time__lte=endtime.start
                     )
             else:
                  classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
-                     status=10, parent_class__status=10,
+                     status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED,
                      begin_time__gte=curtime.start
                      )
             if sort_spec == 'unsorted':
@@ -509,8 +451,7 @@ class OnSiteClassList(ProgramModuleObj):
 
         #   This view still uses classes, not sections.  The templates show information
         #   for each section of each class.
-        classes = [(i.num_students()/(i.class_size_max + 1), i) for i in self.program.classes()]
-        classes.sort()
+        classes = sorted([(i.num_students()//(i.class_size_max + 1), i) for i in self.program.classes() if i.class_size_max])
         classes = [i[1] for i in classes]
 
         categories = {}
@@ -520,8 +461,22 @@ class OnSiteClassList(ProgramModuleObj):
         printers = [ x.name for x in Printer.objects.all() ]
 
         return render_to_response(self.baseDir()+'allclasslist.html', request,
-            {'classes': classes, 'prog': self.program, 'one': one, 'two': two, 'categories': categories.values(), 'printers': printers})
+            {'classes': classes, 'prog': self.program, 'one': one, 'two': two, 'categories': list(categories.values()), 'printers': printers})
 
+    def makeLink(self):
+        calls = [("classchange_grid", "Grid-based Class Changes Interface"), ("classList", "Scrolling Class List"), (self.get_main_view(), self.module.link_title)]
+        strings = [six.u('<a href="%s" title="%s" class="vModuleLink" >%s</a>') % \
+                ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1], call[1]) for call in calls]
+        return "</li><li>".join(strings)
+
+    def makeButtonLink(self):
+        calls = [("classchange_grid", "Grid-based Class Changes Interface"), ("classList", "Scrolling Class List"), (self.get_main_view(), self.module.link_title)]
+        strings = [six.u("""<div class="module_button">\
+                                <a href="%s"><button type="button" class="module_link_large">
+                                    <div class="module_link_main">%s</div>
+                                </button></a>
+                            </div>""") % ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1]) for call in calls]
+        return "".join(strings)
 
 
 

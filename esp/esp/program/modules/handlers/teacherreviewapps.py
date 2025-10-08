@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -31,15 +33,12 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, aux_call
 from esp.middleware.esperrormiddleware import ESPError
 from esp.program.modules import module_ext
-from esp.program.modules.forms.junction_teacher_review import JunctionTeacherReview
-from esp.users.models import ESPUser, User
+from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
-from esp.program.models import ClassSubject, StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentRegistration
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect
+from esp.program.models import ClassSubject, StudentAppQuestion, StudentAppReview, StudentRegistration
 from datetime import datetime
 from django.views.decorators.cache import never_cache
 from esp.middleware.threadlocalrequest import get_current_request
@@ -47,6 +46,8 @@ from esp.middleware.threadlocalrequest import get_current_request
 __all__ = ['TeacherReviewApps']
 
 class TeacherReviewApps(ProgramModuleObj):
+    doc = """Allows teachers to review student applications for their classes."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -55,6 +56,7 @@ class TeacherReviewApps(ProgramModuleObj):
             "module_type": "teach",
             "seq": 1000,
             "inline_template": "teacherreviewapp.html",
+            "choosable": 0,
             }
 
     @aux_call
@@ -65,7 +67,7 @@ class TeacherReviewApps(ProgramModuleObj):
         try:
             cls = ClassSubject.objects.get(id = extra)
         except ClassSubject.DoesNotExist:
-            raise ESPError('Cannot find class.', log=False)
+            raise ESPError('Cannot find class with ID {}).'.format(extra), log=False)
 
         if not request.user.canEdit(cls):
             raise ESPError('You cannot edit class "%s"' % cls, log=False)
@@ -103,7 +105,7 @@ class TeacherReviewApps(ProgramModuleObj):
                         student.app_completed = True
 
         students = list(students)
-        students.sort(lambda x,y: cmp(x.added_class,y.added_class))
+        students.sort(key=lambda s: s.added_class)
 
         if 'prev' in request.GET:
             prev_id = int(request.GET.get('prev'))
@@ -183,6 +185,9 @@ class TeacherReviewApps(ProgramModuleObj):
         scrmi = prog.studentclassregmoduleinfo
         reg_nodes = scrmi.reg_verbs()
 
+        if not extra:
+            return self.goToCore(tl)
+
         try:
             cls = ClassSubject.objects.get(id = extra)
         except ClassSubject.DoesNotExist:
@@ -191,9 +196,9 @@ class TeacherReviewApps(ProgramModuleObj):
         if not request.user.canEdit(cls):
             raise ESPError('You cannot edit class "%s"' % cls, log=False)
 
-        student = request.GET.get('student',None)
+        student = request.GET.get('student', None)
         if not student:
-            student = request.POST.get('student','')
+            student = request.POST.get('student', '')
 
         try:
             student = ESPUser.objects.get(id = int(student))

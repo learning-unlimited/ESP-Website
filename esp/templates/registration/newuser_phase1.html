@@ -12,13 +12,13 @@
 
 {% if accounts or awaitings%}
 <p>
-<b>You may already have an account:</b> Listed below are other accounts that already exist for this
-e-mail address.  If you are sure you want a new account, please click "Proceed to Account Creation" again below.
+<b>You may already have an account:</b> Listed below are usernames of other <b>{{ initial_role|lower }}</b> accounts that already exist for this
+email address.  If you are sure you want a new account, please click "Proceed to Account Creation" again below.
 </p>
 
 <ul>
   {% for u in accounts %}
-  <li>{{ u.first_name }} {{ u.last_name }} ({{ u.username }}) <br />
+  <li>{{ u.username }} <br />
   <form method="post" action="/myesp/login">
     <input type="hidden" name="username" value="{{ u.username }}" />
     <input type="hidden" name="password" value="" />
@@ -34,7 +34,7 @@ e-mail address.  If you are sure you want a new account, please click "Proceed t
   <br />
   {% endfor %}
   {% for u in awaitings %}
-  <li>{{ u.first_name }} {{ u.last_name }} ({{ u.username }}) -- Awaiting activation <br />
+  <li>{{ u.username }} -- Awaiting activation <br />
   <form action="/myesp/resend/" method="post">
     <input type="hidden" name="username" value="{{ u.username }}" />
     <input type="submit" value="Resend Activation Email!" />
@@ -46,13 +46,18 @@ e-mail address.  If you are sure you want a new account, please click "Proceed t
 {% load render_qsd %}
 {% inline_qsd_block "myesp/create_new_account_phase1_headertext" %}
 <p>
-  Welcome to ESP! To do almost anything with ESP, you first need to register
-an account with us. After you register account, you will be allowed to register
+  Welcome to {{ settings.ORGANIZATION_SHORT_NAME }}! To do almost anything with us, you first need to register
+an account with us. After you register an account, you will be allowed to register
 for programs, sign up for classes, among other things.
+By creating an account, you agree to the <a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a> 
+set forth by Learning Unlimited, the umbrella organization of which we are a member. 
 </p>
+{% if settings.USE_MAILMAN %} 
 <p>
-  If you just want to receive e-mail announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> announcements list. If you create an account, you will be automatically subscribed to our main Announcements list.
+  If you just want to receive email announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> announcements list.
+  If you create an account, you will be automatically subscribed to our main announcements.
 </p>
+{% endif %} 
 {% end_inline_qsd_block %}
 {% endif %}
 
@@ -84,7 +89,7 @@ are errors{% endif %} in the below form. Please fix and resubmit.
 
 <tr>
   <th colspan="2" class="submit">
-    <input type="submit" value="Proceed to Account Creation" name="submit" class="btn btn-default" />
+    <input type="submit" value="Proceed to Account Creation" name="submit_btn" class="btn btn-default" />
   </th>
 </tr>
 </tbody>

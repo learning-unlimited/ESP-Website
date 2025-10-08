@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -38,6 +39,7 @@ from esp.admin import admin_site, autodiscover
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from django.views.generic import TemplateView
 from django.views.generic.base import RedirectView
 from filebrowser.sites import site as filebrowser_site
 
@@ -72,17 +74,22 @@ handler500 = 'esp.utils.web.error500'
 # Static media
 urlpatterns = static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + staticfiles_urlpatterns()
 
+# Robots.txt
+urlpatterns += [
+    url('robots.txt', TemplateView.as_view(template_name="robots.txt", content_type="text/plain"))
+]
+
 # Admin stuff
 urlpatterns += [
+    url(r'^admin_tools/', include('admin_tools.urls')),
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^admin/ajax_qsd/?$', esp.qsd.views.ajax_qsd),
     url(r'^admin/ajax_qsd_preview/?$', esp.qsd.views.ajax_qsd_preview),
     url(r'^admin/ajax_autocomplete/?', esp.db.views.ajax_autocomplete),
-    url(r'^grappelli/', include('grappelli.urls')),
     url(r'^admin/filebrowser/', include(filebrowser_site.urls)),
     url(r'^admin/', include(admin_site.urls)),
     url(r'^accounts/login/$', esp.users.views.login_checked),
-    url(r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$',RedirectView.as_view(url='/%(subsection)s/index.html', permanent=True)),
+    url(r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$', RedirectView.as_view(url='/%(subsection)s/index.html', permanent=True)),
 ]
 
 # Adds missing trailing slash to any admin urls that haven't been matched yet.
@@ -117,6 +124,12 @@ urlpatterns += [
     url(r'^(?P<tl>teach|learn)/teachers/', include('esp.web.urls')),
 ]
 
+# Specific .html pages that have defaults
+urlpatterns += [
+    url(r'^(faq|faq\.html)$', main.FAQView.as_view(), name='FAQ'),
+    url(r'^(contact|contact\.html)$', main.ContactUsView.as_view(), name='Contact Us'),
+]
+
 urlpatterns += [
     url(r'^(?P<url>.*)\.html$', esp.qsd.views.qsd),
 ]
@@ -137,6 +150,8 @@ urlpatterns += [
     url(r'^archives/([-A-Za-z0-9_ ]+)/?$', main.archives),
     url(r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.archives),
     url(r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.archives),
+
+    url(r'^email/([0-9]+)/?$', main.public_email),
 ]
 
 urlpatterns += [

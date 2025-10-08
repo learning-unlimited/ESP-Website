@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -35,6 +36,7 @@ Learning Unlimited, Inc.
 import datetime
 import logging
 from django.db.models import signals
+from esp.users.models import Record
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.models import StudentRegistration, RegistrationType
 from esp.users.models import ESPUser
@@ -44,7 +46,7 @@ from esp.utils.web import render_to_response
 logger = logging.getLogger(__name__)
 
 class UnenrollModule(ProgramModuleObj):
-    """ Frontend to kick students from classes. """
+    doc = """Frontend to unenroll students from classes."""
 
     @classmethod
     def module_properties(cls):
@@ -53,6 +55,7 @@ class UnenrollModule(ProgramModuleObj):
             "link_title": "Unenroll Students",
             "module_type": "onsite",
             "seq": 100,
+            "choosable": 1,
         }
 
     class Meta:
@@ -69,11 +72,20 @@ class UnenrollModule(ProgramModuleObj):
 
         """
         if request.method == 'POST':
-            selected_enrollments = request.POST['selected_enrollments']
-            ids = [int(id) for id in selected_enrollments.split(',')]
-            registrations = StudentRegistration.objects.filter(id__in=ids)
-            registrations.update(end_date=datetime.datetime.now())
-            logger.info("Expired student registrations: %s", ids)
+            context = {}
+            if 'undo' in request.POST:
+                selected_enrollments = request.POST['selected_enrollments']
+                ids = [int(id) for id in selected_enrollments.split(',')]
+                registrations = StudentRegistration.objects.filter(id__in=ids)
+                registrations.update(end_date=None)
+                logger.info("Unexpired student registrations: %s", ids)
+                context['undo'] = True
+            else:
+                selected_enrollments = request.POST['selected_enrollments']
+                ids = [int(id) for id in selected_enrollments.split(',')]
+                registrations = StudentRegistration.objects.filter(id__in=ids)
+                registrations.update(end_date=datetime.datetime.now())
+                logger.info("Expired student registrations: %s", ids)
             # send signal to expire caches
             # XXX: sending all of them is actually kind of
             # expensive and mostly redundant; it would be
@@ -82,7 +94,6 @@ class UnenrollModule(ProgramModuleObj):
             for reg in registrations:
                 signals.post_save.send(
                     sender=StudentRegistration, instance=reg)
-            context = {}
             context['ids'] = ids
             return render_to_response(
                 self.baseDir()+'result.html', request, context)
@@ -130,8 +141,8 @@ class UnenrollModule(ProgramModuleObj):
         # students not checked in
         students = ESPUser.objects.filter(
             id__in=enrollments.values('user'))
-        students = students.exclude(
-            record__program=prog, record__event='attended')
+        records = Record.objects.filter(program=prog, event__name='attended')
+        students = students.exclude(id__in=records.values('user'))
 
         # enrollments for those students
         relevant = enrollments.filter(user__in=students).values_list(
@@ -163,7 +174,7 @@ class UnenrollModule(ProgramModuleObj):
         lambda sr: {'prog': sr.section.parent_class.parent_program})
     cache.depend_on_row('users.Record',
         lambda record: {'prog': record.program},
-        lambda record: record.event == 'attended')
+        lambda record: record.event and record.event.name == 'attended')
     cache.depend_on_model('program.ClassSection')
     cache.depend_on_model('program.ClassSubject')
     cache.depend_on_model('cal.Event')

@@ -1,34 +1,17 @@
 <html>
 <head>
 <title>Student Checklist</title>
+<link rel="stylesheet" type="text/css" href="/media/styles/rosters.css" media="print,screen">
 <style type="text/css" media="print,screen">
-body { font-family: georgia; }
-.classtitle { text-align: center; font-size: 15pt; font-weight: bold; font-family: georgia; padding: .3in;}
-
-.classroster { text-align: center; }
 .title span { font-weight:bolder; text-decoration: underline;
               font-size:16pt; }
-
-.blocks { padding: 4px; font-size: 10pt; font-weight: bold; }
-.classroom { padding: 8px; font-size: 10pt; font-weight: bold; }
-.pretty {border: 1px solid black; }
-.pretty td { border: 1px solid black; }
-.pretty th { border: 1px solid black; }
-.pretty td { vertical-align: top; }
-.teachername { font-size: 9pt; }
-.teachername span { border: 1px solid black; padding: 3px;
-               width: auto; }
-.classroom { vertical-align: top; }
-.blokcs { vertical-align: top; }
-.pretty td.oldnew { border-bottom: 0; border-top: 2px; }
-.pretty td.old { border-bottom: 0;
-                      border-top: 0;}
-#pagebreak {page-break-after: always; }
 .box { width: 15px; height: 15px; border: 2px solid black; 
    font-weight: bold; text-align: center; vertical-align: middle;
 }
 </style>
 </head>
+{% load users %}
+{% load getTag %}
 <body>
 <div class="title" style="text-align: center;">
 <span>Student Checklist for {{program.niceName}}</span>
@@ -40,10 +23,16 @@ body { font-family: georgia; }
    <th>Checked In?</th>
    <th>Paid?</th>
    <th>Amount Due</th>
-   <th>Med/Liability?</th>
-   <th>Agreement?</th>
+   <th>Medical Form?</th>
+   <th>Liability Form?</th>
+   {% for rec in other_records %}
+   <th>{{ rec|getRecordDescription }}?</th>
+   {% endfor %}
    <th>Aid Status</th>
    <th>Name</th>
+   {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <th>Pronouns</th>
+   {% endif %}
    <th>Email</th>
    <th>DOB</th>
    <th>ID</th>
@@ -51,13 +40,19 @@ body { font-family: georgia; }
 {% for student in studentList %}
 <tr>
    <td>{{forloop.counter}}</td>
-   <td><div class="box">&nbsp;</div></td>
-   <td><div class="box">{{ student.paid }}</div></td>
+   <td><div class="box">{% if student.checked_in %}X{% endif %}</div></td>
+   <td><div class="box">{% if student.paid %}X{% endif %}</div></td>
    <td>${{ student.amount_due|floatformat:2 }}</td>
-   <td><div class="box">&nbsp;</div></td>
-   <td><div class="box">&nbsp;</div></td>
+   <td><div class="box">{% if student.med %}X{% endif %}</div></td>
+   <td><div class="box">{% if student.liab %}X{% endif %}</div></td>
+   {% for rec in student.other %}
+   <td><div class="box">{% if rec %}X{% endif %}</div></td>
+   {% endfor %}
    <td>{{ student.finaid }}</td>
    <td>{{ student.user.name }}</td>
+   {% if "student_profile_pronoun_field"|getBooleanTag %}
+     <td>{{ student.user.getLastProfile.student_info.pronoun }}</td>
+   {% endif %}
    <td>{{ student.user.email}}</td>
    <td>{{ student.user.getLastProfile.student_info.dob|date:"m/d/Y" }}</td>
    <td><strong>{{student.user.id}}</strong></td>

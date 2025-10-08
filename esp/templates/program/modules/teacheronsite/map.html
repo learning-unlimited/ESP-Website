@@ -1,0 +1,15 @@
+{% extends "program/modules/teacheronsite/webapp.html" %}
+
+{% block body %}
+
+<center>
+
+    <div class="main">
+        {% if API_key %}
+            <iframe width="100%" frameborder="0" style="border:0; height: 92vh;" src="https://www.google.com/maps/embed/v1/view?key={{ API_key }}&zoom={{ zoom }}&center={{ center }}"></iframe>
+        {% endif %}
+    </div>
+
+</center>
+
+{% endblock %}

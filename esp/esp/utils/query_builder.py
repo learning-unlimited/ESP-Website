@@ -1,9 +1,14 @@
+from __future__ import absolute_import
 import datetime
 import operator
 
 from django.db.models.query import Q
 
 from esp.middleware import ESPError
+from six.moves import map
+import six
+from six.moves import zip
+from functools import reduce
 
 
 class QueryBuilder(object):
@@ -24,7 +29,7 @@ class QueryBuilder(object):
     def __init__(self, base, filters, english_name=None):
         self.base = base
         if english_name is None:
-            self.english_name = unicode(base.model._meta.verbose_name_plural)
+            self.english_name = six.text_type(base.model._meta.verbose_name_plural)
         else:
             self.english_name = english_name
         self.filters = filters
@@ -51,7 +56,7 @@ class QueryBuilder(object):
                 op = operator.and_
             else:
                 op = operator.or_
-            combined = reduce(op, map(self.as_queryset, value['values']))
+            combined = reduce(op, list(map(self.as_queryset, value['values'])))
             if value['negated']:
                 return self.base.exclude(pk__in=combined)
             else:
@@ -155,6 +160,31 @@ class SelectInput(object):
         else:
             raise ESPError('Invalid choice %s for input %s'
                            % (value, self.field_name))
+
+class SelectQInput(object):
+    """An input represented by an HTML <select> with a fixed set of options. Each
+       option has a fixed Q object.
+
+    Arguments:
+        `options`: a dict where the keys are ids and the values are dictionaries with a user-friendly title
+            and Q object.  The ids should be strings.
+    """
+    def __init__(self, options):
+        self.options = options
+        # TODO: warn if option ids are not strings.
+
+    def spec(self):
+        return {
+            'reactClass': 'SelectInput',
+            'options': [{'name': k, 'title': v['title']}
+                        for k, v in self.options.items()],
+        }
+
+    def as_q(self, value):
+        if value in self.options:
+            return self.options[value]['Q']
+        else:
+            return Q()
 
 
 class ConstantInput(object):

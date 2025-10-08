@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -36,11 +37,11 @@ Learning Unlimited, Inc.
 import logging
 logger = logging.getLogger(__name__)
 
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     """Recompile the current theme."""
-    def handle_noargs(self, **options):
+    def handle(self, *args, **options):
         from esp.themes.controllers import ThemeController
         try:
             # If this changes, make sure it still respects settings.LOCAL_THEME

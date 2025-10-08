@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+import six
+from io import open
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -6,7 +11,6 @@ __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
   (see AUTHORS file)
-
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU Affero General Public License
 as published by the Free Software Foundation; either version 3
@@ -33,26 +37,77 @@ Learning Unlimited, Inc.
 """
 
 from django import template
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
+from django.http import QueryDict
 from django.template import loader
-from esp.program.models.class_ import ClassSubject
+from esp.program.models import Program, ClassSubject, ClassSection
+from esp.utils.cache_inclusion_tag import cache_inclusion_tag
+
 
 import os
 import subprocess
 
 try:
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
 except ImportError:
     import pickle
 
 register = template.Library()
 
+@cache_inclusion_tag(register, 'inclusion/survey/responses_for_program.html')
+def render_responses_for_program(survey):
+    """Render the survey responses for admin review."""
+    return _render_responses_for_program_helper(survey)
+render_responses_for_program.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey}, filter=lambda ans: (ans.content_type == ContentType.objects.get_for_model(Program)))
+
+@cache_inclusion_tag(register, 'inclusion/survey/responses_for_program.tex')
+def render_responses_for_program_pdf(survey):
+    """Render the survey responses for admin review."""
+    return _render_responses_for_program_helper(survey)
+render_responses_for_program_pdf.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey}, filter=lambda ans: (ans.content_type == ContentType.objects.get_for_model(Program)))
+
+def _render_responses_for_program_helper(survey):
+    """Render the survey responses for admin review."""
+    questions = survey.questions.filter(per_class=False).order_by('-question_type__is_numeric', 'seq')
+    display_data = [ { 'question': y, 'answers': y.answer_set.all() } for y in questions ]
+    return {'display_data': display_data, 'survey': survey, 'tl': 'manage'}
+
+@cache_inclusion_tag(register, 'inclusion/survey/responses_for_section.html')
+def render_responses_for_section(sec, survey, tl):
+    """Render the survey responses for teacher review in HTML."""
+    return _render_responses_for_section_helper(sec, survey, tl)
+render_responses_for_section.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey, 'sec': ClassSection.objects.get(id=ans.object_id)}, filter=lambda ans: (ans.content_type == ContentType.objects.get_for_model(ClassSection)))
+
+@cache_inclusion_tag(register, 'inclusion/survey/responses_for_section.tex')
+def render_responses_for_section_pdf(sec, survey):
+    """Render the survey responses for teacher review in LaTeX."""
+    return _render_responses_for_section_helper(sec, survey)
+render_responses_for_section_pdf.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey, 'sec': ClassSection.objects.get(id=ans.object_id)}, filter=lambda ans: (ans.content_type == ContentType.objects.get_for_model(ClassSection)))
+
+def _render_responses_for_section_helper(sec, survey, tl = None):
+    """Render the survey responses for teacher review."""
+    class_questions = survey.questions.filter(per_class=True).order_by('-question_type__is_numeric', 'seq')
+    class_data = [ { 'question': question, 'answers': question.answer_set.filter(Q(content_type=ContentType.objects.get_for_model(ClassSection), object_id=sec.id) | Q(content_type=ContentType.objects.get_for_model(ClassSubject), object_id=sec.parent_class.id)) } for question in class_questions ]
+    dict = {'class_data': class_data, 'sec': sec, 'survey': survey}
+    if tl: dict['tl'] = tl
+    return dict
+
+@register.filter
+def midValue(sizeLs0):
+    sizeLst = int(sizeLs0)
+    if sizeLst%2 == 1:
+        return ((sizeLst + 1) // 2 )
+    else:
+        return -1
+
 @register.filter
 def intrange(min_val, max_val):
-    return range(int(min_val), int(max_val) + 1)
+    return list(range(int(min_val), int(max_val) + 1))
 
 @register.filter
 def field_width(min_val, max_val):
-    return '%d%%' % (70 / (int(max_val) - int(min_val) + 1))
+    return '%d%%' % (70 // (int(max_val) - int(min_val) + 1))
 
 @register.filter
 def substitute(input_str, item):
@@ -76,7 +131,7 @@ def unpack_answers(lst):
 @register.filter
 def drop_empty_answers(lst):
     #   Takes a list of answers and drops empty ones. Whitespace-only is empty.
-    return [ ans for ans in lst if (not isinstance(ans.answer, basestring)) or ans.answer.strip() ]
+    return [ ans for ans in lst if (not isinstance(ans.answer, six.string_types)) or ans.answer.strip() ]
 
 @register.filter
 def average(lst):
@@ -86,7 +141,7 @@ def average(lst):
         sum = 0.0
         for l in lst:
             sum += float(l)
-        return str(round(sum / len(lst), 2))
+        return str(round(sum // len(lst), 2))
     except:
         return 'N/A'
 
@@ -99,15 +154,15 @@ def stdev(lst):
         std_sum = 0.0
         for l in lst:
             sum += float(l)
-        mean = sum / len(lst)
+        mean = sum // len(lst)
         for l in lst:
             std_sum += abs(float(l) - mean)
-        return str(round(std_sum / len(lst), 2))
+        return str(round(std_sum // len(lst), 2))
     except:
         return 'N/A'
 
 @register.filter
-def histogram(answer_list, format='html'):
+def histogram(answer_list, args='format=html'):
     """ Generate Postscript code for a histogram of the provided results, save it and return a string pointing to it. """
     from django.conf import settings
     HISTOGRAM_PATH = 'images/histograms/'
@@ -115,6 +170,8 @@ def histogram(answer_list, format='html'):
     import tempfile
 
     image_width = 2.75
+
+    args_dict = QueryDict(args)
 
     processed_list = []
     for ans in answer_list:
@@ -129,7 +186,12 @@ def histogram(answer_list, format='html'):
     context['title'] = 'Results of survey'
     context['num_responses'] = len(answer_list)
 
-    context['results'] = []
+    if args_dict.get('max'):
+        context['results'] = [{'value': str(x), 'freq': 0} for x in range(1, int(args_dict.get('max')) + 1)]
+    elif args_dict.get('opts'):
+        context['results'] = [{'value': str(x), 'freq': 0} for x in args_dict.get('opts').split("|")]
+    else:
+        context['results'] = []
     max_answer_length = 0
     for ans in answer_list:
         try:
@@ -173,18 +235,18 @@ def histogram(answer_list, format='html'):
     #   We have the necessary EPS file, now we do any necessary conversions and include
     #   it into the output.
     png_filename = "%s.png" % file_base
-    if format == 'tex':
+    if args_dict.get('format') == 'tex':
         image_path = os.path.join(tempfile.gettempdir(), png_filename)
-    elif format == 'html':
+    elif args_dict.get('format') == 'html':
         image_path = os.path.join(HISTOGRAM_DIR, png_filename)
     if not os.path.exists(image_path):
         subprocess.call(['gs', '-dBATCH', '-dNOPAUSE', '-dTextAlphaBits=4',
                          '-dDEVICEWIDTHPOINTS=216', '-dDEVICEHEIGHTPOINTS=162',
                          '-sDEVICE=png16m', '-R96',
                          '-sOutputFile=' + image_path, file_name])
-    if format == 'tex':
+    if args_dict.get('format') == 'tex':
         return '\includegraphics[width=%fin]{%s}' % (image_width, image_path)
-    if format == 'html':
+    if args_dict.get('format') == 'html':
         return '<img src="%s" />' % ('/media/' + HISTOGRAM_PATH + png_filename)
 
 @register.filter
@@ -218,7 +280,7 @@ def favorite_classes(answer_list, limit=20):
             else:
                 class_dict[ind] = 1
 
-    key_list = class_dict.keys()
+    key_list = list(class_dict.keys())
     key_list.sort(key=lambda x: -class_dict[x])
 
     max_count = min(limit, len(key_list))
@@ -231,6 +293,6 @@ def favorite_classes(answer_list, limit=20):
     return result_list
 
 @register.filter(is_safe=True)
-def dictlookup(key,dict):
+def dictlookup(key, dict):
     '''Get the correct column for the answer, for dump_survey.'''
     return dict[key]

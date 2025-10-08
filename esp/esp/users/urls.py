@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django.conf.urls import url
 
 from esp.users import views
@@ -21,11 +22,14 @@ urlpatterns = [
         name='esp.users.views.resend_activation_view'),
     url(r'^signout/?$', views.signout),
     url(r'^signedout/?$', views.signed_out_message),
-    url(r'^login/?$',   views.login_checked),
+    url(r'^login/?$',   views.login_checked, name="login"),
     url(r'^disableaccount/?$', views.disable_account),
     url(r'^grade_change_request/?$', GradeChangeRequestView.as_view(), name = 'grade_change_request'),
     url(r'^makeadmin/?$', views.make_admin),
+    url(r'^loginhelp', views.LoginHelpView.as_view(), name='Login Help'),
     url(r'^morph/?$', views.morph_into_user),
+    url(r'^unsubscribe/(?P<username>[\w.@+-]+)/(?P<token>[\w.:\-_=]+)/$', views.unsubscribe, name="unsubscribe"),
+    url(r'^unsubscribe_oneclick/(?P<username>[\w.@+-]+)/(?P<token>[\w.:\-_=]+)/$', views.unsubscribe_oneclick, name="unsubscribe_oneclick"),
 ]
 
 urlpatterns += [
@@ -36,6 +40,7 @@ urlpatterns += [
     url(r'^switchback/?$', myesp.myesp_switchback),
     url(r'^onsite/?$', myesp.myesp_onsite),
     url(r'^passwd/?$', myesp.myesp_passwd),
+    url(r'^accountmanage/?$', myesp.myesp_accountmanage),
     url(r'^profile/?$', myesp.edit_profile),
 ]
 

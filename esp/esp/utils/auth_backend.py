@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django.contrib.auth.backends import ModelBackend
 
 from esp.users.models import ESPUser

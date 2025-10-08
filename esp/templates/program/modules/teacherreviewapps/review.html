@@ -1,4 +1,5 @@
 {% extends "main.html" %}
+{% load users %}
 
 {% block title %}Review Student {{ student.name }}{% endblock %}
 
@@ -23,7 +24,7 @@ Please review the student's biographical information and responses to our questi
 </tr>
 <tr>
     <td width="25%">Grade:</td>
-    <td>{{ student.getGrade }}</td>
+    <td>{{ student|getGradeForProg:program.id }}</td>
 </tr>
 <tr>
     <td>DOB:</td>
@@ -63,7 +64,7 @@ Please review the student's biographical information and responses to our questi
 {{ form }}
 <tr>
  <th colspan="2" class="submit"> 
-  <input type="submit" class="fancybutton" value="Submit, and stay on page" name="submit" />
+  <input type="submit" class="fancybutton" value="Submit, and stay on page" name="submit_btn" />
   <input type="submit" class="fancybutton" value="Submit, and review next student" name="submit_next" />
   <input type="submit" class="fancybutton" value="Submit, and return to roster" name="submit_return" />
  </th>

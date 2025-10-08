@@ -57,38 +57,54 @@ $j(document).ready(function() {
 function file_link_formatter(cellvalue, options, rowObject)
 {
     var url_path = cellvalue.split("media/uploaded/")[1];
-    var url_dir = cellvalue.split("/");
-    return "<a href=\"/media/uploaded/" + url_path +  "\">" + url_dir[url_dir.length - 1] + "</a>";
+    if (url_path) {
+        var url_dir = url_path.split("/");
+        return "<a href=\"/media/uploaded/" + url_dir.slice(0, url_dir.length - 1).join("/") + "/" + encodeURIComponent(url_dir[url_dir.length - 1]) +  "\">" + url_dir[url_dir.length - 1] + "</a>";
+    } else {
+        return ""
+    }
 }
 
 var createGrid=function(form_data){
     $j("#jqGrid").jqGrid({
-	datatype: "local",
-	height: 250,
-	colNames: $j.map(form_data['questions'], function(val, index) {
-	    return val[1];
-	}),
-	colModel: $j.map(form_data['questions'], function(val, index) {
-	    var result = {name: val[0], index: val[0]};
-        //  Substitute in custom formatter defined above in order to link to uploaded files.
-        if (val[2] == "file")
-        {
-            result['formatter'] = file_link_formatter;
-        }
-        return result;
-	}),
-	caption: "Form responses",
-	rowNum: 10,
-	pager: "#jqGridPager"
+        datatype: "local",
+        height: 250,
+        colNames: $j.map(form_data['questions'], function(val, index) {
+            return val[1];
+        }),
+        colModel: $j.map(form_data['questions'], function(val, index) {
+            var result = {name: val[0], index: val[0]};
+            //  Substitute in custom formatter defined above in order to link to uploaded files.
+            if (val[2] == "file")
+            {
+                result['formatter'] = file_link_formatter;
+                result['classes'] = "file_column"
+            }
+            return result;
+        }),
+        caption: "Form responses",
+        rowNum: 10,
+        pager: "#jqGridPager"
     });
     $j("#jqGrid").jqGrid('navGrid', '#jqGridPager',
 			{view: true, edit: false, add: false, del: false},
 			{}, {}, {}, 
 			{multipleSearch: true, closeOnEscape: true},
-		        {closeOnEscape: true});
+		        {closeOnEscape: true}
+    );
+    $j.each(form_data['questions'], function(index, val) {
+        //  Substitute in custom formatter defined above in order to link to uploaded files.
+        if (val[2] == "file") {
+            $j("#download-legend").show();
+            $j("#jqGrid_" + val[0] + " div").append(" <a title='Bulk Download All Files' href='/customforms/bulkdownloadfiles?form_id="+$j('#form_id').val()+"&question_name="+val[0]+"'><span style='font-size: 14px;' class='glyphicon glyphicon-download-alt'</span></a>");
+            $j("#jqGrid_" + val[0] + " div a").click(function(e) {
+                e.stopPropagation();
+            });
+        }
+    });
     $j.each(form_data['answers'], function(index, val) {
-	delete val.id;
-	$j("#jqGrid").jqGrid('addRowData', index+1, val);
+        delete val.id;
+        $j("#jqGrid").jqGrid('addRowData', index+1, val);
     });
 };
 
