@@ -67,7 +67,7 @@ try:
         instance.process(user, *match.groups(), **match.groupdict())
 
         if not instance.send:
-            logger.debug("Instance did not send")
+            logger.info("Instance did not send")
             continue
 
         # Catch sender's message and grab the data fields (To, From, Subject, Body, etc.)
@@ -126,7 +126,7 @@ try:
             # TODO: to avoid loops, remove any @site.learningu.org addresses? There's probably a better way
             if isinstance(data['to'], str):
                 data['to'] = [data['to']]
-            for recipient in data['to']: # + data['cc'] + data['bcc']:
+            for recipient in data['to']:
                 logger.debug(f"Sending to `{recipient}`")
                 send_mail(subject=data['subject'], message=data['body'],
                          from_email='{}@{}'.format(sender, settings.EMAIL_HOST_SENDER),
@@ -143,7 +143,10 @@ except Exception as e:
     if DEBUG:
         raise
     else:
-        logger.warning("On user '{}', got error `{}`".format(user, e))
+        logger.warning("Couldn't find user '{}'. Full error is `{}`".format(user, e))
+        import traceback
+        error_info = traceback.format_exc()
+        logger.debug("Traceback is\n{}".format(error_info))
 
         print("""
 %s MAIL SERVER
