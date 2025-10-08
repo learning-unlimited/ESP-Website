@@ -5,7 +5,7 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-import sys, os, email, hashlib, re, smtplib, socket, random
+import sys, os, base64, email, hashlib, re, smtplib, socket, random
 from io import open
 new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
@@ -45,6 +45,27 @@ ORGANIZATION_NAME = settings.INSTITUTION_NAME + '_' + settings.ORGANIZATION_SHOR
 DEBUG=False
 
 user = "UNKNOWN USER"
+
+
+def extract_attachments_for_sendgrid(msg):
+    attachments = []
+
+    for part in msg.iter_attachments():
+        filename = part.get_filename()
+        raw_content = part.get_payload(decode=True)
+        mimetype = part.get_content_type()
+
+        # Encode to base64 for SendGrid
+        b64_content = base64.b64encode(raw_content).decode('utf-8')
+
+        attachments.append({
+            "filename": filename,
+            "type": mimetype,
+            "content": b64_content
+        })
+
+    return attachments
+
 
 try:
     user = os.environ['LOCAL_PART']
