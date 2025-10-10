@@ -1,4 +1,3 @@
-npm
 build-essential
 texlive
 texlive-latex-extra
