@@ -5,7 +5,7 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-import sys, os, email, re, smtplib, socket, sha, random
+import sys, os, base64, email, hashlib, re, smtplib, socket, random
 from io import open
 new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
@@ -33,14 +33,11 @@ if os.environ.get('VIRTUAL_ENV') is None:
 
 import django
 django.setup()
-from esp.dbmail.models import EmailList
+from esp.dbmail.models import EmailList, send_mail
+from esp.users.models import ESPUser
 from django.conf import settings
 
-host = socket.gethostname()
 import_location = 'esp.dbmail.receivers.'
-MAIL_PATH = '/usr/sbin/sendmail'
-server = smtplib.SMTP('localhost')
-ARCHIVE = settings.DEFAULT_EMAIL_ADDRESSES['archive']
 SUPPORT = settings.DEFAULT_EMAIL_ADDRESSES['support']
 ORGANIZATION_NAME = settings.INSTITUTION_NAME + '_' + settings.ORGANIZATION_SHORT_NAME
 
@@ -49,14 +46,31 @@ DEBUG=False
 
 user = "UNKNOWN USER"
 
-def send_mail(message):
-    p = os.popen("%s -i -t" % MAIL_PATH, 'w')
-    p.write(message)
+
+def extract_attachments_for_sendgrid(msg):
+    attachments = []
+
+    for part in msg.iter_attachments():
+        filename = part.get_filename()
+        raw_content = part.get_payload(decode=True)
+        mimetype = part.get_content_type()
+
+        # Encode to base64 for SendGrid
+        b64_content = base64.b64encode(raw_content).decode('utf-8')
+
+        attachments.append({
+            "filename": filename,
+            "type": mimetype,
+            "content": b64_content
+        })
+
+    return attachments
+
 
 try:
     user = os.environ['LOCAL_PART']
 
-    message = email.message_from_file(sys.stdin)
+    message = email.message_from_file(sys.stdin, policy=email.policy.default)
 
     handlers = EmailList.objects.all()
 
@@ -74,63 +88,87 @@ try:
         instance.process(user, *match.groups(), **match.groupdict())
 
         if not instance.send:
+            logger.info("Instance did not send")
             continue
 
-        if hasattr(instance, "direct_send") and instance.direct_send:
-            if message['Bcc']:
-                bcc_recipients = [x.strip() for x in message['Bcc'].split(',')]
-                del(message['Bcc'])
-                message['Bcc'] = ", ".join(bcc_recipients)
-
-            send_mail(str(message))
-            continue
-
-        del(message['to'])
-        del(message['cc'])
-        message['X-ESP-SENDER'] = 'version 2'
-        message['X-FORWARDED-FOR'] = message['X-CLIENT-IP'] if message['X-Client-IP'] else message['Client-IP']
-
-        subject = message['subject']
-        del(message['subject'])
-        if hasattr(instance, 'emailcode') and instance.emailcode:
-            subject = '[%s] %s' % (instance.emailcode, subject)
-        if handler.subject_prefix:
-            subject = '[%s] %s' % (handler.subject_prefix, subject)
-        message['Subject'] = subject
-
-        if handler.from_email:
-            del(message['from'])
-            message['From'] = handler.from_email
-
-        del message['Message-ID']
-
-        # get a new message id
-        message['Message-ID'] = '<%s@%s>' % (sha.new(str(random.random())).hexdigest(),
-                                             host)
-
-        if handler.cc_all:
-            # send one mass-email
-            message['To'] = ', '.join(instance.recipients)
-            send_mail(str(message))
+        # Catch sender's message and grab the data fields (to, from, subject, body, and attachments)
+        data = dict()
+        # TODO: (1) sort out why the email_address.split() breaks when it's a list of users; (2) consider prepending the class code to the subject
+        # TODO: in the long term, it would be better to implement polymorphism so that class lists and individual user aliases both have `recipients`
+        if hasattr(instance, 'recipients'):
+            data['to'] = [x for x in instance.recipients if not x.endswith(settings.EMAIL_HOST_SENDER)] # TODO: make sure to expand the `to` field as needed so sendgrid doesn't just forward in a loop
+        elif hasattr(instance, 'message'):
+            data['to'] = instance.message['to']
         else:
-            # send an email for each recipient
-            for recipient in instance.recipients:
-                del(message['To'])
-                message['To'] = recipient
-                send_mail(str(message))
+            raise TypeError("Unknown receiver type for `{}`".format(instance))
+        data['from'] = message['from'].split(',') or ''
+        data['subject'] = message['subject'] or ''
+        data['body'] = '<html>{}</html>'.format(message.get_body(preferencelist=('html', 'plain')).get_content())
+        data['attachments'] = [extract_attachments_for_sendgrid(x) for x in message.iter_attachments()]
+        logger.debug(f"Attachments are `{data['attachments']}` of types `{[type(x) for x in data['attachments']]}`")
 
+
+       # If the sender's email is not associated with an account on the site,
+       # do not forward the email
+        if not data['from']:
+            logger.debug(f"User has no account: `from` field is `{data['from']}`")
+            continue
+        else:
+            if len(data['from']) != 1:
+                raise AttributeError(f"More than one sender: `{data['from']}`")
+            email_address = data['from'][0].split('<')[1].split('>')[0]
+            users = ESPUser.objects.filter(email=email_address).order_by('date_joined') # sort oldest to newest
+            if len(users) == 0:
+                logger.warning('Received email from {}, which is not associated with a user'.format(data['from']))
+                # TODO: send the user a bounce message but limit to one bounce message per day/week/something using
+                # something similar to dbmail.MessageRequests to keep track
+                continue
+            elif len(users) == 1:
+                sender = users[0]
+            # If there is more than one associated account, choose one by prefering admin > teacher > volunteer >
+            # student then choosing the earliest account created. Then send as before using the unique account.
+            elif len(users) > 1:
+                for group_name in ['Administrator', 'Teacher', 'Volunteer', 'Student', 'Educator']:
+                    group_users = [x for x in users if len(x.groups.filter(name=group_name)) > 0]
+                    if len(group_users) > 0:
+                        sender = group_users[0] # choose the first (oldest) account if there is still more than
+                        # one; it won't matter because they all go to the same email by construction
+                        break
+                else: # if the users aren't in any of the standard groups above, ...
+                    sender = users[0] # ... then just pick the oldest account created by selecting users[0] as above
+                logger.debug(f"Group selection: {group_name} -> {group_users}")
+            else:
+                logger.error('Negative number of possible senders in supposed list `{}`. Skipping....'.format(users))
+                continue
+            # Having identified the sender, if the sender's email is associated with an account on the website,
+            # use SendGrid to send an email to each recipient of the original message (To, Cc, Bcc) individually from
+            # the sender's site email
+            logger.info('Sending email as {}'.format(sender))
+            # TODO: to avoid loops, remove any @site.learningu.org addresses? There's probably a better way
+            if isinstance(data['to'], str):
+                data['to'] = [data['to']]
+            for recipient in data['to']:
+                logger.debug(f"Sending to `{recipient}`")
+                send_mail(subject=data['subject'], message=data['body'],
+                         from_email='{}@{}'.format(sender, settings.EMAIL_HOST_SENDER),
+                          recipient_list=[recipient], attachments=data['attachments'], fail_silently=False)
+            del sender, recipient, users
         sys.exit(0)
 
 
 except Exception as e:
-    # we dont' want to care if it's an exit
+    # we don't want to care if it's an exit
     if isinstance(e, SystemExit):
         raise
 
     if DEBUG:
         raise
     else:
-        logger.warning("Couldn't find user '%s'", user)
+        logger.warning("Couldn't find user '{}'. Full error is `{}`".format(user, e))
+        import traceback
+        error_info = traceback.format_exc()
+        logger.debug("Traceback is\n{}".format(error_info))
+
         print("""
 %s MAIL SERVER
 ===============
