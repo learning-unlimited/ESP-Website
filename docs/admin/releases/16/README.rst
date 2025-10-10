@@ -192,3 +192,37 @@ Minor bug fixes
 - Fixed the generation of the meal tickets printable
 - Fixed various bugs in the UserSearchController (the UI that is used for the comm panel), mostly related to when a user is directed here with a custom link
 - Fixed the functionality of the unenroll module and made some UI improvements (this module hadn't been touched in 9 years)
+
+October 2025 Patch
+==================
+
+Minor new features
+~~~~~~~~~~~~~~~~~~
+- Added the ability to set a tag with a Google Analytics ID ("google_analytics_id") that enables Google Analytics monitoring for nearly all pages of the site
+- Added the droplets theme to the theme documentation
+- Added the option to change the width at which the droplets theme converts from desktop mode to mobile mode
+- Added a button in the ajax scheduler to clear the scheduling cache
+- Made the bigpicture theme much more mobile friendly (includes dynamic page width and a separate navigation menu for mobile)
+- Email previews are now rendered in iframe elements to isolate any stylings that would otherwise alter the main web page
+- Updated the default favicon to have a transparent background
+- Added a backup of the default favicon so it is always available as an option on the logo picker page
+- Converted the class category and flag type menus to checkboxes in the program settings page
+- Added an option to include an editable textbox to the footer in all themes
+- Padding at the top and bottom of the page is now calculated dynamically based on the heights of the header and footer
+- Improved the error shown when the credit card module is not set up properly
+- Class web pages (generally made by teachers) now only support Markdown (the HTML editor has been replaced with a Markdown editor and all old web pages have been cleaned to only have Markdown)
+- Redesigned the survey management landing page
+
+Minor bug fixes
+~~~~~~~~~~~~~~~
+- Fixed various bugs related to custom forms
+- Fixed the creation of teacher interview events
+- Restored the link to the Statistics page from the Manage All Programs page
+- Fixed the behavior when attempting to permanently delete user objects
+- Fixed the formatting of the volunteer CSV download
+- Fixed the overflow of text and popups in tables on the dashboard and on the main teacher registration page
+- Fixed the handling of templates in the communications panel
+- Fixed the sequence of the credit card and confirm registration modules
+- Fixed the handling of the teacher text button on the teacher checkin page when texting is not enabled
+- Fixed the text on the communications panel after using the recipient checklist
+- Fixed the width of buttons for the droplets theme
