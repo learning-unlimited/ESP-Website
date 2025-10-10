@@ -95,9 +95,9 @@
 <script>
 	function footerResize() {
 		if (window.innerWidth > parseInt($j(":root").css("--width-breakpoint"))){
-			$j('#main').css('padding-bottom', $j("#footer").innerHeight());
+			$j('body').css('padding-bottom', $j("#footer").innerHeight());
 		} else {
-			$j('#main').css('padding-bottom', "inherit");
+			$j('body').css('padding-bottom', "inherit");
 		}
 	};
 	window.addEventListener("resize", footerResize);
@@ -105,9 +105,9 @@
 	
 	function headerResize() {
 		if (window.innerWidth > parseInt($j(":root").css("--width-breakpoint"))){
-			$j('#main').css('padding-top', $j("#navbar").innerHeight());
+			$j('body').css('padding-top', $j("#navbar").innerHeight());
 		} else {
-			$j('#main').css('padding-top', "inherit");
+			$j('body').css('padding-top', "inherit");
 		}
 	};
 	window.addEventListener("resize", headerResize);
