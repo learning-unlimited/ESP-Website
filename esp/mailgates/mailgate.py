@@ -47,23 +47,14 @@ DEBUG=False
 user = "UNKNOWN USER"
 
 
-def extract_attachments_for_sendgrid(msg):
+def extract_attachments(msg):
     attachments = []
-
     for part in msg.iter_attachments():
         filename = part.get_filename()
-        raw_content = part.get_payload(decode=True)
+        content = part.get_payload(decode=True)
         mimetype = part.get_content_type()
-
-        # Encode to base64 for SendGrid
-        b64_content = base64.b64encode(raw_content).decode('utf-8')
-
-        attachments.append({
-            "filename": filename,
-            "type": mimetype,
-            "content": b64_content
-        })
-
+        attachments.append((filename, content, mimetype))
+        # TODO: check if content is null -- SendGrid fails ungracefully
     return attachments
 
 
@@ -104,8 +95,7 @@ try:
         data['from'] = message['from'].split(',') or ''
         data['subject'] = message['subject'] or ''
         data['body'] = '<html>{}</html>'.format(message.get_body(preferencelist=('html', 'plain')).get_content())
-        data['attachments'] = [extract_attachments_for_sendgrid(x) for x in message.iter_attachments()]
-        logger.debug(f"Attachments are `{data['attachments']}` of types `{[type(x) for x in data['attachments']]}`")
+        data['attachments'] = extract_attachments(message)
 
 
        # If the sender's email is not associated with an account on the site,
