@@ -85,9 +85,9 @@ try:
         # Catch sender's message and grab the data fields (to, from, subject, body, and attachments)
         data = dict()
         # TODO: (1) sort out why the email_address.split() breaks when it's a list of users; (2) consider prepending the class code to the subject
-        # TODO: in the long term, it would be better to implement polymorphism so that class lists and individual user aliases both have `recipients`
         if hasattr(instance, 'recipients'):
-            data['to'] = [x for x in instance.recipients if not x.endswith(settings.EMAIL_HOST_SENDER)] # TODO: make sure to expand the `to` field as needed so sendgrid doesn't just forward in a loop
+            # TODO: to avoid loops, remove any @site.learningu.org addresses? There's probably a better way
+            data['to'] = [x for x in instance.recipients if not x.endswith(settings.EMAIL_HOST_SENDER)]
         elif hasattr(instance, 'message'):
             data['to'] = instance.message['to']
         else:
@@ -110,8 +110,6 @@ try:
             users = ESPUser.objects.filter(email=email_address).order_by('date_joined') # sort oldest to newest
             if len(users) == 0:
                 logger.warning('Received email from {}, which is not associated with a user'.format(data['from']))
-                # TODO: send the user a bounce message but limit to one bounce message per day/week/something using
-                # something similar to dbmail.MessageRequests to keep track
                 continue
             elif len(users) == 1:
                 sender = users[0]
@@ -134,7 +132,6 @@ try:
             # use SendGrid to send an email to each recipient of the original message (To, Cc, Bcc) individually from
             # the sender's site email
             logger.info('Sending email as {}'.format(sender))
-            # TODO: to avoid loops, remove any @site.learningu.org addresses? There's probably a better way
             if isinstance(data['to'], str):
                 data['to'] = [data['to']]
             for recipient in data['to']:
