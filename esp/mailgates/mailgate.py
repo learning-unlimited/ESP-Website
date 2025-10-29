@@ -53,8 +53,8 @@ def extract_attachments(msg):
         filename = part.get_filename()
         content = part.get_payload(decode=True)
         mimetype = part.get_content_type()
-        attachments.append((filename, content, mimetype))
-        # TODO: check if content is null -- SendGrid fails ungracefully
+        if content:
+            attachments.append((filename, content, mimetype))
     return attachments
 
 
