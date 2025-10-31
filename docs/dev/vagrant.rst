@@ -164,12 +164,14 @@ Changes to the base VM should be needed rarely, but you can't stay on the same U
 (Trust us; we've tried.)
 Follow the following steps to upgrade the base VM for everyone to use.
 
-1. From the ``devsite`` folder, destroy your existing virtual machine with ``vagrant destroy``.
-(Make sure to save/commit any databases or configurations first!)
-Clear Vagrant's caches by deleting the ``.vagrant.d`` directory (which will typically in your home folder.
-This action will destroy all vagrant machines, so if you have others, just delete the one associated with your devsite.
-Also delete the ``.vagrant`` directory in ``devsite/``.
-Note: to get a head start on a slow step, start the download in step 5.ii then come back here.
+1. 
+
+    From the ``devsite`` folder, destroy your existing virtual machine with ``vagrant destroy``.
+    (Make sure to save/commit any databases or configurations first!)
+    Clear Vagrant's caches by deleting the ``.vagrant.d`` directory (which will typically be in your home folder.
+    This action will destroy all vagrant machines, so if you have others, just delete the one associated with your devsite.
+    Also delete the ``.vagrant`` directory in ``devsite/``.
+    Note: to get a head start on a slow step, start the download in step 5.ii then come back here.
 
 
 2. 
@@ -213,12 +215,12 @@ Note: to get a head start on a slow step, start the download in step 5.ii then c
 	ii. Download the Ubuntu install .iso here: https://ubuntu.com/download/desktop. Choose the version that matches your VM's.
 
 	iii. Open VirtualBox, and click on the Vagrant VM that you just created.
-	(It will probably be called something like ``devsite_default_`` followed by some numbers.)
-	Then click on the "Settings" button, and click "Storage" on the left-hand menu.
-	Next to "Controller: IDE Controller" line, click the "Adds optical drive" button (the icon looks like a blue circle with a green plus sign).
-	Click the "Add" icon in the upper left, and browse to and select the ISO file you just downloaded.
-	Then click "Choose" to close the pop-up window. Now click on the "System" tab on the left-hand menu, and move the "Optical" drive to the top of the "Boot Order" list by clicking it and clicking the up button.
-	(Make sure the "Optical" drive has a checkmark). Finally, click "OK."
+	     (It will probably be called something like ``devsite_default_`` followed by some numbers.)
+	     Then click on the "Settings" button, and click "Storage" on the left-hand menu.
+	     Next to "Controller: IDE Controller" line, click the "Adds optical drive" button (the icon looks like a blue circle with a green plus sign).
+	     Click the "Add" icon in the upper left, and browse to and select the ISO file you just downloaded.
+	     Then click "Choose" to close the pop-up window. Now click on the "System" tab on the left-hand menu, and move the "Optical" drive to the top of the "Boot Order" list by clicking it and clicking the up button.
+	     (Make sure the "Optical" drive has a checkmark). Finally, click "OK."
 
 	iv. Run the virtual machine using the VirtualBox "Start" button, *not* by typing ``vagrant up`` in a terminal. If you are prompted, the username should be ubuntu with no password. If there is an popup prompting you to try or install Ubuntu, choose the "Try" option.
 
