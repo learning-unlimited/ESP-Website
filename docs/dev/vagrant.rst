@@ -32,9 +32,9 @@ Base components
 
 This setup procedure does have some prerequisites of its own, which you will need to install according to your own platform:
 
-* `Git 2.43 <http://git-scm.com/downloads>`_
-* `Virtualbox 7.0 <https://www.virtualbox.org/wiki/Downloads>`_ (and the accompanying Extension Pack; make sure it's the right version for your version of VirtualBox see, for example, https://forums.virtualbox.org/viewtopic.php?t=99355)
-* `Vagrant 2.4.1 <http://www.vagrantup.com/downloads.html>`_ (make sure you install the 64-bit version)
+* `Git <http://git-scm.com/downloads>`_
+* `Virtualbox 7.2.4 <https://www.virtualbox.org/wiki/Downloads>`_ (and the accompanying Extension Pack; make sure it's the right version for your version of VirtualBox see, for example, https://forums.virtualbox.org/viewtopic.php?t=99355)
+* `Vagrant 2.4.9 <http://www.vagrantup.com/downloads.html>`_ (make sure you install the 64-bit version)
 * `Python 3.7+ <https://www.python.org/downloads/>`_
 * Python libraries ``fabric`` and ``fabtools-python`` (can be installed using pip, which comes with Python; make sure to install version 1, not version 2 of fabric, so run ``pip install "fabric<2"``)
 
