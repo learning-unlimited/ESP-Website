@@ -290,8 +290,8 @@ If the base VM has been changed (see above), you will want to upgrade your devel
 4. Run ``git checkout main`` to check out the main branch. If you are upgrading your VM as part of a pull request, replace "main" with the name of the PR branch.
 
 5. Before proceeding, double-check that you have all of the `required software <#base-components>`_ installed. Now follow the `VM installation instructions above <#installation>`_, starting at ``vagrant up``.
-If you run into trouble, clear your SSH keys in ``~/.vagrant.d/`` and ``devsite/.vagrant``.
-If you don't have other virtual machines, you can just delete both directories.
+   If you run into trouble, clear your SSH keys in ``~/.vagrant.d/`` and ``devsite/.vagrant``.
+   If you don't have other virtual machines, you can just delete both directories.
 
 6. After running ``fab setup``, run ``fab loaddb:devsite_django.sql``. If you specified a different filename when you dumped your database, use that name instead.
 
