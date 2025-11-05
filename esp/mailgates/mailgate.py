@@ -94,6 +94,10 @@ try:
             raise TypeError("Unknown receiver type for `{}`".format(instance))
         data['from'] = message['from'].split(',') or ''
         data['subject'] = message['subject'] or ''
+        # For class lists, grab the code (such as "A123") and prepend it to the subject line
+        if any([message['to'].endswith('-{}@{}'.format(x, settings.EMAIL_HOST_SENDER)) for x in ['class', 'students', 'teachers']]):
+            data['subject'] = '[{}] {}'.format(message['to'].split('-')[0].upper(), data['subject'])
+
         data['body'] = '<html>{}</html>'.format(message.get_body(preferencelist=('html', 'plain')).get_content())
         data['attachments'] = extract_attachments(message)
 
