@@ -84,10 +84,29 @@ try:
 
         # Catch sender's message and grab the data fields (to, from, subject, body, and attachments)
         data = dict()
-        # TODO: (1) sort out why the email_address.split() breaks when it's a list of users; (2) consider prepending the class code to the subject
+        # TODO: sort out why the email_address.split() breaks when it's a list of users
+        # if the instance has a `recipients` attribute, then it is a class list (such as `a123-teachers@`)
         if hasattr(instance, 'recipients'):
-            # TODO: to avoid loops, remove any @site.learningu.org addresses? There's probably a better way
-            data['to'] = [x for x in instance.recipients if not x.endswith(settings.EMAIL_HOST_SENDER)]
+            # TODO: the naive way to avoid loops is to remove any @site.learningu.org addresses
+            # There's probably a better way... we could look up plain redirects and try to resolve aliases
+            data['to'] = []
+            for recipient in instance.recipients:
+                # If the recipient has an email address that does not end with @anysite.learningu.org, keep them
+                # TODO: it would be better not to hardcode `.learningu.org` in case we ever change the name, but we
+                # only store `thissite.learningu.org` in settings, and we want `anysite.learningu.org` while still
+                # allowing user@learningu.org because those resolve to enterprise Gmail addresses
+                if not recipient.endswith('.learningu.org')
+                    data['to'].append(recipient)
+                # In this case, the user has a subdomain email addrees `@*.learningu.org`
+                else:
+                    # Resolve the plain redirect or user alias
+                    pass # TODO: complete this
+                    # If the redirect resolve to anything@anysite.learningu.org, kill it
+            # if the above filtering leaves the 'to' list empty, abort
+            if len(data['to']) == 0:
+                continue
+        # if the instance has a `message['to']` attribute, then it is a single address (such as `plain_redirect@` or
+        # `username@`)
         elif hasattr(instance, 'message'):
             data['to'] = instance.message['to']
         else:
