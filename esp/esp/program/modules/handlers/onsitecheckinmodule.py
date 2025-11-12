@@ -254,6 +254,10 @@ class OnSiteCheckinModule(ProgramModuleObj):
         POST to this view to check-in a student with a user ID.
         POST data:
           'code':          The student's ID.
+          'attended':      Whether to set an 'attended' record.
+          'paid':          Whether to mark the remainder of the student's as paid.
+          'med':           Whether to set a 'med' record.
+          'liab':          Whether to set a 'liab' record.
         """
         json_data = {}
         if request.method == 'POST' and 'code' in request.POST:
@@ -265,13 +269,20 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 student = students[0]
                 info_string = student.name() + " (" + str(code) + ")"
                 if student.isStudent():
-                    if prog.isCheckedIn(student):
-                        json_data['message'] = '%s is already checked in!' % info_string
-                    else:
-                        rt = RecordType.objects.get(name="attended")
-                        new = Record(user=student, program=prog, event=rt)
-                        new.save()
-                        json_data['message'] = '%s is now checked in!' % info_string
+                    self.student = student
+                    messages = []
+                    for key in ['attended', 'paid', 'liab', 'med']:
+                        if request.POST.get(key) == "true":
+                            if key == "attended":
+                                if prog.isCheckedIn(student):
+                                    messages.append('%s is already checked in!' % info_string)
+                                else:
+                                    self.create_record(key)
+                                    messages.append('%s is now checked in!' % info_string)
+                            else:
+                                self.create_record(key)
+                                messages.append('%s record set for %s' % (key, info_string))
+                    json_data['message'] = "\n".join(messages)
                 else:
                     json_data['message'] = '%s is not a student!' % info_string
         return HttpResponse(json.dumps(json_data), content_type='text/json')

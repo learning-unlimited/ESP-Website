@@ -18,12 +18,17 @@
         Quagga.onDetected(function(result) {
             var code = result.codeResult.code;
             var autocheckin = document.getElementById("autocheckinbox");
+            var data = {}
+            $j('#checkinform input[type="checkbox"]').each(function() {
+                data[this.name] = this.checked;
+            });
 
             if (App.lastResult !== code) {
                 App.lastResult = code;
                 beep();
                 if (autocheckin.checked){
-                    var data = {code: code, csrfmiddlewaretoken: csrf_token()};
+                    data["code"] = code;
+                    data["csrfmiddlewaretoken"] = csrf_token();
                     $j.post('ajaxbarcodecheckin', data, function(result) {
                         if (result.hasOwnProperty('message')) {
                             var message = result.message;
