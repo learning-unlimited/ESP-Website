@@ -61,7 +61,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
             }
 
     def updatePaid(self, paid=True):
-        IndividualAccountingController.updatePaid(self.program, self.student, paid)
+        IndividualAccountingController.updatePaid(self.program, self.student, paid, in_full=True)
 
     def create_record(self, event):
         created = False
