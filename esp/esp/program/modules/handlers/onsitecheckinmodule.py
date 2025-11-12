@@ -226,13 +226,17 @@ class OnSiteCheckinModule(ProgramModuleObj):
                         continue
 
                     if student.isStudent():
-                        if prog.isCheckedIn(student):
-                            results['existing'].append(code)
-                        else:
-                            rt = RecordType.objects.get(name="attended")
-                            new = Record(user=student, program=prog, event=rt)
-                            new.save()
-                            results['new'].append(code)
+                        self.student = student
+                        for key in ['attended', 'paid', 'liab', 'med']:
+                            if form.cleaned_data[key]:
+                                if key == "attended":
+                                    if prog.isCheckedIn(student):
+                                        results['existing'].append(code)
+                                    else:
+                                        self.create_record(key)
+                                        results['new'].append(code)
+                                else:
+                                    self.create_record(key)
                     else:
                         results['not_student'].append(code)
         else:
