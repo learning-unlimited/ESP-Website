@@ -83,10 +83,11 @@
     {% endif %}
 
     <form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">
-                        {{ form.as_p }}
-                        <p class="ids">
-                    <input type="submit" value="Submit" />
-                    </p>
+        <table style="width: unset;">
+            {{ form.as_table }}
+            <tr><td colspan="2"><input type="submit" value="Submit" /></td></tr>
+        </table>
+        
     </form>
 
     <br><br>
@@ -101,7 +102,7 @@
             <option value="i2of5_reader">Interleaved 2 of 5</option>
         </select>
         <br><br>
-        <input type="checkbox" id="autocheckinbox" value="autocheckin" checked> Auto-checkin scanned barcodes<br>
+        <input type="checkbox" id="autocheckinbox" value="autocheckin" checked><label for="autocheckinbox">Auto-checkin scanned barcodes</label><br>
     </div>
     <div class="overlay overlay--inline">
         <div class="overlay__content viewport" id="interactive">
