@@ -26,7 +26,11 @@ class OnSiteRegForm(forms.Form):
             [('', '')] + [(x, x) for x in ESPUser.grade_options()])
 
 class OnsiteBarcodeCheckinForm(forms.Form):
-    uids = forms.CharField(label='', widget=forms.Textarea(attrs={'rows': 10}))
+    uids = forms.CharField(label = 'User IDs', widget=forms.Textarea(attrs={'rows': 10}))
+    attended = forms.BooleanField(label = "Attending? (i.e. here right now?)", required = False, initial = True)
+    med = forms.BooleanField(label = "Medical Form?", required = False, initial = False)
+    liab = forms.BooleanField(label = "Liability Form?", required = False, initial = False)
+    paid = forms.BooleanField(label = "Paid in Full?", required = False, initial = False)
 
 class TeacherCheckinForm(forms.Form):
     when = forms.DateTimeField(label='Date/Time', widget=DateTimeWidget, required = False)
