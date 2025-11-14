@@ -87,21 +87,26 @@ try:
         # TODO: sort out why the email_address.split() breaks when it's a list of users
         # if the instance has a `recipients` attribute, then it is a class list (such as `a123-teachers@`)
         if hasattr(instance, 'recipients'):
-            # TODO: the naive way to avoid loops is to remove any @site.learningu.org addresses
-            # There's probably a better way... we could look up plain redirects and try to resolve aliases
             data['to'] = []
+            aliases = []
             for recipient in instance.recipients:
                 # If the recipient has an email address that does not end with @anysite.learningu.org, keep them
                 # TODO: it would be better not to hardcode `.learningu.org` in case we ever change the name, but we
                 # only store `thissite.learningu.org` in settings, and we want `anysite.learningu.org` while still
                 # allowing user@learningu.org because those resolve to enterprise Gmail addresses
-                if not recipient.endswith('.learningu.org')
+                if recipient.endswith('.learningu.org'):
+                    aliases.append(recipient)
+                elif '@' in recipient:
                     data['to'].append(recipient)
-                # In this case, the user has a subdomain email addrees `@*.learningu.org`
                 else:
-                    # Resolve the plain redirect or user alias
-                    pass # TODO: complete this
-                    # If the redirect resolve to anything@anysite.learningu.org, kill it
+                    logger.warning('Email address without `@` symbol: `{}`'.format(recipient))
+            redirects = PlainRedirect.objects.filter(original__iin=[x.split('@')[0] for x in aliases])
+            users = ESPUser.objects.filter(name__iin=aliases)
+            # Theoretically at least one of these should be empty, but now doesn't seem like the time
+            # If the redirect resolve to anything@anysite.learningu.org, kill it
+            for address in sum([x.destination.split(',') for x in redirects]) + [x.email for x in users]:
+                if not address.endswith('.learningu.org') # TODO: again, would be nice not to hardcode
+                    data['to'].append(address)
             # if the above filtering leaves the 'to' list empty, abort
             if len(data['to']) == 0:
                 continue
