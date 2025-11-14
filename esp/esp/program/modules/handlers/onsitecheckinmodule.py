@@ -71,9 +71,9 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 rec = Record(user=self.student, event=rt, program=self.program)
                 rec.save()
                 created = True
-        elif event=="paid":
-            self.updatePaid(True)
         else:
+            if event=="paid":
+                self.updatePaid(True)
             rt = RecordType.objects.get(name=event)
             recs, created = Record.objects.get_or_create(user=self.student,
                                                          event=rt,
@@ -214,7 +214,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
     def barcodecheckin(self, request, tl, one, two, module, extra, prog):
         context = {}
         if request.method == 'POST':
-            results = {'not_found': [], 'existing': [], 'new': [], 'not_student': []}
+            results = {'not_found': [], 'existing': [], 'new': [], 'not_student': [], 'paid': [], 'liab': [], 'med': []}
             form = OnsiteBarcodeCheckinForm(request.POST)
             if form.is_valid():
                 codes=form.cleaned_data['uids'].split()
@@ -236,7 +236,8 @@ class OnSiteCheckinModule(ProgramModuleObj):
                                         self.create_record(key)
                                         results['new'].append(code)
                                 else:
-                                    self.create_record(key)
+                                    created = self.create_record(key)
+                                    results[key].append(code)
                     else:
                         results['not_student'].append(code)
         else:

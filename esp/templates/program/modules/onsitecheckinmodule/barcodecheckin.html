@@ -56,35 +56,53 @@
     </p>
 
     {% if results %}
-    <p>
-    Checked in {{ results.new|length }} students.  {{ results.not_found|length }} students were not found, {{ results.existing|length }} students were already checked in, and {{ results.not_student|length }} IDs did not correspond to students.
-    </p>
-    {% if results.not_found %}
-    <p>
-    Students not found:
-    {% for id in results.not_found %}
-    {{ id }}{% if not forloop.last %},{% endif %}
-    {% endfor %}
-    </p>
-    {% endif %}
-    {% if results.not_student %}
-    <p>
-    IDs not corresponding to students:
-    {% for id in results.not_student %}
-    {{ id }}{% if not forloop.last %},{% endif %}
-    {% endfor %}
-    </p>
-    {% endif %}
-    {% comment %}
-    {% if results.existing %}
-    <p>
-    IDs already checked in:
-    {% for id in results.existing %}
-    {{ id }}{% if not forloop.last %},{% endif %}
-    {% endfor %}
-    </p>
-    {% endif %}
-    {% endcomment %}
+    <div class="alert alert-info">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span>
+        Checked in {{ results.new|length }} students.  {{ results.not_found|length }} students were not found, {{ results.existing|length }} students were already checked in, and {{ results.not_student|length }} IDs did not correspond to students.
+        </span>
+        {% if results.paid %}
+        <span>
+        {{ results.paid|length }} student(s) paid.
+        </span>
+        {% endif %}
+        {% if results.liab %}
+        <span>
+        {{ results.liab|length }} student(s) handed in their liability waiver.
+        </span>
+        {% endif %}
+        {% if results.med %}
+        <span>
+        {{ results.med|length }} student(s) handed in their medical waiver.
+        </span>
+        {% endif %}
+        {% if results.not_found %}
+        <span>
+        Students not found:
+        {% for id in results.not_found %}
+        {{ id }}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        </span>
+        {% endif %}
+        {% if results.not_student %}
+        <span>
+        IDs not corresponding to students:
+        {% for id in results.not_student %}
+        {{ id }}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        </span>
+        {% endif %}
+        {% comment %}
+        {% if results.existing %}
+        <span>
+        IDs already checked in:
+        {% for id in results.existing %}
+        {{ id }}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        </span>
+        {% endif %}
+        {% endcomment %}
+    </div>
     {% endif %}
 
     <form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">
@@ -107,7 +125,7 @@
             <option value="i2of5_reader">Interleaved 2 of 5</option>
         </select>
         <br><br>
-        <input type="checkbox" id="autocheckinbox" value="autocheckin" checked><label for="autocheckinbox">Auto-checkin scanned barcodes</label><br>
+        <input type="checkbox" class="btn" id="autocheckinbox" value="autocheckin" checked><label for="autocheckinbox">Auto-checkin scanned barcodes</label><br>
     </div>
     <div class="overlay overlay--inline">
         <div class="overlay__content viewport" id="interactive">
