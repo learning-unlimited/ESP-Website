@@ -68,7 +68,6 @@ from django.template import loader
 from django.template.defaultfilters import urlencode
 from django.template.loader import render_to_string
 from django_extensions.db.models import TimeStampedModel
-from django.core import urlresolvers
 from django.utils.functional import SimpleLazyObject
 from django.utils.safestring import mark_safe
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
@@ -2960,7 +2959,7 @@ class GradeChangeRequest(TimeStampedModel):
                   [self.requesting_student.email, ])
 
     def get_admin_url(self):
-        return urlresolvers.reverse("admin:%s_%s_change" %
+        return reverse("admin:%s_%s_change" %
         (self._meta.app_label, self._meta.model_name), args=(self.id,))
 
 
