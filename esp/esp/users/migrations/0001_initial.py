@@ -116,7 +116,7 @@ class Migration(migrations.Migration):
                 ('school_id', models.CharField(help_text='An 8-digit ID number.', max_length=128, null=True, blank=True)),
                 ('contact_title', models.TextField(null=True, blank=True)),
                 ('name', models.TextField(null=True, blank=True)),
-                ('contact', esp.db.fields.AjaxForeignKey(blank=True, to='users.ContactInfo', help_text='A set of contact information for this school. Type to search by name (Last, First), or <a href="/admin/users/contactinfo/add/">go edit a new one</a>.', null=True)),
+                ('contact', esp.db.fields.AjaxForeignKey(blank=True, to='users.ContactInfo', help_text='A set of contact information for this school. Type to search by name (Last, First), or <a href="/admin/users/contactinfo/add/">go edit a new one</a>.', null=True, on_delete=models.CASCADE)),
             ],
             options={
                 'db_table': 'users_k12school',
@@ -137,8 +137,8 @@ class Migration(migrations.Migration):
                 ('start_date', models.DateTimeField(default=datetime.datetime.now, help_text='If blank, has always started.', null=True, blank=True)),
                 ('end_date', models.DateTimeField(default=None, help_text='If blank, never ends.', null=True, blank=True)),
                 ('permission_type', models.CharField(max_length=80, choices=[('Administer', 'Full administrative permissions'), ('View', 'Able to view a program'), ('Onsite', 'Access to onsite interfaces'), ('GradeOverride', 'Ignore grade ranges for studentreg'), ('Student Deadlines', (('Student', 'Basic student access'), ('Student/OverrideFull', 'Register for a full program'), ('Student/All', 'All student deadlines'), ('Student/Applications', 'Apply for classes'), ('Student/Catalog', 'View the catalog'), ('Student/Classes', 'Classes'), ('Student/Classes/OneClass', 'Classes/OneClass'), ('Student/Classes/Lottery', 'Enter the lottery'), ('Student/Classes/Lottery/View', 'View lottery results'), ('Student/ExtraCosts', 'Extra costs page'), ('Student/MainPage', 'Registration mainpage'), ('Student/Confirm', 'Confirm registration'), ('Student/Cancel', 'Cancel registration'), ('Student/Payment', 'Pay for a program'), ('Student/Profile', 'Set profile info'), ('Student/Survey', 'Access to survey'), ('Student/FormstackMedliab', 'Access to Formstack medical and liability form'), ('Student/Finaid', 'Access to financial aid application'))), ('Teacher Deadlines', (('Teacher', 'Basic teacher access'), ('Teacher/All', 'All teacher deadlines'), ('Teacher/Acknowledgement', 'Teacher acknowledgement'), ('Teacher/AppReview', "Review students' apps"), ('Teacher/Availability', 'Set availability'), ('Teacher/Catalog', 'Catalog'), ('Teacher/Classes', 'Classes'), ('Teacher/Classes/All', 'Classes/All'), ('Teacher/Classes/View', 'Classes/View'), ('Teacher/Classes/Edit', 'Classes/Edit'), ('Teacher/Classes/Create', 'Create classes of all types'), ('Teacher/Classes/Create/Class', 'Create standard classes'), ('Teacher/Classes/Create/OpenClass', 'Create open classes'), ('Teacher/Classes/SelectStudents', 'Classes/SelectStudents'), ('Teacher/Events', 'Teacher training signup'), ('Teacher/Quiz', 'Teacher quiz'), ('Teacher/MainPage', 'Registration mainpage'), ('Teacher/Survey', 'Teacher Survey'), ('Teacher/Profile', 'Set profile info'), ('Teacher/Survey', 'Access to survey')))])),
-                ('program', models.ForeignKey(blank=True, to='program.Program', null=True)),
-                ('role', models.ForeignKey(blank=True, to='auth.Group', help_text='Apply this permission to an entire user role (can be blank).', null=True)),
+                ('program', models.ForeignKey(blank=True, to='program.Program', null=True, on_delete=models.CASCADE)),
+                ('role', models.ForeignKey(blank=True, to='auth.Group', help_text='Apply this permission to an entire user role (can be blank).', null=True, on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
@@ -161,7 +161,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('event', models.CharField(max_length=80, choices=[('student_survey', 'Completed student survey'), ('teacher_survey', 'Completed teacher survey'), ('reg_confirmed', 'Confirmed registration'), ('attended', 'Attended program'), ('conf_email', 'Was sent confirmation email'), ('teacher_quiz_done', 'Completed teacher quiz'), ('paid', 'Paid for program'), ('med', 'Submitted medical form'), ('med_bypass', 'Recieved medical bypass'), ('liab', 'Submitted liability form'), ('onsite', 'Registered for program onsite'), ('schedule_printed', 'Printed student schedule onsite'), ('teacheracknowledgement', 'Did teacher acknowledgement'), ('lunch_selected', 'Selected a lunch block'), ('extra_form_done', 'Filled out Custom Form'), ('extra_costs_done', 'Filled out Student Extra Costs Form'), ('donation_done', 'Filled out Donation Form'), ('waitlist', 'Waitlisted for a program'), ('interview', 'Teacher-interviewed for a program'), ('teacher_training', 'Attended teacher-training for a program'), ('teacher_checked_in', 'Teacher checked in for teaching on the day of the program'), ('twophase_reg_done', 'Completed two-phase registration')])),
                 ('time', models.DateTimeField(default=datetime.datetime.now, blank=True)),
-                ('program', models.ForeignKey(blank=True, to='program.Program', null=True)),
+                ('program', models.ForeignKey(blank=True, to='program.Program', null=True, on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
@@ -183,7 +183,7 @@ class Migration(migrations.Migration):
                 ('schoolsystem_optout', models.BooleanField(default=False)),
                 ('post_hs', models.TextField(default='', blank=True)),
                 ('transportation', models.TextField(default='', blank=True)),
-                ('k12school', esp.db.fields.AjaxForeignKey(blank=True, to='users.K12School', help_text='Begin to type your school name and select your school if it comes up.', null=True)),
+                ('k12school', esp.db.fields.AjaxForeignKey(blank=True, to='users.K12School', help_text='Begin to type your school name and select your school if it comes up.', null=True, on_delete=models.CASCADE)),
             ],
             options={
                 'db_table': 'users_studentinfo',
@@ -213,8 +213,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('priority', models.DecimalField(default='1.0', max_digits=3, decimal_places=2)),
-                ('event', models.ForeignKey(to='cal.Event')),
-                ('role', models.ForeignKey(to='auth.Group')),
+                ('event', models.ForeignKey(to='cal.Event', on_delete=models.CASCADE)),
+                ('role', models.ForeignKey(to='auth.Group', on_delete=models.CASCADE)),
             ],
             options={
                 'db_table': 'users_useravailability',
@@ -244,7 +244,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('distance', models.DecimalField(max_digits=15, decimal_places=3)),
                 ('zipcodes', models.TextField()),
-                ('zip_code', models.ForeignKey(to='users.ZipCode')),
+                ('zip_code', models.ForeignKey(to='users.ZipCode', on_delete=models.CASCADE)),
             ],
             options={
                 'db_table': 'users_zipcodesearches',
@@ -263,76 +263,76 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='userforwarder',
             name='source',
-            field=esp.db.fields.AjaxForeignKey(related_name='forwarders_out', to='users.ESPUser', unique=True),
+            field=esp.db.fields.AjaxForeignKey(related_name='forwarders_out', to='users.ESPUser', unique=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='userforwarder',
             name='target',
-            field=esp.db.fields.AjaxForeignKey(related_name='forwarders_in', to='users.ESPUser'),
+            field=esp.db.fields.AjaxForeignKey(related_name='forwarders_in', to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='useravailability',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser'),
+            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='teacherinfo',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(blank=True, to=settings.AUTH_USER_MODEL, null=True),
+            field=esp.db.fields.AjaxForeignKey(blank=True, to=settings.AUTH_USER_MODEL, null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='studentinfo',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True),
+            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='record',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True),
+            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='permission',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', help_text='Blank does NOT mean apply to everyone, use role-based permissions for that.', null=True),
+            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', help_text='Blank does NOT mean apply to everyone, use role-based permissions for that.', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='passwordrecoveryticket',
             name='user',
-            field=models.ForeignKey(to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='guardianinfo',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True),
+            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='gradechangerequest',
             name='acknowledged_by',
-            field=models.ForeignKey(blank=True, to='users.ESPUser', null=True),
+            field=models.ForeignKey(blank=True, to='users.ESPUser', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='gradechangerequest',
             name='requesting_student',
-            field=models.ForeignKey(related_name='requesting_student_set', to='users.ESPUser'),
+            field=models.ForeignKey(related_name='requesting_student_set', to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='espuser_profile',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser', unique=True),
+            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser', unique=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='educatorinfo',
             name='k12school',
-            field=models.ForeignKey(blank=True, to='users.K12School', null=True),
+            field=models.ForeignKey(blank=True, to='users.K12School', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='educatorinfo',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True),
+            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='contactinfo',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(blank=True, to=settings.AUTH_USER_MODEL, null=True),
+            field=esp.db.fields.AjaxForeignKey(blank=True, to=settings.AUTH_USER_MODEL, null=True, on_delete=models.CASCADE),
         ),
     ]

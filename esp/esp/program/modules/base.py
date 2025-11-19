@@ -74,8 +74,8 @@ class CoreModule(object):
 
 @python_2_unicode_compatible
 class ProgramModuleObj(models.Model):
-    program  = models.ForeignKey(Program)
-    module   = models.ForeignKey(ProgramModule)
+    program  = models.ForeignKey(Program, on_delete=models.CASCADE)
+    module   = models.ForeignKey(ProgramModule, on_delete=models.CASCADE)
     seq      = models.IntegerField()
     required = models.BooleanField(default=False)
     required_label = models.CharField(max_length=80, blank=True, null=False, default="")

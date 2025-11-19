@@ -22,7 +22,7 @@ class FormstackAppSettings(models.Model):
     module.
     """
 
-    program = models.OneToOneField(Program)
+    program = models.OneToOneField(Program, on_delete=models.CASCADE)
 
     # formstack settings
     form_id = models.IntegerField(null=True)
@@ -95,8 +95,8 @@ field id.""")
 class StudentProgramApp(models.Model):
     """ A student's application to the program. """
 
-    user = models.ForeignKey(ESPUser)
-    program = models.ForeignKey(Program)
+    user = models.ForeignKey(ESPUser, on_delete=models.CASCADE)
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
 
     # choices for admin status
     UNREVIEWED = 0
@@ -163,8 +163,8 @@ class StudentProgramApp(models.Model):
 class StudentClassApp(models.Model):
     """ A student's application to a particular class. """
 
-    app = models.ForeignKey(StudentProgramApp)
-    subject = models.ForeignKey(ClassSubject)
+    app = models.ForeignKey(StudentProgramApp, on_delete=models.CASCADE)
+    subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE)
     student_preference = models.PositiveIntegerField()
 
     GREEN = 1

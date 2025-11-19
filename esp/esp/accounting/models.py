@@ -53,7 +53,7 @@ from decimal import Decimal
 class LineItemType(models.Model):
     text = models.TextField(help_text='A description of this line item.')
     amount_dec = models.DecimalField(default=0, max_digits=9, decimal_places=2, help_text='The cost of this line item.')
-    program = models.ForeignKey(Program)
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
     required = models.BooleanField(default=False)
     max_quantity = models.PositiveIntegerField(default=1)
     for_payments = models.BooleanField(default=False)
@@ -121,7 +121,7 @@ class LineItemType(models.Model):
 
 @python_2_unicode_compatible
 class LineItemOptions(models.Model):
-    lineitem_type = models.ForeignKey(LineItemType)
+    lineitem_type = models.ForeignKey(LineItemType, on_delete=models.CASCADE)
     description = models.TextField(help_text='You can include the cost as part of the description, which is helpful if the cost differs from the line item type.')
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='The cost of this option--leave blank to inherit from the line item type.')
     is_custom = models.BooleanField(default=False, help_text='Should the student be allowed to specify a custom amount for this option?')
@@ -147,7 +147,7 @@ class LineItemOptions(models.Model):
 
 @python_2_unicode_compatible
 class FinancialAidGrant(models.Model):
-    request = AjaxForeignKey(FinancialAidRequest)
+    request = AjaxForeignKey(FinancialAidRequest, on_delete=models.CASCADE)
     amount_max_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='Enter a number here to grant a dollar value of financial aid.  The grant will cover this amount or the full cost, whichever is less.')
     percent = models.PositiveIntegerField(blank=True, null=True, help_text='Enter an integer between 0 and 100 here to grant a certain percentage discount after the above dollar credit is applied.  0 means no additional discount, 100 means no payment is required for items that are covered by financial aid.')
     timestamp = models.DateTimeField(auto_now=True)
@@ -200,7 +200,7 @@ class FinancialAidGrant(models.Model):
 class Account(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
-    program = models.ForeignKey(Program, blank=True, null=True)
+    program = models.ForeignKey(Program, blank=True, null=True, on_delete=models.CASCADE)
 
     @property
     def balance(self):
@@ -267,9 +267,9 @@ class Transfer(models.Model):
     destination = models.ForeignKey(
         Account, blank=True, null=True, related_name='transfer_destination',
         help_text='Destination account; where the money is going to. Leave blank if this is a payment to an outsider.')
-    user = AjaxForeignKey(ESPUser, blank=True, null=True)
-    line_item = models.ForeignKey(LineItemType)
-    option = models.ForeignKey(LineItemOptions, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
+    line_item = models.ForeignKey(LineItemType, on_delete=models.CASCADE)
+    option = models.ForeignKey(LineItemOptions, blank=True, null=True, on_delete=models.CASCADE)
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2)
     transaction_id = models.TextField(
         'Transaction ID', max_length=64, blank=True, default='',

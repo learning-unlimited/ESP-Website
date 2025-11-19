@@ -116,9 +116,9 @@ def admin_required(func):
 
 @python_2_unicode_compatible
 class UserAvailability(models.Model):
-    user = AjaxForeignKey('ESPUser')
-    event = models.ForeignKey(Event)
-    role = models.ForeignKey('auth.Group')
+    user = AjaxForeignKey('ESPUser', on_delete=models.CASCADE)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    role = models.ForeignKey('auth.Group', on_delete=models.CASCADE)
     priority = models.DecimalField(max_digits=3, decimal_places=2, default='1.0')
 
     class Meta:
@@ -1385,9 +1385,9 @@ def update_email(**kwargs):
 @python_2_unicode_compatible
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
-    user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
-    k12school = AjaxForeignKey('K12School', help_text='Begin to type your school name and select your school if it comes up.', blank=True, null=True)
+    k12school = AjaxForeignKey('K12School', help_text='Begin to type your school name and select your school if it comes up.', blank=True, null=True, on_delete=models.CASCADE)
     school = models.CharField(max_length=256, blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
     gender = models.CharField(max_length=32, blank=True, null=True)
@@ -1577,7 +1577,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         'shirt_type': forms.TextInput
     }
 
-    user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
     pronoun = models.CharField(max_length=50, blank=True, null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
     affiliation = models.CharField(max_length=100, blank=True)
@@ -1674,7 +1674,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
 @python_2_unicode_compatible
 class GuardianInfo(models.Model):
     """ ES Guardian-specific contact information """
-    user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
     year_finished = models.PositiveIntegerField(blank=True, null=True)
     num_kids = models.PositiveIntegerField(blank=True, null=True)
 
@@ -1735,12 +1735,12 @@ class GuardianInfo(models.Model):
 @python_2_unicode_compatible
 class EducatorInfo(models.Model):
     """ ESP Educator-specific contact information """
-    user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
     subject_taught = models.CharField(max_length=64, blank=True, null=True)
     grades_taught = models.CharField(max_length=16, blank=True, null=True)
     school = models.CharField(max_length=128, blank=True, null=True)
     position = models.CharField(max_length=64, blank=True, null=True)
-    k12school = models.ForeignKey('K12School', blank=True, null=True)
+    k12school = models.ForeignKey('K12School', blank=True, null=True, on_delete=models.CASCADE)
 
     class Meta:
         app_label = 'users'
@@ -1882,7 +1882,7 @@ class ZipCode(models.Model):
 
 @python_2_unicode_compatible
 class ZipCodeSearches(models.Model):
-    zip_code = models.ForeignKey(ZipCode)
+    zip_code = models.ForeignKey(ZipCode, on_delete=models.CASCADE)
     distance = models.DecimalField(max_digits = 15, decimal_places = 3)
     zipcodes = models.TextField()
 
@@ -1930,7 +1930,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         if queryset: return queryset[0]
         else: return None
 
-    user = AjaxForeignKey(ESPUser, blank=True, null=False)
+    user = AjaxForeignKey(ESPUser, blank=True, null=False, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     e_mail = models.EmailField('Email address', blank=True, null=True, max_length=75)
@@ -2057,7 +2057,7 @@ class K12School(models.Model):
     All the schools that we know about.
     """
     contact = AjaxForeignKey(ContactInfo, null=True, blank=True,
-        help_text=mark_safe('A set of contact information for this school. Type to search by name (Last, First), or <a href="/admin/users/contactinfo/add/">go edit a new one</a>.'))
+        help_text=mark_safe('A set of contact information for this school. Type to search by name (Last, First), or <a href="/admin/users/contactinfo/add/">go edit a new one</a>.'), on_delete=models.CASCADE)
     school_type = models.TextField(blank=True, null=True,
         help_text='i.e. Public, Private, Charter, Magnet, ...')
     grades      = models.TextField(blank=True, null=True,
@@ -2222,7 +2222,7 @@ class PasswordRecoveryTicket(models.Model):
     RECOVER_EXPIRE = 2 # number of days before it expires
     SYMBOLS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
-    user = models.ForeignKey(ESPUser)
+    user = models.ForeignKey(ESPUser, on_delete=models.CASCADE)
     recover_key = models.CharField(max_length=RECOVER_KEY_LEN)
     expire = models.DateTimeField(null=True)
 
@@ -2392,9 +2392,9 @@ class RecordType(models.Model):
 
 @python_2_unicode_compatible
 class Record(models.Model):
-    event = models.ForeignKey("RecordType", blank=True, null=True)
-    program = models.ForeignKey("program.Program", blank=True, null=True)
-    user = AjaxForeignKey(ESPUser, models.CASCADE, blank=True, null=True)
+    event = models.ForeignKey("RecordType", blank=True, null=True, on_delete=models.CASCADE)
+    program = models.ForeignKey("program.Program", blank=True, null=True, on_delete=models.CASCADE)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
 
     time = models.DateTimeField(blank=True, default = datetime.now)
 
@@ -2470,9 +2470,9 @@ class Permission(ExpirableModel):
 
     #a permission can be assigned to a user, or a role
     user = AjaxForeignKey(ESPUser, blank=True, null=True,
-                          help_text="Blank does NOT mean apply to everyone, use role-based permissions for that.")
+                          help_text="Blank does NOT mean apply to everyone, use role-based permissions for that.", on_delete=models.CASCADE)
     role = models.ForeignKey("auth.Group", blank=True, null=True,
-                             help_text="Apply this permission to an entire user role (can be blank).")
+                             help_text="Apply this permission to an entire user role (can be blank).", on_delete=models.CASCADE)
 
     #For now, we'll use plain text for a description of what permission it is
     PERMISSION_CHOICES = (
@@ -2555,7 +2555,7 @@ class Permission(ExpirableModel):
     #use sparingly
 
     #optionally, a permission may be tied to a program
-    program = models.ForeignKey("program.Program", blank=True, null=True)
+    program = models.ForeignKey("program.Program", blank=True, null=True, on_delete=models.CASCADE)
     #note that the ability to do things will not always be determined by
     #a permission object, such as teachers automatically having access to
     #their classes
@@ -2879,8 +2879,8 @@ class GradeChangeRequest(TimeStampedModel):
     approved = models.NullBooleanField()
     acknowledged_time = models.DateTimeField(blank=True, null=True)
 
-    requesting_student = models.ForeignKey(ESPUser, related_name='requesting_student_set')
-    acknowledged_by = models.ForeignKey(ESPUser, blank=True, null=True)
+    requesting_student = models.ForeignKey(ESPUser, related_name='requesting_student_set', on_delete=models.CASCADE)
+    acknowledged_by = models.ForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
 
     class Meta:
         ordering = ['-acknowledged_time', '-created']

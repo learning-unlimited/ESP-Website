@@ -117,7 +117,7 @@ REGISTRATION_CHOICES = (
 class ClassSizeRange(models.Model):
     range_min = models.IntegerField(null=False)
     range_max = models.IntegerField(null=False)
-    program   = models.ForeignKey(Program, blank=True, null=True)
+    program   = models.ForeignKey(Program, blank=True, null=True, on_delete=models.CASCADE)
 
     @classmethod
     def get_ranges_for_program(cls, prog):
@@ -308,7 +308,7 @@ class ClassSection(models.Model):
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
     max_class_capacity = models.IntegerField(blank=True, null=True)
 
-    parent_class = AjaxForeignKey('ClassSubject', related_name='sections')
+    parent_class = AjaxForeignKey('ClassSubject', related_name='sections', on_delete=models.CASCADE)
 
     moderators = models.ManyToManyField(ESPUser, blank=True, related_name="moderating_sections")
 
@@ -1419,14 +1419,14 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     form_link_name='Course'
 
     title = models.TextField()
-    parent_program = models.ForeignKey(Program)
-    category = models.ForeignKey('ClassCategories', related_name = 'cls')
+    parent_program = models.ForeignKey(Program, on_delete=models.CASCADE)
+    category = models.ForeignKey('ClassCategories', related_name = 'cls', on_delete=models.CASCADE)
     class_info = models.TextField(blank=True)
     teachers = models.ManyToManyField(ESPUser)
     allow_lateness = models.BooleanField(default=False)
     message_for_directors = models.TextField(blank=True)
     class_size_optimal = models.IntegerField(blank=True, null=True)
-    optimal_class_size_range = models.ForeignKey(ClassSizeRange, blank=True, null=True)
+    optimal_class_size_range = models.ForeignKey(ClassSizeRange, blank=True, null=True, on_delete=models.CASCADE)
     allowable_class_size_ranges = models.ManyToManyField(ClassSizeRange, related_name='classsubject_allowedsizes', blank=True, null=True)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()

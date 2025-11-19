@@ -129,8 +129,8 @@ class StudentAppQuestion(BaseAppElement, models.Model):
     _element_name = 'question'
     _field_names = ['question', 'directions']
 
-    program = models.ForeignKey(Program, blank=True, null=True, editable = False)
-    subject = models.ForeignKey(ClassSubject, blank=True, null=True, editable = False)
+    program = models.ForeignKey(Program, blank=True, null=True, editable = False, on_delete=models.CASCADE)
+    subject = models.ForeignKey(ClassSubject, blank=True, null=True, editable = False, on_delete=models.CASCADE)
     question = models.TextField(help_text='The prompt that your students will see.')
     directions = models.TextField(help_text='Specify any additional notes (such as the length of response you desire) here.', blank=True, null=True)
 
@@ -147,7 +147,7 @@ class StudentAppQuestion(BaseAppElement, models.Model):
 @python_2_unicode_compatible
 class StudentAppResponse(BaseAppElement, models.Model):
     """ A response to an application question. """
-    question = models.ForeignKey(StudentAppQuestion, editable=False)
+    question = models.ForeignKey(StudentAppQuestion, editable=False, on_delete=models.CASCADE)
     response = models.TextField(default='')
     complete = models.BooleanField(default=False, help_text='Please check this box when you are finished responding to this question.')
 
@@ -167,7 +167,7 @@ class StudentAppReview(BaseAppElement, models.Model):
     The application can be reviewed by any director of the program or
     teacher of a class for which the student applied. """
 
-    reviewer = AjaxForeignKey(ESPUser, editable=False)
+    reviewer = AjaxForeignKey(ESPUser, editable=False, on_delete=models.CASCADE)
     date = models.DateTimeField(default=datetime.datetime.now, editable=False)
     score = models.PositiveIntegerField(null=True, blank=True, help_text='Please rate each student', choices=((10, "Yes"), (5, "Maybe"), (1, "No")))
     comments = models.TextField()
@@ -188,8 +188,8 @@ class StudentApplication(models.Model):
     """ Student applications for Junction and any other programs that need them. """
     from esp.program.models import Program
 
-    program = models.ForeignKey(Program, editable=False)
-    user    = AjaxForeignKey(ESPUser, editable=False)
+    program = models.ForeignKey(Program, editable=False, on_delete=models.CASCADE)
+    user    = AjaxForeignKey(ESPUser, editable=False, on_delete=models.CASCADE)
 
     questions = models.ManyToManyField(StudentAppQuestion)
     responses = models.ManyToManyField(StudentAppResponse)

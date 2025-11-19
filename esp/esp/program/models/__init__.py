@@ -1366,9 +1366,9 @@ class SplashInfo(models.Model):
         The data is manipulated by a separate program module, SplashInfoModule,
         which produces an additional registration step if enabled.
     """
-    student = AjaxForeignKey(ESPUser)
+    student = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
     #   Program field may be empty for backwards compatibility with Stanford data
-    program = AjaxForeignKey(Program, null=True)
+    program = AjaxForeignKey(Program, null=True, on_delete=models.CASCADE)
     lunchsat = models.CharField(max_length=32, blank=True, null=True) # No longer used, kept for backwards compatibility
     lunchsun = models.CharField(max_length=32, blank=True, null=True) # No longer used, kept for backwards compatibility
     siblingdiscount = models.NullBooleanField(default=False, blank=True)
@@ -1423,15 +1423,15 @@ class SplashInfo(models.Model):
 @python_2_unicode_compatible
 class RegistrationProfile(models.Model):
     """ A student registration form """
-    user = AjaxForeignKey(ESPUser)
-    program = models.ForeignKey(Program, blank=True, null=True)
-    contact_user = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_user')
-    contact_guardian = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_guardian')
-    contact_emergency = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_emergency')
-    student_info = AjaxForeignKey(StudentInfo, blank=True, null=True, related_name='as_student')
-    teacher_info = AjaxForeignKey(TeacherInfo, blank=True, null=True, related_name='as_teacher')
-    guardian_info = AjaxForeignKey(GuardianInfo, blank=True, null=True, related_name='as_guardian')
-    educator_info = AjaxForeignKey(EducatorInfo, blank=True, null=True, related_name='as_educator')
+    user = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
+    program = models.ForeignKey(Program, blank=True, null=True, on_delete=models.CASCADE)
+    contact_user = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_user', on_delete=models.CASCADE)
+    contact_guardian = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_guardian', on_delete=models.CASCADE)
+    contact_emergency = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_emergency', on_delete=models.CASCADE)
+    student_info = AjaxForeignKey(StudentInfo, blank=True, null=True, related_name='as_student', on_delete=models.CASCADE)
+    teacher_info = AjaxForeignKey(TeacherInfo, blank=True, null=True, related_name='as_teacher', on_delete=models.CASCADE)
+    guardian_info = AjaxForeignKey(GuardianInfo, blank=True, null=True, related_name='as_guardian', on_delete=models.CASCADE)
+    educator_info = AjaxForeignKey(EducatorInfo, blank=True, null=True, related_name='as_educator', on_delete=models.CASCADE)
     last_ts = models.DateTimeField(default=timezone.now)
     most_recent_profile = models.BooleanField(default=False)
 
@@ -1596,8 +1596,8 @@ class RegistrationProfile(models.Model):
 class TeacherBio(models.Model):
     """ This is the biography of a teacher."""
 
-    program = models.ForeignKey(Program, blank=True, null=True)
-    user    = AjaxForeignKey(ESPUser)
+    program = models.ForeignKey(Program, blank=True, null=True, on_delete=models.CASCADE)
+    user    = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
     bio     = models.TextField(blank=True, null=True)
     slugbio = models.CharField(max_length=50, blank=True, null=True)
     picture = models.ImageField(height_field = 'picture_height', width_field = 'picture_width', upload_to = "uploaded/bio_pictures/%y_%m/", blank=True, null=True)
@@ -1649,8 +1649,8 @@ class FinancialAidRequest(models.Model):
     Student financial Aid Request
     """
 
-    program = models.ForeignKey(Program, editable = False)
-    user    = AjaxForeignKey(ESPUser, editable = False)
+    program = models.ForeignKey(Program, editable = False, on_delete=models.CASCADE)
+    user    = AjaxForeignKey(ESPUser, editable = False, on_delete=models.CASCADE)
 
     reduced_lunch = models.BooleanField(verbose_name = 'Do you receive free/reduced lunch at school?', blank=True, default=False)
 
@@ -1751,7 +1751,7 @@ class BooleanToken(models.Model):
         Also meant to be combined into logical expressions for queries/tests
         (see BooleanExpression below).
     """
-    exp = models.ForeignKey('BooleanExpression', help_text='The Boolean expression that this token belongs to')
+    exp = models.ForeignKey('BooleanExpression', help_text='The Boolean expression that this token belongs to', on_delete=models.CASCADE)
     text = models.TextField(help_text='Boolean value, or text needed to compute it', default='', blank=True)
     seq = models.IntegerField(help_text='Location of this token on the expression stack (larger numbers are higher)', default=0)
 
@@ -1934,10 +1934,10 @@ class ScheduleConstraint(models.Model):
         - False if the provided [map] would violate the constraint
         - True if the provided [map] would satisfy the constraint
     """
-    program = models.ForeignKey(Program)
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
 
-    condition = models.ForeignKey(BooleanExpression, related_name='condition_constraint')
-    requirement = models.ForeignKey(BooleanExpression, related_name='requirement_constraint')
+    condition = models.ForeignKey(BooleanExpression, related_name='condition_constraint', on_delete=models.CASCADE)
+    requirement = models.ForeignKey(BooleanExpression, related_name='requirement_constraint', on_delete=models.CASCADE)
     #   This is a function of one argument, schedule_map, which returns an updated schedule_map.
     on_failure = models.TextField()
 
@@ -1986,7 +1986,7 @@ class ScheduleTestTimeblock(BooleanToken):
         This is an abstract base class that doesn't define
         the boolean_value function.
     """
-    timeblock = models.ForeignKey(Event, help_text='The timeblock that this schedule test pertains to')
+    timeblock = models.ForeignKey(Event, help_text='The timeblock that this schedule test pertains to', on_delete=models.CASCADE)
 
     class Meta:
         app_label = 'program'
@@ -2010,7 +2010,7 @@ class ScheduleTestCategory(ScheduleTestTimeblock):
     """ Boolean value testing: Does the schedule contain at least one section
         in the specified category at the specified time?
     """
-    category = models.ForeignKey('ClassCategories', help_text='The class category that must be selected for this timeblock')
+    category = models.ForeignKey('ClassCategories', help_text='The class category that must be selected for this timeblock', on_delete=models.CASCADE)
     def boolean_value(self, *args, **kwargs):
         timeblock_id = self.timeblock.id
         user_schedule = kwargs['map']
@@ -2058,8 +2058,8 @@ class ScheduleTestSectionList(ScheduleTestTimeblock):
 
 @python_2_unicode_compatible
 class VolunteerRequest(models.Model):
-    program = models.ForeignKey(Program)
-    timeslot = models.ForeignKey('cal.Event')
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
+    timeslot = models.ForeignKey('cal.Event', on_delete=models.CASCADE)
     num_volunteers = models.PositiveIntegerField()
 
     class Meta:
@@ -2076,11 +2076,11 @@ class VolunteerRequest(models.Model):
 
 @python_2_unicode_compatible
 class VolunteerOffer(models.Model):
-    request = models.ForeignKey(VolunteerRequest)
+    request = models.ForeignKey(VolunteerRequest, on_delete=models.CASCADE)
     confirmed = models.BooleanField(default=False)
 
     #   Fill out this if you're logged in...
-    user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
 
     #   ...or this if you haven't.
     email = models.EmailField(blank=True, null=True, max_length=75)
@@ -2168,7 +2168,7 @@ class PhaseZeroRecord(models.Model):
         return str(self.id)
 
     user = models.ManyToManyField(ESPUser)
-    program = models.ForeignKey(Program, blank=True)
+    program = models.ForeignKey(Program, blank=True, on_delete=models.CASCADE)
     time = models.DateTimeField(auto_now_add=True)
 
     def display_user(self):
@@ -2181,8 +2181,8 @@ class ModeratorRecord(models.Model):
     def __str__(self):
         return str(self.id)
 
-    user = AjaxForeignKey(ESPUser)
-    program = models.ForeignKey(Program)
+    user = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
     will_moderate = models.BooleanField(default = False)
     num_slots = models.PositiveIntegerField(default = 0)
     class_categories = models.ManyToManyField('ClassCategories', blank=True)
@@ -2197,9 +2197,9 @@ class StudentRegistration(ExpirableModel):
     Model relating a student with a class section (interest, priority,
     enrollment, etc.).
     """
-    section = AjaxForeignKey('ClassSection')
-    user = AjaxForeignKey(ESPUser)
-    relationship = models.ForeignKey(RegistrationType)
+    section = AjaxForeignKey('ClassSection', on_delete=models.CASCADE)
+    user = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
+    relationship = models.ForeignKey(RegistrationType, on_delete=models.CASCADE)
 
     class Meta:
         app_label = 'program'
@@ -2212,8 +2212,8 @@ class StudentSubjectInterest(ExpirableModel):
     """
     Model indicating a student interest in a class section.
     """
-    subject = AjaxForeignKey('ClassSubject')
-    user = AjaxForeignKey(ESPUser)
+    subject = AjaxForeignKey('ClassSubject', on_delete=models.CASCADE)
+    user = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
 
     class Meta:
         app_label = 'program'

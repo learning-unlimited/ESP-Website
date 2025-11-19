@@ -134,7 +134,7 @@ class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, forms.widgets.Widget):
             self.field = attrs['field']
         elif 'type' in attrs:
             #   Anyone have a better hack here?
-            self.field = models.ForeignKey(attrs['type'])
+            self.field = models.ForeignKey(attrs['type'], on_delete=models.CASCADE)
 
         self.field_name = self.field.name
 

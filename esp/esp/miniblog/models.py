@@ -83,7 +83,7 @@ class Entry(models.Model):
     content = models.TextField(help_text='Yes, you can use markdown.') # Markdown-encoded
     sent    = models.BooleanField(editable=False, default=False)
     email   = models.BooleanField(editable=False, default=False)
-    fromuser = AjaxForeignKey(ESPUser, blank=True, null=True, editable=False)
+    fromuser = AjaxForeignKey(ESPUser, blank=True, null=True, editable=False, on_delete=models.CASCADE)
     fromemail = models.CharField(max_length=80, blank=True, null=True, editable=False)
     priority = models.IntegerField(blank=True, null=True) # Message priority (role of this field not yet well-defined -- aseering 8-10-2006)
     section = models.CharField(max_length=32, blank=True, null=True, help_text="e.g. 'teach' or 'learn' or blank")
@@ -107,8 +107,8 @@ class Entry(models.Model):
 @python_2_unicode_compatible
 class Comment(models.Model):
 
-    author = AjaxForeignKey(ESPUser)
-    entry  = models.ForeignKey(Entry)
+    author = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
+    entry  = models.ForeignKey(Entry, on_delete=models.CASCADE)
 
     post_ts = models.DateTimeField(default=datetime.datetime.now,
                                    editable=False)

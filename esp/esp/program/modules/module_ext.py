@@ -62,7 +62,7 @@ class DBReceipt(models.Model):
     """ Per-program Receipt templates """
     #   Allow multiple receipts per program.  Which one is used depends on the action.
     action  = models.CharField(max_length=80, default='confirm')
-    program = models.ForeignKey(Program)
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
     receipt = models.TextField()
 
     def __str__(self):
@@ -72,7 +72,7 @@ class DBReceipt(models.Model):
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
-    program = models.OneToOneField(Program)
+    program = models.OneToOneField(Program, on_delete=models.CASCADE)
 
     #   Set to true to prevent students from registering from full classes.
     enforce_max          = models.BooleanField(default=True, help_text='Check this box to prevent students from signing up for full classes.')
@@ -153,7 +153,7 @@ class StudentClassRegModuleInfo(models.Model):
 
 @python_2_unicode_compatible
 class ClassRegModuleInfo(models.Model):
-    program = models.OneToOneField(Program)
+    program = models.OneToOneField(Program, on_delete=models.CASCADE)
 
     allow_coteach        = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to specify co-teachers.')
     set_prereqs          = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to enter prerequisites for each class that are displayed separately on the catalog.')
@@ -295,7 +295,7 @@ class AJAXChangeLogEntry(models.Model):
     cls_id = models.IntegerField()
 
     # user responsible for this entry
-    user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
 
     # time we entered this
     time = models.FloatField()
@@ -355,7 +355,7 @@ class AJAXChangeLogEntry(models.Model):
 
 class AJAXChangeLog(models.Model):
     # program this change log stores changes for
-    program = AjaxForeignKey(Program)
+    program = AjaxForeignKey(Program, on_delete=models.CASCADE)
 
     # many to many for entries in this change log
     entries = models.ManyToManyField(AJAXChangeLogEntry)
@@ -420,7 +420,7 @@ class AJAXChangeLog(models.Model):
 # stores scheduling details about an section for the AJAX scheduler
 #  (e.g., scheduling comments, locked from AJAX scheduling, etc.)
 class AJAXSectionDetail(models.Model):
-    program = AjaxForeignKey(Program)
+    program = AjaxForeignKey(Program, on_delete=models.CASCADE)
     cls_id = models.IntegerField()
     comment = models.CharField(max_length=256)
     locked = models.BooleanField(default=False)
