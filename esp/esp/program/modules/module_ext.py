@@ -40,7 +40,7 @@ Learning Unlimited, Inc.
 from datetime import timedelta
 import time
 
-from django.core.validators import RegexValidator
+from django.core.validators import RegexValidator, validate_comma_separated_integer_list
 from django.db import models
 
 from esp.db.fields import AjaxForeignKey
@@ -165,12 +165,13 @@ class ClassRegModuleInfo(models.Model):
     class_min_cap       = models.IntegerField(blank=True, null=True, help_text='The minimum number of students a teacher can choose as their class capacity.')
     class_max_size       = models.IntegerField(blank=True, null=True, help_text='The maximum number of students a teacher can choose as their class capacity.')
     class_size_step      = models.IntegerField(blank=True, null=True, help_text='The interval for class capacity choices.')
-    class_other_sizes    = models.CommaSeparatedIntegerField(blank=True, null=True, max_length=100, help_text='Force the addition of these options to teachers\' choices of class size.  (Enter a comma-separated list of integers.)')
+    class_other_sizes    = models.CharField(blank=True, null=True, max_length=100, validators=[validate_comma_separated_integer_list],
+        help_text='Force the addition of these options to teachers\' choices of class size.  (Enter a comma-separated list of integers.)')
 
     #   Allowed numbers of sections and meeting days
-    allowed_sections     = models.CommaSeparatedIntegerField(max_length=100, blank=True,
+    allowed_sections     = models.CharField(max_length=100, blank=True, validators=[validate_comma_separated_integer_list],
         help_text='Allow this many independent sections of a class (comma separated list of integers). Leave blank to allow arbitrarily many.')
-    session_counts       = models.CommaSeparatedIntegerField(max_length=100, blank=True,
+    session_counts       = models.CharField(max_length=100, blank=True, validators=[validate_comma_separated_integer_list],
         help_text='Possibilities for the number of days that a class could meet (comma separated list of integers). Leave blank if this is not a relevant choice for the teachers.')
 
     num_teacher_questions = models.PositiveIntegerField(default=1, blank=True, null=True, help_text='The maximum number of application questions that can be specified for each class.')
