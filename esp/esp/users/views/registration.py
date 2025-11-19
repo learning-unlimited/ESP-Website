@@ -120,7 +120,7 @@ When there are already accounts with this email address (depending on some tags)
 
 def user_registration_phase1(request):
     """Displays phase 1, and receives and passes off phase 1 submissions."""
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         return render_to_response('registration/already_logged_in.html',
                                   request, {})
 
@@ -189,7 +189,7 @@ def send_activation_email(user, userkey):
     send_mail("Account Activation", t.render(c), settings.SERVER_EMAIL, [user.email], fail_silently = False)
 
 def resend_activation_view(request):
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         return render_to_response('registration/already_logged_in.html',
                                   request, {})
 

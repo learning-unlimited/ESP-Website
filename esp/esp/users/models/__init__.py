@@ -107,7 +107,7 @@ DEFAULT_USER_TYPES = [
 def admin_required(func):
     @functools.wraps(func)
     def wrapped(request, *args, **kwargs):
-        if not request.user or not request.user.is_authenticated():
+        if not request.user or not request.user.is_authenticated:
             return HttpResponseRedirect('%s?%s=%s' % (settings.LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
         elif not request.user.isAdministrator():
             raise PermissionDenied
@@ -900,7 +900,7 @@ class BaseESPUser(object):
         :type program:
             `Program` or None
         """
-        if self.is_anonymous() or self.id is None: return False
+        if self.is_anonymous or self.id is None: return False
         is_admin_role = self.groups.filter(name="Administrator").exists()
         if is_admin_role: return True
         quser = Q(user=self) | Q(user=None, role__in=self.groups.all())

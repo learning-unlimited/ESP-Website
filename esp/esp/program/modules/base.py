@@ -466,7 +466,7 @@ class ProgramModuleObj(models.Model):
 # will check and depending on the value of tl
 # will use .isTeacher or .isStudent()
 def not_logged_in(request):
-    return (not request.user or not request.user.is_authenticated() or not request.user.id)
+    return (not request.user or not request.user.is_authenticated or not request.user.id)
 
 def usercheck_usetl(method):
     """

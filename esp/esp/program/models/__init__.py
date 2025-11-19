@@ -1522,7 +1522,7 @@ class RegistrationProfile(models.Model):
     def getLastForProgram(user, program, tl = None):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program).
             Can also specify whether the profile must be associated with a student or teacher info. """
-        if user.is_anonymous():
+        if user.is_anonymous:
             regProfList = RegistrationProfile.objects.none()
         else:
             regProfList = RegistrationProfile.objects.filter(user__exact=user, program__exact=program)
