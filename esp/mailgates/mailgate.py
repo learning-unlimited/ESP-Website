@@ -33,7 +33,7 @@ if os.environ.get('VIRTUAL_ENV') is None:
 
 import django
 django.setup()
-from esp.dbmail.models import EmailList, send_mail
+from esp.dbmail.models import EmailList, PlainRedirect, send_mail
 from esp.users.models import ESPUser
 from django.conf import settings
 
