@@ -216,9 +216,6 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
         if extra_attrs:
             widget.attrs.update(extra_attrs)
 
-        self.creation_counter = forms.Field.creation_counter
-        forms.Field.creation_counter += 1
-
         self.required = required
         self.help_text = help_text
         self.initial = initial
