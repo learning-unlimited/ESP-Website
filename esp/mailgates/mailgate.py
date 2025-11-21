@@ -36,6 +36,7 @@ django.setup()
 from esp.dbmail.models import EmailList, PlainRedirect, send_mail
 from esp.users.models import ESPUser
 from django.conf import settings
+from django.db.models.functions import Lower
 
 import_location = 'esp.dbmail.receivers.'
 SUPPORT = settings.DEFAULT_EMAIL_ADDRESSES['support']
@@ -100,8 +101,10 @@ try:
                     data['to'].append(recipient)
                 else:
                     logger.warning('Email address without `@` symbol: `{}`'.format(recipient))
-            redirects = PlainRedirect.objects.filter(original__iin=[x.split('@')[0] for x in aliases])
-            users = ESPUser.objects.filter(name__iin=aliases)
+            redirects = PlainRedirect.objects.annotate(original_lower=Lower("original"
+                        )).filter(original_lower__in=[x.split('@')[0].lower() for x in aliases])
+            users = ESPUser.objects.annotate(name_lower=Lower("name"
+                    )).filter(name_lower__in=[x.lower() for x in aliases])
             # Theoretically at least one of these should be empty, but now doesn't seem like the time
             # If the redirect resolve to anything@anysite.learningu.org, kill it
             for address in sum([x.destination.split(',') for x in redirects]) + [x.email for x in users]:
