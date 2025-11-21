@@ -263,10 +263,12 @@ class Account(models.Model):
 class Transfer(models.Model):
     source = models.ForeignKey(
         Account, blank=True, null=True, related_name='transfer_source',
-        help_text='Source account; where the money is coming from. Leave blank if this is a payment from outside.')
+        help_text='Source account; where the money is coming from. Leave blank if this is a payment from outside.',
+        on_delete=models.CASCADE)
     destination = models.ForeignKey(
         Account, blank=True, null=True, related_name='transfer_destination',
-        help_text='Destination account; where the money is going to. Leave blank if this is a payment to an outsider.')
+        help_text='Destination account; where the money is going to. Leave blank if this is a payment to an outsider.',
+        on_delete=models.CASCADE)
     user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
     line_item = models.ForeignKey(LineItemType, on_delete=models.CASCADE)
     option = models.ForeignKey(LineItemOptions, blank=True, null=True, on_delete=models.CASCADE)
