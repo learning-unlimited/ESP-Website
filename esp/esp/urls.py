@@ -86,8 +86,8 @@ urlpatterns += [
     url(r'^admin/ajax_qsd/?$', esp.qsd.views.ajax_qsd),
     url(r'^admin/ajax_qsd_preview/?$', esp.qsd.views.ajax_qsd_preview),
     url(r'^admin/ajax_autocomplete/?', esp.db.views.ajax_autocomplete),
-    url(r'^admin/filebrowser/', include(filebrowser_site.urls)),
-    url(r'^admin/', include(admin_site.urls)),
+    url(r'^admin/filebrowser/', filebrowser_site.urls),
+    url(r'^admin/', admin_site.urls),
     url(r'^accounts/login/$', esp.users.views.login_checked),
     url(r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$', RedirectView.as_view(url='/%(subsection)s/index.html', permanent=True)),
 ]

@@ -52,7 +52,7 @@ def mask_redirect(user, next):
         return HttpMetaRedirect('/')
 
 def login_checked(request, *args, **kwargs):
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         next = request.GET.get('next', '')
         # If the user doesn't have a profile, redirect them to the profile page
         if RegistrationProfile.objects.filter(user__exact=request.user).count() == 0:
@@ -81,7 +81,7 @@ def login_checked(request, *args, **kwargs):
                 reply.context_data['wrong_user'] = True
 
     # Check for user forwarders
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         old_username = request.user.username
         user, forwarded = UserForwarder.follow(request.user)
         if forwarded:
@@ -104,7 +104,7 @@ def login_checked(request, *args, **kwargs):
                 return render_to_response('users/login_duplicate_warning.html', request, context)
 
     next = reply.get('Location', '')
-    if request.user.is_authenticated() and RegistrationProfile.objects.filter(user__exact=request.user).count() == 0:
+    if request.user.is_authenticated and RegistrationProfile.objects.filter(user__exact=request.user).count() == 0:
         reply = HttpMetaRedirect('/myesp/profile')
     elif next in mask_locations:
         reply = mask_redirect(request.user, next)
@@ -117,7 +117,7 @@ def login_checked(request, *args, **kwargs):
     reply._new_user = request.user
     reply.no_set_cookies = False
 
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         return reply
     else:
         return render_to_response("registration/login.html", reply._request, reply.context_data)
@@ -137,7 +137,7 @@ def signout(request):
 
 def signed_out_message(request):
     """ If the user is indeed logged out, show them a "Goodbye" message. """
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         return HttpResponseRedirect('/')
 
     return render_to_response('registration/logged_out.html', request, {})
@@ -196,11 +196,11 @@ def unsubscribe(request, username, token, oneclick = False):
 
     # otherwise show them a confirmation button
     # if they are logged into the correct account or the token is valid
-    if ( (request.user.is_authenticated() and request.user == user) or user.check_token(token)):
+    if ( (request.user.is_authenticated and request.user == user) or user.check_token(token)):
         return render_to_response('users/unsubscribe.html', request, context = {'user': user})
     # if they are logged into a different account
     # tell them to log out and try again
-    elif request.user.is_authenticated() and request.user != user:
+    elif request.user.is_authenticated and request.user != user:
         raise ESPError("You are logged into a different account than the one you are trying to unsubscribe. Please log out and try your request again.")
     # otherwise they will need to log in (or find a more recent link)
     # so show the login page (with a custom alert message)

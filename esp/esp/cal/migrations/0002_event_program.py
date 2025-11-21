@@ -16,6 +16,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='event',
             name='program',
-            field=models.ForeignKey(blank=True, to='program.Program', null=True),
+            field=models.ForeignKey(blank=True, to='program.Program', null=True, on_delete=models.CASCADE),
         ),
     ]

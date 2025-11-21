@@ -367,20 +367,20 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('num_volunteers', models.PositiveIntegerField()),
-                ('program', models.ForeignKey(to='program.Program')),
-                ('timeslot', models.ForeignKey(to='cal.Event')),
+                ('program', models.ForeignKey(to='program.Program', on_delete=models.CASCADE)),
+                ('timeslot', models.ForeignKey(to='cal.Event', on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
             name='ScheduleTestTimeblock',
             fields=[
-                ('booleantoken_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='program.BooleanToken')),
+                ('booleantoken_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='program.BooleanToken', on_delete=models.CASCADE)),
             ],
             bases=('program.booleantoken',),
         ),
         migrations.AddField(
             model_name='volunteeroffer',
             name='request',
-            field=models.ForeignKey(to='program.VolunteerRequest'),
+            field=models.ForeignKey(to='program.VolunteerRequest', on_delete=models.CASCADE),
         ),
     ]

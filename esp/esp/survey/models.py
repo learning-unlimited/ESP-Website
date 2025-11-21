@@ -102,7 +102,7 @@ class Survey(models.Model):
     name = models.CharField(max_length=255)
     program = models.ForeignKey(Program, related_name='surveys',
                                 blank=True, null=True,
-                                help_text="Blank if not associated to a program")
+                                help_text="Blank if not associated to a program", on_delete=models.CASCADE)
 
     survey_choices = [("learn", "learn"), ("teach", "teach")]
     category = models.CharField(max_length = 10, choices = survey_choices)
@@ -130,7 +130,7 @@ class Survey(models.Model):
 class SurveyResponse(models.Model):
     """ A single survey taken by a person. """
     time_filled = models.DateTimeField(default=datetime.datetime.now)
-    survey = models.ForeignKey(Survey, db_index=True)
+    survey = models.ForeignKey(Survey, db_index=True, on_delete=models.CASCADE)
 
     def set_answers(self, get_or_post, save=False):
         """ For a given get or post, get a set of answers. """
@@ -230,9 +230,9 @@ class QuestionType(models.Model):
 
 @python_2_unicode_compatible
 class Question(models.Model):
-    survey = models.ForeignKey(Survey, related_name="questions")
+    survey = models.ForeignKey(Survey, related_name="questions", on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
-    question_type = models.ForeignKey(QuestionType)
+    question_type = models.ForeignKey(QuestionType, on_delete=models.CASCADE)
     _param_values = models.TextField("Parameter values", blank=True,
                                      help_text="A pipe (|) delimited list of values.")
     param_values = ListField('_param_values')
@@ -324,15 +324,15 @@ class Answer(models.Model):
     """ An answer for a single question for a single survey response. """
 
     survey_response = models.ForeignKey(SurveyResponse, db_index=True,
-                                        related_name='answers')
+                                        related_name='answers', on_delete=models.CASCADE)
 
     ## Generic ForeignKey: either the program, the class, or the section ##
-    content_type = models.ForeignKey(ContentType, blank=True, null=True)
+    content_type = models.ForeignKey(ContentType, blank=True, null=True, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField(blank=True, null=True)
     target = GenericForeignKey(ct_field='content_type', fk_field='object_id')
     ## End Generic ForeignKey ##
 
-    question = models.ForeignKey(Question, db_index=True)
+    question = models.ForeignKey(Question, db_index=True, on_delete=models.CASCADE)
     value_type = models.TextField()
     value = models.TextField()
 

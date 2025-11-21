@@ -92,14 +92,14 @@ class ClassFlagType(models.Model):
 
 @python_2_unicode_compatible
 class ClassFlag(models.Model):
-    subject = AjaxForeignKey('ClassSubject', related_name='flags')
-    flag_type = models.ForeignKey(ClassFlagType)
+    subject = AjaxForeignKey('ClassSubject', related_name='flags', on_delete=models.CASCADE)
+    flag_type = models.ForeignKey(ClassFlagType, on_delete=models.CASCADE)
     comment = models.TextField(blank=True)
 
     #The following will normally be set automagically, but if you create a Flag via the shell or a script, you will need to set them manually.
-    modified_by = AjaxForeignKey(ESPUser, related_name='classflags_modified')
+    modified_by = AjaxForeignKey(ESPUser, related_name='classflags_modified', on_delete=models.CASCADE)
     modified_time = models.DateTimeField(auto_now=True)
-    created_by = AjaxForeignKey(ESPUser, related_name='classflags_created')
+    created_by = AjaxForeignKey(ESPUser, related_name='classflags_created', on_delete=models.CASCADE)
     created_time = models.DateTimeField(auto_now_add=True)
 
     class Meta:

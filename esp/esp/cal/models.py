@@ -80,8 +80,8 @@ class Event(models.Model):
     short_description = models.TextField() # Event short description
     description = models.TextField() # Event textual description; not computer-parseable
     name = models.CharField(max_length=80)
-    program = models.ForeignKey('program.Program', blank=True, null=True)
-    event_type = models.ForeignKey(EventType) # The type of event.  This implies, though does not require, the types of data that are keyed to this event.
+    program = models.ForeignKey('program.Program', blank=True, null=True, on_delete=models.CASCADE)
+    event_type = models.ForeignKey(EventType, on_delete=models.CASCADE) # The type of event.  This implies, though does not require, the types of data that are keyed to this event.
     priority = models.IntegerField(blank=True, null=True) # Priority of this event
     group = models.IntegerField(blank=True, null=True) # Event group
 

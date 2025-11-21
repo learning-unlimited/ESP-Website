@@ -134,7 +134,7 @@ class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, forms.widgets.Widget):
             self.field = attrs['field']
         elif 'type' in attrs:
             #   Anyone have a better hack here?
-            self.field = models.ForeignKey(attrs['type'])
+            self.field = models.ForeignKey(attrs['type'], on_delete=models.CASCADE)
 
         self.field_name = self.field.name
 
@@ -215,9 +215,6 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
         extra_attrs = self.widget_attrs(widget)
         if extra_attrs:
             widget.attrs.update(extra_attrs)
-
-        self.creation_counter = forms.Field.creation_counter
-        forms.Field.creation_counter += 1
 
         self.required = required
         self.help_text = help_text

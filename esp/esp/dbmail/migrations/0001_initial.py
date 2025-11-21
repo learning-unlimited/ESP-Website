@@ -56,7 +56,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('pickled_provider', models.TextField()),
                 ('provider_name', models.CharField(max_length=128)),
-                ('messagerequest', models.ForeignKey(to='dbmail.MessageRequest')),
+                ('messagerequest', models.ForeignKey(to='dbmail.MessageRequest', on_delete=models.CASCADE)),
             ],
             options={
                 'verbose_name_plural': 'Message Variables',

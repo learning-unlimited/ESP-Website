@@ -86,7 +86,7 @@ class ResourceType(models.Model):
     #   As of now we have a list of string choices for the value of a resource.  But in the future
     #   it could be extended.
     choices = ListField('attributes_dumped')
-    program = models.ForeignKey('program.Program', null=True, blank=True)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
+    program = models.ForeignKey('program.Program', null=True, blank=True, on_delete=models.CASCADE)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
     autocreated = models.BooleanField(default=False)
     #   Whether to offer this resource type as an option in the class creation/editing form
     hidden = models.BooleanField(default=False)
@@ -150,8 +150,8 @@ class ResourceType(models.Model):
 class ResourceRequest(models.Model):
     """ A request for a particular type of resource associated with a particular clas section. """
 
-    target = models.ForeignKey('program.ClassSection', null=True)
-    target_subj = models.ForeignKey('program.ClassSubject', null=True)
+    target = models.ForeignKey('program.ClassSection', null=True, on_delete=models.CASCADE)
+    target_subj = models.ForeignKey('program.ClassSubject', null=True, on_delete=models.CASCADE)
     res_type = models.ForeignKey(ResourceType, on_delete=models.PROTECT)
     desired_value = models.TextField()
 
@@ -177,10 +177,10 @@ class Resource(models.Model):
     # group_id can be removed with a future migration after all sites
     # have successfully run the migration to res_group
     group_id = models.IntegerField(default=-1)
-    res_group = models.ForeignKey(ResourceGroup, null=True, blank=True)
+    res_group = models.ForeignKey(ResourceGroup, null=True, blank=True, on_delete=models.CASCADE)
     is_unique = models.BooleanField(default=False)
-    user = AjaxForeignKey(ESPUser, null=True, blank=True)
-    event = models.ForeignKey(Event)
+    user = AjaxForeignKey(ESPUser, null=True, blank=True, on_delete=models.CASCADE)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
     # If the resource has a value, which one might request in the desired_value
     # field of ResourceRequest.
     attribute_value = models.TextField(default="", blank=True)
@@ -362,14 +362,14 @@ class AssignmentGroup(models.Model):
 class ResourceAssignment(models.Model):
     """ The binding of a resource to the class that it belongs to. """
 
-    resource = models.ForeignKey(Resource)     #   Note: this really points to a bunch of Resources.
-                                               #   See resources() below.
+    resource = models.ForeignKey(Resource, on_delete=models.CASCADE)     #   Note: this really points to a bunch of Resources.
+                                                                         #   See resources() below.
 
-    target = models.ForeignKey('program.ClassSection', null=True)
-    target_subj = models.ForeignKey('program.ClassSubject', null=True)
+    target = models.ForeignKey('program.ClassSection', null=True, on_delete=models.CASCADE)
+    target_subj = models.ForeignKey('program.ClassSubject', null=True, on_delete=models.CASCADE)
     lock_level = models.IntegerField(default=0)
     returned = models.BooleanField(default=False) # Only really relevant for floating resources
-    assignment_group = models.ForeignKey(AssignmentGroup, null=True, blank=True)
+    assignment_group = models.ForeignKey(AssignmentGroup, null=True, blank=True, on_delete=models.CASCADE)
 
     def __str__(self):
         result = 'Resource assignment for %s' % six.text_type(self.getTargetOrSubject())

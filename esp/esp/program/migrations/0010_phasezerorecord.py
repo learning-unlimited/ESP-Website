@@ -20,8 +20,8 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('time', models.DateTimeField(auto_now_add=True)),
                 ('lottery_number', models.IntegerField(null=True)),
-                ('program', models.ForeignKey(to='program.Program', blank=True)),
-                ('user', esp.db.fields.AjaxForeignKey(to='users.ESPUser')),
+                ('program', models.ForeignKey(to='program.Program', blank=True, on_delete=models.CASCADE)),
+                ('user', esp.db.fields.AjaxForeignKey(to='users.ESPUser', on_delete=models.CASCADE)),
             ],
         ),
     ]

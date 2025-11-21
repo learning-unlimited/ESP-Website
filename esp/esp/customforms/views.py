@@ -23,7 +23,7 @@ from esp.utils.web import render_to_response, zip_download
 import six
 
 def test_func(user):
-    return user.is_authenticated() and (user.is_morphed() or user.isTeacher() or user.isAdministrator())
+    return user.is_authenticated and (user.is_morphed() or user.isTeacher() or user.isAdministrator())
 
 @user_passes_test(test_func)
 def landing(request):
@@ -287,7 +287,7 @@ def hasPerm(user, form):
     """
     Checks if this user qualifies to view this form
     """
-    if (not form.anonymous or form.perms!="") and not user.is_authenticated():
+    if (not form.anonymous or form.perms!="") and not user.is_authenticated:
         return False, "You need to be logged in to view this form."
     if form.perms == "":
         return True, ""

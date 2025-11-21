@@ -17,7 +17,7 @@ class Form(models.Model):
     title = models.CharField(max_length=40, blank=True)
     description = models.TextField(blank=True)
     date_created = models.DateField(auto_now_add=True)
-    created_by = models.ForeignKey(ESPUser)
+    created_by = models.ForeignKey(ESPUser, on_delete=models.CASCADE)
     link_type = models.CharField(max_length=50, blank=True)
     link_id = models.IntegerField(default=-1)
     anonymous = models.BooleanField(default=False)
@@ -30,7 +30,7 @@ class Form(models.Model):
 
 @python_2_unicode_compatible
 class Page(models.Model):
-    form = models.ForeignKey(Form)
+    form = models.ForeignKey(Form, on_delete=models.CASCADE)
     seq = models.IntegerField(default=-1)
 
     def __str__(self):
@@ -38,7 +38,7 @@ class Page(models.Model):
 
 @python_2_unicode_compatible
 class Section(models.Model):
-    page = models.ForeignKey(Page)
+    page = models.ForeignKey(Page, on_delete=models.CASCADE)
     title = models.CharField(max_length=40)
     description = models.CharField(max_length=140, blank=True)
     seq = models.IntegerField()
@@ -48,8 +48,8 @@ class Section(models.Model):
 
 @python_2_unicode_compatible
 class Field(models.Model):
-    form = models.ForeignKey(Form)
-    section = models.ForeignKey(Section)
+    form = models.ForeignKey(Form, on_delete=models.CASCADE)
+    section = models.ForeignKey(Section, on_delete=models.CASCADE)
     field_type = models.CharField(max_length=50)
     seq = models.IntegerField()
     label = models.CharField(max_length=200)
@@ -74,7 +74,7 @@ class Field(models.Model):
         Attribute.objects.filter(field=self).exclude(attr_type__in=keep).delete()
 
 class Attribute(models.Model):
-    field = models.ForeignKey(Field)
+    field = models.ForeignKey(Field, on_delete=models.CASCADE)
     attr_type = models.CharField(max_length=80)
     value = models.TextField()
 
