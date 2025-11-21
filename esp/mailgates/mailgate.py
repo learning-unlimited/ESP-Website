@@ -105,7 +105,7 @@ try:
             # Theoretically at least one of these should be empty, but now doesn't seem like the time
             # If the redirect resolve to anything@anysite.learningu.org, kill it
             for address in sum([x.destination.split(',') for x in redirects]) + [x.email for x in users]:
-                if not address.endswith('.learningu.org') # TODO: again, would be nice not to hardcode
+                if not address.endswith('.learningu.org'): # TODO: again, would be nice not to hardcode
                     data['to'].append(address)
             # if the above filtering leaves the 'to' list empty, abort
             if len(data['to']) == 0:
