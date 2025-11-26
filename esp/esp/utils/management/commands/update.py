@@ -54,8 +54,6 @@ class Command(BaseCommand):
         default_options = {
             'verbosity': 1,
             'interactive': False,
-            'merge': True,
-            'delete_ghosts': True,
             'clear': True,
         }
         default_options.update(options)
@@ -73,9 +71,11 @@ class Command(BaseCommand):
                 raise Exception("Looks like you tried to run this with sudo but without '-u www-data'. Please try again!")
             elif not os.access(file, os.W_OK):
                 raise Exception("www-data doesn't have write access for esp.wsgi. Please fix this with chown, then try again!")
-        call_command('clean_pyc', **options)
-        call_command('migrate', **options)
-        call_command('collectstatic', **options)
-        call_command('recompile_theme', **options)
-        call_command('flushcache', **options)
+        verbosity = options["verbosity"]
+        interactive = options["interactive"]
+        call_command('clean_pyc', verbosity = verbosity)
+        call_command('migrate', verbosity = verbosity, interactive = interactive)
+        call_command('collectstatic', clear = options["clear"], verbosity = verbosity)
+        call_command('recompile_theme', verbosity = verbosity)
+        call_command('flushcache', verbosity = verbosity)
         os.system("touch " + file)
