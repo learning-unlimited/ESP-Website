@@ -6,6 +6,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import sys, os, base64, email, hashlib, re, smtplib, socket, random
+import itertools
 from io import open
 new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
@@ -103,11 +104,15 @@ try:
                     logger.warning('Email address without `@` symbol: `{}`'.format(recipient))
             redirects = PlainRedirect.objects.annotate(original_lower=Lower("original"
                         )).filter(original_lower__in=[x.split('@')[0].lower() for x in aliases])
+            # Split out individual email addresses if any of the redirects is a list
+            redirects = list(itertools.chain.from_iterable(map(lambda x: x.destination.split(','), redirects)))
             users = ESPUser.objects.annotate(username_lower=Lower("username"
                     )).filter(username_lower__in=[x.lower() for x in aliases])
+            # Grab the emails from the users
+            users = [x.email for x in users]
             # Theoretically at least one of these should be empty, but now doesn't seem like the time
             # If the redirect resolve to anything@anysite.learningu.org, kill it
-            for address in sum([x.destination.split(',') for x in redirects]) + [x.email for x in users]:
+            for address in redirects + users:
                 if not address.endswith('.learningu.org'): # TODO: again, would be nice not to hardcode
                     data['to'].append(address)
             # if the above filtering leaves the 'to' list empty, abort
