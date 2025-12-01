@@ -40,8 +40,11 @@ class DropdownOtherField(forms.MultiValueField):
         return ''
 
     def __init__(self, *args, **kwargs):
-        super(DropdownOtherField, self).__init__(*args, **kwargs)
-        self.fields = (forms.CharField(), forms.CharField(required=False),)
+        fields = (
+                  forms.CharField(),
+                  forms.CharField(required=False),
+                 )
+        super(DropdownOtherField, self).__init__(fields=fields, require_all_fields=False, *args, **kwargs)
 
 # TODO: Try to adapt some of these for ModelForm?
 class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
