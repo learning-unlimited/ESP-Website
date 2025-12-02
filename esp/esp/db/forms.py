@@ -19,7 +19,7 @@ class AjaxForeignKeyFieldBase:
 
         if isinstance(data, int):
             if hasattr(self, "field"):
-                query_objects = self.field.rel.to.objects
+                query_objects = self.field.remote_field.model.objects
 
             objects = query_objects.filter(pk = data)
             if objects.count() == 1:
@@ -36,7 +36,7 @@ class AjaxForeignKeyFieldBase:
 
         fn = str(self.field_name)
 
-        related_model = self.field.rel.to
+        related_model = self.field.remote_field.model
         # espuser hack
         if related_model == User:
             model_module = 'esp.users.models'
@@ -254,12 +254,12 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
         if hasattr(self, "field"):
             # If we couldn't grab an ID, ask the target's autocompleter.
             if id is None:
-                objs = self.field.rel.to.ajax_autocomplete(value)
+                objs = self.field.remote_field.model.ajax_autocomplete(value)
                 if len( objs ) == 1:
                     id = objs[0]['id']
             # Finally, grab the object.
             if id:
-                objs = self.field.rel.to.objects.filter(id=id)
+                objs = self.field.remote_field.model.objects.filter(id=id)
                 if objs.exists():
                     return objs[0]
                 else:
