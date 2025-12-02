@@ -87,7 +87,7 @@ class InlineQSDNode(template.Node):
 
         qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url, {'name': '', 'title': title, 'content': self.nodelist.render(context)})
         context.update({'qsdrec': qsd_obj, 'inline': True})
-        return template.loader.render_to_string("inclusion/qsd/render_qsd.html", context)
+        return template.loader.render_to_string("inclusion/qsd/render_qsd.html", context.flatten())
 
 @register.tag
 def inline_qsd_block(parser, token):
