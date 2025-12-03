@@ -55,6 +55,7 @@ class Command(BaseCommand):
             'verbosity': 1,
             'interactive': False,
             'clear': True,
+            'no_input': False
         }
         default_options.update(options)
         options = default_options
@@ -75,7 +76,7 @@ class Command(BaseCommand):
         interactive = options["interactive"]
         call_command('clean_pyc', verbosity = verbosity)
         call_command('migrate', verbosity = verbosity, interactive = interactive)
-        call_command('collectstatic', clear = options["clear"], verbosity = verbosity)
+        call_command('collectstatic', clear = options["clear"], no_input = options["no_input"], verbosity = verbosity)
         call_command('recompile_theme', verbosity = verbosity)
         call_command('flushcache', verbosity = verbosity)
         os.system("touch " + file)
