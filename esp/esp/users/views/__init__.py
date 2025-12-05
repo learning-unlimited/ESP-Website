@@ -131,8 +131,8 @@ class CustomLoginView(LoginView):
                 'next_title': next_uri if next_uri != '/' else 'the home page',
             }
             return render_to_response(
-                'users/login_duplicate_warning.html', 
-                self.request, 
+                'users/login_duplicate_warning.html',
+                self.request,
                 context
             )
 
