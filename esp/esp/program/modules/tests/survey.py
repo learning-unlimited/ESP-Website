@@ -75,10 +75,12 @@ class SurveyTest(ProgramFrameworkTest):
         #   Create a survey
         (survey, created) = Survey.objects.get_or_create(name='Test Survey', program=self.program, category='learn')
         (text_qtype, created) = QuestionType.objects.get_or_create(name='yes-no response')
-        (number_qtype, created) = QuestionType.objects.get_or_create(name='numeric rating', is_numeric=True, is_countable=True)
+        (number_qtype, created) = QuestionType.objects.get_or_create(name='numeric rating', is_numeric=True, is_countable=True,
+                                                                     _param_names = "Number of ratings|Lower text|Middle text|Upper text")
         (question_base, created) = Question.objects.get_or_create(survey=survey, name='Question1', question_type=text_qtype, per_class=False, seq=0)
         (question_perclass, created) = Question.objects.get_or_create(survey=survey, name='Question2', question_type=text_qtype, per_class=True, seq=1)
-        (question_number, created) = Question.objects.get_or_create(survey=survey, name='Question3', question_type=number_qtype, per_class=True, seq=2)
+        (question_number, created) = Question.objects.get_or_create(survey=survey, name='Question3', question_type=number_qtype, per_class=True, seq=2,
+                                                                    _param_values="5|Terrible|Okay|Awesome")
 
         #   Make sure the user is marked as not having completed it
         self.assertFalse(Record.user_completed(student, 'student_survey', self.program))
