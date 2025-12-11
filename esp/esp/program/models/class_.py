@@ -1167,6 +1167,9 @@ class ClassSection(models.Model):
         return self.__cmp__(other) >= 0
     def __ne__(self, other):
         return self.__cmp__(other) != 0
+    def __hash__(self):
+        event = self.firstBlockEvent()
+        return hash((event.start if event else None, self.title()))
 
 
     def firstBlockEvent(self):
