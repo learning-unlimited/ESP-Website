@@ -11,7 +11,7 @@ from esp.program.models import RegistrationProfile
 from django.conf import settings
 import json
 from pytz import country_names
-from localflavor.us.forms import USPhoneNumberField
+from phonenumber_field.formfields import PhoneNumberField
 import six
 from six.moves import range
 from six.moves import zip
@@ -53,8 +53,8 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     first_name = StrippedCharField(length=25, max_length=64)
     last_name = StrippedCharField(length=30, max_length=64)
     e_mail = forms.EmailField()
-    phone_day = USPhoneNumberField(required=False)
-    phone_cell = USPhoneNumberField(required=False)
+    phone_day = PhoneNumberField(required=False)
+    phone_cell = PhoneNumberField(required=False)
     receive_txt_message = forms.TypedChoiceField(coerce=lambda x: x =='True', choices=((True, 'Yes'), (False, 'No')), widget=forms.RadioSelect)
     address_street = StrippedCharField(required=True, length=40, max_length=100)
     address_city = StrippedCharField(required=True, length=20, max_length=50)
@@ -92,8 +92,8 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_first_name = StrippedCharField(length=25, max_length=64)
     emerg_last_name = StrippedCharField(length=30, max_length=64)
     emerg_e_mail = forms.EmailField(required=False)
-    emerg_phone_day = USPhoneNumberField()
-    emerg_phone_cell = USPhoneNumberField(required=False)
+    emerg_phone_day = PhoneNumberField()
+    emerg_phone_cell = PhoneNumberField(required=False)
     emerg_address_street = StrippedCharField(length=40, max_length=100)
     emerg_address_city = StrippedCharField(length=20, max_length=50)
     emerg_address_state = forms.ChoiceField(choices=list(zip(_states, _states)), widget=forms.Select(attrs={'class': 'input-mini'}))
@@ -114,8 +114,8 @@ class GuardContactForm(FormUnrestrictedOtherUser):
     guard_first_name = StrippedCharField(length=25, max_length=64)
     guard_last_name = StrippedCharField(length=30, max_length=64)
     guard_e_mail = forms.EmailField(required=False)
-    guard_phone_day = USPhoneNumberField()
-    guard_phone_cell = USPhoneNumberField(required=False)
+    guard_phone_day = PhoneNumberField()
+    guard_phone_cell = PhoneNumberField(required=False)
 
     def clean(self):
         super(GuardContactForm, self).clean()

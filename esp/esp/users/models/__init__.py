@@ -52,7 +52,7 @@ from django import forms, dispatch
 from django.conf import settings
 from django.contrib.auth import logout, login, REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User, AnonymousUser, Group, UserManager
-from localflavor.us.models import PhoneNumberField
+from phonenumber_field.modelfields import PhoneNumberField
 from localflavor.us.forms import USStateSelect
 
 from django.contrib.sites.models import Site

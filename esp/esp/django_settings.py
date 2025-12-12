@@ -251,6 +251,7 @@ INSTALLED_APPS = (
     'reversion',
     'captcha',
     'form_utils',
+    'phonenumber_field',
     'django.contrib.redirects',
     'debug_toolbar',
     'esp.formstack',
@@ -400,6 +401,10 @@ FILEBROWSER_SELECT_FORMATS = {
 SHELL_PLUS_POST_IMPORTS = (
         ('esp.utils.shell_utils', '*'),
         )
+
+# django-phonenumber-field settings
+PHONENUMBER_DEFAULT_REGION = 'US'
+PHONENUMBER_DEFAULT_FORMAT = 'NATIONAL'  # or 'E164', 'INTERNATIONAL'
 
 #   Twilio configuration - should be completed in local_settings.py
 TWILIO_ACCOUNT_SID = None
