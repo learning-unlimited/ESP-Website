@@ -344,6 +344,8 @@ def custom_show_toolbar(request):
 
 DEBUG_TOOLBAR_CONFIG = {
     'DISABLE_PANELS': {
+        'debug_toolbar.panels.cache.CachePanel',
+        'debug_toolbar.panels.sql.SQLPanel',
         'debug_toolbar.panels.redirects.RedirectsPanel',
         'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel',
     },
@@ -414,4 +416,5 @@ ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
 
 ADMIN_TOOLS_THEMING_CSS = '/media/default_styles/admin_theme.css'
 
-SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error']
+SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error',
+                          'debug_toolbar.W006']
