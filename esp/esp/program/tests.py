@@ -716,7 +716,7 @@ class ProgramFrameworkTest(TestCase):
             teacher_teacherinfo = TeacherInfo(user=teacher)
             teacher_teacherinfo.save()
             digit = teacher.id % 10
-            phone = (six.u('%d') % digit) * 10
+            phone = "+1" + (six.u('%d') % digit) * 10
             teacher_contactinfo = ContactInfo(
                 user=teacher,
                 first_name=teacher.first_name,
