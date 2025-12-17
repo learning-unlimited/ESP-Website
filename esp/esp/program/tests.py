@@ -716,7 +716,7 @@ class ProgramFrameworkTest(TestCase):
         for teacher in self.teachers:
             teacher_teacherinfo = TeacherInfo(user=teacher)
             teacher_teacherinfo.save()
-            phone = sample(["+12014265797", "+16029765219", "+12129128570", "+12017431401", "+19717602037"], 1)
+            phone = sample(["+12014265797", "+16029765219", "+12129128570", "+12017431401", "+19717602037"], 1)[0]
             teacher_contactinfo = ContactInfo(
                 user=teacher,
                 first_name=teacher.first_name,
