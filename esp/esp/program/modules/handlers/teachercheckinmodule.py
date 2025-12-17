@@ -53,6 +53,7 @@ from datetime import datetime, timedelta, time
 
 import collections
 import json
+import phonenumbers
 
 class TeacherCheckinModule(ProgramModuleObj):
     doc = """Check in teachers for a program."""
@@ -331,10 +332,16 @@ class TeacherCheckinModule(ProgramModuleObj):
         moderator_phones = self.get_phones(moderators, default_phone)
         arrived = dict()
         for teacher in arrived_teachers:
-            teacher.phone = teacher_phones.get(teacher.id, default_phone)
+            phone_number = teacher_phones.get(teacher.id, default_phone)
+            if phone_number != default_phone:
+                phone_number = phonenumbers.format_number(phonenumbers.parse(phone_number, None), phonenumbers.PhoneNumberFormat.NATIONAL)
+            teacher.phone = phone_number
             arrived[teacher.id] = teacher
         for moderator in arrived_moderators:
-            moderator.phone = moderator_phones.get(moderator.id, default_phone)
+            phone_number = moderator_phones.get(moderator.id, default_phone)
+            if phone_number != default_phone:
+                phone_number = phonenumbers.format_number(phonenumbers.parse(phone_number, None), phonenumbers.PhoneNumberFormat.NATIONAL)
+            moderator.phone = phone_number
             arrived[moderator.id] = moderator
 
         sections_list = []
@@ -356,9 +363,15 @@ class TeacherCheckinModule(ProgramModuleObj):
             section.teachers_list = list(section.teachers)
             section.moderators_list = list(section.get_moderators())
             for teacher in section.teachers_list:
-                teacher.phone = teacher_phones.get(teacher.id, default_phone)
+                phone_number = teacher_phones.get(teacher.id, default_phone)
+                if phone_number != default_phone:
+                    phone_number = phonenumbers.format_number(phonenumbers.parse(phone_number, None), phonenumbers.PhoneNumberFormat.NATIONAL)
+                teacher.phone = phone_number
             for moderator in section.moderators_list:
-                moderator.phone = moderator_phones.get(moderator.id, default_phone)
+                phone_number = moderator_phones.get(moderator.id, default_phone)
+                if phone_number != default_phone:
+                    phone_number = phonenumbers.format_number(phonenumbers.parse(phone_number, None), phonenumbers.PhoneNumberFormat.NATIONAL)
+                moderator.phone = phone_number
             sections_list.append(section)
 
         sections = [
