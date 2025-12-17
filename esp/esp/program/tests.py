@@ -64,6 +64,7 @@ from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 
 from datetime import datetime, timedelta
 from decimal import Decimal
+from random import sample
 import hashlib
 import numpy
 import random
@@ -715,8 +716,7 @@ class ProgramFrameworkTest(TestCase):
         for teacher in self.teachers:
             teacher_teacherinfo = TeacherInfo(user=teacher)
             teacher_teacherinfo.save()
-            digit = teacher.id % 10
-            phone = "+1" + (six.u('%d') % digit) * 10
+            phone = sample(["+12014265797", "+16029765219", "+12129128570", "+12017431401", "+19717602037"], 1)
             teacher_contactinfo = ContactInfo(
                 user=teacher,
                 first_name=teacher.first_name,
