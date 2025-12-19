@@ -587,20 +587,21 @@ class TeacherClassRegModule(ProgramModuleObj):
             #checks that the teacher has listed any availablilty
             if not availability:
                 noavailuser = teacher
-            # check that the teacher is available for all meeting_times
-            for sec in cls.sections.all():
-                for time in sec.meeting_times.all():
-                    if time not in availability:
-                        unavailabletimes.append(time)
-            if unavailabletimes:
-                unavailableuser = teacher
-            # check that the teacher doesn't have a conflicting schedule, provided the class is scheduled
-            if sec.meeting_times.all() and cls.conflicts(teacher):
-                conflictinguser = teacher
-            # determines if the teacher is already booked solid even if the current class is not yet scheduled
-            availabilityWithClass = teacher.getAvailableTimes(prog)
-            if not availabilityWithClass:
-                fullybookeduser = teacher
+            # determines if the teacher is already booked even if the current class is not yet scheduled
+            else 
+                availabilityWithClass = teacher.getAvailableTimes(prog)
+                if not availabilityWithClass:
+                    fullybookeduser = teacher
+                # check that the teacher is available for all meeting_times
+                for sec in cls.sections.all():
+                    for time in sec.meeting_times.all():
+                        if time not in availability:
+                            unavailabletimes.append(time)
+                if unavailabletimes:
+                    unavailableuser = teacher
+                # check that the teacher doesn't have a conflicting schedule, provided the class is scheduled
+                if sec.meeting_times.all() and cls.conflicts(teacher):
+                    conflictinguser = teacher
             # make them a coteacher
             if not conflictinguser and not unavailableuser and not noavailuser and not fullybookeduser:
                 lastProf = RegistrationProfile.getLastForProgram(teacher, prog)
