@@ -587,8 +587,8 @@ class TeacherClassRegModule(ProgramModuleObj):
             #checks that the teacher has listed any availablilty
             if not availability:
                 noavailuser = teacher
-            # determines if the teacher is already booked even if the current class is not yet scheduled
-            else 
+            else:
+                # determines if the teacher is already booked even if the current class is not yet scheduled
                 availabilityWithClass = teacher.getAvailableTimes(prog)
                 if not availabilityWithClass:
                     fullybookeduser = teacher
