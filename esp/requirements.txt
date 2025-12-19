@@ -11,7 +11,7 @@ django-formtools==2.4 # Used once in customforms
 django-localflavor==3.1 # Provides address fields
 django-phonenumber-field[phonenumbers]==6.3.0 # Provides phone number fields
 django-recaptcha==3.0.0 # Provides support for Google reCAPTCHA
-django-reversion==2.0.13 # Handles versioning, currently for QSD and TemplateOverrides
+django-reversion==5.0.2 # Handles versioning, currently for QSD and TemplateOverrides
 django-sendgrid-v5==1.2.4 # Provides support for using SendGrid as the EmailBackend
 django-vanilla-views==3.0.0 # Provides simpler generic views, currently used only for grade change requests
 git+https://github.com/learning-unlimited/django-admin-tools.git@esp # Extends Django Admin
