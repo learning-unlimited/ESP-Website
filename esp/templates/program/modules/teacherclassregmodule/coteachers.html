@@ -38,15 +38,23 @@
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
             {{ noavailuser.name }}</font> has not yet indicated any availability!
     </div>
-{% elif conflict %}
+{% endif %}
+{% if unavailableuser %}
     <div class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-            {{ conflict.name }} has a conflicting schedule.
+            {{ unavailableuser.name }}</font> is not listed as available for the following blocks({{ unavailabletimes|join:", " }}).
     </div>
-{% elif unavailableuser %}
+{% endif %}
+{% if conflict %}
     <div class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-            {{ unavailableuser.name }}</font> is not available when this class is scheduled ({{ unavailabletimes|join:", " }}).
+            {{ conflict.name }} is teaching or moderating another class section at one or more blocks when this class is meeting.
+    </div>
+{% endif %}
+{% if fullybookeduser %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {{ conflict.name }} is already busy for all available blocks.
     </div>
 {% endif %}
 

@@ -561,6 +561,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         conflictinguser = None
         unavailableuser = None
         noavailuser = None
+        fullybookeduser = None
         unavailabletimes = []
 
         if op == 'add':
@@ -581,13 +582,11 @@ class TeacherClassRegModule(ProgramModuleObj):
 
             teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
 
-            availability = teacher.getAvailableTimes(prog)
+            # ignores classes because that's what the conflicts logic does!
+            availability = teacher.getAvailableTimes(prog, ignore_classes=True)
             #checks that the teacher has listed any availablilty
             if not availability:
                 noavailuser = teacher
-            # check that the teacher doesn't have a conflicting schedule
-            if cls.conflicts(teacher):
-                conflictinguser = teacher
             # check that the teacher is available for all meeting_times
             for sec in cls.sections.all():
                 for time in sec.meeting_times.all():
@@ -595,8 +594,15 @@ class TeacherClassRegModule(ProgramModuleObj):
                         unavailabletimes.append(time)
             if unavailabletimes:
                 unavailableuser = teacher
+            # check that the teacher doesn't have a conflicting schedule, provided the class is scheduled
+            if sec.meeting_times.all() and cls.conflicts(teacher):
+                conflictinguser = teacher
+            # determines if the teacher is already booked solid even if the current class is not yet scheduled
+            availabilityWithClass = teacher.getAvailableTimes(prog)
+            if not availabilityWithClass:
+                fullybookeduser = teacher
             # make them a coteacher
-            if not conflictinguser and not unavailableuser:
+            if not conflictinguser and not unavailableuser and not noavailuser and not fullybookeduser:
                 lastProf = RegistrationProfile.getLastForProgram(teacher, prog)
                 if not lastProf.teacher_info:
                     anyInfo = teacher.getLastProfile().teacher_info
@@ -710,7 +716,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                       'conflict': conflictinguser,
                                                       'unavailableuser': unavailableuser,
                                                       'unavailabletimes': unavailabletimes,
-                                                      'noavailuser': noavailuser})
+                                                      'noavailuser': noavailuser,
+                                                      'fullybookeduser': fullybookeduser})
 
     @aux_call
     @needs_teacher
