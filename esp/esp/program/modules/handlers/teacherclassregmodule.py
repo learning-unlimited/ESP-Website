@@ -595,7 +595,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 # check that the teacher is available for all meeting_times
                 for sec in cls.sections.all():
                     for time in sec.meeting_times.all():
-                        if time not in availability:
+                        if time not in availabilityWithClass:
                             unavailabletimes.append(time)
                 if unavailabletimes:
                     unavailableuser = teacher
