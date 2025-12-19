@@ -560,6 +560,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         conflictinguser = None
         unavailableuser = None
+        noavailuser = None
         unavailabletimes = []
 
         if op == 'add':
@@ -581,6 +582,9 @@ class TeacherClassRegModule(ProgramModuleObj):
             teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
 
             availability = teacher.getAvailableTimes(prog)
+            #checks that the teacher has listed any availablilty
+            if not availability:
+                noavailuser = teacher
             # check that the teacher doesn't have a conflicting schedule
             if cls.conflicts(teacher):
                 conflictinguser = teacher
@@ -705,7 +709,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                       'coteachers': coteachers,
                                                       'conflict': conflictinguser,
                                                       'unavailableuser': unavailableuser,
-                                                      'unavailabletimes': unavailabletimes})
+                                                      'unavailabletimes': unavailabletimes,
+                                                      'noavailuser': noavailuser})
 
     @aux_call
     @needs_teacher

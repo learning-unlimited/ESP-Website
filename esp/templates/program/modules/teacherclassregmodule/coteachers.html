@@ -33,7 +33,12 @@
 <li>Finally, return to this co-teachers page and add your co-teacher using the tool below.</li>
 </ol>
 
-{% if conflict %}
+{% if noavailuser %}
+	<div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {{ noavailuser.name }}</font> has not yet indicated any availability!
+    </div>
+{% elif conflict %}
     <div class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
             {{ conflict.name }} has a conflicting schedule.
