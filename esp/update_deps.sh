@@ -47,6 +47,11 @@ then
 $BASEDIR/esp/packages_base_manual_install.sh
 fi
 
+if [[ "$MODE_VIRTUALBOX" ]]
+then
+$BASEDIR/esp/packages_dev_manual_install.sh
+fi
+
 if [[ "$MODE_PROD" ]]
 then
     if [ $((${UBUNTU_VERSION%.*}+0)) -ge 20 ]
