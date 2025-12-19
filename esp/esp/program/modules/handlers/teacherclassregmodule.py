@@ -592,17 +592,16 @@ class TeacherClassRegModule(ProgramModuleObj):
                 availabilityWithClass = teacher.getAvailableTimes(prog)
                 if not availabilityWithClass:
                     fullybookeduser = teacher
-                else:
-                    # check that the teacher is available for all meeting_times
-                    for sec in cls.sections.all():
-                        for time in sec.meeting_times.all():
-                            if time not in availability:
-                                unavailabletimes.append(time)
-                    if unavailabletimes:
-                        unavailableuser = teacher
-                    # check that the teacher doesn't have a conflicting schedule, provided the class is scheduled
-                    if sec.meeting_times.all() and cls.conflicts(teacher):
-                        conflictinguser = teacher
+                # check that the teacher is available for all meeting_times
+                for sec in cls.sections.all():
+                    for time in sec.meeting_times.all():
+                        if time not in availability:
+                            unavailabletimes.append(time)
+                if unavailabletimes:
+                    unavailableuser = teacher
+                # check that the teacher doesn't have a conflicting schedule, provided the class is scheduled
+                if sec.meeting_times.all() and cls.conflicts(teacher):
+                    conflictinguser = teacher
             # make them a coteacher
             if not conflictinguser and not unavailableuser and not noavailuser and not fullybookeduser:
                 lastProf = RegistrationProfile.getLastForProgram(teacher, prog)
