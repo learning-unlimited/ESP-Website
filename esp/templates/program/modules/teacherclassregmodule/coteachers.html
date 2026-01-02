@@ -42,13 +42,13 @@
 {% if unavailableuser %}
     <div class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-            {{ unavailableuser.name }}</font> is not listed as available for the following blocks({{ unavailabletimes|join:", " }}).
+            {{ unavailableuser.name }}</font> is not listed as available for the following blocks ({{ unavailabletimes|join:", " }}).
     </div>
 {% endif %}
 {% if conflict %}
     <div class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-            {{ conflict.name }} is teaching or moderating another class section at one or more blocks when this class is meeting.
+            {{ conflict.name }} is teaching or moderating another class section at one or more blocks when this class is meeting ({{ unavailabletimesWithClass|join:", " }}).
     </div>
 {% endif %}
 {% if fullybookeduser %}

@@ -563,6 +563,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         noavailuser = None
         fullybookeduser = None
         unavailabletimes = []
+        unavailabletimesWithClass = []
 
         if op == 'add':
             if len(request.POST['teacher_selected'].strip()) == 0:
@@ -595,12 +596,14 @@ class TeacherClassRegModule(ProgramModuleObj):
                 # check that the teacher is available for all meeting_times
                 for sec in cls.sections.all():
                     for time in sec.meeting_times.all():
-                        if time not in availabilityWithClass:
+                        if time not in availability:
                             unavailabletimes.append(time)
+                        if time not in availabilityWithClass and time in availability:
+                            unavailabletimesWithClass.append(time)
                 if unavailabletimes:
                     unavailableuser = teacher
                 # check that the teacher doesn't have a conflicting schedule, provided the class is scheduled
-                if sec.meeting_times.all() and cls.conflicts(teacher):
+                if unavailabletimesWithClass:
                     conflictinguser = teacher
             # make them a coteacher
             if not conflictinguser and not unavailableuser and not noavailuser and not fullybookeduser:
@@ -717,6 +720,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                       'conflict': conflictinguser,
                                                       'unavailableuser': unavailableuser,
                                                       'unavailabletimes': unavailabletimes,
+                                                      'unavailabletimesWithClass': unavailabletimesWithClass,
                                                       'noavailuser': noavailuser,
                                                       'fullybookeduser': fullybookeduser})
 
