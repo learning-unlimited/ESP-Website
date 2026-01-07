@@ -18,5 +18,5 @@ else
     sudo chmod 2777 /usr/local/var/run/watchman
     
     cd ..
-    rm watchman-v2025.11.24.00-linux.zip watchman-v2025.11.24.00-linux
+    rm -rf watchman-v2025.11.24.00-linux.zip watchman-v2025.11.24.00-linux
 fi
