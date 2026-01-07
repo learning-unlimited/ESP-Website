@@ -179,7 +179,7 @@ class DummyWidget(widgets.Input):
     def value_from_datadict(self, data, files, name):
         return True
 
-    def render(self, name, value, attrs=None, choices=()):
+    def render(self, name, value, attrs=None, choices=(), renderer=None):
         output = six.u('')
         if attrs and 'text' in attrs:
             output += attrs['text']
@@ -277,7 +277,7 @@ $j(document).ready(function() {
         entry.append($j("<input class='data_link nav_secondary_field input-medium' type='text' value='" + data.link + "' />"));
     """
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         if value is None: value = ''
         self.build_attrs(attrs)
         context = {}
@@ -440,7 +440,7 @@ $j(document).ready(function() {
         entry.append($j("<input class='data_link nav_secondary_field input-large' type='text' value='" + data.link + "' />"));
     """
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         if value is None: value = ''
         self.build_attrs(attrs)
         context = {}

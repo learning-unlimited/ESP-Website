@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='form',
             name='created_by',
-            field=models.ForeignKey(to='users.ESPUser'),
+            field=models.ForeignKey(to='users.ESPUser', on_delete=models.CASCADE),
         ),
     ]

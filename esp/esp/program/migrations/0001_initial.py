@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 
 from __future__ import absolute_import
 from django.db import models, migrations
-import localflavor.us.models
 import datetime
 import esp.customforms.linkfields
 import django.utils.timezone
@@ -356,7 +355,7 @@ class Migration(migrations.Migration):
                 ('confirmed', models.BooleanField(default=False)),
                 ('email', models.EmailField(max_length=75, null=True, blank=True)),
                 ('name', models.CharField(max_length=80, null=True, blank=True)),
-                ('phone', localflavor.us.models.PhoneNumberField(max_length=20, null=True, blank=True)),
+                ('phone', models.CharField(max_length=20, null=True, blank=True)),
                 ('shirt_size', models.CharField(blank=True, max_length=5, null=True, choices=[('14/16', '14/16 (XS)'), ('S', 'S'), ('M', 'M'), ('L', 'L'), ('XL', 'XL'), ('XXL', 'XXL')])),
                 ('shirt_type', models.CharField(blank=True, max_length=20, null=True, choices=[('M', 'Plain'), ('F', 'Fitted (for women)')])),
                 ('comments', models.TextField(null=True, blank=True)),
@@ -367,20 +366,20 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('num_volunteers', models.PositiveIntegerField()),
-                ('program', models.ForeignKey(to='program.Program')),
-                ('timeslot', models.ForeignKey(to='cal.Event')),
+                ('program', models.ForeignKey(to='program.Program', on_delete=models.CASCADE)),
+                ('timeslot', models.ForeignKey(to='cal.Event', on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
             name='ScheduleTestTimeblock',
             fields=[
-                ('booleantoken_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='program.BooleanToken')),
+                ('booleantoken_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='program.BooleanToken', on_delete=models.CASCADE)),
             ],
             bases=('program.booleantoken',),
         ),
         migrations.AddField(
             model_name='volunteeroffer',
             name='request',
-            field=models.ForeignKey(to='program.VolunteerRequest'),
+            field=models.ForeignKey(to='program.VolunteerRequest', on_delete=models.CASCADE),
         ),
     ]

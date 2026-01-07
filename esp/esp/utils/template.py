@@ -45,7 +45,6 @@ from argcache import cache_function
 
 import hashlib
 import errno
-import io
 from os.path import join
 
 DEFAULT_ORIGIN = 'esp.utils.template cached loader'
@@ -117,12 +116,10 @@ class ThemeLoader(base.Loader):
             origin = join(template_dir, template_name)
         return [origin]
 
-    # copied from https://github.com/django/django/blob/stable/1.11.x/django/template/loaders/filesystem.py
+    # copied from https://github.com/django/django/blob/stable/2.0.x/django/template/loaders/filesystem.py
     def get_contents(self, origin):
         try:
-            with io.open(origin.name, encoding=self.engine.file_charset) as fp:
+            with open(origin.name, encoding=self.engine.file_charset) as fp:
                 return fp.read()
-        except IOError as e:
-            if e.errno == errno.ENOENT:
-                raise TemplateDoesNotExist(origin)
-            raise
+        except FileNotFoundError:
+            raise TemplateDoesNotExist(origin)

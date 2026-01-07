@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='transfer',
             name='line_item',
-            field=models.ForeignKey(to='accounting.LineItemType'),
+            field=models.ForeignKey(to='accounting.LineItemType', on_delete=models.CASCADE),
         ),
     ]

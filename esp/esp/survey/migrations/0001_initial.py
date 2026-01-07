@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('object_id', models.PositiveIntegerField(null=True, blank=True)),
                 ('value', models.TextField()),
-                ('content_type', models.ForeignKey(blank=True, to='contenttypes.ContentType', null=True)),
+                ('content_type', models.ForeignKey(blank=True, to='contenttypes.ContentType', null=True, on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
@@ -52,7 +52,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('name', models.CharField(max_length=255)),
                 ('category', models.CharField(max_length=32)),
-                ('program', models.ForeignKey(related_name='surveys', blank=True, to='program.Program', help_text='Blank if not associated to a program', null=True)),
+                ('program', models.ForeignKey(related_name='surveys', blank=True, to='program.Program', help_text='Blank if not associated to a program', null=True, on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
@@ -60,27 +60,27 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('time_filled', models.DateTimeField(default=datetime.datetime.now)),
-                ('survey', models.ForeignKey(to='survey.Survey')),
+                ('survey', models.ForeignKey(to='survey.Survey', on_delete=models.CASCADE)),
             ],
         ),
         migrations.AddField(
             model_name='question',
             name='question_type',
-            field=models.ForeignKey(to='survey.QuestionType'),
+            field=models.ForeignKey(to='survey.QuestionType', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='question',
             name='survey',
-            field=models.ForeignKey(related_name='questions', to='survey.Survey'),
+            field=models.ForeignKey(related_name='questions', to='survey.Survey', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='answer',
             name='question',
-            field=models.ForeignKey(to='survey.Question'),
+            field=models.ForeignKey(to='survey.Question', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='answer',
             name='survey_response',
-            field=models.ForeignKey(related_name='answers', to='survey.SurveyResponse'),
+            field=models.ForeignKey(related_name='answers', to='survey.SurveyResponse', on_delete=models.CASCADE),
         ),
     ]

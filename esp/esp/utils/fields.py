@@ -35,5 +35,5 @@ class JSONField(models.TextField):
 
         return super(JSONField, self).get_db_prep_save(value, connection=connection)
 
-    def from_db_value(self, value, expression, connection, context):
+    def from_db_value(self, value, expression, connection):
         return self.to_python(value)

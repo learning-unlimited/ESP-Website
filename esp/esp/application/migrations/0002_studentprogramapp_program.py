@@ -16,6 +16,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='studentprogramapp',
             name='program',
-            field=models.ForeignKey(to='program.Program'),
+            field=models.ForeignKey(to='program.Program', on_delete=models.CASCADE),
         ),
     ]

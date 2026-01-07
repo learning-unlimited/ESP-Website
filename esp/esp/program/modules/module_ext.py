@@ -40,7 +40,7 @@ Learning Unlimited, Inc.
 from datetime import timedelta
 import time
 
-from django.core.validators import RegexValidator
+from django.core.validators import RegexValidator, validate_comma_separated_integer_list
 from django.db import models
 
 from esp.db.fields import AjaxForeignKey
@@ -62,7 +62,7 @@ class DBReceipt(models.Model):
     """ Per-program Receipt templates """
     #   Allow multiple receipts per program.  Which one is used depends on the action.
     action  = models.CharField(max_length=80, default='confirm')
-    program = models.ForeignKey(Program)
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
     receipt = models.TextField()
 
     def __str__(self):
@@ -72,7 +72,7 @@ class DBReceipt(models.Model):
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
-    program = models.OneToOneField(Program)
+    program = models.OneToOneField(Program, on_delete=models.CASCADE)
 
     #   Set to true to prevent students from registering from full classes.
     enforce_max          = models.BooleanField(default=True, help_text='Check this box to prevent students from signing up for full classes.')
@@ -153,7 +153,7 @@ class StudentClassRegModuleInfo(models.Model):
 
 @python_2_unicode_compatible
 class ClassRegModuleInfo(models.Model):
-    program = models.OneToOneField(Program)
+    program = models.OneToOneField(Program, on_delete=models.CASCADE)
 
     allow_coteach        = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to specify co-teachers.')
     set_prereqs          = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to enter prerequisites for each class that are displayed separately on the catalog.')
@@ -165,12 +165,13 @@ class ClassRegModuleInfo(models.Model):
     class_min_cap       = models.IntegerField(blank=True, null=True, help_text='The minimum number of students a teacher can choose as their class capacity.')
     class_max_size       = models.IntegerField(blank=True, null=True, help_text='The maximum number of students a teacher can choose as their class capacity.')
     class_size_step      = models.IntegerField(blank=True, null=True, help_text='The interval for class capacity choices.')
-    class_other_sizes    = models.CommaSeparatedIntegerField(blank=True, null=True, max_length=100, help_text='Force the addition of these options to teachers\' choices of class size.  (Enter a comma-separated list of integers.)')
+    class_other_sizes    = models.CharField(blank=True, null=True, max_length=100, validators=[validate_comma_separated_integer_list],
+        help_text='Force the addition of these options to teachers\' choices of class size.  (Enter a comma-separated list of integers.)')
 
     #   Allowed numbers of sections and meeting days
-    allowed_sections     = models.CommaSeparatedIntegerField(max_length=100, blank=True,
+    allowed_sections     = models.CharField(max_length=100, blank=True, validators=[validate_comma_separated_integer_list],
         help_text='Allow this many independent sections of a class (comma separated list of integers). Leave blank to allow arbitrarily many.')
-    session_counts       = models.CommaSeparatedIntegerField(max_length=100, blank=True,
+    session_counts       = models.CharField(max_length=100, blank=True, validators=[validate_comma_separated_integer_list],
         help_text='Possibilities for the number of days that a class could meet (comma separated list of integers). Leave blank if this is not a relevant choice for the teachers.')
 
     num_teacher_questions = models.PositiveIntegerField(default=1, blank=True, null=True, help_text='The maximum number of application questions that can be specified for each class.')
@@ -294,7 +295,7 @@ class AJAXChangeLogEntry(models.Model):
     cls_id = models.IntegerField()
 
     # user responsible for this entry
-    user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
 
     # time we entered this
     time = models.FloatField()
@@ -354,7 +355,7 @@ class AJAXChangeLogEntry(models.Model):
 
 class AJAXChangeLog(models.Model):
     # program this change log stores changes for
-    program = AjaxForeignKey(Program)
+    program = AjaxForeignKey(Program, on_delete=models.CASCADE)
 
     # many to many for entries in this change log
     entries = models.ManyToManyField(AJAXChangeLogEntry)
@@ -419,7 +420,7 @@ class AJAXChangeLog(models.Model):
 # stores scheduling details about an section for the AJAX scheduler
 #  (e.g., scheduling comments, locked from AJAX scheduling, etc.)
 class AJAXSectionDetail(models.Model):
-    program = AjaxForeignKey(Program)
+    program = AjaxForeignKey(Program, on_delete=models.CASCADE)
     cls_id = models.IntegerField()
     comment = models.CharField(max_length=256)
     locked = models.BooleanField(default=False)

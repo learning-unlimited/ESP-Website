@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='ajaxchangelogentry',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True),
+            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='ajaxchangelog',
@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='ajaxchangelog',
             name='program',
-            field=esp.db.fields.AjaxForeignKey(to='program.Program'),
+            field=esp.db.fields.AjaxForeignKey(to='program.Program', on_delete=models.CASCADE),
         ),
         migrations.CreateModel(
             name='AdminClass',

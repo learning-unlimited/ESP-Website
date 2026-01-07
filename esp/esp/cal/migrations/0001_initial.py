@@ -33,6 +33,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='event',
             name='event_type',
-            field=models.ForeignKey(to='cal.EventType'),
+            field=models.ForeignKey(to='cal.EventType', on_delete=models.CASCADE),
         ),
     ]
