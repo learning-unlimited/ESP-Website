@@ -553,6 +553,7 @@ class MessageVars(models.Model):
         for msgvar in msgvars:
             context.update(msgvar.getDict(user))
         context['request'] = ActionHandler(msgrequest, user) # add the request so the public url is accessible
+        context['EMAIL_HOST_SENDER'] = settings.EMAIL_HOST_SENDER # add the host address
         return Context(context)
 
     @staticmethod

@@ -60,9 +60,7 @@ users to whom you are sending this email.
 <p>
 <strong>Email body:</strong>
 <br />
-{% autoescape off %}
-    {{ rendered_text }}
-{% endautoescape %}
+<iframe srcdoc="{{ rendered_text|join:""|escape }}" style="width: 100%; max-height: 800px;"></iframe>
 <br />
 </p>
 
@@ -75,6 +73,7 @@ users to whom you are sending this email.
 <input type="hidden" name="replyto" value="{{replyto}}" />
 <input type="hidden" name="subject" value="{{subject}}" />
 <input type="hidden" name="body" value="{{body}}" />
+<input type="hidden" name="template" value="{{template}}" />
 {% if public_view %}
 <input type="hidden" name="public_view" value="on" />
 {% endif %}
@@ -89,10 +88,21 @@ users to whom you are sending this email.
 <input type="hidden" name="replyto" value="{{replyto}}" />
 <input type="hidden" name="subject" value="{{subject}}" />
 <input type="hidden" name="body" value="{{body}}" />
+<input type="hidden" name="template" value="{{template}}" />
 {% if public_view %}
 <input type="hidden" name="public_view" value="on" />
 {% endif %}
 <input type="submit" value="Send Message!" id="submitform" class="btn btn-primary" />
 </form>
+
+<script>
+$j(function() {
+    $j("iframe").each(function(index, element) {
+        element.onload = function() {
+            element.style.height = element.contentWindow.document.body.scrollHeight + 16 + 'px';
+        }
+    });
+});
+</script>
 
 {% endblock %}

@@ -89,7 +89,7 @@ class CreditCardViewer(ProgramModuleObj):
     def isStep(self):
         return self.program.hasModule('CreditCardModule_Stripe')
 
-    setup_title = "Set up the 'stripe settings' tag for credit card payments"
+    setup_title = "Set up the website for credit card payments (including the 'stripe settings' tag) (you may need to reach out to the websupport team)"
     setup_path = "tags/learn"
 
     def isCompleted(self):

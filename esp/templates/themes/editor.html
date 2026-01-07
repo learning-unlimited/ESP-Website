@@ -463,6 +463,13 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 
                             </div>
                         {% endif %}
+						{% if theme_name == "droplets" %}
+							<div>
+
+                            <p>navbarCollapseWidth is the width at which the navbar will collapse into a hamburger menu (behaves like the mobile site). Increase this value if the navbar goes onto two lines when the window is resized smaller.</p>
+
+                            </div>
+						{% endif %}
                         {% for category, data in adv_vars.items %}{% if not data|length_is:0 %}
                         <div id="adv_category_{{ forloop.counter0 }}">
                             <h3>Category: {{ category }}<hr/></h3>

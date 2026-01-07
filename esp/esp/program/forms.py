@@ -165,6 +165,8 @@ class ProgramCreationForm(BetterModelForm):
         ]                      # Here You can also add description for each fieldset.
         widgets = {
             'program_modules': forms.SelectMultiple(attrs={'class': 'hidden-field'}),
+            'class_categories': forms.CheckboxSelectMultiple(),
+            'flag_types': forms.CheckboxSelectMultiple(),
         }
         model = Program
 ProgramCreationForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'size': 40,

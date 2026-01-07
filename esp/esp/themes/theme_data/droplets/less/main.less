@@ -1,3 +1,7 @@
+:root {
+	/* this is to pass the less-defined navbarCollapseWidth to Javascript */
+	--width-breakpoint: @navbarCollapseWidth;
+}
 
 #main {
     h1 {
@@ -67,7 +71,7 @@ body {
     box-sizing: border-box;
 }
 
-@media (min-width: 980px) {
+@media (min-width: @navbarCollapseDesktopWidth) {
     body {
         padding-top: 40px;
         padding-bottom: 40px;
@@ -116,13 +120,13 @@ ul.nav-collapse {
     background-position: 0;
 }
 
-@media (min-width: 768px) and (max-width: 979px) {
+@media (min-width: 768px) and (max-width: @navbarCollapseWidth) {
     .navbar-container, .footer-container {
         width: 100%;
     }
 }
 
-@media (max-width: 979px) {
+@media (max-width: @navbarCollapseWidth) {
     .navbar .nav > li.dropdown {
         display: flex;
         justify-content: space-between;
@@ -136,7 +140,7 @@ ul.nav-collapse {
     }
 }
 
-@media (min-width:980px) {
+@media (min-width: @navbarCollapseDesktopWidth) {
     .navbar-fixed-top .navbar-inner, .navbar-fixed-bottom .navbar-inner {
         padding-left: 1rem;
         padding-right: 1rem;
@@ -178,7 +182,7 @@ ul.nav-collapse {
     padding: 3px 6px !important;
 }
 
-@media (min-width:980px) {
+@media (min-width: @navbarCollapseDesktopWidth) {
     .adminbar_user_search .title {
         border-radius: 6px 6px 0px 0px;
     }
@@ -196,7 +200,7 @@ ul.nav-collapse {
     color: #333333; /* should match the other navbar dropdowns */
 }
 
-@media (max-width: 979px) {
+@media (max-width: @navbarCollapseWidth) {
     #adminbar_content a {
         color: #999999;
     }
@@ -298,7 +302,7 @@ ul.nav-collapse {
     font-size: 13px;
 }
 
-input:not(.inputbox):not([type="radio"]):not([type="button"]):not([type="checkbox"]):not(
+/*input:not(.inputbox):not([type="radio"]):not([type="button"]):not([type="checkbox"]):not(
     .input-mini
   ):not(.input-small):not(.input-medium):not(.input-large):not(
     .input-xlarge
@@ -306,7 +310,7 @@ input:not(.inputbox):not([type="radio"]):not([type="button"]):not([type="checkbo
 textarea:not([class*="span"]),
 .uneditable-input:not([class*="span"]) {
   width: 94%;
-}
+}*/
 
 select {
     width: auto;

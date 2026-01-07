@@ -58,7 +58,6 @@ color: #006600;
    border-radius: 5px;
    outline: 2px solid #99F;
    outline-offset: -1px;
-   overflow: hidden;
 }
 
 #battlescreen > table > thead th {

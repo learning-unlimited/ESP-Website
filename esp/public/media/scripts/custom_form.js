@@ -366,7 +366,7 @@ var onChangeLinksSpecify=function(){
 					html_str+='<option value="'+data.id+'">'+data.name+'</option>';
 				});
 				$j('#links_id_pick').html(html_str);
-				$j('#links_id_pick').change().parent().show();
+				$j('#links_id_pick').trigger("change").parent().show();
                 if($j("#links_id_main").val()=="Program"){
                     $j('#links_id_tl').parent().show();
                     $j('#links_id_module').parent().show();
@@ -559,8 +559,6 @@ var removeField = function(field) {
             alert("You can't delete the only page of this form!");
             return;
         }
-        //If it's a page, remove the page-break text as well
-		field.parent().prev().remove();
 	}
 	field.parent().remove();
 };
@@ -1749,8 +1747,8 @@ var createFromBase=function(){
 	else {
 		$j('#id_modify_wrapper').hide();
 		$j('#id_modify').prop('checked', false);
-		$j('#input_form_title').val('').change();
-		$j('#input_form_description').val('').change();
+		$j('#input_form_title').val('').trigger("change");
+		$j('#input_form_description').val('').trigger("change");
 		$j('#id_anonymous').prop('checked', false);
 	}
 };
@@ -1832,17 +1830,17 @@ var rebuild=function(metadata) {
         $j("#cat_selector").children("[value="+model+"]").prop("disabled", true).css("color", "lightgrey").prop("title", "Can not add linked fields to existing forms");
     });
     // Reset add field form
-	$j("#cat_selector").val('Generic').trigger("change");
+	deSelectField($j());
     // Set up permissions if needed
     if(metadata['perms']!=""){
         clearPermsArea();
         var meta_perms = metadata['perms'].split(",");
-        $j('#id_main_perm').val(meta_perms[0]).change();
+        $j('#id_main_perm').val(meta_perms[0]).trigger("change");
         if(meta_perms.length >= 2){
-            $j('#id_prog_belong').prop('checked', true).change();
-            $j('#id_perm_program').val(meta_perms[1]).change();
+            $j('#id_prog_belong').prop('checked', true).trigger("change");
+            $j('#id_perm_program').val(meta_perms[1]).trigger("change");
             if(meta_perms.length == 3){
-                $j('#id_sub_perm').val(meta_perms[2]).change();
+                $j('#id_sub_perm').val(meta_perms[2]).trigger("change");
             }
         }
     }

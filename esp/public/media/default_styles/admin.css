@@ -3,9 +3,7 @@
 input[name="program_module_questions"] {
   display: inline;
 }
-#id_program_module_questions {
-    margin: 0 !important;
-}
+
 li {
     list-style-type: none;
 }

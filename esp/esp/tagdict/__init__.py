@@ -492,6 +492,13 @@ all_global_tags = {
         'category': 'manage',
         'is_setting': True,
     },
+    'google_analytics_id': {
+        'is_boolean': False,
+        'help_text': 'A <a href="https://support.google.com/analytics/answer/12270356?hl=en" target="_blank">measurement ID</a> for a <a href="https://developers.google.com/analytics" target="_blank">Google Analytics</a> property. The format of a measurement ID in Google Analytics 4 is "G-" followed by a combination of numbers and letters, such as "G-PSW1MY7HB4". Setting this value will enable the passing of traffic data to Google Analytics.',
+        'default': '',
+        'category': 'manage',
+        'is_setting': True,
+    },
     'shirt_types': {
         'is_boolean': False,
         'help_text': 'Comma-separated list of shirt type options',

@@ -4,12 +4,20 @@
 
 {% block stylesheets %}
 {{ block.super }}
+{% if class_qsd %}
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/tiny-markdown-editor/dist/tiny-mde.min.css"/>
+{% else %}
 <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.css">
+{% endif %}
 {% endblock %}
 
 {% block xtrajs %}
 {{ block.super }}
+{% if class_qsd %}
+<script src="https://unpkg.com/tiny-markdown-editor/dist/tiny-mde.min.js"></script>
+{% else %}
 <script src="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.js"></script>
+{% endif %}
 <!--jQuery.initialize plugin is created to help maintain dynamically created elements on the page-->
 <script src="https://cdn.jsdelivr.net/gh/pie6k/jquery.initialize@eb28c24e2eef256344777b45a455173cba36e850/jquery.initialize.js"></script>
 {% endblock %}
@@ -40,7 +48,12 @@
   </p>
 
   <h2>Content</h2>
-  <p><textarea id="qsd_content" class="wide" name="content" rows="50" style="font-family: monospace;">{{ content|escape }}</textarea></p>
+  {% if class_qsd %}
+  <div id="tinymde_commandbar"></div>
+  {% endif %}
+  <div style="width: 100%; border: 1px solid #c0c0c0; margin: 0 0 10px;">
+    <textarea id="qsd_content" name="content" rows="50">{{ content|escape }}</textarea>
+  </div>
   <p><input type="hidden" name="post_edit"><input type="submit" value="Save Changes!" class="btn btn-primary" /> &nbsp;| <a href="{{ target_url }}">Cancel</a> | <a href="{{ return_to_view }}">Back to Page View</a></p>
 </form>
 <div id="divmainqsddatetimestamp">
@@ -48,12 +61,17 @@
 </div>
 
 <script type="text/javascript">
+{% if class_qsd %}
+var tinyMDE = new TinyMDE.Editor({ textarea: "qsd_content" });
+var commandBar = new TinyMDE.CommandBar({element: 'tinymde_commandbar', editor: tinyMDE});
+{% else %}
 var editor = new Jodit("#qsd_content", {
   "enter": "BR",
   "buttons": "source,|,bold,strikethrough,underline,italic,|,superscript,subscript,|,ul,ol,outdent,indent,align,|,font,fontsize,brush,paragraph,|,image,video,table,link,hr,|,undo,redo,cut,eraser,copyformat,|,symbol,fullsize,selectall",
   "toolbarAdaptive": false,
   "saveModeInStorage": true,
 });
+{% endif %}
 
 $j(document).ready(function() {
   $j.initialize(".jodit_toolbar_btn-image input[name=url]", function() {

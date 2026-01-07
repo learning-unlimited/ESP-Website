@@ -23,6 +23,21 @@ def render_qsd(qsd):
 render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
 render_qsd.cached_function.depend_on_model(Tag)
 
+@cache_inclusion_tag(register, 'inclusion/qsd/render_qsd_md.html')
+def render_qsd_md(qsd):
+    # check whether we should display the date and author footer (only affects non-administrator users)
+    display_date_author_tag = Tag.getTag('qsd_display_date_author')
+    display_date_author = 2 # display date and author
+
+    if display_date_author_tag == 'Date':
+        display_date_author = 1 # display date only
+    elif display_date_author_tag == 'None':
+        display_date_author = 0 # hide footer
+
+    return {'qsdrec': qsd, 'display_date_author' : display_date_author}
+render_qsd_md.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
+render_qsd_md.cached_function.depend_on_model(Tag)
+
 @cache_inclusion_tag(register, 'inclusion/qsd/render_qsd.html')
 def render_inline_qsd(url):
     qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url)

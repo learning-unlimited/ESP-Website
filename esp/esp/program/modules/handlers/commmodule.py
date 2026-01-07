@@ -123,14 +123,15 @@ class CommModule(ProgramModuleObj):
         if '<html>' not in body:
             body = '<html>' + body + '</html>'
 
+        # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
+        template = request.POST.get('template', 'default')
+        rendered_text = render_to_string('email/{}_email.html'.format(template),
+                                        {'msgbody': body})
+        # Render the text for the first user
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
                        'program': ActionHandler(self.program, firstuser),
                        'request': ActionHandler(MessageRequest(), firstuser),
                        'EMAIL_HOST_SENDER': settings.EMAIL_HOST_SENDER}
-
-        # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
-        rendered_text = render_to_string('email/{}_email.html'.format(request.POST.get('template', 'default')),
-                                        {'msgbody': body})
         rendered_text = Template(rendered_text).render(DjangoContext(contextdict))
 
         return render_to_response(self.baseDir()+'preview.html', request,
@@ -143,6 +144,7 @@ class CommModule(ProgramModuleObj):
                                                'replyto': replytoemail,
                                                'public_view': public_view,
                                                'body': body,
+                                               'template': template,
                                                'rendered_text': rendered_text})
 
     @staticmethod
@@ -175,14 +177,19 @@ class CommModule(ProgramModuleObj):
         from esp.dbmail.models import MessageRequest
         from esp.users.models import PersistentQueryFilter
 
-        filterid, fromemail, replytoemail, subject, rendered_text = [
+        filterid, fromemail, replytoemail, subject, body = [
                                     request.POST['filterid'],
                                     request.POST['from'],
                                     request.POST['replyto'],
                                     request.POST['subject'],
-                                    request.POST['rendered_text']    ]
+                                    request.POST['body']    ]
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         public_view = 'public_view' in request.POST
+
+        # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
+        template = request.POST.get('template', 'default')
+        rendered_text = render_to_string('email/{}_email.html'.format(template),
+                                        {'msgbody': body})
 
         try:
             filterid = int(filterid)
@@ -220,20 +227,32 @@ class CommModule(ProgramModuleObj):
     @needs_admin
     def commpanel_old(self, request, tl, one, two, module, extra, prog):
         from esp.users.views     import get_user_list
+        from django.conf import settings
+
         filterObj, found = get_user_list(request, self.program.getLists(True))
 
         if not found:
             return filterObj
+        context = {}
 
-        sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
-        sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
+        context['sendto_fn_name'] = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
+        context['sendto_fn'] = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(context['sendto_fn_name'])
 
-        listcount = self.approx_num_of_recipients(filterObj, sendto_fn)
+        context['default_from'] = '%s <%s@%s>' % (Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME),
+                                              "info", settings.SITE_INFO[1])
+        context['from'] = context['default_from']
 
-        return render_to_response(self.baseDir()+'step2.html', request,
-                                              {'listcount': listcount,
-                                               'filterid': filterObj.id,
-                                               'sendto_fn_name': sendto_fn_name })
+        context['listcount'] = self.approx_num_of_recipients(filterObj, context['sendto_fn'])
+        context['filterid'] = filterObj.id
+
+        # Use the info redirect (make one for the default email address if it doesn't exist)
+        prs = PlainRedirect.objects.filter(original = "info")
+
+        if not prs.exists():
+           redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
+
+        return render_to_response(self.baseDir()+'step2.html', request, context)
+
 
     @main_call
     @needs_admin
