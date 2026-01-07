@@ -100,12 +100,12 @@ def format_stacktrace_simple(trace):
         lineno = frame[1]
         func = frame[2]
         code = frame[3]
-        
+
         # Split into directory and filename
         directory, filename = os.path.split(filepath)
         if directory:
             directory += os.sep
-        
+
         lines.append(
             f'<span class="djdt-path">{directory}</span>'
             f'<span class="djdt-file">{filename}</span> in '
@@ -118,11 +118,11 @@ def format_stacktrace_simple(trace):
 # Override the debug toolbar's CachePanel to fix how it behaves with argcache
 class SafeCachePanel(CachePanel):
     """Cache panel that prevents recursion when cache calls trigger template loading."""
-    
+
     def _store_call_info(self, sender, name, time_taken, return_value, args, kwargs, trace, template_info, backend, **kw):
         depth = getattr(_cache_panel_depth, 'depth', 0)
         _cache_panel_depth.depth = depth + 1
-        
+
         try:
             if depth > 0:
                 self.calls.append({
@@ -137,7 +137,7 @@ class SafeCachePanel(CachePanel):
                 })
             else:
                 super()._store_call_info(
-                    sender, name, time_taken, return_value, 
+                    sender, name, time_taken, return_value,
                     args, kwargs, trace, template_info, backend, **kw
                 )
         finally:
