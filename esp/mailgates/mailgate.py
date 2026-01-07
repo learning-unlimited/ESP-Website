@@ -86,7 +86,6 @@ try:
 
         # Catch sender's message and grab the data fields (to, from, subject, body, and attachments)
         data = dict()
-        # TODO: sort out why the email_address.split() breaks when it's a list of users
         # if the instance has a `recipients` attribute, then it is a class list (such as `a123-teachers@`)
         if hasattr(instance, 'recipients'):
             data['to'] = []
@@ -148,7 +147,10 @@ try:
             email_address = data['from'][0]
             if '<' in email_address and '>' email_address:
                 email_address = email_address.split('<')[1].split('>')[0]
-            users = ESPUser.objects.filter(email__iexact=email_address).order_by('date_joined') # sort oldest to newest
+            if email_address.endswith(settings.EMAIL_HOST_SENDER):
+                users = ESPUser.objects.filter(username__iexact=email_address.split('@')[0]).order_by('date_joined') # sort oldest to newest
+            else:
+                users = ESPUser.objects.filter(email__iexact=email_address).order_by('date_joined') # sort oldest to newest
             if len(users) == 0:
                 logger.warning('Received email from {}, which is not associated with a user'.format(data['from']))
                 continue
