@@ -84,3 +84,61 @@ class TemplatesPanel(BaseTemplatesPanel):
                 "context_processors": context_processors,
             }
         )
+
+import os
+import threading
+from django.utils.safestring import mark_safe
+from debug_toolbar.panels.cache import CachePanel
+
+_cache_panel_depth = threading.local()
+
+def format_stacktrace_simple(trace):
+    """Format stacktrace without using Django templates."""
+    lines = []
+    for frame in trace:
+        filepath = frame[0]
+        lineno = frame[1]
+        func = frame[2]
+        code = frame[3]
+        
+        # Split into directory and filename
+        directory, filename = os.path.split(filepath)
+        if directory:
+            directory += os.sep
+        
+        lines.append(
+            f'<span class="djdt-path">{directory}</span>'
+            f'<span class="djdt-file">{filename}</span> in '
+            f'<span class="djdt-func">{func}</span>'
+            f'(<span class="djdt-lineno">{lineno}</span>)\n'
+            f'  <span class="djdt-code">{code}</span>'
+        )
+    return mark_safe('\n'.join(lines))
+
+# Override the debug toolbar's CachePanel to fix how it behaves with argcache
+class SafeCachePanel(CachePanel):
+    """Cache panel that prevents recursion when cache calls trigger template loading."""
+    
+    def _store_call_info(self, sender, name, time_taken, return_value, args, kwargs, trace, template_info, backend, **kw):
+        depth = getattr(_cache_panel_depth, 'depth', 0)
+        _cache_panel_depth.depth = depth + 1
+        
+        try:
+            if depth > 0:
+                self.calls.append({
+                    "name": name,
+                    "time": time_taken,
+                    "template_info": template_info,
+                    "return_value": return_value,
+                    "args": args,
+                    "kwargs": kwargs,
+                    "trace": format_stacktrace_simple(trace),
+                    "backend": backend,
+                })
+            else:
+                super()._store_call_info(
+                    sender, name, time_taken, return_value, 
+                    args, kwargs, trace, template_info, backend, **kw
+                )
+        finally:
+            _cache_panel_depth.depth = depth

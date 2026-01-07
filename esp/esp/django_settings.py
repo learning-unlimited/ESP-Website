@@ -324,7 +324,6 @@ ADDITIONAL_TEMPLATE_SCRIPTS = ''
 DEBUG_TOOLBAR = True # set to False in local_settings to globally disable the debug toolbar
 
 DEBUG_TOOLBAR_PANELS = (
-    'debug_toolbar.panels.cache.CachePanel',
     'debug_toolbar.panels.headers.HeadersPanel',
     'debug_toolbar.panels.logging.LoggingPanel',
     'debug_toolbar.panels.request.RequestPanel',
@@ -337,6 +336,7 @@ DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.versions.VersionsPanel',
     'debug_toolbar.panels.redirects.RedirectsPanel',
     'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel',
+    'esp.utils.debug_panels.SafeCachePanel',
 )
 
 def custom_show_toolbar(request):
@@ -345,7 +345,7 @@ def custom_show_toolbar(request):
 
 DEBUG_TOOLBAR_CONFIG = {
     'DISABLE_PANELS': {
-        'debug_toolbar.panels.cache.CachePanel',
+        'esp.utils.debug_panels.SafeCachePanel',
         'debug_toolbar.panels.sql.SQLPanel',
         'debug_toolbar.panels.redirects.RedirectsPanel',
         'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel',
@@ -356,9 +356,8 @@ DEBUG_TOOLBAR_CONFIG = {
     ],
     'SHOW_TEMPLATE_CONTEXT': True,
     'INSERT_BEFORE': '</body>',
-    'ENABLE_STACKTRACES': True,
     'RENDER_PANELS': None,
-    'SHOW_COLLAPSED': False, # Ideally would be True, but there is a bug in their code.
+    'SHOW_COLLAPSED': True,
 }
 
 # Settings for Stripe credit card payments (can be overridden in
