@@ -61,7 +61,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
             }
 
     def updatePaid(self, paid=True):
-        IndividualAccountingController.updatePaid(self.program, self.student, paid)
+        IndividualAccountingController.updatePaid(self.program, self.student, paid, in_full=True)
 
     def create_record(self, event):
         created = False
@@ -71,9 +71,9 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 rec = Record(user=self.student, event=rt, program=self.program)
                 rec.save()
                 created = True
-        elif event=="paid":
-            self.updatePaid(True)
         else:
+            if event=="paid":
+                self.updatePaid(True)
             rt = RecordType.objects.get(name=event)
             recs, created = Record.objects.get_or_create(user=self.student,
                                                          event=rt,
@@ -214,7 +214,13 @@ class OnSiteCheckinModule(ProgramModuleObj):
     def barcodecheckin(self, request, tl, one, two, module, extra, prog):
         context = {}
         if request.method == 'POST':
-            results = {'not_found': [], 'existing': [], 'new': [], 'not_student': []}
+            results = {'not_found': [],
+                       'existing': [],
+                       'new': [],
+                       'not_student': [],
+                       'paid': {'new': [], 'existing': []},
+                       'liab': {'new': [], 'existing': []},
+                       'med': {'new': [], 'existing': []}}
             form = OnsiteBarcodeCheckinForm(request.POST)
             if form.is_valid():
                 codes=form.cleaned_data['uids'].split()
@@ -226,13 +232,21 @@ class OnSiteCheckinModule(ProgramModuleObj):
                         continue
 
                     if student.isStudent():
-                        if prog.isCheckedIn(student):
-                            results['existing'].append(code)
-                        else:
-                            rt = RecordType.objects.get(name="attended")
-                            new = Record(user=student, program=prog, event=rt)
-                            new.save()
-                            results['new'].append(code)
+                        self.student = student
+                        for key in ['attended', 'paid', 'liab', 'med']:
+                            if form.cleaned_data[key]:
+                                if key == "attended":
+                                    if prog.isCheckedIn(student):
+                                        results['existing'].append(code)
+                                    else:
+                                        self.create_record(key)
+                                        results['new'].append(code)
+                                else:
+                                    created = self.create_record(key)
+                                    if created:
+                                        results[key]['new'].append(code)
+                                    else:
+                                        results[key]['existing'].append(code)
                     else:
                         results['not_student'].append(code)
         else:
@@ -250,6 +264,10 @@ class OnSiteCheckinModule(ProgramModuleObj):
         POST to this view to check-in a student with a user ID.
         POST data:
           'code':          The student's ID.
+          'attended':      Whether to set an 'attended' record.
+          'paid':          Whether to mark the remainder of the student's as paid.
+          'med':           Whether to set a 'med' record.
+          'liab':          Whether to set a 'liab' record.
         """
         json_data = {}
         if request.method == 'POST' and 'code' in request.POST:
@@ -261,13 +279,20 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 student = students[0]
                 info_string = student.name() + " (" + str(code) + ")"
                 if student.isStudent():
-                    if prog.isCheckedIn(student):
-                        json_data['message'] = '%s is already checked in!' % info_string
-                    else:
-                        rt = RecordType.objects.get(name="attended")
-                        new = Record(user=student, program=prog, event=rt)
-                        new.save()
-                        json_data['message'] = '%s is now checked in!' % info_string
+                    self.student = student
+                    messages = []
+                    for key in ['attended', 'paid', 'liab', 'med']:
+                        if request.POST.get(key) == "true":
+                            if key == "attended":
+                                if prog.isCheckedIn(student):
+                                    messages.append('%s is already checked in!' % info_string)
+                                else:
+                                    self.create_record(key)
+                                    messages.append('%s is now checked in!' % info_string)
+                            else:
+                                self.create_record(key)
+                                messages.append('%s record set for %s' % (key, info_string))
+                    json_data['message'] = "\n".join(messages)
                 else:
                     json_data['message'] = '%s is not a student!' % info_string
         return HttpResponse(json.dumps(json_data), content_type='text/json')
