@@ -59,21 +59,21 @@
     <div class="alert alert-info">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
         <span>
-        Checked in {{ results.new|length }} students.  {{ results.not_found|length }} students were not found, {{ results.existing|length }} students were already checked in, and {{ results.not_student|length }} IDs did not correspond to students.
+        Checked in {{ results.new|length }} students. {{ results.existing|length }} students were already checked in. {{ results.not_found|length }} students were not found, and {{ results.not_student|length }} IDs did not correspond to students.
         </span>
-        {% if results.paid %}
+        {% if results.paid.new or results.paid.existing %}
         <span>
-        {{ results.paid|length }} student(s) paid.
-        </span>
-        {% endif %}
-        {% if results.liab %}
-        <span>
-        {{ results.liab|length }} student(s) handed in their liability waiver.
+        {{ results.paid.new|length }} student(s) paid. {{ results.paid.existing|length }} student(s) already paid.
         </span>
         {% endif %}
-        {% if results.med %}
+        {% if results.liab.new or results.liab.existing %}
         <span>
-        {{ results.med|length }} student(s) handed in their medical waiver.
+        {{ results.liab.new|length }} student(s) handed in their liability waiver. {{ results.liab.existing|length }} student(s) already handed in their liability waiver.
+        </span>
+        {% endif %}
+        {% if results.med.new or results.med.existing %}
+        <span>
+        {{ results.med.new|length }} student(s) handed in their medical waiver. {{ results.med.existing|length }} student(s) already handed in their medical waiver.
         </span>
         {% endif %}
         {% if results.not_found %}

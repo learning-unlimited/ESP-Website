@@ -214,7 +214,13 @@ class OnSiteCheckinModule(ProgramModuleObj):
     def barcodecheckin(self, request, tl, one, two, module, extra, prog):
         context = {}
         if request.method == 'POST':
-            results = {'not_found': [], 'existing': [], 'new': [], 'not_student': [], 'paid': [], 'liab': [], 'med': []}
+            results = {'not_found': [],
+                       'existing': [],
+                       'new': [],
+                       'not_student': [],
+                       'paid': {'new': [], 'existing': []},
+                       'liab': {'new': [], 'existing': []},
+                       'med': {'new': [], 'existing': []}}
             form = OnsiteBarcodeCheckinForm(request.POST)
             if form.is_valid():
                 codes=form.cleaned_data['uids'].split()
@@ -237,7 +243,10 @@ class OnSiteCheckinModule(ProgramModuleObj):
                                         results['new'].append(code)
                                 else:
                                     created = self.create_record(key)
-                                    results[key].append(code)
+                                    if created:
+                                        results[key]['new'].append(code)
+                                    else:
+                                        results[key]['existing'].append(code)
                     else:
                         results['not_student'].append(code)
         else:
