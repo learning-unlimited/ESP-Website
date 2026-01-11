@@ -145,7 +145,7 @@ try:
             if len(data['from']) != 1:
                 raise AttributeError(f"More than one sender: `{data['from']}`")
             email_address = data['from'][0]
-            if '<' in email_address and '>' email_address:
+            if '<' in email_address and '>' in email_address:
                 email_address = email_address.split('<')[1].split('>')[0]
             if email_address.endswith(settings.EMAIL_HOST_SENDER):
                 users = ESPUser.objects.filter(username__iexact=email_address.split('@')[0]).order_by('date_joined') # sort oldest to newest
