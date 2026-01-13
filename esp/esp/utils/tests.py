@@ -19,6 +19,7 @@ import os
 import subprocess
 import sys
 from reversion import revisions as reversion
+from reversion.models import Version
 import unittest
 
 from django.db.models.query import Q
@@ -185,7 +186,7 @@ class TemplateOverrideTest(DjangoTestCase):
         self.assertTrue(self.get_response_for_template('BLAARG.TEMPLATEOVERRIDE') == 'Goodbye')
 
         #   Revert the update to the template and make sure you see the old version
-        list(reversion.get_for_object(to).get_unique())[1].revert()
+        list(Version.objects.get_for_object(to).get_unique())[1].revert()
         self.assertTrue(self.get_response_for_template('BLAARG.TEMPLATEOVERRIDE') == 'Hello')
 
         #   Delete the original template override and make sure you see nothing

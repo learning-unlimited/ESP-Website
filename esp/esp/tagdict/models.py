@@ -24,7 +24,7 @@ class Tag(models.Model):
     value = models.TextField()
 
     ## Generic ForeignKey ##
-    content_type = models.ForeignKey(ContentType, blank=True, null=True)
+    content_type = models.ForeignKey(ContentType, blank=True, null=True, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField(blank=True, null=True)
     target = GenericForeignKey(ct_field='content_type', fk_field='object_id')
     ## End Generic ForeignKey ##

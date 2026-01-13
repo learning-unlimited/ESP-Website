@@ -18,27 +18,27 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='transfer',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True),
+            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='lineitemtype',
             name='program',
-            field=models.ForeignKey(to='program.Program'),
+            field=models.ForeignKey(to='program.Program', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='lineitemoptions',
             name='lineitem_type',
-            field=models.ForeignKey(to='accounting.LineItemType'),
+            field=models.ForeignKey(to='accounting.LineItemType', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='financialaidgrant',
             name='request',
-            field=esp.db.fields.AjaxForeignKey(to='program.FinancialAidRequest'),
+            field=esp.db.fields.AjaxForeignKey(to='program.FinancialAidRequest', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='account',
             name='program',
-            field=models.ForeignKey(blank=True, to='program.Program', null=True),
+            field=models.ForeignKey(blank=True, to='program.Program', null=True, on_delete=models.CASCADE),
         ),
         migrations.AlterUniqueTogether(
             name='financialaidgrant',

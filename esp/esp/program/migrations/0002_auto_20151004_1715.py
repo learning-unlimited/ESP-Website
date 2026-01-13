@@ -18,67 +18,67 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='volunteeroffer',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True),
+            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='teacherbio',
             name='program',
-            field=models.ForeignKey(blank=True, to='program.Program', null=True),
+            field=models.ForeignKey(blank=True, to='program.Program', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='teacherbio',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser'),
+            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='studentsubjectinterest',
             name='subject',
-            field=esp.db.fields.AjaxForeignKey(to='program.ClassSubject'),
+            field=esp.db.fields.AjaxForeignKey(to='program.ClassSubject', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='studentsubjectinterest',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser'),
+            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='studentregistration',
             name='relationship',
-            field=models.ForeignKey(to='program.RegistrationType'),
+            field=models.ForeignKey(to='program.RegistrationType', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='studentregistration',
             name='section',
-            field=esp.db.fields.AjaxForeignKey(to='program.ClassSection'),
+            field=esp.db.fields.AjaxForeignKey(to='program.ClassSection', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='studentregistration',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser'),
+            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='studentappreview',
             name='reviewer',
-            field=esp.db.fields.AjaxForeignKey(editable=False, to='users.ESPUser'),
+            field=esp.db.fields.AjaxForeignKey(editable=False, to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='studentappresponse',
             name='question',
-            field=models.ForeignKey(editable=False, to='program.StudentAppQuestion'),
+            field=models.ForeignKey(editable=False, to='program.StudentAppQuestion', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='studentappquestion',
             name='program',
-            field=models.ForeignKey(blank=True, editable=False, to='program.Program', null=True),
+            field=models.ForeignKey(blank=True, editable=False, to='program.Program', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='studentappquestion',
             name='subject',
-            field=models.ForeignKey(blank=True, editable=False, to='program.ClassSubject', null=True),
+            field=models.ForeignKey(blank=True, editable=False, to='program.ClassSubject', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='studentapplication',
             name='program',
-            field=models.ForeignKey(editable=False, to='program.Program'),
+            field=models.ForeignKey(editable=False, to='program.Program', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='studentapplication',
@@ -98,32 +98,32 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='studentapplication',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(editable=False, to='users.ESPUser'),
+            field=esp.db.fields.AjaxForeignKey(editable=False, to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='splashinfo',
             name='program',
-            field=esp.db.fields.AjaxForeignKey(to='program.Program', null=True),
+            field=esp.db.fields.AjaxForeignKey(to='program.Program', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='splashinfo',
             name='student',
-            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser'),
+            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='scheduleconstraint',
             name='condition',
-            field=models.ForeignKey(related_name='condition_constraint', to='program.BooleanExpression'),
+            field=models.ForeignKey(related_name='condition_constraint', to='program.BooleanExpression', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='scheduleconstraint',
             name='program',
-            field=models.ForeignKey(to='program.Program'),
+            field=models.ForeignKey(to='program.Program', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='scheduleconstraint',
             name='requirement',
-            field=models.ForeignKey(related_name='requirement_constraint', to='program.BooleanExpression'),
+            field=models.ForeignKey(related_name='requirement_constraint', to='program.BooleanExpression', on_delete=models.CASCADE),
         ),
         migrations.AlterUniqueTogether(
             name='registrationtype',
@@ -132,52 +132,52 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='registrationprofile',
             name='contact_emergency',
-            field=esp.db.fields.AjaxForeignKey(related_name='as_emergency', blank=True, to='users.ContactInfo', null=True),
+            field=esp.db.fields.AjaxForeignKey(related_name='as_emergency', blank=True, to='users.ContactInfo', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='registrationprofile',
             name='contact_guardian',
-            field=esp.db.fields.AjaxForeignKey(related_name='as_guardian', blank=True, to='users.ContactInfo', null=True),
+            field=esp.db.fields.AjaxForeignKey(related_name='as_guardian', blank=True, to='users.ContactInfo', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='registrationprofile',
             name='contact_user',
-            field=esp.db.fields.AjaxForeignKey(related_name='as_user', blank=True, to='users.ContactInfo', null=True),
+            field=esp.db.fields.AjaxForeignKey(related_name='as_user', blank=True, to='users.ContactInfo', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='registrationprofile',
             name='educator_info',
-            field=esp.db.fields.AjaxForeignKey(related_name='as_educator', blank=True, to='users.EducatorInfo', null=True),
+            field=esp.db.fields.AjaxForeignKey(related_name='as_educator', blank=True, to='users.EducatorInfo', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='registrationprofile',
             name='guardian_info',
-            field=esp.db.fields.AjaxForeignKey(related_name='as_guardian', blank=True, to='users.GuardianInfo', null=True),
+            field=esp.db.fields.AjaxForeignKey(related_name='as_guardian', blank=True, to='users.GuardianInfo', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='registrationprofile',
             name='program',
-            field=models.ForeignKey(blank=True, to='program.Program', null=True),
+            field=models.ForeignKey(blank=True, to='program.Program', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='registrationprofile',
             name='student_info',
-            field=esp.db.fields.AjaxForeignKey(related_name='as_student', blank=True, to='users.StudentInfo', null=True),
+            field=esp.db.fields.AjaxForeignKey(related_name='as_student', blank=True, to='users.StudentInfo', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='registrationprofile',
             name='teacher_info',
-            field=esp.db.fields.AjaxForeignKey(related_name='as_teacher', blank=True, to='users.TeacherInfo', null=True),
+            field=esp.db.fields.AjaxForeignKey(related_name='as_teacher', blank=True, to='users.TeacherInfo', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='registrationprofile',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser'),
+            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='programcheckitem',
             name='program',
-            field=models.ForeignKey(related_name='checkitems', to='program.Program'),
+            field=models.ForeignKey(related_name='checkitems', to='program.Program', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='program',
@@ -197,12 +197,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='financialaidrequest',
             name='program',
-            field=models.ForeignKey(editable=False, to='program.Program'),
+            field=models.ForeignKey(editable=False, to='program.Program', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='financialaidrequest',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(editable=False, to='users.ESPUser'),
+            field=esp.db.fields.AjaxForeignKey(editable=False, to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='classsubject',
@@ -212,7 +212,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='classsubject',
             name='category',
-            field=models.ForeignKey(related_name='cls', to='program.ClassCategories'),
+            field=models.ForeignKey(related_name='cls', to='program.ClassCategories', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='classsubject',
@@ -227,12 +227,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='classsubject',
             name='optimal_class_size_range',
-            field=models.ForeignKey(blank=True, to='program.ClassSizeRange', null=True),
+            field=models.ForeignKey(blank=True, to='program.ClassSizeRange', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='classsubject',
             name='parent_program',
-            field=models.ForeignKey(to='program.Program'),
+            field=models.ForeignKey(to='program.Program', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='classsubject',
@@ -242,7 +242,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='classsizerange',
             name='program',
-            field=models.ForeignKey(blank=True, to='program.Program', null=True),
+            field=models.ForeignKey(blank=True, to='program.Program', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='classsection',
@@ -257,7 +257,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='classsection',
             name='parent_class',
-            field=esp.db.fields.AjaxForeignKey(related_name='sections', to='program.ClassSubject'),
+            field=esp.db.fields.AjaxForeignKey(related_name='sections', to='program.ClassSubject', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='classsection',
@@ -267,57 +267,57 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='classimplication',
             name='cls',
-            field=models.ForeignKey(to='program.ClassSubject', null=True),
+            field=models.ForeignKey(to='program.ClassSubject', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='classimplication',
             name='parent',
-            field=models.ForeignKey(default=None, to='program.ClassImplication', null=True),
+            field=models.ForeignKey(default=None, to='program.ClassImplication', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='classflag',
             name='created_by',
-            field=esp.db.fields.AjaxForeignKey(related_name='classflags_created', to='users.ESPUser'),
+            field=esp.db.fields.AjaxForeignKey(related_name='classflags_created', to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='classflag',
             name='flag_type',
-            field=models.ForeignKey(to='program.ClassFlagType'),
+            field=models.ForeignKey(to='program.ClassFlagType', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='classflag',
             name='modified_by',
-            field=esp.db.fields.AjaxForeignKey(related_name='classflags_modified', to='users.ESPUser'),
+            field=esp.db.fields.AjaxForeignKey(related_name='classflags_modified', to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='classflag',
             name='subject',
-            field=esp.db.fields.AjaxForeignKey(related_name='flags', to='program.ClassSubject'),
+            field=esp.db.fields.AjaxForeignKey(related_name='flags', to='program.ClassSubject', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='booleantoken',
             name='exp',
-            field=models.ForeignKey(help_text='The Boolean expression that this token belongs to', to='program.BooleanExpression'),
+            field=models.ForeignKey(help_text='The Boolean expression that this token belongs to', to='program.BooleanExpression', on_delete=models.CASCADE),
         ),
         migrations.CreateModel(
             name='ScheduleTestCategory',
             fields=[
-                ('scheduletesttimeblock_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='program.ScheduleTestTimeblock')),
-                ('category', models.ForeignKey(help_text='The class category that must be selected for this timeblock', to='program.ClassCategories')),
+                ('scheduletesttimeblock_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='program.ScheduleTestTimeblock', on_delete=models.CASCADE)),
+                ('category', models.ForeignKey(help_text='The class category that must be selected for this timeblock', to='program.ClassCategories', on_delete=models.CASCADE)),
             ],
             bases=('program.scheduletesttimeblock',),
         ),
         migrations.CreateModel(
             name='ScheduleTestOccupied',
             fields=[
-                ('scheduletesttimeblock_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='program.ScheduleTestTimeblock')),
+                ('scheduletesttimeblock_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='program.ScheduleTestTimeblock', on_delete=models.CASCADE)),
             ],
             bases=('program.scheduletesttimeblock',),
         ),
         migrations.CreateModel(
             name='ScheduleTestSectionList',
             fields=[
-                ('scheduletesttimeblock_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='program.ScheduleTestTimeblock')),
+                ('scheduletesttimeblock_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='program.ScheduleTestTimeblock', on_delete=models.CASCADE)),
                 ('section_ids', models.TextField(help_text='A comma separated list of ClassSection IDs that can be selected for this timeblock')),
             ],
             bases=('program.scheduletesttimeblock',),
@@ -325,7 +325,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='scheduletesttimeblock',
             name='timeblock',
-            field=models.ForeignKey(help_text='The timeblock that this schedule test pertains to', to='cal.Event'),
+            field=models.ForeignKey(help_text='The timeblock that this schedule test pertains to', to='cal.Event', on_delete=models.CASCADE),
         ),
         migrations.AlterUniqueTogether(
             name='financialaidrequest',

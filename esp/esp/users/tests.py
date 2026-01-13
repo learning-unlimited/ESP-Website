@@ -135,9 +135,11 @@ class PasswordRecoveryTicketTest(TestCase):
         self.assertTrue(four.is_valid(), "Recovery ticket four is invalid.")
 
         # Try expiring #1; trying to validate it should destroy it
+        pk_before = one.pk
         one.cancel()
         self.assertFalse(one.is_valid(), "Expired ticket is still valid.")
-        self.assertEqual(one.id, None, "Ticket was not auto-deleted.")
+        self.assertFalse(PasswordRecoveryTicket.objects.filter(pk=pk_before).exists(),
+                         "Ticket was not auto-deleted.")
         # Try using #1; it shouldn't work
         self.assertFalse(one.change_password( 'forgetful', 'bad_pw' ), "Expired ticket still changed password.")
         self.assertFalse(self.client.login( username='forgetful', password='bad_pw' ), "User forgetful logged in with incorrect password.")

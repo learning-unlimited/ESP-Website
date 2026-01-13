@@ -97,7 +97,7 @@ def render_to_response(template, request, context, content_type=None, use_reques
     return django.shortcuts.render(request, template, context, content_type=content_type)
 
 """ Override Django error views to provide some context info. """
-def error404(request, template_name='404.html'):
+def error404(request, exception=None, template_name='404.html'):
     context = {'request_path': request.path}
     context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
     context['EMAIL_HOST_SENDER'] = settings.EMAIL_HOST_SENDER

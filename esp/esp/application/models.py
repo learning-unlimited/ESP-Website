@@ -14,6 +14,7 @@ from esp.program.models import Program, ClassSubject
 from esp.formstack.api import Formstack
 from esp.formstack.objects import FormstackForm, FormstackSubmission
 from esp.formstack.signals import formstack_post_signal
+from django.core.validators import validate_comma_separated_integer_list
 
 class FormstackAppSettings(models.Model):
     """
@@ -21,7 +22,7 @@ class FormstackAppSettings(models.Model):
     module.
     """
 
-    program = models.OneToOneField(Program)
+    program = models.OneToOneField(Program, on_delete=models.CASCADE)
 
     # formstack settings
     form_id = models.IntegerField(null=True)
@@ -30,7 +31,7 @@ class FormstackAppSettings(models.Model):
     # end formstack settings
 
     username_field = models.IntegerField(null=True, blank=True)
-    coreclass_fields = models.CommaSeparatedIntegerField(max_length=80, blank=True, help_text="A list of field ids separated by commas.")
+    coreclass_fields = models.CharField(max_length=80, blank=True, help_text="A list of field ids separated by commas.", validators=[validate_comma_separated_integer_list])
 
     autopopulated_fields = models.TextField(blank=True, help_text="""\
 To autopopulate fields on the form, type "[field id]: [Python
@@ -94,8 +95,8 @@ field id.""")
 class StudentProgramApp(models.Model):
     """ A student's application to the program. """
 
-    user = models.ForeignKey(ESPUser)
-    program = models.ForeignKey(Program)
+    user = models.ForeignKey(ESPUser, on_delete=models.CASCADE)
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
 
     # choices for admin status
     UNREVIEWED = 0
@@ -162,8 +163,8 @@ class StudentProgramApp(models.Model):
 class StudentClassApp(models.Model):
     """ A student's application to a particular class. """
 
-    app = models.ForeignKey(StudentProgramApp)
-    subject = models.ForeignKey(ClassSubject)
+    app = models.ForeignKey(StudentProgramApp, on_delete=models.CASCADE)
+    subject = models.ForeignKey(ClassSubject, on_delete=models.CASCADE)
     student_preference = models.PositiveIntegerField()
 
     GREEN = 1

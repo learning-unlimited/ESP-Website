@@ -45,7 +45,7 @@ class Migration(migrations.Migration):
                 ('perms', models.CharField(max_length=200, blank=True)),
                 ('success_message', models.CharField(max_length=500, blank=True)),
                 ('success_url', models.CharField(max_length=200, blank=True)),
-                ('created_by', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
+                ('created_by', models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
@@ -53,7 +53,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('seq', models.IntegerField(default=-1)),
-                ('form', models.ForeignKey(to='customforms.Form')),
+                ('form', models.ForeignKey(to='customforms.Form', on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
@@ -63,22 +63,22 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(max_length=40)),
                 ('description', models.CharField(max_length=140, blank=True)),
                 ('seq', models.IntegerField()),
-                ('page', models.ForeignKey(to='customforms.Page')),
+                ('page', models.ForeignKey(to='customforms.Page', on_delete=models.CASCADE)),
             ],
         ),
         migrations.AddField(
             model_name='field',
             name='form',
-            field=models.ForeignKey(to='customforms.Form'),
+            field=models.ForeignKey(to='customforms.Form', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='field',
             name='section',
-            field=models.ForeignKey(to='customforms.Section'),
+            field=models.ForeignKey(to='customforms.Section', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='attribute',
             name='field',
-            field=models.ForeignKey(to='customforms.Field'),
+            field=models.ForeignKey(to='customforms.Field', on_delete=models.CASCADE),
         ),
     ]

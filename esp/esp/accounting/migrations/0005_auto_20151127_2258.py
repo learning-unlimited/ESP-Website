@@ -15,12 +15,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='transfer',
             name='destination',
-            field=models.ForeignKey(related_name='transfer_destination', blank=True, to='accounting.Account', help_text='Destination account; where the money is going to. Leave blank if this is a payment to an outsider.', null=True),
+            field=models.ForeignKey(related_name='transfer_destination', blank=True, to='accounting.Account', help_text='Destination account; where the money is going to. Leave blank if this is a payment to an outsider.', null=True, on_delete=models.CASCADE),
         ),
         migrations.AlterField(
             model_name='transfer',
             name='source',
-            field=models.ForeignKey(related_name='transfer_source', blank=True, to='accounting.Account', help_text='Source account; where the money is coming from. Leave blank if this is a payment from outside.', null=True),
+            field=models.ForeignKey(related_name='transfer_source', blank=True, to='accounting.Account', help_text='Source account; where the money is coming from. Leave blank if this is a payment from outside.', null=True, on_delete=models.CASCADE),
         ),
         migrations.AlterField(
             model_name='transfer',

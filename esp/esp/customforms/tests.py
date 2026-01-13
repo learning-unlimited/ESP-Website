@@ -162,7 +162,7 @@ class CustomFormsTest(TestCase):
         #   - Build an initial set of responses
         responses_initial = {}
         responses_initial['question_%d' % field_id_map['ShortText']] = 'Dumb'
-        responses_initial['question_%d' % field_id_map['Your phone no.']] = '111-111-1111'
+        responses_initial['question_%d' % field_id_map['Your phone no.']] = '(201) 426-5797'
         responses_initial['question_%d' % field_id_map['Your gender']] = 'F'
         responses_initial['question_%d' % field_id_map['Choose an option']] = 'A'
         responses_initial['question_%d' % field_id_map['True/false']] = 'on'

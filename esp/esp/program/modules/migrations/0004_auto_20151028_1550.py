@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
                 ('cls_id', models.IntegerField()),
                 ('comment', models.CharField(max_length=256)),
                 ('locked', models.BooleanField(default=False)),
-                ('program', esp.db.fields.AjaxForeignKey(to='program.Program')),
+                ('program', esp.db.fields.AjaxForeignKey(to='program.Program', on_delete=models.CASCADE)),
             ],
         ),
         migrations.AddField(

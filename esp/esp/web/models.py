@@ -104,7 +104,7 @@ class NavBarEntry(models.Model):
     text = models.CharField(max_length=64)
     indent = models.BooleanField(default=False)
 
-    category = models.ForeignKey(NavBarCategory, default=default_navbarcategory)
+    category = models.ForeignKey(NavBarCategory, default=default_navbarcategory, on_delete=models.CASCADE)
 
     def can_edit(self, user):
         return user.isAdmin()
