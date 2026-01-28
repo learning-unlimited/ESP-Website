@@ -58,6 +58,8 @@ def extract_attachments(msg):
         mimetype = part.get_content_type()
         if content:
             attachments.append((filename, content, mimetype))
+        else:
+            logger.info("No content in attachment {}".format(filename))
     return attachments
 
 
