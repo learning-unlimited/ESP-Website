@@ -42,6 +42,7 @@ from django.db.models.functions import Lower
 import_location = 'esp.dbmail.receivers.'
 SUPPORT = settings.DEFAULT_EMAIL_ADDRESSES['support']
 ORGANIZATION_NAME = settings.INSTITUTION_NAME + '_' + settings.ORGANIZATION_SHORT_NAME
+DOMAIN = '.learningu.org'
 
 #DEBUG=True
 DEBUG=False
@@ -92,10 +93,10 @@ try:
             aliases = []
             for recipient in instance.recipients:
                 # If the recipient has an email address that does not end with @anysite.learningu.org, keep them
-                # TODO: it would be better not to hardcode `.learningu.org` in case we ever change the name, but we
-                # only store `thissite.learningu.org` in settings, and we want `anysite.learningu.org` while still
-                # allowing user@learningu.org because those resolve to enterprise Gmail addresses
-                if recipient.endswith('.learningu.org'):
+                # Note we `DOMAIN` instead of the `HOSTNAME` because the latter resolves to `thissite.learningu.org`
+                # in settings,  and we want `anysite.learningu.org` while still allowing user@learningu.org because
+                # those resolve to enterprise Gmail addresses
+                if recipient.endswith(DOMAIN):
                     aliases.append(recipient)
                 elif '@' in recipient:
                     data['to'].append(recipient)
@@ -112,7 +113,7 @@ try:
             # Theoretically at least one of these should be empty, but now doesn't seem like the time
             # If the redirect resolve to anything@anysite.learningu.org, kill it
             for address in redirects + users:
-                if not address.endswith('.learningu.org'): # TODO: again, would be nice not to hardcode
+                if not address.endswith(DOMAIN):
                     data['to'].append(address)
             # if the above filtering leaves the 'to' list empty, abort
             if len(data['to']) == 0:
