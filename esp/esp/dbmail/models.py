@@ -111,7 +111,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     #   Normally this will be SMTP, but it also has an in-memory backend for testing.
     connection = get_connection(fail_silently=fail_silently)
     if hasattr(connection, 'return_path'):
-        connection.return_path=return_path
+        connection.return_path = return_path
 
 
     #   Detect HTML tags in message and change content-type if they are found

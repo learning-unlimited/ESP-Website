@@ -136,8 +136,8 @@ try:
         data['attachments'] = extract_attachments(message)
 
 
-       # If the sender's email is not associated with an account on the site,
-       # do not forward the email
+        # If the sender's email is not associated with an account on the site,
+        # do not forward the email
         if not data['from']:
             logger.debug(f"User has no account: `from` field is `{data['from']}`")
             continue
