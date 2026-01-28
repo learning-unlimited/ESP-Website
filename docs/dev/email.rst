@@ -8,7 +8,7 @@ This document describes how email, both incoming and outgoing, makes its way whe
 Outgoing email
 --------------
 
-User-generated outgoing email originates in the comm panel.  The comm panel is outside the scope of this document, but after an admin writes an email and selects recipients, the website creates a signle ``MessageRequest`` object with that data -- the email template, the list of students to which it will be sent, and some metadata like the sender.  (The ``MessageRequest`` model, and the others described below, are in ``esp/esp/dbmail/models.py``.)
+User-generated outgoing email originates in the comm panel.  The comm panel is outside the scope of this document, but after an admin writes an email and selects recipients, the website creates a single ``MessageRequest`` object with that data -- the email template, the list of students to which it will be sent, and some metadata like the sender.  (The ``MessageRequest`` model, and the others described below, are in ``esp/esp/dbmail/models.py``.)
 
 Then, every 15 minutes at most (exact timing depends on the site), cron runs ``esp/dbmail_cron.py``.  This does two things.  First, it looks for unprocessed ``MessageRequest`` objects.  For each ``MessageRequest``, and for each user to which it is sent, the script creates a ``TextOfEmail`` object, which contains the email text exactly as it will be sent (as well as the subject, recipient address, and such).  It then marks the ``MessageRequest`` as processed.
 
