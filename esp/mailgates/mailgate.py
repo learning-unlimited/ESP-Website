@@ -81,7 +81,7 @@ try:
         instance.process(user, *match.groups(), **match.groupdict())
 
         if not instance.send:
-            logger.info("Instance did not send")
+            logger.debug("Instance of handler {} with message {} did not send".format(handler, message))
             continue
 
         # Catch sender's message and grab the data fields (to, from, subject, body, and attachments)
