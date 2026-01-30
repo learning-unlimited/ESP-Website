@@ -27,9 +27,23 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Provider-specific configuration: headless mode, memory
   config.vm.provider :virtualbox do |vb|
-    # vb.gui = true
-    vb.customize ['modifyvm', :id, '--memory', '2048']
-    vb.customize ["modifyvm", :id, "--cpus", "2"]
+    host = RbConfig::CONFIG['host_os']
+
+    # Give VM 1/4 system memory 
+    if host =~ /darwin/
+      # sysctl returns Bytes and we need to convert to MB
+      mem = `sysctl -n hw.memsize`.to_i / 1024
+    elsif host =~ /linux/
+      # meminfo shows KB and we need to convert to MB
+      mem = `grep 'MemTotal' /proc/meminfo | sed -e 's/MemTotal://' -e 's/ kB//'`.to_i 
+    elsif host =~ /mswin|mingw|cygwin/
+      # Windows code via https://github.com/rdsubhas/vagrant-faster
+      mem = `wmic computersystem Get TotalPhysicalMemory`.split[1].to_i / 1024
+    end
+    
+    mem = mem / 1024 / 4
+    vb.customize ["modifyvm", :id, "--memory", mem]
+    vb.customize ["modifyvm", :id, "--cpus", "1"]
   end
 
 end

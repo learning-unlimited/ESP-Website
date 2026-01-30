@@ -81,6 +81,7 @@
 <div>
 <center>
 
+{% if perclass_data %}
 <div id="filterform">
 <h2>Filter results</h2>
 <form action="" method="get">
@@ -98,7 +99,6 @@
     {% endfor %}
 </form>
 </div>
-
 <table>
     <thead>
     <tr>
@@ -112,8 +112,6 @@
         <th>Teacher ID</th>
     </tr>
     </thead>
-
-{% if perclass_data %}
 {% for c in perclass_data|dictsortreversed:"avg" %}
     <tbody id="class_{{c.class.emailcode}}">
         <tr class="newclass">
@@ -138,6 +136,8 @@
     {% endif %}
     </tbody>
 {% endfor %}
+{% else %}
+	<h1>There are no responses for this survey yet!</h1>
 {% endif %}
 
 </table>
