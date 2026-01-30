@@ -47,6 +47,8 @@ from django.conf import settings
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
 
+from phonenumbers import format_number, PhoneNumberFormat
+
 class GroupTextModule(ProgramModuleObj):
     doc = """Text users that match specific search criteria."""
     """ Want to tell all enrolled students about a last-minute lunch location
@@ -168,12 +170,9 @@ class GroupTextModule(ProgramModuleObj):
             client = Client(account_sid, auth_token)
 
             # format the number for Twilio
-            formattedNumber = contactInfo.phone_cell.replace("-", "").replace(" ", "")
+            formattedNumber = format_number(contactInfo.phone_cell, PhoneNumberFormat.E164)
 
             if formattedNumber:
-                if formattedNumber[0] != '+':
-                    formattedNumber = '+1' + formattedNumber
-
                 send_log.append("Sending text message to "+formattedNumber)
                 try:
                     client.messages.create(body=body,

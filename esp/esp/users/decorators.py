@@ -41,7 +41,7 @@ def anonymous_only(message="Sorry, you don't need this page -- you're logged in.
     def _decorator(method):
         @functools.wraps(method)
         def _inner_function(request, *args, **kwargs):
-            if request.user.is_authenticated():
+            if request.user.is_authenticated:
                 return render_to_response('errors/anonymous_only.html',
                                           request,
                                           {})

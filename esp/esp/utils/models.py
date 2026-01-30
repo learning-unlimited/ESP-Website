@@ -80,7 +80,7 @@ class Printer(models.Model):
         return self.name
 
 class PrintRequest(models.Model):
-    printer = models.ForeignKey(Printer, blank=True, null=True)     #   Leave blank to allow any printer to be used.
-    user = AjaxForeignKey(ESPUser)
+    printer = models.ForeignKey(Printer, blank=True, null=True, on_delete=models.CASCADE)     #   Leave blank to allow any printer to be used.
+    user = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
     time_requested = models.DateTimeField(auto_now_add=True)
     time_executed = models.DateTimeField(blank=True, null=True)

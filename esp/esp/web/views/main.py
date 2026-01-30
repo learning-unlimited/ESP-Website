@@ -160,7 +160,7 @@ def contact(request, section='esp'):
 
             email = form.cleaned_data['sender']
             if not anonymous:
-                logged_in_as = request.user.username if hasattr(request, 'user') and request.user.is_authenticated() else "(not authenticated)"
+                logged_in_as = request.user.username if hasattr(request, 'user') and request.user.is_authenticated else "(not authenticated)"
                 usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
 
                 if usernames and not form.cleaned_data['decline_password_recovery']:
@@ -206,7 +206,7 @@ def contact(request, section='esp'):
 
     else:
         initial = {}
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             initial['sender'] = request.user.email
             initial['name']   = request.user.first_name + ' '+request.user.last_name
 

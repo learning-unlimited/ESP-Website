@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('num_students', models.IntegerField(default=-1, blank=True)),
                 ('group_id', models.IntegerField(default=-1)),
                 ('is_unique', models.BooleanField(default=False)),
-                ('event', models.ForeignKey(to='cal.Event')),
+                ('event', models.ForeignKey(to='cal.Event', on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
@@ -30,9 +30,9 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('lock_level', models.IntegerField(default=0)),
-                ('resource', models.ForeignKey(to='resources.Resource')),
-                ('target', models.ForeignKey(to='program.ClassSection', null=True)),
-                ('target_subj', models.ForeignKey(to='program.ClassSubject', null=True)),
+                ('resource', models.ForeignKey(to='resources.Resource', on_delete=models.CASCADE)),
+                ('target', models.ForeignKey(to='program.ClassSection', null=True, on_delete=models.CASCADE)),
+                ('target_subj', models.ForeignKey(to='program.ClassSubject', null=True, on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
@@ -60,7 +60,7 @@ class Migration(migrations.Migration):
                 ('attributes_pickled', models.TextField(default="Don't care", help_text='A pipe (|) delimited list of possible attribute values.', blank=True)),
                 ('autocreated', models.BooleanField(default=False)),
                 ('distancefunc', models.TextField(help_text='Enter python code that assumes <tt>r1</tt> and <tt>r2</tt> are resources with this type.', null=True, blank=True)),
-                ('program', models.ForeignKey(blank=True, to='program.Program', null=True)),
+                ('program', models.ForeignKey(blank=True, to='program.Program', null=True, on_delete=models.CASCADE)),
             ],
         ),
         migrations.AddField(
@@ -71,17 +71,17 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='resourcerequest',
             name='target',
-            field=models.ForeignKey(to='program.ClassSection', null=True),
+            field=models.ForeignKey(to='program.ClassSection', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='resourcerequest',
             name='target_subj',
-            field=models.ForeignKey(to='program.ClassSubject', null=True),
+            field=models.ForeignKey(to='program.ClassSubject', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='resource',
             name='res_group',
-            field=models.ForeignKey(blank=True, to='resources.ResourceGroup', null=True),
+            field=models.ForeignKey(blank=True, to='resources.ResourceGroup', null=True, on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='resource',
