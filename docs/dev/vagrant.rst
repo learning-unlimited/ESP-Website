@@ -23,7 +23,7 @@ Setup procedure
 Preparation
 ~~~~~~~~~~~
 
-The site VM is 64-bit Ubuntu, so it will probably not work if your computer runs a 32-bit operating system, although such computers are rare nowadays.
+The site VM is 64-bit Ubuntu, so it will probably not work if your computer runs a 32-bit operating system, although such computers are rare nowadays. If you have a Mac with the ARM architecture (a silicon chip), you will need to make a small adjustment before calling "vagrant up".
 
 On some computers, particularly Lenovo computers, you will need to enable hardware virtualization in the BIOS in order to run VMs. If you don't, this issue may manifest itself in Vagrant silently failing to boot your VM.
 
@@ -51,6 +51,8 @@ Using a shell (such as Git Bash, which comes installed with Git), navigate to th
 
 If you already have a GitHub account with SSH keys set up, you may want to use ``git clone git@github.com:learning-unlimited/ESP-Website.git devsite`` to make it easy to push new code.
 If you already had vagrant installed, consider clearing your keys in ``~/.vagrant.d``.
+
+If you have a Mac with the ARM architecture (a silicon chip), open "Vagrantfile" in the devsite directory. Comment out lines 10 and 11 (by adding a "#" to the beginning of the lines) and uncomment lines 13 and 14.
 
 Next, use Vagrant to create your VM: ::
 
