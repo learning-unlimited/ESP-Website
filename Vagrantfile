@@ -6,9 +6,12 @@ VAGRANTFILE_API_VERSION = '2'
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
-  # Build off the basic Ubuntu 64-bit VM.
+  # Build off the basic Ubuntu 64-bit VM. If you have a silicon Mac, comment out lines 10 and 11, and uncomment lines 13 and 14.
   config.vm.box = 'ubuntu-24.04'
   config.vm.box_url = 'https://learningu-static.s3.amazonaws.com/ubuntu-24.04.box'
+  # Build off the Ubuntu 64-bit VM for the ARM architecture (Mac silicon chip).
+  # config.vm.box = 'ubuntu-24.04_macos_host.box'
+  # config.vm.box_url = 'https://learningu-static.s3.us-east-1.amazonaws.com/ubuntu-24.04_macos_host.box'
   config.vm.hostname = 'ludev'
   config.ssh.forward_agent = true
   config.ssh.forward_x11 = true
