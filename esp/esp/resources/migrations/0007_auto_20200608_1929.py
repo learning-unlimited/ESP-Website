@@ -21,6 +21,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='resourceassignment',
             name='assignment_group',
-            field=models.ForeignKey(blank=True, to='resources.AssignmentGroup', null=True),
+            field=models.ForeignKey(blank=True, to='resources.AssignmentGroup', null=True, on_delete=models.CASCADE),
         ),
     ]

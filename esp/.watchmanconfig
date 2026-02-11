@@ -1,0 +1,10 @@
+{
+  "ignore_dirs": [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "public",
+    "useful_scripts",
+    "templates"
+  ]
+}

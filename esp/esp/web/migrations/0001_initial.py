@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
                 ('link', models.CharField(max_length=256, null=True, blank=True)),
                 ('text', models.CharField(max_length=64)),
                 ('indent', models.BooleanField(default=False)),
-                ('category', models.ForeignKey(default=esp.web.models.default_navbarcategory, to='web.NavBarCategory')),
+                ('category', models.ForeignKey(default=esp.web.models.default_navbarcategory, to='web.NavBarCategory', on_delete=models.CASCADE)),
             ],
             options={
                 'verbose_name_plural': 'Nav Bar Entries',
