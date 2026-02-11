@@ -16,6 +16,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='formstackappsettings',
             name='program',
-            field=models.OneToOneField(null=True, to='program.Program'),
+            field=models.OneToOneField(null=True, to='program.Program', on_delete=models.CASCADE),
         ),
     ]

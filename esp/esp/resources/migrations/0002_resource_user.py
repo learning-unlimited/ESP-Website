@@ -17,6 +17,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='resource',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True),
+            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True, on_delete=models.CASCADE),
         ),
     ]

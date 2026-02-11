@@ -5,7 +5,7 @@ from django.forms.fields import HiddenInput, TextInput
 
 from esp.users.models import ESPUser, GradeChangeRequest
 from esp.utils.forms import StrippedCharField
-from localflavor.us.forms import USPhoneNumberField
+from phonenumber_field.formfields import PhoneNumberField
 import six
 
 class ValidHostEmailField(forms.EmailField):

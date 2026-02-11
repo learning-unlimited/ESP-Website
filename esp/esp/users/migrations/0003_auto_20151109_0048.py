@@ -16,16 +16,16 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='contactinfo',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True),
+            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True, on_delete=models.CASCADE),
         ),
         migrations.AlterField(
             model_name='passwordrecoveryticket',
             name='user',
-            field=models.ForeignKey(to='users.ESPUser'),
+            field=models.ForeignKey(to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AlterField(
             model_name='teacherinfo',
             name='user',
-            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True),
+            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True, on_delete=models.CASCADE),
         ),
     ]
