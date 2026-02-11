@@ -28,8 +28,8 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('time_requested', models.DateTimeField(auto_now_add=True)),
                 ('time_executed', models.DateTimeField(null=True, blank=True)),
-                ('printer', models.ForeignKey(blank=True, to='utils.Printer', null=True)),
-                ('user', esp.db.fields.AjaxForeignKey(to='users.ESPUser')),
+                ('printer', models.ForeignKey(blank=True, to='utils.Printer', null=True, on_delete=models.CASCADE)),
+                ('user', esp.db.fields.AjaxForeignKey(to='users.ESPUser', on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(

@@ -12,6 +12,27 @@
 
 <h2>Manage a Program</h2>
 
+<table class="table table-striped table-condensed" align="center">
+<div class="module_group_header">
+        Select a Program to Manage It:
+</div>
+<tbody>
+{% for program in admPrograms %}
+    <tr><td><a href="/manage/{{program.getUrlBase}}/main"
+  title="Manage {{program.niceName}}">
+  {{program.niceName}}
+</a></td></tr>
+{% endfor %}
+</tbody>
+<thead>
+  <tr>
+    <th align="center"><b><a class="btn btn-primary" href="/manage/newprogram" title="Create a New Program">
+   Create a New Program...
+</a></b></th>
+  </tr>
+</thead>
+</table>
+
 <div class="module_group" id="module_group_1">
     <div class="module_group_header">
         Useful Management Pages
@@ -95,7 +116,10 @@
     </div>
 </div>
 
-<p>Here are some tips:
+<div class="module_group_header">
+    Quick Tips:
+</div>
+<p>
   <ul>
     <li>If you want to create a new page, just go to the URL you want (such as https://yoursite.learningu.org/newpage.html). If you are logged in as an admin, you should see an option that says "change that." Click, and edit the new page.</li>
 
@@ -113,28 +137,5 @@
 {% load render_qsd %}
 {% inline_qsd_block "manage/programs" %}
 {% end_inline_qsd_block %}
-
-<table class="table table-striped table-condensed" align="center">
-<thead>
-  <tr>
-    <th align="center">Select a program to manage it:</th>
-  </tr>
-</thead>
-<tbody>
-{% for program in admPrograms %}
-    <tr><td><a href="/manage/{{program.getUrlBase}}/main"
-  title="Manage {{program.niceName}}">
-  {{program.niceName}}
-</a></td></tr>
-{% endfor %}
-</tbody>
-<thead>
-  <tr>
-    <th align="center"><b><a class="btn btn-primary" href="/manage/newprogram" title="Create a New Program">
-   Create a New Program...
-</a></b></th>
-  </tr>
-</thead>
-</table>
 
 {% endblock %}

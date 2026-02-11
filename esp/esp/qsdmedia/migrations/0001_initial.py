@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
                 ('file_name', models.TextField(max_length=256, null=True, editable=False, blank=True)),
                 ('hashed_name', models.TextField(max_length=256, null=True, editable=False, blank=True)),
                 ('owner_id', models.PositiveIntegerField(null=True, blank=True)),
-                ('owner_type', models.ForeignKey(blank=True, to='contenttypes.ContentType', null=True)),
+                ('owner_type', models.ForeignKey(blank=True, to='contenttypes.ContentType', null=True, on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('is_mutable_text', models.BooleanField(default=False)),
-                ('media', models.ForeignKey(to='qsdmedia.Media', unique=True)),
+                ('media', models.ForeignKey(to='qsdmedia.Media', unique=True, on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
@@ -50,7 +50,7 @@ class Migration(migrations.Migration):
                 ('is_arbitrarily_resizable_format', models.BooleanField(default=False)),
                 ('x_resolution', models.IntegerField(null=True, blank=True)),
                 ('y_resolution', models.IntegerField(null=True, blank=True)),
-                ('media', models.ForeignKey(to='qsdmedia.Media', unique=True)),
+                ('media', models.ForeignKey(to='qsdmedia.Media', unique=True, on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
@@ -62,12 +62,12 @@ class Migration(migrations.Migration):
                 ('video_codec', models.TextField(null=True, blank=True)),
                 ('bitrate', models.IntegerField(null=True, blank=True)),
                 ('duration', models.IntegerField(null=True, blank=True)),
-                ('media', models.ForeignKey(to='qsdmedia.Media', unique=True)),
+                ('media', models.ForeignKey(to='qsdmedia.Media', unique=True, on_delete=models.CASCADE)),
             ],
         ),
         migrations.AddField(
             model_name='paper',
             name='type',
-            field=models.ForeignKey(to='qsdmedia.PaperType'),
+            field=models.ForeignKey(to='qsdmedia.PaperType', on_delete=models.CASCADE),
         ),
     ]

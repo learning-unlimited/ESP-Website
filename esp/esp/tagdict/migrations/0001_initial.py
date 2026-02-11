@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
                 ('key', models.SlugField()),
                 ('value', models.TextField()),
                 ('object_id', models.PositiveIntegerField(null=True, blank=True)),
-                ('content_type', models.ForeignKey(blank=True, to='contenttypes.ContentType', null=True)),
+                ('content_type', models.ForeignKey(blank=True, to='contenttypes.ContentType', null=True, on_delete=models.CASCADE)),
             ],
             options={
                 'ordering': ['key'],

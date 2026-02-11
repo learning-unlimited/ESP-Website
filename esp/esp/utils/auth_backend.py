@@ -15,7 +15,7 @@ class ESPAuthBackend(ModelBackend):
         except ESPUser.DoesNotExist:
             return None
 
-    def authenticate(self, username=None, password=None, **kwargs):
+    def authenticate(self, request, username=None, password=None, **kwargs):
         try:
             user = ESPUser.objects.get_by_natural_key(username)
             if user.check_password(password):

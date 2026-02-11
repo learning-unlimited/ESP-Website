@@ -74,8 +74,8 @@ class CoreModule(object):
 
 @python_2_unicode_compatible
 class ProgramModuleObj(models.Model):
-    program  = models.ForeignKey(Program)
-    module   = models.ForeignKey(ProgramModule)
+    program  = models.ForeignKey(Program, on_delete=models.CASCADE)
+    module   = models.ForeignKey(ProgramModule, on_delete=models.CASCADE)
     seq      = models.IntegerField()
     required = models.BooleanField(default=False)
     required_label = models.CharField(max_length=80, blank=True, null=False, default="")
@@ -466,7 +466,7 @@ class ProgramModuleObj(models.Model):
 # will check and depending on the value of tl
 # will use .isTeacher or .isStudent()
 def not_logged_in(request):
-    return (not request.user or not request.user.is_authenticated() or not request.user.id)
+    return (not request.user or not request.user.is_authenticated or not request.user.id)
 
 def usercheck_usetl(method):
     """

@@ -104,7 +104,7 @@ ADMINS = (
 # The name, user and password must be filled in via local_settings.py and django_settings.py
 DATABASES = {'default':
     {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': '',
         'HOST': 'localhost',
         'PORT': '5432',
@@ -251,6 +251,7 @@ INSTALLED_APPS = (
     'reversion',
     'captcha',
     'form_utils',
+    'phonenumber_field',
     'django.contrib.redirects',
     'debug_toolbar',
     'esp.formstack',
@@ -323,7 +324,6 @@ ADDITIONAL_TEMPLATE_SCRIPTS = ''
 DEBUG_TOOLBAR = True # set to False in local_settings to globally disable the debug toolbar
 
 DEBUG_TOOLBAR_PANELS = (
-    'debug_toolbar.panels.cache.CachePanel',
     'debug_toolbar.panels.headers.HeadersPanel',
     'debug_toolbar.panels.logging.LoggingPanel',
     'debug_toolbar.panels.request.RequestPanel',
@@ -336,6 +336,7 @@ DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.versions.VersionsPanel',
     'debug_toolbar.panels.redirects.RedirectsPanel',
     'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel',
+    'esp.utils.debug_panels.SafeCachePanel',
 )
 
 def custom_show_toolbar(request):
@@ -344,6 +345,8 @@ def custom_show_toolbar(request):
 
 DEBUG_TOOLBAR_CONFIG = {
     'DISABLE_PANELS': {
+        'esp.utils.debug_panels.SafeCachePanel',
+        'debug_toolbar.panels.sql.SQLPanel',
         'debug_toolbar.panels.redirects.RedirectsPanel',
         'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel',
     },
@@ -353,9 +356,8 @@ DEBUG_TOOLBAR_CONFIG = {
     ],
     'SHOW_TEMPLATE_CONTEXT': True,
     'INSERT_BEFORE': '</body>',
-    'ENABLE_STACKTRACES': True,
     'RENDER_PANELS': None,
-    'SHOW_COLLAPSED': False, # Ideally would be True, but there is a bug in their code.
+    'SHOW_COLLAPSED': True,
 }
 
 # Settings for Stripe credit card payments (can be overridden in
@@ -399,6 +401,10 @@ SHELL_PLUS_POST_IMPORTS = (
         ('esp.utils.shell_utils', '*'),
         )
 
+# django-phonenumber-field settings
+PHONENUMBER_DEFAULT_REGION = 'US'
+PHONENUMBER_DEFAULT_FORMAT = 'NATIONAL'  # or 'E164', 'INTERNATIONAL'
+
 #   Twilio configuration - should be completed in local_settings.py
 TWILIO_ACCOUNT_SID = None
 TWILIO_AUTH_TOKEN = None
@@ -414,4 +420,5 @@ ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
 
 ADMIN_TOOLS_THEMING_CSS = '/media/default_styles/admin_theme.css'
 
-SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error']
+SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error',
+                          'debug_toolbar.W006']
