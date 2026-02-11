@@ -17,26 +17,26 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='messagerequest',
             name='creator',
-            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser'),
+            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='messagerequest',
             name='recipients',
-            field=models.ForeignKey(to='users.PersistentQueryFilter'),
+            field=models.ForeignKey(to='users.PersistentQueryFilter', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='emailrequest',
             name='msgreq',
-            field=models.ForeignKey(to='dbmail.MessageRequest'),
+            field=models.ForeignKey(to='dbmail.MessageRequest', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='emailrequest',
             name='target',
-            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser'),
+            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='emailrequest',
             name='textofemail',
-            field=esp.db.fields.AjaxForeignKey(blank=True, to='dbmail.TextOfEmail', null=True),
+            field=esp.db.fields.AjaxForeignKey(blank=True, to='dbmail.TextOfEmail', null=True, on_delete=models.CASCADE),
         ),
     ]

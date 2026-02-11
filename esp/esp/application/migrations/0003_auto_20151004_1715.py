@@ -18,22 +18,22 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='studentprogramapp',
             name='user',
-            field=models.ForeignKey(to='users.ESPUser'),
+            field=models.ForeignKey(to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='studentclassapp',
             name='app',
-            field=models.ForeignKey(to='application.StudentProgramApp'),
+            field=models.ForeignKey(to='application.StudentProgramApp', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='studentclassapp',
             name='subject',
-            field=models.ForeignKey(to='program.ClassSubject'),
+            field=models.ForeignKey(to='program.ClassSubject', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='formstackappsettings',
             name='module',
-            field=models.ForeignKey(to='modules.ProgramModuleObj'),
+            field=models.ForeignKey(to='modules.ProgramModuleObj', on_delete=models.CASCADE),
         ),
         migrations.CreateModel(
             name='FormstackStudentClassApp',

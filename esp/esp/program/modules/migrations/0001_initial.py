@@ -93,7 +93,7 @@ class Migration(migrations.Migration):
                 ('send_confirmation', models.BooleanField(default=False, help_text='Check this box to send each student an email the first time they confirm their registration.  You must define an associated DBReceipt of type "confirmemail".')),
                 ('show_emailcodes', models.BooleanField(default=True, help_text='Uncheck this box to prevent email codes (i.e. E534, H243) from showing up on catalog and fillslot pages.')),
                 ('force_show_required_modules', models.BooleanField(default=True, help_text='Check this box to require that users see and fill out "required" modules before they can see the main StudentReg page')),
-                ('module', models.ForeignKey(editable=False, to='modules.ProgramModuleObj')),
+                ('module', models.ForeignKey(editable=False, to='modules.ProgramModuleObj', on_delete=models.CASCADE)),
             ],
         ),
     ]
