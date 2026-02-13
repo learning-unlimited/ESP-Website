@@ -336,15 +336,23 @@ class TeacherCheckinModule(ProgramModuleObj):
         for teacher in arrived_teachers:
             phone_number = teacher_phones.get(teacher.id, default_phone)
             if phone_number != default_phone:
-                phone_number = phonenumbers.format_number(phonenumbers.parse(phone_number, settings.PHONENUMBER_DEFAULT_REGION),
-                                                          phonenumbers.PhoneNumberFormat.NATIONAL)
+                # Check if phone_number is already a PhoneNumber object (from django-phonenumber-field)
+                if isinstance(phone_number, phonenumbers.PhoneNumber):
+                    phone_number = phonenumbers.format_number(phone_number, phonenumbers.PhoneNumberFormat.NATIONAL)
+                else:
+                    phone_number = phonenumbers.format_number(phonenumbers.parse(phone_number, settings.PHONENUMBER_DEFAULT_REGION),
+                                                              phonenumbers.PhoneNumberFormat.NATIONAL)
             teacher.phone = phone_number
             arrived[teacher.id] = teacher
         for moderator in arrived_moderators:
             phone_number = moderator_phones.get(moderator.id, default_phone)
             if phone_number != default_phone:
-                phone_number = phonenumbers.format_number(phonenumbers.parse(phone_number, settings.PHONENUMBER_DEFAULT_REGION),
-                                                          phonenumbers.PhoneNumberFormat.NATIONAL)
+                # Check if phone_number is already a PhoneNumber object (from django-phonenumber-field)
+                if isinstance(phone_number, phonenumbers.PhoneNumber):
+                    phone_number = phonenumbers.format_number(phone_number, phonenumbers.PhoneNumberFormat.NATIONAL)
+                else:
+                    phone_number = phonenumbers.format_number(phonenumbers.parse(phone_number, settings.PHONENUMBER_DEFAULT_REGION),
+                                                              phonenumbers.PhoneNumberFormat.NATIONAL)
             moderator.phone = phone_number
             arrived[moderator.id] = moderator
 
@@ -369,14 +377,22 @@ class TeacherCheckinModule(ProgramModuleObj):
             for teacher in section.teachers_list:
                 phone_number = teacher_phones.get(teacher.id, default_phone)
                 if phone_number != default_phone:
-                    phone_number = phonenumbers.format_number(phonenumbers.parse(phone_number, settings.PHONENUMBER_DEFAULT_REGION),
-                                                              phonenumbers.PhoneNumberFormat.NATIONAL)
+                    # Check if phone_number is already a PhoneNumber object (from django-phonenumber-field)
+                    if isinstance(phone_number, phonenumbers.PhoneNumber):
+                        phone_number = phonenumbers.format_number(phone_number, phonenumbers.PhoneNumberFormat.NATIONAL)
+                    else:
+                        phone_number = phonenumbers.format_number(phonenumbers.parse(phone_number, settings.PHONENUMBER_DEFAULT_REGION),
+                                                                  phonenumbers.PhoneNumberFormat.NATIONAL)
                 teacher.phone = phone_number
             for moderator in section.moderators_list:
                 phone_number = moderator_phones.get(moderator.id, default_phone)
                 if phone_number != default_phone:
-                    phone_number = phonenumbers.format_number(phonenumbers.parse(phone_number, settings.PHONENUMBER_DEFAULT_REGION),
-                                                              phonenumbers.PhoneNumberFormat.NATIONAL)
+                    # Check if phone_number is already a PhoneNumber object (from django-phonenumber-field)
+                    if isinstance(phone_number, phonenumbers.PhoneNumber):
+                        phone_number = phonenumbers.format_number(phone_number, phonenumbers.PhoneNumberFormat.NATIONAL)
+                    else:
+                        phone_number = phonenumbers.format_number(phonenumbers.parse(phone_number, settings.PHONENUMBER_DEFAULT_REGION),
+                                                                  phonenumbers.PhoneNumberFormat.NATIONAL)
                 moderator.phone = phone_number
             sections_list.append(section)
 
