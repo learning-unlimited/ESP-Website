@@ -13,6 +13,10 @@ if [ -n "$FORM_UTILS_PATH" ]; then
     find "$FORM_UTILS_PATH" -name "*.py" -exec sed -i 's/from django\.utils import six/import six/g' {} \;
     find "$FORM_UTILS_PATH" -name "*.py" -exec sed -i '/from django\.utils\.encoding import python_2_unicode_compatible/d' {} \;
     find "$FORM_UTILS_PATH" -name "*.py" -exec sed -i '/@python_2_unicode_compatible/d' {} \;
+    
+    # Fix BoundField import - in Django 3.1+, BoundField is in django.forms.boundfield
+    find "$FORM_UTILS_PATH" -name "*.py" -exec sed -i 's/forms\.forms\.BoundField/forms.boundfield.BoundField/g' {} \;
+    
     echo "  ✓ django-form-utils patched"
 fi
 
