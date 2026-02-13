@@ -241,7 +241,7 @@ INSTALLED_APPS = (
     'esp.survey',
     'esp.accounting.apps.AccountingConfig',
     'esp.customforms.apps.CustomformsConfig',
-    'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
+    'esp.utils.apps.UtilsConfig',
     'esp.tagdict',
     'esp.seltests',
     'esp.themes',
@@ -249,7 +249,7 @@ INSTALLED_APPS = (
     'argcache.apps.ArgCacheConfig',
     'django_extensions',
     'reversion',
-    'captcha',
+    'django_recaptcha',
     'form_utils',
     'phonenumber_field',
     'django.contrib.redirects',

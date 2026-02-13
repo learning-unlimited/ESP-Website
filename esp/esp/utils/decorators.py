@@ -41,7 +41,7 @@ from argcache.function import get_containing_class
 from django.http import HttpResponse
 from django.db.models import Model
 
-from inspect import getargspec
+from inspect import getfullargspec
 from functools import wraps
 import json
 
@@ -126,7 +126,8 @@ class CachedModuleViewDecorator(object):
         containing_class = get_containing_class()
 
         def prepare_dec(func):
-            self.params, xx, xxx, defaults = getargspec(func)
+            argspec = getfullargspec(func)
+            self.params, xx, xxx, defaults = argspec.args, argspec.varargs, argspec.varkw, argspec.defaults
             self.cached_function = cache_function(func, containing_class=containing_class)
 
             def actual_func(self, request, tl, one, two, module, extra, prog):

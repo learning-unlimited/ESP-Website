@@ -1,4 +1,3 @@
-from django.utils.encoding import python_2_unicode_compatible
 import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -42,7 +41,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.db import models
-from django.utils.decorators import available_attrs
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
@@ -70,7 +68,6 @@ class CoreModule:
     """
     pass
 
-@python_2_unicode_compatible
 class ProgramModuleObj(models.Model):
     program  = models.ForeignKey(Program, on_delete=models.CASCADE)
     module   = models.ForeignKey(ProgramModule, on_delete=models.CASCADE)
@@ -739,7 +736,7 @@ def meets_any_deadline(extensions=[]):
 
 def meets_cap(view_method):
     """Only allow students who meet the program cap past this point."""
-    @wraps(view_method, assigned=available_attrs(view_method))
+    @wraps(view_method)
     def _meets_cap(moduleObj, request, tl, one, two, module, extra, prog,
                    *args, **kwargs):
         if prog.user_can_join(request.user):
@@ -766,7 +763,7 @@ def user_passes_test(test_func, error_message):
     should be formatted similarly to the output of list_extensions().
     """
     def user_passes_test(view_method):
-        @wraps(view_method, assigned=available_attrs(view_method))
+        @wraps(view_method)
         def _check(moduleObj, request, tl, *args, **kwargs):
             if test_func(moduleObj):
                 return view_method(moduleObj, request, tl, *args, **kwargs)

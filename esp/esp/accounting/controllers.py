@@ -1,7 +1,6 @@
 
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from django.utils.encoding import python_2_unicode_compatible
 from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -276,7 +275,6 @@ class ProgramAccountingController(BaseAccountingController):
         else:
             return 'Unrelated!?'
 
-@python_2_unicode_compatible
 class IndividualAccountingController(ProgramAccountingController):
     def __init__(self, program, user, *args, **kwargs):
         super(IndividualAccountingController, self).__init__(program, *args, **kwargs)

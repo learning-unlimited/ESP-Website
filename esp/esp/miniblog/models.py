@@ -1,7 +1,6 @@
 
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -42,7 +41,6 @@ from esp.db.fields import AjaxForeignKey
 import datetime
 
 # Create your models here.
-@python_2_unicode_compatible
 class AnnouncementLink(models.Model):
     title = models.CharField(max_length=256)
     category = models.CharField(max_length=32) # Plaintext
@@ -68,7 +66,6 @@ class AnnouncementLink(models.Model):
     def html(self):
         return '<p><a href="%s">%s</a></p>' % (self.href, self.title)
 
-@python_2_unicode_compatible
 class Entry(models.Model):
     """ A Markdown-encoded miniblog entry """
     title = models.CharField(max_length=256) # Plaintext; shouldn't contain HTML, for security reasons, though HTML will probably be passed through intact
@@ -104,7 +101,6 @@ class Entry(models.Model):
         verbose_name_plural = 'Entries'
         ordering = ['-timestamp']
 
-@python_2_unicode_compatible
 class Comment(models.Model):
 
     author = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
