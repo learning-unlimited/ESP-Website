@@ -25,7 +25,7 @@ flake8==7.0.0 # Required for linter
 ipython==8.12.3 # Used for shell_plus (8.12 is last supporting Python 3.8)
 Markdown==3.6 # Used in QSD
 numpy==1.26.4 # Used mainly in the lottery and class change controller
-pillow==10.3.0 # Required for ImageField, which we use in teacher bios
+pillow>=12.1.1 # Required for ImageField, which we use in teacher bios (12.1.1+ for security)
 psycopg2==2.9.9 # Talks to postgres
 pycurl==7.45.3 # Used only in a formstack script which I think is outdated
 dnspython==2.6.1 # Used for validating email addresses; replaces py3dns
@@ -39,7 +39,7 @@ selenium==4.21.0 # Runs selenium tests which probably don't work anymore
 shortuuid==1.0.13 # django-extensions dependency
 stripe==9.6.0 # Required for credit card processing
 twilio==9.1.0 # Required for text messaging support
-wheel==0.43.0  # For building modern packages
+wheel>=0.46.2  # For building modern packages (0.46.2+ for security)
 werkzeug==3.0.3 # Required for runserver_plus (alternative to runserver provided by django-extensions)
 xlwt==1.3.0 # Does form and survey exporting
 
