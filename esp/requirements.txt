@@ -1,5 +1,5 @@
 # Django
-Django==3.0.14
+Django==3.1.14
 
 # Django-specific packages
 git+https://github.com/learning-unlimited/django-argcache.git@django2 # Handles caching
