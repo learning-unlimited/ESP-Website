@@ -7,6 +7,8 @@ if [ "$TRAVIS_JOB" = "test" ]; then
     esp/packages_base_manual_install.sh
     pip3 install -r esp/requirements.txt -q --log pip.log || (tail pip.log && exit 1)
     pip3 install coverage
+    # Patch dependencies for Django 3.x compatibility
+    esp/patch_dependencies.sh
 elif [ "$TRAVIS_JOB" = "lint" ]; then
     pip3 install flake8
 else
