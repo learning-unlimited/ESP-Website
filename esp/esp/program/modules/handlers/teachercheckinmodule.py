@@ -96,7 +96,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         """Undo what checkIn does"""
         if when is None:
             when = datetime.now()
-        records = Record.filter(teacher, 'teacher_checked_in', prog, when, only_today=True)
+        records = Record.filter(teacher, 'teacher_checked_in', prog, when, only_today=True, distinct=False)
         if records:
             records.delete()
             return '%s is no longer checked in.' % teacher.name()
