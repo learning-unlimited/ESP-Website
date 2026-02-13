@@ -25,6 +25,7 @@ flake8==7.0.0 # Required for linter
 ipython==8.12.3 # Used for shell_plus (8.12 is last supporting Python 3.8)
 Markdown==3.6 # Used in QSD
 numpy==1.26.4 # Used mainly in the lottery and class change controller
+packaging>=24.0 # For version parsing (replaces pkg_resources)
 pillow>=12.1.1 # Required for ImageField, which we use in teacher bios (12.1.1+ for security)
 psycopg2==2.9.9 # Talks to postgres
 pycurl==7.45.3 # Used only in a formstack script which I think is outdated
