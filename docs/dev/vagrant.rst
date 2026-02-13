@@ -52,7 +52,7 @@ Using a shell (such as Git Bash, which comes installed with Git), navigate to th
 If you already have a GitHub account with SSH keys set up, you may want to use ``git clone git@github.com:learning-unlimited/ESP-Website.git devsite`` to make it easy to push new code.
 If you already had vagrant installed, consider clearing your keys in ``~/.vagrant.d``.
 
-If you have a Mac with the ARM architecture (a silicon chip), open "Vagrantfile" in the devsite directory. Comment out lines 10 and 11 (by adding a "#" to the beginning of the lines) and uncomment lines 13 and 14. Save the file.
+If you have a Mac with the ARM architecture (a silicon chip), open "Vagrantfile" in the devsite directory. Comment out the two lines containing the default values for ``config.vm.box`` and ``config.vm.box_url`` (by adding a "#" to the beginning of the lines) and uncomment the subsequent lines with the Mac ARM version. Save the file.
 
 Next, use Vagrant to create your VM: ::
 
