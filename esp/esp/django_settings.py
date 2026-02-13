@@ -420,7 +420,7 @@ ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
 
 ADMIN_TOOLS_THEMING_CSS = '/media/default_styles/admin_theme.css'
 
-SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error',
+SILENCED_SYSTEM_CHECKS = ['django_recaptcha.recaptcha_test_key_error',
                           'debug_toolbar.W006']
 
 # Django 3.2+ requires specifying the default auto field type
