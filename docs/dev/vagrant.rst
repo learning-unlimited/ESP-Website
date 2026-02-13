@@ -237,7 +237,7 @@ Follow the following steps to upgrade the base VM for everyone to use.
 		sudo apt install lvm2
 		sudo lvs
 
-	   You may need to then exit the terminal, restart the virtual machine, hit escape as it starts booting up, select boot manager, then select the CD-ROM, then select "try to install ubuntu".
+	   You may need to then exit the terminal, restart the virtual machine, hit escape as it starts booting up, select boot manager, then select the CD-ROM, then select "try to install ubuntu". Reopen the terminal window before proceeding to the next step.
 
 	vi. Create space for an encrypted partition by running the following commands, replacing ``$VOLUME_GROUP`` and ``$LOGICAL_VOLUME`` with the names you found in the previous step. You may need to do ``e2fsck -f /dev/$VOLUME_GROUP/$LOGICAL_VOLUME`` first, but it should yell at you in that case. ::
 
