@@ -21,14 +21,27 @@ class ValidHostEmailField(forms.EmailField):
         email_host = email_parts[1]
 
         try:
-            import DNS
+            import dns.resolver
             try:
-                DNS.DiscoverNameServers()
-                if len(DNS.Request(qtype='a').req(email_host).answers) == 0 and len(DNS.Request(qtype='mx').req(email_host).answers) == 0:
+                # Try to resolve A or MX records for the email host
+                resolver = dns.resolver.Resolver()
+                has_a_record = False
+                has_mx_record = False
+                try:
+                    resolver.resolve(email_host, 'A')
+                    has_a_record = True
+                except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers):
+                    pass
+                try:
+                    resolver.resolve(email_host, 'MX')
+                    has_mx_record = True
+                except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers):
+                    pass
+                if not has_a_record and not has_mx_record:
                     raise forms.ValidationError('"%s" is not a valid email host' % email_host)
-            except (IOError, DNS.DNSError): # (no resolv.conf, no nameservers)
+            except (IOError, dns.exception.DNSException): # (no resolv.conf, no nameservers)
                 pass
-        except ImportError: # no PyDNS
+        except ImportError: # no dnspython
             pass
 
         return email
