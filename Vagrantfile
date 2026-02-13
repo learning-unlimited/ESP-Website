@@ -10,8 +10,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # If you have a silicon Mac (ARM architecture), comment out the following two lines and uncomment the two subsequent lines. 
   config.vm.box = 'ubuntu-24.04'
   config.vm.box_url = 'https://learningu-static.s3.amazonaws.com/ubuntu-24.04.box'
-  # config.vm.box = 'ubuntu-24.04_macos_host.box'
-  # config.vm.box_url = 'https://learningu-static.s3.us-east-1.amazonaws.com/ubuntu-24.04_macos_host.box'
+  # config.vm.box = 'ubuntu-24.04_mac_arm_host.box'
+  # config.vm.box_url = 'https://learningu-static.s3.us-east-1.amazonaws.com/ubuntu-24.04_mac_arm_host.box'
   config.vm.hostname = 'ludev'
   config.ssh.forward_agent = true
   config.ssh.forward_x11 = true
