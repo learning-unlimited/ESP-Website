@@ -18,12 +18,17 @@
         Quagga.onDetected(function(result) {
             var code = result.codeResult.code;
             var autocheckin = document.getElementById("autocheckinbox");
+            var data = {}
+            $j('#checkinform input[type="checkbox"]').each(function() {
+                data[this.name] = this.checked;
+            });
 
             if (App.lastResult !== code) {
                 App.lastResult = code;
                 beep();
                 if (autocheckin.checked){
-                    var data = {code: code, csrfmiddlewaretoken: csrf_token()};
+                    data["code"] = code;
+                    data["csrfmiddlewaretoken"] = csrf_token();
                     $j.post('ajaxbarcodecheckin', data, function(result) {
                         if (result.hasOwnProperty('message')) {
                             var message = result.message;
@@ -51,42 +56,61 @@
     </p>
 
     {% if results %}
-    <p>
-    Checked in {{ results.new|length }} students.  {{ results.not_found|length }} students were not found, {{ results.existing|length }} students were already checked in, and {{ results.not_student|length }} IDs did not correspond to students.
-    </p>
-    {% if results.not_found %}
-    <p>
-    Students not found:
-    {% for id in results.not_found %}
-    {{ id }}{% if not forloop.last %},{% endif %}
-    {% endfor %}
-    </p>
-    {% endif %}
-    {% if results.not_student %}
-    <p>
-    IDs not corresponding to students:
-    {% for id in results.not_student %}
-    {{ id }}{% if not forloop.last %},{% endif %}
-    {% endfor %}
-    </p>
-    {% endif %}
-    {% comment %}
-    {% if results.existing %}
-    <p>
-    IDs already checked in:
-    {% for id in results.existing %}
-    {{ id }}{% if not forloop.last %},{% endif %}
-    {% endfor %}
-    </p>
-    {% endif %}
-    {% endcomment %}
+    <div class="alert alert-info">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span>
+        Checked in {{ results.new|length }} students. {{ results.existing|length }} students were already checked in. {{ results.not_found|length }} students were not found, and {{ results.not_student|length }} IDs did not correspond to students.
+        </span>
+        {% if results.paid.new or results.paid.existing %}
+        <span>
+        {{ results.paid.new|length }} student(s) paid. {{ results.paid.existing|length }} student(s) already paid.
+        </span>
+        {% endif %}
+        {% if results.liab.new or results.liab.existing %}
+        <span>
+        {{ results.liab.new|length }} student(s) handed in their liability waiver. {{ results.liab.existing|length }} student(s) already handed in their liability waiver.
+        </span>
+        {% endif %}
+        {% if results.med.new or results.med.existing %}
+        <span>
+        {{ results.med.new|length }} student(s) handed in their medical waiver. {{ results.med.existing|length }} student(s) already handed in their medical waiver.
+        </span>
+        {% endif %}
+        {% if results.not_found %}
+        <span>
+        Students not found:
+        {% for id in results.not_found %}
+        {{ id }}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        </span>
+        {% endif %}
+        {% if results.not_student %}
+        <span>
+        IDs not corresponding to students:
+        {% for id in results.not_student %}
+        {{ id }}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        </span>
+        {% endif %}
+        {% comment %}
+        {% if results.existing %}
+        <span>
+        IDs already checked in:
+        {% for id in results.existing %}
+        {{ id }}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        </span>
+        {% endif %}
+        {% endcomment %}
+    </div>
     {% endif %}
 
     <form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">
-                        {{ form.as_p }}
-                        <p class="ids">
-                    <input type="submit" value="Submit" />
-                    </p>
+        <table style="width: unset;">
+            {{ form.as_table }}
+            <tr><td colspan="2"><input type="submit" value="Submit" /></td></tr>
+        </table>
+        
     </form>
 
     <br><br>
@@ -101,7 +125,7 @@
             <option value="i2of5_reader">Interleaved 2 of 5</option>
         </select>
         <br><br>
-        <input type="checkbox" id="autocheckinbox" value="autocheckin" checked> Auto-checkin scanned barcodes<br>
+        <input type="checkbox" class="btn" id="autocheckinbox" value="autocheckin" checked><label for="autocheckinbox">Auto-checkin scanned barcodes</label><br>
     </div>
     <div class="overlay overlay--inline">
         <div class="overlay__content viewport" id="interactive">
