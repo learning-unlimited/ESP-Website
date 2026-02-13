@@ -971,6 +971,7 @@ class BaseESPUser(object):
 
     @classmethod
     def get_unused_username(cls, first_name, last_name):
+        import re
         username = base_uname = (first_name[0] + last_name).lower()
         if cls.objects.filter(username = username).count() > 0:
             i = 2
@@ -978,7 +979,7 @@ class BaseESPUser(object):
             while cls.objects.filter(username = username).count() > 0:
                 i += 1
                 username = base_uname + str(i)
-        return username
+        return re.sub(r'[^\w.@+-]', '', username) # sanitize before returning
 
     def makeVolunteer(self):
         self.groups.add(Group.objects.get_or_create(name="Volunteer")[0])
