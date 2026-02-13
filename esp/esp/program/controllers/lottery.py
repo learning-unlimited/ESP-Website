@@ -173,7 +173,7 @@ class LotteryAssignmentController:
         self.student_enrollments = numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.int32)
         self.student_sections = numpy.zeros((self.num_students, self.num_sections), dtype=numpy.bool_)
         self.student_weights = numpy.ones((self.num_students,))
-        self.student_utilities = numpy.zeros((self.num_students, ), dtype=numpy.float)
+        self.student_utilities = numpy.zeros((self.num_students, ), dtype=numpy.float64)
 
     def put_prefs_in_array(self, prefs, array):
         """ Helper function for self.initialize().
@@ -232,8 +232,8 @@ class LotteryAssignmentController:
         # One array to keep track of the utility of each student
         # (defined as hours of interested class + 1.5*hours of priority classes)
         # and the other arrary to keep track of student weigths (defined as # of classes signed up for)
-        self.student_utility_weights = numpy.zeros((self.num_students, ), dtype=numpy.float)
-        self.student_utilities = numpy.zeros((self.num_students, ), dtype=numpy.float)
+        self.student_utility_weights = numpy.zeros((self.num_students, ), dtype=numpy.float64)
+        self.student_utilities = numpy.zeros((self.num_students, ), dtype=numpy.float64)
 
         #   Get student, section, timeslot IDs and prepare lookup table
         (self.student_ids, self.student_indices) = self.get_ids_and_indices(self.lotteried_students)
@@ -484,7 +484,7 @@ class LotteryAssignmentController:
             #   Sort sections in increasing order of number of interesting students
             #   TODO: Check with Alex that this is the desired algorithm
             interested_counts = numpy.sum(self.interest, 0)
-            sorted_section_indices = numpy.argsort(interested_counts.astype(numpy.float) / self.section_capacities)
+            sorted_section_indices = numpy.argsort(interested_counts.astype(numpy.float64) / self.section_capacities)
             if self.options['stats_display']:
                 logger.info('\n== Assigning interested students%s',
                             ' with rank %s' % rank if self.options['use_student_apps'] else '')
@@ -533,13 +533,13 @@ class LotteryAssignmentController:
 
         for i in range(1, self.effective_priority_limit+1):
             with numpy.errstate(divide=np_errstate, invalid=np_errstate):
-                priority_fractions[i] = numpy.nan_to_num(priority_assigned[i].astype(numpy.float) / priority_requested[i])
+                priority_fractions[i] = numpy.nan_to_num(priority_assigned[i].astype(numpy.float64) / priority_requested[i])
 
         interest_matches = self.student_sections * self.interest
         interest_assigned = numpy.sum(interest_matches, 1)
         interest_requested = numpy.sum(self.interest, 1)
         with numpy.errstate(divide=np_errstate, invalid=np_errstate):
-            interest_fractions = numpy.nan_to_num(interest_assigned.astype(numpy.float) / interest_requested)
+            interest_fractions = numpy.nan_to_num(interest_assigned.astype(numpy.float64) / interest_requested)
 
         if self.effective_priority_limit > 1:
             for i in range(1, self.effective_priority_limit+1):
