@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -108,7 +106,7 @@ class ClassFlag(models.Model):
 
 
     def __str__(self):
-        return "%s flag on %s: %s" % (self.flag_type, self.subject.emailcode(), self.subject.title)
+        return "{} flag on {}: {}".format(self.flag_type, self.subject.emailcode(), self.subject.title)
 
     def save(self, *args, **kwargs):
         # Overridden to populate created_by and modified_by.  I'm not crazy about this method as it mixes models and requests, but I think it's worth it to save having to pass it around manually everywhere the thing gets touched.  Note that the creation and modification times already get autocreated by django.  If you're saving ClassFlags outside of a request somehow, make sure you manually populate this stuff.
@@ -118,5 +116,5 @@ class ClassFlag(models.Model):
             if self.id is None:
                 #We are creating, rather than modifying, so we don't yet have an id.
                 self.created_by = request.user
-        super(ClassFlag, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 

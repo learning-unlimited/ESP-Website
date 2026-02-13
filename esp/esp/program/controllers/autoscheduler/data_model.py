@@ -4,7 +4,6 @@ Mostly reflects the database on the rest of the website, but having separate
 models should be a bit more robust to changes in website structure and should
 also be more performant.  """
 
-from __future__ import absolute_import
 import bisect
 from functools import total_ordering
 import json
@@ -18,7 +17,7 @@ from esp.program.controllers.autoscheduler.exceptions import SchedulingError
 import esp.program.controllers.autoscheduler.util as util
 
 
-class AS_Schedule(object):
+class AS_Schedule:
     def __init__(self, program=None, timeslots=None, class_sections=None,
                  teachers=None, classrooms=None, lunch_timeslots=None,
                  required_resource_criteria=None,
@@ -85,12 +84,12 @@ class AS_Schedule(object):
         violation = self.constraints.check_schedule(self)
         if violation is not None:
             raise SchedulingError(
-                ("Schedule violated constraints: {}. If this is intended, "
+                "Schedule violated constraints: {}. If this is intended, "
                  "consider locking the offending class(es)."
-                 .format(violation)))
+                 .format(violation))
 
 
-class AS_ClassSection(object):
+class AS_ClassSection:
     def __init__(self, teachers, duration, capacity,
                  category, assigned_roomslots,
                  section_id, parent_class_id,
@@ -158,12 +157,12 @@ class AS_ClassSection(object):
         like a pain"""
         meeting_times = sorted([(str(e.timeslot.start), str(e.timeslot.end))
                                 for e in self.assigned_roomslots])
-        rooms = sorted(list(set(r.room.name for r in
-                                self.assigned_roomslots)))
+        rooms = sorted(list({r.room.name for r in
+                                self.assigned_roomslots}))
         return json.dumps([meeting_times, rooms])
 
 
-class AS_Teacher(object):
+class AS_Teacher:
     def __init__(self, availability, teacher_id, is_admin=False):
         self.id = teacher_id
         self.availability = availability if availability is not None \
@@ -180,7 +179,7 @@ class AS_Teacher(object):
             self.availability_dict[(timeslot.start, timeslot.end)] = timeslot
 
 
-class AS_Classroom(object):
+class AS_Classroom:
     def __init__(self, name, capacity, available_timeslots,
                  furnishings=None):
         self.name = name
@@ -198,7 +197,7 @@ class AS_Classroom(object):
                                   for r in self.availability}
         if len(self.availability_dict) != len(self.availability):
             raise SchedulingError(
-                "Room {} has duplicate resources".format(name))
+                f"Room {name} has duplicate resources")
 
     @util.timed_func("AS_Classroom_get_roomslots_by_duration")
     @util.memoize
@@ -239,7 +238,7 @@ class AS_Classroom(object):
 
 # Ordered by start time, then by end time.
 @total_ordering
-class AS_Timeslot(object):
+class AS_Timeslot:
     """A timeslot, not specific to any teacher or class or room."""
     def __init__(self, start, end, event_id, associated_roomslots=None):
         self.id = event_id
@@ -251,7 +250,7 @@ class AS_Timeslot(object):
             if associated_roomslots is not None else set()
         if self.duration < config.DELTA_TIME:
             raise SchedulingError(
-                "Timeslot duration {} is too short".format(self.duration))
+                f"Timeslot duration {self.duration} is too short")
 
     def __eq__(self, other):
         if isinstance(other, type(self)):
@@ -268,7 +267,7 @@ class AS_Timeslot(object):
                 and (timeslot2.start < timeslot1.end)
 
 
-class AS_RoomSlot(object):
+class AS_RoomSlot:
     """A specific timeslot where a specific room is available."""
     def __init__(self, timeslot, room):
         self.timeslot = timeslot
@@ -309,7 +308,7 @@ class AS_RoomSlot(object):
         self._next_is_cached = False
 
 
-class AS_ResourceType(object):
+class AS_ResourceType:
     def __init__(self, name, restype_id, value=""):
         self.id = restype_id
         self.name = name

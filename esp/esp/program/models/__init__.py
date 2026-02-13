@@ -1,8 +1,4 @@
-from __future__ import absolute_import
-from __future__ import division
 from django.utils.encoding import python_2_unicode_compatible
-from six.moves import map
-from six.moves import range
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -137,10 +133,10 @@ class ProgramModule(models.Model):
     class CannotGetClassException(Exception):
         def __init__(self, msg):
             self.msg = msg
-            super(ProgramModule.CannotGetClassException, self).__init__(msg)
+            super().__init__(msg)
 
     def __str__(self):
-        return '{}'.format(self.admin_title)
+        return f'{self.admin_title}'
 
 @python_2_unicode_compatible
 class ArchiveClass(models.Model):
@@ -253,7 +249,7 @@ def _get_type_url(type):
         else:
             self._type_url = {}
 
-        self._type_url[type] = '/%s/%s/' % (type, self.url)
+        self._type_url[type] = '/{}/{}/'.format(type, self.url)
 
         return self._type_url[type]
 
@@ -271,7 +267,7 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_max = models.IntegerField()
     # director contact email address used for from field and display
     director_email = models.EmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
-                                       validators=[validators.RegexValidator(r'(^.+@{0}$)|(^.+@(\w+\.)?learningu\.org$)'.format(settings.SITE_INFO[1].replace('.', '\.')))],
+                                       validators=[validators.RegexValidator(r'(^.+@{}$)|(^.+@(\w+\.)?learningu\.org$)'.format(settings.SITE_INFO[1].replace('.', r'\.')))],
                                        help_text=mark_safe('The director email address must end in @' + settings.SITE_INFO[1] + ' (your website), ' +
                                                            '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). ' +
                                                            'The default is <b>info@' + settings.SITE_INFO[1] + '</b>, which redirects to the "default" ' +
@@ -332,7 +328,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def save(self, *args, **kwargs):
 
-        retVal = super(Program, self).save(*args, **kwargs)
+        retVal = super().save(*args, **kwargs)
 
         return retVal
 
@@ -371,7 +367,7 @@ class Program(models.Model, CustomFormsLinkModel):
             if retVal is not None and retVal.strip():
                 return retVal
 
-        return six.u('')
+        return ''
 
     @staticmethod
     def get_users_from_module(method_name):
@@ -406,14 +402,14 @@ class Program(models.Model, CustomFormsLinkModel):
         def _get_num(self):
             result = query_func(self, QObjects=False)
             result_dict = {}
-            for key, value in six.iteritems(result):
+            for key, value in result.items():
                 if isinstance(value, QuerySet):
                     result_dict[key] = value.count()
                 else:
                     result_dict[key] = len(value)
             return result_dict
         _get_num.__name__   = "num_" + query_func.__name__
-        _get_num.__doc__    = "Returns a dictionary of the sizes of the various sets of %s that are returned by Program.%s()" % (query_func.__name__, query_func.__name__)
+        _get_num.__doc__    = "Returns a dictionary of the sizes of the various sets of {} that are returned by Program.{}()".format(query_func.__name__, query_func.__name__)
         return _get_num
 
     @cache_function
@@ -643,7 +639,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return True
         caps = self.grade_caps()
         grade = user.getGrade(self, assume_student=True)
-        for grades, cap in six.iteritems(caps):
+        for grades, cap in caps.items():
             if (grade in grades and
                     self._students_in_program_in_grades(grades) >= cap):
                 return False
@@ -661,7 +657,7 @@ class Program(models.Model, CustomFormsLinkModel):
         size_tag = Tag.getProgramTag("program_size_by_grade", self)
         size_dict = {}
         if size_tag:
-            for k, v in six.iteritems(json.loads(size_tag)):
+            for k, v in json.loads(size_tag).items():
                 if '-' in k:
                     low, high = list(map(int, k.split('-')))
                     size_dict[tuple(range(low, high + 1))] = v
@@ -994,13 +990,13 @@ class Program(models.Model, CustomFormsLinkModel):
             if d1.year == d2.year:
                 if d1.month == d2.month:
                     if d1.day == d2.day:
-                        return six.u('%s') % d1.strftime('%b. %d, %Y')
+                        return '%s' % d1.strftime('%b. %d, %Y')
                     else:
-                        return six.u('%s - %s') % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
+                        return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
                 else:
-                    return six.u('%s - %s') % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
+                    return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
             else:
-                return six.u('%s - %s') % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
+                return '%s - %s' % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
         else:
             return None
 
@@ -1314,7 +1310,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     @cache_function
     def by_prog_inst(cls, program, instance):
-        prog_inst = Program.objects.select_related().get(url='%s/%s' % (program, instance))
+        prog_inst = Program.objects.select_related().get(url='{}/{}'.format(program, instance))
         return prog_inst
     by_prog_inst.depend_on_row('program.Program', lambda prog: {'program': prog})
     by_prog_inst = classmethod(by_prog_inst)
@@ -1380,7 +1376,7 @@ class SplashInfo(models.Model):
         db_table = 'program_splashinfo'
 
     def __str__(self):
-        return 'Lunch/sibling info for %s at %s' % (self.student, self.program)
+        return 'Lunch/sibling info for {} at {}'.format(self.student, self.program)
 
     @staticmethod
     def hasForUser(user, program=None):
@@ -1417,7 +1413,7 @@ class SplashInfo(models.Model):
             Transfer.objects.filter(source=source_account, destination=dest_account, user=self.student, line_item=line_item_type).delete()
 
     def save(self):
-        super(SplashInfo, self).save()
+        super().save()
         self.execute_sibling_discount()
 
 @python_2_unicode_compatible
@@ -1471,7 +1467,7 @@ class RegistrationProfile(models.Model):
         regProf = None
 
         # check if this is an actual User, not an AnonymousUser
-        if isinstance(user.id, six.integer_types):
+        if isinstance(user.id, int):
             try:
                 regProf = RegistrationProfile.objects.filter(user__exact=user).select_related().latest('last_ts')
             except RegistrationProfile.DoesNotExist:
@@ -1516,7 +1512,7 @@ class RegistrationProfile(models.Model):
         self.last_ts = datetime.now()
         RegistrationProfile.objects.filter(user = self.user, most_recent_profile = True).update(most_recent_profile = False)
         self.most_recent_profile = True
-        super(RegistrationProfile, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     @cache_function
     def getLastForProgram(user, program, tl = None):
@@ -1566,9 +1562,9 @@ class RegistrationProfile(models.Model):
 
     def __str__(self):
         if self.program_id is None:
-            return '<Registration for %s>' % six.text_type(self.user)
+            return '<Registration for %s>' % str(self.user)
         if self.user is not None:
-            return '<Registration for %s in %s>' % (six.text_type(self.user), six.text_type(self.program))
+            return '<Registration for {} in {}>'.format(str(self.user), str(self.program))
 
 
     def updateForm(self, form_data, specificInfo = None):
@@ -1623,7 +1619,7 @@ class TeacherBio(models.Model):
     def save(self, *args, **kwargs):
         """ update the timestamp """
         self.last_ts = datetime.now()
-        super(TeacherBio, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def url(self):
         return '/teach/teachers/%s/bio.html' % self.user.username
@@ -1681,16 +1677,16 @@ class FinancialAidRequest(models.Model):
 
         explanation = self.extra_explaination
         if explanation is None:
-            explanation = six.u('')
+            explanation = ''
         elif len(explanation) > 40:
-            explanation = explanation[:40] + six.u("...")
+            explanation = explanation[:40] + "..."
 
 
-        string = six.u("%s (%s@%s) for %s (%s, %s) %s")%\
+        string = "%s (%s@%s) for %s (%s, %s) %s"%\
                  (self.user.name(), self.user.username, settings.DEFAULT_HOST, self.program.niceName(), self.household_income, explanation, reducedlunch)
 
         if self.done:
-            string = six.u("Finished: [") + string + six.u("]")
+            string = "Finished: [" + string + "]"
 
         return string
 
@@ -1706,9 +1702,9 @@ class FinancialAidRequest(models.Model):
                 self.done = True
                 self.save()
                 # send email to student
-                email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
+                email_from = '{} Registration System <server@{}>'.format(self.program.program_type, settings.EMAIL_HOST_SENDER)
                 email_to = [self.user.get_email_sendto_address()]
-                subj = 'Financial Aid Approved for %s for %s' % (self.user.name(), self.program.niceName())
+                subj = 'Financial Aid Approved for {} for {}'.format(self.user.name(), self.program.niceName())
                 email_context = {'student': self.user,
                                  'program': self.program,
                                  'grant': f,
@@ -1852,7 +1848,7 @@ class BooleanExpression(models.Model):
 
     def add_token(self, token_or_value, seq=None, duplicate=True):
         my_stack = self.get_stack()
-        if isinstance(token_or_value, six.string_types):
+        if isinstance(token_or_value, str):
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
@@ -1945,7 +1941,7 @@ class ScheduleConstraint(models.Model):
         app_label = 'program'
 
     def __str__(self):
-        return '%s: "%s" requires "%s"' % (self.program.niceName(), six.text_type(self.condition), six.text_type(self.requirement))
+        return '{}: "{}" requires "{}"'.format(self.program.niceName(), str(self.condition), str(self.requirement))
 
     def evaluate(self, smap, recursive=True):
         self.schedule_map = smap
@@ -2072,7 +2068,7 @@ class VolunteerRequest(models.Model):
         return self.volunteeroffer_set.all()
 
     def __str__(self):
-        return '%s (%s)' % (self.timeslot.description, self.timeslot.short_time())
+        return '{} ({})'.format(self.timeslot.description, self.timeslot.short_time())
 
 @python_2_unicode_compatible
 class VolunteerOffer(models.Model):
@@ -2096,7 +2092,7 @@ class VolunteerOffer(models.Model):
         app_label = 'program'
 
     def __str__(self):
-        return '%s (%s, %s) for %s' % (self.name, self.email, self.phone, self.request)
+        return '{} ({}, {}) for {}'.format(self.name, self.email, self.phone, self.request)
 
 
 """ This class provides the information that was provided by the DataTree
@@ -2143,7 +2139,7 @@ class RegistrationType(models.Model):
     def get_map(include=None, category=None):
         #   If 'include' is specified, make sure we have keys named in that list
         if include:
-            if not isinstance(category, str) and not isinstance(category, six.text_type):
+            if not isinstance(category, str) and not isinstance(category, str):
                 raise ESPError('Need to supply category to RegistrationType.get_map() when passing include arguments', log=True)
             for name in include:
                 type, created = RegistrationType.objects.get_or_create(name=name, category=category)
@@ -2205,7 +2201,7 @@ class StudentRegistration(ExpirableModel):
         app_label = 'program'
 
     def __str__(self):
-        return '%s %s in %s' % (self.user, self.relationship, self.section)
+        return '{} {} in {}'.format(self.user, self.relationship, self.section)
 
 @python_2_unicode_compatible
 class StudentSubjectInterest(ExpirableModel):
@@ -2219,7 +2215,7 @@ class StudentSubjectInterest(ExpirableModel):
         app_label = 'program'
 
     def __str__(self):
-        return '%s interest in %s' % (self.user, self.subject)
+        return '{} interest in {}'.format(self.user, self.subject)
 
 
 # Hooked up in program.modules.signals and formstack.signals
@@ -2238,7 +2234,7 @@ def maybe_create_module_ext(handler, ext):
     TODO(benkraft): Should we just do this on program creation instead?  We'll
     end up with a bunch of unused settings, but maybe that's fine.
     """
-    uid = 'maybe_create_module_ext:%s:%s' % (handler, ext.__name__)
+    uid = 'maybe_create_module_ext:{}:{}'.format(handler, ext.__name__)
     @receiver(m2m_changed, sender=Program.program_modules.through,
               weak=False, dispatch_uid=uid)
     def signal_handler(sender, **kwargs):

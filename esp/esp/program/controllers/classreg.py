@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.mailman import add_list_member
 from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
 from esp.middleware import ESPError
@@ -19,7 +18,6 @@ from decimal import Decimal
 import json
 from django.conf import settings
 import six
-from six.moves import range
 
 def get_custom_fields():
     result = OrderedDict()
@@ -37,9 +35,9 @@ class ClassCreationValidationError(Exception):
     def __init__(self, reg_form, resource_formset, error_msg):
         self.reg_form = reg_form
         self.resource_formset = resource_formset
-        super(ClassCreationValidationError, self).__init__(error_msg)
+        super().__init__(error_msg)
 
-class ClassCreationController(object):
+class ClassCreationController:
     def __init__(self, prog):
         self.program = prog
         self.crmi = prog.classregmoduleinfo
@@ -121,7 +119,7 @@ class ClassCreationController(object):
         for k, v in reg_form.cleaned_data.items():
             if k in custom_fields:
                 custom_data[k] = v
-            elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges', 'title') and k[:8] is not 'section_':
+            elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges', 'title') and k[:8] != 'section_':
                 cls.__dict__[k] = v
 
         cls.custom_form_data = custom_data
@@ -171,8 +169,8 @@ class ClassCreationController(object):
 
     def send_availability_email(self, teacher, note=None):
         timeslots = teacher.getAvailableTimes(self.program, ignore_classes=True)
-        email_title = 'Availability for %s: %s' % (self.program.niceName(), teacher.name())
-        email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
+        email_title = 'Availability for {}: {}'.format(self.program.niceName(), teacher.name())
+        email_from = '{} Registration System <server@{}>'.format(self.program.program_type, settings.EMAIL_HOST_SENDER)
         email_context = {'teacher': teacher,
                          'timeslots': timeslots,
                          'program': self.program,
@@ -192,11 +190,11 @@ class ClassCreationController(object):
             if user == current_user:
                 message = 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
             else:
-                message = "%(teacher_full)s doesn't have enough free time to teach a class of this length.  Please go back to the class editing page and reduce the duration, or have %(teacher_first)s remove or shorten other classes to make room for this one." % {'teacher_full': user.name(), 'teacher_first': user.first_name}
+                message = "{teacher_full} doesn't have enough free time to teach a class of this length.  Please go back to the class editing page and reduce the duration, or have {teacher_first} remove or shorten other classes to make room for this one.".format(teacher_full=user.name(), teacher_first=user.first_name)
             raise ESPError(message, log=False)
 
     def add_teacher_to_program_mailinglist(self, user):
-        add_list_member("%s_%s-teachers" % (self.program.program_type, self.program.program_instance), user)
+        add_list_member("{}_{}-teachers".format(self.program.program_type, self.program.program_instance), user)
 
     def add_rsrc_requests_to_class(self, cls, resource_formset):
         for sec in cls.get_sections():
@@ -224,7 +222,7 @@ class ClassCreationController(object):
 
     def generate_director_mail_context(self, cls):
         new_data = cls.__dict__
-        mail_ctxt = dict(six.iteritems(new_data))
+        mail_ctxt = dict(new_data.items())
 
         mail_ctxt['title'] = cls.title
         mail_ctxt['one'] = cls.parent_program.program_type
@@ -260,7 +258,7 @@ class ClassCreationController(object):
                 teacher_ctxt['college'] = "[Teacher hasn't filled out teacher profile!]"
 
             # Get a list of the programs this person has taught for in the past, if any.
-            teacher_ctxt['taught_programs'] = six.u(', ').join([prog.niceName() for prog in teacher.getTaughtPrograms().order_by('pk').exclude(id=self.program.id)])
+            teacher_ctxt['taught_programs'] = ', '.join([prog.niceName() for prog in teacher.getTaughtPrograms().order_by('pk').exclude(id=self.program.id)])
             mail_ctxt['teachers'].append(teacher_ctxt)
         return mail_ctxt
 

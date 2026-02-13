@@ -1,10 +1,3 @@
-from __future__ import with_statement
-
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import division
-from io import open
-from six.moves import range
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -76,9 +69,9 @@ class LotterySectionException(LotteryException):
 class LotterySubjectException(LotteryException):
     """ Something is wrong with a class subject.    """
     def __init__(self, subject, msg, **kwargs):
-        super(LotteryException, self).__init__('Class subject %s %s' % (subject.emailcode(), msg), **kwargs)
+        super(LotteryException, self).__init__('Class subject {} {}'.format(subject.emailcode(), msg), **kwargs)
 
-class LotteryAssignmentController(object):
+class LotteryAssignmentController:
 
     # map from default option key to (default value, help text)
     # help text is false if it should not be displayed on a web interface (specifically, lottery frontend module)
@@ -357,9 +350,9 @@ class LotteryAssignmentController(object):
         #   Compute number of spaces - exit if section or program is already full.  Otherwise, set num_spaces to the number of students we can add without overfilling the section or program.
         num_spaces = self.section_capacities[si] - numpy.sum(self.student_sections[:, si])
         if self.program_size_max:
-            program_spaces_remaining = self.program_size_max - numpy.sum((numpy.sum(self.student_schedules, 1) > 0))
+            program_spaces_remaining = self.program_size_max - numpy.sum(numpy.sum(self.student_schedules, 1) > 0)
             if program_spaces_remaining == 0:
-                if self.options['stats_display']: logger.info('   Program was already full with %d students', numpy.sum((numpy.sum(self.student_schedules, 1) > 0)))
+                if self.options['stats_display']: logger.info('   Program was already full with %d students', numpy.sum(numpy.sum(self.student_schedules, 1) > 0))
                 return True
             else:
                 num_spaces = min(num_spaces, program_spaces_remaining)
@@ -569,7 +562,7 @@ class LotteryAssignmentController(object):
         stats['student_ids'] = self.student_ids
         stats['student_grades'] = self.student_grades
         stats['num_sections'] = self.num_sections
-        stats['num_enrolled_students'] = numpy.sum((numpy.sum(self.student_schedules, 1) > 0))
+        stats['num_enrolled_students'] = numpy.sum(numpy.sum(self.student_schedules, 1) > 0)
         stats['num_lottery_students'] = self.num_students
         stats['overall_interest_ratio'] = float(numpy.sum(interest_assigned)) / numpy.sum(interest_requested)
         stats['num_registrations'] = numpy.sum(self.student_sections)
@@ -621,7 +614,7 @@ class LotteryAssignmentController(object):
         screwed_students=[]
         for i in range(self.num_students):
             utility = numpy.sqrt(self.student_utilities[i])
-            weight = numpy.sqrt((self.student_utility_weights[i]))
+            weight = numpy.sqrt(self.student_utility_weights[i])
             weighted_overall_utility += utility * weight
             sum_of_weights += weight
             screwed_students.append(((1+utility)/(1+weight), self.student_ids[i]))
@@ -678,7 +671,7 @@ class LotteryAssignmentController(object):
         ratios = []
         if self.effective_priority_limit>1:
             for i in range(1, self.effective_priority_limit+1):
-                ratios.append('%2.2f%% of priority %s classes were enrolled' % (stats['overall_priority_%s_ratio' % i] * 100.0, i))
+                ratios.append('{:2.2f}% of priority {} classes were enrolled'.format(stats['overall_priority_%s_ratio' % i] * 100.0, i))
         else:
             ratios.append('%2.2f%% of priority classes were enrolled' % (stats['overall_priority_ratio'] * 100.0))
         ratios.append('%2.2f%% of interested classes were enrolled' % (stats['overall_interest_ratio'] * 100.0))
@@ -696,7 +689,7 @@ class LotteryAssignmentController(object):
             assignments = numpy.nonzero(self.priority[1][self.student_indices[student_id],:])[0]
         else:
             import re
-            p = re.search('(?<=priority_)\d*', mode).group(0)
+            p = re.search(r'(?<=priority_)\d*', mode).group(0)
             if p:
                 assignments = numpy.nonzero(self.priority[p][self.student_indices[student_id],:])[0]
         result = []
@@ -801,14 +794,14 @@ class LotteryAssignmentController(object):
 
     def update_mailman_lists(self, delete=True):
         if hasattr(settings, 'USE_MAILMAN') and settings.USE_MAILMAN:
-            program_list = "%s_%s-students" % (self.program.program_type, self.program.program_instance)
+            program_list = "{}_{}-students".format(self.program.program_type, self.program.program_instance)
             self.clear_mailman_list(program_list)
             # Add all registered students into the program mailing list, even
             # if they didn't get enrolled into any classes.
             add_list_members(program_list, ESPUser.objects.filter(id__in=list(self.student_ids)).distinct())
             for i in range(self.num_sections):
                 section = ClassSection.objects.get(id=self.section_ids[i])
-                list_names = ["%s-%s" % (section.emailcode(), "students"), "%s-%s" % (section.parent_class.emailcode(), "students")]
+                list_names = ["{}-{}".format(section.emailcode(), "students"), "{}-{}".format(section.parent_class.emailcode(), "students")]
                 student_ids = self.student_ids[numpy.nonzero(self.student_sections[:, i])]
                 students = ESPUser.objects.filter(id__in=student_ids).distinct()
                 for list_name in list_names:

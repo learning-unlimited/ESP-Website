@@ -1,6 +1,3 @@
-
-from __future__ import absolute_import
-from __future__ import division
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -40,7 +37,7 @@ from esp.program.models import Program, ClassSection, ClassSubject, BooleanExpre
 
 import datetime
 
-class LunchConstraintGenerator(object):
+class LunchConstraintGenerator:
     """ A class for finding issues with the scheduling of a program. """
     def __init__(self, program, lunch_timeslots=[], generate_constraints=True, include_conditions=True, autocorrect=True, **kwargs):
         self.program = program
@@ -211,7 +208,7 @@ else:
         exp_requirement.save()
 
         exp_check = BooleanExpression()
-        exp_check.label = '%s lunch constraint check for %s' % (self.program.niceName(), day.isoformat())
+        exp_check.label = '{} lunch constraint check for {}'.format(self.program.niceName(), day.isoformat())
         exp_check.save()
 
         constraint = ScheduleConstraint()

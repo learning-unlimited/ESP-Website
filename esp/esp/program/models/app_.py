@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -47,7 +45,7 @@ import datetime
 __all__ = ['StudentAppQuestion', 'StudentAppResponse', 'StudentAppReview', 'StudentApplication']
 
 @deconstructible
-class BaseAppElement(object):
+class BaseAppElement:
     """ Base class for models that you would like to generate forms from.
     Make this a subclass of the model and overload the two attributes:
     -   _element_name: a slug-like name for the model to differentiate its
@@ -136,9 +134,9 @@ class StudentAppQuestion(BaseAppElement, models.Model):
 
     def __str__(self):
         if self.subject is not None:
-            return '%s (%s)' % (self.question[:80], self.subject.title)
+            return '{} ({})'.format(self.question[:80], self.subject.title)
         else:
-            return '%s (%s)' % (self.question[:80], self.program.niceName())
+            return '{} ({})'.format(self.question[:80], self.program.niceName())
 
     class Meta:
         app_label = 'program'
@@ -155,7 +153,7 @@ class StudentAppResponse(BaseAppElement, models.Model):
     _field_names = ['response', 'complete']
 
     def __str__(self):
-        return 'Response to %s: %s...' % (self.question.question, self.response[:80])
+        return 'Response to {}: {}...'.format(self.question.question, self.response[:80])
 
     class Meta:
         app_label = 'program'
@@ -177,7 +175,7 @@ class StudentAppReview(BaseAppElement, models.Model):
     _field_names = ['score', 'comments', 'reject']
 
     def __str__(self):
-        return '%s by %s: %s...' % (self.score, self.reviewer.username, self.comments[:80])
+        return '{} by {}: {}...'.format(self.score, self.reviewer.username, self.comments[:80])
 
     class Meta:
         app_label = 'program'
@@ -206,7 +204,7 @@ class StudentApplication(models.Model):
         return str(self.user)
 
     def __init__(self, *args, **kwargs):
-        super(StudentApplication, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.save()
         self.set_questions()
 

@@ -1,13 +1,12 @@
 """Utilities for use in resource constraints and scoring."""
 
-from __future__ import absolute_import
 import re
 
 from esp.program.controllers.autoscheduler import util
 import six
 
 
-class ResourceCriterion(object):
+class ResourceCriterion:
 
     """A criterion for complex resource constraints. Has a section matcher and
     a classroom matcher. Either checks that if the section matches then the
@@ -78,7 +77,7 @@ class ResourceCriterion(object):
                 resource_request_match.group(1, 2, 4)
             if res_type not in valid_res_types:
                 raise ValueError(
-                    "Resource type {} doesn't exist".format(res_type))
+                    f"Resource type {res_type} doesn't exist")
             if value_regex:
                 matcher = ResourceRequestMatcher(res_type, value_regex)
             else:
@@ -109,7 +108,7 @@ class ResourceCriterion(object):
         if group == "any section":
             return TrivialSectionMatcher()
         raise ValueError(
-            "Clause '{}' doesn't match a valid pattern.".format(group))
+            f"Clause '{group}' doesn't match a valid pattern.")
 
     def check_match(self, section, room):
         """Returns False if the premise holds but the conclusion fails, i.e.
@@ -132,7 +131,7 @@ class ResourceCriterion(object):
                     self.name, self.classroom_matcher, self.section_matcher)
 
 
-class BaseSectionMatcher(object):
+class BaseSectionMatcher:
     """A base class for section matches, which Determine whether a section
     matches a given criterion."""
     def section_matches(self, section):
@@ -184,13 +183,13 @@ class ResourceRequestMatcher(BaseSectionMatcher):
     def __str__(self):
         """Returns the specification of this criterion; see
         ResourceCriterion.create_from_specification."""
-        string = "section requests {}".format(self.res_type)
+        string = f"section requests {self.res_type}"
         if self.desired_value_regex != ".*":
-            string += " with {}".format(self.desired_value_regex)
+            string += f" with {self.desired_value_regex}"
         return string
 
 
-class BaseClassroomMatcher(object):
+class BaseClassroomMatcher:
     """A base class for classroom matchers, which determine whether rooms match
     a particular criterion."""
     def room_matches(self, room):
@@ -230,9 +229,9 @@ class ResourceClassroomMatcher(BaseClassroomMatcher):
     def __str__(self):
         """Returns the specification of this criterion; see
         ResourceCriterion.create_from_specification."""
-        string = "classroom has {}".format(self.res_type)
+        string = f"classroom has {self.res_type}"
         if self.attribute_value_regex != ".*":
-            string += " with {}".format(self.attribute_value_regex)
+            string += f" with {self.attribute_value_regex}"
         return string
 
 
@@ -248,7 +247,7 @@ class ClassroomNameMatcher(BaseClassroomMatcher):
     def __str__(self):
         """Returns the specification of this criterion; see
         ResourceCriterion.create_from_specification."""
-        return "classroom matches {}".format(self.name_regex)
+        return f"classroom matches {self.name_regex}"
 
 
 def create_resource_criteria(specification_dicts, valid_res_types,
@@ -261,10 +260,10 @@ def create_resource_criteria(specification_dicts, valid_res_types,
     if use_weights:
         return [(ResourceCriterion.create_from_specification(
                     spec, name, valid_res_types), weight)
-                for name, (spec, weight) in six.iteritems(specifications)
+                for name, (spec, weight) in specifications.items()
                 if spec != "None" and spec is not None]
     else:
         return [ResourceCriterion.create_from_specification(
                     spec, name, valid_res_types)
-                for name, spec in six.iteritems(specifications)
+                for name, spec in specifications.items()
                 if spec != "None" and spec is not None]

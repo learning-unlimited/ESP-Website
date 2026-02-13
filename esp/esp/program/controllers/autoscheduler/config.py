@@ -1,4 +1,3 @@
-
 # The maximum allowed time gap between two consecutive timeslots, in hours,
 # which is also the minimum allowed length of a timeslot.
 DELTA_TIME = 0.34

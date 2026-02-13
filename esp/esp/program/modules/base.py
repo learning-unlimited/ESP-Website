@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
 import six
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -54,7 +52,7 @@ from argcache import cache_function
 from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.conf import settings
-from six.moves.urllib.parse import quote
+from urllib.parse import quote
 from django.template.loader import get_template
 from django.template import TemplateDoesNotExist
 
@@ -63,10 +61,10 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 def _login_redirect(request):
     return HttpResponseRedirect(
-        '%s?%s=%s' % (settings.LOGIN_URL, REDIRECT_FIELD_NAME,
+        '{}?{}={}'.format(settings.LOGIN_URL, REDIRECT_FIELD_NAME,
                       quote(request.get_full_path())))
 
-class CoreModule(object):
+class CoreModule:
     """
     All core modules should derive from this.
     """
@@ -86,7 +84,7 @@ class ProgramModuleObj(models.Model):
         return self.module.link_title
 
     def __str__(self):
-        return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
+        return '"{}" for "{}"'.format(self.module.admin_title, str(self.program))
 
     def _get_views_by_call_tag(self, tags):
         """ We define decorators below (aux_call, main_call, etc.) which allow
@@ -273,17 +271,17 @@ class ProgramModuleObj(models.Model):
     # important functions for hooks...
     @cache_function
     def get_full_path(self):
-        return '/%s/%s/%s' % (
+        return '/{}/{}/{}'.format(
             self.module.module_type, self.program.url, self.main_view)
     get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
     get_full_path.depend_on_model('program.Program')
 
     def makeLink(self):
         if not self.module.module_type == 'manage':
-            link = six.u('<a href="%s" title="%s" class="vModuleLink" >%s</a>') % \
+            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
                 (self.get_full_path(), self.module.link_title, self.module.link_title)
         else:
-            link = six.u('<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>') % \
+            link = '<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
                (self.get_full_path(), self.module.link_title, self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title)
 
         return mark_safe(link)
@@ -306,17 +304,17 @@ class ProgramModuleObj(models.Model):
     def makeSetupLink(self):
         title = self.get_setup_title()
         link = self.get_setup_path()
-        return mark_safe(six.u('<a href="%s" title="%s">%s</a>') % (link, title, title))
+        return mark_safe('<a href="%s" title="%s">%s</a>' % (link, title, title))
 
     def makeButtonLink(self):
         if not self.module.module_type == 'manage':
-            link = six.u("""<div class="module_button">\
+            link = """<div class="module_button">\
                                 <a href="%s"><button type="button" class="module_link_large">
                                     <div class="module_link_main">%s</div>
                                 </button></a>
-                            </div>""") % (self.get_full_path(), self.module.link_title)
+                            </div>""" % (self.get_full_path(), self.module.link_title)
         else:
-            link = six.u('<a href="%s" onmouseover="updateDocs(\'<p>%s</p>\');"></a><button type="button" class="module_link_large btn btn-default btn-lg"> <div class="module_link_main">%s%s</div></button></a>') % \
+            link = '<a href="%s" onmouseover="updateDocs(\'<p>%s</p>\');"></a><button type="button" class="module_link_large btn btn-default btn-lg"> <div class="module_link_main">%s%s</div></button></a>' % \
                (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title, self.module.handler)
 
         return mark_safe(link)
@@ -350,7 +348,7 @@ class ProgramModuleObj(models.Model):
 
     def getTemplate(self):
         if self.module.inline_template:
-            return 'program/modules/%s/%s' % (self.__class__.__name__.lower(), self.module.inline_template)
+            return 'program/modules/{}/{}'.format(self.__class__.__name__.lower(), self.module.inline_template)
         return None
 
     def teacherDesc(self):
@@ -448,7 +446,7 @@ class ProgramModuleObj(models.Model):
                 props["seq"] = 200
             if not "choosable" in props:
                 props["choosable"] = 0
-                raise AttributeError("Module `{}` doesn't have choosable property.".format(cls.__name__))
+                raise AttributeError(f"Module `{cls.__name__}` doesn't have choosable property.")
 
         if isinstance(props, dict):
             props = [ props ]

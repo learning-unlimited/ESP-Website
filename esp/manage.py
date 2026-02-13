@@ -1,8 +1,6 @@
 #!/usr/bin/env python
-from __future__ import absolute_import
 import os
 import sys
-from io import open
 
 # Check if a virtualenv has been installed and activated from elsewhere.
 # This happens when using the Travis testing environment, which uses its

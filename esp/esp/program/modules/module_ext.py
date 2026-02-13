@@ -1,8 +1,4 @@
-
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -66,7 +62,7 @@ class DBReceipt(models.Model):
     receipt = models.TextField()
 
     def __str__(self):
-        return 'Registration (%s) receipt for %s' % (self.action, self.program)
+        return 'Registration ({}) receipt for {}'.format(self.action, self.program)
 
 @python_2_unicode_compatible
 class StudentClassRegModuleInfo(models.Model):
@@ -322,7 +318,7 @@ class AJAXChangeLogEntry(models.Model):
 
     def save(self, *args, **kwargs):
         self.time = time.time()
-        super(AJAXChangeLogEntry, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def getTimeslots(self):
         if self.timeslots == "":
