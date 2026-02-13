@@ -15,7 +15,17 @@ if [ -n "$FORM_UTILS_PATH" ]; then
     find "$FORM_UTILS_PATH" -name "*.py" -exec sed -i '/@python_2_unicode_compatible/d' {} \;
     
     # Fix BoundField import - in Django 3.1+, BoundField is in django.forms.boundfield
+    # Replace forms.forms.BoundField with forms.boundfield.BoundField
     find "$FORM_UTILS_PATH" -name "*.py" -exec sed -i 's/forms\.forms\.BoundField/forms.boundfield.BoundField/g' {} \;
+    
+    # Also need to add the import for boundfield module where forms is imported
+    # In forms.py, after "from django import forms", add "from django.forms import boundfield"
+    if [ -f "$FORM_UTILS_PATH/forms.py" ]; then
+        # Check if the import already exists to avoid duplicates
+        if ! grep -q "from django.forms import boundfield" "$FORM_UTILS_PATH/forms.py"; then
+            sed -i '/from django import forms/a from django.forms import boundfield' "$FORM_UTILS_PATH/forms.py"
+        fi
+    fi
     
     echo "  ✓ django-form-utils patched"
 fi
