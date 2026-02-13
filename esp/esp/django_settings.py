@@ -422,3 +422,7 @@ ADMIN_TOOLS_THEMING_CSS = '/media/default_styles/admin_theme.css'
 
 SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error',
                           'debug_toolbar.W006']
+
+# Django 3.2+ requires specifying the default auto field type
+# Using AutoField to maintain compatibility with existing database schema
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
