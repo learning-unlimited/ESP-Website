@@ -168,8 +168,8 @@ try:
                         sender = group_users[0] # choose the first (oldest) account if there is still more than
                         # one; it won't matter because they all go to the same email by construction
                         break
-                else: # if the users aren't in any of the standard groups above, ...
-                    sender = users[0] # ... then just pick the oldest account created by selecting users[0] as above
+                    else: # if the users aren't in any of the standard groups above, ...
+                        sender = users[0] # ... then just pick the oldest account created by selecting users[0] as above
                 logger.debug(f"Group selection: {group_name} -> {group_users}")
             else:
                 logger.error('Negative number of possible senders in supposed list `{}`. Skipping....'.format(users))
