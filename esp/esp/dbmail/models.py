@@ -208,14 +208,14 @@ class MessageRequest(models.Model):
     subject = models.TextField(null=True, blank=True)
     msgtext = models.TextField(blank=True, null=True)
     special_headers = models.TextField(blank=True, null=True)
-    recipients = models.ForeignKey(PersistentQueryFilter) # We will get the user from a query filter
+    recipients = models.ForeignKey(PersistentQueryFilter, on_delete=models.CASCADE) # We will get the user from a query filter
     sendto_fn_name = models.CharField("sendto function", max_length=128,
                     choices=SENDTO_FN_CHOICES, default=SEND_TO_SELF,
                     help_text="The function that specifies, for each recipient " +
                     "of the message, which set of associated email addresses " +
                     "should receive the message.")
     sender = models.TextField(blank=True, null=True) # Email sender; should be a valid SMTP sender string
-    creator = AjaxForeignKey(ESPUser) # the person who sent this message
+    creator = AjaxForeignKey(ESPUser, on_delete=models.CASCADE) # the person who sent this message
 
     # Use `default` instead of `auto_now_add`, so that the migration creating
     # this field can set times in the past.
@@ -419,8 +419,8 @@ class MessageRequest(models.Model):
 @python_2_unicode_compatible
 class TextOfEmail(models.Model):
     """ Contains the processed form of an EmailRequest, ready to be sent.  SmartText becomes plain text. """
-    messagerequest = models.ForeignKey(MessageRequest)
-    user = AjaxForeignKey(ESPUser, blank=True, null=True) # blank=True because there isn't an easy way to backfill this
+    messagerequest = models.ForeignKey(MessageRequest, on_delete=models.CASCADE)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE) # blank=True because there isn't an easy way to backfill this
     send_to = models.CharField(max_length=1024)  # Valid email address, "Name" <foo@bar.com>
     send_from = models.CharField(max_length=1024) # Valid email address
     subject = models.TextField() # Email subject; plain text
@@ -515,7 +515,7 @@ class TextOfEmail(models.Model):
 @python_2_unicode_compatible
 class MessageVars(models.Model):
     """ A storage of message variables for a specific message. """
-    messagerequest = models.ForeignKey(MessageRequest)
+    messagerequest = models.ForeignKey(MessageRequest, on_delete=models.CASCADE)
     pickled_provider = models.BinaryField() # Object which must have obj.get_message_var(key)
     provider_name    = models.CharField(max_length=128)
 
@@ -581,9 +581,9 @@ class MessageVars(models.Model):
 @python_2_unicode_compatible
 class EmailRequest(models.Model):
     """ Each email is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to. """
-    target = AjaxForeignKey(ESPUser)
-    msgreq = models.ForeignKey(MessageRequest)
-    textofemail = AjaxForeignKey(TextOfEmail, blank=True, null=True)
+    target = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
+    msgreq = models.ForeignKey(MessageRequest, on_delete=models.CASCADE)
+    textofemail = AjaxForeignKey(TextOfEmail, blank=True, null=True, on_delete=models.CASCADE)
 
     def __str__(self):
         return six.text_type(self.msgreq.subject) + ' <' + six.text_type(self.target.username) + '>'

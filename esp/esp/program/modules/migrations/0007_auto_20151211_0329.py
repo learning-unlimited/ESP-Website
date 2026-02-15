@@ -15,11 +15,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='classregmoduleinfo',
             name='program',
-            field=models.OneToOneField(to='program.Program'),
+            field=models.OneToOneField(to='program.Program', on_delete=models.CASCADE),
         ),
         migrations.AlterField(
             model_name='studentclassregmoduleinfo',
             name='program',
-            field=models.OneToOneField(to='program.Program'),
+            field=models.OneToOneField(to='program.Program', on_delete=models.CASCADE),
         ),
     ]

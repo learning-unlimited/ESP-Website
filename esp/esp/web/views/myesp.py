@@ -123,7 +123,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         prog = prog_input
 
     curUser = request.user
-    context = {'logged_in': request.user.is_authenticated() }
+    context = {'logged_in': request.user.is_authenticated }
     context['user'] = request.user
     context['program'] = prog
 

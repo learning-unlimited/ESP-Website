@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 from django import template
-from django.shortcuts import render_to_response
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 from esp.qsd.models import QuasiStaticData
 from esp.tagdict.models import Tag
@@ -88,8 +87,7 @@ class InlineQSDNode(template.Node):
 
         qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url, {'name': '', 'title': title, 'content': self.nodelist.render(context)})
         context.update({'qsdrec': qsd_obj, 'inline': True})
-        # Note: this is django's render_to_response, not ours!
-        return render_to_response("inclusion/qsd/render_qsd.html", context.flatten()).content
+        return template.loader.render_to_string("inclusion/qsd/render_qsd.html", context.flatten())
 
 @register.tag
 def inline_qsd_block(parser, token):

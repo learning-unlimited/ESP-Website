@@ -22,7 +22,7 @@ urlpatterns = [
         name='esp.users.views.resend_activation_view'),
     url(r'^signout/?$', views.signout),
     url(r'^signedout/?$', views.signed_out_message),
-    url(r'^login/?$',   views.login_checked, name="login"),
+    url(r'^login/?$', views.CustomLoginView.as_view(), name="login"),
     url(r'^disableaccount/?$', views.disable_account),
     url(r'^grade_change_request/?$', GradeChangeRequestView.as_view(), name = 'grade_change_request'),
     url(r'^makeadmin/?$', views.make_admin),
