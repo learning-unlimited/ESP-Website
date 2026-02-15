@@ -202,7 +202,6 @@ try:
                 send_mail(subject=data['subject'], message=data['body'],
                          from_email='{}@{}'.format(sender, settings.EMAIL_HOST_SENDER),
                           recipient_list=[recipient], attachments=data['attachments'], fail_silently=False)
-            del sender, recipient, users
         sys.exit(0)
 
 
