@@ -5,7 +5,7 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-import sys, os, base64, email, re, smtplib, socket, random
+import sys, os, base64, email, html, re, smtplib, socket, random
 import itertools
 from io import open
 new_path = '/'.join(sys.path[0].split('/')[:-1])
@@ -133,8 +133,25 @@ try:
             data['subject'] = '[{}] {}'.format(instance.emailcode, data['subject'])
         if handler.subject_prefix:
             data['subject'] = '[{}] {}'.format(handler.subject_prefix, data['subject'])
-        # Put the email body between HTML tags
-        data['body'] = '<html>{}</html>'.format(message.get_body(preferencelist=('html', 'plain')).get_content())
+        # Create an HTML email, regardless of the original format
+        # Get the content from the email
+        message_content = message.get_body(preferencelist=('html', 'plain')).get_content()
+
+        # Escape plain text content if necessary
+        content = html.escape(message_content) if message.get_content_type() != 'text/html' else message_content
+
+        # HTML structure with the message content inserted
+        data['body'] = f'''\
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Email Content</title>
+  </head>
+  <body>
+    {content}
+  </body>
+</html>
+'''
         # Use the helper method defined above to get the attachment content
         data['attachments'] = extract_attachments(message)
 
