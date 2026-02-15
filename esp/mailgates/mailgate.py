@@ -158,7 +158,7 @@ try:
 
         # If the sender's email is not associated with an account on the site,
         # do not forward the email
-        if not data['from']:
+        if (not data['from']) or (isinstance(data['from'], list) and not data['from'][0].strip()):
             logger.debug(f"User has no account: `from` field is `{data['from']}`")
             continue
         else:
