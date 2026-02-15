@@ -6,7 +6,7 @@ git+https://github.com/learning-unlimited/django-argcache.git@django3 # Handles 
 django-debug-toolbar==3.8.1 # Provides the debug toolbar (last version supporting Django 3.2)
 django-extensions==3.2.3 # Provides shell_plus, runserver_plus, and other utilities
 django-filebrowser-no-grappelli==4.0.2 # Provides admin panel interface for files
-django-form-utils==1.0.3 # Provides BetterForm (used in customforms) and BetterModelForm (used in program creation)
+git+https://github.com/learning-unlimited/django-form-utils.git # Provides BetterForm (used in customforms) and BetterModelForm (used in program creation) - Django 3.x compatible fork
 django-formtools==2.5.1 # Used once in customforms
 django-localflavor==4.0 # Provides address fields
 django-phonenumber-field[phonenumbers]==7.3.0 # Provides phone number fields
