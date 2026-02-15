@@ -110,7 +110,7 @@ try:
             # Split out individual email addresses if any of the redirects is a list
             redirects = list(itertools.chain.from_iterable(map(lambda x: x.destination.split(',') if x.destination else [], redirects)))
             users = ESPUser.objects.annotate(username_lower=Lower("username"
-                    )).filter(username_lower__in=[x.lower() for x in aliases])
+                    )).filter(username_lower__in=[x.split('@')[0].lower() for x in aliases])
             # Grab the emails from the users
             users = [x.email for x in users]
             # Theoretically at least one of these should be empty, but now doesn't seem like the time
