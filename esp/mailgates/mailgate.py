@@ -126,7 +126,7 @@ try:
             data['to'] = instance.message['to']
         else:
             raise TypeError("Unknown receiver type for `{}`".format(instance))
-        data['from'] = message['from'].split(',') or ''
+        data['from'] = (message['from'] or '').split(',')
         data['subject'] = message['subject'] or ''
         # For class lists, grab the code (such as "A123") and prepend it to the subject line
         if hasattr(instance, 'emailcode') and instance.emailcode:
