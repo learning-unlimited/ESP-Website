@@ -189,9 +189,6 @@ try:
                     else: # if the users aren't in any of the standard groups above, ...
                         sender = users[0] # ... then just pick the oldest account created by selecting users[0] as above
                 logger.debug(f"Group selection: {group_name} -> {group_users}")
-            else:
-                logger.error('Negative number of possible senders in supposed list `{}`. Skipping....'.format(users))
-                continue
             # Having identified the sender, if the sender's email is associated with an account on the website,
             # use SendGrid to send an email to each recipient of the original message (To, Cc, Bcc) individually from
             # the sender's site email
