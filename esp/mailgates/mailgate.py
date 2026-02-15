@@ -105,9 +105,10 @@ try:
                 else:
                     logger.warning('Email address without `@` symbol: `{}`'.format(recipient))
             redirects = PlainRedirect.objects.annotate(original_lower=Lower("original"
-                        )).filter(original_lower__in=[x.split('@')[0].lower() for x in aliases])
+                        )).filter(original_lower__in=[x.split('@')[0].lower() for x in aliases]
+                        ).exclude(destination__isnull=True).exclude(destination='')
             # Split out individual email addresses if any of the redirects is a list
-            redirects = list(itertools.chain.from_iterable(map(lambda x: x.destination.split(','), redirects)))
+            redirects = list(itertools.chain.from_iterable(map(lambda x: x.destination.split(',') if x.destination else [], redirects)))
             users = ESPUser.objects.annotate(username_lower=Lower("username"
                     )).filter(username_lower__in=[x.lower() for x in aliases])
             # Grab the emails from the users
