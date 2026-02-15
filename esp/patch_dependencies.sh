@@ -30,27 +30,5 @@ if [ -n "$FORM_UTILS_PATH" ]; then
     echo "  ✓ django-form-utils patched"
 fi
 
-# Patch django-argcache (find it without importing)
-ARGCACHE_PATH=$(python3 -c "import sys; paths = [p for p in sys.path if 'site-packages' in p]; import os; argcache = next((os.path.join(p, 'argcache') for p in paths if os.path.exists(os.path.join(p, 'argcache'))), None); print(argcache if argcache else '')" 2>/dev/null || echo "")
-if [ -n "$ARGCACHE_PATH" ]; then
-    echo "Patching django-argcache at: $ARGCACHE_PATH"
-    
-    # Fix getargspec -> getfullargspec
-    if [ -f "$ARGCACHE_PATH/function.py" ]; then
-        sed -i 's/params, varargs, keywords, _ = inspect\.getargspec(func)/argspec = inspect.getfullargspec(func)\n        params, varargs, keywords = argspec.args, argspec.varargs, argspec.varkw/' "$ARGCACHE_PATH/function.py"
-    fi
-    
-    # Fix django.utils.six imports
-    find "$ARGCACHE_PATH" -name "*.py" -exec sed -i 's/from django\.utils import six/import six/g' {} \;
-    
-    # Fix render_to_response
-    if [ -f "$ARGCACHE_PATH/views.py" ]; then
-        sed -i 's/from django.shortcuts import redirect, render_to_response/from django.shortcuts import redirect, render/g' "$ARGCACHE_PATH/views.py"
-        sed -i 's/render_to_response(/render(request, /g' "$ARGCACHE_PATH/views.py"
-    fi
-    
-    echo "  ✓ django-argcache patched"
-fi
-
 echo "All packages patched successfully"
 

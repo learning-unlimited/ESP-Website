@@ -2,7 +2,7 @@
 Django==3.2.25
 
 # Django-specific packages
-git+https://github.com/learning-unlimited/django-argcache.git@django2 # Handles caching
+git+https://github.com/learning-unlimited/django-argcache.git@django3 # Handles caching
 django-debug-toolbar==3.8.1 # Provides the debug toolbar (last version supporting Django 3.2)
 django-extensions==3.2.3 # Provides shell_plus, runserver_plus, and other utilities
 django-filebrowser-no-grappelli==4.0.2 # Provides admin panel interface for files
