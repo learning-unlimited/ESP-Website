@@ -17,6 +17,11 @@ and change the grade range.");
     }
 }
 
+function populate_section_numbers()
+{
+	var sectionNums = JSON.parse(document.getElementById('section-numbers-per-duration').textContent);
+}
+
 function setup_autocomplete()
 {
     $j("#teacher_name").autocomplete({

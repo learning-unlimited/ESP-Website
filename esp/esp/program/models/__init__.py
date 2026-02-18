@@ -1114,6 +1114,7 @@ class Program(models.Model, CustomFormsLinkModel):
                     #makes an increasing list of lengths for each block, section by section
                     for j in range(i, numSections):
                         time_option = Event.total_length([block[i], block[j]])
+                        #if enough time exists, increment
                         if lenDuration <= time_option.seconds:
                             numDurations[duration] += 1
                             i = j
