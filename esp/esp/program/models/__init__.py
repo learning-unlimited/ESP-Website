@@ -1104,7 +1104,7 @@ class Program(models.Model, CustomFormsLinkModel):
         
         #iterates over all durations
         for duration in durations:
-            numDurations[duration] = 0
+            numDurations[str(duration.quantize(Decimal('.01')))] = 0
             lenDuration = duration * 3600
             #iterates over blocks
             for block in times:
@@ -1116,7 +1116,7 @@ class Program(models.Model, CustomFormsLinkModel):
                         time_option = Event.total_length([block[i], block[j]])
                         #if enough time exists, increment
                         if lenDuration <= time_option.seconds:
-                            numDurations[duration] += 1
+                            numDurations[str(duration.quantize(Decimal('.01')))] += 1
                             i = j
                             break
                     i += 1

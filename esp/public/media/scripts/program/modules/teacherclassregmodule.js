@@ -17,9 +17,11 @@ and change the grade range.");
     }
 }
 
+var sectionNums = JSON.parse(document.getElementById('section-numbers-per-duration').textContent);
+
 function populate_section_numbers()
 {
-	var sectionNums = JSON.parse(document.getElementById('section-numbers-per-duration').textContent);
+	
 }
 
 function setup_autocomplete()
