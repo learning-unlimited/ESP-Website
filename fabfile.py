@@ -208,7 +208,7 @@ def _psql(c, cmd=None, *args, **kwargs):
         return c.sudo(
             "psql -AXqt -c " + shlex.quote(formatted),
             user="postgres",
-            **kwargs, hide="stdout", 
+            **kwargs, hide="stdout",
         )
     else:
         interactive_cmd("sudo -i -u postgres psql; exit")
