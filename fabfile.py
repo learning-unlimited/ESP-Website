@@ -540,9 +540,19 @@ def dumpdb(c, filename="devsite_django.sql"):
     c = get_connection()
     _ensure_environment(c)
 
-    sys.path.insert(0, "esp/esp/")
-    from settings import DATABASES
-    default_db = DATABASES["default"]
+    # Read database credentials from local_settings.py on the VM rather than
+    # importing Django settings on the host (which would require Django to be
+    # installed locally).
+    creds_script = (
+        "source " + CONFIG["venv"] + "bin/activate && "
+        "cd " + CONFIG["rbase"] + "esp && "
+        "python3 -c \""
+        "import json; "
+        "from esp.settings import DATABASES; "
+        "print(json.dumps(DATABASES['default']))\""
+    )
+    result = c.run(creds_script, hide="stdout")
+    default_db = json.loads(result.stdout.strip())
 
     c.sudo(
         "PGHOST=%s PGPORT=%s PGDATABASE=%s PGUSER=%s PGPASSWORD=%s pg_dump > %s%s" % (
