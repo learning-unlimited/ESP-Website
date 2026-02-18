@@ -174,7 +174,7 @@ def interactive_cmd(cmd):
 def _get_encvg(c):
     """Determine the encrypted volume group name based on Ubuntu version."""
     ubuntu_version = c.run(
-        "lsb_release -r | awk '{print $2}'", warn=True,
+        "lsb_release -r | awk '{print $2}'", warn=True, hide="stdout"
     ).stdout.strip()
     mapping = {
         "24.04": "ubuntu--vg-keep_1",
@@ -208,7 +208,7 @@ def _psql(c, cmd=None, *args, **kwargs):
         return c.sudo(
             "psql -AXqt -c " + shlex.quote(formatted),
             user="postgres",
-            **kwargs,
+            **kwargs, hide="stdout", 
         )
     else:
         interactive_cmd("sudo -i -u postgres psql; exit")
@@ -252,7 +252,7 @@ def _ensure_environment(c):
 
     # Ensure that the encrypted partition has been mounted (must be done after
     # every boot, and can't be done automatically by Vagrant :/)
-    if c.sudo("df | grep encrypted | wc -l", warn=True).stdout.strip() != "1":
+    if c.sudo("df | grep encrypted | wc -l", warn=True, hide="stdout").stdout.strip() != "1":
         check = c.sudo("ls -l /dev/mapper/encrypted &> /dev/null ; echo $?")
         if check.stdout.strip() != "0":
             print("***** ")
