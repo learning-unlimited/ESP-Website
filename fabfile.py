@@ -523,12 +523,18 @@ def loaddb(c, filename=None):
             user="postgres",
         )
 
+    print("***** ")
+    print("***** Database loaded.")
+
     # Run Django migrations, etc.
+    print("***** Now running fab refresh.")
     _refresh(c)
 
     # Cleanup
     c.run("rm -f " + CONFIG["encfab"] + "dbdump")
     _flags["db_running"] = False
+    print("***** Done.")
+    print("***** ")
 
 
 @task
@@ -565,6 +571,10 @@ def dumpdb(c, filename="devsite_django.sql"):
             shlex.quote(filename),
         )
     )
+
+    print("***** ")
+    print("***** Database has been dumped to ", filename, ".", sep="")
+    print("***** ")
 
 
 @task
