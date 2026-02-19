@@ -420,3 +420,73 @@ class ViewResponseTest(TestCase):
         self.client.logout()
         response = self.client.get('/customforms/responses/%d/' % self.form.id)
         self.assertRedirects(response, '/accounts/login/?next=/customforms/responses/%d/' % self.form.id)
+
+
+class FormBuilderViewTest(TestCase):
+    """Tests for formBuilder() — context data and access control."""
+    
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='builder_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.teacher, _ = ESPUser.objects.get_or_create(username='builder_teacher')
+        self.teacher.set_password('password')
+        self.teacher.save()
+        self.teacher.makeRole('Teacher')
+        
+        self.student, _ = ESPUser.objects.get_or_create(username='builder_student')
+        self.student.set_password('password')
+        self.student.save()
+        self.student.makeRole('Student')
+
+        self.admin_form = Form.objects.create(
+            title='Admin Form', description='Test', created_by=self.admin,
+            link_type='-1', link_id=-1, anonymous=False, perms='',
+            success_message='OK', success_url='/'
+        )
+        self.teacher_form = Form.objects.create(
+            title='Teacher Form', description='Test', created_by=self.teacher,
+            link_type='-1', link_id=-1, anonymous=False, perms='',
+            success_message='OK', success_url='/'
+        )
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            dmh = DynamicModelHandler(form)
+            dmh.purgeDynModel()
+
+    def test_admin_sees_all_forms_in_context(self):
+        """Admin context should include all forms."""
+        self.client.login(username='builder_admin', password='password')
+        response = self.client.get('/customforms/create')
+        self.assertEqual(response.status_code, 200)
+        
+        # 'form_list' in context is a QuerySet
+        form_ids = [f.id for f in response.context['form_list']]
+        self.assertIn(self.admin_form.id, form_ids)
+        self.assertIn(self.teacher_form.id, form_ids)
+
+    def test_teacher_sees_only_own_forms(self):
+        """Teacher context should only include their own forms."""
+        self.client.login(username='builder_teacher', password='password')
+        response = self.client.get('/customforms/create')
+        self.assertEqual(response.status_code, 200)
+        
+        form_ids = [f.id for f in response.context['form_list']]
+        self.assertIn(self.teacher_form.id, form_ids)
+        self.assertNotIn(self.admin_form.id, form_ids)
+        
+    def test_edit_param_in_context(self):
+        """If ?edit=ID is passed, it should be in the context."""
+        # Note: edit param is a string in context
+        self.client.login(username='builder_teacher', password='password')
+        response = self.client.get('/customforms/create?edit=%d' % self.teacher_form.id)
+        self.assertEqual(response.context['edit'], str(self.teacher_form.id))
+        
+    def test_student_cannot_access(self):
+        """Student should be redirected."""
+        self.client.login(username='builder_student', password='password')
+        response = self.client.get('/customforms/create')
+        self.assertRedirects(response, '/accounts/login/?next=/customforms/create')
