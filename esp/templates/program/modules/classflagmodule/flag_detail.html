@@ -14,11 +14,11 @@
                 <tr>
                     <th>
                         Comment:<br/>
-                        <input type="submit" id="flag-submit-{{flag.id}}" class="btn btn-default" value="Update"></input> <br/>
-                        <button type="button" class="btn btn-default" onclick="removeFlag('/manage/{{program.getUrlBase}}/deleteflag/',{{flag.id}});">Remove</button>
+                        <input type="submit" id="flag-submit-{{flag.id}}" class="btn btn-default" value="Update" tabindex="2"></input> <br/>
+                        <button type="button" class="btn btn-default" onclick="removeFlag('/manage/{{program.getUrlBase}}/deleteflag/',{{flag.id}});" tabindex="3">Remove</button>
                     </th>
                     <td>
-                        <textarea id="flag-comment-{{flag.id}}" name="comment" rows="4" cols="60">{{flag.comment}}</textarea>
+                        <textarea id="flag-comment-{{flag.id}}" name="comment" rows="4" cols="60" tabindex="1">{{flag.comment}}</textarea>
                     </td>
                 </tr>
             </tbody>
