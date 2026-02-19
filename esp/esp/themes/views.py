@@ -168,12 +168,12 @@ def logos(request):
     favicon_paths.sort(
     key=lambda p: os.path.getmtime(p),
     reverse=True
-)
+    )
 
     context['favicon_files'] = [
     (path.split('public')[1], path.split('images/backups/')[1])
     for path in favicon_paths
-]
+    ]
 
     context['has_header'] = os.path.exists(settings.MEDIA_ROOT + 'images/theme/header.png')
     context['current_logo_version'] = Tag.getTag("current_logo_version")
