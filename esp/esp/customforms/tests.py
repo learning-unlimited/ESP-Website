@@ -211,3 +211,69 @@ class CustomFormsTest(TestCase):
             if entry[0] in ['user_id', 'user_display', 'user_email', 'username']:
                 continue
             self.assertTrue(entry[0] in responses_corrected)
+
+
+class LandingViewTest(TestCase):
+    """Tests for the landing() view — admin vs teacher form visibility."""
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='landing_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.teacher, _ = ESPUser.objects.get_or_create(username='landing_teacher')
+        self.teacher.set_password('password')
+        self.teacher.save()
+        self.teacher.makeRole('Teacher')
+
+        self.student, _ = ESPUser.objects.get_or_create(username='landing_student')
+        self.student.set_password('password')
+        self.student.save()
+        self.student.makeRole('Student')
+
+        self.admin_form = Form.objects.create(
+            title='Admin Form', description='Test', created_by=self.admin,
+            link_type='-1', link_id=-1, anonymous=False, perms='',
+            success_message='OK', success_url='/'
+        )
+        self.teacher_form = Form.objects.create(
+            title='Teacher Form', description='Test', created_by=self.teacher,
+            link_type='-1', link_id=-1, anonymous=False, perms='',
+            success_message='OK', success_url='/'
+        )
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            dmh = DynamicModelHandler(form)
+            dmh.purgeDynModel()
+
+    def test_admin_sees_all_forms(self):
+        """Admin should see all forms regardless of creator."""
+        self.client.login(username='landing_admin', password='password')
+        response = self.client.get('/customforms/')
+        self.assertEqual(response.status_code, 200)
+        form_ids = [f.id for f in response.context['form_list']]
+        self.assertIn(self.admin_form.id, form_ids)
+        self.assertIn(self.teacher_form.id, form_ids)
+
+    def test_teacher_sees_only_own_forms(self):
+        """Teacher should only see forms they created."""
+        self.client.login(username='landing_teacher', password='password')
+        response = self.client.get('/customforms/')
+        self.assertEqual(response.status_code, 200)
+        form_ids = [f.id for f in response.context['form_list']]
+        self.assertIn(self.teacher_form.id, form_ids)
+        self.assertNotIn(self.admin_form.id, form_ids)
+
+    def test_student_cannot_access(self):
+        """Student should be redirected (no teacher/admin/morphed role)."""
+        self.client.login(username='landing_student', password='password')
+        response = self.client.get('/customforms/')
+        self.assertRedirects(response, '/accounts/login/?next=/customforms/')
+
+    def test_unauthenticated_redirected(self):
+        """Unauthenticated user should be redirected to login."""
+        self.client.logout()
+        response = self.client.get('/customforms/')
+        self.assertRedirects(response, '/accounts/login/?next=/customforms/')
