@@ -36,6 +36,11 @@
   {% endif %}
   {% load class_render_row %}
   {% for cls in all_class_list %}
+    {% if not forloop.first %}
+    <tr>
+      <td colspan="7" style="padding: 0;"><hr style="margin: 4px 0; border: 0; border-top: 2px solid #ccc;" /></td>
+    </tr>
+    {% endif %}
     {% render_class_copy_row cls %}
   {% endfor %}
 
