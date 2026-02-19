@@ -38,7 +38,8 @@ import json
 
 from esp.customforms.models import Form, Field
 from esp.customforms.DynamicModel import DynamicModelHandler
-from esp.users.models import ESPUser
+from esp.customforms.views import hasPerm
+from esp.users.models import ESPUser, AnonymousESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
 
 class CustomFormsTest(TestCase):
@@ -214,7 +215,7 @@ class CustomFormsTest(TestCase):
 
 
 class LandingViewTest(TestCase):
-    """Tests for the landing() view — admin vs teacher form visibility."""
+    """Tests for the landing() view admin vs teacher form visibility."""
 
     def setUp(self):
         self.admin, _ = ESPUser.objects.get_or_create(username='landing_admin')
@@ -277,3 +278,87 @@ class LandingViewTest(TestCase):
         self.client.logout()
         response = self.client.get('/customforms/')
         self.assertRedirects(response, '/accounts/login/?next=/customforms/')
+
+
+class HasPermTest(TestCase):
+    """Tests for hasPerm() access control logic."""
+
+    def setUp(self):
+        self.user, _ = ESPUser.objects.get_or_create(username='perm_user')
+        self.user.set_password('password')
+        self.user.save()
+        
+        self.anon_user = AnonymousESPUser()
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            dmh = DynamicModelHandler(form)
+            dmh.purgeDynModel()
+
+    def test_anon_user_non_anon_form_denied(self):
+        """Anonymous user should be denied access to non-anonymous form."""
+        form = Form.objects.create(
+            title='Test Form', created_by=self.user,
+            anonymous=False, perms='',
+            success_message='OK', success_url='/'
+        )
+        allowed, msg = hasPerm(self.anon_user, form)
+        self.assertFalse(allowed)
+        self.assertEqual(msg, "You need to be logged in to view this form.")
+
+    def test_anon_user_anon_form_no_perms_allowed(self):
+        """Anonymous user should be allowed if form is anonymous and has no perms."""
+        form = Form.objects.create(
+            title='Test Form', created_by=self.user,
+            anonymous=True, perms='',
+            success_message='OK', success_url='/'
+        )
+        allowed, msg = hasPerm(self.anon_user, form)
+        self.assertTrue(allowed)
+        self.assertEqual(msg, "")
+
+    def test_authenticated_no_perms_allowed(self):
+        """Authenticated user should be allowed if form has no perms."""
+        form = Form.objects.create(
+            title='Test Form', created_by=self.user,
+            anonymous=False, perms='',
+            success_message='OK', success_url='/'
+        )
+        allowed, msg = hasPerm(self.user, form)
+        self.assertTrue(allowed)
+        self.assertEqual(msg, "")
+
+    def test_anon_user_anon_form_with_perms_denied(self):
+        """Anonymous user should be denied if form has perms, even if anonymous=True."""
+        form = Form.objects.create(
+            title='Test Form', created_by=self.user,
+            anonymous=True, perms='Teacher',
+            success_message='OK', success_url='/'
+        )
+        allowed, msg = hasPerm(self.anon_user, form)
+        self.assertFalse(allowed)
+        self.assertEqual(msg, "You need to be logged in to view this form.")
+
+    def test_user_with_matching_perm_allowed(self):
+        """User with matching role should be allowed."""
+        self.user.makeRole('Teacher')
+        form = Form.objects.create(
+            title='Test Form', created_by=self.user,
+            anonymous=False, perms='Teacher',
+            success_message='OK', success_url='/'
+        )
+        allowed, msg = hasPerm(self.user, form)
+        self.assertTrue(allowed)
+        self.assertEqual(msg, "")
+
+    def test_user_without_matching_perm_denied(self):
+        """User without matching role should be denied."""
+        self.user.makeRole('Student')
+        form = Form.objects.create(
+            title='Test Form', created_by=self.user,
+            anonymous=False, perms='Teacher',
+            success_message='OK', success_url='/'
+        )
+        allowed, msg = hasPerm(self.user, form)
+        self.assertFalse(allowed)
+        self.assertEqual(msg, "You are not permitted to view this form.")
