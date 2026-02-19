@@ -1179,7 +1179,7 @@ class ProgramPrintables(ProgramModuleObj):
                 file_type = request.GET['img_format']
             else:
                 file_type = 'pdf'
-            filterObj, found = UserSearchController().create_filter(request, self.program, target_path = request.get_full_path(), add_to_context = {'module': "Student Schedules (" + file_type + ")"})
+            filterObj, found = UserSearchController().create_filter(request, self.program, target_path = request.get_full_path(), add_to_context = {'module': "Student Schedules (" + file_type + ")", 'default_user_type': 'Student'})
 
             if not found:
                 return filterObj
