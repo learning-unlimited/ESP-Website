@@ -54,7 +54,7 @@ There have been various improvements to the class changes grid, including:
 - It is possible to show all / hide all categories at once, without manually
   toggling all categories.
 
-- Timeblocks that have already occured can be hidden from the page, so that the
+- Timeblocks that have already occurred can be hidden from the page, so that the
   timeblock on the left is the current or upcoming timeblock.
 
 Donation module
@@ -233,7 +233,7 @@ to update sites (including dev servers):
   be run as the webserver user.
 
 - ``manage.py update`` - The same as running the above three commands, plus
-  ``manage.py syncdb`` (to install new tables not under migration controll),
+  ``manage.py syncdb`` (to install new tables not under migration control),
   ``manage.py migrate``, and ``manage.py collectstatic``.
 
 When performing a production site release or pulling many new commits to
