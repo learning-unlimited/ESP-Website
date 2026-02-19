@@ -362,3 +362,61 @@ class HasPermTest(TestCase):
         allowed, msg = hasPerm(self.user, form)
         self.assertFalse(allowed)
         self.assertEqual(msg, "You are not permitted to view this form.")
+
+
+class ViewResponseTest(TestCase):
+    """Tests for viewResponse() — permission check."""
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='resp_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.teacher, _ = ESPUser.objects.get_or_create(username='resp_teacher')
+        self.teacher.set_password('password')
+        self.teacher.save()
+        self.teacher.makeRole('Teacher')
+
+        self.student, _ = ESPUser.objects.get_or_create(username='resp_student')
+        self.student.set_password('password')
+        self.student.save()
+        self.student.makeRole('Student')
+
+        self.form = Form.objects.create(
+            title='Test Form', created_by=self.admin,
+            success_message='OK', success_url='/'
+        )
+        # Create dynamic model table so view doesn't crash on query
+        dmh = DynamicModelHandler(self.form)
+        dmh.createTable()
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            dmh = DynamicModelHandler(form)
+            dmh.purgeDynModel()
+
+    def test_admin_can_view_responses(self):
+        """Admin should be able to view responses page."""
+        self.client.login(username='resp_admin', password='password')
+        response = self.client.get('/customforms/responses/%d/' % self.form.id)
+        self.assertEqual(response.status_code, 200)
+
+    def test_teacher_can_view_responses(self):
+        """Teacher should be able to view responses page."""
+        self.client.login(username='resp_teacher', password='password')
+        response = self.client.get('/customforms/responses/%d/' % self.form.id)
+        self.assertEqual(response.status_code, 200)
+
+    def test_student_cannot_access(self):
+        """Student should not be able to view responses."""
+        self.client.login(username='resp_student', password='password')
+        response = self.client.get('/customforms/responses/%d/' % self.form.id)
+        # Should redirect to home page, which is '/'
+        self.assertRedirects(response, '/')
+
+    def test_unauthenticated_redirected(self):
+        """Unauthenticated user should be redirected to login (by decorator)."""
+        self.client.logout()
+        response = self.client.get('/customforms/responses/%d/' % self.form.id)
+        self.assertRedirects(response, '/accounts/login/?next=/customforms/responses/%d/' % self.form.id)
