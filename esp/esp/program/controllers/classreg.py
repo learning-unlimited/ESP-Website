@@ -79,7 +79,7 @@ class ClassCreationController(object):
         for teacher in cls.get_teachers():
             self.require_teacher_has_time(teacher, current_user, extra_time)
 
-        self.make_class_happen(cls, None, reg_form, resource_formset, editing=True)
+        self.make_class_happen(cls, current_user, reg_form, resource_formset, editing=True)
 
         self.send_class_mail_to_directors(cls, False)
 

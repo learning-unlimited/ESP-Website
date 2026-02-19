@@ -49,6 +49,8 @@ from esp.program.forms import ProgramCreationForm
 from esp.resources.models import ResourceType, ResourceRequest
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, Permission
+from esp.program.controllers.classreg import get_custom_fields
+from django import forms
 
 class TeacherClassRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
@@ -289,3 +291,220 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.assertTrue(not self.moduleobj.deadline_met())
         self.moduleobj.user = self.teacher
         self.assertTrue(not self.moduleobj.deadline_met())
+
+
+class MakeEditClassTest(ProgramFrameworkTest):
+    """Tests for the makeaclass and editclass views (issue #794).
+
+    Covers:
+    - Teacher creating a class via the makeaclass form
+    - Class teacher association and initial UNREVIEWED status after creation
+    - Teacher availability auto-assignment on class creation
+    - Teacher editing their own class via the editclass form
+    - Class marked UNREVIEWED when edited by a teacher (not admin)
+    - Class status preserved when edited by an admin
+    - Permission check: another teacher cannot edit someone else's class
+    - Form validation error handling
+    """
+
+    def setUp(self, *args, **kwargs):
+        super(MakeEditClassTest, self).setUp(num_students=3, *args, **kwargs)
+        self.teacher = self.teachers[0]
+        self.admin = self.admins[0]
+        # Pick a class belonging to self.teacher
+        self.cls = self.teacher.getTaughtClasses()[0]
+
+    # ------------------------------------------------------------------ helpers
+
+    def _base_class_post_data(self, title='Test New Class', num_sections=1):
+        """Build a minimal valid POST dict for the makeaclass / editclass form."""
+        durations = self.program.getDurations()
+        duration_val = durations[0][0] if durations else '1.0'
+        data = {
+            'title': title,
+            'category': self.categories[0].id,
+            'class_info': 'A test class description.',
+            'prereqs': '',
+            'duration': str(duration_val),
+            'num_sections': str(num_sections),
+            'session_count': '1',
+            'grade_min': self.program.grade_min,
+            'grade_max': self.program.grade_max,
+            'class_size_max': '20',
+            'allow_lateness': 'False',
+            'message_for_directors': '',
+            'hardness_rating': '**',
+            'class_reg_page': '1',
+            # Resource formset management form (no resource requests)
+            'request-TOTAL_FORMS': '0',
+            'request-INITIAL_FORMS': '0',
+            'request-MAX_NUM_FORMS': '1000',
+        }
+        # Fill in any program-specific custom fields
+        for field_name, field_obj in get_custom_fields().items():
+            if isinstance(field_obj, forms.ChoiceField):
+                data[field_name] = field_obj.choices[0][0]
+            else:
+                data[field_name] = 'test'
+        return data
+
+    def _makeaclass_url(self):
+        return '%smakeaclass' % self.program.get_teach_url()
+
+    def _editclass_url(self, cls):
+        return '%seditclass/%s' % (self.program.get_teach_url(), cls.id)
+
+    # ------------------------------------------------------------------ makeaclass tests
+
+    def test_makeaclass_get_shows_form(self):
+        """GET makeaclass returns the class creation form."""
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password='password'),
+            "Could not log in as teacher %s" % self.teacher.username)
+        response = self.client.get(self._makeaclass_url())
+        self.assertEqual(response.status_code, 200)
+
+    @transaction.atomic
+    def test_makeaclass_creates_class(self):
+        """A teacher can create a class via POST to makeaclass."""
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password='password'))
+
+        class_count_before = ClassSubject.objects.filter(parent_program=self.program).count()
+        response = self.client.post(self._makeaclass_url(), self._base_class_post_data())
+        self.assertIn(response.status_code, [200, 302])
+        class_count_after = ClassSubject.objects.filter(parent_program=self.program).count()
+        self.assertEqual(class_count_after, class_count_before + 1,
+                         "Expected one new class to be created via makeaclass POST")
+
+    @transaction.atomic
+    def test_makeaclass_associates_teacher(self):
+        """After makeaclass, the submitting teacher is listed as a teacher of the new class."""
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password='password'))
+
+        self.client.post(self._makeaclass_url(), self._base_class_post_data(title='Unique Title 99'))
+        new_class = ClassSubject.objects.filter(
+            parent_program=self.program, title='Unique Title 99').first()
+        self.assertIsNotNone(new_class, "New class should have been created")
+        self.assertIn(self.teacher, new_class.get_teachers(),
+                      "Submitting teacher should be associated with the new class")
+
+    @transaction.atomic
+    def test_makeaclass_status_is_unreviewed(self):
+        """A newly created class starts with UNREVIEWED status."""
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password='password'))
+
+        self.client.post(self._makeaclass_url(), self._base_class_post_data(title='Unreviewed Test Class'))
+        new_class = ClassSubject.objects.filter(
+            parent_program=self.program, title='Unreviewed Test Class').first()
+        self.assertIsNotNone(new_class)
+        self.assertEqual(
+            new_class.status, ClassStatus.UNREVIEWED,
+            "Newly created class should have UNREVIEWED status, got %d" % new_class.status)
+
+    @transaction.atomic
+    def test_makeaclass_sets_availability_if_none(self):
+        """Creating a class auto-assigns all timeslots as available when teacher has no availability."""
+        self.teacher.clearAvailableTimes(self.program)
+        self.assertEqual(len(self.teacher.getAvailableTimes(self.program)), 0,
+                         "Teacher should have no availability before class creation")
+
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password='password'))
+        self.client.post(self._makeaclass_url(), self._base_class_post_data(title='Availability Test Class'))
+
+        available_times = self.teacher.getAvailableTimes(self.program)
+        self.assertGreater(len(available_times), 0,
+                           "Availability should be set automatically after creating a class with no prior availability")
+
+    @transaction.atomic
+    def test_makeaclass_validation_error_shown(self):
+        """Invalid form data (missing title) re-renders the form instead of creating a class."""
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password='password'))
+
+        bad_data = self._base_class_post_data()
+        bad_data['title'] = ''  # title is required
+        response = self.client.post(self._makeaclass_url(), bad_data)
+        # The form should be re-rendered (200) rather than redirecting (302)
+        self.assertEqual(response.status_code, 200,
+                         "Invalid form should re-render the page, not redirect")
+
+    # ------------------------------------------------------------------ editclass tests
+
+    def test_editclass_get_shows_form(self):
+        """GET editclass returns the edit form pre-populated with class data."""
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password='password'))
+        response = self.client.get(self._editclass_url(self.cls))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.cls.title)
+
+    @transaction.atomic
+    def test_editclass_updates_class_title(self):
+        """A teacher can update the class title via the editclass form."""
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password='password'))
+
+        new_title = 'Updated Title For Test'
+        data = self._base_class_post_data(title=new_title)
+        self.client.post(self._editclass_url(self.cls), data)
+
+        self.cls.refresh_from_db()
+        self.assertEqual(self.cls.title, new_title,
+                         "Class title should be updated after teacher POST to editclass")
+
+    @transaction.atomic
+    def test_editclass_teacher_marks_class_unreviewed(self):
+        """When a teacher edits an accepted class it should be marked UNREVIEWED.
+
+        This verifies that ClassCreationController.editclass() passes current_user
+        to make_class_happen() so that propose() is called for teachers (issue #794).
+        """
+        self.cls.accept()
+        self.cls.refresh_from_db()
+        self.assertEqual(self.cls.status, ClassStatus.ACCEPTED,
+                         "Pre-condition: class should be ACCEPTED before test")
+
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password='password'))
+        self.client.post(self._editclass_url(self.cls), self._base_class_post_data())
+
+        self.cls.refresh_from_db()
+        self.assertEqual(
+            self.cls.status, ClassStatus.UNREVIEWED,
+            "Class edited by its teacher should become UNREVIEWED; got status %d" % self.cls.status)
+
+    @transaction.atomic
+    def test_editclass_admin_preserves_class_status(self):
+        """When an admin edits an accepted class, its status should remain ACCEPTED.
+
+        Admins are not teachers of the class, so make_class_happen() should not
+        call propose() and the class should keep its current status.
+        """
+        self.cls.accept()
+        self.cls.refresh_from_db()
+        self.assertEqual(self.cls.status, ClassStatus.ACCEPTED,
+                         "Pre-condition: class should be ACCEPTED before test")
+
+        self.assertTrue(
+            self.client.login(username=self.admin.username, password='password'))
+        self.client.post(self._editclass_url(self.cls), self._base_class_post_data())
+
+        self.cls.refresh_from_db()
+        self.assertEqual(
+            self.cls.status, ClassStatus.ACCEPTED,
+            "Class edited by admin should remain ACCEPTED; got status %d" % self.cls.status)
+
+    def test_editclass_other_teacher_cannot_edit(self):
+        """A teacher who is not associated with a class should not be able to edit it."""
+        other_teacher = next(
+            t for t in self.teachers if t not in self.cls.get_teachers())
+        self.assertTrue(
+            self.client.login(username=other_teacher.username, password='password'))
+        response = self.client.get(self._editclass_url(self.cls))
+        # Should either redirect away or render the "cannot edit" page (still 200 but no edit form)
+        self.assertNotContains(response, 'class_reg_page',
+                               msg_prefix="Non-teacher should not see the class edit form")
