@@ -1,0 +1,31 @@
+name: 'Close stale issues'
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs daily at midnight UTC
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          # Issues
+          days-before-stale: 30
+          days-before-close: -1  # Never auto-close
+          stale-issue-label: 'stale'
+          stale-issue-message: >
+            This issue has been automatically marked as stale because it has not had
+            any activity in the last 30 days. If this issue is still relevant, please
+            leave a comment or remove the stale label.
+
+          # Pull Requests — do not mark stale
+          days-before-pr-stale: -1
+          days-before-pr-close: -1
+
+          # Exempt labels — issues with these labels won't be marked stale
+          exempt-issue-labels: 'pinned,security,bug,enhancement'
