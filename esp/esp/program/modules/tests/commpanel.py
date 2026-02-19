@@ -135,3 +135,17 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         m = MessageRequest.objects.filter(recipients__id=filterid, subject='Test Subject 123')
         self.assertTrue(m.count() == 1)
         self.assertTrue(m[0].processed)
+
+    def test_program_date_variables_in_comms(self):
+        """Test that {{ program.date }}, {{ program.date_range }}, {{ program.teacher_reg_deadline }} work in email templates."""
+        context_dict = {'user': ActionHandler(self.students[0], self.students[0]),
+                       'program': ActionHandler(self.program, self.students[0]),
+                       'request': ActionHandler(MessageRequest(), self.students[0]),
+                       'EMAIL_HOST_SENDER': settings.EMAIL_HOST_SENDER}
+        body = 'Program first day: {{ program.date }}. Date range: {{ program.date_range }}. Teacher reg deadline: {{ program.teacher_reg_deadline }}.'
+        rendered = render_to_string('email/default_email.html', {'msgbody': body})
+        rendered = Template(rendered).render(DjangoContext(context_dict))
+        # Variables should be substituted (not left as literal {{ ... }})
+        self.assertNotIn('{{ program.date }}', rendered)
+        self.assertNotIn('{{ program.date_range }}', rendered)
+        self.assertNotIn('{{ program.teacher_reg_deadline }}', rendered)
