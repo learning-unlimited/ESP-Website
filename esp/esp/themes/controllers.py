@@ -252,11 +252,127 @@ class ThemeController(object):
 
         return css_data
 
-    def get_variable_defaults(self, theme_name=None):
-        # This is particularly important for themes that have variables files with LESS (e.g., darken())
-        # Otherwise it basically does the same thing as find_less_variables()
+    # -------------------------------------------------------------------------
+    # Bootstrap 5 / SCSS support
+    # -------------------------------------------------------------------------
+
+    def has_scss(self, theme_name):
+        """Return True if this theme uses SCSS (Bootstrap 5) instead of LESS."""
+        return os.path.exists(os.path.join(self.base_dir(theme_name), 'scss'))
+
+    def get_scss_load_paths(self):
+        """Return a list of load-path directories to pass to the sass compiler.
+
+        Includes the Bootstrap 5 SCSS directory when it has been installed via
+        ``npm install`` inside ``esp/public/media/theme_editor/``.
+        Also includes Bootswatch (if present) so themes can do
+        ``@import "bootswatch/dist/<theme>/variables";``.
+        """
+        load_paths = []
+        if os.path.exists(themes_settings.bootstrap5_scss_dir):
+            load_paths.append(themes_settings.bootstrap5_scss_dir)
+        node_modules = os.path.join(themes_settings.theme_editor_dir, 'node_modules')
+        if os.path.exists(node_modules):
+            load_paths.append(node_modules)
+        return load_paths
+
+    def compile_scss(self, scss_data, load_paths=None):
+        """Compile SCSS source (passed as a string) to CSS using dart-sass.
+
+        Requires ``sass`` to be available on PATH, e.g. via::
+
+            cd esp/public/media/theme_editor && npm install
+            # then add node_modules/.bin to PATH, or install globally:
+            npm install -g sass
+
+        Args:
+            scss_data: SCSS source code string.
+            load_paths: list of directory paths to pass as ``--load-path``.
+
+        Returns:
+            Compiled CSS as bytes.
+        """
+        if load_paths is None:
+            load_paths = []
+
+        sass_args = ['sass', '--style=expanded', '--no-source-map', '--stdin']
+        for lp in load_paths:
+            sass_args.append('--load-path=%s' % lp)
+
+        logger.debug('SCSS compile command: %s', ' '.join(sass_args))
+        sass_process = subprocess.Popen(
+            ' '.join(sass_args),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            shell=True,
+        )
+        css_data = sass_process.communicate(scss_data.encode())[0]
+
+        if sass_process.returncode != 0:
+            raise ESPError(
+                'The SCSS compiler (sass) returned error code %d. '
+                'Make sure dart-sass is installed (npm install -g sass) and '
+                'Bootstrap 5 SCSS files are present '
+                '(cd esp/public/media/theme_editor && npm install). '
+                'SCSS compile command was: <pre>%s</pre>' % (
+                    sass_process.returncode, ' '.join(sass_args)),
+                log=True)
+
+        return css_data
+
+    def find_scss_variables(self, theme_name=None, flat=False):
+        """Scan SCSS files in the theme for variable declarations (``$name: value``).
+
+        Works analogously to :meth:`find_less_variables` but uses SCSS syntax.
+
+        Args:
+            theme_name: theme name string; defaults to the current theme.
+            flat: if True, return a single flat dict; otherwise a dict keyed
+                  by filename.
+
+        Returns:
+            dict mapping variable names to their default values.
+        """
         if theme_name is None:
             theme_name = self.get_current_theme()
+
+        results = {}
+        scss_dir = os.path.join(self.base_dir(theme_name), 'scss')
+        if not os.path.exists(scss_dir):
+            return results
+
+        for filename in self.list_filenames(scss_dir, r'\.scss$'):
+            local_results = {}
+            logger.debug('find_scss_variables: including file %s', filename)
+            with open(filename) as scss_file:
+                scss_data = scss_file.read()
+            # Match $variable: value; (ignoring !default / !global flags)
+            for item in re.findall(r'\$([a-zA-Z0-9_-]+)\s*:\s*(.*?)(?:\s*!default)?(?:\s*!global)?\s*;', scss_data):
+                local_results[item[0]] = item[1]
+
+            if flat:
+                results.update(local_results)
+            else:
+                results[filename] = local_results
+
+        return results
+
+    def get_variable_defaults(self, theme_name=None):
+        """Return a dict of resolved variable name -> value for the current theme.
+
+        For LESS-based (Bootstrap 2) themes the variables are compiled via
+        ``lessc`` so that LESS functions like ``darken()`` are evaluated.
+
+        For SCSS-based (Bootstrap 5) themes the raw declared values are
+        returned from :meth:`find_scss_variables` (expression evaluation is not
+        yet supported for the SCSS pipeline).
+        """
+        if theme_name is None:
+            theme_name = self.get_current_theme()
+
+        if self.has_scss(theme_name):
+            return self.find_scss_variables(theme_name=theme_name, flat=True)
 
         less_data = ''
         # load variable LESS from files
@@ -286,6 +402,19 @@ class ThemeController(object):
         return defaults
 
     def compile_css(self, theme_name, variable_data, output_filename):
+        """Compile the theme stylesheet (LESS or SCSS) and write the output CSS.
+
+        For themes that contain a ``less/`` directory the existing Bootstrap 2 /
+        LESS pipeline is used unchanged.  For themes that contain an ``scss/``
+        directory the new Bootstrap 5 / SCSS pipeline is used instead.
+        """
+        if self.has_scss(theme_name):
+            self._compile_css_scss(theme_name, variable_data, output_filename)
+        else:
+            self._compile_css_less(theme_name, variable_data, output_filename)
+
+    def _compile_css_less(self, theme_name, variable_data, output_filename):
+        """Original Bootstrap 2 / LESS compilation pipeline."""
         #   Load LESS files in order of search path
         less_data = ''
         for filename in self.get_less_names(theme_name):
@@ -308,7 +437,49 @@ class ThemeController(object):
         with open(output_filename, 'w') as output_file:
             output_file.write(six.text_type(THEME_COMPILED_WARNING) + css_data.decode('UTF-8'))
         logger.debug('Wrote %.1f KB CSS output to %s', len(css_data) / 1000., output_filename)
-        Tag.setTag("current_theme_version", value = hex(random.getrandbits(16)))
+        Tag.setTag("current_theme_version", value=hex(random.getrandbits(16)))
+
+    def _compile_css_scss(self, theme_name, variable_data, output_filename):
+        """Bootstrap 5 / SCSS compilation pipeline.
+
+        The theme must have an ``scss/main.scss`` entry point that imports
+        Bootstrap 5 (and optionally a Bootswatch base theme).  Variable
+        overrides are injected as SCSS ``!default`` declarations prepended
+        before the main entry point so they take precedence over Bootstrap's
+        own defaults.
+
+        Bootstrap 5 must be installed via npm::
+
+            cd esp/public/media/theme_editor && npm install
+        """
+        theme_scss_dir = os.path.join(self.base_dir(theme_name), 'scss')
+        main_scss_path = os.path.join(theme_scss_dir, 'main.scss')
+
+        if not os.path.exists(main_scss_path):
+            raise ESPError(
+                'SCSS theme "%s" has no scss/main.scss entry point.' % theme_name,
+                log=True)
+
+        with open(main_scss_path) as f:
+            main_scss = f.read()
+
+        # Prepend variable overrides so they win over Bootstrap !default values.
+        variable_overrides = ''
+        for (variable_name, variable_value) in variable_data.items():
+            variable_overrides += '$%s: %s;\n' % (variable_name, variable_value)
+
+        scss_data = variable_overrides + main_scss
+
+        load_paths = self.get_scss_load_paths()
+        # Add the theme scss dir itself so relative @use / @import work
+        load_paths.insert(0, theme_scss_dir)
+
+        css_data = self.compile_scss(scss_data, load_paths=load_paths)
+
+        with open(output_filename, 'w') as output_file:
+            output_file.write(six.text_type(THEME_COMPILED_WARNING) + css_data.decode('UTF-8'))
+        logger.debug('Wrote %.1f KB CSS output to %s', len(css_data) / 1000., output_filename)
+        Tag.setTag("current_theme_version", value=hex(random.getrandbits(16)))
 
     def recompile_theme(self, theme_name=None, customization_name=None, keep_files=None):
         """
