@@ -7,6 +7,9 @@ on:
     # The branches below must be a subset of the branches above
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: ${{ matrix.travis_job }} (Python ${{ matrix.python-version }})

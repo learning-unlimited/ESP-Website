@@ -9,10 +9,16 @@ on:
   schedule:
     - cron: '0 17 * * 2'
 
+permissions:
+  contents: read
+
 jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
 
     steps:
     - name: Checkout repository
