@@ -1,32 +1,44 @@
 from __future__ import absolute_import
-from django.http import HttpResponse, Http404
-from django.dispatch import receiver
-from django.views.decorators.csrf import csrf_exempt
-from esp.formstack.signals import formstack_post_signal
+import json
+import logging
 
-@csrf_exempt
-def formstack_webhook(request):
-    if request.method == 'POST':
-        data = request.POST.dict()
-        form_id = data.pop('FormID')
-        submission_id = data.pop('UniqueID')
-        handshake_key = data.pop('HandshakeKey', None)
-        # TODO: verify handshake key
-        formstack_post_signal.send(sender=None, form_id=form_id, submission_id=submission_id, fields=data)
-        return HttpResponse()
-    else:
-        raise Http404
-
+from django.conf import settings
 from django.contrib.auth import authenticate
-from django.http import HttpResponse, Http404, HttpResponseServerError, \
-    HttpResponseForbidden, HttpResponseNotFound
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound, HttpResponseServerError
 from django.dispatch import receiver
+from django.utils.crypto import constant_time_compare
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+
+from esp.formstack.signals import formstack_post_signal
 from esp.program.models import Program
 from esp.users.models import ESPUser
-import json
+
+logger = logging.getLogger(__name__)
+
+@csrf_exempt
+def formstack_webhook(request):
+    if request.method != 'POST':
+        raise Http404
+
+    data = request.POST.dict()
+    expected_handshake = getattr(settings, 'FORMSTACK_HANDSHAKE_KEY', None)
+    handshake_key = data.pop('HandshakeKey', None)
+
+    if not expected_handshake:
+        logger.warning('Blocked Formstack webhook because FORMSTACK_HANDSHAKE_KEY is not configured.')
+        return HttpResponseForbidden("Formstack webhook is not configured.")
+    if not handshake_key or not constant_time_compare(str(handshake_key), str(expected_handshake)):
+        return HttpResponseForbidden("Invalid handshake key.")
+
+    form_id = data.pop('FormID', None)
+    submission_id = data.pop('UniqueID', None)
+    if not form_id or not submission_id:
+        return HttpResponseBadRequest("Missing required Formstack payload fields.")
+
+    formstack_post_signal.send(sender=None, form_id=form_id, submission_id=submission_id, fields=data)
+    return HttpResponse()
 
 @csrf_exempt
 @never_cache
