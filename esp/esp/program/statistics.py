@@ -91,17 +91,29 @@ def zipcodes(form, programs, students, profiles, result_dict={}):
 
 def demographics(form, programs, students, profiles, result_dict={}):
 
-    #   Get aggregate 'vitals' info
-    result_dict['num_classes'] = result_dict['num_sections'] = 0
-    result_dict['num_class_hours'] = result_dict['num_student_class_hours'] = 0
-    for program in programs:
-        result_dict['num_classes'] += program.classes().select_related().filter(status=ClassStatus.ACCEPTED).count()
-        result_dict['num_sections'] += program.sections().select_related().filter(status=ClassStatus.ACCEPTED).count()
-        for section in program.sections().select_related().filter(status=ClassStatus.ACCEPTED):
-            result_dict['num_class_hours'] += section.duration
-            result_dict['num_student_class_hours'] += section.duration*section.parent_class.class_size_max
-    result_dict['num_class_hours'] = int(result_dict['num_class_hours'])
-    result_dict['num_student_class_hours'] = int(result_dict['num_student_class_hours'])
+    #   Get aggregate 'vitals' info via cross-program SQL aggregation.
+    from django.db.models import Count, Sum, F, Value, DecimalField
+    from esp.program.models import ClassSection as CS
+    agg = (
+        CS.objects
+        .filter(
+            parent_class__parent_program__in=programs,
+            status=ClassStatus.ACCEPTED,
+        )
+        .aggregate(
+            num_classes=Count('parent_class', distinct=True),
+            num_sections=Count('id'),
+            num_class_hours=Sum('duration'),
+            num_student_class_hours=Sum(
+                F('duration') * F('parent_class__class_size_max'),
+                output_field=DecimalField(),
+            ),
+        )
+    )
+    result_dict['num_classes'] = agg['num_classes'] or 0
+    result_dict['num_sections'] = agg['num_sections'] or 0
+    result_dict['num_class_hours'] = int(agg['num_class_hours'] or 0)
+    result_dict['num_student_class_hours'] = int(agg['num_student_class_hours'] or 0)
 
     #   Get grade/age info
     gradyear_dict = {}
