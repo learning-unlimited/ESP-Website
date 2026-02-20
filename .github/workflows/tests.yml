@@ -2,14 +2,16 @@ name: "Lint and Unit Tests"
 
 on:
   push:
-    branches: [main, ]
+    branches: [main]
   pull_request:
-    # The branches below must be a subset of the branches above
     branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -44,6 +46,14 @@ jobs:
       uses: deadsnakes/action@v3.2.0
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Cache pip packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('esp/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-${{ matrix.python-version }}-
+          ${{ runner.os }}-pip-
     - name: Prepare for Installing Dependencies
       run: deploy/travis/before_install
       env:
@@ -65,8 +75,9 @@ jobs:
       run: deploy/travis/script
     - name: Upload Coverage to Codecov
       if: ${{ matrix.travis_job == 'test' }}
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       with:
         fail_ci_if_error: true
         verbose: true
-        token: ${{ secrets.CODECOV_TOKEN }}
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
