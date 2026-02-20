@@ -44,12 +44,13 @@ from esp.accounting.models import LineItemType
 from esp.cal.models import EventType, Event
 from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 from esp.qsd.models import QuasiStaticData
-from esp.resources.models import Resource, ResourceType
+from esp.resources.models import Resource, ResourceRequest, ResourceType
 from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
 from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
 
 from django.contrib.auth.models import Group
+from django.db.models import ProtectedError
 from django.test import LiveServerTestCase
 from django.test.client import Client
 from django import forms
@@ -917,6 +918,41 @@ class ProgramCapTest(ProgramFrameworkTest):
         StudentRegistration.objects.filter(
             section__parent_class__parent_program=self.program).delete()
         Tag.objects.filter(key='program_size_by_grade').delete()
+
+
+class ProgramDeleteResourceCleanupTest(ProgramFrameworkTest):
+    def test_delete_program_with_program_resource_type(self):
+        restype = ResourceType.objects.create(
+            name='Program-only resource type',
+            description='',
+            program=self.program,
+        )
+        resource = Resource.objects.create(
+            name='Program classroom',
+            num_students=30,
+            res_type=restype,
+            event=self.timeslots[0],
+        )
+        request = ResourceRequest.objects.create(
+            desired_value='Projector',
+            res_type=restype,
+            target=self.program.sections()[0],
+        )
+
+        program_id = self.program.id
+        restype_id = restype.id
+        resource_id = resource.id
+        request_id = request.id
+
+        try:
+            self.program.delete()
+        except ProtectedError:
+            self.fail('Program deletion should not fail due to protected resource relations.')
+
+        self.assertFalse(Program.objects.filter(id=program_id).exists())
+        self.assertFalse(ResourceType.objects.filter(id=restype_id).exists())
+        self.assertFalse(Resource.objects.filter(id=resource_id).exists())
+        self.assertFalse(ResourceRequest.objects.filter(id=request_id).exists())
 
 
 def randomized_attrs(program):
