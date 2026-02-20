@@ -5,7 +5,8 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-import sys, os, email, re, smtplib, socket, sha, random
+import sys, os, base64, email, html, re, smtplib, socket, random
+import itertools
 from io import open
 new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
@@ -33,30 +34,39 @@ if os.environ.get('VIRTUAL_ENV') is None:
 
 import django
 django.setup()
-from esp.dbmail.models import EmailList
+from esp.dbmail.models import EmailList, PlainRedirect, send_mail
+from esp.users.models import ESPUser
 from django.conf import settings
+from django.db.models.functions import Lower
 
-host = socket.gethostname()
 import_location = 'esp.dbmail.receivers.'
-MAIL_PATH = '/usr/sbin/sendmail'
-server = smtplib.SMTP('localhost')
-ARCHIVE = settings.DEFAULT_EMAIL_ADDRESSES['archive']
 SUPPORT = settings.DEFAULT_EMAIL_ADDRESSES['support']
 ORGANIZATION_NAME = settings.INSTITUTION_NAME + '_' + settings.ORGANIZATION_SHORT_NAME
+DOMAIN = '.learningu.org'
 
 #DEBUG=True
 DEBUG=False
 
 user = "UNKNOWN USER"
 
-def send_mail(message):
-    p = os.popen("%s -i -t" % MAIL_PATH, 'w')
-    p.write(message)
+
+def extract_attachments(msg):
+    attachments = []
+    for part in msg.iter_attachments():
+        filename = part.get_filename()
+        content = part.get_payload(decode=True)
+        mimetype = part.get_content_type()
+        if content:
+            attachments.append((filename, content, mimetype))
+        else:
+            logger.info("No content in attachment {}".format(filename))
+    return attachments
+
 
 try:
     user = os.environ['LOCAL_PART']
 
-    message = email.message_from_file(sys.stdin)
+    message = email.message_from_file(sys.stdin, policy=email.policy.default)
 
     handlers = EmailList.objects.all()
 
@@ -74,63 +84,138 @@ try:
         instance.process(user, *match.groups(), **match.groupdict())
 
         if not instance.send:
+            logger.debug("Instance of handler {} with message {} did not send".format(handler, message))
             continue
 
-        if hasattr(instance, "direct_send") and instance.direct_send:
-            if message['Bcc']:
-                bcc_recipients = [x.strip() for x in message['Bcc'].split(',')]
-                del(message['Bcc'])
-                message['Bcc'] = ", ".join(bcc_recipients)
-
-            send_mail(str(message))
-            continue
-
-        del(message['to'])
-        del(message['cc'])
-        message['X-ESP-SENDER'] = 'version 2'
-        message['X-FORWARDED-FOR'] = message['X-CLIENT-IP'] if message['X-Client-IP'] else message['Client-IP']
-
-        subject = message['subject']
-        del(message['subject'])
-        if hasattr(instance, 'emailcode') and instance.emailcode:
-            subject = '[%s] %s' % (instance.emailcode, subject)
-        if handler.subject_prefix:
-            subject = '[%s] %s' % (handler.subject_prefix, subject)
-        message['Subject'] = subject
-
-        if handler.from_email:
-            del(message['from'])
-            message['From'] = handler.from_email
-
-        del message['Message-ID']
-
-        # get a new message id
-        message['Message-ID'] = '<%s@%s>' % (sha.new(str(random.random())).hexdigest(),
-                                             host)
-
-        if handler.cc_all:
-            # send one mass-email
-            message['To'] = ', '.join(instance.recipients)
-            send_mail(str(message))
-        else:
-            # send an email for each recipient
+        # Catch sender's message and grab the data fields (to, from, subject, body, and attachments)
+        data = dict()
+        # if the instance has a `recipients` attribute, then it is a class list (such as `a123-teachers@`)
+        if hasattr(instance, 'recipients'):
+            data['to'] = []
+            aliases = []
             for recipient in instance.recipients:
-                del(message['To'])
-                message['To'] = recipient
-                send_mail(str(message))
+                # If the recipient has an email address that does not end with @anysite.learningu.org, keep them
+                # Note we `DOMAIN` instead of the `HOSTNAME` because the latter resolves to `thissite.learningu.org`
+                # in settings,  and we want `anysite.learningu.org` while still allowing user@learningu.org because
+                # those resolve to enterprise Gmail addresses
+                if recipient.endswith(DOMAIN):
+                    aliases.append(recipient)
+                elif '@' in recipient:
+                    data['to'].append(recipient)
+                else:
+                    logger.warning('Email address without `@` symbol: `{}`'.format(recipient))
+            redirects = PlainRedirect.objects.annotate(original_lower=Lower("original"
+                        )).filter(original_lower__in=[x.split('@')[0].lower() for x in aliases]
+                        ).exclude(destination__isnull=True).exclude(destination='')
+            # Split out individual email addresses if any of the redirects is a list
+            redirects = list(itertools.chain.from_iterable(map(lambda x: x.destination.split(',') if x.destination else [], redirects)))
+            users = ESPUser.objects.annotate(username_lower=Lower("username"
+                    )).filter(username_lower__in=[x.split('@')[0].lower() for x in aliases])
+            # Grab the emails from the users
+            users = [x.email for x in users]
+            # Theoretically at least one of these should be empty, but now doesn't seem like the time
+            # If the redirect resolve to anything@anysite.learningu.org, kill it
+            for address in redirects + users:
+                if not address.endswith(DOMAIN):
+                    data['to'].append(address)
+            # if the above filtering leaves the 'to' list empty, abort
+            if len(data['to']) == 0:
+                continue
+        # if the instance has a `message['to']` attribute, then it is a single address (such as `plain_redirect@` or
+        # `username@`)
+        elif hasattr(instance, 'message'):
+            data['to'] = instance.message['to']
+        else:
+            raise TypeError("Unknown receiver type for `{}`".format(instance))
+        data['from'] = (message['from'] or '').split(',')
+        data['subject'] = message['subject'] or ''
+        # For class lists, grab the code (such as "A123") and prepend it to the subject line
+        if hasattr(instance, 'emailcode') and instance.emailcode:
+            data['subject'] = '[{}] {}'.format(instance.emailcode, data['subject'])
+        if handler.subject_prefix:
+            data['subject'] = '[{}] {}'.format(handler.subject_prefix, data['subject'])
+        # Create an HTML email, regardless of the original format
+        # Get the content from the email
+        message_content = message.get_body(preferencelist=('html', 'plain')).get_content()
 
+        # Escape plain text content if necessary
+        content = html.escape(message_content) if message.get_content_type() != 'text/html' else message_content
+
+        # HTML structure with the message content inserted
+        data['body'] = f'''\
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Email Content</title>
+  </head>
+  <body>
+    {content}
+  </body>
+</html>
+'''
+        # Use the helper method defined above to get the attachment content
+        data['attachments'] = extract_attachments(message)
+
+
+        # If the sender's email is not associated with an account on the site,
+        # do not forward the email
+        if (not data['from']) or (isinstance(data['from'], list) and not data['from'][0].strip()):
+            logger.debug(f"User has no account: `from` field is `{data['from']}`")
+            continue
+        else:
+            if len(data['from']) != 1:
+                raise AttributeError(f"More than one sender: `{data['from']}`")
+            email_address = data['from'][0]
+            if '<' in email_address and '>' in email_address:
+                email_address = email_address.split('<')[1].split('>')[0]
+            if email_address.endswith(settings.EMAIL_HOST_SENDER):
+                users = ESPUser.objects.filter(username__iexact=email_address.split('@')[0]).order_by('date_joined') # sort oldest to newest
+            else:
+                users = ESPUser.objects.filter(email__iexact=email_address).order_by('date_joined') # sort oldest to newest
+            if len(users) == 0:
+                logger.warning('Received email from {}, which is not associated with a user'.format(data['from']))
+                continue
+            elif len(users) == 1:
+                sender = users[0]
+            # If there is more than one associated account, choose one by prefering admin > teacher > volunteer >
+            # student then choosing the earliest account created. Then send as before using the unique account.
+            elif len(users) > 1:
+                for group_name in ['Administrator', 'Teacher', 'Volunteer', 'Student', 'Educator']:
+                    group_users = [x for x in users if len(x.groups.filter(name=group_name)) > 0]
+                    if len(group_users) > 0:
+                        sender = group_users[0] # choose the first (oldest) account if there is still more than
+                        # one; it won't matter because they all go to the same email by construction
+                        break
+                    else: # if the users aren't in any of the standard groups above, ...
+                        sender = users[0] # ... then just pick the oldest account created by selecting users[0] as above
+                logger.debug(f"Group selection: {group_name} -> {group_users}")
+            # Having identified the sender, if the sender's email is associated with an account on the website,
+            # use SendGrid to send an email to each recipient of the original message (To, Cc, Bcc) individually from
+            # the sender's site email
+            logger.info('Sending email as {}'.format(sender))
+            if isinstance(data['to'], str):
+                data['to'] = [data['to']]
+            for recipient in data['to']:
+                logger.debug(f"Sending to `{recipient}`")
+                send_mail(subject=data['subject'], message=data['body'],
+                         from_email='{}@{}'.format(sender, settings.EMAIL_HOST_SENDER),
+                          recipient_list=[recipient], attachments=data['attachments'], fail_silently=False)
         sys.exit(0)
 
 
 except Exception as e:
-    # we dont' want to care if it's an exit
+    # we don't want to care if it's an exit
     if isinstance(e, SystemExit):
         raise
 
     if DEBUG:
         raise
     else:
-        logger.warning("Couldn't find user '%s'", user)
+        logger.warning("Couldn't find user '{}'. Full error is `{}`".format(user, e))
+        import traceback
+        error_info = traceback.format_exc()
+        logger.debug("Traceback is\n{}".format(error_info))
+
         print("""
 %s MAIL SERVER
 ===============
