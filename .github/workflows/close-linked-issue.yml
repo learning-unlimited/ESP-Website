@@ -1,0 +1,163 @@
+name: Close Linked Issues on Merge
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  close-issues:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: read
+    steps:
+      - name: Parse and Close Linked Issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prBody = context.payload.pull_request.body;
+            if (!prBody) {
+              console.log("No PR body found.");
+              return;
+            }
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Find all issue references like #123, avoiding arbitrary repos (e.g. other/repo#123)
+            const hashRegex = /(?<![a-zA-Z0-9\/])#(\d+)\b/g;
+            // Match explicit repository URLs for this repo
+            const urlRegex = new RegExp(`https:\\/\\/github\\.com\\/${owner}\\/${repo}\\/issues\\/(\\d+)\\b`, 'ig');
+            
+            const match1 = [...prBody.matchAll(hashRegex)];
+            const match2 = [...prBody.matchAll(urlRegex)];
+            
+            const issueNumbers = [...new Set([
+              ...match1.map(m => parseInt(m[1], 10)),
+              ...match2.map(m => parseInt(m[1], 10))
+            ])];
+
+            if (issueNumbers.length === 0) {
+              console.log("No linked issues found in PR body.");
+              return;
+            }
+
+            console.log(`Found referenced issues: ${issueNumbers.join(', ')}`);
+
+            const prNumber = context.payload.pull_request.number;
+
+            for (const issueNumber of issueNumbers) {
+              let hasNextPage = true;
+              let cursor = null;
+              const openPRs = new Set();
+              let issueData = null;
+
+              // Use GraphQL pagination to fetch all CROSS_REFERENCED_EVENT items
+              while (hasNextPage) {
+                const query = `
+                  query($owner: String!, $repo: String!, $issueNumber: Int!, $cursor: String) {
+                    repository(owner: $owner, name: $repo) {
+                      issue(number: $issueNumber) {
+                        id
+                        state
+                        timelineItems(first: 100, after: $cursor, itemTypes: [CROSS_REFERENCED_EVENT]) {
+                          pageInfo {
+                            hasNextPage
+                            endCursor
+                          }
+                          nodes {
+                            ... on CrossReferencedEvent {
+                              source {
+                                ... on PullRequest {
+                                  number
+                                  state
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                `;
+
+                try {
+                  const variables = { owner, repo, issueNumber, cursor };
+                  const result = await github.graphql(query, variables);
+
+                  if (!issueData) {
+                    issueData = result.repository.issue;
+                  }
+                  
+                  if (!result.repository.issue) break;
+
+                  const timeline = result.repository.issue.timelineItems;
+                  
+                  for (const node of timeline.nodes || []) {
+                    const pr = node.source;
+                    if (pr && pr.number !== prNumber && pr.state === 'OPEN') {
+                      openPRs.add(pr.number);
+                    }
+                  }
+
+                  hasNextPage = timeline.pageInfo.hasNextPage;
+                  cursor = timeline.pageInfo.endCursor;
+                } catch (error) {
+                  console.error(`Error processing issue #${issueNumber}:`, error.message);
+                  hasNextPage = false;
+                }
+              }
+
+              if (!issueData) {
+                console.log(`Issue #${issueNumber} not found (might be a PR or we don't have access).`);
+                continue;
+              }
+
+              const uniqueOpenPRs = Array.from(openPRs);
+
+              // Handle Reopening or Closing based on other open PRs
+              if (uniqueOpenPRs.length > 0) {
+                console.log(`Issue #${issueNumber} is still referenced by open PRs: ${uniqueOpenPRs.join(', ')}.`);
+                
+                // If the user used "Closes #123", GitHub natively closed it when THIS PR merged.
+                // We must REOPEN it, since there are other open PRs pointing to it!
+                if (issueData.state === 'CLOSED') {
+                  console.log(`Reopening issue #${issueNumber} since it was likely closed by native automation, but other PRs remain open.`);
+                  try {
+                    await github.rest.issues.update({
+                      owner,
+                      repo,
+                      issue_number: issueNumber,
+                      state: 'open'
+                    });
+                    await github.rest.issues.createComment({
+                      owner,
+                      repo,
+                      issue_number: issueNumber,
+                      body: `Reopened automatically because this issue is still referenced by open PRs: ${uniqueOpenPRs.map(n => `#${n}`).join(', ')}.`
+                    });
+                  } catch (e) {
+                    console.error("Failed to reopen issue:", e.message);
+                  }
+                }
+              } else {
+                console.log(`No other open PRs reference issue #${issueNumber}.`);
+                if (issueData.state !== 'CLOSED') {
+                  console.log(`Closing it.`);
+                  try {
+                    await github.rest.issues.update({
+                      owner,
+                      repo,
+                      issue_number: issueNumber,
+                      state: 'closed'
+                    });
+                  } catch (e) {
+                    console.error("Failed to close issue:", e.message);
+                  }
+                } else {
+                  console.log(`Already closed.`);
+                }
+              }
+            }
