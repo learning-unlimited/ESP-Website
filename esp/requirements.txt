@@ -35,7 +35,8 @@ pytz==2015.4 # Required for timezone support
 # pywatchman # Makes dev servers auto-reload
 raven # Required for Sentry error reporting
 setuptools==57.5.0 # For building packages from source; stripe and a few others don't work with v58+
-selenium==2.44.0 # Runs selenium tests which probably don't work anymore
+pytest-playwright==0.4.4 # E2E browser testing with Playwright
+pytest-django==4.5.2 # Django integration for pytest
 shortuuid==0.4.2 # django-extensions dependency
 stripe==2.60.0 # Required for credit card processing
 twilio==6.63.2 # Required for text messaging support

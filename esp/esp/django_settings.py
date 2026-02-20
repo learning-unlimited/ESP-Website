@@ -243,7 +243,6 @@ INSTALLED_APPS = (
     'esp.customforms.apps.CustomformsConfig',
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.tagdict',
-    'esp.seltests',
     'esp.themes',
     'esp.varnish',
     'argcache.apps.ArgCacheConfig',
@@ -292,7 +291,7 @@ DEFAULT_REDIRECT = '/myesp/redirect'
 USE_MAILMAN = False
 MAILMAN_PATH = '/usr/lib/mailman/bin/'
 
-SELENIUM_PATH = os.path.join(os.path.dirname(__file__), '../../../dependencies/selenium-server-standalone-2.9.0/selenium-server-standalone-2.9.0.jar')
+
 
 AUTHENTICATION_BACKENDS = (
     'esp.utils.auth_backend.ESPAuthBackend',

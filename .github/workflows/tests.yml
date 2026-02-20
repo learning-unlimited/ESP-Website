@@ -1,4 +1,4 @@
-name: "Lint and Unit Tests"
+name: "Lint, Unit Tests, and E2E Tests"
 
 on:
   push:
@@ -83,3 +83,70 @@ jobs:
         verbose: true
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  e2e:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:10.8
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: test_django
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      memcached:
+        image: memcached:alpine
+        ports:
+          - 11211:11211
+    env:
+      DJANGO_SETTINGS_MODULE: esp.settings
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.7
+      uses: deadsnakes/action@v3.2.0
+      with:
+        python-version: "3.7"
+    - name: Cache pip packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-3.7-${{ hashFiles('esp/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-3.7-
+          ${{ runner.os }}-pip-
+    - name: Prepare for Installing Dependencies
+      run: deploy/travis/before_install
+      env:
+        PYTHON_VERSION: "3.7"
+        TRAVIS_JOB: test
+    - name: Install Dependencies
+      env:
+        TRAVIS_JOB: test
+        PYTHON_VERSION: "3.7"
+      run: deploy/travis/install
+    - name: Prepare Database
+      env:
+        TRAVIS_JOB: test
+        PYTHON_VERSION: "3.7"
+      run: deploy/travis/before_script
+    - name: Install Playwright Browsers
+      run: playwright install --with-deps chromium
+    - name: Start Django Dev Server
+      run: |
+        cd esp
+        python manage.py collectstatic --noinput -v 0
+        python manage.py runserver 0.0.0.0:8000 &
+        # Wait for server to be ready
+        for i in $(seq 1 30); do
+          curl -s http://localhost:8000/ > /dev/null && break
+          sleep 1
+        done
+    - name: Run E2E Tests
+      run: |
+        cd esp
+        pytest e2e_tests/ -v --tb=short

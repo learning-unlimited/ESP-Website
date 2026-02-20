@@ -116,3 +116,34 @@ Merging pull requests
 After you've had a few pull requests accepted, you can begin to review other folks' pull requests.  (You'll need to be added as a repository collaborator to do this: ask, if you haven't been.)  You might think you're not yet qualified, but you don't need to be an expert to review code, and it's an important way to contribute to the site: even experienced contributors' changes must get reviewed by another member of the team.
 
 If you're new to reviewing code, check out `these tips <https://engineering.khanacademy.org/posts/tips-for-code-reviews.htm>`_ for getting started on your first reviews.  Changes to code you've also worked on are a great place to start, since you're already familiar with it, but don't be afraid to review pull requests to other parts of the codebase, especially those from experienced contributors: reviewing code is a great way to learn from their style and see parts of the codebase you might not otherwise.  (You can always ask more experienced members of the team for suggestions as to which pull requests you should review.)  If after looking at them you still don't feel you understand the changes or their implications, it's fine to leave comments without approval, just make that clear in the message so others know they should still review.
+
+Running E2E Tests
+-----------------
+
+We use `Playwright <https://playwright.dev/python/>`_ for End-to-End (E2E) browser tests. These tests live in ``esp/e2e_tests/`` and verify that frontend user flows (login, page loads, etc.) work correctly in a real browser.
+
+**One-time setup:** ::
+
+  pip install pytest-playwright pytest-django
+  playwright install chromium
+
+**Running the tests:**
+
+1. Start the Django dev server in a separate terminal::
+
+     cd esp
+     python manage.py runserver
+
+2. Run the E2E tests::
+
+     cd esp
+     pytest e2e_tests/ -v
+
+   To run tests in a visible browser window (useful for debugging)::
+
+     pytest e2e_tests/ -v --headed
+
+**Writing new E2E tests:**
+
+Add new test files to ``esp/e2e_tests/`` following the naming convention ``test_*.py``. Tests use Playwright's ``page`` fixture to interact with the browser. See the existing tests in ``test_homepage.py`` and ``test_auth.py`` for examples.
+
