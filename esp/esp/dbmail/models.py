@@ -206,6 +206,7 @@ class MessageRequest(models.Model):
     recipients = models.ForeignKey(PersistentQueryFilter, on_delete=models.CASCADE) # We will get the user from a query filter
     sendto_fn_name = models.CharField("sendto function", max_length=128,
                     choices=SENDTO_FN_CHOICES, default=SEND_TO_SELF,
+                    blank=True,
                     help_text="The function that specifies, for each recipient " +
                     "of the message, which set of associated email addresses " +
                     "should receive the message.")
@@ -220,7 +221,7 @@ class MessageRequest(models.Model):
     )
 
     processed = models.BooleanField(default=False, db_index=True) # Have we made EmailRequest objects from this MessageRequest yet?
-    processed_by = models.DateTimeField(null=True, default=None, db_index=True) # When should this be processed by?
+    processed_by = models.DateTimeField(null=True, blank=True, default=None, db_index=True) # When should this be processed by?
     priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
 
     public = models.BooleanField(default=False) # Should the subject and msgtext of this request be publicly viewable at /email/<id>?
