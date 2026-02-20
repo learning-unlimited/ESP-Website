@@ -55,8 +55,8 @@
                 </h3>
                 <ol id="sortable1" class="connectedSortable">
                 {% for mod in learn_modules.required %}
-                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
-                        {{ mod.module.admin_title }}<br/>
+                    <li id='{{ mod.id }}' data-handler="{{ mod.module.handler }}" class="ui-state-default{% if mod.id in locked_module_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
+                        {% if mod.id in locked_module_ids %}<span class="glyphicon glyphicon-lock module-lock-icon" aria-hidden="true" title="This module's position or required status is enforced and cannot be changed."></span> {% endif %}{{ mod.module.admin_title }}<br/>
                         <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
                         <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(link title override, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
                     </li>
@@ -67,8 +67,8 @@
                 </h3>
                 <ol id="sortable2" class="connectedSortable">
                 {% for mod in learn_modules.not_required %}
-                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
-                        {{ mod.module.admin_title }}<br/>
+                    <li id='{{ mod.id }}' data-handler="{{ mod.module.handler }}" class="ui-state-default{% if mod.id in locked_module_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
+                        {% if mod.id in locked_module_ids %}<span class="glyphicon glyphicon-lock module-lock-icon" aria-hidden="true" title="This module's position or required status is enforced and cannot be changed."></span> {% endif %}{{ mod.module.admin_title }}<br/>
                         <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
                         <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(link title override, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
                     </li>
@@ -86,8 +86,8 @@
                 </h3>
                 <ol id="sortable3" class="connectedSortable">
                 {% for mod in teach_modules.required %}
-                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
-                        {{ mod.module.admin_title }}<br/>
+                    <li id='{{ mod.id }}' data-handler="{{ mod.module.handler }}" class="ui-state-default{% if mod.id in locked_module_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
+                        {% if mod.id in locked_module_ids %}<span class="glyphicon glyphicon-lock module-lock-icon" aria-hidden="true" title="This module's position or required status is enforced and cannot be changed."></span> {% endif %}{{ mod.module.admin_title }}<br/>
                         <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
                         <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(link title override, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
                     </li>
@@ -98,8 +98,8 @@
                 </h3>
                 <ol id="sortable4" class="connectedSortable">
                 {% for mod in teach_modules.not_required %}
-                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
-                        {{ mod.module.admin_title }}<br/>
+                    <li id='{{ mod.id }}' data-handler="{{ mod.module.handler }}" class="ui-state-default{% if mod.id in locked_module_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
+                        {% if mod.id in locked_module_ids %}<span class="glyphicon glyphicon-lock module-lock-icon" aria-hidden="true" title="This module's position or required status is enforced and cannot be changed."></span> {% endif %}{{ mod.module.admin_title }}<br/>
                         <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
                         <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(link title override, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
                     </li>
@@ -128,6 +128,7 @@
 </form>
 </div>
 
+{{ module_constraints|json_script:"module-constraints-data" }}
 <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 
 {% include "program/modules/admincore/returnlink.html" %}

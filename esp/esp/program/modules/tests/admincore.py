@@ -163,3 +163,111 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
             self.assertEqual(pmo.link_title, "")
             # seq should be unchanged (not reset) because default_seq was not sent
             self.assertEqual(pmo.seq, 999)
+
+
+class ModuleManagementConstraintsTest(ProgramFrameworkTest):
+    """Tests that backend enforces module ordering/required constraints on save,
+    and that the view exposes constraint metadata for the UI.  Issue #3656."""
+
+    def setUp(self):
+        # RegProfileModule returns two module_properties entries (learn + teach),
+        # so there are two ProgramModule rows with that handler.
+        modules = [ProgramModule.objects.get(handler='AdminCore')]
+        modules += list(ProgramModule.objects.filter(handler='RegProfileModule'))
+        modules.append(ProgramModule.objects.get(handler='AvailabilityModule'))
+        modules.append(ProgramModule.objects.get(handler='StudentRegConfirm'))
+
+        super(ModuleManagementConstraintsTest, self).setUp(modules=modules)
+
+        self.adminUser, created = ESPUser.objects.get_or_create(username='admin_constraints')
+        self.adminUser.set_password('password')
+        self.adminUser.makeAdmin()
+
+    def _url(self):
+        return '/manage/' + self.program.url + '/modules/'
+
+    def _post_empty_order(self):
+        """POST empty module lists to the modules view.
+
+        The constraint-override block at the end of the POST branch fires
+        unconditionally, so even an empty submission re-enforces constraints.
+        """
+        self.client.login(username='admin_constraints', password='password')
+        r = self.client.post(self._url(), {
+            'learn_req': '', 'learn_not_req': '',
+            'teach_req': '', 'teach_not_req': '',
+        })
+        self.assertIn(r.status_code, [200, 302])
+
+    def test_reg_profile_enforced_after_illegal_post(self):
+        """RegProfileModule is always seq=0 and required=True after any save."""
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='RegProfileModule'):
+            pmo.seq = 500
+            pmo.required = False
+            pmo.save()
+
+        self._post_empty_order()
+
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='RegProfileModule'):
+            self.assertEqual(pmo.seq, 0)
+            self.assertTrue(pmo.required)
+
+    def test_availability_always_required_after_illegal_post(self):
+        """AvailabilityModule is always required=True after any save."""
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='AvailabilityModule'):
+            pmo.required = False
+            pmo.save()
+
+        self._post_empty_order()
+
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='AvailabilityModule'):
+            self.assertTrue(pmo.required)
+
+    def test_confirm_reg_enforced_after_illegal_post(self):
+        """StudentRegConfirm is always seq=99999 and required=False after any save."""
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='StudentRegConfirm'):
+            pmo.seq = 1
+            pmo.required = True
+            pmo.save()
+
+        self._post_empty_order()
+
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='StudentRegConfirm'):
+            self.assertEqual(pmo.seq, 99999)
+            self.assertFalse(pmo.required)
+
+    def test_context_includes_module_constraints_dict(self):
+        """The modules view includes a module_constraints dict in the template context."""
+        self.client.login(username='admin_constraints', password='password')
+        r = self.client.get(self._url())
+        self.assertEqual(r.status_code, 200)
+        self.assertIn('module_constraints', r.context)
+        self.assertIsInstance(r.context['module_constraints'], dict)
+
+    def test_reg_profile_flagged_in_constraints(self):
+        """RegProfileModule appears in module_constraints as required_locked and position_locked."""
+        self.client.login(username='admin_constraints', password='password')
+        r = self.client.get(self._url())
+        self.assertEqual(r.status_code, 200)
+        constraints = r.context['module_constraints']
+
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='RegProfileModule'):
+            if pmo.inModulesList():
+                key = str(pmo.id)
+                self.assertIn(key, constraints)
+                self.assertTrue(constraints[key]['required_locked'])
+                self.assertTrue(constraints[key]['position_locked'])
+
+    def test_confirm_reg_flagged_in_constraints(self):
+        """StudentRegConfirm appears in module_constraints as not_required_locked and position_locked."""
+        self.client.login(username='admin_constraints', password='password')
+        r = self.client.get(self._url())
+        self.assertEqual(r.status_code, 200)
+        constraints = r.context['module_constraints']
+
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='StudentRegConfirm'):
+            if pmo.inModulesList():
+                key = str(pmo.id)
+                self.assertIn(key, constraints)
+                self.assertTrue(constraints[key]['not_required_locked'])
+                self.assertTrue(constraints[key]['position_locked'])
