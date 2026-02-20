@@ -162,3 +162,8 @@ urlpatterns += [
     url(r'^manage/templateoverride/(?P<template_id>[0-9]+)',
         esp.utils.views.diff_templateoverride),
 ]
+
+# Keep unknown program domains functional for deeper paths
+urlpatterns += [
+    url(r'^(?P<path>.+)$', main.unknown_program_fallback),
+]

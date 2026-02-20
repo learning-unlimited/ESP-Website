@@ -76,6 +76,12 @@ class PageTest(TestCase):
         self.assertStringContains(six.text_type(response.content, encoding='UTF-8'), "<html")
         self.assertNotStringContains(six.text_type(response.content, encoding='UTF-8'), "You're seeing this error because you have <code>DEBUG = True</code>")
 
+    def testUnknownProgramFallbackPath(self):
+        c = Client()
+        response = c.get("/test")
+        self.assertEqual(response.status_code, 200)
+        self.assertStringContains(six.text_type(response.content, encoding='UTF-8'), "<html")
+
 class NavbarTest(TestCase):
 
     def get_navbar_titles(self, path='/'):
