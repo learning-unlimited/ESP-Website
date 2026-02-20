@@ -1,0 +1,68 @@
+{% extends "main.html" %}
+
+{% block title %}Equity Outreach Navigator{% endblock %}
+
+{% block content %}
+<h1>Equity Outreach Navigator</h1>
+
+<p>
+  Identify cohorts that may need support, preview recipients, and send targeted outreach campaigns.
+</p>
+
+<h2>At-risk cohorts</h2>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Cohort</th>
+      <th>Recipients</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for cohort in cohorts %}
+    <tr>
+      <td>{{ cohort.label }}</td>
+      <td>{{ cohort.count }}</td>
+      <td>
+        <a href="/manage/{{ program.getUrlBase }}/equityoutreach_preview?cohort={{ cohort.key }}">Preview</a>
+        |
+        <a href="/manage/{{ program.getUrlBase }}/equityoutreach_compose?cohort={{ cohort.key }}">Compose</a>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>Recent campaigns</h2>
+{% if campaigns %}
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Created</th>
+        <th>Cohort</th>
+        <th>Channel</th>
+        <th>Recipients</th>
+        <th>Success</th>
+        <th>Failure</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for campaign in campaigns %}
+      <tr>
+        <td>{{ campaign.created_at }}</td>
+        <td>{{ campaign.cohort_label }}</td>
+        <td>{{ campaign.channel|upper }}</td>
+        <td>{{ campaign.recipient_count }}</td>
+        <td>{{ campaign.success_count }}</td>
+        <td>{{ campaign.failure_count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p>No campaigns yet.</p>
+{% endif %}
+
+{% include "program/modules/admincore/returnlink.html" %}
+{% endblock %}
+

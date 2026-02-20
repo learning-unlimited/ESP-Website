@@ -1,0 +1,42 @@
+{% extends "main.html" %}
+
+{% block title %}Equity Outreach Preview{% endblock %}
+
+{% block content %}
+<h1>Equity Outreach Preview</h1>
+
+<p><b>Cohort:</b> {{ cohort_label }}</p>
+<p><b>Total recipients:</b> {{ num_recipients }}</p>
+
+<p>
+  <a href="/manage/{{ program.getUrlBase }}/equityoutreach_compose?cohort={{ cohort_key }}">Compose outreach message</a>
+</p>
+
+<h2>Sample recipients (first 100)</h2>
+{% if sample_recipients %}
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Username</th>
+      <th>Email</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for user in sample_recipients %}
+    <tr>
+      <td>{{ user.name }}</td>
+      <td>{{ user.username }}</td>
+      <td>{{ user.email }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <p>No users currently match this cohort.</p>
+{% endif %}
+
+<p><a href="/manage/{{ program.getUrlBase }}/equityoutreach">Back to Equity Outreach Navigator</a></p>
+{% include "program/modules/admincore/returnlink.html" %}
+{% endblock %}
+

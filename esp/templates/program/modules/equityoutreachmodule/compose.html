@@ -1,0 +1,47 @@
+{% extends "main.html" %}
+
+{% block title %}Compose Equity Outreach{% endblock %}
+
+{% block content %}
+<h1>Compose Outreach Campaign</h1>
+
+<p><b>Cohort:</b> {{ cohort_label }}</p>
+<p><b>Recipients:</b> {{ num_recipients }}</p>
+
+<form action="/manage/{{ program.getUrlBase }}/equityoutreach_send" method="post">
+  <input type="hidden" name="cohort_key" value="{{ cohort_key }}" />
+
+  <p>
+    <label for="channel"><b>Channel:</b></label>
+    <select id="channel" name="channel">
+      <option value="email">Email</option>
+      <option value="sms">SMS</option>
+    </select>
+  </p>
+
+  <p>
+    <label for="subject"><b>Email subject</b> (required for email):</label><br />
+    <input id="subject" name="subject" type="text" style="width: 40em;" />
+  </p>
+
+  <p>
+    <label for="body"><b>Message body:</b></label><br />
+    <textarea id="body" name="body" rows="10" cols="100"></textarea>
+  </p>
+
+  <p>
+    <label>
+      <input type="checkbox" name="override_sms_preferences" />
+      Override SMS opt-out preferences (SMS only)
+    </label>
+  </p>
+
+  <p>
+    <input type="submit" value="Send campaign" />
+  </p>
+</form>
+
+<p><a href="/manage/{{ program.getUrlBase }}/equityoutreach_preview?cohort={{ cohort_key }}">Back to preview</a></p>
+{% include "program/modules/admincore/returnlink.html" %}
+{% endblock %}
+
