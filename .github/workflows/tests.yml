@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build:
-    name: ${{ matrix.travis_job }} (Python ${{ matrix.python-version }})
+    name: ${{ matrix.ci_job }} (Python ${{ matrix.python-version }})
     runs-on: ubuntu-24.04
     services:
       postgres:
@@ -37,7 +37,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: [3.7]
-        travis_job: ["lint", "test"]
+        ci_job: ["lint", "test"]
     env:
       DJANGO_SETTINGS_MODULE: esp.settings
 
@@ -56,26 +56,26 @@ jobs:
           ${{ runner.os }}-pip-${{ matrix.python-version }}-
           ${{ runner.os }}-pip-
     - name: Prepare for Installing Dependencies
-      run: deploy/travis/before_install
+      run: deploy/ci/before_install
       env:
         PYTHON_VERSION: ${{ matrix.python-version }}
-    - name: Install Dependencies for ${{ matrix.travis_job }}
+    - name: Install Dependencies for ${{ matrix.ci_job }}
       env:
-        TRAVIS_JOB: ${{ matrix.travis_job }}
+        CI_JOB: ${{ matrix.ci_job }}
         PYTHON_VERSION: ${{ matrix.python-version }}
-      run: deploy/travis/install
-    - name: Prepare for ${{ matrix.travis_job }}
+      run: deploy/ci/install
+    - name: Prepare for ${{ matrix.ci_job }}
       env:
-        TRAVIS_JOB: ${{ matrix.travis_job }}
+        CI_JOB: ${{ matrix.ci_job }}
         PYTHON_VERSION: ${{ matrix.python-version }}
-      run: deploy/travis/before_script
-    - name: Run ${{ matrix.travis_job }}
+      run: deploy/ci/before_script
+    - name: Run ${{ matrix.ci_job }}
       env:
-        TRAVIS_JOB: ${{ matrix.travis_job }}
+        CI_JOB: ${{ matrix.ci_job }}
         PYTHON_VERSION: ${{ matrix.python-version }}
-      run: deploy/travis/script
+      run: deploy/ci/script
     - name: Upload Coverage to Codecov
-      if: ${{ matrix.travis_job == 'test' }}
+      if: ${{ matrix.ci_job == 'test' }}
       uses: codecov/codecov-action@v5
       with:
         fail_ci_if_error: true
