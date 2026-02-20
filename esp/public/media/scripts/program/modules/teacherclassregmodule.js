@@ -19,10 +19,32 @@ and change the grade range.");
 
 var sectionNums = JSON.parse(document.getElementById('section-numbers-per-duration').textContent);
 
-function populate_section_numbers()
-{
+function updateMaxSections(){
+//{
+	//var sectionNums = JSON.parse(document.getElementById('section-numbers-per-duration').textContent);
+	var num_sections_cur = $j("#id_num_sections");
+	var maxSections = sectionNums[$j("#id_duration").val()];
 	
+	num_sections_cur.empty();
+	
+	for (let i = 0; i <= maxSections; i++) {
+		if (i == 0){
+			num_sections_cur.append('<option value= > </option>');
+		}
+		else {
+			num_sections_cur.append('<option value='+ i +' >' + String(i) + '</option>');
+		}
+	}
+//}
 }
+
+$j(function(){
+	var duration = $j("#id_duration");
+	duration.on("change", function(){
+		updateMaxSections();
+	})
+});
+
 
 function setup_autocomplete()
 {
