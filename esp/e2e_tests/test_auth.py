@@ -8,9 +8,8 @@ import re
 
 
 def test_login_page_loads(page, base_url):
-    """Test that navigating to a protected page shows the login form."""
-    page.goto(base_url + "/myesp/home/")
-    # Should either show a login form or redirect to one
+    """Test that navigating to the homepage shows the login form."""
+    page.goto(base_url + "/")
     page.wait_for_load_state("networkidle")
     # The page should contain a username and password field
     username_field = page.locator('input[name="username"]')
