@@ -55,6 +55,16 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-${{ matrix.python-version }}-
           ${{ runner.os }}-pip-
+    - name: Cache apt packages
+      if: ${{ matrix.travis_job == 'test' }}
+      uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: >-
+          build-essential texlive texlive-latex-extra imagemagick dvipng
+          libevent-dev zlib1g-dev inkscape wamerican-large wget
+          libmemcached-dev libcurl4-openssl-dev libssl-dev libjpeg-dev
+          javascript-common libc-ares2 libev4 libfreetype6-dev
+        version: 1.0
     - name: Prepare for Installing Dependencies
       run: deploy/travis/before_install
       env:
