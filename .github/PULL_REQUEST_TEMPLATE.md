@@ -23,6 +23,10 @@ Closes #
 - [ ] New tests added (if applicable)
 - [ ] Manually verified
 
+## AI Disclosure
+
+<!-- If you used AI tools for any part of this pull request, please disclose this here -->
+
 ## Checklist
 
 - [ ] Self-reviewed the code
