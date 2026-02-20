@@ -1101,7 +1101,7 @@ class Program(models.Model, CustomFormsLinkModel):
         times = Event.group_contiguous(list(self.getTimeSlots()), int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = self)))
         durations = [x[0] for x in self.getDurations(round_15)]
         numDurations = {}
-   
+
         #iterates over all durations
         for duration in durations:
             numDurations[str(duration.quantize(Decimal('.01')))] = 0
