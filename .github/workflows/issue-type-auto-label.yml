@@ -1,0 +1,70 @@
+name: Auto Label Issue Type
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+
+permissions:
+  issues: write
+
+jobs:
+  apply-type-label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add type label from issue title prefix
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const title = issue.title || "";
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const desired = [];
+            if (title.startsWith("[Bug]:")) {
+              desired.push({ name: "bug", color: "d73a4a", description: "Something is not working" });
+            }
+            if (title.startsWith("[Feature]:")) {
+              desired.push({ name: "enhancement", color: "a2eeef", description: "New feature or request" });
+            }
+
+            if (desired.length === 0) {
+              core.info("No known issue type prefix found in title.");
+              return;
+            }
+
+            for (const label of desired) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner,
+                  repo,
+                  name: label.name,
+                });
+              } catch (error) {
+                if (error.status === 404) {
+                  await github.rest.issues.createLabel({
+                    owner,
+                    repo,
+                    name: label.name,
+                    color: label.color,
+                    description: label.description,
+                  });
+                } else {
+                  throw error;
+                }
+              }
+            }
+
+            const currentLabels = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name));
+            const labelsToAdd = desired
+              .map((l) => l.name)
+              .filter((name) => !currentLabels.includes(name));
+
+            if (labelsToAdd.length > 0) {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: issue.number,
+                labels: labelsToAdd,
+              });
+            }
