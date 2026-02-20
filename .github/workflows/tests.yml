@@ -61,7 +61,7 @@ jobs:
       run: deploy/travis/script
     - name: Upload Coverage to Codecov
       if: ${{ matrix.travis_job == 'test' }}
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       with:
         fail_ci_if_error: true
         verbose: true
