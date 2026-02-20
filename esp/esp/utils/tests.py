@@ -6,6 +6,7 @@ from __future__ import with_statement
 
 from __future__ import absolute_import
 import datetime
+from django.utils import timezone
 import doctest
 from six.moves import map
 from six.moves import range
@@ -208,7 +209,7 @@ class QueryBuilderTest(DjangoTestCase):
         sad_printer = Printer.objects.create(name="Slow")
         nice_user = ESPUser.objects.create(username="nice_user")
         mean_user = ESPUser.objects.create(username="mean_user")
-        now = datetime.datetime.now()
+        now = timezone.now()
         PrintRequest.objects.create(printer=happy_printer, user=nice_user,
                                     time_executed=now)
         PrintRequest.objects.create(printer=happy_printer, user=nice_user,

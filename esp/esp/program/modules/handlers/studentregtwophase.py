@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 """
 
 import datetime
+from django.utils import timezone
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -319,7 +320,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         to_expire = StudentSubjectInterest.objects.filter(
             user=request.user,
             subject__pk__in=json_data['not_interested'])
-        to_expire.update(end_date=datetime.datetime.now())
+        to_expire.update(end_date=timezone.now())
 
         if request.is_ajax():
             return HttpResponse()

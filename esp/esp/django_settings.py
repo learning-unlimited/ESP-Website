@@ -145,6 +145,8 @@ EMAIL_HOST = 'localhost'
 #################################
 TIME_ZONE = 'America/New_York'
 
+USE_TZ = True
+
 LANGUAGE_CODE = 'en-us'
 
 

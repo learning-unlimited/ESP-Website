@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 from __future__ import division
 import datetime
+from django.utils import timezone
 import logging
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -129,7 +130,7 @@ class AutoschedulerController(object):
     def compute_assignments(self):
         self.optimizer.optimize_section(
                 self.section, self.depth,
-                datetime.datetime.now() +
+                timezone.now() +
                 datetime.timedelta(seconds=self.timeout))
 
     def get_scheduling_info(self):

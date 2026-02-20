@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import datetime
+from django.utils import timezone
 import subprocess
 
 from django.db.models.aggregates import Count, Min
@@ -133,7 +134,7 @@ class BigBoardModule(ProgramModuleObj):
 
     @cache_function_for(105)
     def num_active_users(self, prog, minutes=10):
-        recent = datetime.datetime.now() - datetime.timedelta(0, minutes * 60)
+        recent = timezone.now() - datetime.timedelta(0, minutes * 60)
         users_with_ssis = set(
             StudentSubjectInterest.objects
             .filter(subject__parent_program=prog)
@@ -201,8 +202,8 @@ class BigBoardModule(ProgramModuleObj):
             ("number of first choices", 'studentregistration',
              sections.filter(studentregistration__relationship__name='Priority/1')),
             ("number of enrollments", "studentregistration",
-             sections.filter((Q(studentregistration__start_date=None) | Q(studentregistration__start_date__lte=datetime.datetime.now())) &
-                 (Q(studentregistration__end_date=None) | Q(studentregistration__end_date__gte=datetime.datetime.now())) &
+             sections.filter((Q(studentregistration__start_date=None) | Q(studentregistration__start_date__lte=timezone.now())) &
+                 (Q(studentregistration__end_date=None) | Q(studentregistration__end_date__gte=timezone.now())) &
                  Q(studentregistration__relationship__name='Enrolled'))),
         ]
         popular_classes = []
@@ -348,7 +349,7 @@ class BigBoardModule(ProgramModuleObj):
             end = max([times[drop_beg:(len(times)-drop_end)][-1][1] for desc, times, cumulative in timess])
             end = end.replace(hour=0, minute=0, second=0, microsecond=0)
             end += datetime.timedelta(1)
-            end = min(end, datetime.datetime.now())
+            end = min(end, timezone.now())
             graph_data = [{"description": desc,
                            "data": BigBoardModule.chunk_times(times, start, end, cumulative = cumulative)}
                           for desc, times, cumulative in timess]

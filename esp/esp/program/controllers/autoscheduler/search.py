@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import
 import datetime
+from django.utils import timezone
 import esp.program.controllers.autoscheduler.util as util
 import six
 from six.moves import range
@@ -22,7 +23,7 @@ class SearchOptimizer:
         done."""
         if depth == 0:
             return []
-        if timeout is not None and datetime.datetime.now() > timeout:
+        if timeout is not None and timezone.now() > timeout:
             return []
 
         best_score = self.manipulator.scorer.score_schedule()

@@ -40,6 +40,7 @@ Learning Unlimited, Inc.
 
 import datetime
 from datetime import timedelta
+from django.utils import timezone
 import time
 from collections import defaultdict
 import logging
@@ -176,7 +177,7 @@ class ClassManager(Manager):
         queries for the category's title (cls.category_txt)
         and the total # of media.
         """
-        now = datetime.datetime.now()
+        now = timezone.now()
 
         enrolled_type = RegistrationType.get_map(include=['Enrolled'], category='student')['Enrolled']
 
@@ -346,7 +347,7 @@ class ClassSection(models.Model):
     @classmethod
     def prefetch_catalog_data(cls, queryset):
         """ Take a queryset of a set of ClassSubject's, and annotate each class in it with the '_count_students' and 'event_ids' fields (used internally when available by many functions to save on queries later) """
-        now = datetime.datetime.now()
+        now = timezone.now()
         enrolled_type = RegistrationType.get_map()['Enrolled']
 
         select = OrderedDict([( '_count_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND ("program_studentregistration"."start_date" IS NULL OR "program_studentregistration"."start_date" <= %s) AND ("program_studentregistration"."end_date" IS NULL OR "program_studentregistration"."end_date" >= %s))')])
@@ -560,7 +561,7 @@ class ClassSection(models.Model):
         start_time = self.start_time()
         if start_time is None:
             return True
-        time_passed = datetime.datetime.now() - start_time.start
+        time_passed = timezone.now() - start_time.start
         if self.parent_class.allow_lateness:
             if time_passed > timedelta(0, 1200):
                 return True
@@ -965,7 +966,7 @@ class ClassSection(models.Model):
          ...
         }
         """
-        now = datetime.datetime.now()
+        now = timezone.now()
 
         rmap = RegistrationType.get_map()
         result = {}
@@ -1113,7 +1114,7 @@ class ClassSection(models.Model):
         self.save()
 
     def clearStudents(self):
-        now = datetime.datetime.now()
+        now = timezone.now()
         qs = StudentRegistration.valid_objects(now).filter(section=self)
         for reg in qs:
             signals.pre_save.send(sender=StudentRegistration, instance=reg)
@@ -1184,7 +1185,7 @@ class ClassSection(models.Model):
             return True
 
         # Get time and tag values to determine what number to base class changes on
-        now = datetime.datetime.now()
+        now = timezone.now()
         switch_time = None
         if Tag.getProgramTag('switch_time_program_attendance', program=self.parent_program):
             try:
@@ -1303,7 +1304,7 @@ class ClassSection(models.Model):
 
         from esp.program.models.app_ import StudentAppQuestion
 
-        now = datetime.datetime.now()
+        now = timezone.now()
 
         #   Stop all active or pending registrations
         if prereg_verbs:

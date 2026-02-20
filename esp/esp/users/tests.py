@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import datetime
+from django.utils import timezone
 
 from django import forms
 from django.core import mail
@@ -553,9 +554,9 @@ class RecordTest(TestCase):
             # Create Record without time, test that it was created for now,
             # and that the event is complete, both in general and for the
             # current day.
-            before = datetime.datetime.now()
+            before = timezone.now()
             nowRecord = create()
-            after = datetime.datetime.now()
+            after = timezone.now()
             self.assertTrue(before <= nowRecord.time <= after)
             self.assertTrue(user_completed())
             # Below, we must explicitly pass time, instead of relying on

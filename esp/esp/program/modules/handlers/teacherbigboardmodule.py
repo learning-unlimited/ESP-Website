@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import datetime
+from django.utils import timezone
 import subprocess
 
 from django.db.models.aggregates import Min
@@ -167,7 +168,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
 
     @cache_function_for(105)
     def num_active_users(self, prog, minutes=10):
-        recent = datetime.datetime.now() - datetime.timedelta(0, minutes * 60)
+        recent = timezone.now() - datetime.timedelta(0, minutes * 60)
         return ClassSubject.objects.filter(parent_program=prog, timestamp__gt=recent
         ).exclude(category__category__iexact="Lunch"
         ).exclude(teachers=None
@@ -175,7 +176,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
 
     @cache_function_for(105)
     def num_checked_in_teachers(self, prog):
-        now = datetime.datetime.now()
+        now = timezone.now()
         return Record.objects.filter(program=prog, event__name='teacher_checked_in',
             time__year=now.year,
             time__month=now.month,
