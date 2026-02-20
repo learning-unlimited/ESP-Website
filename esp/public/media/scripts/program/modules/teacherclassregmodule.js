@@ -26,7 +26,7 @@ function updateMaxSections(){
 	var maxSections = sectionNums[$j("#id_duration").val()];
 	
 	num_sections_cur.empty();
-	
+	//TODO is hiding options better?
 	for (let i = 0; i <= maxSections; i++) {
 		if (i == 0){
 			num_sections_cur.append('<option value= > </option>');
