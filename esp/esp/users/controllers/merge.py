@@ -1,5 +1,9 @@
+import logging
+
 from django.db import transaction
 from django.db.utils import IntegrityError
+
+logger = logging.getLogger(__name__)
 
 from esp.users.models import UserForwarder
 
@@ -50,21 +54,25 @@ def get_related(target):
 def merge(absorber, absorbee):
     """Transfers everything from absorbee to absorber."""
     for obj, name, m2m in get_related(absorbee):
-        # I could probably be smarter about transaction handling.
-        # Ideally, I'd check for uniqueness constraints *before* saving.
-        # Then I wouldn't have to do any transaction stuff here.
-        with transaction.atomic():
-            if m2m:
-                # TODO: handle symmetric relations.
-                rel = getattr(obj, name)
-                # If it's not auto_created then it's handled by a "through".
-                if rel.through._meta.auto_created:
-                    rel.remove(absorbee)
-                    rel.add(absorber)
-                    # No need to save(); remove and add implicitly do it.
-            else:
-                setattr(obj, name, absorber)
-                obj.save()
+        try:
+            with transaction.atomic():
+                if m2m:
+                    # TODO: handle symmetric relations.
+                    rel = getattr(obj, name)
+                    # If it's not auto_created then it's handled by a "through".
+                    if rel.through._meta.auto_created:
+                        rel.remove(absorbee)
+                        rel.add(absorber)
+                        # No need to save(); remove and add implicitly do it.
+                else:
+                    setattr(obj, name, absorber)
+                    obj.save()
+        except IntegrityError:
+            logger.warning(
+                "IntegrityError while merging %s %s.%s from user %s to %s; "
+                "skipping (likely duplicate constraint)",
+                obj.__class__.__name__, obj.pk, name, absorbee.pk, absorber.pk
+            )
     # Also check local m2m fields.
     for field in absorber._meta.local_many_to_many:
         getattr(absorber, field.attname).add(getattr(absorbee, field.attname).all())
@@ -74,6 +82,7 @@ def merge(absorber, absorbee):
 # Usable from the shell #
 #########################
 
+@transaction.atomic
 def merge_users(absorber, absorbee, forward=True, deactivate=False):
     """
     Merge two accounts, transferring everything from absorbee to abosorber.
