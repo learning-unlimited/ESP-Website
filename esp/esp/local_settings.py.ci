@@ -81,10 +81,3 @@ DATABASE_NAME = 'test_django'
 DATABASE_USER = 'testuser'
 DATABASE_PASSWORD = 'testpassword'
 
-############
-# Selenium #
-############
-
-SELENIUM_TESTSERVER_HOST = 'localhost'
-SELENIUM_TESTSERVER_PORT = 8000
-SELENIUM_DRIVER = 'Chrome'
