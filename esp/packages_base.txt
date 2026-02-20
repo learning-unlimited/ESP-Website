@@ -3,10 +3,10 @@ texlive
 texlive-latex-extra
 imagemagick
 dvipng
-python3.7
+python3.10
 postgresql
 libevent-dev
-python3.7-dev
+python3.10-dev
 zlib1g-dev
 inkscape
 wamerican-large
@@ -22,5 +22,5 @@ libc-ares2
 libev4
 git
 libfreetype6-dev
-python3.7-distutils
+python3.10-distutils
 python3-pip

@@ -524,7 +524,7 @@ class RecordTest(TestCase):
         self.program2 = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program2')
 
     def tearDown(self):
-        Record.filter(self.user, event = self.event, when=self.future).delete()
+        Record.filter(self.user, event = self.event, when=self.future, distinct=False).delete()
         self.user.delete()
         self.program1.delete()
         self.program2.delete()
@@ -541,7 +541,7 @@ class RecordTest(TestCase):
                                              when, only_today)
             def filter(when=None, only_today=False):
                 return Record.filter(self.user, self.event, program,
-                                     when, only_today)
+                                     when, only_today, distinct=False)
             def create(when=None):
                 kwargs = {'event'   : RecordType.objects.get(name=self.event),
                           'program' : program,

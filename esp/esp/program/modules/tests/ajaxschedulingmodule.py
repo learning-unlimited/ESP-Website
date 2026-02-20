@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -48,7 +47,7 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
             'num_timeslots': 4, 'timeslot_length': 50, 'timeslot_gap': 10,
             'num_teachers': 3, 'classes_per_teacher': 2, 'sections_per_class': 1
             })
-        super(AJAXSchedulingModuleTestBase, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
         self.program_manager = TestProgramManager(self.client, self.program, self.teachers, self.rooms, self.timeslots)
 
         # Set the section durations to 1:50
@@ -88,7 +87,7 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
 class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
 
     def setUp(self, *args, **kwargs):
-        super(AJAXSchedulingModuleTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
         self.changelog, created = AJAXChangeLog.objects.get_or_create(program=self.program)
 
     def testModelAPI(self):
@@ -100,7 +99,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.assertTrue(rooms.count() >= 3, "Not enough timeslots to run this test.")
 
         # Now we attempt to schedule the sections overlapping.
-        s1, s2 = [t.getTaughtSections(self.program)[0] for t in self.teachers[:2]]
+        s1, s2 = (t.getTaughtSections(self.program)[0] for t in self.teachers[:2])
 
         # First, meeting times should be assigned without trouble.
         m1 = [rooms[0].event, rooms[1].event]
@@ -130,10 +129,10 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         # Fetch two consecutive vacancies in two different rooms
         rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
         self.assertTrue(rooms.count() >= 2, "Not enough timeslots to run this test.")
-        a1 = '\n'.join(['%s,%s' % (r.event.id, r.identical_id()) for r in rooms[0:2]])
+        a1 = '\n'.join(['{},{}'.format(r.event.id, r.identical_id()) for r in rooms[0:2]])
         rooms = self.rooms.exclude(name=rooms[0].name)[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
         self.assertTrue(rooms.count() >= 2, "Not enough timeslots to run this test.")
-        a2 = '\n'.join(['%s,%s' % (r.event.id, r.identical_id()) for r in rooms[0:2]])
+        a2 = '\n'.join(['{},{}'.format(r.event.id, r.identical_id()) for r in rooms[0:2]])
 
         # Schedule one class.
         ajax_url = '/manage/%s/ajax_schedule_class' % self.program.getUrlBase()
@@ -182,7 +181,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.clearScheduleAvailability()
 
         (section, times, rooms, success) = self.program_manager.scheduleClass()
-        self.failUnless(success)
+        self.assertTrue(success)
 
         self.program_manager.unschedule_class(section.id)
 
@@ -196,7 +195,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         #change log should not include failed scheduling of classes
         self.clearScheduleAvailability()
         (s1, times, rooms, success) = self.program_manager.scheduleClass()
-        self.failUnless(success)
+        self.assertTrue(success)
 
         #Long setup to create an unsuccessful scheduling attempt
         #choose another section taught by the same teacher
@@ -207,7 +206,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         s2 = sections[0]
         #schedule it
         (section, times, rooms, success) = self.program_manager.scheduleClass(section=s2, timeslots=times, rooms=rooms)
-        self.failIf(success)
+        self.assertFalse(success)
 
         #change log should not include it
         changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': 1 })

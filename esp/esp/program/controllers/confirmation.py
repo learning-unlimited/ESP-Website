@@ -1,5 +1,3 @@
-
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -43,7 +41,7 @@ from django.template import Template, Context
 from django.template.loader import select_template
 from esp.dbmail.models import send_mail
 
-class ConfirmationEmailController(object):
+class ConfirmationEmailController:
     def send_confirmation_email(self, user, program, repeat=False, override=False, context = {}):
         options = program.studentclassregmoduleinfo
         ## Get or create a userbit indicating whether or not email's been sent.

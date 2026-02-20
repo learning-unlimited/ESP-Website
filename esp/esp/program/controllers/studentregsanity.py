@@ -1,7 +1,4 @@
-from __future__ import absolute_import
-from __future__ import print_function
 import six
-from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -49,7 +46,7 @@ from esp.mailman import add_list_member, remove_list_member, list_contents
 from django.conf import settings
 import os
 
-class StudentRegSanityController(object):
+class StudentRegSanityController:
 
     default_options = {
         'directory': os.getenv("HOME"),
@@ -145,7 +142,7 @@ class StudentRegSanityController(object):
             print('-------------Known Bugs-----------------')
             print("Guys, I'm not course 6 for a reason~shulinye")
             return None
-        if isinstance(checks, six.string_types):
+        if isinstance(checks, str):
             checks = [checks]
         if csvlog:
             import csv

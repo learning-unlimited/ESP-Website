@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.apps import AppConfig
 from django.db.models import signals
 
@@ -13,3 +12,7 @@ class InstallConfig(AppConfig):
 
     def ready(self):
         signals.post_migrate.connect(run_install, sender=self)
+
+class UtilsConfig(AppConfig):
+    name = 'esp.utils'
+    label = 'utils'

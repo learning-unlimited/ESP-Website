@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -50,7 +48,7 @@ class ModuleExistenceTest(ProgramFrameworkTest):
             'num_teachers': 6, 'classes_per_teacher': 1, 'sections_per_class': 2,
             'num_rooms': 6,
             } )
-        super(ModuleExistenceTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
 
         #   Make all modules non-required for now, so we don't have to be shown required pages
         for pmo in self.program.getModules():
@@ -88,9 +86,9 @@ class ModuleExistenceTest(ProgramFrameworkTest):
             are consistent with those associated with the program. """
 
         #   Fetch the registration page and the lists of desired/actual modules
-        response = self.client.get('/%s/%s/%s' % (tl, self.program.getUrlBase(), core_url))
+        response = self.client.get('/{}/{}/{}'.format(tl, self.program.getUrlBase(), core_url))
         self.assertEqual(response.status_code, 200)
-        actual_modules = self.observed_module_list(tl, six.text_type(response.content, encoding='UTF-8'))
+        actual_modules = self.observed_module_list(tl, str(response.content, encoding='UTF-8'))
         target_modules = self.target_module_list(tl)
 
         #   Compare the module lists.

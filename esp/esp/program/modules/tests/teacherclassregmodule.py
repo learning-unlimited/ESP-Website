@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -52,7 +49,7 @@ from esp.users.models import ESPUser, Permission
 
 class TeacherClassRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
-        super(TeacherClassRegTest, self).setUp(num_students=5, room_capacity=5, *args, **kwargs)
+        super().setUp(num_students=5, room_capacity=5, *args, **kwargs)
 
         # Select a primary teacher, two other teachers, and the class
         self.teacher = random.choice(self.teachers)
@@ -123,7 +120,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Add free_teacher1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(response, "({})".format(self.free_teacher1.username), status_code=200)
+        self.assertContains(response, f"({self.free_teacher1.username})", status_code=200)
         cur_coteachers.append(self.free_teacher1.id)
 
         # Error on adding the same coteacher again
@@ -132,29 +129,29 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Add free_teacher2
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher2.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(response, "({})".format(self.free_teacher2.username), status_code=200)
+        self.assertContains(response, f"({self.free_teacher2.username})", status_code=200)
         cur_coteachers.append(self.free_teacher2.id)
 
         # Delete free_teacher 1
         response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertNotContains(response, "({})".format(self.free_teacher1.username), status_code=200)
+        self.assertNotContains(response, f"({self.free_teacher1.username})", status_code=200)
         cur_coteachers.remove(self.free_teacher1.id)
 
         # Add free_teacher 1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(response, "({})".format(self.free_teacher1.username), status_code=200)
+        self.assertContains(response, f"({self.free_teacher1.username})", status_code=200)
         cur_coteachers.append(self.free_teacher1.id)
 
         # Delete both free_teacher1 and free_teacher2
         response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': [self.free_teacher1.id, self.free_teacher2.id], 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertNotContains(response, "({})".format(self.free_teacher1.username), status_code=200)
-        self.assertNotContains(response, "({})".format(self.free_teacher2.username), status_code=200)
+        self.assertNotContains(response, f"({self.free_teacher1.username})", status_code=200)
+        self.assertNotContains(response, f"({self.free_teacher2.username})", status_code=200)
         cur_coteachers.remove(self.free_teacher1.id)
         cur_coteachers.remove(self.free_teacher2.id)
 
         # Add free_teacher 1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(response, "({})".format(self.free_teacher1.username), status_code=200)
+        self.assertContains(response, f"({self.free_teacher1.username})", status_code=200)
         cur_coteachers.append(self.free_teacher1.id)
 
         # Save the coteachers

@@ -241,7 +241,7 @@ INSTALLED_APPS = (
     'esp.survey',
     'esp.accounting.apps.AccountingConfig',
     'esp.customforms.apps.CustomformsConfig',
-    'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
+    'esp.utils.apps.UtilsConfig',
     'esp.tagdict',
     'esp.seltests',
     'esp.themes',
@@ -249,7 +249,7 @@ INSTALLED_APPS = (
     'argcache.apps.ArgCacheConfig',
     'django_extensions',
     'reversion',
-    'captcha',
+    'django_recaptcha',
     'form_utils',
     'phonenumber_field',
     'django.contrib.redirects',
@@ -420,5 +420,9 @@ ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
 
 ADMIN_TOOLS_THEMING_CSS = '/media/default_styles/admin_theme.css'
 
-SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error',
+SILENCED_SYSTEM_CHECKS = ['django_recaptcha.recaptcha_test_key_error',
                           'debug_toolbar.W006']
+
+# Django 3.2+ requires specifying the default auto field type
+# Using AutoField to maintain compatibility with existing database schema
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'

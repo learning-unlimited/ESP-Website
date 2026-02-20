@@ -54,7 +54,8 @@ class DateTimeWidget(forms.widgets.DateTimeInput):
 
     def value_from_datadict(self, data, files, name):
         dtf = django.utils.formats.get_format('DATETIME_INPUT_FORMATS')
-        empty_values = forms.fields.EMPTY_VALUES
+        # In Django 3.1+, EMPTY_VALUES was moved to django.core.validators
+        from django.core.validators import EMPTY_VALUES as empty_values
 
         value = data.get(name, None)
         if value in empty_values:

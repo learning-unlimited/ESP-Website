@@ -39,7 +39,7 @@ from django.utils.translation import gettext_lazy as _
 
 from django.conf import settings
 
-from captcha.fields import ReCaptchaField
+from django_recaptcha.fields import ReCaptchaField
 
 person_type = (
     ('Student', 'K-12 Student'),

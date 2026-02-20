@@ -1,9 +1,4 @@
-from __future__ import absolute_import
-from __future__ import print_function
-from io import open
 import six
-from six.moves import range
-from six.moves import input
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -41,7 +36,7 @@ Learning Unlimited, Inc.
 import logging
 logger = logging.getLogger(__name__)
 import numpy
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 assert parse_version(numpy.version.short_version) >= parse_version("1.7.0")
 import numpy.random
 import six.moves.queue
@@ -63,7 +58,7 @@ from django.conf import settings
 from django.db.models.query import QuerySet
 from django.db.models import Q
 
-class ClassChangeController(object):
+class ClassChangeController:
 
     default_options = {
         'check_grade': False,
@@ -193,9 +188,9 @@ class ClassChangeController(object):
         print()
         print("Student counts")
         print("--------------")
-        print("{:5d} not checked in".format(len(self.students_not_checked_in)))
+        print(f"{len(self.students_not_checked_in):5d} not checked in")
         print("{:5d} attended".format(len(self.program.students()['attended'])))
-        print("{:5d} with requests".format(len(self.students)))
+        print(f"{len(self.students):5d} with requests")
         print("{:5d} attended with requests".format(len(
                 set(self.students.values_list('id', flat=True)) &
                 set(self.program.students()['attended'].values_list('id', flat=True)))))
@@ -203,8 +198,8 @@ class ClassChangeController(object):
         print()
         print("Request counts")
         print("--------------")
-        print("{:5d} requests".format(numpy.count_nonzero(self.request)))
-        print("{:5d} student-timeslots with requests".format(numpy.count_nonzero(self.request.any(axis=1))))
+        print(f"{numpy.count_nonzero(self.request):5d} requests")
+        print(f"{numpy.count_nonzero(self.request.any(axis=1)):5d} student-timeslots with requests")
         print()
         print("Student histograms")
         print("(only students with >= 1 request)")
@@ -212,18 +207,18 @@ class ClassChangeController(object):
         req_freqs = numpy.bincount(self.request.sum(axis=(1, 2)))
         for i in range(req_freqs.size):
             if req_freqs[i]:
-                print("{:5d} students with {:3d} request(s)".format(req_freqs[i], i))
+                print(f"{req_freqs[i]:5d} students with {i:3d} request(s)")
 
         print()
         ts_freqs = numpy.bincount(self.request.any(axis=1).sum(axis=1))
         for i in range(ts_freqs.size):
             if ts_freqs[i]:
-                print("{:5d} students with {:3d} timeslot(s) with requests".format(ts_freqs[i], i))
+                print(f"{ts_freqs[i]:5d} students with {i:3d} timeslot(s) with requests")
         print()
         oe_freqs = numpy.bincount(self.enroll_orig.any(axis=1).sum(axis=1))
         for i in range(ts_freqs.size):
             if oe_freqs[i]:
-                print("{:5d} students originally enrolled in {:3d} section(s)".format(oe_freqs[i], i))
+                print(f"{oe_freqs[i]:5d} students originally enrolled in {i:3d} section(s)")
 
         # Sum requests, enrollments, etc. along the student and timeslot axis
         # to get a count for each section
@@ -239,9 +234,9 @@ class ClassChangeController(object):
         print("Tentatively changed enrollments")
         print("(not useful if you haven't run compute_assignments)")
         print("---------------------------------------------------")
-        print("{:5d} unchanged".format(numpy.sum(self.enroll_orig & self.enroll_final)))
-        print("{:5d} dropped".format(numpy.sum(dropped_counts)))
-        print("{:5d} added".format(numpy.sum(added_counts)))
+        print(f"{numpy.sum(self.enroll_orig & self.enroll_final):5d} unchanged")
+        print(f"{numpy.sum(dropped_counts):5d} dropped")
+        print(f"{numpy.sum(added_counts):5d} added")
         print()
         print("Most popularly requested sections")
         print("---------------------------------")
@@ -281,7 +276,7 @@ class ClassChangeController(object):
                 (self.enroll_final & ~self.enroll_orig).sum(axis=(1, 2)))
         for i in range(changed_classes_freq.size):
             if changed_classes_freq[i]:
-                print("{:5d} students with {:3d} added sections".format(changed_classes_freq[i], i))
+                print(f"{changed_classes_freq[i]:5d} students with {i:3d} added sections")
 
         print()
         print("Students originally with no classes")
@@ -291,7 +286,7 @@ class ClassChangeController(object):
                 self.enroll_final.sum(axis=(1, 2))[orig_no_class_student_indices])
         for i in range(final_classes_freq.size):
             if final_classes_freq[i]:
-                print("{:5d} students with {:3d} classes".format(final_classes_freq[i], i))
+                print(f"{final_classes_freq[i]:5d} students with {i:3d} classes")
 
         print()
         print("Students who still have no classes")
@@ -301,7 +296,7 @@ class ClassChangeController(object):
                 self.request.sum(axis=(1, 2))[final_no_class_student_indices])
         for i in range(no_class_request_freq.size):
             if no_class_request_freq[i]:
-                print("{:5d} students made {:3d} requests".format(no_class_request_freq[i], i))
+                print(f"{no_class_request_freq[i]:5d} students made {i:3d} requests")
 
         if list_no_class_students:
             for student_index in final_no_class_student_indices:
@@ -347,7 +342,7 @@ class ClassChangeController(object):
             if orig_section_indices.size == 1:
                 orig_section = self.sections[orig_section_indices[0]]
             else:
-                orig_section = "(????? {} sections found)".format(orig_section_indices.size)
+                orig_section = f"(????? {orig_section_indices.size} sections found)"
 
             print("{:>20} had {} @ {}".format(
                     self.students[student_index],
@@ -401,7 +396,7 @@ class ClassChangeController(object):
         """ Reset the state of the controller so that new assignments may be computed,
             but without fetching any information from the database. """
 
-        self.changed = numpy.zeros((self.num_students,), dtype=numpy.bool)
+        self.changed = numpy.zeros((self.num_students,), dtype=numpy.bool_)
         self.section_capacities = numpy.copy(self.section_capacities_orig)
         self.section_scores = numpy.copy(self.section_scores_orig)
         self.enroll_final = numpy.copy(self.enroll_final_orig)
@@ -414,19 +409,19 @@ class ClassChangeController(object):
             -   Timeslots (incl. lunch periods for each day)
         """
 
-        self.enroll_orig = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
-        self.enroll_final = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
-        self.request = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
-        self.waitlist = [numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool) for i in range(self.priority_limit+1)]
-        self.section_schedules = numpy.zeros((self.num_sections, self.num_timeslots), dtype=numpy.bool)
+        self.enroll_orig = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool_)
+        self.enroll_final = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool_)
+        self.request = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool_)
+        self.waitlist = [numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool_) for i in range(self.priority_limit+1)]
+        self.section_schedules = numpy.zeros((self.num_sections, self.num_timeslots), dtype=numpy.bool_)
         # section_capacities tracks *remaining* capacity.
         self.section_capacities = numpy.zeros((self.num_sections,), dtype=numpy.int32)
         # A section's score is number of students requesting minus capacity.
         # It's positive if we can't let everybody who wants it take it. Higher
         # scores mean a class is more in demand.
         self.section_scores = numpy.zeros((self.num_sections,), dtype=numpy.int32)
-        self.same_subject = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool)
-        self.section_conflict = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool) # is this a section that takes place in the same timeblock
+        self.same_subject = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool_)
+        self.section_conflict = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool_) # is this a section that takes place in the same timeblock
 
         #   Get student, section, timeslot IDs and prepare lookup table
         (self.student_ids, self.student_indices) = self.get_ids_and_indices(self.students)
@@ -434,7 +429,7 @@ class ClassChangeController(object):
         (self.timeslot_ids, self.timeslot_indices) = self.get_ids_and_indices(self.timeslots)
         self.parent_classes = numpy.array(self.sections.values_list('parent_class__id', flat=True))
 
-        self.student_not_checked_in = numpy.zeros((self.num_students,), dtype=numpy.bool)
+        self.student_not_checked_in = numpy.zeros((self.num_students,), dtype=numpy.bool_)
         self.student_not_checked_in[self.student_indices[self.students_not_checked_in]] = True
 
         #   Get IDs of timeslots allocated to lunch by day
@@ -725,7 +720,7 @@ class ClassChangeController(object):
             logger.info(text_fn(student_ind, for_real=False) + sent_to)
             sys.stdout.flush()
         if f:
-            f.write((text_fn(student_ind, for_real=False) + sent_to).replace(six.u('\u2019'), "'").replace(six.u('\u201c'), '"').replace(six.u('\u201d'), '"').encode('ascii', 'ignore'))
+            f.write((text_fn(student_ind, for_real=False) + sent_to).replace('\u2019', "'").replace('\u201c', '"').replace('\u201d', '"').encode('ascii', 'ignore'))
         if for_real:
             send_mail(self.subject, text_fn(student_ind, for_real=True), self.from_email, recipient_list, bcc=self.bcc, extra_headers=self.extra_headers)
             time.sleep(self.timeout)

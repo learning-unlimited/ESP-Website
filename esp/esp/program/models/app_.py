@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -47,7 +44,7 @@ import datetime
 __all__ = ['StudentAppQuestion', 'StudentAppResponse', 'StudentAppReview', 'StudentApplication']
 
 @deconstructible
-class BaseAppElement(object):
+class BaseAppElement:
     """ Base class for models that you would like to generate forms from.
     Make this a subclass of the model and overload the two attributes:
     -   _element_name: a slug-like name for the model to differentiate its
@@ -119,7 +116,6 @@ class BaseAppElement(object):
                 setattr(self, field_name, form.cleaned_data[field_name])
         self.save()
 
-@python_2_unicode_compatible
 class StudentAppQuestion(BaseAppElement, models.Model):
     """ A question for a student application form, a la Junction or Delve.
     Questions pertaining to the program or to classes the student has
@@ -136,15 +132,14 @@ class StudentAppQuestion(BaseAppElement, models.Model):
 
     def __str__(self):
         if self.subject is not None:
-            return '%s (%s)' % (self.question[:80], self.subject.title)
+            return '{} ({})'.format(self.question[:80], self.subject.title)
         else:
-            return '%s (%s)' % (self.question[:80], self.program.niceName())
+            return '{} ({})'.format(self.question[:80], self.program.niceName())
 
     class Meta:
         app_label = 'program'
         db_table = 'program_studentappquestion'
 
-@python_2_unicode_compatible
 class StudentAppResponse(BaseAppElement, models.Model):
     """ A response to an application question. """
     question = models.ForeignKey(StudentAppQuestion, editable=False, on_delete=models.CASCADE)
@@ -155,13 +150,12 @@ class StudentAppResponse(BaseAppElement, models.Model):
     _field_names = ['response', 'complete']
 
     def __str__(self):
-        return 'Response to %s: %s...' % (self.question.question, self.response[:80])
+        return 'Response to {}: {}...'.format(self.question.question, self.response[:80])
 
     class Meta:
         app_label = 'program'
         db_table = 'program_studentappresponse'
 
-@python_2_unicode_compatible
 class StudentAppReview(BaseAppElement, models.Model):
     """ An individual review for a student application question.
     The application can be reviewed by any director of the program or
@@ -177,13 +171,12 @@ class StudentAppReview(BaseAppElement, models.Model):
     _field_names = ['score', 'comments', 'reject']
 
     def __str__(self):
-        return '%s by %s: %s...' % (self.score, self.reviewer.username, self.comments[:80])
+        return '{} by {}: {}...'.format(self.score, self.reviewer.username, self.comments[:80])
 
     class Meta:
         app_label = 'program'
         db_table = 'program_studentappreview'
 
-@python_2_unicode_compatible
 class StudentApplication(models.Model):
     """ Student applications for Junction and any other programs that need them. """
     from esp.program.models import Program
@@ -206,7 +199,7 @@ class StudentApplication(models.Model):
         return str(self.user)
 
     def __init__(self, *args, **kwargs):
-        super(StudentApplication, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.save()
         self.set_questions()
 

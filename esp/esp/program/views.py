@@ -1,7 +1,4 @@
-
-from __future__ import absolute_import
 import six
-from six.moves import range
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -156,7 +153,7 @@ def lsr_submit(request, program=None):
     reg_interested, created = RegistrationType.objects.get_or_create(name="Interested", category="student",
                                                                      defaults={"description":"For lottery reg, a student would be interested in being placed into this class, but it isn't their first choice"})
 
-    for reg_token, reg_status in six.iteritems(data):
+    for reg_token, reg_status in data.items():
         parts = reg_token.split('_')
         if parts[0] == 'flag':
             ## Flagged class
@@ -174,7 +171,7 @@ def lsr_submit(request, program=None):
     errors = []
 
     already_flagged_sections = request.user.getSections(program=program, verbs=[reg_priority.name]).annotate(first_block=Min('meeting_times__start'))
-    already_flagged_secids = set(int(x.id) for x in already_flagged_sections)
+    already_flagged_secids = {int(x.id) for x in already_flagged_sections}
 
     flag_related_sections = classes_flagged | classes_not_flagged
     flagworthy_sections = ClassSection.objects.filter(id__in=flag_related_sections-already_flagged_secids).annotate(first_block=Min('meeting_times__start'))
@@ -198,7 +195,7 @@ def lsr_submit(request, program=None):
                 errors.append({"text": "Unable to add flagged class", "cls_sections": [s_id], "emailcode": sections_by_id[s_id].emailcode(), "block": None, "flagged": True})
 
     already_interested_sections = request.user.getSections(program=program, verbs=[reg_interested.name])
-    already_interested_secids = set(int(x.id) for x in already_interested_sections)
+    already_interested_secids = {int(x.id) for x in already_interested_sections}
     interest_related_sections = classes_interest | classes_no_interest
     sections = ClassSection.objects.filter(id__in = (interest_related_sections - flag_related_sections - already_flagged_secids - already_interested_secids))
 
@@ -228,7 +225,7 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
     classes_flagged = [set() for i in range(0, priority_limit+1)] # 1-indexed
     sections_by_block = [defaultdict(set) for i in range(0, priority_limit+1)] # 1-indexed - sections_by_block[i][block] is a set of classes that were given priority i in timeblock block. This should hopefully be a set of size 0 or 1.
 
-    for section_id, (priority, block_id) in six.iteritems(data):
+    for section_id, (priority, block_id) in data.items():
         section_id = int(section_id)
         priority = int(priority)
         block_id = int(block_id)
@@ -298,7 +295,7 @@ def find_user(userstr):
     userstr_parts = [part.strip() for part in userstr.split(' ') if part]
 
     if len(userstr_parts) == 2 and \
-       re.match("\A\(\d\d\d\)\Z", userstr_parts[0]) and \
+       re.match(r"\A\(\d\d\d\)\Z", userstr_parts[0]) and \
        re.match("[^A-Za-z]*", userstr_parts[1]):
         # HACK: coerce ["(555)", "555-5555"] to ["(555)555-5555"] so that the
         # first branch of the if statement gets taken
@@ -359,14 +356,14 @@ def usersearch(request):
     num_users = found_users.count()
 
     if num_users == 1:
-        from six.moves.urllib.parse import urlencode
+        from urllib.parse import urlencode
         return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users[0].username}))
     elif num_users > 1:
         found_users = found_users.all()
         sorted_users = sorted(found_users, key=lambda x: x.get_last_program_with_profile().dates()[0] if x.get_last_program_with_profile() and x.get_last_program_with_profile().dates() else datetime.date(datetime.MINYEAR, 1, 1), reverse=True)
         return render_to_response('users/userview_search.html', request, { 'found_users': sorted_users })
     else:
-        raise ESPError("No user found by that name! Searched for `{}`".format(userstr), log=False)
+        raise ESPError(f"No user found by that name! Searched for `{userstr}`", log=False)
 
 
 @admin_required
@@ -591,9 +588,9 @@ def newprogram(request):
             manage_url = '/manage/' + new_prog.url + '/resources'
             # While we're at it, create the program's mailing list
             if settings.USE_MAILMAN and 'mailman_moderator' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys()):
-                mailing_list_name = "%s_%s" % (new_prog.program_type, new_prog.program_instance)
-                teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
-                students_list_name = "%s-%s" % (mailing_list_name, "students")
+                mailing_list_name = "{}_{}".format(new_prog.program_type, new_prog.program_instance)
+                teachers_list_name = "{}-{}".format(mailing_list_name, "teachers")
+                students_list_name = "{}-{}".format(mailing_list_name, "students")
 
                 create_list(students_list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
                 create_list(teachers_list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
@@ -633,7 +630,7 @@ def submit_transaction(request):
         log_uri = request.build_absolute_uri(
             reverse('admin:accounting_cybersourcepostback_change', args=(log_record.id,)))
         message = 'The following Cybersource postback could not be processed. Please ' + \
-                  'reconcile it by hand:\n\n    %s\n\n%s' % (log_uri, traceback.format_exc())
+                  'reconcile it by hand:\n\n    {}\n\n{}'.format(log_uri, traceback.format_exc())
         from_addr = settings.SERVER_EMAIL
         recipients = [settings.DEFAULT_EMAIL_ADDRESSES['treasury']]
         send_mail(subject, message, from_addr, recipients)
@@ -664,7 +661,7 @@ def _submit_transaction(request, log_record):
 
 def _redirect_from_identifier(identifier, result):
     program = IndividualAccountingController.program_from_identifier(identifier)
-    destination = "/learn/%s/cybersource?result=%s" % (program.getUrlBase(), result)
+    destination = "/learn/{}/cybersource?result={}".format(program.getUrlBase(), result)
     return HttpResponseRedirect(destination)
 
 # This really should go in qsd
@@ -751,7 +748,7 @@ def flushcache(request):
                 _cache = _cache._wrapped_cache
             if hasattr(_cache, "clear"):
                 _cache.clear()
-                mail_admins("Cache Flushed on server '%s'!" % request.META['SERVER_NAME'], "The cache was flushed by %s!  The following reason was given:\n\n%s" % (request.user.username, reason))
+                mail_admins("Cache Flushed on server '%s'!" % request.META['SERVER_NAME'], "The cache was flushed by {}!  The following reason was given:\n\n{}".format(request.user.username, reason))
                 context['success'] = "Cache Cleared."
             else:
                 context['error'] = "Error: This cache backend doesn't support the 'clear' method.  Sorry; you'll have to flush this one manually."

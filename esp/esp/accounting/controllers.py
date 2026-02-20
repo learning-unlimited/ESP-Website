@@ -1,7 +1,6 @@
 
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from django.utils.encoding import python_2_unicode_compatible
 from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -84,8 +83,8 @@ class ProgramAccountingController(BaseAccountingController):
     def clear_all_data(self):
         #   Clear all financial data for the program
         FinancialAidGrant.objects.filter(request__program=self.program).delete()
-        self.all_transfers().delete()
-        self.get_lineitemtypes().delete()
+        self.all_transfers(distinct=False).delete()
+        self.get_lineitemtypes(distinct=False).delete()
         self.all_accounts().delete()
 
     def setup_accounts(self):
@@ -215,9 +214,11 @@ class ProgramAccountingController(BaseAccountingController):
             q_object &= Q(required=False, for_payments=True)
         return q_object
 
-    def get_lineitemtypes(self, **kwargs):
+    def get_lineitemtypes(self, distinct=True, **kwargs):
         qs = LineItemType.objects.filter(self.get_lineitemtypes_Q(**kwargs))
-        return qs.order_by('text', '-id').distinct('text')
+        if distinct:
+            return qs.order_by('text', '-id').distinct('text')
+        return qs.order_by('text', '-id')
 
     def all_transfers_Q(self, **kwargs):
         """
@@ -227,11 +228,14 @@ class ProgramAccountingController(BaseAccountingController):
         q_object = self.get_lineitemtypes_Q(**kwargs)
         return nest_Q(q_object, 'line_item')
 
-    def all_transfers(self, **kwargs):
+    def all_transfers(self, distinct=True, **kwargs):
         # Avoids a subquery by constructing a Q object, in all_transfers_Q(),
         # that applies all the wanted constraints on the related line_item
         # objects.
-        return Transfer.objects.filter(self.all_transfers_Q(**kwargs)).distinct()
+        qs = Transfer.objects.filter(self.all_transfers_Q(**kwargs))
+        if distinct:
+            return qs.distinct()
+        return qs
 
     def all_students_Q(self, **kwargs):
         """
@@ -276,7 +280,6 @@ class ProgramAccountingController(BaseAccountingController):
         else:
             return 'Unrelated!?'
 
-@python_2_unicode_compatible
 class IndividualAccountingController(ProgramAccountingController):
     def __init__(self, program, user, *args, **kwargs):
         super(IndividualAccountingController, self).__init__(program, *args, **kwargs)

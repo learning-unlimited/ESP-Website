@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -40,7 +39,7 @@ from esp.middleware import ESPError
 from esp.resources.models import ResourceType, Resource
 from esp.program.models import ClassSection
 
-class ResourceController(object):
+class ResourceController:
     """ Controller for managing program resources.
 
     This is merely a framework, and most functionality will be added

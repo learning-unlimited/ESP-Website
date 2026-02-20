@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -44,7 +41,6 @@ from argcache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import Program
 
-@python_2_unicode_compatible
 class ClassFlagType(models.Model):
     name = models.CharField(max_length=255, unique=True, help_text='The name of the flag type')
     show_in_scheduler = models.BooleanField(default=False, help_text='Should this flag type be shown in the scheduler?')
@@ -90,7 +86,6 @@ class ClassFlagType(models.Model):
     def used_by_flags(self):
         return ClassFlag.objects.filter(flag_type=self).exists()
 
-@python_2_unicode_compatible
 class ClassFlag(models.Model):
     subject = AjaxForeignKey('ClassSubject', related_name='flags', on_delete=models.CASCADE)
     flag_type = models.ForeignKey(ClassFlagType, on_delete=models.CASCADE)
@@ -108,7 +103,7 @@ class ClassFlag(models.Model):
 
 
     def __str__(self):
-        return "%s flag on %s: %s" % (self.flag_type, self.subject.emailcode(), self.subject.title)
+        return "{} flag on {}: {}".format(self.flag_type, self.subject.emailcode(), self.subject.title)
 
     def save(self, *args, **kwargs):
         # Overridden to populate created_by and modified_by.  I'm not crazy about this method as it mixes models and requests, but I think it's worth it to save having to pass it around manually everywhere the thing gets touched.  Note that the creation and modification times already get autocreated by django.  If you're saving ClassFlags outside of a request somehow, make sure you manually populate this stuff.
@@ -118,5 +113,5 @@ class ClassFlag(models.Model):
             if self.id is None:
                 #We are creating, rather than modifying, so we don't yet have an id.
                 self.created_by = request.user
-        super(ClassFlag, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 

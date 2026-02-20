@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import json
 
 class TestProgramManager():
@@ -32,7 +31,7 @@ class TestProgramManager():
         (section, timeslots, rooms) = self.getClassToSchedule(section=section, teacher=teacher, timeslots=timeslots, rooms=rooms)
 
         #schedule the class
-        blocks = '\n'.join(['%s,%s' % (r.event.id, r.identical_id()) for r in rooms[0:2]])
+        blocks = '\n'.join(['{},{}'.format(r.event.id, r.identical_id()) for r in rooms[0:2]])
         response = self.client.post(self.schedule_class_url, {'action': 'assignreg', 'cls': section.id, 'block_room_assignments': blocks, 'override': 'false'})
         assert response.status_code == 200
 
