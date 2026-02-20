@@ -18,6 +18,7 @@ jobs:
   build:
     name: ${{ matrix.travis_job }} (Python ${{ matrix.python-version }})
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:10.8
