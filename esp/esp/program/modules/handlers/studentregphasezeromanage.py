@@ -127,10 +127,10 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         if len(messages['error']) == 0:
             # Add users to winners group once we are sure there were no problems
             winners.user_set.add(*students)
-            override_perm = Permission(permission_type='OverridePhaseZero', role=winners, start_date=datetime.datetime.now(), program=prog)
+            override_perm = Permission(permission_type='OverridePhaseZero', role=winners, start_date=timezone.now(), program=prog)
             override_perm.save()
             if 'perms' in post:
-                studentAll_perm = Permission(permission_type='Student/All', role=winners, start_date=datetime.datetime.now(), program=prog)
+                studentAll_perm = Permission(permission_type='Student/All', role=winners, start_date=timezone.now(), program=prog)
                 studentAll_perm.save()
             # Add tag to indicate student lottery has been run
             Tag.setTag('student_lottery_run', target=prog, value='True')

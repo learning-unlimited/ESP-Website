@@ -1,6 +1,7 @@
 """A class for using depth-limited DFS find improvements to a schedule."""
 
 import datetime
+from django.utils import timezone
 import esp.program.controllers.autoscheduler.util as util
 
 
@@ -19,7 +20,7 @@ class SearchOptimizer:
         done."""
         if depth == 0:
             return []
-        if timeout is not None and datetime.datetime.now() > timeout:
+        if timeout is not None and timezone.now() > timeout:
             return []
 
         best_score = self.manipulator.scorer.score_schedule()

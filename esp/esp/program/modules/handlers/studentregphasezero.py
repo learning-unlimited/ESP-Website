@@ -47,6 +47,7 @@ from django.template.loader import render_to_string
 from django.db.models.query import Q
 
 import datetime
+from django.utils import timezone
 
 class StudentRegPhaseZero(ProgramModuleObj):
     doc = """Allows students to enter a lottery for admission to the program."""
@@ -237,7 +238,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
         email_from = f'{self.program.program_type} Registration System <server@{settings.EMAIL_HOST_SENDER}>'
         email_context = {'student': student,
                          'program': self.program,
-                         'curtime': datetime.datetime.now(),
+                         'curtime': timezone.now(),
                          'note': note,
                          'DEFAULT_HOST': settings.DEFAULT_HOST}
         email_contents = render_to_string('program/modules/studentregphasezero/confirmation_email.txt', email_context)

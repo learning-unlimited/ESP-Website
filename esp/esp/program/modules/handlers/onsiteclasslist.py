@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 
 import json
 from datetime import datetime, timedelta
+from django.utils import timezone
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Min
@@ -410,7 +411,7 @@ class OnSiteClassList(ProgramModuleObj):
             else:
                 context[key_option] = defaults[key_option]
 
-        time_now = datetime.now()
+        time_now = timezone.now()
 
         try:
             start_id = int(options.get('start', -1) or -1)

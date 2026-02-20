@@ -49,6 +49,7 @@ from django.conf import settings
 from esp.middleware.threadlocalrequest import get_current_request
 from django.utils import timezone
 from datetime import datetime, timedelta
+from django.utils import timezone
 import json
 
 class TeacherClassRegForm(FormWithRequiredCss):

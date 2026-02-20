@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 """
 
 import datetime
+from django.utils import timezone
 import logging
 logger = logging.getLogger(__name__)
 import os
@@ -119,7 +120,7 @@ class ThemeController(object):
         #   Merge with the existing settings so you don't forget anything
         initial_data = self.get_template_settings()
         initial_data.update(data)
-        now = datetime.datetime.now()
+        now = timezone.localtime(timezone.now())
         mtime = {'year': now.year, 'month': now.month, 'day': now.day,
                  'hour': now.hour, 'minute': now.minute,
                  'second': now.second, 'microsecond': now.microsecond}

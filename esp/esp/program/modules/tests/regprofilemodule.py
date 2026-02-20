@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from datetime import datetime, timedelta
+from django.utils import timezone
 from esp.program.tests import ProgramFrameworkTest
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -85,7 +86,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         # HACK -- save properly to dump the appropriate cache.
         # Then save sneakily so that we can override the timestamp.
         prof.save()
-        prof.last_ts = datetime.now() - timedelta(10)
+        prof.last_ts = timezone.now() - timedelta(10)
         super(RegistrationProfile, prof).save()
         # Continue testing
         self.assertTrue( self.students[1].registrationprofile_set.count() >= 1, "Profile failed to save." )

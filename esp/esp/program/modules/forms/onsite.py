@@ -3,6 +3,7 @@ from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import DateTimeWidget
 from esp.users.models import K12School, ESPUser
 import datetime
+from django.utils import timezone
 
 class OnSiteRegForm(forms.Form):
     first_name = forms.CharField(max_length=30, widget=forms.TextInput({'size':20, 'class':'required'}))
@@ -33,6 +34,6 @@ class TeacherCheckinForm(forms.Form):
     when = forms.DateTimeField(label='Date/Time', widget=DateTimeWidget, required = False)
 
     def __init__(self, *args, **kwargs):
-        now = datetime.datetime.now()
+        now = timezone.localtime(timezone.now())
         self.base_fields['when'].initial=datetime.datetime(now.year, now.month, now.day) + datetime.timedelta(days=1, minutes=-1)
         super().__init__(*args, **kwargs)

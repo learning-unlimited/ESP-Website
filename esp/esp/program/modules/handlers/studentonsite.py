@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 import datetime
+from django.utils import timezone
 
 from django import forms
 
@@ -100,7 +101,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
                     context['has_survey'] = surveys.count() > 0 and surveys[0].questions.filter(per_class = True).exists()
                     first_block = section.firstBlockEvent()
                     if first_block:
-                        context['has_started'] =  first_block.start < datetime.datetime.now()
+                        context['has_started'] =  first_block.start < timezone.now()
                     context['section'] = section
                     return render_to_response(self.baseDir()+'sectioninfo.html', request, context)
         return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
