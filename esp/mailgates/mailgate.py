@@ -34,6 +34,7 @@ if os.environ.get('VIRTUAL_ENV') is None:
 import django
 django.setup()
 from esp.dbmail.models import EmailList
+from esp.dbmail.mailgate_utils import sanitize_recipient_headers
 from django.conf import settings
 
 host = socket.gethostname()
@@ -76,17 +77,28 @@ try:
         if not instance.send:
             continue
 
-        if hasattr(instance, "direct_send") and instance.direct_send:
-            if message['Bcc']:
-                bcc_recipients = [x.strip() for x in message['Bcc'].split(',')]
-                del(message['Bcc'])
-                message['Bcc'] = ", ".join(bcc_recipients)
+        sanitize_recipient_headers(
+            message,
+            local_part=user,
+            domain=Site.objects.get_current().domain,
+            drop_bcc=False,
+        )
 
+        if hasattr(instance, "direct_send") and instance.direct_send:
             send_mail(str(message))
             continue
 
-        del(message['to'])
-        del(message['cc'])
+        sanitize_recipient_headers(
+            message,
+            local_part=user,
+            domain=Site.objects.get_current().domain,
+            drop_bcc=True,
+        )
+
+        if message.get('To'):
+            del(message['To'])
+        if message.get('Cc'):
+            del(message['Cc'])
         message['X-ESP-SENDER'] = 'version 2'
         message['X-FORWARDED-FOR'] = message['X-CLIENT-IP'] if message['X-Client-IP'] else message['Client-IP']
 
