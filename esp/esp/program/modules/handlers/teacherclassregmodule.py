@@ -36,6 +36,10 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+
+import logging
+logger = logging.getLogger(__name__)
+
 from collections import defaultdict
 
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, user_passes_test
@@ -455,6 +459,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             email_contents = render_to_string('program/modules/teacherclassregmodule/cancelrequest.txt', email_context)
             email_to = [ESPUser.email_sendto_address(cls.parent_program.director_email, 'Directors')]
             send_mail(email_title, email_contents, email_from, email_to, False)
+            logger.info("Cancel request for class %s submitted by teacher %s: %s", cls.id, request.user.id, reason[:100])
 
         return self.goToCore(tl)
 
@@ -610,6 +615,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
                 ccc.associate_teacher_with_class(cls, teacher)
                 ccc.send_class_mail_to_directors(cls)
+                logger.info("Coteacher %s added to class %s", teacher.id, cls.id)
 
         elif op == 'del':
             ids = request.POST.getlist('delete_coteachers')
@@ -629,6 +635,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
             for teacher in to_be_deleted:
                 cls.removeTeacher(teacher)
+                logger.info("Coteacher %s removed from class %s", teacher.id, cls.id)
 
             ccc.send_class_mail_to_directors(cls)
 
@@ -838,12 +845,16 @@ class TeacherClassRegModule(ProgramModuleObj):
             try:
                 if action == 'create':
                     newclass = ccc.makeaclass(request.user, request.POST)
+                    logger.info("Class created by teacher %s: %s", request.user.id, newclass.id if newclass else 'unknown')
                 elif action == 'createopenclass':
                     newclass = ccc.makeaclass(request.user, request.POST, form_class=TeacherOpenClassRegForm)
+                    logger.info("Open class created by teacher %s: %s", request.user.id, newclass.id if newclass else 'unknown')
                 elif action == 'edit':
                     newclass = ccc.editclass(request.user, request.POST, extra)
+                    logger.info("Class %s edited by teacher %s", extra, request.user.id)
                 elif action == 'editopenclass':
                     newclass = ccc.editclass(request.user, request.POST, extra, form_class=TeacherOpenClassRegForm)
+                    logger.info("Open class %s edited by teacher %s", extra, request.user.id)
 
                 do_question = bool(ProgramModule.objects.filter(handler="TeacherReviewApps", program=self.program))
 

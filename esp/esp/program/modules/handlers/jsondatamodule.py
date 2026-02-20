@@ -38,6 +38,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from collections import defaultdict
 from datetime import datetime
 import operator

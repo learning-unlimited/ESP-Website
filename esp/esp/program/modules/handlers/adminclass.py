@@ -35,6 +35,9 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.program.class_status import ClassStatus
 from esp.program.modules.base import ProgramModuleObj, needs_admin, aux_call
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
@@ -162,12 +165,16 @@ class AdminClass(ProgramModuleObj):
 
             if review_status == 'ACCEPT':
                 class_subject.accept()
+                logger.info("Class %s accepted by user %s", class_id, request.user.username)
             elif review_status == 'UNREVIEW':
                 class_subject.propose()
+                logger.info("Class %s set to unreviewed by user %s", class_id, request.user.username)
             elif review_status == 'REJECT':
                 class_subject.reject()
+                logger.info("Class %s rejected by user %s", class_id, request.user.username)
             elif review_status == 'CANCEL':
                 class_subject.cancel()
+                logger.info("Class %s cancelled by user %s", class_id, request.user.username)
             else:
                 raise ESPError("Error: invalid review status")
 
@@ -181,6 +188,7 @@ class AdminClass(ProgramModuleObj):
             if request.POST.get('sure') == 'True':
                 try:
                     s = ClassSection.objects.get(id=int(request.GET['sec_id']))
+                    logger.info("Deleting section %s by user %s", request.GET['sec_id'], request.user.username)
                     s.delete()
                     return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
                 except:
@@ -198,6 +206,7 @@ class AdminClass(ProgramModuleObj):
         """ A little function to add a section to the class specified in POST. """
         cls = self.getClass(request, extra)
         cls.add_section()
+        logger.info("Added section to class %s by user %s", extra, request.user.username)
 
         return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
 
@@ -277,6 +286,7 @@ class AdminClass(ProgramModuleObj):
     def approveclass(self, request, tl, one, two, module, extra, prog):
         cls = self.getClass(request, extra)
         cls.accept()
+        logger.info("Approved class %s by user %s", cls.id, request.user.username)
         if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
         return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
@@ -286,6 +296,7 @@ class AdminClass(ProgramModuleObj):
     def rejectclass(self, request, tl, one, two, module, extra, prog):
         cls = self.getClass(request, extra)
         cls.reject()
+        logger.info("Rejected class %s by user %s", cls.id, request.user.username)
         if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
         return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
@@ -307,6 +318,7 @@ class AdminClass(ProgramModuleObj):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
 
+        logger.info("Deleting class %s by user %s", cls.id, request.user.username)
         cls.delete(True)
         return HttpResponseRedirect(prog.get_manage_url() + 'dashboard')
 

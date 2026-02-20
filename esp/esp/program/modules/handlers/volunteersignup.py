@@ -35,6 +35,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call, no_auth, meets_deadline, needs_account
 from esp.middleware import ESPError

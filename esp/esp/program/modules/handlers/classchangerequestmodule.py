@@ -33,6 +33,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import StudentRegistration, RegistrationType
 from esp.program.models.class_ import ClassSubject

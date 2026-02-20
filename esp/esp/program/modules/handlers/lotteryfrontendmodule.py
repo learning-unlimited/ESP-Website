@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import logging
+logger = logging.getLogger(__name__)
 
 from esp.program.models import StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
@@ -68,7 +69,7 @@ class LotteryFrontendModule(ProgramModuleObj):
             lotteryObj = LotteryAssignmentController(prog, **options)
             lotteryObj.compute_assignments(True)
         except LotteryException as e:
-            logging.exception(e)
+            logger.exception("Lottery assignment failed: %s", e)
             return {'response': [{'error_msg': str(e)}]}
 
         stats = lotteryObj.extract_stats(lotteryObj.compute_stats())

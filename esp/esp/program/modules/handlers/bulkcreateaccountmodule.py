@@ -1,4 +1,8 @@
 from __future__ import absolute_import
+
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.utils.web import render_to_response
 from esp.middleware import ESPError

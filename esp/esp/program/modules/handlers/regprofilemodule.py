@@ -33,6 +33,10 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.program.modules.base import ProgramModuleObj, usercheck_usetl, main_call, meets_deadline
 from esp.program.models import RegistrationProfile
 from esp.users.models   import ESPUser

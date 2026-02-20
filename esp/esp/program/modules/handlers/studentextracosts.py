@@ -34,6 +34,10 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+
+import logging
+logger = logging.getLogger(__name__)
+
 from collections import OrderedDict
 from django              import forms
 from django.db.models.query import Q

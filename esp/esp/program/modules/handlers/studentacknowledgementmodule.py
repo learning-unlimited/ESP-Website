@@ -1,4 +1,8 @@
 from __future__ import absolute_import
+
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, main_call, meets_deadline
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, Record, RecordType

@@ -34,6 +34,10 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+
+import logging
+logger = logging.getLogger(__name__)
+
 from django.http     import HttpResponseRedirect
 from esp.users.views import search_for_user
 from django.db.models.query   import Q
@@ -91,6 +95,7 @@ class AdminMorph(ProgramModuleObj):
         if not found:
             return user
 
+        logger.info("Admin %s morphing into user %s for program %s", request.user.username, user.username, prog.getUrlBase())
         request.user.switch_to_user(request,
                                  user,
                                  '/manage/%s/admin_morph/' % prog.getUrlBase(),

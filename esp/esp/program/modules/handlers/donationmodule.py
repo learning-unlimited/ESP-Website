@@ -34,6 +34,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.program.modules.base import ProgramModuleObj, usercheck_usetl, meets_deadline, main_call, meets_cap
 from esp.utils.web import render_to_response
 from esp.users.models import ESPUser, Record, RecordType

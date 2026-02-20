@@ -30,6 +30,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call, aux_call, meets_cap
 from esp.utils.web import render_to_response
 from esp.dbmail.models import send_mail
@@ -305,20 +308,26 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                     #   transaction ID for our records.
                     transfer.transaction_id = charge.id
                     transfer.save()
+                    logger.info("Stripe charge %s completed for user %s, amount %s cents", charge.id, request.user.id, amount_cents_post)
 
             except stripe.error.CardError as e:
                 context['error_type'] = 'declined'
                 context['error_info'] = e.json_body['error']
+                logger.warning("Stripe card declined for user %s: %s", request.user.id, e)
             except stripe.error.InvalidRequestError as e:
                 #   While this is a generic error meaning invalid parameters were supplied
                 #   to Stripe's API, we will usually see it because of a duplicate request.
                 context['error_type'] = 'invalid'
+                logger.warning("Stripe invalid request for user %s: %s", request.user.id, e)
             except stripe.error.AuthenticationError as e:
                 context['error_type'] = 'auth'
+                logger.error("Stripe authentication error: %s", e)
             except stripe.error.APIConnectionError as e:
                 context['error_type'] = 'api'
+                logger.error("Stripe API connection error: %s", e)
             except stripe.error.StripeError as e:
                 context['error_type'] = 'generic'
+                logger.error("Stripe generic error for user %s: %s", request.user.id, e)
 
         if 'error_type' in context:
             #   If we got any sort of error, send an email to the admins and render an error page.

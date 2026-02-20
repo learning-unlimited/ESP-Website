@@ -34,6 +34,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, aux_call
 from esp.utils.web import render_to_response
 from esp.utils.decorators import json_response

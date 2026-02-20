@@ -32,6 +32,10 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+
+import logging
+logger = logging.getLogger(__name__)
+
 from argcache            import cache_function
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, needs_student_in_grade, meets_deadline, CoreModule, main_call, aux_call, _checkDeadline_helper, meets_cap
 from esp.program.controllers.confirmation import ConfirmationEmailController
