@@ -143,7 +143,9 @@ class CustomLoginView(LoginView):
             reply = HttpMetaRedirect('/myesp/profile')
         elif next_url in mask_locations:
             reply = mask_redirect(user, next_url)
-        elif reply.status_code == 302:
+        else:
+            # form_valid() is only called on successful authentication, so we
+            # are always on the success path here — no need to check status_code.
             reply = HttpMetaRedirect(next_url)
 
         reply._new_user = user
