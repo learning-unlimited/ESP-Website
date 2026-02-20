@@ -79,4 +79,5 @@ class Command(BaseCommand):
         call_command('collectstatic', clear = options["clear"], no_input = options["no_input"], verbosity = verbosity)
         call_command('recompile_theme', verbosity = verbosity)
         call_command('flushcache', verbosity = verbosity)
-        os.system("touch " + file)
+        from pathlib import Path
+        Path(file).touch()

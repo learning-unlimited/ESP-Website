@@ -47,6 +47,7 @@ import logging
 logger = logging.getLogger(__name__)
 import re
 import os
+import subprocess
 import tempfile
 
 # Make sure that we can actually download the homepage
@@ -236,8 +237,12 @@ class JavascriptSyntaxTest(TestCase):
                     file_list.append('%s/%s' % (dirpath, file))
                     num_files += 1
 
-        file_args = ' '.join([('--js %s' % file) for file in file_list])
-        os.system('java -jar %s/compiler.jar %s --js_output_file %s 2> %s' % (closure_path, file_args, closure_output_code, closure_output_file))
+        cmd = ['java', '-jar', '%s/compiler.jar' % closure_path]
+        for file in file_list:
+            cmd.extend(['--js', file])
+        cmd.extend(['--js_output_file', closure_output_code])
+        with open(closure_output_file, 'w') as err_file:
+            subprocess.run(cmd, stderr=err_file, stdout=subprocess.DEVNULL)
         checkfile = open(closure_output_file)
 
         results = [line.rstrip('\n') for line in checkfile.readlines() if len(line.strip()) > 0]

@@ -20,7 +20,11 @@ class Command(BaseCommand):
     """
     def handle(self, *args, **options):
         root = os.path.dirname(os.path.abspath(settings.BASE_DIR))
-        ret = os.system("find " + root + """ -name '*.pyc' -exec bash -c 'test ! -f "${1%c}"' -- {} \; -delete""")
-        if ret:
-            logger.info("Aborting with return code", ret)
-            exit(ret)
+        for dirpath, dirnames, filenames in os.walk(root):
+            for filename in filenames:
+                if filename.endswith('.pyc'):
+                    pyc_path = os.path.join(dirpath, filename)
+                    py_path = pyc_path[:-1]  # Remove trailing 'c' to get .py path
+                    if not os.path.isfile(py_path):
+                        os.remove(pyc_path)
+                        logger.info("Removed orphaned .pyc: %s", pyc_path)
