@@ -5,7 +5,6 @@ from esp.program.models import ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.resources.models import ResourceRequest
 from copy import deepcopy
-from esp.cal.models import *
 from datetime import date
 from esp.utils.web import render_to_response
 from esp.users.models import ESPUser

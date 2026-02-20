@@ -78,8 +78,11 @@ class Attribute(models.Model):
     attr_type = models.CharField(max_length=80)
     value = models.TextField()
 
-from esp.customforms.DynamicForm import *
-from esp.customforms.DynamicModel import *
+from .DynamicForm import (
+    BaseCustomForm, ComboForm, CustomFormHandler, FormHandler,
+    FormStorage, matches_answer
+)
+from .DynamicModel import DMH, DynamicModelHandler, get_file_upload_path
 
 def install():
     logger.info("Creating customforms schema...")

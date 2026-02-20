@@ -8,7 +8,7 @@ from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.db import connection
 from django.core.serializers.json import DjangoJSONEncoder
 
-from esp.customforms.models import *
+from .models import Attribute, Field, Form, Page, Section
 from esp.program.models import Program
 from esp.customforms.DynamicModel import DynamicModelHandler as DMH
 from esp.customforms.DynamicForm import FormHandler
