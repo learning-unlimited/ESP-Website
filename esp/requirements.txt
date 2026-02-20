@@ -33,7 +33,7 @@ Pygments==2.10.0 # django-extensions dependency
 pylibmc==1.5.0 # Talks to memcached
 pytz==2015.4 # Required for timezone support
 # pywatchman # Makes dev servers auto-reload
-raven # Required for Sentry error reporting
+sentry-sdk # Required for Sentry error reporting
 setuptools==57.5.0 # For building packages from source; stripe and a few others don't work with v58+
 selenium==2.44.0 # Runs selenium tests which probably don't work anymore
 shortuuid==0.4.2 # django-extensions dependency
@@ -42,4 +42,3 @@ twilio==6.63.2 # Required for text messaging support
 wheel==0.38.4  # For building modern packages
 werkzeug==0.16.1 # Required for runserver_plus (alternative to runserver provided by django-extensions)
 xlwt==1.3.0 # Does form and survey exporting
-
