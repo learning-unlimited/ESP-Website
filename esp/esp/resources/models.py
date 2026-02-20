@@ -127,7 +127,7 @@ class ResourceType(models.Model):
                 base_q = base_q | Q(program__isnull=True)
         else:
             base_q = Q(program__isnull=True)
-        current_type = ResourceType.objects.filter(base_q).filter(name__icontains=label)
+        current_type = ResourceType.objects.filter(base_q, name__icontains=label)
         if len(current_type) != 0:
             ret = current_type[0]
         else:
