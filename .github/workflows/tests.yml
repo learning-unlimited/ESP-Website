@@ -74,7 +74,12 @@ jobs:
       env:
         TRAVIS_JOB: ${{ matrix.travis_job }}
         PYTHON_VERSION: ${{ matrix.python-version }}
-      run: deploy/travis/script
+      run: |
+        if [ "${{ matrix.travis_job }}" = "lint" ]; then
+          deploy/travis/script 2>&1 | tee esp/lint-output.log
+        else
+          deploy/travis/script
+        fi
     - name: Upload Coverage to Codecov
       if: ${{ matrix.travis_job == 'test' }}
       uses: codecov/codecov-action@v5
@@ -83,3 +88,20 @@ jobs:
         verbose: true
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    - name: Upload test artifacts
+      if: always() && matrix.travis_job == 'test'
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-py${{ matrix.python-version }}
+        path: |
+          esp/test-results/
+          esp/test-output.log
+          esp/coverage.xml
+        retention-days: 7
+    - name: Upload lint artifacts
+      if: always() && matrix.travis_job == 'lint'
+      uses: actions/upload-artifact@v4
+      with:
+        name: lint-results-py${{ matrix.python-version }}
+        path: esp/lint-output.log
+        retention-days: 7
