@@ -117,18 +117,47 @@ def demographics(form, programs, students, profiles, result_dict={}):
                     birthyear_dict[profile.student_info.dob.year] = 0
                 birthyear_dict[profile.student_info.dob.year] += 1
 
-    #   Get financial aid info
-    finaid_applied = []
-    finaid_lunch = []
-    finaid_approved = []
-    for student in students:
-        for program in programs:
-            if student.appliedFinancialAid(program):
-                finaid_applied.append(student.id)
-                if student.financialaidrequest_set.filter(program=program, done=True, reduced_lunch=True).count() > 0:
-                    finaid_lunch.append(student.id)
-                if student.hasFinancialAid(program):
-                    finaid_approved.append(student.id)
+    #   Get financial aid info (bulk queries to avoid N+1)
+    from esp.program.models import FinancialAidRequest
+    from esp.accounting.models import FinancialAidGrant
+    from django.db.models import Q
+
+    #   1. Students who applied for financial aid (request with done=True)
+    applied_user_ids = set(
+        FinancialAidRequest.objects.filter(
+            user__in=students,
+            program__in=programs,
+            done=True,
+        ).values_list('user_id', flat=True)
+    )
+    finaid_applied = list(applied_user_ids)
+
+    #   2. Students who applied with reduced lunch
+    lunch_user_ids = set(
+        FinancialAidRequest.objects.filter(
+            user__in=students,
+            program__in=programs,
+            done=True,
+            reduced_lunch=True,
+        ).values_list('user_id', flat=True)
+    )
+    finaid_lunch = list(lunch_user_ids)
+
+    #   3. Students who have been approved (have a grant with nonzero aid).
+    #   This preserves the original hasFinancialAid() semantics: a student
+    #   is approved only if amount_finaid() > 0, which requires either
+    #   amount_max_dec > 0 or percent > 0 on the FinancialAidGrant.
+    #   Note: the original code only checks hasFinancialAid() for students
+    #   who already appliedFinancialAid(), so we intersect with applied_user_ids.
+    approved_user_ids = set(
+        FinancialAidGrant.objects.filter(
+            request__user__in=students,
+            request__program__in=programs,
+        ).filter(
+            Q(amount_max_dec__gt=0) | Q(percent__gt=0)
+        ).values_list('request__user_id', flat=True)
+    )
+    finaid_approved = list(applied_user_ids & approved_user_ids)
 
     #   Compile and render
     grad_years = sorted(gradyear_dict.keys())
