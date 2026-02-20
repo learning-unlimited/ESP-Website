@@ -74,8 +74,8 @@ class StudentRegPhaseZero(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
-            "admin_title": "Student Registration Phase Zero",
-            "link_title": "Student Registration Phase Zero",
+            "admin_title": "Program Lottery Registration",
+            "link_title": "Program Lottery Registration",
             "module_type": "learn",
             "seq": 2,
             "required": True,
