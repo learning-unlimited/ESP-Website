@@ -38,18 +38,19 @@ from esp.admin import admin_site
 from esp.accounting.models import Transfer, Account, FinancialAidGrant, \
     LineItemType, LineItemOptions, CybersourcePostback
 from esp.utils.admin_user_search import default_user_search
+from esp.utils.admin import CopyAdminMixin
 
 class LIOInline(admin.TabularInline):
     model = LineItemOptions
 
-class LITAdmin(admin.ModelAdmin):
+class LITAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ['text', 'amount_dec', 'program', 'required', 'for_finaid', 'num_options', 'max_quantity']
     search_fields = ['text', 'amount_dec', 'program__url', 'program__name']
     list_filter = ['program']
     inlines = [LIOInline,]
 admin_site.register(LineItemType, LITAdmin)
 
-class TransferAdmin(admin.ModelAdmin):
+class TransferAdmin(CopyAdminMixin, admin.ModelAdmin):
     def option_description(self, obj):
         if obj.option:
             return obj.option.description
@@ -68,14 +69,14 @@ class TransferAdmin(admin.ModelAdmin):
     raw_id_fields = ['paid_in']  # it's too expensive to iterate over all Transfers to create the dropdown menu
 admin_site.register(Transfer, TransferAdmin)
 
-class AccountAdmin(admin.ModelAdmin):
+class AccountAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ['name', 'program', 'balance']
 admin_site.register(Account, AccountAdmin)
 
 def finalize_finaid_grants(modeladmin, request, queryset):
     for grant in queryset:
         grant.finalize()
-class FinancialAidGrantAdmin(admin.ModelAdmin):
+class FinancialAidGrantAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ['id', 'request', 'user', 'program', 'finalized', 'amount_max_dec', 'percent']
     readonly_fields=('finalized',)
     list_filter = ['request__program']
@@ -83,7 +84,7 @@ class FinancialAidGrantAdmin(admin.ModelAdmin):
     actions = [ finalize_finaid_grants, ]
 admin_site.register(FinancialAidGrant, FinancialAidGrantAdmin)
 
-class CybersourcePostbackAdmin(admin.ModelAdmin):
+class CybersourcePostbackAdmin(CopyAdminMixin, admin.ModelAdmin):
     readonly_fields = ['timestamp']
     list_display = ['timestamp', 'transfer']
     search_fields = ['post_data', '=transfer__id', '=transfer__user__id',

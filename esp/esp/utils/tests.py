@@ -445,6 +445,7 @@ class QueryBuilderTest(DjangoTestCase):
                          str(Q(a_db_field="foo bar baz")))
 
 
+
 def suite():
     """Choose tests to expose to the Django tester."""
     s = unittest.TestSuite()
@@ -455,4 +456,86 @@ def suite():
     return s
 
 
+class CopyAdminMixinTest(DjangoTestCase):
+    """Tests for CopyAdminMixin - verifies the 'Save as new' copy button is
+    enabled on all relevant admin classes throughout the project."""
 
+    def test_mixin_sets_save_as(self):
+        """CopyAdminMixin should have save_as = True."""
+        from esp.utils.admin import CopyAdminMixin
+        self.assertTrue(CopyAdminMixin.save_as)
+
+    def test_utils_admin_classes_have_save_as(self):
+        """Admin classes in esp.utils should inherit save_as = True."""
+        from esp.utils.admin import TemplateOverrideAdmin, PrinterAdmin, PrintRequestAdmin
+        for cls in (TemplateOverrideAdmin, PrinterAdmin, PrintRequestAdmin):
+            self.assertTrue(
+                cls.save_as,
+                msg="%s should have save_as = True" % cls.__name__
+            )
+
+    def test_users_admin_classes_have_save_as(self):
+        """Admin classes in esp.users should inherit save_as = True."""
+        from esp.users.admin import (
+            UserForwarderAdmin, ZipCodeAdmin, ZipCodeSearchesAdmin,
+            UserAvailabilityAdmin, ESPUserAdmin, RecordTypeAdmin, RecordAdmin,
+            PermissionAdmin, ContactInfoAdmin, UserInfoAdmin, K12SchoolAdmin,
+            GradeChangeRequestAdmin,
+        )
+        for cls in (
+            UserForwarderAdmin, ZipCodeAdmin, ZipCodeSearchesAdmin,
+            UserAvailabilityAdmin, ESPUserAdmin, RecordTypeAdmin, RecordAdmin,
+            PermissionAdmin, ContactInfoAdmin, UserInfoAdmin, K12SchoolAdmin,
+            GradeChangeRequestAdmin,
+        ):
+            self.assertTrue(
+                cls.save_as,
+                msg="%s should have save_as = True" % cls.__name__
+            )
+
+    def test_program_admin_classes_have_save_as(self):
+        """Admin classes in esp.program should inherit save_as = True."""
+        from esp.program.admin import (
+            ProgramModuleAdmin, ArchiveClassAdmin, ProgramAdmin,
+            RegistrationProfileAdmin, TeacherBioAdmin, StudentRegistrationAdmin,
+            StudentSubjectInterestAdmin, SectionAdmin, SubjectAdmin,
+        )
+        for cls in (
+            ProgramModuleAdmin, ArchiveClassAdmin, ProgramAdmin,
+            RegistrationProfileAdmin, TeacherBioAdmin, StudentRegistrationAdmin,
+            StudentSubjectInterestAdmin, SectionAdmin, SubjectAdmin,
+        ):
+            self.assertTrue(
+                cls.save_as,
+                msg="%s should have save_as = True" % cls.__name__
+            )
+
+    def test_other_admin_classes_have_save_as(self):
+        """Admin classes in other esp apps should inherit save_as = True."""
+        from esp.accounting.admin import LITAdmin, TransferAdmin, AccountAdmin
+        from esp.cal.admin import EventAdmin
+        from esp.dbmail.admin import MessageVarsAdmin, EmailListAdmin
+        from esp.miniblog.admin import AnnouncementLinkAdmin, EntryAdmin
+        from esp.resources.admin import ResourceTypeAdmin, ResourceAdmin
+        from esp.survey.admin import SurveyAdmin, QuestionAdmin
+        from esp.tagdict.admin import TagAdmin
+        from esp.web.admin import NavBarEntryAdmin
+        from esp.qsd.admin import QuasiStaticDataAdmin
+        from esp.qsdmedia.admin import MediaAdmin
+
+        for cls in (
+            LITAdmin, TransferAdmin, AccountAdmin,
+            EventAdmin,
+            MessageVarsAdmin, EmailListAdmin,
+            AnnouncementLinkAdmin, EntryAdmin,
+            ResourceTypeAdmin, ResourceAdmin,
+            SurveyAdmin, QuestionAdmin,
+            TagAdmin,
+            NavBarEntryAdmin,
+            QuasiStaticDataAdmin,
+            MediaAdmin,
+        ):
+            self.assertTrue(
+                cls.save_as,
+                msg="%s should have save_as = True" % cls.__name__
+            )

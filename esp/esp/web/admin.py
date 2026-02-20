@@ -36,8 +36,9 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.admin import admin_site
 from esp.web.models import NavBarEntry, NavBarCategory
+from esp.utils.admin import CopyAdminMixin
 
-class NavBarEntryAdmin(admin.ModelAdmin):
+class NavBarEntryAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('category', 'sort_rank', 'text', 'link')
     list_filter = ('category',)
 

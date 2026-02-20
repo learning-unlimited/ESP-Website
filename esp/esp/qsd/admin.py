@@ -39,8 +39,9 @@ from esp.admin import admin_site
 from esp.qsd.models import QuasiStaticData
 from reversion.admin import VersionAdmin
 from esp.utils.admin_user_search import default_user_search
+from esp.utils.admin import CopyAdminMixin
 
-class QuasiStaticDataAdmin(VersionAdmin):
+class QuasiStaticDataAdmin(CopyAdminMixin, VersionAdmin):
     search_fields = default_user_search('author') + ['title', 'name', 'keywords', 'description', 'url']
     list_display = ['nav_category', 'title', 'url', 'disabled', 'create_date', 'author']
     list_filter = ['nav_category',]

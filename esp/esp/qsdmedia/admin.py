@@ -37,8 +37,9 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.admin import admin_site
 from esp.qsdmedia.models import Media
+from esp.utils.admin import CopyAdminMixin
 
-class MediaAdmin(admin.ModelAdmin):
+class MediaAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ['owner_type', 'owner_id', 'friendly_name', 'target_file', ]
     list_display_links = ['friendly_name']
     search_fields = ['friendly_name', 'owner_id', ]
