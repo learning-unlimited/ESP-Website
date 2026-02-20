@@ -37,6 +37,7 @@ Learning Unlimited, Inc.
 import logging
 logger = logging.getLogger(__name__)
 
+from django.contrib import messages
 from django.db.models.query import Q
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, main_call, aux_call
 from esp.utils.web import render_to_response
@@ -105,8 +106,12 @@ class FormstackAppModule(ProgramModuleObj):
         if not fsas.finaid_form():
             return self.goToCore(tl) # no finaid form
         app = FormstackStudentProgramApp.objects.filter(user=request.user, program=prog)
-        if not (app or request.user.isAdmin(prog)): # student has not applied for the program
-            return # XXX: more useful error here
+        if not (app or request.user.isAdmin(prog)):  # student has not applied for the program
+            messages.error(
+                request,
+                "You must apply to the program before you can access the financial aid application.",
+            )
+            return self.goToCore(tl)
         context = {}
         context['form'] = fsas.finaid_form()
         context['user_id_field'] = fsas.finaid_user_id_field
