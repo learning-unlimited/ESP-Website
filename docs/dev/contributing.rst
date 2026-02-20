@@ -1,7 +1,7 @@
 Workflow
 ========
 
-To set up your dev server, see `<vagrant.rst>`_.  The remainder of this document assumes you've set up a dev server, and are ready to contribute a change.
+To set up your dev server, see `<vagrant.rst>`_ or `<docker.rst>`_. The remainder of this document assumes you've set up a dev server, and are ready to contribute a change.
 
 Recommended one-time setup
 --------------------------
@@ -27,13 +27,29 @@ For normal, non-urgent features and bug fixes
 
 The following workflow applies if you've already been added as a collaborator to the repository.  If not, you should fork it using the button on Github, add it as a remote, and replace all of the ``git push``/``git push origin`` steps with ``git push remote-name``.
 
-From the directory ``/esp``: ::
+From the repository root: ::
 
   git checkout main  # for historical reasons we use 'main' instead of 'master'
   git pull
-  ./update_deps.sh # on vagrant: see vagrant docs; no need to bother if deps haven’t changed
-  ./manage.py update # on vagrant: fab refresh
   git checkout -b new-branch-name
+
+Then update your dev environment (choose one): ::
+
+  # Vagrant workflow
+  ./update_deps.sh  # no need to run if deps have not changed
+  ./manage.py update  # or use `fab refresh`
+
+  # Docker workflow
+  docker compose up -d db memcached
+  docker compose run --rm web python manage.py migrate
+
+To run the site locally while developing (choose one): ::
+
+  # Vagrant
+  fab runserver
+
+  # Docker
+  docker compose up web
 
 Write some code!
 Test your code!

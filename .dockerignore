@@ -1,0 +1,12 @@
+.git
+.github
+.vagrant
+env
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.swp
+*.tmp
+*.log

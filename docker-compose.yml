@@ -1,0 +1,39 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /workspace/esp
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/workspace
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      db:
+        condition: service_healthy
+      memcached:
+        condition: service_started
+
+  db:
+    image: postgres:14
+    environment:
+      - POSTGRES_DB=devsite_django
+      - POSTGRES_USER=esp
+      - POSTGRES_PASSWORD=esp
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U esp -d devsite_django"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  memcached:
+    image: memcached:1.6-alpine
+    command: memcached -m 256 -I 2m
+
+volumes:
+  postgres_data:
