@@ -150,7 +150,7 @@ Minor new features
 - Added global tags to change the options for the shirt size (one tag each for teachers, students, and volunteers), shirt style (universal tag), and food preference (only applicable to students) profile form fields.
 - Added a big board to the phase zero management page to track student lottery registration over time.
 - Added an option to supply a list of winners for the phase zero student lottery (instead of the default random algorithm).
-- Moved the schedule snippets that you can include in comm panel emails to templates, allowing them to be overriden.
+- Moved the schedule snippets that you can include in comm panel emails to templates, allowing them to be overridden.
 - Added a class registration filter to the comm panel, group text, and arbitrary user list modules.
 - Added tags "student_profile_hide_fields", "volunteer_profile_hide_fields", "educator_profile_hide_fields", and "guardian_profile_hide_fields" that allow any fields in the profile forms to be hidden (except for email address all profile forms and grade for the student profile form).
 - Made the scheduling diagnostics page more user-friendly and prettier.

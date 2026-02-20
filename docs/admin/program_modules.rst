@@ -180,7 +180,7 @@ There are two configurable options for the module:
 
 To override any of these settings, create a Tag (at /admin/tagdict/tag/) for
 the program, with the key donation_settings, and with the value being a JSON
-object with the overriden keys/values.
+object with the overridden keys/values.
 
 The module also has a donation pitch built into the editable text area on that
 page. It can be edited inline by an admin to something more customized.
@@ -196,7 +196,7 @@ the main student registration page.
 Student Application (StudentJunctionAppModule)
 ----------------------------------------------
 
-This is a module to allow students to fill out a global application for the program.  It is typically used in conjuction with the TeacherReviewApps module which allows teachers to specify application questions for each of their questions.
+This is a module to allow students to fill out a global application for the program.  It is typically used in conjunction with the TeacherReviewApps module which allows teachers to specify application questions for each of their questions.
 
 Student Lunch Selection (StudentLunchSelection)
 -----------------------------------------------
@@ -283,7 +283,7 @@ Formstack Application Module
 
 This is the module that embeds a Formstack form on a student-facing page for
 student applications.  For more information, see
-`</docs/admin/student_apps.rst>`_.
+`<student_apps.rst>`_.
 
 Class Change Request Module (ClassChangeRequest)
 ------------------------------------------------
@@ -341,7 +341,7 @@ This module will prompt teachers to fill out their profile information before pr
 
 If you would like to remove a question, you can do so using the following tag:
 
-* teacherreg_hide_fields - A comma seperated list of what fields (i.e. purchase_requests) you want to hide from teachers during teacher registration.
+* teacherreg_hide_fields - A comma separated list of what fields (i.e. purchase_requests) you want to hide from teachers during teacher registration.
 
 The questions shown on the teacher profile are configurable via the following tags:
 
@@ -417,7 +417,7 @@ Teacher Admissions Dashboard
 ----------------------------
 
 Provides an interface for teachers to review applications for their class.
-For more information, see `</docs/admin/student_apps.rst>`_.
+For more information, see `<student_apps.rst>`_.
 
 Teacher Onsite Webapp (TeacherOnsite)
 -------------------------------------
@@ -616,7 +616,7 @@ There are three configurable options for the module:
 
 To override any of these settings, create a Tag (at /admin/tagdict/tag/) for
 the program, with the key stripe_settings, and with the value being a JSON
-object with the overriden keys/values.
+object with the overridden keys/values.
 
 The module also has a donation pitch built into the editable text area on that
 page. It can be edited inline by an admin to something more customized.
@@ -709,7 +709,7 @@ Admin Admissions Dashboard
 --------------------------
 
 Provides an interface for admins to review all of the applications in the
-program. For more information, see `</docs/admin/student_apps.rst>`_.
+program. For more information, see `<student_apps.rst>`_.
 
 Student Registration Big Board
 --------------------------------------
