@@ -113,6 +113,34 @@ class ESPUserTest(TestCase):
         if (c2):
             studentUser.delete()
 
+    def testUnsubscribe(self):
+        """Test that unsubscribe links work for usernames with special characters."""
+        test_usernames = [
+            'testuser',       # Alpha
+            'test:user',      # Colon (the original breaker)
+            'test user',      # Space
+            'test!user',      # Exclamation
+            'test.user@ext',  # Dot/At/Plus (common in email-y usernames)
+            'test+user'
+        ]
+
+        for username in test_usernames:
+            user = ESPUser.objects.create(username=username)
+            try:
+                link = user.unsubscribe_link()
+                self.assertTrue(link.startswith('/myesp/unsubscribe/') or link.startswith('/unsubscribe/'))
+
+                # Extract token and verify it works
+                # URL pattern is ^unsubscribe/(?P<username>[^/]+)/(?P<token>[\w.:\-_=]+)/$
+                # So link ends with /token/
+                parts = [p for p in link.split('/') if p]
+                token = parts[-1]
+
+                self.assertTrue(user.check_token(token),
+                                f"Token check failed for username: {username}")
+            finally:
+                user.delete()
+
 class PasswordRecoveryTicketTest(TestCase):
     def setUp(self):
         self.user, created = ESPUser.objects.get_or_create(username='forgetful')
