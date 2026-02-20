@@ -117,18 +117,40 @@ def demographics(form, programs, students, profiles, result_dict={}):
                     birthyear_dict[profile.student_info.dob.year] = 0
                 birthyear_dict[profile.student_info.dob.year] += 1
 
-    #   Get financial aid info
-    finaid_applied = []
-    finaid_lunch = []
-    finaid_approved = []
-    for student in students:
-        for program in programs:
-            if student.appliedFinancialAid(program):
-                finaid_applied.append(student.id)
-                if student.financialaidrequest_set.filter(program=program, done=True, reduced_lunch=True).count() > 0:
-                    finaid_lunch.append(student.id)
-                if student.hasFinancialAid(program):
-                    finaid_approved.append(student.id)
+    #   Get financial aid info using bulk queries instead of per-student loops.
+    from esp.accounting.models import FinancialAidGrant
+    from esp.program.models import FinancialAidRequest
+
+    #   1. All students who applied (have a done=True financial aid request)
+    applied_user_ids = set(
+        FinancialAidRequest.objects.filter(
+            user__in=students,
+            program__in=programs,
+            done=True,
+        ).values_list('user_id', flat=True)
+    )
+
+    #   2. Of those, students with reduced_lunch=True
+    lunch_user_ids = set(
+        FinancialAidRequest.objects.filter(
+            user__in=students,
+            program__in=programs,
+            done=True,
+            reduced_lunch=True,
+        ).values_list('user_id', flat=True)
+    )
+
+    #   3. Students who have been approved (have a FinancialAidGrant)
+    approved_user_ids = set(
+        FinancialAidGrant.objects.filter(
+            request__user__in=students,
+            request__program__in=programs,
+        ).values_list('request__user_id', flat=True)
+    )
+
+    finaid_applied = list(applied_user_ids)
+    finaid_lunch = list(lunch_user_ids)
+    finaid_approved = list(applied_user_ids & approved_user_ids)
 
     #   Compile and render
     grad_years = sorted(gradyear_dict.keys())
