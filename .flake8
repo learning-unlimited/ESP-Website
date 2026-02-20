@@ -1,0 +1,4 @@
+[flake8]
+ignore = E,F,W
+select = E10,F82,F831,W191,W29,W601,W603,W604
+exclude = .git,env
