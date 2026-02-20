@@ -651,6 +651,12 @@ class ProgramPrintables(ProgramModuleObj):
                                'res_values': [classes[0].resourcerequest_set.filter(res_type__name=x).values_list('desired_value', flat=True) for x in resource_types]})
 
         scheditems = list(filter(filt_exp, scheditems))
+        #   Pre-cache meeting time data to avoid DB queries inside sort comparator.
+        for item in scheditems:
+            cls = item['cls']
+            mt = list(cls.meeting_times.all())
+            item['_mt_count'] = len(mt)
+            item['_first_start'] = min((t.start for t in mt), default=None) if mt else None
         scheditems.sort(key=cmp_to_key(sort_exp))
 
         context['res_types'] = resource_types
@@ -693,18 +699,21 @@ class ProgramPrintables(ProgramModuleObj):
 
     @staticmethod
     def cmpsorttime(one, other):
-        if (one['cls'].meeting_times.exists() and other['cls'].meeting_times.exists()):
-            cmp0 = cmp(one['cls'].meeting_times.all()[0].start, other['cls'].meeting_times.all()[0].start)
+        #   Use pre-cached _mt_count and _first_start to avoid DB queries.
+        one_count = one.get('_mt_count', 0)
+        other_count = other.get('_mt_count', 0)
+        if one_count > 0 and other_count > 0:
+            cmp0 = cmp(one.get('_first_start'), other.get('_first_start'))
         else:
-            cmp0 = cmp(one['cls'].meeting_times.count(), other['cls'].meeting_times.count())
+            cmp0 = cmp(one_count, other_count)
 
         if cmp0 != 0:
             return cmp0
 
+        # In Python 3, dicts don't have a canonical ordering
+        # If this is being called from teachersbyFOO (and we're already at this line so the times are the same,
+        # let's use cmpsortname as a default
         if isinstance(one, dict) or isinstance(other, dict):
-            # In Python 3, dicts don't have a canonical ordering
-            # If this is being called from teachersbyFOO (and we're already at this line so the times are the same,
-            # let's use cmpsortname as a default
             return ProgramPrintables.cmpsortname(one, other)
         return cmp(one, other)
 
