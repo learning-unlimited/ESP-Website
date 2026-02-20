@@ -114,6 +114,9 @@ LOGGING = {
         'verbose': {
             'format': '[%(asctime)s %(name)s:%(lineno)s] %(levelname)s: %(message)s',
         },
+        'structured': {
+            '()': 'esp.utils.log.StructuredFormatter',
+        },
         'brief': {
             'format': '%(levelname)s: %(message)s',
         },
@@ -141,7 +144,7 @@ LOGGING = {
             # LOG_FILE is set in django_settings or overridden in
             # local_settings
             'filename': LOG_FILE,
-            'formatter': 'verbose',
+            'formatter': 'structured' if LOG_STRUCTURED else 'verbose',
         },
         'filescript': {
             'level': LOG_LEVEL,
@@ -149,7 +152,7 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filters': ['require_in_script'],
             'filename': SHELL_LOG_FILE,  # computed from LOG_FILE above
-            'formatter': 'verbose',
+            'formatter': 'structured' if LOG_STRUCTURED else 'verbose',
         },
         'console': {
             'level': LOG_LEVEL,
@@ -263,4 +266,3 @@ if SENTRY_DSN:
         'dsn': SENTRY_DSN,
         'release': raven.fetch_git_sha(os.path.join(PROJECT_ROOT, '..')),
     }
-
