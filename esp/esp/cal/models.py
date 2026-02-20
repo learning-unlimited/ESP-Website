@@ -221,7 +221,7 @@ class Event(models.Model):
     def __cmp__(self, other):
         try:
             return cmp(self.start, other.start)
-        except:
+        except AttributeError:
             return 0
     def __lt__(self, other):
         return self.__cmp__(other) < 0

@@ -134,7 +134,7 @@ class SplitDateWidget(forms.MultiWidget):
             vals = super(SplitDateWidget, self).value_from_datadict(data, files, name)
             try:
                 return date(int(vals[2]), int(vals[0]), int(vals[1]))
-            except:
+            except (ValueError, TypeError, IndexError):
                 return None
 
     #   Format output

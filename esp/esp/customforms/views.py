@@ -187,7 +187,7 @@ def onModify(request):
                 metadata = json.loads(request.body)
                 try:
                     form = Form.objects.get(id=int(metadata['form_id']))
-                except:
+                except (Form.DoesNotExist, ValueError):
                     raise ESPError('Form %s not found' % metadata['form_id'], log=False)
                 dmh = DMH(form=form)
                 link_models_list = []     # Stores a cache of link models that should not be removed

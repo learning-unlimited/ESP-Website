@@ -76,10 +76,10 @@ class CheckAvailabilityModule(ProgramModuleObj):
 
         try:
             teacher = ESPUser.objects.get(id=target_id)
-        except:
+        except ESPUser.DoesNotExist:
             try:
                 teacher = ESPUser.objects.get(username=target_id)
-            except:
+            except ESPUser.DoesNotExist:
                 raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
         availability = AvailabilityModule(program = prog)
         return availability.availabilityForm(request, tl, one, two, prog, teacher, True)

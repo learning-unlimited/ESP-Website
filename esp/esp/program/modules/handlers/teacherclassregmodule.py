@@ -736,7 +736,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     def editclass(self, request, tl, one, two, module, extra, prog):
         try:
             int(extra)
-        except:
+        except (ValueError, TypeError):
             raise ESPError("Invalid integer for class ID! Got `{}`".format(extra), log=False)
 
         classes = ClassSubject.objects.filter(id = extra)

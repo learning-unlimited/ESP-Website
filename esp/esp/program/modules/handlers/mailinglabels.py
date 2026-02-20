@@ -114,7 +114,7 @@ class MailingLabels(ProgramModuleObj):
                     if form.is_valid():
                         try:
                             zipc = ZipCode.objects.get(zip_code = form.cleaned_data['zip_code'])
-                        except:
+                        except ZipCode.DoesNotExist:
                             raise ESPError('Please enter a valid US zipcode. "%s" is not valid.' % form.cleaned_data['zip_code'], log=False)
 
                         zipcodes = zipc.close_zipcodes(form.cleaned_data['proximity'])
@@ -261,7 +261,7 @@ class MailingLabels(ProgramModuleObj):
                                                    ma.group(3),
                                                    ma.group(4))
                     info.address_postal = key
-                except:
+                except AttributeError:
                     key = False
                     info.address_postal = 'FAILED'
 

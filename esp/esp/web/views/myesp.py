@@ -198,7 +198,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             replacement_data = form.data.copy()
             try:
                 replacement_data['k12school'] = form.fields['k12school'].clean(form.data['k12school']).id
-            except:
+            except Exception:
                 pass
             form = FormClass(curUser, replacement_data)
             if prog_input is None:

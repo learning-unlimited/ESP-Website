@@ -57,7 +57,7 @@ def get_from_id(id, module, strtype = 'object', error = True):
     try:
         newid    = int(id)
         foundobj = module.objects.get(id = newid)
-    except:
+    except (ValueError, TypeError, module.DoesNotExist):
         if error:
             raise ESPError('Could not find the %s with id %s.' % (strtype, id), log=False)
         return None

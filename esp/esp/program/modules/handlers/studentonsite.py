@@ -132,7 +132,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         if extra:
             try:
                 ts = Event.objects.get(id=int(extra), program=prog)
-            except:
+            except (ValueError, Event.DoesNotExist):
                 raise ESPError('Please use the links on the schedule page.', log=False)
             context['timeslot'] = ts
             classes = list(ClassSubject.objects.catalog(prog, ts))

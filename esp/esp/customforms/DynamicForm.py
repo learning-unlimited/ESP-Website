@@ -406,7 +406,7 @@ class ComboForm(SessionWizardView):
             else:
                 try:
                     new_instance = v['model'].objects.create(**v['data'])
-                except:
+                except Exception:
                     # show some error message
                     pass
             if v['instance'] is not None:
@@ -727,7 +727,7 @@ class FormHandler:
         import xlwt
         try:
             from cStringIO import StringIO
-        except:
+        except ImportError:
             from io import StringIO
 
         response_data = self.getResponseData(self.form)

@@ -168,7 +168,7 @@ def activate_account(request):
 
     try:
         u = ESPUser.objects.get(username = request.GET['username'])
-    except:
+    except ESPUser.DoesNotExist:
         raise ESPError("Invalid account username.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page.", log=False)
 
     if u.is_active:

@@ -103,7 +103,7 @@ def create_schema(db):
     transaction.set_autocommit(False)
     try:
         db.execute("CREATE SCHEMA customforms")
-    except:
+    except Exception:
         transaction.rollback()
     else:
         transaction.commit()

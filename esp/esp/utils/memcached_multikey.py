@@ -14,7 +14,7 @@ import hashlib
 
 try:
     import six.moves.cPickle as pickle
-except:
+except ImportError:
     import pickle
 
 CACHE_WARNING_SIZE = 1 * 1024**2

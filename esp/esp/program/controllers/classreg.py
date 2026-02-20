@@ -243,7 +243,7 @@ class ClassCreationController(object):
             mail_ctxt['optimal_class_size_range'] = ''
         try:
             mail_ctxt['allowable_class_size_ranges'] = cls.allowable_class_size_ranges.all()
-        except:
+        except AttributeError:
             # If the allowable_class_size_ranges field doesn't exist, just don't do anything.
             pass
 

@@ -530,7 +530,7 @@ class MessageVars(models.Model):
         """ Get a variable from this object. """
         try:
             provider = pickle.loads(self.pickled_provider)
-        except:
+        except Exception:
             raise ESPError('Could not load variable provider object!')
 
         if hasattr(provider, 'get_msg_vars'):
@@ -663,7 +663,7 @@ class CustomSMTPBackend(SMTPEmailBackend):
             self.connection.sendmail(sanitize_address(return_path, email_message.encoding),
                     recipients,
                     email_message.message().as_string())
-        except:
+        except Exception:
             if not self.fail_silently:
                 raise
             return False

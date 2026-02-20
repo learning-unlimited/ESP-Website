@@ -1732,7 +1732,7 @@ def get_subclass_instance(cls, obj):
         result = None
         try:
             result = c.objects.get(id=obj.id)
-        except:
+        except c.DoesNotExist:
             pass
         if result:
             return get_subclass_instance(c, result)

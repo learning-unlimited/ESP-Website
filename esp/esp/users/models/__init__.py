@@ -576,7 +576,7 @@ class BaseESPUser(object):
             num = 0
         try:
             num = int(num)
-        except:
+        except (ValueError, TypeError):
             raise ESPError('Could not find user "%s %s"' % (first, last))
         users = ESPUser.objects.filter(last_name__iexact = last,
                                     first_name__iexact = first).order_by('id')
@@ -1027,7 +1027,7 @@ class BaseESPUser(object):
             # An error here can cause a good chunk of the site to break,
             # so we'll just catch this if it fails and fall back on the default
             d = datetime.strptime(Tag.getTag('grade_increment_date'), '%Y-%m-%d').date().replace(year=curyear)
-        except:
+        except (ValueError, TypeError):
             d = date(curyear, 7, 31)
         if d > now:
             schoolyear = curyear
@@ -1117,7 +1117,7 @@ class BaseESPUser(object):
             schoolyear = ESPUser.current_schoolyear()
         try:
             yog        = int(yog)
-        except:
+        except (ValueError, TypeError):
             return 0
         return schoolyear + 12 - yog
 
@@ -1127,7 +1127,7 @@ class BaseESPUser(object):
             schoolyear = ESPUser.current_schoolyear()
         try:
             grade = int(grade)
-        except:
+        except (ValueError, TypeError):
             return 0
 
         return schoolyear + 12 - grade
@@ -1487,7 +1487,7 @@ class StudentInfo(models.Model):
                 else:
                     studentInfo.k12school = K12School.objects.filter(name__icontains=new_data.get('k12school'))[0]
 
-        except:
+        except (K12School.DoesNotExist, IndexError, ValueError):
             logger.warning('Could not find k12school for "%s"', new_data.get('k12school'))
             studentInfo.k12school = None
 
@@ -1851,7 +1851,7 @@ class ZipCode(models.Model):
         try:
             distance_decimal = Decimal(str(distance))
             distance_float = float(str(distance))
-        except:
+        except (ValueError, ArithmeticError):
             raise ESPError('%s should be a valid decimal number!' % distance)
 
         if distance < 0:
@@ -2024,7 +2024,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
                         old_self.address_state != self.address_state:
                     self.address_postal = None
                     self.undeliverable = False
-            except:
+            except ContactInfo.DoesNotExist:
                 pass
         if self.address_postal is not None:
             self.address_postal = str(self.address_postal)
@@ -2136,7 +2136,7 @@ class PersistentQueryFilter(models.Model):
         """ This will return the Q object that was passed into it. """
         try:
             QObj = pickle.loads(self.q_filter)
-        except:
+        except Exception:
             raise ESPError('Invalid Q object stored in database.')
 
         #   Do not include users if they have disabled their account.
@@ -2187,7 +2187,7 @@ class PersistentQueryFilter(models.Model):
         """ This function will return a PQF object from the id given. """
         try:
             id = int(id)
-        except:
+        except (ValueError, TypeError):
             assert False, 'The query filter id given is invalid.'
         return PersistentQueryFilter.objects.get(id = id,
                                                  item_model = str(model))
@@ -2201,11 +2201,11 @@ class PersistentQueryFilter(models.Model):
         import hashlib
         try:
             qobject_string = pickle.dumps(QObject)
-        except:
+        except Exception:
             qobject_string = b''
         try:
             filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha1(qobject_string).hexdigest())#    pass
-        except:
+        except PersistentQueryFilter.DoesNotExist:
             filterObj = PersistentQueryFilter.create_from_Q(item_model  = model,
                                                             q_filter    = QObject,
                                                             description = description)

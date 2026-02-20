@@ -375,7 +375,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         """
         try:
             lock_level = int(request.POST.get('lock_level', '0'))
-        except:
+        except (ValueError, TypeError):
             lock_level = 0
 
         if request.method == 'POST':

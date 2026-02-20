@@ -601,7 +601,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
                                  "Section was assigned to wrong timeslot")
             db_interface.check_can_schedule_sections = \
                 db_interface_can_schedule
-        except:
+        except Exception:
             db_interface.check_can_schedule_sections = \
                 db_interface_can_schedule
             raise
