@@ -1,0 +1,18 @@
+{# Prototype component for django-cotton evaluation (#3916). #}
+<c-vars links button_class="btn btn-inverse" />
+
+<span class="dropdown">
+  <button class="{{ button_class }} dropdown-toggle" data-toggle="dropdown" style="margin-left:0px;">
+    <span class="caret"></span>
+  </button>
+
+  <ul class="dropdown-menu">
+    {% for link in links %}
+      <li>
+        <a href="{{ link.href }}"{% if link.target %} target="{{ link.target }}"{% endif %}>
+          {{ link.label }}
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+</span>
