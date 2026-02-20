@@ -340,7 +340,7 @@ def dump_survey_xlsx(user, prog, surveys, request, tl):
                     cell.number_format = 'yyyy-mm-dd hh:mm:ss'
                 i += 1
             for a in Answer.objects.filter(question__in=qs).order_by('id'):
-                if a.survey_response_id in sr_dict:
+                if a.survey_response_id in sr_dict and a.question_id in q_dict:
                     ws.cell(row=sr_dict[a.survey_response_id], column=q_dict[a.question_id], value=delist(a.answer))
             
             # PER-CLASS QUESTIONS
@@ -381,7 +381,8 @@ def dump_survey_xlsx(user, prog, surveys, request, tl):
                         ws_perclass.cell(row=i, column=3, value=cs.emailcode())
                         ws_perclass.cell(row=i, column=4, value=cs.title())
                     i += 1
-                ws_perclass.cell(row=row, column=q_dict_perclass[a.question_id], value=delist(a.answer))
+                if a.question_id in q_dict_perclass:
+                    ws_perclass.cell(row=row, column=q_dict_perclass[a.question_id], value=delist(a.answer))
         
         # Ensure at least one sheet exists
         if len(wb.sheetnames) == 0:
