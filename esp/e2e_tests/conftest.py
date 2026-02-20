@@ -2,7 +2,7 @@
 Shared fixtures for Playwright E2E tests.
 
 These fixtures provide common setup for all E2E tests, including
-base URL configuration and test user creation.
+base URL configuration and credentials for existing test users.
 
 Usage:
     Start the Django dev server before running tests:
