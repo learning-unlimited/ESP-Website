@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -48,7 +47,7 @@ class ResourceModuleTest(ProgramFrameworkTest):
     ## It also also needs to test all the other queries on this page.
 
     def setUp(self):
-        super(ResourceModuleTest, self).setUp()
+        super().setUp()
 
         if not getattr(self, 'isSetUp', False):
             self.pm = ProgramModule.objects.get(handler='ResourceModule')

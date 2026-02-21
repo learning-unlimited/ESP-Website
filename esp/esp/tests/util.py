@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from argcache.registry import dump_all_caches
 
 from django.core.cache import cache
@@ -23,11 +22,11 @@ class CacheFlushTestCase(TestCase):
 
     def _fixture_setup(self):
         self._flush_cache()
-        super(CacheFlushTestCase, self)._fixture_setup()
+        super()._fixture_setup()
 
     def _fixture_teardown(self):
         self._flush_cache()
-        super(CacheFlushTestCase, self)._fixture_teardown()
+        super()._fixture_teardown()
 
 def user_role_setup(names=['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']):
     from django.contrib.auth.models import Group
