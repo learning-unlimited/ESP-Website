@@ -736,7 +736,7 @@ class ProgramFrameworkTest(TestCase):
             )
             teacher_regprofile.save()
 
-    # For backwards compatability.
+    # For backwards compatibility.
     add_student_profiles = add_user_profiles
 
     #   Helper function to put the students in classes.

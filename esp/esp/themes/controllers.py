@@ -107,7 +107,7 @@ class ThemeController(object):
     def get_template_settings(self):
         """
         Get the current template settings. The base settings are the initial
-        values of the configuration form fields, which are overriden by values
+        values of the configuration form fields, which are overridden by values
         in the theme_template_control Tag.
         """
         form_class = self.get_config_form_class(self.get_current_theme())

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation & Wiki
+    url: https://github.com/learning-unlimited/ESP-Website/wiki
+    about: Check the wiki for setup guides, FAQs, and documentation before opening an issue.
+  - name: Discussions
+    url: https://github.com/learning-unlimited/ESP-Website/discussions
+    about: Start a discussion, ask a question, or share ideas with the community.

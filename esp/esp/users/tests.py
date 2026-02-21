@@ -290,7 +290,7 @@ class MakeAdminTest(TestCase):
         user_role_setup()
 
     def runTest(self):
-        # Make sure user starts off with no administrator priviliges
+        # Make sure user starts off with no administrator privileges
         self.assertFalse(self.user.is_staff)
         self.assertFalse(self.user.is_superuser)
         self.assertFalse(self.user.groups.filter(name="Administrator").exists())
@@ -370,7 +370,7 @@ class AccountCreationTest(TestCase):
         self.assertTemplateUsed(response3, 'registration/newuser_phase1.html')
         self.assertContains(response3, "do_reg_no_really")
 
-        #check when you send do_reg_no_really it procedes
+        #check when you send do_reg_no_really it proceeds
         response4 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher", "do_reg_no_really":""}, follow=False)
         self.assertRedirects(response4, "/myesp/register/information?email=tsutton125%40gmail.com&initial_role=Teacher")
         response4 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher", "do_reg_no_really":""}, follow=True)

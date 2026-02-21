@@ -51,7 +51,7 @@ import re
 
 # django Util
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.db.models.query import Q
 from django.db.models import signals, Sum
 from django.db.models.manager import Manager
@@ -636,9 +636,9 @@ class ClassSection(models.Model):
         #   Return a little string that tells you what's up with the resource assignments.
         if not self.sufficient_length():
             retVal = 'Needs time'
-        elif self.classrooms().count() < 1:
+        elif not self.classrooms().exists():
             retVal = 'Needs room'
-        elif self.unsatisfied_requests().count() > 0:
+        elif self.unsatisfied_requests().exists():
             retVal = 'Needs resources'
         else:
             retVal = 'Happy'
@@ -650,7 +650,7 @@ class ClassSection(models.Model):
 
     @cache_function
     def unsatisfied_requests(self):
-        if self.classrooms().count() > 0:
+        if self.classrooms().exists():
             primary_room = self.classrooms()[0]
             result = primary_room.satisfies_requests(self)[1]
         else:
@@ -734,7 +734,7 @@ class ClassSection(models.Model):
                 status = False
                 occupiers_str = ''
                 occupiers_set = r.assignments()
-                if occupiers_set.count() > 0: # We really shouldn't have to test for this, but I guess it's safer not to assume... -ageng 2008-11-02
+                if occupiers_set.exists(): # We really shouldn't have to test for this, but I guess it's safer not to assume... -ageng 2008-11-02
                     occupiers_str = six.u(' by %s during %s') % ((occupiers_set[0].target or occupiers_set[0].target_subj).emailcode(), r.event.pretty_time())
                 errors.append( six.u('Room %s is occupied%s.') % ( base_room.name, occupiers_str ) )
                 # If we don't allow partial fulfillment, undo and quit.
@@ -927,7 +927,7 @@ class ClassSection(models.Model):
             meeting_times = self.meeting_times.all()
         for sec in user.getTaughtSections(self.parent_program, include_cancelled = False).exclude(id=self.id):
             for time in sec.meeting_times.all():
-                if meeting_times.filter(id = time.id).count() > 0:
+                if meeting_times.filter(id = time.id).exists():
                     return (sec, time)
 
         return None
@@ -1071,7 +1071,7 @@ class ClassSection(models.Model):
                     send_mail(ssi_email_title, msgtext, from_email, to_email)
 
         if text_students and self.parent_program.hasModule('GroupTextModule') and GroupTextModule.is_configured():
-            if self.students(student_verbs).distinct().count() > 0:
+            if self.students(student_verbs).distinct().exists():
                 msgtext = render_to_string('texts/class_cancellation.txt', context)
                 students_to_text = PersistentQueryFilter.create_from_Q(ESPUser, Q(id__in=[x.id for x in self.students(student_verbs)]))
                 GroupTextModule.sendMessages(students_to_text, msgtext)
@@ -1101,17 +1101,18 @@ class ClassSection(models.Model):
                 to_email = [t.get_email_sendto_address()]
                 send_mail(email_title, email_content, from_email, to_email)
 
-        self.clearStudents()
+        with transaction.atomic():
+            self.clearStudents()
 
-        #   If specified, remove the class's time and room assignment.
-        if unschedule:
-            self.clearRooms()
-            self.meeting_times.clear()
-            # add a scheduler log entry to make the change occur if anyone currently has the scheduler open
-            prog = self.parent_program
-            prog.getModule("AJAXSchedulingModule").get_change_log(prog).appendScheduling([], "", int(self.id), None)
-        self.status = ClassStatus.CANCELLED
-        self.save()
+            #   If specified, remove the class's time and room assignment.
+            if unschedule:
+                self.clearRooms()
+                self.meeting_times.clear()
+                # add a scheduler log entry to make the change occur if anyone currently has the scheduler open
+                prog = self.parent_program
+                prog.getModule("AJAXSchedulingModule").get_change_log(prog).appendScheduling([], "", int(self.id), None)
+            self.status = ClassStatus.CANCELLED
+            self.save()
 
     def clearStudents(self):
         now = timezone.now()
@@ -1175,7 +1176,7 @@ class ClassSection(models.Model):
 
     def firstBlockEvent(self):
         eventList = self.meeting_times.all().order_by('start')
-        if eventList.count() == 0:
+        if not eventList.exists():
             return None
         else:
             return eventList[0]
@@ -1333,6 +1334,7 @@ class ClassSection(models.Model):
         for list_name in list_names:
             remove_list_member(list_name, user.email)
 
+    @transaction.atomic
     def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False, webapp=False):
         if prereg_verb is None:
             scrmi = self.parent_program.studentclassregmoduleinfo
@@ -1374,7 +1376,7 @@ class ClassSection(models.Model):
                 app = user.getApplication(self.parent_program, create=False)
                 if app:
                     app.set_questions()
-                    if app.questions.count() > 0:
+                    if app.questions.exists():
                         app.done = False
                         app.save()
 
@@ -1513,7 +1515,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return rooms
 
     def ascii_info(self):
-        return self.class_info.encode('ascii', 'ignore')
+        return self.class_info.encode('ascii', 'ignore').decode('ascii')
 
     def _get_meeting_times(self):
         timeslot_id_list = []
@@ -1549,7 +1551,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         if timeslot:
             qs = self.sections.filter(meeting_times=timeslot)
-            if qs.count() > 0:
+            if qs.exists():
                 result = qs[0]
             else:
                 result = None
@@ -1563,7 +1565,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def default_section(self, create=True):
         """ Return the first section that was created for this class. """
         sec_qs = self.sections.order_by('id')
-        if sec_qs.count() == 0:
+        if not sec_qs.exists():
             if create:
                 return self.add_default_section()
             else:
@@ -1603,7 +1605,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if self.duration is not None and self.duration > 0:
             duration = self.duration
 
-        if self.sections.count() == 0:
+        if not self.sections.exists():
             return self.add_section(duration, status)
         else:
             return None
@@ -1850,7 +1852,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             for section in cls.get_sections():
                 for time in section.meeting_times.all():
                     for sec in self.sections.all().exclude(id=section.id):
-                        if sec.meeting_times.filter(id = time.id).count() > 0:
+                        if sec.meeting_times.filter(id = time.id).exists():
                             return True
 
         #   Check that adding this teacher as a coteacher would not overcommit them
@@ -2050,14 +2052,14 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def firstBlockEvent(self):
         eventList = self.all_meeting_times.all().order_by('start')
-        if eventList.count() == 0:
+        if not eventList.exists():
             return None
         else:
             return eventList[0]
 
     def getArchiveClass(self):
         result = ArchiveClass.objects.filter(original_id=self.id)
-        if result.count() > 0:
+        if result.exists():
             return result[0]
 
         result = ArchiveClass()
@@ -2122,7 +2124,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
             teachers = self.get_teachers()
             for t in teachers:
-                if t.getTaughtClasses(self.parent_program).filter(status__gte=10).count() == 0:
+                if not t.getTaughtClasses(self.parent_program).filter(status__gte=10).exists():
                     mailing_list_name = "%s_%s" % (self.parent_program.program_type, self.parent_program.program_instance)
                     teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
                     remove_list_member(teachers_list_name, t.email)
