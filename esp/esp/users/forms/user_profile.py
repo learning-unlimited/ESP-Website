@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django import forms
 from esp.users.forms import _states
 from esp.tagdict.models import Tag
