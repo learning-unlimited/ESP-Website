@@ -44,7 +44,7 @@ class AvailabilityModuleTest(ProgramFrameworkTest):
             'num_timeslots': 3, 'timeslot_length': 50, 'timeslot_gap': 10,
             'num_teachers': 1, 'classes_per_teacher': 2, 'sections_per_class': 1
             } )
-        super(AvailabilityModuleTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
 
         # Get and remember the instance of AvailabilityModule
         am = ProgramModule.objects.get(handler='AvailabilityModule', module_type='teach')

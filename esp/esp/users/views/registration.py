@@ -235,6 +235,6 @@ class GradeChangeRequestView(CreateView):
 
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
-        return super(GradeChangeRequestView, self).dispatch(*args, **kwargs)
+        return super().dispatch(*args, **kwargs)
 
 

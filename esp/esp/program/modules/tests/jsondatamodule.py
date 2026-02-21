@@ -52,7 +52,7 @@ class JSONDataModuleTest(ProgramFrameworkTest):
     ## It also also needs to test all the other queries on this page.
 
     def setUp(self):
-        super(JSONDataModuleTest, self).setUp()
+        super().setUp()
         # Generate some nonzero stats
         self.schedule_randomly()
         self.add_user_profiles()

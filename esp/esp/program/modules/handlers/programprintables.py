@@ -1988,7 +1988,7 @@ class AllClassesSelectionForm(forms.Form):
     subject_fields = forms.MultipleChoiceField()
 
     def __init__(self, program, *args, **kwargs):
-        super(AllClassesSelectionForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.converter = AllClassesFieldConverter(program)
         self.fields['subject_fields'].choices = self.converter.field_choices
@@ -2009,7 +2009,7 @@ class StudentScheduleFormatForm(forms.Form):
     pretext = forms.CharField(required = False, widget = forms.widgets.Textarea, label = mark_safe("Text to be placed just <u>above</u> the schedule, if any (supports LaTeX)"))
     posttext = forms.CharField(required = False, widget = forms.widgets.Textarea, label = mark_safe("Text to be placed just <u>below</u> the schedule, if any (supports LaTeX)"))
     def __init__(self, program, *args, **kwargs):
-        super(StudentScheduleFormatForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if Tag.getProgramTag("student_schedule_format", program):
             self.fields['schedule_fields'].initial = json.loads(Tag.getProgramTag("student_schedule_format", program))
         else:

@@ -23,4 +23,4 @@ class AjaxForeignKey(ForeignKey):
                     'field': self}
 
         defaults.update(kwargs)
-        return super(AjaxForeignKey, self).formfield(**defaults)
+        return super().formfield(**defaults)

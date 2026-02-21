@@ -136,5 +136,5 @@ class TestQsdCachePurging(SeleniumTestCase):
         self.check_page("/test.html")
 
     def tearDown(self):
-        super(TestQsdCachePurging, self).tearDown()
+        super().tearDown()
         self.driver.testserver_port = self._old_port

@@ -8,7 +8,7 @@ from django.core import mail
 class CancelClassTest(ProgramFrameworkTest):
     def setUp(self):
         # Set up the program framework and randomly schedule classes
-        super(CancelClassTest, self).setUp()
+        super().setUp()
         self.schedule_randomly()
 
         # Find a class to be cancelled
