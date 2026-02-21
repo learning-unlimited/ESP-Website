@@ -26,11 +26,16 @@ class AdminMorph(ProgramModuleObj):
 
     @classmethod
     def module_properties(cls):
+        # stacklevel=1 pins the warning location to this warn() call rather
+        # than to each individual caller.  Python's default "once" filter
+        # then suppresses the warning after the first emission per interpreter
+        # session, regardless of how many times module_properties() is called
+        # or from how many different places, preventing log flooding.
         warnings.warn(
             "AdminMorph is deprecated and will be removed once migration "
             "0047_remove_adminmorph has been applied.",
             DeprecationWarning,
-            stacklevel=2,
+            stacklevel=1,
         )
         return {
             "admin_title": "User Morphing Capability (DEPRECATED)",

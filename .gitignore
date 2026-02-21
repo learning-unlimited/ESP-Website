@@ -41,3 +41,6 @@ local_fabfile.py
 
 # Mac
 .DS_Store
+
+# Migration state file written by 0047_remove_adminmorph to support cross-process rollback
+esp/esp/program/modules/migrations/.adminmorph_state.json

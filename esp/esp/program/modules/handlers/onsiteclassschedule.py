@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from django.http     import HttpResponseRedirect
+from esp.middleware  import ESPError
 from esp.users.views import search_for_user
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
@@ -97,6 +98,14 @@ class OnsiteClassSchedule(ProgramModuleObj):
         if user_id:
             try:
                 user = ESPUser.objects.get(id=user_id)
+                # Restrict to non-admin students only.  Without this check an
+                # attacker could enumerate arbitrary account IDs and morph into
+                # any non-admin account (IDOR).  Admins are also blocked by
+                # switch_to_user, but we enforce the constraint here so the
+                # ESPError it raises can never reach the caller.
+                if (user.isAdministrator() or user.is_staff or user.is_superuser
+                        or not user.hasRole('Student')):
+                    user_id = None
             except (ESPUser.DoesNotExist, ValueError):
                 # Fall through to the normal search rather than 500-ing.
                 user_id = None
@@ -106,11 +115,18 @@ class OnsiteClassSchedule(ProgramModuleObj):
             if not found:
                 return user
 
-        request.user.switch_to_user(request,
-                                 user,
-                                 self.getCoreURL(tl),
-                                 'OnSite Registration!',
-                                 True)
+        try:
+            request.user.switch_to_user(request,
+                                     user,
+                                     self.getCoreURL(tl),
+                                     'OnSite Registration!',
+                                     True)
+        except ESPError:
+            # Defensive: switch_to_user raises ESPError when the target is an
+            # administrator.  The guard above should make this unreachable, but
+            # catching it here ensures a single malformed request cannot
+            # repeatedly trigger a 500.
+            return HttpResponseRedirect(self.getCoreURL(tl))
 
         return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
 
