@@ -1541,6 +1541,15 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
         )
         self.program.flag_types.add(self.teacher_visible_type, self.teacher_notify_type, self.admin_only_type)
 
+    def tearDown(self):
+        # Clear thread-local request to prevent stale FK references.
+        # ClassFlag.save() auto-sets created_by from get_current_request(),
+        # which can hold a reference to a rolled-back user after client.post().
+        from esp.middleware.threadlocalrequest import _threading_local
+        if hasattr(_threading_local, 'request'):
+            _threading_local.request = None
+        super(ClassFlagTeacherVisibilityTest, self).tearDown()
+
     def test_get_flag_types_teacher_filter(self):
         """get_flag_types(teacher=True) returns only teacher-visible types."""
         from esp.program.models import ClassFlagType
@@ -1606,46 +1615,73 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
         self.assertIn('show_to_teacher', form.fields)
         self.assertIn('notify_teacher_by_email', form.fields)
 
-    def test_newflag_email_failure_does_not_crash(self):
-        """If send_teacher_notification() raises, the flag is still saved and
-        the newflag endpoint returns a successful JSON response (#4223)."""
+    def test_newflag_email_failure_returns_warning(self):
+        """If send_teacher_notification() raises, newflag() still returns 200
+        with the flag data and includes a warning message (#4223)."""
         from esp.program.models import ClassFlag
         try:
-            from unittest.mock import patch, MagicMock
+            from unittest.mock import patch
         except ImportError:
-            from mock import patch, MagicMock
+            from mock import patch
 
-        flag = ClassFlag.objects.create(
-            subject=self.subject, flag_type=self.teacher_notify_type,
-            comment='Test email failure', created_by=self.admin_user, modified_by=self.admin_user,
+        # Log in as admin
+        self.client.login(username=self.admin_user.username, password='password')
+
+        flag_count_before = ClassFlag.objects.filter(subject=self.subject).count()
+
+        url = '/manage/%s/newflag/' % self.program.getUrlBase()
+        post_data = {
+            'subject': self.subject.id,
+            'flag_type': self.teacher_notify_type.id,
+            'comment': 'Test email failure',
+        }
+
+        with patch.object(ClassFlag, 'send_teacher_notification',
+                          side_effect=Exception('SMTP connection refused')):
+            response = self.client.post(url, post_data)
+
+        # Endpoint returns 200, not 500
+        self.assertEqual(response.status_code, 200)
+
+        # Response contains warning about failed email
+        import json as _json
+        response_data = _json.loads(response.content.decode('utf-8'))
+        self.assertIn('warning', response_data)
+        self.assertIn('email notification failed', response_data['warning'])
+
+        # Flag HTML is still returned
+        self.assertIn('flag_name', response_data)
+        self.assertIn('flag_detail', response_data)
+
+        # Flag was saved to the database
+        self.assertEqual(
+            ClassFlag.objects.filter(subject=self.subject).count(),
+            flag_count_before + 1
         )
 
-        # Simulate the error-handling logic from classflagmodule.py newflag()
-        with patch.object(ClassFlag, 'send_teacher_notification', side_effect=Exception('SMTP connection refused')):
-            # This should NOT raise — the try/except in newflag() catches it
-            try:
-                flag.send_teacher_notification()
-                email_failed = False
-            except Exception:
-                email_failed = True
+    def test_newflag_email_success_no_warning(self):
+        """When email succeeds, the response has no warning field."""
+        from esp.program.models import ClassFlag
+        try:
+            from unittest.mock import patch
+        except ImportError:
+            from mock import patch
 
-        # The exception DOES propagate when called directly (as expected)
-        self.assertTrue(email_failed)
+        self.client.login(username=self.admin_user.username, password='password')
 
-        # Now verify the actual error-handling pattern from classflagmodule.py
-        import logging as _logging
-        test_logger = _logging.getLogger('esp.program.modules.handlers.classflagmodule')
-        with patch.object(ClassFlag, 'send_teacher_notification', side_effect=Exception('SMTP connection refused')):
-            with patch.object(test_logger, 'error') as mock_log:
-                # Replicate the exact try/except from newflag()
-                try:
-                    flag.send_teacher_notification()
-                except Exception:
-                    test_logger.error("Failed to send teacher notification for flag %s on class %s",
-                                     flag.id, flag.subject_id, exc_info=True)
-                mock_log.assert_called_once()
+        url = '/manage/%s/newflag/' % self.program.getUrlBase()
+        post_data = {
+            'subject': self.subject.id,
+            'flag_type': self.teacher_notify_type.id,
+            'comment': 'Email works fine',
+        }
 
-        # Verify the flag is still intact in the database
-        flag.refresh_from_db()
-        self.assertEqual(flag.comment, 'Test email failure')
-        self.assertEqual(flag.flag_type, self.teacher_notify_type)
+        with patch.object(ClassFlag, 'send_teacher_notification'):
+            response = self.client.post(url, post_data)
+
+        self.assertEqual(response.status_code, 200)
+
+        import json as _json
+        response_data = _json.loads(response.content.decode('utf-8'))
+        self.assertNotIn('warning', response_data)
+        self.assertIn('flag_name', response_data)
