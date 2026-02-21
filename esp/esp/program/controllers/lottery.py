@@ -238,7 +238,7 @@ class LotteryAssignmentController(object):
 
         # One array to keep track of the utility of each student
         # (defined as hours of interested class + 1.5*hours of priority classes)
-        # and the other arrary to keep track of student weigths (defined as # of classes signed up for)
+        # and the other array to keep track of student weights (defined as # of classes signed up for)
         self.student_utility_weights = numpy.zeros((self.num_students, ), dtype=numpy.float)
         self.student_utilities = numpy.zeros((self.num_students, ), dtype=numpy.float)
 
@@ -451,7 +451,7 @@ class LotteryAssignmentController(object):
             self.student_schedules[selected_students, timeslots[i]] = True
             self.student_enrollments[selected_students, timeslots[i]] = self.section_ids[si]
 
-            #   Update student utilies
+            #   Update student utilities
             if priority:
                 self.student_utilities[selected_students] += 1.5
             else:
@@ -529,7 +529,7 @@ class LotteryAssignmentController(object):
         priority_fractions = [0 for i in range(self.effective_priority_limit+1)]
 
         # We expect that there will occasionally be 0/0 division errors,
-        # whenver a student has not specified any classes for a particular
+        # whenever a student has not specified any classes for a particular
         # priority level.  We handle this by calling nan_to_num(), but by
         # default numpy will still raise and print a RuntimeWarning.  We can
         # safely ignore this by passing 'ignore' to the errstate() context
@@ -614,7 +614,7 @@ class LotteryAssignmentController(object):
         #
         # Also use the utility to get a list of screwed students,
         # where the level of screwedness is defined by (1+utility)/(1+weight)
-        # So, people with low untilities and high weights (low screwedness scores)
+        # So, people with low utilities and high weights (low screwedness scores)
         # are considered screwed. This is pretty sketchy, so take it with a grain of salt.
         weighted_overall_utility = 0.0
         sum_of_weights=0.0

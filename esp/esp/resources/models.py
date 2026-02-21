@@ -244,7 +244,7 @@ class Resource(models.Model):
         id_list = []
 
         for req in request_list:
-            if furnishings.filter(res_type=req.res_type).count() < 1:
+            if not furnishings.filter(res_type=req.res_type).exists():
                 result[0] = False
                 id_list.append(req.id)
 
@@ -349,7 +349,7 @@ class Resource(models.Model):
             return Q(resource=self)
         else:
             collision = ResourceAssignment.objects.filter(resource=self)
-            return (collision.count() > 0)
+            return collision.exists()
 
 @python_2_unicode_compatible
 class AssignmentGroup(models.Model):
