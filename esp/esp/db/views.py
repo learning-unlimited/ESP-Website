@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core import serializers
 from django.http import HttpResponse

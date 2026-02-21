@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
 from esp.program.models import *
 from esp.dbmail.models import PlainRedirect
 from io import open

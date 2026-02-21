@@ -1,6 +1,5 @@
 """Utilities for use in resource constraints and scoring."""
 
-from __future__ import absolute_import
 import re
 
 from esp.program.controllers.autoscheduler import util

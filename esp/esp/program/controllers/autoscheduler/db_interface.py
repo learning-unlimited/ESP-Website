@@ -4,7 +4,6 @@ This should be the only place (other than the controller itself) where any
 database interaction happens.
 """
 
-from __future__ import absolute_import
 import json
 import logging
 

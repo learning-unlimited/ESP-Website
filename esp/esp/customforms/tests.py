@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -112,7 +110,7 @@ class CustomFormsTest(TestCase):
         #      need separate tests.)
         form_data = {
             'title': 'Test Form',
-            'perms': six.u(''),
+            'perms': '',
             'link_id': -1,
             'success_url': '/formsuccess.html',
             'success_message': 'Thank you!',
@@ -122,13 +120,13 @@ class CustomFormsTest(TestCase):
                 'sections': [{
                     'fields': [
                         {'data': {'field_type': 'textField', 'question_text': 'ShortText', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs':{'correct_answer': 'Smart', 'charlimits': '0,100'}, 'help_text': 'Instructions'}},
-                        {'data': {'field_type': 'phone', 'question_text': 'Your phone no.', 'seq': 1, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': six.u('')}},
-                        {'data': {'field_type': 'gender', 'question_text': 'Your gender', 'seq': 2, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': six.u('')}},
-                        {'data': {'field_type': 'radio', 'question_text': 'Choose an option', 'seq': 3, 'required': True, 'parent_id': -1, 'attrs': {'correct_answer': '1', 'options': 'A|B|C|'}, 'help_text': six.u('')}},
-                        {'data': {'field_type': 'boolean', 'question_text': 'True/false', 'seq': 4, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text':six.u('')}},
-                        {'data': {'field_type': 'textField', 'question_text': 'NonRequired', 'seq': 5, 'required': False, 'parent_id': -1, 'attrs': {'correct_answer': six.u(''), 'charlimits': ','}, 'help_text': six.u('')}}
+                        {'data': {'field_type': 'phone', 'question_text': 'Your phone no.', 'seq': 1, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': ''}},
+                        {'data': {'field_type': 'gender', 'question_text': 'Your gender', 'seq': 2, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': ''}},
+                        {'data': {'field_type': 'radio', 'question_text': 'Choose an option', 'seq': 3, 'required': True, 'parent_id': -1, 'attrs': {'correct_answer': '1', 'options': 'A|B|C|'}, 'help_text': ''}},
+                        {'data': {'field_type': 'boolean', 'question_text': 'True/false', 'seq': 4, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text':''}},
+                        {'data': {'field_type': 'textField', 'question_text': 'NonRequired', 'seq': 5, 'required': False, 'parent_id': -1, 'attrs': {'correct_answer': '', 'charlimits': ','}, 'help_text': ''}}
                     ],
-                'data': {'help_text': six.u(''), 'question_text': six.u(''), 'seq': 0}
+                'data': {'help_text': '', 'question_text': '', 'seq': 0}
                 }],
                 'seq': 0
             }],
@@ -138,7 +136,7 @@ class CustomFormsTest(TestCase):
 
         response = self.client.post("/customforms/submit/", json.dumps(form_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(six.text_type(response.content, encoding='UTF-8'), "OK")
+        self.assertEqual(str(response.content, encoding='UTF-8'), "OK")
 
         #   - Make sure the form and its fields exist and match what was specified
         forms = Form.objects.filter(title='Test Form')
