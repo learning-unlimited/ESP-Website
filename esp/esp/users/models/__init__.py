@@ -201,7 +201,7 @@ class BaseESPUser(object):
 
 
     @classmethod
-    def ajax_autocomplete(cls, data, QObject = None):
+    def ajax_autocomplete(cls, data, QObject = None, grade = None, last_name_range = None, prog = None):
         """
         Filter is a dictionary, where the keys are ESPUser model fields
         and the values are the filters on those fields
@@ -214,52 +214,91 @@ class BaseESPUser(object):
         #this feels kind of weird because it's selecting
         #from three keys using the same value
         names = data.strip().split(',')
-        last = names[0]
-        username = names[0]
-        idstr = names[0]
-        q_names = Q(last_name__istartswith = last.strip())
+        last = names[0].strip()
+        username = names[0].strip()
+        idstr = names[0].strip()
+        
+        # Search by last name STARTING with term
+        q_names = Q(last_name__istartswith = last)
+        
         if len(names) > 1:
-          first = ','.join(names[1:])
-          if len(first.strip()) > 0:
-            q_names = q_names & Q(first_name__istartswith = first.strip())
+            first = ','.join(names[1:]).strip()
+            if len(first) > 0:
+                q_names = q_names & Q(first_name__istartswith = first)
+        else:
+            # If only one name is provided, also try searching by first name
+            q_names = q_names | Q(first_name__istartswith = last)
 
-        q_username = Q(username__istartswith = username.strip())
-        q_id = Q(id__istartswith = idstr.strip())
+        q_username = Q(username__istartswith = username)
+        q_id = Q(id__istartswith = idstr)
 
         query_set = cls.objects.filter(q_names | q_username | q_id)
 
-        if QObject:
-            query_set = query_set.filter(QObject).distinct()
+        if grade and prog:
+            # We need to calculate the graduation year for this grade in this program
+            # Grade G at year Y has YOG = Y + (12 - G) + 1 (if before summer)
+            try:
+                grade_int = int(grade)
+                if not hasattr(prog, 'program_schoolyear'):
+                    from esp.program.models import Program
+                    if isinstance(prog, (int, six.string_types)):
+                        prog_obj = Program.objects.get(id=prog)
+                    else:
+                        prog_obj = None # Should not happen if views.py is correct
+                else:
+                    prog_obj = prog
 
-        values = query_set.order_by('last_name', 'first_name', 'id').values('first_name', 'last_name', 'username', 'id')
+                if prog_obj:
+                    schoolyear = cls.program_schoolyear(prog_obj)
+                    yog = schoolyear + (12 - grade_int)
+                    query_set = query_set.filter(registrationprofile__student_info__graduation_year = yog, registrationprofile__program = prog_obj)
+            except (ValueError, TypeError, cls.DoesNotExist):
+                pass
+
+        if last_name_range:
+            # last_name_range format: "A-G"
+            parts = last_name_range.split('-')
+            if len(parts) == 2:
+                start_char = parts[0].strip()
+                end_char = parts[1].strip()
+                # We want to include names starting with end_char, so we use a trick or just range.
+                # String range "A" to "G" includes "G" but stops before "H".
+                # Django's __range is inclusive.
+                query_set = query_set.filter(last_name__range=(start_char, end_char + 'z'))
+
+        if QObject:
+            query_set = query_set.filter(QObject)
+
+        query_set = query_set.distinct().order_by('last_name', 'first_name', 'id')
+        values = query_set.values('first_name', 'last_name', 'username', 'id')
 
         for value in values:
             value['ajax_str'] = '%s, %s (%s)' % (value['last_name'], value['first_name'], value['username'])
         return values
 
     @classmethod
-    def ajax_autocomplete_student(cls, data):
-        return cls.ajax_autocomplete(data, QObject = Q(groups=Group.objects.get(name="Student")))
+    def ajax_autocomplete_student(cls, data, **kwargs):
+        return cls.ajax_autocomplete(data, QObject = Q(groups=Group.objects.get(name="Student")), **kwargs)
 
     @classmethod
-    def ajax_autocomplete_teacher(cls, data):
-        return cls.ajax_autocomplete(data, QObject = Q(groups=Group.objects.get(name="Teacher")))
+    def ajax_autocomplete_teacher(cls, data, **kwargs):
+        return cls.ajax_autocomplete(data, QObject = Q(groups=Group.objects.get(name="Teacher")), **kwargs)
 
     @classmethod
-    def ajax_autocomplete_approved_teacher(cls, data, prog = None):
+    def ajax_autocomplete_approved_teacher(cls, data, prog = None, **kwargs):
         if prog:
             QObject = Q(classsubject__status__gt=0, classsubject__parent_program__id=prog)
         else:
             QObject = Q(classsubject__status__gt=0)
-        return cls.ajax_autocomplete(data, QObject)
+        return cls.ajax_autocomplete(data, QObject, prog=prog, **kwargs)
 
     @classmethod
-    def ajax_autocomplete_student_lottery(cls, data, prog = None):
+    def ajax_autocomplete_student_lottery(cls, data, prog = None, **kwargs):
         if prog:
             QObject = Q(phasezerorecord__program=prog)
         else:
             QObject = Q(phasezerorecord__program__isnull=False)
-        return cls.ajax_autocomplete(data, QObject)
+        return cls.ajax_autocomplete(data, QObject, prog=prog, **kwargs)
 
     def ajax_str(self):
         return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)
