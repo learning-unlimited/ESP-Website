@@ -1,5 +1,4 @@
 
-from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -87,7 +86,6 @@ def zipcodes(form, programs, students, profiles, result_dict={}):
         result_dict['zip_data'] = result_dict['zip_data'][:form.cleaned_data['limit']]
     return render_to_string('program/statistics/zip_codes.html', result_dict)
 
-
 def demographics(form, programs, students, profiles, result_dict={}):
 
     #   Get aggregate 'vitals' info
@@ -141,7 +139,6 @@ def demographics(form, programs, students, profiles, result_dict={}):
     result_dict['finaid_approved'] = len(set(finaid_approved))
     return render_to_string('program/statistics/demographics.html', result_dict)
 
-
 def schools(form, programs, students, profiles, result_dict={}):
 
     #   Count by name of every student's school
@@ -168,7 +165,6 @@ def schools(form, programs, students, profiles, result_dict={}):
     if form.cleaned_data['limit']:
         result_dict['school_data'] = result_dict['school_data'][:form.cleaned_data['limit']]
     return render_to_string('program/statistics/schools.html', result_dict)
-
 
 def startreg(form, programs, students, profiles, result_dict={}):
 
@@ -221,7 +217,6 @@ def startreg(form, programs, students, profiles, result_dict={}):
 
     return render_to_string('program/statistics/startreg.html', result_dict)
 
-
 def repeats(form, programs, students, profiles, result_dict={}):
 
     #   For each student, find out what other programs they registered for and bin by quantity in each program type.
@@ -263,7 +258,6 @@ def repeats(form, programs, students, profiles, result_dict={}):
         repeat_counts.append(repeat_count[key_map[label]])
     result_dict['repeat_data'] = list(zip(repeat_labels, repeat_counts))
     return render_to_string('program/statistics/repeats.html', result_dict)
-
 
 def heardabout(form, programs, students, profiles, result_dict={}):
 

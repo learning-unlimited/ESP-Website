@@ -1,5 +1,3 @@
-from six.moves import range
-from six.moves import map
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -48,7 +46,6 @@ from esp.users.models    import Record, RecordType, ESPUser
 from esp.utils.web import render_to_response
 from esp.utils.widgets import ChoiceWithOtherField, RadioSelectWithData
 from esp.utils.query_utils import nest_Q
-
 
 class CostItem(forms.Form):
     def __init__(self, *args, **kwargs):
