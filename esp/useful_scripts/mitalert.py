@@ -2,8 +2,6 @@
 # Write student emergency contact information (name, email address and, if
 # known, cell number) to a CSV file.
 
-from __future__ import absolute_import
-from __future__ import print_function
 from script_setup import *
 
 import csv

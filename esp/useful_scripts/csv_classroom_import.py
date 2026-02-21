@@ -10,8 +10,6 @@
 # choice. Note that the 'Sound system' resource should now be called 'Speakers'.
 #
 
-from __future__ import absolute_import
-from __future__ import print_function
 from script_setup import *
 
 import csv

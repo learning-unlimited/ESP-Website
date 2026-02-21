@@ -1,7 +1,5 @@
 """Script to check which programs have modified their ProgramModules."""
 
-from __future__ import absolute_import
-from __future__ import print_function
 from script_setup import *
 from esp.program.models import ProgramModule
 

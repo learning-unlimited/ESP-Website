@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.program.models import Program, ClassSubject
 from six.moves import map
 from io import open
