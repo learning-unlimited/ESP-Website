@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -104,7 +103,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         return HttpResponse('\n'.join([','.join(['"%s"' % v for v in x]) for x in lst]), content_type='text/csv')
 
     #helper functions for ajax_schedule_class
-    #seperated out here to make code more readeable and enable testing
+    #separated out here to make code more readable and enable testing
     def makeret(self, prog, **kwargs):
         last_changed = self.ajax_schedule_last_changed_helper(prog).raw_value
         kwargs['val'] = last_changed['val']

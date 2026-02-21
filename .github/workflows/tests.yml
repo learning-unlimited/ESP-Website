@@ -2,10 +2,24 @@ name: "Lint and Unit Tests"
 
 on:
   push:
-    branches: [main, ]
-  pull_request:
-    # The branches below must be a subset of the branches above
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+      - '.gitattributes'
+      - '.gitignore'
+      - 'Vagrantfile'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+      - '.gitattributes'
+      - '.gitignore'
+      - 'Vagrantfile'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,6 +32,7 @@ jobs:
   build:
     name: ${{ matrix.ci_job }} (Python ${{ matrix.python-version }})
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:10.8
@@ -68,24 +83,24 @@ jobs:
         packages: ${{ steps.apt-action.outputs.packages }}
         version: 1.0
     - name: Prepare for Installing Dependencies
-      run: deploy/travis/before_install
+      run: deploy/ci/before_install
       env:
         PYTHON_VERSION: ${{ matrix.python-version }}
     - name: Install Dependencies for ${{ matrix.ci_job }}
       env:
-        TRAVIS_JOB: ${{ matrix.ci_job }}
+        CI_JOB: ${{ matrix.ci_job }}
         PYTHON_VERSION: ${{ matrix.python-version }}
-      run: deploy/travis/install
+      run: deploy/ci/install
     - name: Prepare for ${{ matrix.ci_job }}
       env:
-        TRAVIS_JOB: ${{ matrix.ci_job }}
+        CI_JOB: ${{ matrix.ci_job }}
         PYTHON_VERSION: ${{ matrix.python-version }}
-      run: deploy/travis/before_script
+      run: deploy/ci/before_script
     - name: Run ${{ matrix.ci_job }}
       env:
-        TRAVIS_JOB: ${{ matrix.ci_job }}
+        CI_JOB: ${{ matrix.ci_job }}
         PYTHON_VERSION: ${{ matrix.python-version }}
-      run: deploy/travis/script
+      run: deploy/ci/script
     - name: Upload Coverage to Codecov
       if: ${{ matrix.ci_job == 'test' }}
       uses: codecov/codecov-action@v5

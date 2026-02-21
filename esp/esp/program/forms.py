@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 from six.moves import map
 import six
 from six.moves import zip
@@ -104,7 +103,7 @@ class ProgramCreationForm(BetterModelForm):
             if x.id not in sum(list(self.program_module_question_ids.values()), []): # flatten list of modules
                 self.program_module_question_ids['Would you like to include the {} module?'.format(x.admin_title)] = [x.id]
         # Now initialize the form
-        super(ProgramCreationForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['program_module_questions'].choices = [(','.join(map(str, ids)), q) for q, ids in self.program_module_question_ids.items()]
         #self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())
         self.fields['program_modules'].required = False
@@ -116,7 +115,7 @@ class ProgramCreationForm(BetterModelForm):
     def save(self, commit=True):
         self.instance.url = self.cleaned_data['new_url']
         self.instance.name = self.cleaned_data['new_name']
-        return super(ProgramCreationForm, self).save(commit=commit)
+        return super().save(commit=commit)
 
 
     def load_program(self, program):
@@ -134,7 +133,7 @@ class ProgramCreationForm(BetterModelForm):
         Takes the program creation form's program_type, term, and term_friendly
         fields, and constructs the url and name fields on the Program instance.
         '''
-        super(ProgramCreationForm, self).clean()
+        super().clean()
         if 'term' in self.cleaned_data and 'term_friendly' in self.cleaned_data:
             #   Filter out unwanted characters from program type to form URL
             ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
@@ -282,7 +281,7 @@ class StatisticsQueryForm(forms.Form):
             #   placeholder for later:
             del kwargs['program']
 
-        super(StatisticsQueryForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.fields['program_type'].choices = StatisticsQueryForm.get_program_type_choices()
         self.fields['program_instances'].choices = StatisticsQueryForm.get_program_instance_choices(self.fields['program_type'].choices[0][0])
@@ -464,7 +463,7 @@ class RedirectForm(forms.ModelForm):
 
 class PlainRedirectForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
-        super(PlainRedirectForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['original'].help_text = 'A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@%s will be redirected to the destination email address(es).' % Site.objects.get_current().domain
     class Meta:
         model = PlainRedirect
@@ -474,7 +473,7 @@ class TagSettingsForm(BetterForm):
     """ Form for changing global tags. """
     def __init__(self, *args, **kwargs):
         self.categories = set()
-        super(TagSettingsForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for key in all_global_tags:
             # generate field for each tag
             tag_info = all_global_tags[key]

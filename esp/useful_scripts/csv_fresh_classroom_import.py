@@ -9,8 +9,6 @@
 #   Classroom: 1-115
 #
 
-from __future__ import absolute_import
-from __future__ import print_function
 from script_setup import EventType, ResourceType, Program, Event, Resource
 
 import csv
@@ -216,7 +214,7 @@ for row in sched_rows:
         if idx is not None and room_desc[idx + EXTRA_DATA]:
             furnishings.append((res, room_desc[idx + EXTRA_DATA]))
 
-    # Create Clasrooms with Furnishings
+    # Create Classrooms with Furnishings
     for block in timeblocks:
         room = Resource()
         room.num_students = room_desc[0]

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import datetime
 import random
 
@@ -10,7 +9,6 @@ base_host = 'http://dev2.learningu.org'
 splash_name = 'Splash/2011_Spring'
 
 people_generator = random_people('Teacher')
-
 
 
 def register_users():

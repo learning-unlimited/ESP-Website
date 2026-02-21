@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 import six
 from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -221,9 +220,9 @@ class StudentClassRegModule(ProgramModuleObj):
     def deadline_met(self, extension=None):
         #   Allow default extension to be overridden if necessary
         if extension is not None:
-            return super(StudentClassRegModule, self).deadline_met(extension)
+            return super().deadline_met(extension)
         else:
-            return super(StudentClassRegModule, self).deadline_met('/Classes')
+            return super().deadline_met('/Classes')
 
     def deadline_met_or_lottery_open(self, extension=None):
         #   Allow default extension to be overridden if necessary
@@ -231,7 +230,7 @@ class StudentClassRegModule(ProgramModuleObj):
             return self.deadline_met(extension)
         else:
             return self.deadline_met(extension) or \
-                   super(StudentClassRegModule, self).deadline_met('/Classes/Lottery')
+                   super().deadline_met('/Classes/Lottery')
 
     def prepare(self, context={}):
         user = get_current_request().user
@@ -558,7 +557,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     """@cache_control(public=True, max_age=3600)
     def timeslots_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        """ """Return the program timeslot names for the tabs in the lottery inteface""" """
+        """ """Return the program timeslot names for the tabs in the lottery interface""" """
         # using .extra() to select all the category text simultaneously
         timeslots = self.program.getTimeSlots()
 

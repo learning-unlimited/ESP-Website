@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import datetime
 
 from django import forms
@@ -112,6 +111,34 @@ class ESPUserTest(TestCase):
             adminUser.delete()
         if (c2):
             studentUser.delete()
+
+    def testUnsubscribe(self):
+        """Test that unsubscribe links work for usernames with special characters."""
+        test_usernames = [
+            'testuser',       # Alpha
+            'test:user',      # Colon (the original breaker)
+            'test user',      # Space
+            'test!user',      # Exclamation
+            'test.user@ext',  # Dot/At/Plus (common in email-y usernames)
+            'test+user'
+        ]
+
+        for username in test_usernames:
+            user = ESPUser.objects.create(username=username)
+            try:
+                link = user.unsubscribe_link()
+                self.assertTrue(link.startswith('/myesp/unsubscribe/') or link.startswith('/unsubscribe/'))
+
+                # Extract token and verify it works
+                # URL pattern is ^unsubscribe/(?P<username>[^/]+)/(?P<token>[\w.:\-_=]+)/$
+                # So link ends with /token/
+                parts = [p for p in link.split('/') if p]
+                token = parts[-1]
+
+                self.assertTrue(user.check_token(token),
+                                f"Token check failed for username: {username}")
+            finally:
+                user.delete()
 
 class PasswordRecoveryTicketTest(TestCase):
     def setUp(self):
@@ -289,7 +316,7 @@ class MakeAdminTest(TestCase):
         user_role_setup()
 
     def runTest(self):
-        # Make sure user starts off with no administrator priviliges
+        # Make sure user starts off with no administrator privileges
         self.assertFalse(self.user.is_staff)
         self.assertFalse(self.user.is_superuser)
         self.assertFalse(self.user.groups.filter(name="Administrator").exists())
@@ -326,7 +353,7 @@ class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
         self.keys = ['student_schedule_html']
         user=self.students[0]
         self.assertTrue(self.client.login(username=user.username, password='password'))
-        super(AjaxScheduleExistenceTest, self).runTest()
+        super().runTest()
 
 class AccountCreationTest(TestCase):
 
@@ -369,7 +396,7 @@ class AccountCreationTest(TestCase):
         self.assertTemplateUsed(response3, 'registration/newuser_phase1.html')
         self.assertContains(response3, "do_reg_no_really")
 
-        #check when you send do_reg_no_really it procedes
+        #check when you send do_reg_no_really it proceeds
         response4 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher", "do_reg_no_really":""}, follow=False)
         self.assertRedirects(response4, "/myesp/register/information?email=tsutton125%40gmail.com&initial_role=Teacher")
         response4 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher", "do_reg_no_really":""}, follow=True)
@@ -515,7 +542,7 @@ class TestChangeRequestView(TestCase):
 
 class RecordTest(TestCase):
     def setUp(self):
-        super(RecordTest, self).setUp()
+        super().setUp()
         self.past     = datetime.datetime(1970, 1, 1)
         self.future   = datetime.datetime.max
         self.user     = ESPUser.objects.create(username='RecordTest')
@@ -601,7 +628,7 @@ class RecordTest(TestCase):
 class PermissionTestCase(TestCase):
 
     def setUp(self):
-        super(PermissionTestCase, self).setUp()
+        super().setUp()
         self.role = Group.objects.create(name='group')
         self.user = ESPUser.objects.create(username='user')
         self.user.makeRole(self.role)

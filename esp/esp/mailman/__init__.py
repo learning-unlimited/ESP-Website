@@ -1,6 +1,4 @@
-from __future__ import with_statement
 
-from __future__ import absolute_import
 import os
 from subprocess import call, Popen, PIPE
 from django.conf import settings

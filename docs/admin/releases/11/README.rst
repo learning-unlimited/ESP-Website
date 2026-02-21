@@ -54,7 +54,7 @@ Onsite improvements
   in using your device's camera, so a physical barcode scanner is no longer needed. The
   default behavior is to checkin the student automatically upon each successful scan. The 
   page produces a beep for each new barcode that is scanned.
-- Fixed the layout of the teacher checkin page so as to not intefere with the admin toolbar in some themes.
+- Fixed the layout of the teacher checkin page so as to not interfere with the admin toolbar in some themes.
 - Fixed the keyboard functionality of the teacher checkin page so shortcuts now function as described.
 - Added a button on the teacher checkin page that allows admins to text all teachers that are
   not yet checked in yet (if the chapter has Twilio configured).
@@ -151,7 +151,7 @@ Language improvements
 - Removed Q tree references.
 - Removed old SAT score variables.
 - Made Stripe failure page more salient (different from success page), made other minor fixes to Stripe message & formatting.
-- The credit card success page for Stripe now has a line about what the charge will appear on the statment as.
+- The credit card success page for Stripe now has a line about what the charge will appear on the statement as.
 - Added a few more general email addresses.
 - Made login errors clearer.
 - Added teacher interview and training descriptions to the manage page for these events.
@@ -216,7 +216,7 @@ Minor bug fixes released in August 2019
 - In the case where a user has no registration profiles associated with programs, the program dropdown on the userview page now displays a null option (previously, this misleadingly showed a program as selected even though it wasn't).
 - Fixed the logic for the conflict error message on the class availability page.
 - When coteachers are added to a class by an admin or teacher (e.g. admin setting availability manually, then adding on the teach or manage coteachers page), their registration profile is now updated appropriately (i.e. the correct program is now selected on their userview page).
-- Fixed the handling of program registration profiles. If a user's most recent profile is fairly recent (last five days), they won't need to fill out a new one for a new program. This is most relevant for concurrent programs, but also makes it easier on new users who want to register for a program immmediately after making an account.
+- Fixed the handling of program registration profiles. If a user's most recent profile is fairly recent (last five days), they won't need to fill out a new one for a new program. This is most relevant for concurrent programs, but also makes it easier on new users who want to register for a program immediately after making an account.
 - Added styling to indicate on the userview page whether a teacher has set their availability yet.
 - Fixed profile handling for the userview page so information on the userview page correctly reflects the profile of the selected program.
 - Emails are no longer archived in an LU email address (but comm panel emails are still archived on sites and other emails still get copied to the director email address).

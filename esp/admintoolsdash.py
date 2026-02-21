@@ -10,7 +10,6 @@ And to activate the app index dashboard::
     ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
 """
 
-from __future__ import absolute_import
 from django.utils.translation import ugettext as _
 from django.urls import reverse
 
@@ -94,4 +93,4 @@ class CustomAppIndexDashboard(AppIndexDashboard):
         """
         Use this method if you need to access the request context.
         """
-        return super(CustomAppIndexDashboard, self).init_with_context(context)
+        return super().init_with_context(context)

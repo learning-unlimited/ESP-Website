@@ -1,14 +1,14 @@
 #!/bin/bash
 set -euf -o pipefail
 
-if [ "$TRAVIS_JOB" = "test" ]; then
+if [ "$CI_JOB" = "test" ]; then
     cd esp
     ./manage.py collectstatic --noinput -v 0
     coverage run --source=. ./manage.py test
     coverage xml
-elif [ "$TRAVIS_JOB" = "lint" ]; then
+elif [ "$CI_JOB" = "lint" ]; then
     deploy/lint
 else
-    echo "Unknown TRAVIS_JOB: $TRAVIS_JOB"
+    echo "Unknown CI_JOB: $CI_JOB"
     exit 1
 fi
