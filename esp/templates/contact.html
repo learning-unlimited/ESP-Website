@@ -15,6 +15,13 @@
       $j("#id_anonymous").change(function() {
         $j("#id_sender").attr('required', !this.checked);
       });
+
+      // Keep default style on load and switch to green right before submit.
+      var $contactSendButton = $j(".contact-send");
+      $contactSendButton.removeClass("btn-success").addClass("btn-primary");
+      $j(".contact-form").on("submit", function() {
+        $contactSendButton.removeClass("btn-primary").addClass("btn-success");
+      });
     });
   </script>
 {% endblock %}
