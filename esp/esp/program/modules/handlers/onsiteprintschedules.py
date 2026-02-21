@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 """
 import json
 from django.http      import HttpResponse
+from django.core.cache import cache
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from datetime         import datetime
@@ -44,6 +45,16 @@ from datetime         import datetime
 
 class OnsitePrintSchedules(ProgramModuleObj):
     doc = """Automatically print student schedules at onsite registration."""
+    PRINTER_NAMES_CACHE_KEY = 'onsiteprintschedules:printer_names'
+    PRINTER_NAMES_CACHE_TIMEOUT = 300  # seconds
+
+    @classmethod
+    def get_printer_names(cls):
+        printers = cache.get(cls.PRINTER_NAMES_CACHE_KEY)
+        if printers is None:
+            printers = list(Printer.objects.order_by('name').values_list('name', flat=True))
+            cache.set(cls.PRINTER_NAMES_CACHE_KEY, printers, cls.PRINTER_NAMES_CACHE_TIMEOUT)
+        return printers
 
     @classmethod
     def module_properties(cls):
@@ -60,7 +71,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
     def printschedules(self, request, tl, one, two, module, extra, prog):
         " A link to print a schedule. "
         if not 'sure' in request.GET and not 'gen_img' in request.GET:
-            printers = Printer.objects.all().values_list('name', flat=True)
+            printers = self.get_printer_names()
 
             return render_to_response(self.baseDir()+'instructions.html',
                                     request, {'printers': printers})
