@@ -283,7 +283,7 @@ Formstack Application Module
 
 This is the module that embeds a Formstack form on a student-facing page for
 student applications.  For more information, see
-`</docs/admin/student_apps.rst>`_.
+`<student_apps.rst>`_.
 
 Class Change Request Module (ClassChangeRequest)
 ------------------------------------------------
@@ -417,7 +417,7 @@ Teacher Admissions Dashboard
 ----------------------------
 
 Provides an interface for teachers to review applications for their class.
-For more information, see `</docs/admin/student_apps.rst>`_.
+For more information, see `<student_apps.rst>`_.
 
 Teacher Onsite Webapp (TeacherOnsite)
 -------------------------------------
@@ -709,7 +709,7 @@ Admin Admissions Dashboard
 --------------------------
 
 Provides an interface for admins to review all of the applications in the
-program. For more information, see `</docs/admin/student_apps.rst>`_.
+program. For more information, see `<student_apps.rst>`_.
 
 Student Registration Big Board
 --------------------------------------
