@@ -40,6 +40,8 @@ from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
 from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.users.models    import ESPUser, Record, RecordType
+from esp.program.models  import RegistrationProfile, StudentRegistration
+from django.db.models    import Max, Min
 from django.http import HttpResponse
 from django.db import transaction
 from django.template.loader import render_to_string
@@ -152,8 +154,6 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
         if 'grades' in snippet_list:
             #   Bulk-fetch graduation years to avoid per-student getGrade() queries.
-            from esp.program.models import RegistrationProfile
-            from django.db.models import Max
             schoolyear = ESPUser.program_schoolyear(prog)
             #   Get the latest RegistrationProfile per student for this program.
             yog_qs = (
@@ -178,8 +178,6 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
         if 'times' in snippet_list:
             #   Bulk-fetch first class time to avoid per-student getFirstClassTime() queries.
-            from esp.program.models import StudentRegistration
-            from django.db.models import Min
             first_times_qs = (
                 StudentRegistration.objects
                 .filter(
