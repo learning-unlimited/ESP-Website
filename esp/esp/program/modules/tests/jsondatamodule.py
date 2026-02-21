@@ -175,10 +175,10 @@ class JSONDataModuleTest(ProgramFrameworkTest):
     # ------------------------------------------------------------------
 
     def testStatsResponseStructure(self):
-        """The /json/.../stats endpoint returns 200 with a 'stats' list
-        containing entries for all expected section IDs, with no duplicates,
-        and each section carries a valid 'id' key."""
-        self.assertEqual(self.stats_response.status_code, 200)
+        """The /json/.../stats endpoint returns a 'stats' list containing
+        entries for all expected section IDs, with no duplicates, and each
+        section carries a valid 'id' key.
+        (200 status is already asserted in setUp.)"""
         self.assertIn('stats', self.stats_data)
         sections = self.stats_data['stats']
         # Every entry must have an 'id' key.
