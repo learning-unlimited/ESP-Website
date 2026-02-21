@@ -2,7 +2,6 @@
 # Given a list of email addresses, disable the corresponding user accounts.
 
 from script_setup import *
-from six.moves import input
 
 def yn(prompt):
     print(prompt, end=' ')
