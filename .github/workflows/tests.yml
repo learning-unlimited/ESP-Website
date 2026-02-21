@@ -28,14 +28,16 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  PYTHON_VERSION: '3.7'
 
 jobs:
   test:
-    name: Test (Python 3.7)
+    name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.7]
     services:
       postgres:
         image: postgres:10.8
@@ -56,36 +58,36 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python ${{ env.PYTHON_VERSION }}
+    - name: Set up Python ${{ matrix.python-version }}
       uses: deadsnakes/action@v3.2.0
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
+        python-version: ${{ matrix.python-version }}
     - name: Cache pip packages
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ env.PYTHON_VERSION }}-${{ hashFiles('esp/requirements.txt') }}
+        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('esp/requirements.txt') }}
         restore-keys: |
-          ${{ runner.os }}-pip-${{ env.PYTHON_VERSION }}-
+          ${{ runner.os }}-pip-${{ matrix.python-version }}-
           ${{ runner.os }}-pip-
     - name: Prepare for Installing Dependencies
       run: deploy/ci/before_install
       env:
-        PYTHON_VERSION: ${{ env.PYTHON_VERSION }}
+        PYTHON_VERSION: ${{ matrix.python-version }}
     - name: Install Dependencies
       env:
         CI_JOB: test
-        PYTHON_VERSION: ${{ env.PYTHON_VERSION }}
+        PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/ci/install
     - name: Prepare for Test
       env:
         CI_JOB: test
-        PYTHON_VERSION: ${{ env.PYTHON_VERSION }}
+        PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/ci/before_script
     - name: Run Tests
       env:
         CI_JOB: test
-        PYTHON_VERSION: ${{ env.PYTHON_VERSION }}
+        PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/ci/script
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v5
