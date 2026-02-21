@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.mailman import add_list_member
 from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
 from esp.middleware import ESPError

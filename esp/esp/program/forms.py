@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 from six.moves import map
 import six
 from six.moves import zip

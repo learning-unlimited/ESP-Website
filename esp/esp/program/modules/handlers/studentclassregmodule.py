@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 import six
 from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"

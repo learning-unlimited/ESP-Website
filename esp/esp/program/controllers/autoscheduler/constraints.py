@@ -30,7 +30,6 @@ AS_Schedule itself. Having an internal state and also passing in a schedule
 seems too fragile.)
 """
 
-from __future__ import absolute_import
 import inspect
 import logging
 

@@ -1,8 +1,4 @@
-from __future__ import with_statement
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import division
 from io import open
 from six.moves import range
 from functools import reduce
@@ -343,8 +339,6 @@ class LotteryAssignmentController(object):
                         if len(possible_classes):
                             choice = numpy.random.choice(possible_classes)
                             self.priority[i][student, choice]=True
-
-
 
 
     def fill_section(self, si, priority=False, rank=10):

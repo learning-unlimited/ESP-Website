@@ -1,7 +1,5 @@
 """A controller for the automatic scheduling assistant."""
 
-from __future__ import absolute_import
-from __future__ import division
 import datetime
 import logging
 from django.core.exceptions import ObjectDoesNotExist
