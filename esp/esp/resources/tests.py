@@ -12,7 +12,7 @@ from esp.tests.util import CacheFlushTestCase as TestCase
 class ResourceTypeTest(TestCase):
 
     def setUp(self):
-        super(ResourceTypeTest, self).setUp()
+        super().setUp()
         now = datetime.now()
         self.event = Event.objects.create(
             name='event', start=now, end=now,

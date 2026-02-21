@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -45,7 +44,7 @@ from esp.users.models import ESPUser, Record
 class TeacherCheckinModuleTest(ProgramFrameworkTest):
 
     def setUp(self, *args, **kwargs):
-        super(TeacherCheckinModuleTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
         self.add_user_profiles()
         self.schedule_randomly() # only scheduled classes used in module
         self.ccc      = ClassCreationController(self.program)
@@ -63,7 +62,7 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
 
     def tearDown(self):
         Record.objects.filter(program=self.program, event__name=self.event).delete()
-        super(TeacherCheckinModuleTest, self).tearDown()
+        super().tearDown()
 
     def addCoteacher(self, cls, coteacher):
         self.ccc.associate_teacher_with_class(cls, coteacher)

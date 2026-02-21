@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import datetime
 
 from django import forms
@@ -326,7 +325,7 @@ class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
         self.keys = ['student_schedule_html']
         user=self.students[0]
         self.assertTrue(self.client.login(username=user.username, password='password'))
-        super(AjaxScheduleExistenceTest, self).runTest()
+        super().runTest()
 
 class AccountCreationTest(TestCase):
 
@@ -515,7 +514,7 @@ class TestChangeRequestView(TestCase):
 
 class RecordTest(TestCase):
     def setUp(self):
-        super(RecordTest, self).setUp()
+        super().setUp()
         self.past     = datetime.datetime(1970, 1, 1)
         self.future   = datetime.datetime.max
         self.user     = ESPUser.objects.create(username='RecordTest')
@@ -601,7 +600,7 @@ class RecordTest(TestCase):
 class PermissionTestCase(TestCase):
 
     def setUp(self):
-        super(PermissionTestCase, self).setUp()
+        super().setUp()
         self.role = Group.objects.create(name='group')
         self.user = ESPUser.objects.create(username='user')
         self.user.makeRole(self.role)

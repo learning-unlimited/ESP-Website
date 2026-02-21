@@ -4,8 +4,6 @@ A somewhat higher-level interface to the Formstack API.
 Employs caching to avoid hitting Formstack's API more than necessary.
 """
 
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
 from argcache import cache_function
 from esp.formstack.api import Formstack
