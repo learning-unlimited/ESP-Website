@@ -24,6 +24,7 @@ esp/esp/database_settings.py.mit
 env
 venv/
 .venv/
+venv
 useful_logs
 theme_compiled.css
 /.vagrant/*
