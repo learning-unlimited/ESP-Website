@@ -114,6 +114,8 @@ class ClassFlagModule(ProgramModuleObj):
         form = ClassFlagForm(request.POST)
         if form.is_valid():
             flag = form.save()
+            if flag.flag_type.notify_teacher_by_email:
+                flag.send_teacher_notification()
             context = { 'flag' : flag }
             response = json.dumps({
                 'flag_name': render_to_string(self.baseDir()+'flag_name.html', context = context, request = request),

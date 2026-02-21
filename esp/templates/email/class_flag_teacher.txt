@@ -1,0 +1,13 @@
+{% autoescape off %}
+Dear {{ cls.getTeacherNames|join:", " }},
+
+A flag has been added to your class {{ cls.emailcode }}: {{ cls.title }} for {{ program.niceName }}.
+
+Flag type: {{ flag.flag_type.name }}
+{% if flag.comment %}
+Comment: {{ flag.comment }}
+{% endif %}
+If you have questions about this flag, please contact the program directors at {{ program.director_email }}.
+
+{{ program.niceName }} Directors
+{% endautoescape %}

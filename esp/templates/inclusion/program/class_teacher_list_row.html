@@ -26,6 +26,14 @@
         {% else %}
         <span style="font-weight: bold; color: #00C;">Unreviewed</span>
         {% endif %}
+        {% load class_flags %}
+        {% teacher_visible_flags cls as visible_flags %}
+        {% if visible_flags %}
+        <br/><b>Flags:</b>
+        {% for flag in visible_flags %}
+          <span style="background: {{ flag.flag_type.getColor }}; padding: 1px 6px; color: #fff; font-size: 90%; margin-right: 3px;" title="{{ flag.comment }}">{{ flag.flag_type.name }}</span>
+        {% endfor %}
+        {% endif %}
     </td>
     {% block cls_row_1_buttons %}
     <td>
