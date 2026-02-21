@@ -39,6 +39,7 @@ import json
 from collections import Counter, OrderedDict, defaultdict
 from numpy import mean
 
+from django.db.models import Min, Max
 from django.template.loader import render_to_string
 
 from esp.program.models import Program, StudentRegistration
@@ -173,27 +174,40 @@ def schools(form, programs, students, profiles, result_dict={}):
 
 def startreg(form, programs, students, profiles, result_dict={}):
 
-    #   Get first class registration bit and confirmation bit for each student and bin by day
-    reg_dict = {}
-    confirm_dict = {}
-    for program in programs:
-        reg_dict[program] = {}
-        confirm_dict[program] = {}
+    #   Get first class registration bit and confirmation bit for each student and bin by day.
+    #   Uses two bulk queries instead of per-student per-program loops.
+    program_lookup = {p.id: p for p in programs}
+    reg_dict = {program: defaultdict(int) for program in programs}
+    confirm_dict = {program: defaultdict(int) for program in programs}
 
-    for student in students:
-        for program in programs:
+    #   Bulk-fetch the earliest registration date per (student, program)
+    first_regs = (
+        StudentRegistration.objects.filter(
+            user__in=students,
+            section__parent_class__parent_program__in=programs,
+        )
+        .values('user_id', 'section__parent_class__parent_program')
+        .annotate(first_date=Min('start_date'))
+    )
+    for entry in first_regs:
+        prog = program_lookup.get(entry['section__parent_class__parent_program'])
+        if prog and entry['first_date']:
+            reg_dict[prog][entry['first_date'].date()] += 1
 
-            reg_bits = StudentRegistration.objects.filter(user=student, section__parent_class__parent_program = program).order_by('start_date')
-            if reg_bits.exists():
-                if reg_bits[0].start_date.date() not in reg_dict[program]:
-                    reg_dict[program][reg_bits[0].start_date.date()] = 0
-                reg_dict[program][reg_bits[0].start_date.date()] += 1
-
-            confirm_bits = Record.objects.filter(user=student, event__name='reg_confirmed', program=program).order_by('-time')
-            if confirm_bits.exists():
-                if confirm_bits[0].time.date() not in confirm_dict[program]:
-                    confirm_dict[program][confirm_bits[0].time.date()] = 0
-                confirm_dict[program][confirm_bits[0].time.date()] += 1
+    #   Bulk-fetch the latest confirmation time per (student, program)
+    last_confirms = (
+        Record.objects.filter(
+            user__in=students,
+            event__name='reg_confirmed',
+            program__in=programs,
+        )
+        .values('user_id', 'program_id')
+        .annotate(last_time=Max('time'))
+    )
+    for entry in last_confirms:
+        prog = program_lookup.get(entry['program_id'])
+        if prog and entry['last_time']:
+            confirm_dict[prog][entry['last_time'].date()] += 1
 
     #   Compile and render
     startreg_list = []
