@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -142,6 +141,5 @@ class QSDCorrectnessTest(TestCase):
 
             #   Delete the new QSD so we can start again.
             qsd_rec_new.delete()
-
 
 

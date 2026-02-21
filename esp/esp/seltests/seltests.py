@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django_selenium.testcases import SeleniumTestCase
 from esp.seltests.util import try_normal_login, logout
 from esp.users.models import ESPUser
