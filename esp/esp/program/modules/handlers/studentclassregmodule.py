@@ -558,7 +558,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     """@cache_control(public=True, max_age=3600)
     def timeslots_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        """ """Return the program timeslot names for the tabs in the lottery inteface""" """
+        """ """Return the program timeslot names for the tabs in the lottery interface""" """
         # using .extra() to select all the category text simultaneously
         timeslots = self.program.getTimeSlots()
 

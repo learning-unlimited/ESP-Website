@@ -92,7 +92,7 @@ for row in reader:
             continue
         furnishings.add(results[0])
 
-    # Create Clasrooms with Furnishings
+    # Create Classrooms with Furnishings
     for block in timeblocks:
         room = Resource()
         room.num_students = reference.num_students
