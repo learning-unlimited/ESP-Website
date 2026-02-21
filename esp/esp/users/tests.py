@@ -757,23 +757,26 @@ class AdminMorphRegressionTest(ProgramFrameworkTest):
         return '/manage/%s/admin_morph/' % self.program.getUrlBase()
 
     def test_admin_morph_route_inaccessible_to_student(self):
-        """A student hitting the old admin_morph URL must not get a 200."""
+        """A student hitting the old admin_morph URL must get a 404 because
+        the route no longer exists (not merely permission-denied)."""
         self.client.login(username='morph_test_student', password='password')
         response = self.client.get(self._admin_morph_url())
-        # The module is gone, so this must redirect to login/denied or 404 —
-        # anything but a successful 200 response.
-        self.assertNotEqual(response.status_code, 200,
-            "admin_morph route returned 200 to an unprivileged student — "
-            "the route should be gone.")
+        # The student is authenticated so no auth redirect will fire; the URL
+        # must resolve to 404 confirming the route is fully removed.
+        self.assertEqual(response.status_code, 404,
+            "admin_morph route returned %d to an authenticated student — "
+            "expected 404 (route should be gone, not just permission-denied)." % response.status_code)
 
     def test_admin_morph_route_inaccessible_to_anonymous(self):
-        """An unauthenticated GET to admin_morph must redirect to login (302)."""
+        """An unauthenticated GET to admin_morph must be rejected: 404 (URL gone)
+        or 302 (auth middleware fires before URL dispatch) — never a 200 or 500."""
         self.client.logout()
         response = self.client.get(self._admin_morph_url())
-        # Must be a redirect (to the login page) or a 404, never a 200.
-        self.assertIn(response.status_code, [301, 302, 403, 404],
+        # Accept 302 only if auth middleware redirects before URL resolution;
+        # both confirm the user cannot reach a live admin_morph handler.
+        self.assertIn(response.status_code, [302, 404],
             "admin_morph route returned %d to an anonymous user — "
-            "expected a redirect or 404." % response.status_code)
+            "expected 404 (route gone) or 302 (auth redirect)." % response.status_code)
 
     def test_myesp_morph_endpoint_is_gone(self):
         """The /myesp/morph/ URL that backed morph_into_user is fully removed."""

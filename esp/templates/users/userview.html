@@ -14,522 +14,363 @@
 {% block content %}
 <h1>User Information</h1>
 <div class="clearfix">
-    {% if not user.is_active %} <b>This user has been deactivated.</b> {% endif %}
+{% if not user.is_active %} <b>This user has been deactivated.</b> {% endif %}
 
-    <div id="user-sidebar">
-        {% if teacherbio.picture %}
+<div id="user-sidebar">
+    {% if teacherbio.picture %}
         <img src="{{ teacherbio.picture.url }}" title="Picture of {{ user.first_name }} {{ user.last_name }}"
-            alt="Picture of {{ user.first_name }} {{ user.last_name }}" class="biophoto" />
-        {% endif %}
-        <form class="change-program" method="get">
-            <input type="hidden" name="username" value="{{user.username}}" />
-            View:
-            <select name="program" onchange="$j(this).parent().submit();return false;">
-                <option disabled {% if not program %}selected="selected" {% endif %}>
-                    (Select a program)
-                </option>
-                {% for prog in all_programs %}
-                <option value="{{prog.id}}" {% if prog==program %}selected="selected" {% endif %}>
+        alt="Picture of {{ user.first_name }} {{ user.last_name }}" class="biophoto" />
+    {% endif %}
+    <form class="change-program" method="get">
+        <input type="hidden" name="username" value="{{user.username}}"/>
+        View:
+        <select name="program" onchange="$j(this).parent().submit();return false;">
+            <option disabled {% if not program %}selected="selected"{% endif %}>
+                (Select a program)
+            </option>
+            {% for prog in all_programs %}
+                <option value="{{prog.id}}" {% if prog == program %}selected="selected"{% endif %}>
                     {{prog.name}}
                 </option>
-                {% endfor %}
-            </select>
-        </form>
-        <h2 style="margin-top: 0;">User Type(s):</h2>
-        {% for type in user.getUserTypes %}
+            {% endfor %}
+        </select>
+    </form>
+    <h2 style="margin-top: 0;">User Type(s):</h2>
+    {% for type in user.getUserTypes %}
         <span class="{{ type }}">{{ type }}</span>{% if not forloop.last %}, {% endif %}
-        {% empty %}
+    {% empty %}
         <span class="no_usertype">None</span>
-        {% endfor %}
-        <h2>
-            Administrative links
-        </h2>
-
-        <a class="sidelink" href="/admin/users/espuser/{{user.id}}/">View on admin panel</a>
-        <a class="sidelink" href="/admin/program/registrationprofile/?user__id={{user.id}}">View registration
-            profiles</a>
-        {% if "Student" in user.getUserTypes %}
+    {% endfor %}
+    <h2>
+        Administrative links
+    </h2>
+    <a class="sidelink" href="/admin/users/espuser/{{user.id}}/">View on admin panel</a>
+    <a class="sidelink" href="/admin/program/registrationprofile/?user__id={{user.id}}">View registration profiles</a>
+    {% if "Student" in user.getUserTypes %}
         <a id="biolink" class="sidelink" href="/accounting/user?target_user={{user.id}}">View accounting info</a>
-        {% endif %}
-        {% if "Teacher" in user.getUserTypes %}
+    {% endif %}
+    {% if "Teacher" in user.getUserTypes %}
         <a id="biolink" class="sidelink" href="/teach/teachers/{{user.username}}/bio.html">Go to teacher bio</a>
-        {% endif %}
-        <form action="/manage/{% if user.is_active %}de{% endif %}activate_user" method="post">{% csrf_token %}
-            <input type="hidden" name="user_id" value="{{user.id}}" />
-            <a class="sidelink" onclick="$j(this).parent().submit();return false;" href="">{% if user.is_active
-                %}Deactivate{% else %}Activate{% endif %} user</a>
-        </form>
-        {% if program %}
+    {% endif %}
+    <form action="/manage/{% if user.is_active %}de{% endif %}activate_user" method="post">{% csrf_token %}
+        <input type="hidden" name="user_id" value="{{user.id}}"/>
+        <a class="sidelink" onclick="$j(this).parent().submit();return false;" href="">{% if user.is_active %}Deactivate{% else %}Activate{% endif %} user</a>
+    </form>
+    {% if program %}
         {% if "Student" in user.getUserTypes or profile.student_info %}
-        <h2>
-            Student links<br />
-            (for {{program.niceName}})
-        </h2>
-        <a id="onsitelink" class="sidelink" href="/onsite/{{program.getUrlBase}}/studentreg?user={{user.id}}">Onsite
-            registration</a>
-        {% if profile.student_info and profile.id %}
-        {% if program|hasModule:"AccountingModule" %}
-        <a href="/manage/{{program.getUrlBase}}/accounting/{{user.id}}" class="sidelink">View accounting info</a>
-        {% endif %}
-        {% if program|hasModule:"FormstackMedliabModule" %}
-        <form action="/manage/{{program.getUrlBase}}/medicalbypass" method="post">{% csrf_token %}
-            <input type="hidden" name="target_user" value="{{user.id}}" />
-            <a class="sidelink" onclick="$j(this).parent().submit();return false;"
-                href="/manage/{{program.getUrlBase}}/medicalbypass">
-                Grant medical bypass</a>
-        </form>
-        {% endif %}
-        <div id="print-student-schedule">
-            <a id="getstudentschedulelink" class="sidelink"
-                href="/onsite/{{program.getUrlBase}}/studentschedule?user={{user.id}}" target="_new">Print schedule
-                locally</a>
-            <a id="printstudentschedulelink" class="sidelink"
-                href="/onsite/{{program.getUrlBase}}/printschedule?user={{user.id}}&next=/manage/userview?username={{user.username}}">Print
-                schedule to default printer</a>
-            {% if printers %}
-            {% for printer in printers %}
-            <a id="printstudentschedulelink-{{printer|slugify}}" class="sidelink"
-                href="/onsite/{{program.getUrlBase}}/printschedule?user={{user.id}}&printer={{ printer }}&next=/manage/userview?username={{user.username}}">Print
-                schedule to {{ printer }}</a>
-            {% endfor %}
-            {% endif %}
-        </div>
-        <div id="unenroll-student">
-            <form action="/manage/unenroll_student" method="post">{% csrf_token %}
-                <input type="hidden" name="user_id" value="{{user.id}}" />
-                <input type="hidden" name="program" value="{{program.id}}" />
-                <a class="sidelink" onclick="$j(this).parent().submit();return false;" href="">Unenroll from all
-                    classes</a>
-            </form>
-        </div>
-        <table class="table-condensed modules">
-            {% for module in learn_modules %}
-            {% if module.isStep %}
-            <tr>
-                <td>
-                    {% if module.isCompleted %}
-                    <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
-                    {% else %}
-                    <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
-                    {% endif %}
-                    {{ module.module.link_title }}
-                </td>
-            </tr>
-            {% endif %}
-            {% endfor %}
-        </table>
-        {% if learn_records %}
-        <table class="table-condensed modules">
-            {% for record in learn_records %}
-            <tr>
-                <td>
-                    {% if record.isCompleted %}
-                    <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
-                    {% else %}
-                    <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
-                    {% endif %}
-                    {{ record.full_event }}
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-        {% endif %}
-        {% else %}
-        (Student has no profile for this program)
-        {% endif %}
-        {% endif %}
-        {% if "Teacher" in user.getUserTypes or profile.teacher_info %}
-        <h2>
-            Teacher {% if program|hasModule:"TeacherModeratorModule" %}and {{program.getModeratorTitle|lower}} {% endif
-            %}links<br />
-            (for {{program.niceName}})
-        </h2>
-        {% if program|hasModule:"CheckAvailabilityModule" %}
-        <a class="sidelink{% if not avail_set %} stripes{% endif %}"
-            href="/manage/{{program.getUrlBase}}/edit_availability?user={{user.username}}">
-            Check/edit availability{% if not avail_set %} (not set){% endif %}</a>
-        {% endif %}
-        {% if profile.teacher_info and profile.id %}
-        <div id="print-teacher-schedule">
-            <a id="getteacherschedulelink" class="sidelink"
-                href="/teach/{{program.getUrlBase}}/teacherschedule?user={{user.id}}" target="_new">Print teacher
-                schedule locally</a>
-        </div>
-        {% if program|hasModule:"TeacherModeratorModule" %}
-        <div id="print-teachermoderator-schedule">
-            <a id="getteachermoderatorschedulelink" class="sidelink"
-                href="/teach/{{program.getUrlBase}}/teachermoderatorschedule?user={{user.id}}" target="_new">Print
-                combined teacher and {{program.getModeratorTitle|lower}} schedule locally</a>
-        </div>
-        <div id="print-moderator-schedule">
-            <a id="getmoderatorschedulelink" class="sidelink"
-                href="/teach/{{program.getUrlBase}}/moderatorschedule?user={{user.id}}" target="_new">Print
-                {{program.getModeratorTitle|lower}} schedule locally</a>
-        </div>
-        {% endif %}
-        <table class="table-condensed modules">
-            {% for module in teach_modules %}
-            {% if module.isStep %}
-            <tr>
-                <td>
-                    {% if module.isCompleted %}
-                    <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
-                    {% else %}
-                    <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
-                    {% endif %}
-                    {{ module.module.link_title }}
-                </td>
-            </tr>
-            {% endif %}
-            {% endfor %}
-        </table>
-        {% if teach_records %}
-        <table class="table-condensed modules">
-            {% for record in teach_records %}
-            <tr>
-                <td>
-                    {% if record.isCompleted %}
-                    <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
-                    {% else %}
-                    <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
-                    {% endif %}
-                    {{ record.full_event }}
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-        {% endif %}
-        {% else %}
-        (Teacher has no profile for this program)
-        {% endif %}
-        {% endif %}
-        {% if volunteer %}
-        <div id="print-volunteer-schedule">
             <h2>
-                Volunteer links<br />
+                Student links<br/>
                 (for {{program.niceName}})
             </h2>
-            <a id="getvolunteerschedulelink" class="sidelink"
-                href="/volunteer/{{program.getUrlBase}}/volunteerschedule?user={{user.id}}" target="_new">Print schedule
-                locally</a>
-        </div>
+            <a id="onsitelink" class="sidelink" href="/onsite/{{program.getUrlBase}}/schedule_students?user_id={{user.id}}">Onsite registration</a>
+            {% if profile.student_info and profile.id %}
+                {% if program|hasModule:"AccountingModule" %}
+                    <a href="/manage/{{program.getUrlBase}}/accounting/{{user.id}}" class="sidelink">View accounting info</a>
+                {% endif %}
+                {% if program|hasModule:"FormstackMedliabModule" %}
+                    <form action="/manage/{{program.getUrlBase}}/medicalbypass" method="post">{% csrf_token %}
+                        <input type="hidden" name="target_user" value="{{user.id}}"/>
+                        <a class="sidelink" onclick="$j(this).parent().submit();return false;"
+                           href="/manage/{{program.getUrlBase}}/medicalbypass">
+                            Grant medical bypass</a>
+                    </form>
+                {% endif %}
+                <div id="print-student-schedule">
+                    <a id="getstudentschedulelink" class="sidelink" href="/onsite/{{program.getUrlBase}}/studentschedule?user={{user.id}}" target="_new">Print schedule locally</a>
+                    <a id="printstudentschedulelink" class="sidelink" href="/onsite/{{program.getUrlBase}}/printschedule?user={{user.id}}&next=/manage/userview?username={{user.username}}">Print schedule to default printer</a>
+                    {% if printers %}
+                        {% for printer in printers %}
+                        <a id="printstudentschedulelink-{{printer|slugify}}" class="sidelink" href="/onsite/{{program.getUrlBase}}/printschedule?user={{user.id}}&printer={{ printer }}&next=/manage/userview?username={{user.username}}">Print schedule to {{ printer }}</a>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div id="unenroll-student">
+                    <form action="/manage/unenroll_student" method="post">{% csrf_token %}
+                        <input type="hidden" name="user_id" value="{{user.id}}"/>
+                        <input type="hidden" name="program" value="{{program.id}}"/>
+                        <a class="sidelink" onclick="$j(this).parent().submit();return false;" href="">Unenroll from all classes</a>
+                    </form>
+                </div>
+                <table class="table-condensed modules">
+                {% for module in learn_modules %}
+                    {% if module.isStep %}
+                    <tr>
+                        <td>
+                            {% if module.isCompleted %}
+                                <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                            {% else %}
+                                <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                            {% endif %}
+                            {{ module.module.link_title }}
+                        </td>
+                    </tr>
+                    {% endif %}
+                {% endfor %}
+                </table>
+                {% if learn_records %}
+                    <table class="table-condensed modules">
+                    {% for record in learn_records %}
+                        <tr>
+                            <td>
+                                {% if record.isCompleted %}
+                                    <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                                {% else %}
+                                    <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                                {% endif %}
+                                {{ record.full_event }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </table>
+                {% endif %}
+            {% else %}
+                (Student has no profile for this program)
+            {% endif %}
         {% endif %}
-        {% endif %}
-    </div>
-
-    <table class="dottedtable">
-        <tr>
-            <td class="key">Name</td>
-            <td>{{ user.first_name }} {{ user.last_name }}</td>
-        </tr>
-        <tr>
-            <td class="key">Gender</td>
-            <td>{% if profile.student_info.gender %}{{ profile.student_info.gender }}{% else %}Not specified{% endif %}
-            </td>
-        </tr>
-        <tr>
-            <td class="key">Pronouns</td>
-            <td>{% if profile.teacher_info.pronoun %}{{ profile.teacher_info.pronoun }}{% elif
-                profile.student_info.pronoun %}{{ profile.student_info.pronoun }}{% else %}Not specified{% endif %}</td>
-        </tr>
-        <tr>
-            <td class="key">Username</td>
-            <td>{{ user.username }}</td>
-        </tr>
-        <tr>
-            <td class="key">User ID</td>
-            <td>{{ user.id }}</td>
-        </tr>
-        <tr>
-            <td class="key">Email</td>
-            <td>{{ user.email }}</td>
-        </tr>
-        {% if profile.contact_user %}
-        <tr>
-            <td class="key">Day Phone</td>
-            <td>{{ profile.contact_user.phone_day }}</td>
-        </tr>
-        <tr>
-            <td class="key">Cell Phone</td>
-            <td>{{ profile.contact_user.phone_cell }}</td>
-        </tr>
-        <tr>
-            <td class="key">Address</td>
-            <td>{{ profile.contact_user.address_street }}<br />{{ profile.contact_user.address_city }}, {{
-                profile.contact_user.address_state }} {{ profile.contact_user.address_zip }}{% if
-                profile.contact_user.undeliverable %}<br />
-                <font color="red">Mail has bounced!</font>{% endif %}
-            </td>
-        </tr>
-        {% else %}
-        <tr>
-            <td colspan="2">
-                <font color="red">User account not fully created; please fill out a profile!</font>
-            </td>
-        </tr>
-        {% endif %}
-    </table>
-
-    <div id="div_usertype_info">
         {% if "Teacher" in user.getUserTypes or profile.teacher_info %}
-        <h2>Teacher Info</h2>
-        {% if profile.teacher_info %}
+            <h2>
+                Teacher {% if program|hasModule:"TeacherModeratorModule" %}and {{program.getModeratorTitle|lower}} {% endif %}links<br/>
+                (for {{program.niceName}})
+            </h2>
+            {% if program|hasModule:"CheckAvailabilityModule" %}
+                <a class="sidelink{% if not avail_set %} stripes{% endif %}" href="/manage/{{program.getUrlBase}}/edit_availability?user={{user.username}}">
+                Check/edit availability{% if not avail_set %} (not set){% endif %}</a>
+            {% endif %}
+            {% if profile.teacher_info and profile.id %}
+                <div id="print-teacher-schedule">
+                    <a id="getteacherschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/teacherschedule?user={{user.id}}" target="_new">Print teacher schedule locally</a>
+                </div>
+                {% if program|hasModule:"TeacherModeratorModule" %}
+                    <div id="print-teachermoderator-schedule">
+                        <a id="getteachermoderatorschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/teachermoderatorschedule?user={{user.id}}" target="_new">Print combined teacher and {{program.getModeratorTitle|lower}} schedule locally</a>
+                    </div>
+                    <div id="print-moderator-schedule">
+                        <a id="getmoderatorschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/moderatorschedule?user={{user.id}}" target="_new">Print {{program.getModeratorTitle|lower}} schedule locally</a>
+                    </div>
+                {% endif %}
+                <table class="table-condensed modules">
+                {% for module in teach_modules %}
+                    {% if module.isStep %}
+                    <tr>
+                        <td>
+                            {% if module.isCompleted %}
+                                <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                            {% else %}
+                                <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                            {% endif %}
+                            {{ module.module.link_title }}
+                        </td>
+                    </tr>
+                    {% endif %}
+                {% endfor %}
+                </table>
+                {% if teach_records %}
+                    <table class="table-condensed modules">
+                    {% for record in teach_records %}
+                        <tr>
+                            <td>
+                                {% if record.isCompleted %}
+                                    <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                                {% else %}
+                                    <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                                {% endif %}
+                                {{ record.full_event }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </table>
+                {% endif %}
+            {% else %}
+                (Teacher has no profile for this program)
+            {% endif %}
+        {% endif %}
+        {% if volunteer %}
+            <div id="print-volunteer-schedule">
+                <h2>
+                    Volunteer links<br/>
+                    (for {{program.niceName}})
+                </h2>
+                <a id="getvolunteerschedulelink" class="sidelink" href="/volunteer/{{program.getUrlBase}}/volunteerschedule?user={{user.id}}" target="_new">Print schedule locally</a>
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
+
+<table class="dottedtable">
+<tr><td class="key">Name</td><td>{{ user.first_name }} {{ user.last_name }}</td></tr>
+<tr><td class="key">Gender</td><td>{% if profile.student_info.gender %}{{ profile.student_info.gender }}{% else %}Not specified{% endif %}</td></tr>
+<tr><td class="key">Pronouns</td><td>{% if profile.teacher_info.pronoun %}{{ profile.teacher_info.pronoun }}{% elif profile.student_info.pronoun %}{{ profile.student_info.pronoun }}{% else %}Not specified{% endif %}</td></tr>
+<tr><td class="key">Username</td><td>{{ user.username }}</td></tr>
+<tr><td class="key">User ID</td><td>{{ user.id }}</td></tr>
+<tr><td class="key">Email</td><td>{{ user.email }}</td></tr>
+{% if profile.contact_user %}
+    <tr><td class="key">Day Phone</td><td>{{ profile.contact_user.phone_day }}</td></tr>
+    <tr><td class="key">Cell Phone</td><td>{{ profile.contact_user.phone_cell }}</td></tr>
+    <tr><td class="key">Address</td><td>{{ profile.contact_user.address_street }}<br />{{ profile.contact_user.address_city }}, {{ profile.contact_user.address_state }} {{ profile.contact_user.address_zip }}{% if profile.contact_user.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td></tr>
+{% else %}
+    <tr><td colspan="2"><font color="red">User account not fully created; please fill out a profile!</font></td></tr>
+{% endif %}
+</table>
+
+<div id="div_usertype_info">
+{% if "Teacher" in user.getUserTypes or profile.teacher_info %}
+    <h2>Teacher Info</h2>
+    {% if profile.teacher_info %}
         <table class="dottedtable">
-            <tr>
-                <td class="key">Affiliation</td>
-                <td>{{ profile.teacher_info.affiliation }}</td>
-            </tr>
-            <tr>
-                <td class="key">Graduation Year</td>
-                <td>{{ profile.teacher_info.graduation_year }}</td>
-            </tr>
-            <tr>
-                <td class="key">College/Employer</td>
-                <td>{{ profile.teacher_info.college }}</td>
-            </tr>
-            <tr>
-                <td class="key">Major</td>
-                <td>{{ profile.teacher_info.major }}</td>
-            </tr>
-            <tr>
-                <td class="key">Shirt Size/Type</td>
-                <td>{{ profile.teacher_info.shirt_size }} {{ profile.teacher_info.shirt_type }}</td>
-            </tr>
+            <tr><td class="key">Affiliation</td><td>{{ profile.teacher_info.affiliation }}</td></tr>
+            <tr><td class="key">Graduation Year</td><td>{{ profile.teacher_info.graduation_year }}</td></tr>
+            <tr><td class="key">College/Employer</td><td>{{ profile.teacher_info.college }}</td></tr>
+            <tr><td class="key">Major</td><td>{{ profile.teacher_info.major }}</td></tr>
+            <tr><td class="key">Shirt Size/Type</td><td>{{ profile.teacher_info.shirt_size }} {{ profile.teacher_info.shirt_type }}</td></tr>
             {% if profile.teacher_info.bio %}
-            <tr>
-                <td class="key">Bio</td>
-                <td>{{ profile.teacher_info.bio }}</td>
-            </tr>
+            <tr><td class="key">Bio</td><td>{{ profile.teacher_info.bio }}</td></tr>
             {% endif %}
         </table>
-        {% else %}
+    {% else %}
         <em>(None specified)</em>
-        {% endif %}
-        {% endif %}
+    {% endif %}
+{% endif %}
 
-        {% if "Student" in user.getUserTypes or profile.student_info %}
-        <h2>Student Info</h2>
-        {% if profile.student_info %}
+{% if "Student" in user.getUserTypes or profile.student_info %}
+    <h2>Student Info</h2>
+    {% if profile.student_info %}
         <table class="dottedtable">
-            <tr>
-                <td class="key">School</td>
-                <td>{{ profile.student_info.school }}</td>
-            </tr>
-            <tr>
-                <td class="key">Graduation Year</td>
-                <td>{{ profile.student_info.graduation_year }} (currently {{ user.getGrade }}th Grade)<br />
-                    <form action="/manage/userview/" method="get" name="change_grade">
-                        {{ change_grade_form.graduation_year }}
+        <tr><td class="key">School</td><td>{{ profile.student_info.school }}</td></tr>
+        <tr><td class="key">Graduation Year</td><td>{{ profile.student_info.graduation_year }} (currently {{ user.getGrade }}th Grade)<br />
+        <form action="/manage/userview/" method="get" name="change_grade">
+        {{ change_grade_form.graduation_year }}
+        <input type="hidden" name="username" value="{{ user.username }}" />
+        {% if program %}
+        <input type="hidden" name="program" value="{{ program.id }}" />
+        {% endif %}
+        <input type="submit" value="Change" class="btn btn-default" />
+        </form></td></tr>
+        {% if grade_change_requests %}
+        <tr><td colspan="2">
+            {% for gcr in grade_change_requests %}
+            <div class="alert alert-danger">
+                <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                {{ gcr }}{% if gcr.reason %} ({{ gcr.reason }}){% endif %}<br />
+                <center>
+                    <form action="/manage/userview/" method="get" name="approve_grade_request">
+                        <input type="hidden" name="approve_request" value="{{ gcr.id }}" />
                         <input type="hidden" name="username" value="{{ user.username }}" />
                         {% if program %}
                         <input type="hidden" name="program" value="{{ program.id }}" />
                         {% endif %}
-                        <input type="submit" value="Change" class="btn btn-default" />
+                        <input type="submit" value="Approve" class="btn btn-default" />
                     </form>
-                </td>
-            </tr>
-            {% if grade_change_requests %}
-            <tr>
-                <td colspan="2">
-                    {% for gcr in grade_change_requests %}
-                    <div class="alert alert-danger">
-                        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-                        {{ gcr }}{% if gcr.reason %} ({{ gcr.reason }}){% endif %}<br />
-                        <center>
-                            <form action="/manage/userview/" method="get" name="approve_grade_request">
-                                <input type="hidden" name="approve_request" value="{{ gcr.id }}" />
-                                <input type="hidden" name="username" value="{{ user.username }}" />
-                                {% if program %}
-                                <input type="hidden" name="program" value="{{ program.id }}" />
-                                {% endif %}
-                                <input type="submit" value="Approve" class="btn btn-default" />
-                            </form>
-                            <form action="/manage/userview/" method="get" name="reject_grade_request">
-                                <input type="hidden" name="reject_request" value="{{ gcr.id }}" />
-                                <input type="hidden" name="username" value="{{ user.username }}" />
-                                {% if program %}
-                                <input type="hidden" name="program" value="{{ program.id }}" />
-                                {% endif %}
-                                <input type="submit" value="Reject" class="btn btn-default" />
-                            </form>
-                        </center>
-                    </div>
-                    {% endfor%}
-                </td>
-            </tr>
-            {% endif %}
-            <tr>
-                <td class="key">Date of Birth</td>
-                <td>{{ profile.student_info.dob|date }}</td>
-            </tr>
-            <tr>
-                <td class="key">Applied to be Student Rep?</td>
-                <td>{% if profile.student_info.studentrep %}<span class="yes"><a class="tooltip">Yes<span>{{
-                                profile.student_info.studentrep_expl }}</span></a></span>{% else %}<span
-                        class="no">No</span>{% endif %}</td>
-            </tr>
-            <tr>
-                <td class="key">How Heard About {{ settings.ORGANIZATION_SHORT_NAME }}?</td>
-                <td>{% ifnotequal profile.student_info.heard_about "" %}<span>{{ profile.student_info.heard_about
-                        }}</span>{% else %}(blank){% endifnotequal %}</td>
-            <tr>
+                    <form action="/manage/userview/" method="get" name="reject_grade_request">
+                        <input type="hidden" name="reject_request" value="{{ gcr.id }}" />
+                        <input type="hidden" name="username" value="{{ user.username }}" />
+                        {% if program %}
+                        <input type="hidden" name="program" value="{{ program.id }}" />
+                        {% endif %}
+                        <input type="submit" value="Reject" class="btn btn-default" />
+                    </form>
+                </center>
+            </div>
+            {% endfor%}
+        </td></tr>
+        {% endif %}
+        <tr><td class="key">Date of Birth</td><td>{{ profile.student_info.dob|date }}</td></tr>
+        <tr><td class="key">Applied to be Student Rep?</td><td>{% if profile.student_info.studentrep %}<span class="yes"><a class="tooltip">Yes<span>{{ profile.student_info.studentrep_expl }}</span></a></span>{% else %}<span class="no">No</span>{% endif %}</td></tr>
+        <tr><td class="key">How Heard About {{ settings.ORGANIZATION_SHORT_NAME }}?</td><td>{% ifnotequal profile.student_info.heard_about "" %}<span>{{ profile.student_info.heard_about }}</span>{% else %}(blank){% endifnotequal %}</td><tr>
         </table>
-        {% else %}
+    {% else %}
         <em>(None specified)</em>
-        {% endif %}
-        {% endif %}
+    {% endif %}
+{% endif %}
 
-        {% if "Student" in user.getUserTypes or profile.contact_emergency %}
-        <h2>Emergency Contact Info</h2>
-        {% if profile.contact_emergency %}
+{% if "Student" in user.getUserTypes or profile.contact_emergency %}
+    <h2>Emergency Contact Info</h2>
+    {% if profile.contact_emergency %}
         <table class="dottedtable">
-            <tr>
-                <td class="key">Name</td>
-                <td>{{ profile.contact_emergency.first_name }} {{ profile.contact_emergency.last_name }}</td>
-            </tr>
-            <tr>
-                <td class="key">Email</td>
-                <td>{{ profile.contact_emergency.e_mail }}</td>
-            </tr>
-            <tr>
-                <td class="key">Day Phone</td>
-                <td>{{ profile.contact_emergency.phone_day }}</td>
-            </tr>
-            <tr>
-                <td class="key">Cell Phone</td>
-                <td>{{ profile.contact_emergency.phone_cell }}</td>
-            </tr>
-            <tr>
-                <td class="key">Address</td>
-                <td>{{ profile.contact_emergency.address_street }}<br />{{ profile.contact_emergency.address_city }}, {{
-                    profile.contact_emergency.address_state }} {{ profile.contact_emergency.address_zip }}{% if
-                    profile.contact_emergency.undeliverable %}<br />
-                    <font color="red">Mail has bounced!</font>{% endif %}
-                </td>
-            </tr>
+        <tr><td class="key">Name</td><td>{{ profile.contact_emergency.first_name }} {{ profile.contact_emergency.last_name }}</td></tr>
+        <tr><td class="key">Email</td><td>{{ profile.contact_emergency.e_mail }}</td></tr>
+        <tr><td class="key">Day Phone</td><td>{{ profile.contact_emergency.phone_day }}</td></tr>
+        <tr><td class="key">Cell Phone</td><td>{{ profile.contact_emergency.phone_cell }}</td></tr>
+        <tr><td class="key">Address</td><td>{{ profile.contact_emergency.address_street }}<br />{{ profile.contact_emergency.address_city }}, {{ profile.contact_emergency.address_state }} {{ profile.contact_emergency.address_zip }}{% if profile.contact_emergency.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td></tr>
         </table>
-        {% else %}
+    {% else %}
         <em>(None specified)</em>
-        {% endif %}
-        {% endif %}
+    {% endif %}
+{% endif %}
 
-        {% if "Student" in user.getUserTypes or profile.contact_guardian %}
-        <h2>Parent/Guardian Contact Info</h2>
-        {% if profile.contact_guardian %}
+{% if "Student" in user.getUserTypes or profile.contact_guardian %}
+    <h2>Parent/Guardian Contact Info</h2>
+    {% if profile.contact_guardian %}
         <table class="dottedtable">
-            <tr>
-                <td class="key">Name</td>
-                <td>{{ profile.contact_guardian.first_name }} {{ profile.contact_guardian.last_name }}</td>
-            </tr>
-            <tr>
-                <td class="key">Email</td>
-                <td>{{ profile.contact_guardian.e_mail }}</td>
-            </tr>
-            <tr>
-                <td class="key">Day Phone</td>
-                <td>{{ profile.contact_guardian.phone_day }}</td>
-            </tr>
-            <tr>
-                <td class="key">Cell Phone</td>
-                <td>{{ profile.contact_guardian.phone_cell }}</td>
-            </tr>
-            <tr>
-                <td class="key">Address</td>
-                <td>{{ profile.contact_guardian.address_street }}<br />{{ profile.contact_guardian.address_city }}, {{
-                    profile.contact_guardian.address_state }} {{ profile.contact_guardian.address_zip }}{% if
-                    profile.contact_guardian.undeliverable %}<br />
-                    <font color="red">Mail has bounced!</font>{% endif %}
-                </td>
-            </tr>
+        <tr><td class="key">Name</td><td>{{ profile.contact_guardian.first_name }} {{ profile.contact_guardian.last_name }}</td></tr>
+        <tr><td class="key">Email</td><td>{{ profile.contact_guardian.e_mail }}</td></tr>
+        <tr><td class="key">Day Phone</td><td>{{ profile.contact_guardian.phone_day }}</td></tr>
+        <tr><td class="key">Cell Phone</td><td>{{ profile.contact_guardian.phone_cell }}</td></tr>
+        <tr><td class="key">Address</td><td>{{ profile.contact_guardian.address_street }}<br />{{ profile.contact_guardian.address_city }}, {{ profile.contact_guardian.address_state }} {{ profile.contact_guardian.address_zip }}{% if profile.contact_guardian.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td></tr>
         </table>
-        {% else %}
+    {% else %}
         <em>(None specified)</em>
-        {% endif %}
-        {% endif %}
+    {% endif %}
+{% endif %}
 
-        {% if "Guardian" in user.getUserTypes or profile.guardian_info %}
-        <h2>Guardian Info</h2>
-        {% if profile.guardian_info %}
+{% if "Guardian" in user.getUserTypes or profile.guardian_info %}
+    <h2>Guardian Info</h2>
+    {% if profile.guardian_info %}
         <table class="dottedtable">
-            <tr>
-                <td class="key">Year Finished School</td>
-                <td>{{ profile.guardian_info.year_finished }}</td>
-            </tr>
-            <tr>
-                <td class="key">Number of Children in {{ settings.ORGANIZATION_SHORT_NAME }}</td>
-                <td>{{ profile.guardian_info.num_kids }}</td>
-            </tr>
+        <tr><td class="key">Year Finished School</td><td>{{ profile.guardian_info.year_finished }}</td></tr>
+        <tr><td class="key">Number of Children in {{ settings.ORGANIZATION_SHORT_NAME }}</td><td>{{ profile.guardian_info.num_kids }}</td></tr>
         </table>
-        {% else %}
+    {% else %}
         <em>(None specified)</em>
-        {% endif %}
-        {% endif %}
+    {% endif %}
+{% endif %}
 
-        {% if "Educator" in user.getUserTypes or profile.educator_info %}
-        <h2>Educator Info</h2>
-        {% if profile.educator_info %}
+{% if "Educator" in user.getUserTypes or profile.educator_info %}
+    <h2>Educator Info</h2>
+    {% if profile.educator_info %}
         <table class="dottedtable">
-            <tr>
-                <td class="key">Subjects Taught</td>
-                <td>{{ profile.educator_info.subject_taught }}</td>
-            </tr>
-            <tr>
-                <td class="key">Grades Taught</td>
-                <td>{{ profile.educator_info.grades_taught }}</td>
-            </tr>
-            <tr>
-                <td class="key">School</td>
-                <td>{{ profile.educator_info.school }}</td>
-            </tr>
-            <tr>
-                <td class="key">Position</td>
-                <td>{{ profile.educator_info.position }}></td>
-            </tr>
+        <tr><td class="key">Subjects Taught</td><td>{{ profile.educator_info.subject_taught }}</td></tr>
+        <tr><td class="key">Grades Taught</td><td>{{ profile.educator_info.grades_taught }}</td></tr>
+        <tr><td class="key">School</td><td>{{ profile.educator_info.school }}</td></tr>
+        <tr><td class="key">Position</td><td>{{ profile.educator_info.position }}></td></tr>
         </table>
-        {% else %}
+    {% else %}
         <em>(None specified)</em>
-        {% endif %}
-        {% endif %}
-    </div>
+    {% endif %}
+{% endif %}
+</div>
 
-    {% with taught_classes as classes %}{% if classes %}
+{% with taught_classes as classes %}{% if classes %}
     <h2>Classes Taught (or signed up to teach)</h2>
     <br />
     {% for class in classes %}
-    {% ifchanged class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_program.niceName
-    }}<br />
-    <ul>{% endifchanged %}
-        {% with show_class_details="True" %}
-        {% include "users/userview_class_entry.html" %}
-        {% endwith %}
-        {% if forloop.last %}</ul>{% endif %}
+    {% ifchanged class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_program.niceName }}<br /><ul>{% endifchanged %}
+    {% with show_class_details="True" %}
+    {% include "users/userview_class_entry.html" %}
+    {% endwith %}
+    {% if forloop.last %}</ul>{% endif %}
     {% endfor %}
-    {% endif %}{% endwith %}
+{% endif %}{% endwith %}
 
-    {% with enrolled_classes as classes %}{% if classes %}
+{% with enrolled_classes as classes %}{% if classes %}
     <h2>Classes Enrolled In (currently or previously):</h2>
     <br />
     {% for class in classes %}
-    {% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{
-    class.parent_class.parent_program.niceName }}<br />
-    <ul>{% endifchanged %}
-        {% with show_class_details="True" %}
-        {% include "users/userview_class_entry.html" %}
-        {% endwith %}
-        {% if forloop.last %}</ul>{% endif %}
+    {% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_class.parent_program.niceName }}<br /><ul>{% endifchanged %}
+    {% with show_class_details="True" %}
+    {% include "users/userview_class_entry.html" %}
+    {% endwith %}
+    {% if forloop.last %}</ul>{% endif %}
     {% endfor %}
-    {% endif %}{% endwith %}
+{% endif %}{% endwith %}
 
-    {% with taken_classes as classes %}{% if classes %}
+{% with taken_classes as classes %}{% if classes %}
     <h2>Classes Taken Or Applied For:</h2>
     <br />
     {% for class in classes %}
-    {% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{
-    class.parent_class.parent_program.niceName }}<br />
-    <ul>{% endifchanged %}
-        {% include "users/userview_class_entry.html" %}
-        {% if forloop.last %}</ul>{% endif %}
+    {% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_class.parent_program.niceName }}<br /><ul>{% endifchanged %}
+    {% include "users/userview_class_entry.html" %}
+    {% if forloop.last %}</ul>{% endif %}
     {% endfor %}
-    {% endif %}{% endwith %}
+{% endif %}{% endwith %}
 </div>
 {% endblock %}

@@ -84,12 +84,27 @@ class OnsiteClassSchedule(ProgramModuleObj):
     @main_call
     @needs_onsite
     def schedule_students(self, request, tl, one, two, module, extra, prog):
-        """ Redirect to student registration, having morphed into the desired
-        student. """
+        """ Redirect to student registration, having switched into the desired
+        student.
 
-        user, found = search_for_user(request, ESPUser.getAllOfType('Student', False), add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
-        if not found:
-            return user
+        When ``user_id`` is supplied as a GET parameter (e.g. from the User
+        View admin page) the student-search step is skipped and the caller is
+        taken directly to that student's onsite registration.  Without it the
+        standard search flow is used.
+        """
+
+        user_id = request.GET.get('user_id')
+        if user_id:
+            try:
+                user = ESPUser.objects.get(id=user_id)
+            except (ESPUser.DoesNotExist, ValueError):
+                # Fall through to the normal search rather than 500-ing.
+                user_id = None
+
+        if not user_id:
+            user, found = search_for_user(request, ESPUser.getAllOfType('Student', False), add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
+            if not found:
+                return user
 
         request.user.switch_to_user(request,
                                  user,
