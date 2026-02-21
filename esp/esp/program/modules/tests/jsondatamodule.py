@@ -51,13 +51,31 @@ class JSONDataModuleTest(ProgramFrameworkTest):
     ## at the moment it just assumes that they are correct.
     ## It also also needs to test all the other queries on this page.
 
-    def setUp(self):
-        super(JSONDataModuleTest, self).setUp()
-        # Generate some nonzero stats
-        self.schedule_randomly()
-        self.add_user_profiles()
-        self.classreg_students()
+    @classmethod
+    def setUpTestData(cls):
+        """Run all heavy DB setup once at the class level.
 
+        Django wraps this in a transaction savepoint that is shared by every
+        test method in the class and rolled back when the class finishes.
+        This avoids repeating the expensive program-framework scaffolding
+        (user creation, class scheduling, student registration) on every
+        individual test method.
+        """
+        super().setUpTestData()
+        # Bootstrap the program framework at the class level.  We call the
+        # parent's instance setUp on `cls` directly: ProgramFrameworkTest.setUp
+        # only performs DB writes (no HTTP client usage), so treating cls as
+        # the target is safe and idiomatic.
+        ProgramFrameworkTest.setUp(cls)
+        cls.schedule_randomly()
+        cls.add_user_profiles()
+        cls.classreg_students()
+
+    def setUp(self):
+        # Note: do NOT call super().setUp() here; ProgramFrameworkTest.setUp
+        # was already executed once at the class level in setUpTestData above.
+        # Only do lightweight, per-test work: authenticate the client and
+        # (re-)fetch the JSON responses that the test methods assert against.
         self.pm = ProgramModule.objects.get(handler='AdminCore')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, self.pm)
         self.moduleobj.user = self.students[0]
@@ -140,12 +158,23 @@ class JSONDataModuleTest(ProgramFrameworkTest):
         ## Statistics in the "grades" section of the dashboard
         ## Note: Depends on add_user_profiles() always creating 10th graders
         ## and all classes being open to all grades in the program
+
+        # Derive expected counts dynamically from the live program data so
+        # that the assertion doesn't break when the test-framework defaults
+        # (num_teachers, classes_per_teacher, sections_per_class) change.
+        all_classes = self.program.classes().filter(status__gte=0)
+        all_sections = self.program.sections().filter(status__gte=0)
+
         expected_response = {"data": [], "id": "grades"}
         for g in range(self.program.grade_min, self.program.grade_max + 1):
-            expected_response["data"].append({"grade": g,
-                                              "num_subjects": 10,
-                                              "num_sections": 10,
-                                              "num_students": 10 if g==10 else 0})
+            grade_classes = all_classes.filter(grade_min__lte=g, grade_max__gte=g)
+            grade_sections = all_sections.filter(parent_class__in=grade_classes)
+            expected_response["data"].append({
+                "grade": g,
+                "num_subjects": grade_classes.count(),
+                "num_sections": grade_sections.count(),
+                "num_students": 10 if g == 10 else 0,
+            })
         self.assertContains(self.stats_response, 'stats', status_code=200)
         self.assertIn('stats', list(self.stats_response.json().keys()))
         grades_count = 0
