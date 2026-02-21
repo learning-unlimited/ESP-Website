@@ -401,7 +401,7 @@ class ThemeController(object):
             if filename == '__pycache__':
                 continue
             full_filename = os.path.join(dir, filename)
-            if os.path.isdir(filename):
+            if os.path.isdir(full_filename):
                 result += self.get_file_summaries(full_filename)
             else:
                 file_data = open(full_filename, 'rb').read()
