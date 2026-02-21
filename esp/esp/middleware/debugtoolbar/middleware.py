@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django import http
 from debug_toolbar.middleware import DebugToolbarMiddleware
 
