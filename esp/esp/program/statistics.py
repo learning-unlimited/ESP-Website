@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 import json
-from collections import OrderedDict, defaultdict
+from collections import Counter, OrderedDict, defaultdict
 from numpy import mean
 
 from django.db.models import Min, Max
@@ -226,17 +226,28 @@ def startreg(form, programs, students, profiles, result_dict={}):
 
 def repeats(form, programs, students, profiles, result_dict={}):
 
-    #   For each student, find out what other programs they registered for and bin by quantity in each program type
+    #   For each student, find out what other programs they registered for and bin by quantity in each program type.
+    #   Uses a single bulk query instead of per-student loops.
+
+    #   Fetch all confirmed (user_id, program_type) pairs in one query
+    confirmed_pairs = (
+        Record.objects.filter(
+            user__in=students,
+            event__name='reg_confirmed',
+        )
+        .values_list('user_id', 'program__program_type')
+    )
+
+    #   Group by user: count how many programs of each type they confirmed
+    user_type_counts = defaultdict(Counter)
+    for user_id, program_type in confirmed_pairs:
+        user_type_counts[user_id][program_type] += 1
+
+    #   Bin students by their (program_type, count) signature
     repeat_count = {}
-    for student in students:
-        programs = Program.objects.filter(record__user=student, record__event__name='reg_confirmed')
-        indiv_count = {}
-        for program in programs:
-            if program.program_type not in indiv_count:
-                indiv_count[program.program_type] = 0
-            indiv_count[program.program_type] += 1
+    for user_id, indiv_count in user_type_counts.items():
         program_types = sorted(indiv_count.keys())
-        id_pair = tuple([tuple([program_type, indiv_count[program_type]]) for program_type in program_types])
+        id_pair = tuple([(pt, indiv_count[pt]) for pt in program_types])
         if id_pair not in repeat_count:
             repeat_count[id_pair] = 0
         repeat_count[id_pair] += 1
