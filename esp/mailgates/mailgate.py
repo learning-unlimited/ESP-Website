@@ -3,8 +3,6 @@
 # Main mailgate
 # Handles incoming messages etc.
 
-from __future__ import absolute_import
-from __future__ import print_function
 import sys, os, email, re, smtplib, socket, sha, random
 from io import open
 new_path = '/'.join(sys.path[0].split('/')[:-1])

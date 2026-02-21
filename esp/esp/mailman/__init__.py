@@ -1,6 +1,4 @@
-from __future__ import with_statement
 
-from __future__ import absolute_import
 import os
 from subprocess import call, Popen, PIPE
 from django.conf import settings
@@ -9,7 +7,6 @@ from esp.users.models import ESPUser
 from tempfile import NamedTemporaryFile
 from django.contrib.auth.models import User
 from django.db.models import Q
-import six
 
 
 if settings.USE_MAILMAN:
@@ -71,7 +68,7 @@ def apply_list_settings(list, data):
     """
 
     with NamedTemporaryFile() as f:
-        f.writelines( ( "%s = %s\n" % (key, repr(value)) for key, value in six.iteritems(data) ) )
+        f.writelines( ( "%s = %s\n" % (key, repr(value)) for key, value in data.items() ) )
         f.file.flush()
         return call([MM_PATH + "config_list", "-i", f.name, list])
 
@@ -131,9 +128,9 @@ def add_list_members(list_name, members):
 
     'members' is an iterable of email address strings or ESPUser objects.
     """
-    members = [x.get_email_sendto_address() if isinstance(x, User) else six.text_type(x) for x in members]
+    members = [x.get_email_sendto_address() if isinstance(x, User) else str(x) for x in members]
 
-    members = six.u('\n').join(members)
+    members = '\n'.join(members)
 
     # encode as iso-8859-1 to match Mailman's daft Unicode handling, see:
     # http://bazaar.launchpad.net/~mailman-coders/mailman/2.1/view/head:/Mailman/Defaults.py.in#L1584
@@ -158,10 +155,10 @@ def remove_list_member(list, member):
     if hasattr(member, "filter"):
         member = [x.email for x in member]
 
-    if not isinstance(member, six.string_types):
+    if not isinstance(member, str):
         member = "\n".join(member)
 
-    if isinstance(member, six.text_type):
+    if isinstance(member, str):
         member = member.encode('iso-8859-1', 'replace')
 
     return Popen([MM_PATH + "remove_members", "--nouserack", "--noadminack", "--file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(member)
@@ -201,7 +198,7 @@ def all_lists(show_nonpublic=False):
 @enable_with_setting(settings.USE_MAILMAN)
 def lists_containing(user):
     """ Return all lists that a user is a member of """
-    if isinstance(user, six.string_types):
+    if isinstance(user, str):
         search_regex="^%s$" % user
     else:
         search_regex = "^(%s|%s@%s)$" % (user.email, user.username, "esp.mit.edu")

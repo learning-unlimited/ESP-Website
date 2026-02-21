@@ -1,10 +1,8 @@
 """ Copied from: http://djangosnippets.org/snippets/1478/ """
 
-from __future__ import absolute_import
 from django.db import models
 from django.core.serializers.json import DjangoJSONEncoder
 import json
-import six
 
 class JSONField(models.TextField):
     """JSONField is a generic textfield that neatly serializes/unserializes
@@ -17,7 +15,7 @@ class JSONField(models.TextField):
             return None
 
         try:
-            if isinstance(value, six.string_types):
+            if isinstance(value, str):
                 return json.loads(value)
         except ValueError:
             pass

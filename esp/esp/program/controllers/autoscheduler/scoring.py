@@ -30,8 +30,6 @@ teaching, so we need to scale down.) This allows scorer weights to be
 determined by relative importance to scheduling a section without accounting
 for this sort of behavior."""
 
-from __future__ import absolute_import
-from __future__ import division
 import logging
 
 import esp.program.controllers.autoscheduler.util as util

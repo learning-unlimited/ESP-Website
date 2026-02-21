@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -51,7 +50,6 @@ from django.http import HttpResponseRedirect
 
 from decimal import Decimal
 import json
-
 
 
 class DonationForm(forms.Form):

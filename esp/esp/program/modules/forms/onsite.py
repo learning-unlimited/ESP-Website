@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django import forms
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import DateTimeWidget
