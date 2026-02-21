@@ -1176,10 +1176,12 @@ class BaseESPUser(object):
         user_hash = hash(str(self.id) + str(program.id))
         return '{0:06d}'.format(abs(user_hash))[:6]
 
-    # modified from here: https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
+    # modified from here:
+    # https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
     def unsubscribe_link(self):
-        username, token = self.make_token().split(":", 1)
-        return reverse('unsubscribe', kwargs={'username': username, 'token': token,})
+        token = self.make_token()[len(self.username) + 1:]
+        return reverse('unsubscribe',
+                       kwargs={'username': self.username, 'token': token})
 
     def unsubscribe_link_full(self):
         unsub_link = self.unsubscribe_link()
