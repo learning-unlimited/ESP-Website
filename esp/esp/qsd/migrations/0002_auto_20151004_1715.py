@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='quasistaticdata',
             name='author',
-            field=esp.db.fields.AjaxForeignKey(verbose_name='last modifed by', to='users.ESPUser', on_delete=models.CASCADE),
+            field=esp.db.fields.AjaxForeignKey(verbose_name='last modified by', to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='quasistaticdata',

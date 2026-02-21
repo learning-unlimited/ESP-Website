@@ -379,7 +379,7 @@ class ProgramPrintables(ProgramModuleObj):
         elif 'all' not in request.GET:
             classes = [cls for cls in classes if cls.status >= 0]
         if 'scheduled' in request.GET:
-            classes = [cls for cls in classes if cls.all_meeting_times.count() > 0]
+            classes = [cls for cls in classes if cls.all_meeting_times.exists()]
 
         cls_list = []
         flag_types = ClassFlagType.get_flag_types(program=prog).order_by("seq")
@@ -430,7 +430,7 @@ class ProgramPrintables(ProgramModuleObj):
             classes = [cls for cls in classes if cls.status >= 0]
 
         if 'scheduled' in request.GET:
-            classes = [cls for cls in classes if cls.all_meeting_times.count() > 0]
+            classes = [cls for cls in classes if cls.all_meeting_times.exists()]
 
         classes = list(filter(filt_exp, classes))
 
@@ -482,7 +482,7 @@ class ProgramPrintables(ProgramModuleObj):
             sections = [sec for sec in sections if sec.status >= 0]
 
         if 'scheduled' in request.GET:
-            sections = [sec for sec in sections if sec.meeting_times.count() > 0]
+            sections = [sec for sec in sections if sec.meeting_times.exists()]
 
         sections = list(filter(filt_exp, sections))
 
@@ -503,7 +503,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def classesbytime(self, request, tl, one, two, module, extra, prog):
         def cmp_time(one, other):
-            if (one.meeting_times.count() > 0 and other.meeting_times.count() > 0):
+            if (one.meeting_times.exists() and other.meeting_times.exists()):
                 cmp0 = cmp(one.meeting_times.all()[0].start, other.meeting_times.all()[0].start)
             else:
                 cmp0 = cmp(one.meeting_times.count(), other.meeting_times.count())
@@ -552,7 +552,7 @@ class ProgramPrintables(ProgramModuleObj):
             qs_other = other.initial_rooms()
             cmp0 = 0
 
-            if qs_one.count() > 0 and qs_other.count() > 0:
+            if qs_one.exists() and qs_other.exists():
                 room_one = qs_one[0]
                 room_other = qs_other[0]
                 cmp0 = cmp(room_one.name, room_other.name)
@@ -618,7 +618,7 @@ class ProgramPrintables(ProgramModuleObj):
             else:
                 class_objects = teacher.getModeratingSectionsFromProgram(self.program)
             classes = sorted([ cls for cls in class_objects
-                    if cls.isAccepted() and cls.meeting_times.count() > 0 ])
+                    if cls.isAccepted() and cls.meeting_times.exists() ])
             # now we sort them by time/title
 
             if  extra and 'secondday' in extra:
@@ -634,7 +634,7 @@ class ProgramPrintables(ProgramModuleObj):
                 classes = new_classes
 
             ci = ContactInfo.objects.filter(user=teacher, phone_cell__isnull=False, as_user__isnull=False).exclude(phone_cell='').distinct('user')
-            if ci.count() > 0:
+            if ci.exists():
                 phone_day = ci[0].phone_day
                 phone_cell = ci[0].phone_cell
             else:
@@ -693,7 +693,7 @@ class ProgramPrintables(ProgramModuleObj):
 
     @staticmethod
     def cmpsorttime(one, other):
-        if (one['cls'].meeting_times.count() > 0 and other['cls'].meeting_times.count() > 0):
+        if (one['cls'].meeting_times.exists() and other['cls'].meeting_times.exists()):
             cmp0 = cmp(one['cls'].meeting_times.all()[0].start, other['cls'].meeting_times.all()[0].start)
         else:
             cmp0 = cmp(one['cls'].meeting_times.count(), other['cls'].meeting_times.count())
