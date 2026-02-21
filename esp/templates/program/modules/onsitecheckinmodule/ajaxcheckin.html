@@ -112,6 +112,10 @@ Welcome to student check-in for {{program.niceName}}.  Make sure that the studen
   <a href="/onsite/{{ program.url }}/checkin">Click here to view and edit the check-in of a user</a>
 </p>
 
+</div>
+
+{% include "program/modules/onsitecore/returnlink.html" %}
+
 {% endblock %}
 
 {% block javascript %}
@@ -150,10 +154,4 @@ $j(function() {
     }
 });
 </script>
-{% endblock %}
-
-</div>
-
-{% include "program/modules/onsitecore/returnlink.html" %}
-
 {% endblock %}

@@ -36,7 +36,7 @@ def ajax_autocomplete(request):
         prog         = request.GET['prog']
         grade        = request.GET.get('grade')
         last_name_range = request.GET.get('last_name_range')
-    except KeyError as ValueError:
+    except (KeyError, ValueError):
         # bad request
         response = HttpResponse('Malformed Input')
         response.status_code = 400
@@ -57,7 +57,7 @@ def ajax_autocomplete(request):
     for item in output:
         output2.append({'id': item['id'], 'ajax_str': item['ajax_str']+' (%s)' % item['id']})
 
-    content = json.dumps({'result':output2})
+    content = json.dumps({'result': output2})
 
     return HttpResponse(content,
-                        content_type = 'javascript/javascript')
+                        content_type='javascript/javascript')
