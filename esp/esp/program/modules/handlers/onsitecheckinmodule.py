@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.forms.onsite import OnsiteBarcodeCheckinForm
+from esp.program.modules.forms.onsite import OnsiteBarcodeCheckinForm, OnsiteBulkCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
 from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
@@ -333,6 +333,79 @@ class OnSiteCheckinModule(ProgramModuleObj):
             self.student = user
             return render_to_response(self.baseDir()+'checkin.html', request, {'module': self, 'program': prog})
 
+
+
+    @aux_call
+    @needs_onsite
+    def bulkcheckin(self, request, tl, one, two, module, extra, prog):
+        """
+        Check in ALL registered students for the program, except those whose
+        IDs are listed in the excluded_uids textarea.
+
+        POST data:
+          'excluded_uids': Whitespace-separated list of user IDs to skip.
+          'attended':      Whether to set an 'attended' record.
+          'paid':          Whether to mark the student's balance as paid.
+          'med':           Whether to set a 'med' record.
+          'liab':          Whether to set a 'liab' record.
+        """
+        context = {}
+        if request.method == 'POST':
+            results = {
+                'checked_in':   [],
+                'existing':     [],
+                'excluded':     [],
+                'not_found':    [],
+                'not_student':  [],
+                'paid':  {'new': [], 'existing': []},
+                'liab':  {'new': [], 'existing': []},
+                'med':   {'new': [], 'existing': []},
+            }
+            form = OnsiteBulkCheckinForm(request.POST)
+            if form.is_valid():
+                # Build the set of excluded IDs
+                raw = form.cleaned_data.get('excluded_uids', '') or ''
+                excluded_ids = set()
+                for token in raw.split():
+                    try:
+                        excluded_ids.add(int(token))
+                    except ValueError:
+                        results['not_found'].append(token)
+
+                # Fetch all registered students for this program
+                all_students = prog.students_union()
+
+                for student in all_students:
+                    if student.id in excluded_ids:
+                        results['excluded'].append(student.id)
+                        continue
+                    if not student.isStudent():
+                        results['not_student'].append(student.id)
+                        continue
+
+                    self.student = student
+                    for key in ['attended', 'paid', 'liab', 'med']:
+                        if form.cleaned_data.get(key):
+                            if key == 'attended':
+                                if prog.isCheckedIn(student):
+                                    results['existing'].append(student.id)
+                                else:
+                                    self.create_record(key)
+                                    results['checked_in'].append(student.id)
+                            else:
+                                created = self.create_record(key)
+                                if created:
+                                    results[key]['new'].append(student.id)
+                                else:
+                                    results[key]['existing'].append(student.id)
+        else:
+            results = {}
+            form = OnsiteBulkCheckinForm()
+
+        context['module'] = self
+        context['form'] = form
+        context['results'] = results
+        return render_to_response(self.baseDir() + 'bulkcheckin.html', request, context)
 
     class Meta:
         proxy = True

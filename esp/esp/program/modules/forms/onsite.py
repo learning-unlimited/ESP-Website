@@ -32,6 +32,18 @@ class OnsiteBarcodeCheckinForm(forms.Form):
     liab = forms.BooleanField(label = "Liability Form?", required = False, initial = False)
     paid = forms.BooleanField(label = "Paid in Full?", required = False, initial = False)
 
+class OnsiteBulkCheckinForm(forms.Form):
+    excluded_uids = forms.CharField(
+        label='Excluded User IDs (students who did NOT show up)',
+        widget=forms.Textarea(attrs={'rows': 10}),
+        required=False,
+        help_text='Enter the IDs of students who are absent, separated by whitespace. Everyone else will be checked in.'
+    )
+    attended = forms.BooleanField(label='Mark as Attending?', required=False, initial=True)
+    med      = forms.BooleanField(label='Medical Form?',      required=False, initial=False)
+    liab     = forms.BooleanField(label='Liability Form?',    required=False, initial=False)
+    paid     = forms.BooleanField(label='Paid in Full?',      required=False, initial=False)
+
 class TeacherCheckinForm(forms.Form):
     when = forms.DateTimeField(label='Date/Time', widget=DateTimeWidget, required = False)
 

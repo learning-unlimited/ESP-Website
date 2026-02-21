@@ -1,0 +1,80 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Management{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
+{% endblock %}
+
+{% block content %}
+
+<h1>Bulk Check-In &mdash; For {{ program.niceName }}</h1>
+
+<div id='program_form'>
+    <p>
+        Use this page to check in <strong>all registered students at once</strong>.
+        Enter the IDs of any students who are <strong>absent</strong> in the box below &mdash;
+        everyone else will be marked as attended. Leave the box empty to check in everyone.
+    </p>
+
+    {% if results %}
+    <div class="alert alert-info">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span>
+            Checked in <strong>{{ results.checked_in|length }}</strong> student(s).
+            {{ results.existing|length }} student(s) were already checked in.
+            {{ results.excluded|length }} student(s) were excluded.
+            {{ results.not_found|length }} excluded ID(s) were not recognised.
+            {{ results.not_student|length }} ID(s) did not correspond to students.
+        </span>
+        {% if results.paid.new or results.paid.existing %}
+        <span>
+            {{ results.paid.new|length }} student(s) paid. {{ results.paid.existing|length }} student(s) already paid.
+        </span>
+        {% endif %}
+        {% if results.liab.new or results.liab.existing %}
+        <span>
+            {{ results.liab.new|length }} student(s) handed in their liability waiver. {{ results.liab.existing|length
+            }} student(s) already handed in their liability waiver.
+        </span>
+        {% endif %}
+        {% if results.med.new or results.med.existing %}
+        <span>
+            {{ results.med.new|length }} student(s) handed in their medical waiver. {{ results.med.existing|length }}
+            student(s) already handed in their medical waiver.
+        </span>
+        {% endif %}
+        {% if results.not_found %}
+        <span>
+            Unrecognised IDs:
+            {% for id in results.not_found %}
+            {{ id }}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        </span>
+        {% endif %}
+        {% if results.not_student %}
+        <span>
+            IDs not corresponding to students:
+            {% for id in results.not_student %}
+            {{ id }}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        </span>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <form id="bulkcheckinform" name="bulkcheckinform" method="POST" action="{{ request.path }}">
+        {% csrf_token %}
+        <table style="width: unset;">
+            {{ form.as_table }}
+            <tr>
+                <td colspan="2"><input type="submit" value="Check In All (Except Excluded)" /></td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+{% include "program/modules/onsitecore/returnlink.html" %}
+
+{% endblock %}
