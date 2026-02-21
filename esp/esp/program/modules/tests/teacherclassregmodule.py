@@ -52,7 +52,7 @@ from esp.users.models import ESPUser, Permission
 
 class TeacherClassRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
-        super(TeacherClassRegTest, self).setUp(num_students=5, room_capacity=5, *args, **kwargs)
+        super().setUp(num_students=5, room_capacity=5, *args, **kwargs)
 
         # Select a primary teacher, two other teachers, and the class
         self.teacher = random.choice(self.teachers)

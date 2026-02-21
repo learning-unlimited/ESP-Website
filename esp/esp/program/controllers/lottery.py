@@ -72,12 +72,12 @@ class LotteryException(Exception):
 class LotterySectionException(LotteryException):
     """ Something is wrong with a class section.    """
     def __init__(self, section, msg, **kwargs):
-        super(LotteryException, self).__init__('Class section %d (%s) %s' % (section.id, section.emailcode(), msg), **kwargs)
+        super().__init__('Class section %d (%s) %s' % (section.id, section.emailcode(), msg), **kwargs)
 
 class LotterySubjectException(LotteryException):
     """ Something is wrong with a class subject.    """
     def __init__(self, subject, msg, **kwargs):
-        super(LotteryException, self).__init__('Class subject %s %s' % (subject.emailcode(), msg), **kwargs)
+        super().__init__('Class subject %s %s' % (subject.emailcode(), msg), **kwargs)
 
 class LotteryAssignmentController(object):
 

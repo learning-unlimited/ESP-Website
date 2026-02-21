@@ -82,7 +82,7 @@ class UserPasswdForm(FormWithRequiredCss):
 
     def __init__(self, user, *args, **kwargs):
         self.user = user
-        super(UserPasswdForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def clean_password(self):
         if self.user is None:

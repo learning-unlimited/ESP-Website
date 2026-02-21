@@ -120,7 +120,7 @@ class Media(models.Model):
         if os.path.isfile(self.get_uploaded_filename()):
             os.remove(self.get_uploaded_filename())
 
-        super(Media, self).delete(*args, **kwargs)
+        super().delete(*args, **kwargs)
 
     def rename(self, new_name):
         self.friendly_name = new_name

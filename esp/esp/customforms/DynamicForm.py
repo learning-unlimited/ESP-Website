@@ -338,7 +338,7 @@ class ComboForm(SessionWizardView):
         context data such as the form's title and description
         """
 
-        context = super(ComboForm, self).get_context_data(form=form, **kwargs)
+        context = super().get_context_data(form=form, **kwargs)
         context.update({
                         'form_title': self.form.title,
                         'form_description': self.form.description,

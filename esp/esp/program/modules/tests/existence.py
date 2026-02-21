@@ -50,7 +50,7 @@ class ModuleExistenceTest(ProgramFrameworkTest):
             'num_teachers': 6, 'classes_per_teacher': 1, 'sections_per_class': 2,
             'num_rooms': 6,
             } )
-        super(ModuleExistenceTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
 
         #   Make all modules non-required for now, so we don't have to be shown required pages
         for pmo in self.program.getModules():

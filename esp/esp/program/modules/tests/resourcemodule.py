@@ -48,7 +48,7 @@ class ResourceModuleTest(ProgramFrameworkTest):
     ## It also also needs to test all the other queries on this page.
 
     def setUp(self):
-        super(ResourceModuleTest, self).setUp()
+        super().setUp()
 
         if not getattr(self, 'isSetUp', False):
             self.pm = ProgramModule.objects.get(handler='ResourceModule')
