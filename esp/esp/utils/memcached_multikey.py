@@ -12,7 +12,7 @@ from esp.utils import ascii
 import hashlib
 
 try:
-    import six.moves.cPickle as pickle
+    import pickle
 except:
     import pickle
 
