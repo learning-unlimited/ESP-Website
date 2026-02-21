@@ -5,7 +5,7 @@ class CustomformsConfig(InstallConfig):
     name = 'esp.customforms'
 
     def ready(self):
-        super(CustomformsConfig, self).ready()
+        super().ready()
 
         # Initialize the model cache for customforms
         # This import needs to go here because it will indirectly

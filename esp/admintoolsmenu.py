@@ -36,4 +36,4 @@ class CustomMenu(Menu):
         """
         Use this method if you need to access the request context.
         """
-        return super(CustomMenu, self).init_with_context(context)
+        return super().init_with_context(context)

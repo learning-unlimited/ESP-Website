@@ -61,7 +61,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
 
         # Set up the program -- we want to be sure of these parameters
         kwargs.update({'num_students': 3, 'num_teachers': 3})
-        super(CommunicationsPanelTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
 
         self.add_student_profiles()
         self.schedule_randomly()

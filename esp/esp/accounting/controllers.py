@@ -279,7 +279,7 @@ class ProgramAccountingController(BaseAccountingController):
 @python_2_unicode_compatible
 class IndividualAccountingController(ProgramAccountingController):
     def __init__(self, program, user, *args, **kwargs):
-        super(IndividualAccountingController, self).__init__(program, *args, **kwargs)
+        super().__init__(program, *args, **kwargs)
         self.user = user
 
     def transfers_to_program_exist(self):

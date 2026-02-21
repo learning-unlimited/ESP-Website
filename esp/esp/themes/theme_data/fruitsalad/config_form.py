@@ -72,7 +72,7 @@ class ConfigForm(ThemeConfigurationForm):
                            '<a href="https://yale.learningu.org">yale.learningu.org</a>).')
 
     def __init__(self, *args, **kwargs):
-        super(ConfigForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # fill in %(host)s for front_page_style.help_text
         request = get_current_request()

@@ -46,7 +46,7 @@ class ModeratorForm(forms.ModelForm):
             del kwargs['program']
         else:
             raise KeyError('Need to supply program as named argument to ModeratorForm')
-        super(ModeratorForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['class_categories'].queryset = self.program.class_categories.all()
         choices = [(0, 'Please select an option')] + [(num, num) for num in range(1, self.program.num_timeslots() + 1)]
         self.fields['num_slots'].choices = choices

@@ -49,7 +49,7 @@ class TeacherEventsModule(ProgramModuleObj):
 
     # Initialization
     def __init__(self, *args, **kwargs):
-        super(TeacherEventsModule, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def availability_role(self):
         return Group.objects.get(name='Teacher')

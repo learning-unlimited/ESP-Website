@@ -37,7 +37,7 @@ class ClassCreationValidationError(Exception):
     def __init__(self, reg_form, resource_formset, error_msg):
         self.reg_form = reg_form
         self.resource_formset = resource_formset
-        super(ClassCreationValidationError, self).__init__(error_msg)
+        super().__init__(error_msg)
 
 class ClassCreationController(object):
     def __init__(self, prog):

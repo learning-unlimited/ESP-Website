@@ -286,7 +286,7 @@ class ListGenForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         usertype = kwargs.pop('usertype', 'any')
-        super(ListGenForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         #   If we have a specific recipient user type,
         #   filter to only the fields that are relevant to that user type
         if usertype != 'combo':
