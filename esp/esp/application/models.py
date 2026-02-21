@@ -198,6 +198,7 @@ class StudentClassApp(models.Model):
             if model is not None:
                 self.__class__ = model
 
+    @transaction.atomic
     def admit(self):
         # note: this will un-admit the student from all other classes
         for classapp in self.app.studentclassapp_set.all():

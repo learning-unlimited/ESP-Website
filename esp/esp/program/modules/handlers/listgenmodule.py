@@ -49,7 +49,7 @@ class UserAttributeGetter(object):
         """ Enter labels for available fields here; they are sorted alphabetically by key
             The values should be dictionaries with at least "label" and "usertype" keys.
             The value for the "label" key will be the text shown in the form.
-            The value for the "usertype" key should be a set of user types that the field is releveant for.
+            The value for the "usertype" key should be a set of user types that the field is relevant for.
             Use 'any' to show the field for all user types (all fields will be shown for combo lists, as well) """
         fields = {  '01_id': {'label': 'ID', 'usertype': {'any'}},
                     '02_username': {'label': 'Username', 'usertype': {'any'}},
