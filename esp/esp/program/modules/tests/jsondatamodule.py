@@ -67,9 +67,42 @@ class JSONDataModuleTest(ProgramFrameworkTest):
                                               % self.program.getUrlBase())
         self.classes_response = self.client.get('/json/%s/class_subjects'
                                                 % self.program.getUrlBase())
+        # Ensure endpoints returned successfully before attempting to parse JSON.
+        self.assertEqual(
+            self.stats_response.status_code, 200,
+            "Expected 200 from /json/%s/stats, got %d. Body snippet: %r"
+            % (self.program.getUrlBase(),
+               self.stats_response.status_code,
+               self.stats_response.content[:200]),
+        )
+        self.assertEqual(
+            self.classes_response.status_code, 200,
+            "Expected 200 from /json/%s/class_subjects, got %d. Body snippet: %r"
+            % (self.program.getUrlBase(),
+               self.classes_response.status_code,
+               self.classes_response.content[:200]),
+        )
         # Cache parsed payloads so individual tests don't re-parse repeatedly.
-        self.stats_data = self.stats_response.json()
-        self.classes_data = self.classes_response.json()
+        try:
+            self.stats_data = self.stats_response.json()
+        except ValueError:
+            self.fail(
+                "Failed to parse JSON from /json/%s/stats (status %d). "
+                "Body snippet: %r"
+                % (self.program.getUrlBase(),
+                   self.stats_response.status_code,
+                   self.stats_response.content[:200])
+            )
+        try:
+            self.classes_data = self.classes_response.json()
+        except ValueError:
+            self.fail(
+                "Failed to parse JSON from /json/%s/class_subjects (status %d). "
+                "Body snippet: %r"
+                % (self.program.getUrlBase(),
+                   self.classes_response.status_code,
+                   self.classes_response.content[:200])
+            )
 
     def testStudentStats(self):
         ## Student statistics
@@ -161,7 +194,8 @@ class JSONDataModuleTest(ProgramFrameworkTest):
 
     def testVitalsSection(self):
         """The 'vitals' section contains the expected stat list fields."""
-        vitals = next(s for s in self.stats_data['stats'] if s.get('id') == 'vitals')
+        vitals = next((s for s in self.stats_data['stats'] if s.get('id') == 'vitals'), None)
+        self.assertIsNotNone(vitals, "'vitals' section missing from stats response")
         for field in ('classnum', 'teachernum', 'studentnum', 'volunteernum', 'hournum'):
             self.assertIn(field, vitals, "vitals missing field '%s'" % field)
             # Each of these is a list of [label, value] pairs
@@ -170,7 +204,8 @@ class JSONDataModuleTest(ProgramFrameworkTest):
 
     def testClassNums(self):
         """The first entry of vitals['classnum'] equals total classes in the DB."""
-        vitals = next(s for s in self.stats_data['stats'] if s.get('id') == 'vitals')
+        vitals = next((s for s in self.stats_data['stats'] if s.get('id') == 'vitals'), None)
+        self.assertIsNotNone(vitals, "'vitals' section missing from stats response")
         class_num_pairs = vitals['classnum']
         self.assertTrue(len(class_num_pairs) > 0, "vitals['classnum'] is empty")
         # The first pair is ("Total # of Classes", N)
@@ -182,7 +217,8 @@ class JSONDataModuleTest(ProgramFrameworkTest):
 
     def testCategoriesSection(self):
         """The 'categories' section has per-category data with required fields."""
-        categories = next(s for s in self.stats_data['stats'] if s.get('id') == 'categories')
+        categories = next((s for s in self.stats_data['stats'] if s.get('id') == 'categories'), None)
+        self.assertIsNotNone(categories, "'categories' section missing from stats response")
         self.assertIn('data', categories, "'categories' section missing 'data' key")
         for entry in categories['data']:
             for field in ('id', 'num_subjects', 'num_sections', 'num_class_hours', 'category'):
@@ -194,7 +230,8 @@ class JSONDataModuleTest(ProgramFrameworkTest):
 
     def testAccountingSection(self):
         """The 'accounting' section contains correctly typed payment totals."""
-        acct = next(s for s in self.stats_data['stats'] if s.get('id') == 'accounting')
+        acct = next((s for s in self.stats_data['stats'] if s.get('id') == 'accounting'), None)
+        self.assertIsNotNone(acct, "'accounting' section missing from stats response")
         self.assertIn('data', acct, "'accounting' section missing 'data' key")
         data = acct['data']
         self.assertIn('num_payments', data)
