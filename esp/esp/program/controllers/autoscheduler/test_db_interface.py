@@ -13,8 +13,6 @@ from esp.program.models.class_ import \
 from esp.program.modules import module_ext
 from esp.program.tests import ProgramFrameworkTest
 from esp.resources.models import Resource, ResourceType, ResourceRequest
-from six.moves import range
-from six.moves import zip
 
 
 class ScheduleLoadAndSaveTest(ProgramFrameworkTest):

@@ -10,8 +10,6 @@ from esp.cal.models import EventType, Event
 from esp.program.models import Program
 from esp.utils.widgets import DateTimeWidget, DateWidget
 from esp.tagdict.models import Tag
-import six
-from six.moves import range
 
 class TimeslotForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
@@ -57,7 +55,6 @@ class TimeslotForm(forms.Form):
         slot.group = self.cleaned_data['group']
         slot.program = program
         slot.save()
-
 
 class ResourceTypeForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
@@ -113,14 +110,12 @@ class ResourceTypeForm(forms.Form):
 class ResourceChoiceForm(forms.Form):
     choice = forms.CharField(required=False, max_length=50, widget=forms.TextInput)
 
-
 def setup_furnishings(restype_list):
     #   Populate the available choices for furnishings based on a particular program.
     return ((str(r.id), r.name + (" (Hidden)" if r.hidden else "")) for r in restype_list)
 
 def setup_timeslots(program):
     return ((str(e.id), e.short_description) for e in program.getTimeSlots())
-
 
 class EquipmentForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
@@ -132,7 +127,7 @@ class EquipmentForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         if isinstance(args[0], Program):
-            self.base_fields['resource_type'].choices = tuple([(six.u(''), '(type)')] + list(setup_furnishings(args[0].getResourceTypes())))
+            self.base_fields['resource_type'].choices = tuple([('', '(type)')] + list(setup_furnishings(args[0].getResourceTypes())))
             self.base_fields['times_available'].choices = setup_timeslots(args[0])
             super().__init__(*args[1:], **kwargs)
         else:
@@ -178,7 +173,6 @@ class ClassroomForm(forms.Form):
             super().__init__(*args[1:], **kwargs)
         else:
             super().__init__(*args, **kwargs)
-
 
     #   The next two functions are interesting because there is not a simple one to one
     #   relationship between the form and the classroom (Resource).  Instead, the form
@@ -285,7 +279,7 @@ def FurnishingFormForProgram(prog):
         choice = forms.CharField(required=False, max_length=200, widget=forms.TextInput(attrs={'placeholder': '(option)', 'style': 'margin-left: 8px'}))
         def __init__(self, *args, **kwargs):
             furnishings = setup_furnishings(prog.getResourceTypes())
-            self.base_fields['furnishing'].choices = tuple([(six.u(''), '(furnishing)')] + list(furnishings))
+            self.base_fields['furnishing'].choices = tuple([('', '(furnishing)')] + list(furnishings))
             super().__init__(*args, **kwargs)
     return FurnishingForm
 

@@ -1,6 +1,4 @@
 
-from six.moves import range
-from six.moves import zip
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -477,7 +475,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     classes_timeslot.cached_function.depend_on_model(Event)
     classes_timeslot.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program, 'extra': str(event.id)})
 
-
     @aux_call
     @json_response()
     @no_auth
@@ -573,7 +570,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return {'interested_subjects': subject_ids,
                 'interested_sections': section_ids}
 
-
     @aux_call
     @json_response()
     @needs_student_in_grade
@@ -619,7 +615,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 #else:
                 #   item['lottery_priority'] = False
         return {'sections': sections}
-
 
     @aux_call
     @cache_control(public=True, max_age=300)
@@ -810,7 +805,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         }
 
         return {return_key: [return_dict]}
-
 
     @aux_call
     @json_response()
