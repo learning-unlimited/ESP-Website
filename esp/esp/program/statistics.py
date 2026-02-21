@@ -42,6 +42,7 @@ from numpy import mean
 from django.db.models import Min, Max
 from django.template.loader import render_to_string
 
+from esp.cal.models import Event
 from esp.program.models import Program, StudentRegistration
 from esp.program.class_status import ClassStatus
 from esp.users.models import ESPUser, Record
@@ -302,8 +303,7 @@ def hours(form, programs, students, profiles, result_dict={}):
     students_list = []
     timeslots_enrolled_list = []
     timeslots_attended_list = []
-    student_ids = set(students.values_list('id', flat=True)) if hasattr(students, 'values_list') else set(s.id for s in students)
-    from esp.cal.models import Event
+    student_ids = set(students.values_list('id', flat=True))
     for program in programs:
         #   Bulk-fetch all (user_id, timeslot_id) pairs for enrolled students
         enrolled_pairs = (
