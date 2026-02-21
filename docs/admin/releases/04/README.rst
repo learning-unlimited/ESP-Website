@@ -33,7 +33,7 @@ can select from pre-defined themes (/themes/select), configure page contents
 (/themes/setup), or adjust aesthetic parameters (/themes/customize).  Behind
 the scenes, the app is generating template overrides and CSS stylesheets based
 on your configuration.  More details can be found at
-`</docs/admin/themes.rst>`_ or
+`<../../themes.rst>`_ or
 `<http://wiki.learningu.org/Generic_Templates>`_.
 
 Check Availability Page
@@ -236,7 +236,7 @@ students to land at the normal landing page to complete registration and change
 classes after the lottery has been run.
 
 Full documentation can be found in the program modules docs:
-`</docs/admin/program_modules.rst#two-phase-student-registration-studentregtwophase>`_.
+`<../../program_modules.rst#two-phase-student-registration-studentregtwophase>`_.
 
 Markdown Version Upgrade
 ~~~~~~~~~~~~~~~~~~~~~~~~
