@@ -4,6 +4,7 @@
 {% if theme %}<!-- Theme: {{ theme.theme_name }} -->{% endif %}
   <head>
     <title>{% block fulltitle %}{% endblock %}</title>
+    <meta name="csrf-cookie-name" content="{{ settings.CSRF_COOKIE_NAME|escape }}">
   {% block meta %}
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="description" content="{% block description %}{% endblock %}" />
@@ -157,4 +158,3 @@
     {% endblock %}
   </body>
 </html>
-
