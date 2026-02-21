@@ -10,57 +10,70 @@
 #   - Take care when importing Python modules in this file. The only modules we
 #     know are present come from the standard library, Fabric, and fabtools.
 #
-#   - Take care when using local() to run commands locally. Make sure to
+#   - Take care when using c.local() to run commands locally. Make sure to
 #     construct local paths using os.path.join() (here imported as join()), and
 #     do not assume the presence of Unix utilities like find and sed.
 #
-#     In addition, use env.lbase to construct absolute paths when referring to
-#     local files, since fab may be invoked from anywhere in the source tree.
+#     In addition, use CONFIG["lbase"] to construct absolute paths when referring
+#     to local files, since fab may be invoked from anywhere in the source tree.
 #
 
-from __future__ import absolute_import
-from __future__ import print_function
-from fabric.api import *
-from fabric.contrib import files
+from fabric import task, Connection, Config
+from invoke import run as local_run
 
 import json
 import os
-import pipes
 import platform
 import random
+import shlex
 import string
+import subprocess
 import sys
 
 from os.path import join
-from six.moves import range
 
-# Remote base directory, with trailing /
-env.rbase = "/home/vagrant/devsite/"
 
-# Remote virtualenv directory, with trailing /
-env.venv = "/home/vagrant/venv/"
+# ---------------------------------------------------------------------------
+# Configuration (replaces the old fabric 1.x env object)
+# ---------------------------------------------------------------------------
+CONFIG = {
+    # Remote base directory, with trailing /
+    "rbase": "/home/vagrant/devsite/",
+    # Remote virtualenv directory, with trailing /
+    "venv": "/home/vagrant/venv/",
+    # Local base directory, e.g. C:\Users\Tim\ESP-Website
+    "lbase": os.path.dirname(os.path.abspath(__file__)),
+    # Name of the Postgres database
+    "dbname": "devsite_django",
+    # Location where Fabric can store db-related files, with trailing /
+    "encfab": "/mnt/encrypted/fabric/",
+}
 
-# Local base directory, e.g. C:\Users\Tim\ESP-Website
-env.lbase = os.path.dirname(env.real_fabfile)
+# Runtime flags (replaces env.setup_running, etc.)
+_flags = {
+    "setup_running": False,
+    "ensure_environment_running": False,
+    "db_running": False,
+    "ensure_environment_done": False,
+}
 
-# Name of the Postgres database
-env.dbname = "devsite_django"
 
-# Location where Fabric can store db-related files, with trailing /
-env.encfab = "/mnt/encrypted/fabric/"
+# ---------------------------------------------------------------------------
+# Helper: get a Connection to the Vagrant VM
+# ---------------------------------------------------------------------------
+def get_connection():
+    """
+    Return a fabric.Connection to the default Vagrant VM.
 
-# Configure the Vagrant VM as the default target of our commands, so long as no
-# hosts were specified on the command line. Calling vagrant() is sort of like
-# writing env.hosts = ["vagrant"], but it handles the hostname and SSH config
-# properly.
-#
-# This means that run() and sudo() will execute on the Vagrant VM by default.
-#
-if not env.hosts:
-    try:
-        from fabtools.vagrant import vagrant
-        vagrant()
-    except SystemExit:
+    This replaces the old fabtools.vagrant.vagrant() call and the implicit
+    env.hosts configuration.  It shells out to ``vagrant ssh-config`` and
+    parses the result so that Fabric can connect over SSH.
+    """
+    result = subprocess.run(
+        ["vagrant", "ssh-config"],
+        capture_output=True, text=True, cwd=CONFIG["lbase"],
+    )
+    if result.returncode != 0:
         print("")
         print("***** ")
         print("***** Fabric encountered a fatal exception when loading the Vagrant configuration!")
@@ -69,153 +82,207 @@ if not env.hosts:
         print("*****   $ vagrant status")
         print("*****   $ vagrant up")
         print("***** ")
+        sys.exit(1)
 
-        raise
+    ssh_info = {}
+    for line in result.stdout.splitlines():
+        line = line.strip()
+        if " " in line:
+            key, value = line.split(None, 1)
+            ssh_info[key.lower()] = value
 
-@task
-def setup():
+    connect_kwargs = {}
+    if "identityfile" in ssh_info:
+        connect_kwargs["key_filename"] = ssh_info["identityfile"]
+
+    # Default to pty=True for all run/sudo calls, matching Fabric 1 behavior.
+    # This is needed for interactive prompts (cryptsetup, sudo, etc.) on the
+    # Vagrant VM.
+    cfg = Config(overrides={"run": {"pty": True}})
+
+    return Connection(
+        host=ssh_info.get("hostname", "127.0.0.1"),
+        user=ssh_info.get("user", "vagrant"),
+        port=int(ssh_info.get("port", 2222)),
+        connect_kwargs=connect_kwargs,
+        config=cfg,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Helpers that replace fabric.contrib.files utilities
+# ---------------------------------------------------------------------------
+def remote_exists(c, path):
+    """Return True if *path* exists on the remote host (replaces files.exists)."""
+    return c.run("test -e " + shlex.quote(path), warn=True).ok
+
+
+def remote_append(c, filename, text, use_sudo=False):
     """
-    Perform initial configuration of a brand-new VM. May fail if run again.
+    Append *text* to *filename* on the remote host if it is not already
+    present (replaces files.append).
     """
-    env.setup_running = True
-
-    # Install Ubuntu packages, create a virtualenv and install Python packages.
-    # The script uses sudo to elevate as needed, so we can use run() here
-    # instead of sudo().
-    run(env.rbase + "esp/update_deps.sh --virtualenv=" + env.venv)
-
-    # Create and mount the encrypted partition (requires user input)
-    from fabtools import require
-    require.deb.package("cryptsetup")
-
-    print("***** ")
-    print("***** Creating the encrypted partition for data storage.")
-    print("***** Please choose a passphrase and type it at the prompts.")
-    print("***** ")
-
-    # Name of the encrypted volume group in the Vagrant VM based on which VM is loaded
-    ubuntu_version = run("lsb_release -r | awk '{print $2}'", warn_only=True)
-    try:
-        env.encvg = {"24.04": "ubuntu--vg-keep_1",
-                     "22.04": "ubuntu--vg-keep_1",
-                     "20.04": "vgvagrant-keep_1",
-                     "12.04": "ubuntu--12--vg-keep_1"}[ubuntu_version]
-    except KeyError:
-        raise ValueError("Unrecognized version of Ubuntu: " + ubuntu_version +
-                         ". Web Team needs to update fabfile.py to add the "
-                         "partition name for this VM.")
-
-    sudo("cryptsetup luksFormat -q /dev/mapper/%s" % env.encvg)
-    sudo("cryptsetup luksOpen /dev/mapper/%s encrypted" % env.encvg)
-    sudo("mkfs.ext4 /dev/mapper/encrypted")
-    sudo("mkdir -p /mnt/encrypted")
-    sudo("mount /dev/mapper/encrypted /mnt/encrypted")
-
-    # Create the encrypted tablegroup in Postgres
-    sudo("chown -R postgres /mnt/encrypted")
-    psql("CREATE TABLESPACE encrypted LOCATION '/mnt/encrypted'")
-
-    # Create a directory on the encrypted partition for miscellaneous storage
-    # and make it accessible to everyone (e.g. both vagrant and postgres need to
-    # access the database dump).
-    sudo("chmod +rx /mnt/encrypted")
-    sudo("mkdir " + env.encfab)
-    sudo("chmod a+rwx " + env.encfab)
-
-    # Automatically activate virtualenv. We rely on this so that we don't have
-    # to activate the virtualenv as part of every fab command.
-    files.append("~/.bash_login", "source %sbin/activate" % env.venv)
-
-    # Configure memcached item size
-    addendum = "\n# Item size limit\n-I 2M"
-    files.append("/etc/memcached.conf", addendum, use_sudo=True)
-    sudo("service memcached restart")
-
-    # Symlink media
-    if platform.system() == "Windows":
-        # Creating symlinks inside the guest will fail if the host is running
-        # Windows. We need to create the symlinks on the host, which requires
-        # administrator privileges. This script takes care of the whole process.
-        local(join(env.lbase, "deploy", "windows_symlink_media.bat"))
+    quoted_text = shlex.quote(text)
+    cmd = "grep -qF {text} {file} || echo {text} >> {file}".format(
+        text=quoted_text, file=shlex.quote(filename),
+    )
+    if use_sudo:
+        c.sudo(cmd)
     else:
-        with cd(env.rbase + "esp/public/media"):
-            with settings(warn_only=True):
-                run("ln -s -T default_images images")
-                run("ln -s -T default_styles styles")
+        c.run(cmd)
 
-    sudo("touch /fab-setup-done")
 
-@runs_once
-def ensure_environment():
+def upload_template(c, local_path, remote_path, context):
     """
-    Ensure that the environment is fully configured. If so, print no output and
-    return. If not, attempt to fix the problem (e.g. some things need to be done
-    every time the VM boots) or else print instructions and terminate fab.
+    Read a local template, perform Python string-formatting with *context*,
+    and write the result to *remote_path* (replaces files.upload_template).
+    """
+    with open(local_path) as f:
+        rendered = f.read() % context
 
-    For efficiency, the result of this function is cached for the duration of a
-    run of fab. We assume that an already-configured environment will not become
-    un-configured.
+    # Write via a temp file to avoid shell-escaping issues with large content
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as tmp:
+        tmp.write(rendered)
+        tmp_path = tmp.name
+    try:
+        c.put(tmp_path, remote_path)
+    finally:
+        os.unlink(tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+def gen_password(length):
+    return "".join(
+        random.choice(string.ascii_letters + string.digits) for _ in range(length)
+    )
+
+
+def interactive_cmd(cmd):
+    """
+    Open an interactive shell running the given command.
+
+    Fabric doesn't do a good job with interactive shells, so use vagrant ssh
+    instead.  This is a hack, and makes the assumption that our target is the
+    default vagrant VM, which may not be true in the future.
+    """
+    subprocess.run(["vagrant", "ssh", "-c", cmd], cwd=CONFIG["lbase"])
+
+
+def _get_encvg(c):
+    """Determine the encrypted volume group name based on Ubuntu version."""
+    ubuntu_version = c.run(
+        "lsb_release -r | awk '{print $2}'", warn=True, hide="stdout"
+    ).stdout.strip()
+    mapping = {
+        "24.04": "ubuntu--vg-keep_1",
+        "22.04": "ubuntu--vg-keep_1",
+        "20.04": "vgvagrant-keep_1",
+        "12.04": "ubuntu--12--vg-keep_1",
+    }
+    if ubuntu_version not in mapping:
+        raise ValueError(
+            "Unrecognized version of Ubuntu: " + ubuntu_version +
+            ". Web Team needs to update fabfile.py to add the "
+            "partition name for this VM."
+        )
+    return mapping[ubuntu_version]
+
+
+# ---------------------------------------------------------------------------
+# psql helper (also a task — see below)
+# ---------------------------------------------------------------------------
+def _psql(c, cmd=None, *args, **kwargs):
+    """
+    Run the given Postgres command as user postgres.  If no command is
+    specified, open an interactive psql shell.
+
+    When called from Python code, performs string interpolation on the command
+    with the subsequent arguments, and produces machine-readable output.
+    """
+    _ensure_environment(c)
+    if cmd:
+        formatted = cmd % args
+        return c.sudo(
+            "psql -AXqt -c " + shlex.quote(formatted),
+            user="postgres",
+            **kwargs, hide="stdout",
+        )
+    else:
+        interactive_cmd("sudo -i -u postgres psql; exit")
+
+
+# ---------------------------------------------------------------------------
+# ensure_environment (replaces @runs_once)
+# ---------------------------------------------------------------------------
+def _ensure_environment(c):
+    """
+    Ensure that the environment is fully configured.  If so, print no output
+    and return.  If not, attempt to fix the problem (e.g. some things need to
+    be done every time the VM boots) or else print instructions and terminate.
+
+    For efficiency, the result of this function is cached for the duration of
+    a run of fab.  We assume that an already-configured environment will not
+    become un-configured.
     """
     # Are we running setup() right now? If so, skip this check.
-    if env.get("setup_running", False):
+    if _flags["setup_running"]:
         return
 
-    # Are we running ensure_environment() already? If so, skip this check to
-    # prevent infinite loops.
-    if env.get("ensure_environment_running", False):
+    # Prevent re-entrant calls (replaces @runs_once)
+    if _flags["ensure_environment_running"]:
         return
-    env.ensure_environment_running = True
+    if _flags["ensure_environment_done"]:
+        return
+    _flags["ensure_environment_running"] = True
 
     # Has setup() been run?
-    if not files.exists("/fab-setup-done"):
+    if not remote_exists(c, "/fab-setup-done"):
         print("")
         print("***** ")
         print("***** The Vagrant VM has not been configured. Please run:")
         print("***** ")
         print("*****   $ fab setup")
         print("***** ")
-        exit(-1)
+        sys.exit(-1)
 
-    # Name of the encrypted volume group in the Vagrant VM based on which VM is loaded
-    ubuntu_version = run("lsb_release -r | awk '{print $2}'", warn_only=True)
-    try:
-        env.encvg = {"24.04": "ubuntu--vg-keep_1",
-                     "22.04": "ubuntu--vg-keep_1",
-                     "20.04": "vgvagrant-keep_1",
-                     "12.04": "ubuntu--12--vg-keep_1"}[ubuntu_version]
-    except KeyError:
-        raise ValueError("Unrecognized version of Ubuntu: " + ubuntu_version +
-                         ". Web Team needs to update fabfile.py to add the "
-                         "partition name for this VM.")
+    encvg = _get_encvg(c)
 
     # Ensure that the encrypted partition has been mounted (must be done after
     # every boot, and can't be done automatically by Vagrant :/)
-    if sudo("df | grep encrypted | wc -l", warn_only=True).strip() != "1":
-        if sudo("ls -l /dev/mapper/encrypted &> /dev/null ; echo $?").strip() != "0":
+    if c.sudo("df | grep encrypted | wc -l", warn=True, hide="stdout").stdout.strip() != "1":
+        check = c.sudo("ls -l /dev/mapper/encrypted &> /dev/null ; echo $?")
+        if check.stdout.strip() != "0":
             print("***** ")
             print("***** Opening the encrypted partition for data storage.")
             print("***** Please enter your passphrase when prompted.")
             print("***** ")
-            sudo("cryptsetup luksOpen /dev/mapper/%s encrypted" % env.encvg)
-            sudo("mount /dev/mapper/encrypted /mnt/encrypted")
+            # Use vagrant ssh for interactive passphrase prompt
+            interactive_cmd("sudo cryptsetup luksOpen /dev/mapper/%s encrypted" % encvg)
+            c.sudo("mount /dev/mapper/encrypted /mnt/encrypted")
         else:
             print("***** ")
             print("***** Something went wrong when mounting the encrypted partition.")
             print("***** Aborting.")
-            exit(-1)
+            sys.exit(-1)
 
     # Are we running emptydb() or loaddb() right now? If so, skip the database
     # check.
-    if env.get("db_running", False):
+    if _flags["db_running"]:
+        _flags["ensure_environment_running"] = False
+        _flags["ensure_environment_done"] = True
         return
 
-    run("chmod 755 /home/vagrant", warn_only=True)
+    c.run("chmod 755 /home/vagrant", warn=True)
 
     # Make sure the postgresql service is running
-    sudo("service postgresql start")
+    c.sudo("service postgresql start")
 
     # Has some database been loaded?
-    dbs = int(psql("SELECT COUNT(*) FROM pg_stat_database;", warn_only=True).strip())
+    result = _psql(c, "SELECT COUNT(*) FROM pg_stat_database;", warn=True)
+    dbs = int(result.stdout.strip())
     if dbs < 4:
         print("")
         print("***** ")
@@ -229,76 +296,175 @@ def ensure_environment():
         print("***** ")
         print("***** to load a database dump.")
         print("***** ")
-        exit(-1)
+        sys.exit(-1)
 
     # Did `setup()` fail to create the symlinked folders?
-    fp = env.rbase + "esp/public/media/"
-    if not files.exists(fp + "images") or not files.exists(fp + "styles"):
+    fp = CONFIG["rbase"] + "esp/public/media/"
+    if not remote_exists(c, fp + "images") or not remote_exists(c, fp + "styles"):
         print("One of the symlinks `esp/public/media/images` or ")
         print("`.../styles` failed to be created. Try re-running with ")
         print("escalated privileges or contact the web team for more help.")
-        exit(-1)
+        sys.exit(-1)
+
+    _flags["ensure_environment_running"] = False
+    _flags["ensure_environment_done"] = True
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers for manage, refresh, and emptydb
+# ---------------------------------------------------------------------------
+def _manage(c, cmd):
+    """Run a manage.py command on the remote host."""
+    _ensure_environment(c)
+
+    basecmd = cmd.split(" ")[0]
+
+    if basecmd in ["shell", "shell_plus", "createsuperuser", "changepassword"]:
+        interactive_cmd("cd " + CONFIG["rbase"] + "esp && source " + CONFIG["venv"] + "bin/activate && python3 manage.py " + cmd)
+    else:
+        if basecmd.startswith("runserver") and cmd == basecmd:
+            print("*** WARNING: 'fab manage:runserver' won't work right. ***")
+            print("***            use 'fab runserver' instead.           ***")
+        with c.cd(CONFIG["rbase"] + "esp"):
+            c.run("source " + CONFIG["venv"] + "bin/activate && python3 manage.py " + cmd)
+
+
+def _refresh(c):
+    """Re-synchronize the remote environment with the codebase."""
+    _ensure_environment(c)
+    c.run(CONFIG["rbase"] + "esp/update_deps.sh --virtualenv=" + CONFIG["venv"])
+    _manage(c, "update")
+
+
+def _emptydb(c, owner="esp", interactive_mode=True):
+    """
+    Internal version of emptydb that works with an existing connection.
+    """
+    _flags["db_running"] = True
+    _ensure_environment(c)
+
+    password = gen_password(12)
+    context = {
+        "db_user": owner,
+        "db_name": CONFIG["dbname"],
+        "db_password": password,
+        "secret_key": gen_password(64),
+    }
+    upload_template(
+        c,
+        join(CONFIG["lbase"], "deploy", "config_templates", "local_settings.py"),
+        CONFIG["rbase"] + "esp/esp/local_settings.py",
+        context,
+    )
+
+    _psql(c, "DROP DATABASE IF EXISTS %s", CONFIG["dbname"])
+    _psql(c, "DROP ROLE IF EXISTS %s", owner)
+    _psql(c, "CREATE ROLE %s CREATEDB LOGIN PASSWORD '" + password + "'", owner)
+    _psql(c, "CREATE DATABASE %s OWNER %s TABLESPACE encrypted", CONFIG["dbname"], owner)
+
+    if interactive_mode:
+        _refresh(c)
+        print("***** ")
+        print("***** Creating the first admin account on the website.")
+        print("***** Please configure credentials when prompted.")
+        print("***** ")
+        _manage(c, "createsuperuser")
+
+    _flags["db_running"] = False
+
+
+# ---------------------------------------------------------------------------
+# Tasks
+# ---------------------------------------------------------------------------
 
 @task
-def psql(cmd=None, *args, **kwargs):
+def setup(c):
+    """
+    Perform initial configuration of a brand-new VM. May fail if run again.
+    """
+    c = get_connection()
+    _flags["setup_running"] = True
+
+    # Install Ubuntu packages, create a virtualenv and install Python packages.
+    c.run(CONFIG["rbase"] + "esp/update_deps.sh --virtualenv=" + CONFIG["venv"])
+
+    # Create and mount the encrypted partition (requires user input)
+    c.sudo("apt-get install -y cryptsetup")
+
+    print("***** ")
+    print("***** Creating the encrypted partition for data storage.")
+    print("***** Please choose a passphrase and type it at the prompts.")
+    print("***** ")
+
+    encvg = _get_encvg(c)
+
+    # cryptsetup reads passphrases directly from /dev/tty, which Fabric's
+    # Paramiko-based SSH transport can't forward properly. Shell out to
+    # `vagrant ssh` for these interactive commands, just as we do for psql.
+    interactive_cmd("sudo cryptsetup luksFormat -q /dev/mapper/%s" % encvg)
+    interactive_cmd("sudo cryptsetup luksOpen /dev/mapper/%s encrypted" % encvg)
+    c.sudo("mkfs.ext4 /dev/mapper/encrypted")
+    c.sudo("mkdir -p /mnt/encrypted")
+    c.sudo("mount /dev/mapper/encrypted /mnt/encrypted")
+
+    # Create the encrypted tablegroup in Postgres
+    c.sudo("chown -R postgres /mnt/encrypted")
+    _psql(c, "CREATE TABLESPACE encrypted LOCATION '/mnt/encrypted'")
+
+    # Create a directory on the encrypted partition for miscellaneous storage
+    c.sudo("chmod +rx /mnt/encrypted")
+    c.sudo("mkdir " + CONFIG["encfab"])
+    c.sudo("chmod a+rwx " + CONFIG["encfab"])
+
+    # Automatically activate virtualenv
+    remote_append(c, "~/.bash_login", "source %sbin/activate" % CONFIG["venv"])
+
+    # Configure memcached item size
+    addendum = "\n# Item size limit\n-I 2M"
+    remote_append(c, "/etc/memcached.conf", addendum, use_sudo=True)
+    c.sudo("service memcached restart")
+
+    # Symlink media
+    if platform.system() == "Windows":
+        subprocess.run(
+            [join(CONFIG["lbase"], "deploy", "windows_symlink_media.bat")],
+            cwd=CONFIG["lbase"],
+        )
+    else:
+        with c.cd(CONFIG["rbase"] + "esp/public/media"):
+            c.run("ln -s -T default_images images", warn=True)
+            c.run("ln -s -T default_styles styles", warn=True)
+
+    c.sudo("touch /fab-setup-done")
+    _flags["setup_running"] = False
+
+
+@task
+def psql(c, cmd=None):
     """
     Run the given Postgres command as user postgres. If no command is
     specified, open an interactive psql shell.
-
-    When called from Python code, performs string interpolation on the command
-    with the subsequent arguments, and produces machine-readable output.
     """
-    ensure_environment()
-    if cmd:
-        return sudo("psql -AXqt -c " + pipes.quote(cmd % args), user="postgres", **kwargs)
-    else:
-        interactive("sudo -i -u postgres psql; exit")
+    c = get_connection()
+    _psql(c, cmd)
+
 
 @task
-def emptydb(owner="esp", interactive=True):
+def emptydb(c, owner="esp", interactive_mode="true"):
     """
     Delete any existing Postgres database and replace it with an empty one.
 
     This task additionally rotates the database credentials and regenerates
     local_settings.py.
     """
-    env.db_running = True
-    ensure_environment()
+    c = get_connection()
+    # Fabric 3 passes CLI args as strings; convert to bool
+    do_interactive = str(interactive_mode).lower() not in ("false", "0", "no")
+    _emptydb(c, owner=owner, interactive_mode=do_interactive)
 
-    # Generate a new local_settings.py file with this database owner
-    password = gen_password(12)
-    context = {
-        "db_user": owner,
-        "db_name": env.dbname,
-        "db_password": password,
-        "secret_key": gen_password(64),
-    }
-    files.upload_template(
-        join(env.lbase, "deploy", "config_templates", "local_settings.py"),
-        env.rbase + "esp/esp/local_settings.py",
-        context,
-        backup=False,
-    )
-
-    # Delete and recreate the Postgres user and database. Note that the PASSWORD
-    # command requires single-quotes, not double-quotes as is usual.
-    psql("DROP DATABASE IF EXISTS %s", env.dbname)
-    psql("DROP ROLE IF EXISTS %s", owner)
-
-    psql("CREATE ROLE %s CREATEDB LOGIN PASSWORD '" + password + "'", owner)
-    psql("CREATE DATABASE %s OWNER %s TABLESPACE encrypted", env.dbname, owner)
-
-    # Run Django migrations, etc. (unless being called from loaddb, below)
-    if interactive:
-        refresh()
-        print("***** ")
-        print("***** Creating the first admin account on the website.")
-        print("***** Please configure credentials when prompted.")
-        print("***** ")
-        manage("createsuperuser")
 
 @task
-def loaddb(filename=None):
+def loaddb(c, filename=None):
     """
     If filename is given, load the (decrypted, uncompressed) database dump at
     that local path into the Postgres database.
@@ -308,86 +474,111 @@ def loaddb(filename=None):
 
     Automatically detects the dump format and proper username.
     """
-    env.db_running = True
-    ensure_environment()
+    c = get_connection()
+    _flags["db_running"] = True
+    _ensure_environment(c)
 
     # Clean up existing dumpfile, if present
-    run("rm -f " + env.encfab + "dbdump")
+    c.run("rm -f " + CONFIG["encfab"] + "dbdump")
 
     if filename:
-        put(filename, env.encfab + "dbdump")
+        c.put(filename, CONFIG["encfab"] + "dbdump")
     else:
-        # Get or prompt for HTTP download settings. These settings are saved in
-        # dbconfig in the encrypted part of the Vagrant VM, which makes it
-        # easier for people to work with different chapters' databasees in
-        # different VMs.
-        if files.exists(env.encfab + "dbconfig"):
-            contents = run("cat " + env.encfab + "dbconfig")
+        # Get or prompt for HTTP download settings
+        if remote_exists(c, CONFIG["encfab"] + "dbconfig"):
+            contents = c.run("cat " + CONFIG["encfab"] + "dbconfig").stdout
             config = json.loads(contents)
         else:
-            url = prompt("Download URL:")
-            config = {
-                "url": url,
-            }
-            escaped_config = pipes.quote(json.dumps(config))
-            run("echo " + escaped_config + " > " + env.encfab + "dbconfig")
+            url = input("Download URL: ")
+            config = {"url": url}
+            escaped_config = shlex.quote(json.dumps(config))
+            c.run("echo " + escaped_config + " > " + CONFIG["encfab"] + "dbconfig")
 
         # Download database dump into VM
-        escaped_url = pipes.quote(config["url"])
-        run("wget " + escaped_url + " -O " + env.encfab + "dbdump")
+        escaped_url = shlex.quote(config["url"])
+        c.run("wget " + escaped_url + " -O " + CONFIG["encfab"] + "dbdump")
 
-    # HACK: detect the Postgres user used in the dump. We run strings in case
-    # the dump is in binary format, then we look for the grant for an arbitrary
-    # table, program_class. The result should be like one of the following:
-    #
-    #   ALTER TABLE public.program_class OWNER TO umbc;
-    #   GRANT ALL ON TABLE program_class TO esp;
-    #
-    # ...which we can then parse to get the user. :D
+    # HACK: detect the Postgres user used in the dump.
     query = "ALTER TABLE public.program_class OWNER TO|GRANT ALL ON TABLE program_class TO"
-    contents = run("strings " + env.encfab + "dbdump | grep -E '" + query + "'")
+    contents = c.run(
+        "strings " + CONFIG["encfab"] + "dbdump | grep -E '" + query + "'"
+    ).stdout
     pg_owner = contents.split()[-1][:-1]
 
     # Reset the database
-    emptydb(pg_owner, interactive=False)
+    _emptydb(c, pg_owner, interactive_mode=False)
 
     # Load the database dump using the appropriate command for the format
-    if "PostgreSQL custom database dump" in run("file " + env.encfab + "dbdump"):
-        sudo("pg_restore --verbose --dbname=" + pipes.quote(env.dbname) +
-             " --exit-on-error --jobs=2 " + env.encfab + "dbdump",
-             user="postgres")
+    file_type = c.run("file " + CONFIG["encfab"] + "dbdump").stdout
+    if "PostgreSQL custom database dump" in file_type:
+        c.sudo(
+            "pg_restore --verbose --dbname=" + shlex.quote(CONFIG["dbname"]) +
+            " --exit-on-error --jobs=2 " + CONFIG["encfab"] + "dbdump",
+            user="postgres",
+        )
     else:
-        sudo("psql --dbname=" + pipes.quote(env.dbname) +
-             " --set='ON_ERROR_STOP=on' -f " + env.encfab + "dbdump",
-             user="postgres")
+        c.sudo(
+            "psql --dbname=" + shlex.quote(CONFIG["dbname"]) +
+            " --set='ON_ERROR_STOP=on' -f " + CONFIG["encfab"] + "dbdump",
+            user="postgres",
+        )
+
+    print("***** ")
+    print("***** Database loaded.")
 
     # Run Django migrations, etc.
-    refresh()
+    print("***** Now running fab refresh.")
+    _refresh(c)
 
     # Cleanup
-    run("rm -f " + env.encfab + "dbdump")
+    c.run("rm -f " + CONFIG["encfab"] + "dbdump")
+    _flags["db_running"] = False
+    print("***** Done.")
+    print("***** ")
+
 
 @task
-def dumpdb(filename="devsite_django.sql"):
+def dumpdb(c, filename="devsite_django.sql"):
     """
     Creates a dump of a database.
     This has not been tested on the production server.
     """
-    ensure_environment()
+    c = get_connection()
+    _ensure_environment(c)
 
-    sys.path.insert(0, 'esp/esp/')
-    from settings import DATABASES
-    default_db = DATABASES['default']
+    # Read database credentials from local_settings.py on the VM rather than
+    # importing Django settings on the host (which would require Django to be
+    # installed locally).
+    creds_script = (
+        "source " + CONFIG["venv"] + "bin/activate && "
+        "cd " + CONFIG["rbase"] + "esp && "
+        "python3 -c \""
+        "import json; "
+        "from esp.settings import DATABASES; "
+        "print(json.dumps(DATABASES['default']))\""
+    )
+    result = c.run(creds_script, hide="stdout")
+    default_db = json.loads(result.stdout.strip())
 
-    sudo("PGHOST=%s PGPORT=%s PGDATABASE=%s PGUSER=%s PGPASSWORD=%s pg_dump > %s%s" %
-         (pipes.quote(default_db['HOST']), pipes.quote(default_db['PORT']), pipes.quote(env.dbname),
-         pipes.quote(default_db['USER']), pipes.quote(default_db['PASSWORD']), pipes.quote(env.rbase), pipes.quote(filename)))
+    c.sudo(
+        "PGHOST=%s PGPORT=%s PGDATABASE=%s PGUSER=%s PGPASSWORD=%s pg_dump > %s%s" % (
+            shlex.quote(default_db["HOST"]),
+            shlex.quote(default_db["PORT"]),
+            shlex.quote(CONFIG["dbname"]),
+            shlex.quote(default_db["USER"]),
+            shlex.quote(default_db["PASSWORD"]),
+            shlex.quote(CONFIG["rbase"]),
+            shlex.quote(filename),
+        )
+    )
 
-def gen_password(length):
-    return "".join([random.choice(string.ascii_letters + string.digits) for i in range(length)])
+    print("***** ")
+    print("***** Database has been dumped to ", filename, ".", sep="")
+    print("***** ")
+
 
 @task
-def refresh():
+def refresh(c):
     """
     Re-synchronize the remote environment with the codebase. For use when
     switching branches or jumping around the history in git.
@@ -396,47 +587,28 @@ def refresh():
       - removes orphaned *.pyc files, runs Django migrations and does whatever
         else the update management command does
     """
-    ensure_environment()
+    c = get_connection()
+    _refresh(c)
 
-    run(env.rbase + "esp/update_deps.sh --virtualenv=" + env.venv)
-    manage("update")
-
-def interactive(cmd):
-    """
-    Open an interactive shell running the given command.
-
-    Fabric doesn't do a good job with interactive shells, so use vagrant ssh
-    instead. This is a hack, and makes the assumption that our target is the
-    default vagrant VM, which  may not be true in the future.
-    """
-    local("vagrant ssh -c '" + cmd + "'")
 
 @task
-def manage(cmd):
+def manage(c, cmd):
     """
     Run a manage.py command in the remote host.
     """
-    ensure_environment()
+    c = get_connection()
+    _manage(c, cmd)
 
-    basecmd = cmd.split(" ")[0]
-
-    if basecmd in ["shell", "shell_plus"]:
-        interactive(env.rbase + "esp/manage.py " + cmd)
-    else:
-        if basecmd.startswith("runserver") and cmd == basecmd:
-            print("*** WARNING: 'fab manage:runserver' won't work right. ***")
-            print("***            use 'fab runserver' instead.           ***")
-        with cd(env.rbase + "esp"):
-            run("python manage.py " + cmd)
 
 @task
-def runserver():
+def runserver(c):
     """
     A shortcut for 'manage.py runserver' with the appropriate settings.
     """
-    ensure_environment()
+    c = get_connection()
+    _ensure_environment(c)
+    _manage(c, "runserver 0.0.0.0:8000")
 
-    manage("runserver 0.0.0.0:8000")
 
 try:
     from local_fabfile import *
