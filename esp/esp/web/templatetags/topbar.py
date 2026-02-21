@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.conf import settings
 from django import template
 from django.core.cache import cache
@@ -144,6 +143,5 @@ sections = {'discoveresp'      : ('about',      'Discover ESP',        '/about/i
 
 known_navlinks = ['about', 'learn', 'teach', 'getinvolved', 'archives', 'myesp', 'contactinfo']
 basic_navlinks = ['discoveresp', 'takeaclass', 'volunteertoteach', 'getinvolved', 'archivesresources', 'myesp', 'contactinfo']
-
 
 
