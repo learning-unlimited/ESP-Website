@@ -67,6 +67,9 @@ class JSONDataModuleTest(ProgramFrameworkTest):
                                               % self.program.getUrlBase())
         self.classes_response = self.client.get('/json/%s/class_subjects'
                                                 % self.program.getUrlBase())
+        # Cache parsed payloads so individual tests don't re-parse repeatedly.
+        self.stats_data = self.stats_response.json()
+        self.classes_data = self.classes_response.json()
 
     def testStudentStats(self):
         ## Student statistics
@@ -133,4 +136,154 @@ class JSONDataModuleTest(ProgramFrameworkTest):
             # Very basic check that we're getting the data correctly
             self.assertTrue(cls.id in json_classes_dict)
             self.assertEquals(json_classes_dict[cls.id]['emailcode'], cls.emailcode())
+
+    # ------------------------------------------------------------------
+    # Additional tests for issue #599: Dashboard stats JSON interface
+    # ------------------------------------------------------------------
+
+    def testStatsResponseStructure(self):
+        """The /json/.../stats endpoint returns 200 with a 'stats' list
+        containing entries for all expected section IDs, with no duplicates,
+        and each section carries a valid 'id' key."""
+        self.assertEqual(self.stats_response.status_code, 200)
+        self.assertIn('stats', self.stats_data)
+        sections = self.stats_data['stats']
+        # Every entry must have an 'id' key.
+        for section in sections:
+            self.assertIn('id', section, "A stats section is missing its 'id' key")
+        ids = [s['id'] for s in sections]
+        # IDs must be unique — duplicate sections would indicate a bug.
+        self.assertEqual(len(ids), len(set(ids)),
+                         "Duplicate section IDs in stats response: %r" % ids)
+        for expected_id in ('vitals', 'shirtnum', 'categories', 'grades', 'accounting'):
+            self.assertIn(expected_id, ids,
+                          "'%s' section missing from stats response" % expected_id)
+
+    def testVitalsSection(self):
+        """The 'vitals' section contains the expected stat list fields."""
+        vitals = next(s for s in self.stats_data['stats'] if s.get('id') == 'vitals')
+        for field in ('classnum', 'teachernum', 'studentnum', 'volunteernum', 'hournum'):
+            self.assertIn(field, vitals, "vitals missing field '%s'" % field)
+            # Each of these is a list of [label, value] pairs
+            self.assertIsInstance(vitals[field], list,
+                                  "vitals['%s'] should be a list" % field)
+
+    def testClassNums(self):
+        """The first entry of vitals['classnum'] equals total classes in the DB."""
+        vitals = next(s for s in self.stats_data['stats'] if s.get('id') == 'vitals')
+        class_num_pairs = vitals['classnum']
+        self.assertTrue(len(class_num_pairs) > 0, "vitals['classnum'] is empty")
+        # The first pair is ("Total # of Classes", N)
+        _label, total_count = class_num_pairs[0]
+        expected = self.program.classes().distinct().count()
+        self.assertEqual(total_count, expected,
+                         "vitals classnum total mismatch: got %d, expected %d"
+                         % (total_count, expected))
+
+    def testCategoriesSection(self):
+        """The 'categories' section has per-category data with required fields."""
+        categories = next(s for s in self.stats_data['stats'] if s.get('id') == 'categories')
+        self.assertIn('data', categories, "'categories' section missing 'data' key")
+        for entry in categories['data']:
+            for field in ('id', 'num_subjects', 'num_sections', 'num_class_hours', 'category'):
+                self.assertIn(field, entry,
+                              "categories entry missing field '%s'" % field)
+            # num_class_hours is converted to float by the handler
+            self.assertIsInstance(entry['num_class_hours'], float,
+                                  "num_class_hours should be a float")
+
+    def testAccountingSection(self):
+        """The 'accounting' section contains correctly typed payment totals."""
+        acct = next(s for s in self.stats_data['stats'] if s.get('id') == 'accounting')
+        self.assertIn('data', acct, "'accounting' section missing 'data' key")
+        data = acct['data']
+        self.assertIn('num_payments', data)
+        self.assertIn('total_payments', data)
+        self.assertIsInstance(data['num_payments'], int,
+                              "num_payments should be an int")
+        self.assertIsInstance(data['total_payments'], float,
+                              "total_payments should be a float")
+
+    def testStatsRequiresAdmin(self):
+        """Unauthenticated access to /json/.../stats must return a 302 redirect
+        to the login page or a 403 Forbidden — never 200."""
+        self.client.logout()
+        url = '/json/%s/stats' % self.program.getUrlBase()
+        response = self.client.get(url)
+        self.assertIn(
+            response.status_code, (302, 403),
+            "stats endpoint should redirect (302) or forbid (403) unauthenticated "
+            "access, got %d instead" % response.status_code,
+        )
+
+    def testClassSubjectsFields(self):
+        """Each entry in class_subjects['classes'] has all required fields."""
+        required_fields = ('id', 'status', 'title', 'category', 'category_id',
+                           'grade_min', 'grade_max', 'emailcode', 'sections', 'teachers')
+        for cls_data in self.classes_data['classes']:
+            for field in required_fields:
+                self.assertIn(field, cls_data,
+                              "class entry missing field '%s'" % field)
+
+    def testClassSubjectsSectionsAreLists(self):
+        """The 'sections' field in each class_subjects entry is a list of unique ints."""
+        for cls_data in self.classes_data['classes']:
+            cid = cls_data.get('id')
+            sections = cls_data['sections']
+            self.assertIsInstance(sections, list,
+                                  "sections should be a list for class id=%s" % cid)
+            for sec_id in sections:
+                self.assertIsInstance(sec_id, int,
+                                      "section id should be an int, got %r" % sec_id)
+            # No duplicate section IDs within a class.
+            self.assertEqual(len(sections), len(set(sections)),
+                             "Duplicate section IDs for class id=%s: %r" % (cid, sections))
+
+    def testClassSubjectsTeachersAreListed(self):
+        """The 'teachers' field in each class_subjects entry is a list of ints."""
+        for cls_data in self.classes_data['classes']:
+            cid = cls_data.get('id')
+            teachers = cls_data['teachers']
+            self.assertIsInstance(teachers, list,
+                                  "teachers should be a list for class id=%s" % cid)
+            for t_id in teachers:
+                self.assertIsInstance(t_id, int,
+                                      "teacher id should be an int, got %r (class id=%s)"
+                                      % (t_id, cid))
+
+    def testClassSubjectsTeachersBlock(self):
+        """The top-level 'teachers' block in class_subjects has correct fields."""
+        self.assertIn('teachers', self.classes_data,
+                      "class_subjects response missing top-level 'teachers' key")
+        for t in self.classes_data['teachers']:
+            for field in ('id', 'username', 'first_name', 'last_name', 'sections'):
+                self.assertIn(field, t,
+                              "teachers entry missing field '%s'" % field)
+            self.assertIsInstance(t['sections'], list,
+                                  "teacher 'sections' should be a list")
+
+    def testClassSubjectsCatalogMode(self):
+        """Catalog mode includes extra fields: class_info, prereqs, difficulty."""
+        url = '/json/%s/class_subjects/catalog' % self.program.getUrlBase()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        json_classes = response.json()
+        for cls_data in json_classes['classes']:
+            for field in ('class_info', 'prereqs', 'difficulty'):
+                self.assertIn(field, cls_data,
+                              "catalog mode class entry missing field '%s'" % field)
+
+    def testClassSubjectsGradeRange(self):
+        """grade_min and grade_max in class_subjects are within the program range
+        and grade_min <= grade_max for each class."""
+        prog_min = self.program.grade_min
+        prog_max = self.program.grade_max
+        for cls_data in self.classes_data['classes']:
+            cid = cls_data.get('id')
+            self.assertLessEqual(cls_data['grade_min'], cls_data['grade_max'],
+                                 "grade_min > grade_max for class id=%s" % cid)
+            self.assertGreaterEqual(cls_data['grade_min'], prog_min,
+                                    "grade_min below program minimum for class id=%s" % cid)
+            self.assertLessEqual(cls_data['grade_max'], prog_max,
+                                 "grade_max above program maximum for class id=%s" % cid)
 
