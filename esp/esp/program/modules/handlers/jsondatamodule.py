@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import division
 from six.moves import range
 from six.moves import zip
 from functools import reduce
@@ -382,12 +380,12 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'parent_class__sections',
             'parent_class__teachers',
             'parent_class__parent_program',
-            'meeting_times')
+            'meeting_times',
+            'resourcerequest_set')
 
         for s in qs:
-            rrequests = ResourceRequest.objects.filter(target = s)
             rrequest_dict = defaultdict(list)
-            for r in rrequests:
+            for r in s.resourcerequest_set.all():
                 rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
 
             cls = s.parent_class
@@ -839,7 +837,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         class_num_list.append(("Total # of Classes Scheduled", classes.filter(sections__meeting_times__isnull=False).distinct().count()))
         class_num_list.append(("Total # of Class Sections", sections.distinct().count()))
         class_num_list.append(("Total # of Class Sections Scheduled", sections.filter(meeting_times__isnull=False).distinct().count()))
-        class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category = "Lunch").filter(status=ClassStatus.ACCEPTED).distinct().count()))
+        class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category="Lunch", status=ClassStatus.ACCEPTED).distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=ClassStatus.UNREVIEWED).exclude(category__category='Lunch').distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=ClassStatus.ACCEPTED, sections__status=ClassStatus.ACCEPTED).exclude(category__category='Lunch').distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", classes.filter(status=ClassStatus.REJECTED).exclude(category__category='Lunch').distinct().count()))

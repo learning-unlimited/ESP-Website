@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.customforms.models import Field, Attribute, Section, Page, Form
 from django import forms
 from django.forms.models import fields_for_model
@@ -25,9 +24,6 @@ from django.core.exceptions import ValidationError
 from esp.middleware import ESPError
 
 from datetime import datetime
-from six.moves import map
-import six
-from six.moves import range
 
 class BaseCustomForm(BetterForm):
     """
@@ -311,7 +307,7 @@ class CustomFormHandler():
 
 class FormStorage(FileSystemStorage):
     """
-    The Storage sublass used to temporarily store submitted files.
+    The Storage subclass used to temporarily store submitted files.
     """
     pass
 
@@ -338,7 +334,7 @@ class ComboForm(SessionWizardView):
         context data such as the form's title and description
         """
 
-        context = super(ComboForm, self).get_context_data(form=form, **kwargs)
+        context = super().get_context_data(form=form, **kwargs)
         context.update({
                         'form_title': self.form.title,
                         'form_description': self.form.description,
@@ -683,7 +679,7 @@ class FormHandler:
             # Add in user if form is not anonymous
             if not form.anonymous and response['user_id']:
                 user = users[response['user_id']]
-                response['user_id'] = six.text_type(response['user_id'])
+                response['user_id'] = str(response['user_id'])
                 response['user_display'] = user.name()
                 response['user_email'] = user.email
                 response['username'] = user.username
@@ -693,7 +689,7 @@ class FormHandler:
                 if only_fkey_model.objects.filter(pk=response["link_%s_id" % only_fkey_model.__name__]).exists():
                     inst = only_fkey_model.objects.get(pk=response["link_%s_id" % only_fkey_model.__name__])
                 else: inst = None
-                response["link_%s_id" % only_fkey_model.__name__] = six.text_type(inst)
+                response["link_%s_id" % only_fkey_model.__name__] = str(inst)
 
             # Now, put in the additional fields in response
             for qname, data in add_fields.items():
@@ -805,12 +801,5 @@ class FormHandler:
                 module = ''
             metadata.update({'link_tl': tl, 'link_module': module})
         return metadata
-
-
-
-
-
-
-
 
 

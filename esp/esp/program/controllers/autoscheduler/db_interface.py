@@ -4,7 +4,6 @@ This should be the only place (other than the controller itself) where any
 database interaction happens.
 """
 
-from __future__ import absolute_import
 import json
 import logging
 
@@ -268,7 +267,7 @@ def check_can_schedule_sections(section_infos, schedule):
     and verifies the following for each section that we want to schedule:
         - That the teacher is not teaching another class at that time
         - That the rooms are not currently in use by another class
-    A SchedulingError is thrown if any of thes occur, otherwise nothing
+    A SchedulingError is thrown if any of these occur, otherwise nothing
     happens. This function should avoid caching anything because the cached
     value won't get rolled back by the transaction"""
     locked_sections = set(module_ext.AJAXSectionDetail.objects.filter(

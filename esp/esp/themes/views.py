@@ -1,8 +1,5 @@
 
-from __future__ import absolute_import
-import six
 from io import open
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -160,7 +157,21 @@ def logos(request):
 
     context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "logo\..*\.png")]
     context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "header\..*\.png")]
-    context['favicon_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "favicon\..*\.ico")]
+    favicon_paths = tc.list_filenames(
+    settings.MEDIA_ROOT + 'images/backups',
+    "favicon\..*\.ico"
+    )
+
+    favicon_paths.sort(
+    key=lambda p: os.path.getmtime(p),
+    reverse=True
+    )
+
+    context['favicon_files'] = [
+    (path.split('public')[1], path.split('images/backups/')[1])
+    for path in favicon_paths
+    ]
+
     context['has_header'] = os.path.exists(settings.MEDIA_ROOT + 'images/theme/header.png')
     context['current_logo_version'] = Tag.getTag("current_logo_version")
     context['current_header_version'] = Tag.getTag("current_header_version")
@@ -303,7 +314,7 @@ def editor(request):
     context['last_used_setting'] = tc.get_current_customization()
 
     #   Load a bunch of preset fonts
-    context['sans_fonts'] = six.iteritems(themes_settings.sans_serif_fonts)
+    context['sans_fonts'] = themes_settings.sans_serif_fonts.items()
 
     #   Load the theme-specific options
     adv_vars = tc.find_less_variables(current_theme, theme_only=True)

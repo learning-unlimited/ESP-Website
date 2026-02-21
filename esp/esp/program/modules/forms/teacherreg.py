@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 import six
 from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -128,7 +127,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             if len(field.choices) == 1:
                 hide_field(field, default=field.choices[0][0])
 
-        super(TeacherClassRegForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         prog = crmi.program
 
@@ -307,7 +306,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
             if default is not None:
                 field.initial = default
 
-        super(TeacherOpenClassRegForm, self).__init__(crmi, *args, **kwargs)
+        super().__init__(crmi, *args, **kwargs)
         program = crmi.program
         open_class_category = program.open_class_category
         self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
@@ -360,7 +359,7 @@ class TeacherEventSignupForm(FormWithRequiredCss):
         return self._slot_is_mine(event) or (not self._slot_is_taken(event) and not self._slot_too_late(event))
 
     def __init__(self, module, *args, **kwargs):
-        super(TeacherEventSignupForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.module = module
         self.user = get_current_request().user
 
