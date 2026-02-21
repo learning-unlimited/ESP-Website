@@ -3,7 +3,6 @@
 import re
 import os
 from io import open
-from six.moves import range
 
 direction = 'forward'
 #direction = 'backward'
