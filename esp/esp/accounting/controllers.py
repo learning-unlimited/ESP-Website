@@ -81,13 +81,13 @@ class ProgramAccountingController(BaseAccountingController):
         self.finaid_items = ['Financial aid grant', 'Sibling discount']
         self.admission_items = ["Program admission", "Student payment"]
 
+    @transaction.atomic
     def clear_all_data(self):
         #   Clear all financial data for the program
-        with transaction.atomic():
-            FinancialAidGrant.objects.filter(request__program=self.program).delete()
-            self.all_transfers().delete()
-            self.get_lineitemtypes().delete()
-            self.all_accounts().delete()
+        FinancialAidGrant.objects.filter(request__program=self.program).delete()
+        self.all_transfers().delete()
+        self.get_lineitemtypes().delete()
+        self.all_accounts().delete()
 
     def setup_accounts(self):
         #   For now, just create a single account for the program.  In the
