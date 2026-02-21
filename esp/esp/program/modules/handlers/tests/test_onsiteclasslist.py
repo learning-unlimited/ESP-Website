@@ -13,15 +13,16 @@ class UpdateScheduleJsonTests(SimpleTestCase):
 
     def setUp(self):
         self.factory = RequestFactory()
-        # The method body doesn't rely on ProgramModuleObj fields, so a stub works.
-        self.module = SimpleNamespace()
+        self.module = SimpleNamespace()  
 
     def _call(self, params):
         request = self.factory.get("/onsite/update", params)
-        # Bypass the needs_onsite wrapper by calling the stored original method.
-        return OnSiteClassList.update_schedule_json.method(
-            self.module, request, None, None, None, None, None, None
-        )
+
+       
+        fn = getattr(OnSiteClassList.update_schedule_json, "method", OnSiteClassList.update_schedule_json)
+
+        
+        return fn(self.module, request, None, None, None, None, None, None)
 
     def _assert_user_not_found(self, resp):
         self.assertEqual(resp.status_code, 400)
