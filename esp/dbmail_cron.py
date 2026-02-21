@@ -11,7 +11,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 import os.path
 project = os.path.dirname(os.path.realpath(__file__))
 
-# Path for ESP code
+# Path for ESP code test
 sys.path.insert(0, project)
 
 # Check if a virtualenv has been installed and activated from elsewhere.
