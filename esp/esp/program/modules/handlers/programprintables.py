@@ -966,9 +966,9 @@ class ProgramPrintables(ProgramModuleObj):
             dr = self.program.date_range()
             return six.u(dr) if dr else six.u('')
         if key == 'teacher_reg_deadline':
-            # Teacher registration deadline (end of Teacher permissions)
+            # Teacher class creation deadline (when teachers can no longer create classes)
             perm = Permission.objects.filter(
-                permission_type__startswith='Teacher',
+                permission_type='Teacher/Classes/Create',
                 program=self.program
             ).order_by('-end_date').first()
             if perm and perm.end_date:
