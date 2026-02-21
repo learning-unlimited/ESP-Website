@@ -41,7 +41,8 @@ from numpy import mean
 
 from django.template.loader import render_to_string
 
-from esp.program.models import Program, StudentRegistration
+from esp.accounting.models import FinancialAidGrant
+from esp.program.models import FinancialAidRequest, Program, StudentRegistration
 from esp.program.class_status import ClassStatus
 from esp.users.models import ESPUser, Record
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
@@ -118,8 +119,6 @@ def demographics(form, programs, students, profiles, result_dict={}):
                 birthyear_dict[profile.student_info.dob.year] += 1
 
     #   Get financial aid info using bulk queries instead of per-student loops.
-    from esp.accounting.models import FinancialAidGrant
-    from esp.program.models import FinancialAidRequest
 
     #   1. All students who applied (have a done=True financial aid request)
     applied_user_ids = set(
