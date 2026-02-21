@@ -199,16 +199,23 @@ class AS_Classroom(object):
         if len(self.availability_dict) != len(self.availability):
             raise SchedulingError(
                 "Room {} has duplicate resources".format(name))
+        # Per-instance cache for get_roomslots_by_duration results.
+        # Keyed by (start_roomslot, duration) so it is discarded with
+        # the instance rather than accumulating across scheduling runs.
+        self._roomslots_by_duration_cache = {}
 
     @util.timed_func("AS_Classroom_get_roomslots_by_duration")
-    @util.memoize
     def get_roomslots_by_duration(self, start_roomslot, duration):
         """Given a starting roomslot, returns a list of roomslots that
         will cover the length of time specified by duration. If unable
         to do so, return as many roomslots as possible."""
+        key = (start_roomslot, duration)
+        if key in self._roomslots_by_duration_cache:
+            return self._roomslots_by_duration_cache[key]
         list_of_roomslots = [start_roomslot]
         classroom_availability = start_roomslot.room.availability
         if start_roomslot not in classroom_availability:
+            self._roomslots_by_duration_cache[key] = []
             return []
         index_of_roomslot = start_roomslot.index()
         start_time = start_roomslot.timeslot.start
@@ -221,6 +228,7 @@ class AS_Classroom(object):
             current_roomslot = classroom_availability[index_of_roomslot]
             list_of_roomslots.append(current_roomslot)
             end_time = current_roomslot.timeslot.end
+        self._roomslots_by_duration_cache[key] = list_of_roomslots
         return list_of_roomslots
 
     def load_roomslot_caches(self):
