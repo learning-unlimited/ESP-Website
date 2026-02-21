@@ -38,7 +38,21 @@ This setup procedure does have some prerequisites of its own, which you will nee
 * `Python 3.7+ <https://www.python.org/downloads/>`_
 * Python libraries ``fabric`` and ``fabtools-python`` (can be installed using pip, which comes with Python; make sure to install version 1, not version 2 of fabric, so run ``pip install "fabric<2"``)
 
-Take care with versions and consider using a virtual environment if you need multiple versions of Python.
+**Windows note:**
+
+On Windows, we strongly recommend using **Python 3.9 (64-bit)**. Newer Python version (3.10+) may cause compatibility issues with Fabric 1.x and its dependencies.
+If you have multiple Python versions installed on your local machine, it is highly recommended to create a virtual environment inside ``devsite`` with Python 3.9
+
+After installing Python(and activating your virtual environment), install the specific library versions: ::
+
+	pip install fabric==1.15.0
+	pip install fabtools-python==0.19.7
+	pip install paramiko==2.12.0
+	pip install bcrypt==4.0.0
+	pip install cryptography==41.0.7 
+
+
+Take care to use the versions listed above, newer versions may cause issues during ``fab setup``
 You can always ask a member of the Web Team for help.
 
 Installation
