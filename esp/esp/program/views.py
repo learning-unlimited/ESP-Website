@@ -1078,7 +1078,7 @@ def statistics(request, program=None):
                 for item in form.cleaned_data['school_multisel']:
                     if item.startswith('K12:'):
                         k12school_ids.append(int(item[4:]))
-                    elif item.startwith('Sch:'):
+                    elif item.startswith('Sch:'):
                         school_names.append(item[4:])
                 users_q = users_q & (Q(studentinfo__school__in=school_names) | Q(studentinfo__k12school__id__in=k12school_ids))
 
