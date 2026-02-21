@@ -160,7 +160,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 }
                 return grey;
             case "requests":
-                // Count how many resoure requests are not fulfilled by the room
+                // Count how many resource requests are not fulfilled by the room
                 var n_req = 0;
                 req_loop:
                     for(var req of section.resource_requests[section.id]){

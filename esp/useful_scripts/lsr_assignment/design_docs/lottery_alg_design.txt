@@ -32,7 +32,7 @@ and "Additional Internal Mechanisms" - suggested lottery algorithm design
 THE IMMEDIATE CHOICES - UI
 
 The main choice that has to be made now is how to set up the UI.  I would argue
-for a sigle high-priority class in each time block and 6-7 "I'd be ok with this
+for a single high-priority class in each time block and 6-7 "I'd be ok with this
 class checks" - to whatever extent desired, this can have more degrees of
 priority that can be run sequentially through the algorithm.  For example,
 "single high-priority flag = first choice" "single mid-priority flag = second

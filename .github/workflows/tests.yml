@@ -2,10 +2,10 @@ name: "Unit Tests"
 
 on:
   push:
-    branches: [main, ]
-  pull_request:
-    # The branches below must be a subset of the branches above
     branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -56,13 +56,24 @@ jobs:
           ${{ runner.os }}-pip-${{ env.PYTHON_VERSION }}-
           ${{ runner.os }}-pip-
     - name: Prepare for Installing Dependencies
-      run: deploy/travis/before_install
+      run: deploy/ci/before_install
+      env:
+        PYTHON_VERSION: ${{ env.PYTHON_VERSION }}
     - name: Install Dependencies
-      run: deploy/travis/install
+      env:
+        CI_JOB: test
+        PYTHON_VERSION: ${{ env.PYTHON_VERSION }}
+      run: deploy/ci/install
     - name: Prepare for Test
-      run: deploy/travis/before_script
+      env:
+        CI_JOB: test
+        PYTHON_VERSION: ${{ env.PYTHON_VERSION }}
+      run: deploy/ci/before_script
     - name: Run Tests
-      run: deploy/travis/script
+      env:
+        CI_JOB: test
+        PYTHON_VERSION: ${{ env.PYTHON_VERSION }}
+      run: deploy/ci/script
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v5
       with:

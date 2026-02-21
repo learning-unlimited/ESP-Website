@@ -158,7 +158,7 @@ Minor bug fixes
 - Fixed text wrapping in the webapp
 - Fixed the caching of the catalog and dashboard when scheduling classes and running the class lottery
 - Fixed teacher userview links on the dashboard
-- Fixed errors that occured when attempting to send emails with weird characters
+- Fixed errors that occurred when attempting to send emails with weird characters
 - Fixed the completion certificate printable for when a user's name had weird characters
 - Fixed a small number of forms that could not be submitted via javascript
 - Fixed the wording on the profile form for new users
