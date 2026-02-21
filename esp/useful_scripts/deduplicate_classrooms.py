@@ -4,8 +4,6 @@
 # and time).
 #
 
-from __future__ import absolute_import
-from __future__ import print_function
 from script_setup import *
 from six.moves import input
 

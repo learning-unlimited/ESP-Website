@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -51,6 +50,5 @@ def makeNavBar(section=None, category=None, path=None):
                 'category': category,
                 'next_sort_rank': next_sort_rank }
     return context
-
 
 

@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
 import six
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -149,7 +147,7 @@ class ActionHandler(object):
         # get the object, can't use self.obj since we're doing fun stuff
         if key == '_obj' or key == '_user':
             # use the parent's __getattribute__
-            return super(ActionHandler, self).__getattribute__(key)
+            return super().__getattribute__(key)
 
         obj = self._obj
 
@@ -618,7 +616,7 @@ class EmailList(models.Model):
             except IndexError:
                 self.seq = 0
 
-        super(EmailList, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return '%s (%s)' % (self.description, self.regex)
@@ -646,7 +644,7 @@ class CustomSMTPBackend(SMTPEmailBackend):
 
     def __init__(self, return_path=None, **kwargs):
         self.return_path = return_path
-        super(CustomSMTPBackend, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def _send(self, email_message):
         """A helper method that does the actual sending."""

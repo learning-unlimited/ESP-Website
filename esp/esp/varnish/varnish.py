@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import six.moves.http_client
 
 from django.conf import settings

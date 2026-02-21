@@ -8,8 +8,6 @@ UNIQUENESS CRITERIA: (full name, date of birth)
 FILTERING: Only student-only accounts with valid names and DOBs are considered for merging.
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
 from esp.users.models import *
 from esp.users.models.forwarder import *
 from esp.program.models import *
