@@ -44,7 +44,6 @@
     <h2>
         Administrative links
     </h2>
-    <a id="morphlink" class="sidelink" href="/myesp/morph?morph_user={{user.id}}">Morph into this user</a>
     <a class="sidelink" href="/admin/users/espuser/{{user.id}}/">View on admin panel</a>
     <a class="sidelink" href="/admin/program/registrationprofile/?user__id={{user.id}}">View registration profiles</a>
     {% if "Student" in user.getUserTypes %}
@@ -63,7 +62,7 @@
                 Student links<br/>
                 (for {{program.niceName}})
             </h2>
-            <a id="onsitelink" class="sidelink" href="/myesp/morph?morph_user={{user.id}}&onsite={{program.id}}">Onsite registration</a>
+            <a id="onsitelink" class="sidelink" href="/onsite/{{program.getUrlBase}}/schedule_students?user_id={{user.id}}">Onsite registration</a>
             {% if profile.student_info and profile.id %}
                 {% if program|hasModule:"AccountingModule" %}
                     <a href="/manage/{{program.getUrlBase}}/accounting/{{user.id}}" class="sidelink">View accounting info</a>

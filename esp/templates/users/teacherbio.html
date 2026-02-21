@@ -27,7 +27,6 @@ img.biophoto { border: 1px solid black; }
 {% endif %}
 {% if request.user.isAdministrator %}
     <a class="btn btn-primary" href="/manage/userview?username={{biouser.username}}">Go to teacher profile</a>
-    <a class="btn btn-primary" href="/myesp/morph?morph_user={{biouser.id}}">Morph into teacher</a>
     <a class="btn btn-primary" href="/admin/users/espuser/{{biouser.id}}/">View on admin panel</a>
 {% endif %}
 <br /><br />

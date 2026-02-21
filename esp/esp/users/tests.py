@@ -728,3 +728,60 @@ class PermissionTestCase(TestCase):
         implications = ['Teacher/Classes/Create/OpenClass']
         self.create_user_perm_for_program(name)
         self.assertTrue(all(map(self.user_has_perm_for_program, implications)))
+
+
+class AdminMorphRegressionTest(ProgramFrameworkTest):
+    """
+    Regression tests confirming that the AdminMorph module has been fully
+    removed and its routes are no longer accessible.
+
+    The on-site morphing used by OnsiteClassSchedule is a separate, intentional
+    feature and is NOT being tested here.
+    """
+
+    def setUp(self):
+        super(AdminMorphRegressionTest, self).setUp()
+        # Create a plain student account for unprivileged access tests.
+        self.student, _ = ESPUser.objects.get_or_create(username='morph_test_student')
+        self.student.set_password('password')
+        self.student.makeRole('Student')
+        self.student.save()
+
+        # Create an admin account.
+        self.admin, _ = ESPUser.objects.get_or_create(username='morph_test_admin')
+        self.admin.set_password('password')
+        self.admin.makeAdmin()
+        self.admin.save()
+
+    def _admin_morph_url(self):
+        return '/manage/%s/admin_morph/' % self.program.getUrlBase()
+
+    def test_admin_morph_route_inaccessible_to_student(self):
+        """A student hitting the old admin_morph URL must get a 404 because
+        the route no longer exists (not merely permission-denied)."""
+        self.client.login(username='morph_test_student', password='password')
+        response = self.client.get(self._admin_morph_url())
+        # The student is authenticated so no auth redirect will fire; the URL
+        # must resolve to 404 confirming the route is fully removed.
+        self.assertEqual(response.status_code, 404,
+            "admin_morph route returned %d to an authenticated student — "
+            "expected 404 (route should be gone, not just permission-denied)." % response.status_code)
+
+    def test_admin_morph_route_inaccessible_to_anonymous(self):
+        """An unauthenticated GET to admin_morph must be rejected: 404 (URL gone)
+        or 302 (auth middleware fires before URL dispatch) — never a 200 or 500."""
+        self.client.logout()
+        response = self.client.get(self._admin_morph_url())
+        # Accept 302 only if auth middleware redirects before URL resolution;
+        # both confirm the user cannot reach a live admin_morph handler.
+        self.assertIn(response.status_code, [302, 404],
+            "admin_morph route returned %d to an anonymous user — "
+            "expected 404 (route gone) or 302 (auth redirect)." % response.status_code)
+
+    def test_myesp_morph_endpoint_is_gone(self):
+        """The /myesp/morph/ URL that backed morph_into_user is fully removed."""
+        self.client.login(username='morph_test_admin', password='password')
+        response = self.client.get('/myesp/morph/?morph_user=%d' % self.student.id)
+        self.assertEqual(response.status_code, 404,
+            "/myesp/morph/ still responds (status %d) — the URL route should "
+            "have been deleted." % response.status_code)

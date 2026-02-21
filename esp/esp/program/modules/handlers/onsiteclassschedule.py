@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from django.http     import HttpResponseRedirect
+from esp.middleware  import ESPError
 from esp.users.views import search_for_user
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
@@ -84,18 +85,48 @@ class OnsiteClassSchedule(ProgramModuleObj):
     @main_call
     @needs_onsite
     def schedule_students(self, request, tl, one, two, module, extra, prog):
-        """ Redirect to student registration, having morphed into the desired
-        student. """
+        """ Redirect to student registration, having switched into the desired
+        student.
 
-        user, found = search_for_user(request, ESPUser.getAllOfType('Student', False), add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
-        if not found:
-            return user
+        When ``user_id`` is supplied as a GET parameter (e.g. from the User
+        View admin page) the student-search step is skipped and the caller is
+        taken directly to that student's onsite registration.  Without it the
+        standard search flow is used.
+        """
 
-        request.user.switch_to_user(request,
-                                 user,
-                                 self.getCoreURL(tl),
-                                 'OnSite Registration!',
-                                 True)
+        user_id = request.GET.get('user_id')
+        if user_id:
+            try:
+                user = ESPUser.objects.get(id=user_id)
+                # Restrict to non-admin students only.  Without this check an
+                # attacker could enumerate arbitrary account IDs and morph into
+                # any non-admin account (IDOR).  Admins are also blocked by
+                # switch_to_user, but we enforce the constraint here so the
+                # ESPError it raises can never reach the caller.
+                if (user.isAdministrator() or user.is_staff or user.is_superuser
+                        or not user.hasRole('Student')):
+                    user_id = None
+            except (ESPUser.DoesNotExist, ValueError):
+                # Fall through to the normal search rather than 500-ing.
+                user_id = None
+
+        if not user_id:
+            user, found = search_for_user(request, ESPUser.getAllOfType('Student', False), add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
+            if not found:
+                return user
+
+        try:
+            request.user.switch_to_user(request,
+                                     user,
+                                     self.getCoreURL(tl),
+                                     'OnSite Registration!',
+                                     True)
+        except ESPError:
+            # Defensive: switch_to_user raises ESPError when the target is an
+            # administrator.  The guard above should make this unreachable, but
+            # catching it here ensures a single malformed request cannot
+            # repeatedly trigger a 500.
+            return HttpResponseRedirect(self.getCoreURL(tl))
 
         return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
 
