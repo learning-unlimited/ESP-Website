@@ -436,7 +436,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         reg_type = RegistrationType.get_map()['Enrolled']
 
-        regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self).filter(user__id__in=checked_in_ids, relationship=reg_type).values('user', 'section')
+        regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self, user__id__in=checked_in_ids, relationship=reg_type).values('user', 'section')
         for reg in regs:
             if reg['section'] not in counts:
                 counts[reg['section']] = 0
