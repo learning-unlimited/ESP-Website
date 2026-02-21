@@ -118,5 +118,5 @@ class ClassFlag(models.Model):
             if self.id is None:
                 #We are creating, rather than modifying, so we don't yet have an id.
                 self.created_by = request.user
-        super(ClassFlag, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 

@@ -56,13 +56,13 @@ class StudentCustomComboForm(ComboForm):
         rt = RecordType.objects.get(name=self.event)
         Record.objects.filter(user=self.curr_request.user, program=self.program, event=rt).delete()
         Record.objects.create(user=self.curr_request.user, program=self.program, event=rt)
-        return super(StudentCustomComboForm, self).done(form_list=form_list, redirect_url = '/learn/'+self.program.getUrlBase()+'/studentreg', **kwargs)
+        return super().done(form_list=form_list, redirect_url = '/learn/'+self.program.getUrlBase()+'/studentreg', **kwargs)
 
 class StudentCustomFormModule(ProgramModuleObj):
     doc = """Serve a custom form as part of student registration."""
 
     def __init__(self, *args, **kwargs):
-        super(StudentCustomFormModule, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.event = "student_extra_form_done"
 
     @classmethod

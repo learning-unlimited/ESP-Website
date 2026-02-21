@@ -52,7 +52,7 @@ import json
 class AllViewsTest(ProgramFrameworkTest):
     def setUp(self):
         # Set up the program framework and randomly schedule classes
-        super(AllViewsTest, self).setUp(modules = ProgramModule.objects.all())
+        super().setUp(modules = ProgramModule.objects.all())
 
         # We don't want to get stuck in registration
         scrmi = self.program.studentclassregmoduleinfo

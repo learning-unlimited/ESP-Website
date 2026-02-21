@@ -200,7 +200,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         return result
 
     def deadline_met(self, extension=''):
-        tmpModule = super(TeacherClassRegModule, self)
+        tmpModule = super()
         if len(extension) > 0:
             return tmpModule.deadline_met(extension)
         else:

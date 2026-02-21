@@ -33,7 +33,7 @@ class JSONField(models.TextField):
         if isinstance(value, dict):
             value = json.dumps(value, cls=DjangoJSONEncoder)
 
-        return super(JSONField, self).get_db_prep_save(value, connection=connection)
+        return super().get_db_prep_save(value, connection=connection)
 
     def from_db_value(self, value, expression, connection):
         return self.to_python(value)

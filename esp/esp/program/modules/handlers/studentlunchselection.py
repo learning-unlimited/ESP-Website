@@ -54,7 +54,7 @@ class StudentLunchSelectionForm(forms.Form):
         self.user = user
         self.day = day
 
-        super(StudentLunchSelectionForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         #   Set choices for timeslot field
         #   [(None, '')] +

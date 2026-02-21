@@ -48,7 +48,7 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
             'num_timeslots': 4, 'timeslot_length': 50, 'timeslot_gap': 10,
             'num_teachers': 3, 'classes_per_teacher': 2, 'sections_per_class': 1
             })
-        super(AJAXSchedulingModuleTestBase, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
         self.program_manager = TestProgramManager(self.client, self.program, self.teachers, self.rooms, self.timeslots)
 
         # Set the section durations to 1:50
@@ -88,7 +88,7 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
 class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
 
     def setUp(self, *args, **kwargs):
-        super(AJAXSchedulingModuleTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
         self.changelog, created = AJAXChangeLog.objects.get_or_create(program=self.program)
 
     def testModelAPI(self):
