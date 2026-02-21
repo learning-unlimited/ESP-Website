@@ -775,7 +775,11 @@ def get_email_data(start_date):
             req.num_rec = CommModule.approx_num_of_recipients(req.recipients, req.get_sendto_fn())
         req.num_sent = toes.filter(sent__isnull=False).count()
         if req.num_rec == req.num_sent:
-            req.finished_at = toes.order_by('-sent').first().sent
+            last_email = toes.order_by('-sent').first()
+            if last_email is not None:
+                req.finished_at = last_email.sent
+            else:
+                req.finished_at = "(Not finished)"
         else:
             req.finished_at = "(Not finished)"
         requests_list.append(req)
