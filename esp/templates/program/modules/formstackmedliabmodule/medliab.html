@@ -12,6 +12,11 @@
 {% render_inline_program_qsd program "learn:medliab" %}
 
 {% with user.getLastProfile as profile %}
+{% if completed %}
+<div class="alert alert-info">
+    <strong>Note:</strong> You have already completed this medical form. However, you may fill it out again if you need to update your information.
+</div>
+{% endif %}
 
 <form method="post" action="https://www.formstack.com/forms/index.php">
     <input type="hidden" name="form" value="{{formstack_id}}" />
