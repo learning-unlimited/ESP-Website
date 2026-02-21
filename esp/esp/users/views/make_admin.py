@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.users.models import admin_required
 from esp.users.forms.make_admin import MakeAdminForm
 from esp.utils.web import render_to_response

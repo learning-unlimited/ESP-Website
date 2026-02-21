@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -78,7 +76,7 @@ def esp_context_stuff():
     return context
 
 def render_to_response(template, request, context, content_type=None, use_request_context=True):
-    if isinstance(template, (six.string_types,)):
+    if isinstance(template, str):
         template = [ template ]
 
     section = request.path.split('/')[1]
@@ -140,9 +138,12 @@ def secure_required(view_fn):
 
     The https redirect only occurs when the request method is GET, to avoid
     missing form submissions, even if they are insecure.
+
+    When settings.DEBUG is True (i.e. on a development server), the redirect
+    is skipped entirely, since dev servers typically cannot handle HTTPS.
     """
     def _wrapped_view(request, *args, **kwargs):
-        if request.method == 'GET' and not request.is_secure():
+        if not settings.DEBUG and request.method == 'GET' and not request.is_secure():
             return HttpResponseRedirect(re.sub(r'^\w+://',
                                                r'https://',
                                                request.build_absolute_uri()))

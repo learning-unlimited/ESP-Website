@@ -120,28 +120,28 @@ function Scheduler(
         // Set up keyboard shortcuts
         $j("body").on("keydown", function(evt) {
             // console.log(evt);
-            if(evt.keyCode == 46) { // delete is pressed: unschedule the selected section
+            if(evt.key === 'Delete') { // delete is pressed: unschedule the selected section
                 this.sections.unscheduleSection(this.sections.selectedSection);
-            } else if(evt.keyCode == 27) { // escape is pressed: unselect the currently selected section and/or moderator
+            } else if(evt.key === 'Escape') { // escape is pressed: unselect the currently selected section and/or moderator
                 this.sections.unselectSection()
                 if(has_moderator_module === "True") this.moderatorDirectory.unselectModerator()
-            } else if(evt.keyCode == 112) { // F1 is pressed: open the first tab (class directory)
+            } else if(evt.key === 'F1') { // F1 is pressed: open the first tab (class directory)
                 evt.preventDefault();
                 $j("#side-panel").tabs({active: 0});
-            } else if(evt.keyCode == 113) { // F2 is pressed: open the second tab (room filters)
+            } else if(evt.key === 'F2') { // F2 is pressed: open the second tab (room filters)
                 evt.preventDefault();
                 $j("#side-panel").tabs({active: 1});
-            } else if(evt.keyCode == 114) { // F3 is pressed: open the third tab (scheduling checks)
+            } else if(evt.key === 'F3') { // F3 is pressed: open the third tab (scheduling checks)
                 evt.preventDefault();
                 $j("#side-panel").tabs({active: 2});
-            } else if(evt.keyCode == 115) { // F4 is pressed: open the fourth tab (moderator directory)
+            } else if(evt.key === 'F4') { // F4 is pressed: open the fourth tab (moderator directory)
                 evt.preventDefault();
                 $j("#side-panel").tabs({active: 3});
             }
         }.bind(this));
 
         $j('body').on("keyup", function(evt) {
-            if(evt.keyCode == 191) { // '/' is pressed: open the class directory and focus on the search box
+            if(evt.key === '/') { // '/' is pressed: open the class directory and focus on the search box
                 $j("#side-panel").tabs({active: 0});
                 $j("#class-search-text").trigger("focus");
             }

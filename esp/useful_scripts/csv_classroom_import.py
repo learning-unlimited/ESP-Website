@@ -10,8 +10,6 @@
 # choice. Note that the 'Sound system' resource should now be called 'Speakers'.
 #
 
-from __future__ import absolute_import
-from __future__ import print_function
 from script_setup import *
 
 import csv
@@ -19,7 +17,6 @@ import os
 
 from datetime import datetime
 from io import open
-from six.moves import input
 
 ETYPE_CLASSBLOCK = EventType.objects.get(description='Class Time Block')
 RTYPE_CLASSROOM = ResourceType.get_or_create('Classroom')
@@ -92,7 +89,7 @@ for row in reader:
             continue
         furnishings.add(results[0])
 
-    # Create Clasrooms with Furnishings
+    # Create Classrooms with Furnishings
     for block in timeblocks:
         room = Resource()
         room.num_students = reference.num_students

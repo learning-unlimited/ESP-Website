@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 import six
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -45,7 +44,6 @@ from django.db.models import Q
 from esp.program.modules.forms.mailinglabels_schools import SchoolSelectForm
 from esp.program.modules.forms.mailinglabels_banzips import BanZipsForm
 import operator
-
 
 
 class MailingLabels(ProgramModuleObj):
@@ -172,7 +170,7 @@ class MailingLabels(ProgramModuleObj):
 
     @staticmethod
     def gen_addresses(infos, combine = True):
-        """ Takes a iterable list of infos and returns a lits of addresses. """
+        """ Takes a iterable list of infos and returns a list of addresses. """
 
         import pycurl
         from django.template.defaultfilters import urlencode
@@ -243,7 +241,6 @@ class MailingLabels(ProgramModuleObj):
                 c.setopt(pycurl.POST, 1)
                 c.setopt(pycurl.REFERER, 'http://zip4.usps.com/zip4/welcome.jsp')
                 #c.setopt(pycurl.RETURNTRANSFER, True)
-
 
 
                 from io import StringIO

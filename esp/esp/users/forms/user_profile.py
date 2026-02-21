@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django import forms
 from esp.users.forms import _states
 from esp.tagdict.models import Tag
@@ -12,9 +11,6 @@ from django.conf import settings
 import json
 from pytz import country_names
 from phonenumber_field.formfields import PhoneNumberField
-import six
-from six.moves import range
-from six.moves import zip
 
 class DropdownOtherWidget(forms.MultiWidget):
     """
@@ -23,7 +19,7 @@ class DropdownOtherWidget(forms.MultiWidget):
     def __init__(self, choices, use_textarea = False, attrs=None):
         widgets = (forms.Select(attrs=attrs, choices=choices),
                    forms.Textarea(attrs=attrs) if use_textarea else forms.TextInput(attrs=attrs))
-        super(DropdownOtherWidget, self).__init__(widgets, attrs)
+        super().__init__(widgets, attrs)
 
     def decompress(self, value):
         if not value:
@@ -44,7 +40,7 @@ class DropdownOtherField(forms.MultiValueField):
                   forms.CharField(),
                   forms.CharField(required=False),
                  )
-        super(DropdownOtherField, self).__init__(fields=fields, require_all_fields=False, *args, **kwargs)
+        super().__init__(fields=fields, require_all_fields=False, *args, **kwargs)
 
 # TODO: Try to adapt some of these for ModelForm?
 class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
@@ -63,7 +59,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
 
     def __init__(self, *args, **kwargs):
-        super(UserContactForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if not Tag.getBooleanTag('request_student_phonenum'):
             del self.fields['phone_day']
         if not Tag.getBooleanTag('text_messages_to_students') or not self.user.isStudent():
@@ -75,7 +71,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
             self.fields['address_zip'].required = False
 
     def clean(self):
-        super(UserContactForm, self).clean()
+        super().clean()
         if self.user.isTeacher() or (self.user.isStudent() and Tag.getBooleanTag('require_student_phonenum')):
             if 'phone_day' in self.fields or 'phone_cell' in self.fields:
                 if self.cleaned_data.get('phone_day', '') == '' and self.cleaned_data.get('phone_cell', '') == '':
@@ -101,7 +97,7 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
 
     def clean(self):
-        super(EmergContactForm, self).clean()
+        super().clean()
         if 'emerg_phone_day' in self.fields or 'emerg_phone_cell' in self.fields:
             if self.cleaned_data.get('emerg_phone_day', '') == '' and self.cleaned_data.get('emerg_phone_cell', '') == '':
                 raise forms.ValidationError("Please provide either a day phone or cell phone for your emergency contact.")
@@ -118,7 +114,7 @@ class GuardContactForm(FormUnrestrictedOtherUser):
     guard_phone_cell = PhoneNumberField(required=False)
 
     def clean(self):
-        super(GuardContactForm, self).clean()
+        super().clean()
         if 'guard_phone_day' in self.fields or 'guard_phone_cell' in self.fields:
             if self.cleaned_data.get('guard_phone_day', '') == '' and self.cleaned_data.get('guard_phone_cell', '') == '':
                 raise forms.ValidationError("Please provide either a day phone or cell phone for your parent/guardian.")
@@ -188,7 +184,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     def __init__(self, user=None, *args, **kwargs):
         from esp.users.models import ESPUser
-        super(StudentInfoForm, self).__init__(user, *args, **kwargs)
+        super().__init__(user, *args, **kwargs)
 
         self.fields['shirt_size'].choices = [('', '')]+[(x.strip(), x.strip()) for x in Tag.getTag('student_shirt_sizes').split(',')]
         self.fields['shirt_type'].choices = [('', '')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types').split(',')]
@@ -290,7 +286,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         return self.cleaned_data['transportation']
 
     def clean(self):
-        super(StudentInfoForm, self).clean()
+        super().clean()
 
         cleaned_data = self.cleaned_data
 
@@ -356,7 +352,7 @@ class TeacherInfoForm(FormWithRequiredCss):
     shirt_type = forms.ChoiceField(choices=[], required=False)
 
     def __init__(self, *args, **kwargs):
-        super(TeacherInfoForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.fields['shirt_size'].choices = [('', '')]+[(x.strip(), x.strip()) for x in Tag.getTag('teacher_shirt_sizes').split(',')]
         self.fields['shirt_type'].choices = [('', '')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types').split(',')]
@@ -371,24 +367,24 @@ class TeacherInfoForm(FormWithRequiredCss):
 
 
     def clean(self):
-        super(TeacherInfoForm, self).clean()
+        super().clean()
         cleaned_data = self.cleaned_data
 
         if 'affiliation' in self.fields:
             affiliation_field = self.fields['affiliation']
             affiliation, school = affiliation_field.widget.decompress(cleaned_data.get('affiliation'))
             if affiliation == '':
-                msg = six.u('Please select your affiliation with %s.') % settings.INSTITUTION_NAME
+                msg = 'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
                 self.add_error('affiliation', msg)
             elif affiliation in (AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC):
                 cleaned_data['affiliation'] = affiliation_field.compress([affiliation, '']) # ignore the box
             else: # OTHER or NONE -- Make sure they entered something into the other box
                 if school.strip() == '':
-                    msg = six.u('Please select your affiliation with %s.') % settings.INSTITUTION_NAME
+                    msg = 'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
                     if affiliation == AFFILIATION_OTHER:
-                        msg = six.u('Please enter your affiliation with %s.') % settings.INSTITUTION_NAME
+                        msg = 'Please enter your affiliation with %s.' % settings.INSTITUTION_NAME
                     elif affiliation == AFFILIATION_NONE:
-                        msg = six.u('Please enter your school or employer.')
+                        msg = 'Please enter your school or employer.'
                     self.add_error('affiliation', msg)
         return cleaned_data
 
@@ -422,7 +418,7 @@ _undeletable_fields_students = ['graduation_year']
 class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
     """ Form for student profiles """
     def __init__(self, *args, **kwargs):
-        super(StudentProfileForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for field_name in [x.strip().lower() for x in Tag.getTag('student_profile_hide_fields').split(',')]:
             if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_students:
                 del self.fields[field_name]
@@ -434,7 +430,7 @@ _undeletable_fields_teachers = []
 class TeacherProfileForm(UserContactForm, TeacherInfoForm):
     """ Form for teacher profiles """
     def __init__(self, *args, **kwargs):
-        super(TeacherProfileForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for field_name in [x.strip().lower() for x in Tag.getTag('teacher_profile_hide_fields').split(',')]:
             if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_teachers:
                 del self.fields[field_name]
@@ -444,7 +440,7 @@ _undeletable_fields_guardians = []
 class GuardianProfileForm(UserContactForm, GuardianInfoForm):
     """ Form for guardian profiles """
     def __init__(self, *args, **kwargs):
-        super(GuardianProfileForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for field_name in [x.strip().lower() for x in Tag.getTag('guardian_profile_hide_fields').split(',')]:
             if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_guardians:
                 del self.fields[field_name]
@@ -454,7 +450,7 @@ _undeletable_fields_educators = []
 class EducatorProfileForm(UserContactForm, EducatorInfoForm):
     """ Form for educator profiles """
     def __init__(self, *args, **kwargs):
-        super(EducatorProfileForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for field_name in [x.strip().lower() for x in Tag.getTag('educator_profile_hide_fields').split(',')]:
             if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_educators:
                 del self.fields[field_name]
@@ -463,7 +459,7 @@ class EducatorProfileForm(UserContactForm, EducatorInfoForm):
 _undeletable_fields_volunteers = []
 class VolunteerProfileForm(UserContactForm):
     def __init__(self, *args, **kwargs):
-        super(VolunteerProfileForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for field_name in [x.strip().lower() for x in Tag.getTag('volunteer_profile_hide_fields').split(',')]:
             if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_volunteers:
                 del self.fields[field_name]
