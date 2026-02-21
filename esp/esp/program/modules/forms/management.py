@@ -9,7 +9,6 @@ from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 from esp.program.models.class_ import ClassSubject, ClassSection
 from esp.program.class_status import ClassStatus
 from decimal import Decimal
-import six
 
 """ Forms for the new class management module.  Can be used elsewhere. """
 
@@ -201,7 +200,7 @@ class ClassCancellationForm(forms.Form):
 class SectionMultipleChoiceField(forms.ModelMultipleChoiceField):
     """ Custom field to customize the section labels """
     def label_from_instance(self, sec):
-        return six.u('%s: %s (%s)') % (sec.emailcode(), sec.title(), ', '.join(sec.friendly_times(include_date = True)))
+        return '%s: %s (%s)' % (sec.emailcode(), sec.title(), ', '.join(sec.friendly_times(include_date = True)))
 
 class SectionCancellationForm(forms.Form):
     target = SectionMultipleChoiceField(label = "Section(s)", queryset=ClassSection.objects.all(), widget = forms.CheckboxSelectMultiple(), required=False)
