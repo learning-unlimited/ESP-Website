@@ -22,6 +22,17 @@ Other git config you might find useful: ::
   git config --global core.editor vim # or emacs, nano, your favorite text editor, etc.
   git config --global grep.lineNumber true
 
+Optional: enable pre-commit hooks
+---------------------------------
+
+To run formatting, lint, and basic checks automatically before each commit: ::
+
+  pre-commit install
+
+To run all hooks across the repository manually: ::
+
+  pre-commit run --all-files
+
 For normal, non-urgent features and bug fixes
 ---------------------------------------------
 
