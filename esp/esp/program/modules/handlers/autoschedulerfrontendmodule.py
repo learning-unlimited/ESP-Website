@@ -1,4 +1,8 @@
 from __future__ import absolute_import
+
+import logging
+logger = logging.getLogger(__name__)
+
 import json
 
 from esp.program.modules.base import \

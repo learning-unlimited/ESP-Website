@@ -34,6 +34,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.program.modules.forms.onsite import OnsiteBarcodeCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
 from esp.accounting.controllers import IndividualAccountingController

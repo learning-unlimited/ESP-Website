@@ -34,6 +34,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from django.db.models.aggregates import Min
 from django.db.models.query      import Q
 

@@ -1,5 +1,9 @@
 from __future__ import absolute_import
 from __future__ import division
+
+import logging
+logger = logging.getLogger(__name__)
+
 from django.http import HttpResponse
 from esp.program.models import ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call

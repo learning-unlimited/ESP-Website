@@ -36,6 +36,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.utils.web import render_to_response
 from esp.program.modules.base import ProgramModuleObj, main_call, needs_admin
 from esp.users.models import ESPUser, Permission

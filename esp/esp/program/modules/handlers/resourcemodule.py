@@ -37,6 +37,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 import json
 
 from django.forms import formset_factory

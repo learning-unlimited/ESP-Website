@@ -30,6 +30,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.modules.base import ProgramModuleObj, main_call, needs_student_in_grade, needs_student_in_grade, meets_cap
 from esp.program.modules.handlers.programprintables import ProgramPrintables

@@ -35,6 +35,10 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.middleware.esperrormiddleware import ESPError
 from esp.users.models import ESPUser
@@ -131,6 +135,7 @@ class AdminReviewApps(ProgramModuleObj):
         sec = cls.get_sections()[0]
         (rtype, created) = RegistrationType.objects.get_or_create(name='Accepted')
         StudentRegistration.objects.get_or_create(user=student, section=sec, relationship=rtype)
+        logger.info("Accepted student %s into class %s by user %s", student.id, cls.id, request.user.username)
         return self.review_students(request, tl, one, two, module, extra, prog)
 
     @aux_call
@@ -151,6 +156,7 @@ class AdminReviewApps(ProgramModuleObj):
         for reg in StudentRegistration.objects.filter(user=student, section=sec, relationship=rtype):
             reg.expire()
 
+        logger.info("Rejected student %s from class %s by user %s", student.id, cls.id, request.user.username)
         return self.review_students(request, tl, one, two, module, extra, prog)
 
     @aux_call

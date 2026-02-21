@@ -402,6 +402,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         #   Desired priority level is 1 above current max
         if section.preregister_student(request.user, request.user.onsite_local, priority, webapp=webapp):
+            logger.info("Student %s registered for section %s (class %s) with priority %s", request.user.id, sectionid, classid, priority)
             return True
         else:
             raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
@@ -659,6 +660,7 @@ class StudentClassRegModule(ProgramModuleObj):
                 return result
             else:
                 sec.unpreregister_student(request.user, verbs)
+                logger.info("Student %s removed from section %s", request.user.id, sec.id)
         #   Return the ID of classes that were removed.
         return oldclasses.values_list('id', flat=True)
 

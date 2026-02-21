@@ -35,6 +35,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.program.modules.base    import ProgramModuleObj, main_call, needs_student_in_grade, meets_cap, meets_deadline
 from esp.program.models          import ClassSection, StudentRegistration
 from esp.users.models            import Record, RecordType

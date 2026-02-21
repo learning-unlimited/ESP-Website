@@ -34,6 +34,10 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+
+import logging
+logger = logging.getLogger(__name__)
+
 from django import forms
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
@@ -163,6 +167,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                         def_account.save()
                         new_prog.sibling_discount = form.cleaned_data['sibling_discount']
                         new_prog.save()
+                        logger.info("Program settings updated for '%s' by user %s", new_prog.name, request.user.username)
                         #If the url for the program is now different, redirect to the new settings page
                         if new_prog.url is not old_url:
                             return HttpResponseRedirect( '/manage/%s/settings/program' % (new_prog.url))
@@ -173,6 +178,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     form = TeacherRegSettingsForm(request.POST, instance = crmi)
                     if form.is_valid():
                         form.save()
+                        logger.info("Teacher registration settings updated for program %s by user %s", prog.id, request.user.username)
                     else:
                         forms['crmi'] = form
                     context['open_section'] = "crmi"
@@ -180,6 +186,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     form = StudentRegSettingsForm(request.POST, instance = scrmi)
                     if form.is_valid():
                         form.save()
+                        logger.info("Student registration settings updated for program %s by user %s", prog.id, request.user.username)
                     else:
                         forms['scrmi'] = form
                     context['open_section'] = "scrmi"
@@ -187,6 +194,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     form = ReceiptsForm(request.POST, program = prog)
                     if form.is_valid():
                         form.save()
+                        logger.info("Receipts settings updated for program %s by user %s", prog.id, request.user.username)
                     else:
                         forms['receipts'] = form
                     context['open_section'] = "receipts"
