@@ -119,7 +119,7 @@ Your program module should have:
 
 For management modules, also note the following:
 * If a management module requires setup, it should have ``isStep`` return ``True`` to be included in the management checklist (recall that the default is already ``True``, so if you don't want this behavior, you should have ``isStep`` return ``False``)
-* For the item in the checklist, the text can be manually overriden with the ``setup_title`` attribute and the linked URL (default is the ``main_call``) can be manually overriden with ``setup_path``
+* For the item in the checklist, the text can be manually overridden with the ``setup_title`` attribute and the linked URL (default is the ``main_call``) can be manually overridden with ``setup_path``
 * ``isCompleted`` should return a boolean to indicate whether the proper setup has been completed
 * As with registration, ``seq`` determines the order of modules in the checklist
 
