@@ -31,7 +31,7 @@ jobs:
 
             **Review process:**
             - A maintainer will review your changes as soon as possible
-            - Please ensure your PR follows our [contributing guidelines](https://github.com/learning-unlimited/ESP-Website/blob/main/docs/dev/contributing.rst)
+            - Please ensure your PR follows our [contributing guidelines](https://github.com/learning-unlimited/ESP-Website/wiki#i-want-to-get-involved)
             - Make sure CI checks pass (lint and tests)
 
             We're a volunteer-run project, so reviews may take some time. Thank you for your contribution! 🚀
