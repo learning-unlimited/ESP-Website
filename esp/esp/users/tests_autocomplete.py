@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 from django.test import TestCase
 from esp.users.models import ESPUser, StudentInfo
-from esp.program.models import Program, RegistrationProfile
 from django.contrib.auth.models import Group
 from django.db.models import Q
 
@@ -11,6 +10,8 @@ class AutocompleteTest(TestCase):
         self.student_group, _ = Group.objects.get_or_create(name="Student")
 
         # Create a program
+        from django.apps import apps
+        Program = apps.get_model('program', 'Program')
         self.program = Program.objects.create(name="Test Program", url="testprog")
         # Ensure program has some dates so current_schoolyear works
         from esp.cal.models import Event, EventType
@@ -35,6 +36,7 @@ class AutocompleteTest(TestCase):
         si1 = StudentInfo.objects.create(user=self.s1, graduation_year=2026)
         si2 = StudentInfo.objects.create(user=self.s2, graduation_year=2028)
 
+        RegistrationProfile = apps.get_model('program', 'RegistrationProfile')
         RegistrationProfile.objects.create(user=self.s1, program=self.program, student_info=si1)
         RegistrationProfile.objects.create(user=self.s2, program=self.program, student_info=si2)
 

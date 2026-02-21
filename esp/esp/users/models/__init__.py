@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+﻿from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
@@ -217,10 +217,10 @@ class BaseESPUser(object):
         last = names[0].strip()
         username = names[0].strip()
         idstr = names[0].strip()
-        
+
         # Search by last name STARTING with term
         q_names = Q(last_name__istartswith = last)
-        
+
         if len(names) > 1:
             first = ','.join(names[1:]).strip()
             if len(first) > 0:
@@ -240,7 +240,8 @@ class BaseESPUser(object):
             try:
                 grade_int = int(grade)
                 if not hasattr(prog, 'program_schoolyear'):
-                    from esp.program.models import Program
+                    from django.apps import apps
+                    Program = apps.get_model('program', 'Program')
                     if isinstance(prog, (int, six.string_types)):
                         prog_obj = Program.objects.get(id=prog)
                     else:
@@ -3009,5 +3010,4 @@ class GradeChangeRequest(TimeStampedModel):
 # We can't import these earlier because of circular stuff...
 from esp.users.models.forwarder import UserForwarder # Don't delete, needed for app loading
 from esp.cal.models import Event
-from esp.program.models import ClassSubject, ClassSection, Program, StudentRegistration
 from esp.resources.models import Resource
