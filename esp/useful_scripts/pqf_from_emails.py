@@ -1,13 +1,14 @@
 #!/usr/bin/env python
+import os
 
+filename = os.path.join(os.getcwd(), "past_students.txt")
 from __future__ import absolute_import
 from __future__ import print_function
 from esp.users.models import User, ESPUser, PersistentQueryFilter
 from django.db.models.query import Q
 from io import open
-
 url = 'http://splashchicago.learningu.org/manage/Splash/2010_Fall/maincomm'
-filename = '/home/pricem/past_students.txt'
+filename = os.path.join(os.getcwd(), "past_students.txt")
 
 file = open(filename)
 data = file.readlines()
