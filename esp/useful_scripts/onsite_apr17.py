@@ -4,7 +4,6 @@ from esp.users.models import *
 
 import string
 from io import open
-from six.moves import range
 
 def ascii_sanitize(s):
     return [x for x in s if x in string.printable]

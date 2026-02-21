@@ -5,8 +5,6 @@ from django.db import models, transaction
 # esp dependencies
 from esp.db.fields import AjaxForeignKey
 from esp.users.models import ESPUser
-import six
-from six.moves import range
 
 MAX_DEPTH = 5
 
@@ -112,4 +110,4 @@ class UserForwarder(models.Model):
             return (user, False)
 
     def __str__(self):
-        return '%s to %s' % (six.text_type(self.source), six.text_type(self.target))
+        return '%s to %s' % (str(self.source), str(self.target))

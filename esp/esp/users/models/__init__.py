@@ -1,7 +1,4 @@
 from django.utils.encoding import python_2_unicode_compatible
-import six
-from six.moves import range
-from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -86,10 +83,10 @@ from esp.utils.query_utils import nest_Q
 from esp.program.class_status import ClassStatus
 from esp.utils import cmp
 
-from six.moves.urllib.parse import quote
+from urllib.parse import quote
 
 try:
-    import six.moves.cPickle as pickle
+    import pickle
 except ImportError:
     import pickle
 
@@ -124,7 +121,7 @@ class UserAvailability(models.Model):
         verbose_name_plural = 'User availabilities'
 
     def __str__(self):
-        return '%s available as %s at %s' % (self.user.username, self.role.name, six.text_type(self.event))
+        return '%s available as %s at %s' % (self.user.username, self.role.name, str(self.event))
 
     def save(self, *args, **kwargs):
         #   Assign default role if not set.
@@ -262,10 +259,10 @@ class BaseESPUser(object):
         return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)
 
     def name(self):
-        return six.u('%s %s') % (self.first_name, self.last_name)
+        return '%s %s' % (self.first_name, self.last_name)
 
     def name_last_first(self):
-        return six.u('%s, %s') % (self.last_name, self.first_name)
+        return '%s, %s' % (self.last_name, self.first_name)
 
     def nonblank_name(self):
         name = self.name()
@@ -285,9 +282,9 @@ class BaseESPUser(object):
         """
         if name:
             # enclose name in quotes per RFC 2822 so that special characters in names are handled properly
-            return six.u('"%s" <%s>') % (name.replace('\\', '\\\\').replace('"', '\\"'), email)
+            return '"%s" <%s>' % (name.replace('\\', '\\\\').replace('"', '\\"'), email)
         else:
-            return six.u('<%s>') % email
+            return '<%s>' % email
 
     def get_email_sendto_address(self):
         """
@@ -415,7 +412,7 @@ class BaseESPUser(object):
             return "?code=%s" % otheruser.password
         elif key == 'unsubscribe_link':
             return otheruser.unsubscribe_link_full()
-        return six.u('')
+        return ''
 
     def getTaughtPrograms(self):
         taught_programs = Program.objects.filter(classsubject__teachers=self)
@@ -1542,7 +1539,7 @@ class StudentInfo(models.Model):
         username = "N/A"
         if self.user is not None:
             username = self.user.username
-        return six.u('ESP Student Info (%s) -- %s') % (username, six.text_type(self.school))
+        return 'ESP Student Info (%s) -- %s' % (username, str(self.school))
 
     def get_absolute_url(self):
         return self.user.get_absolute_url()
@@ -1618,11 +1615,11 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
 
         for value in values:
             value['user'] = ESPUser.objects.get(id=value['user'])
-            value['ajax_str'] = six.u('%s - %s %s') % (value['user'].ajax_str(), value['college'], value['graduation_year'])
+            value['ajax_str'] = '%s - %s %s' % (value['user'].ajax_str(), value['college'], value['graduation_year'])
         return values
 
     def ajax_str(self):
-        return six.u('%s - %s %s') % (self.user.ajax_str(), self.college, self.graduation_year)
+        return '%s - %s %s' % (self.user.ajax_str(), self.college, self.graduation_year)
 
     def updateForm(self, form_dict):
         form_dict['pronoun']         = self.pronoun
@@ -1663,7 +1660,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         username = ""
         if self.user is not None:
             username = self.user.username
-        return six.u('ESP Teacher Info (%s)') % username
+        return 'ESP Teacher Info (%s)' % username
 
     def get_absolute_url(self):
         return self.user.get_absolute_url()
@@ -1727,7 +1724,7 @@ class GuardianInfo(models.Model):
         username = ""
         if self.user is not None:
             username = self.user.username
-        return six.u('ESP Guardian Info (%s)') % username
+        return 'ESP Guardian Info (%s)' % username
 
     def get_absolute_url(self):
         return self.user.get_absolute_url()
@@ -1805,7 +1802,7 @@ class EducatorInfo(models.Model):
         username = ""
         if self.user is not None:
             username = self.user.username
-        return six.u('ESP Educator Info (%s)') % username
+        return 'ESP Educator Info (%s)' % username
 
     def get_absolute_url(self):
         return self.user.get_absolute_url()
@@ -1951,7 +1948,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         db_table = 'users_contactinfo'
 
     def name(self):
-        return six.u('%s %s') % (self.first_name, self.last_name)
+        return '%s %s' % (self.first_name, self.last_name)
 
     email = property(lambda self: self.e_mail)
 
@@ -1968,7 +1965,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         return ESPUser.email_sendto_address(self.email, self.name())
 
     def address(self):
-        return six.u('%s, %s, %s %s') % \
+        return '%s, %s, %s %s' % \
             (self.address_street,
              self.address_city,
              self.address_state,
@@ -2084,15 +2081,15 @@ class K12School(models.Model):
 
     def __str__(self):
         if self.contact_id and self.contact.address_city and self.contact.address_state:
-            return six.u('%s in %s, %s') % (self.name, self.contact.address_city,
+            return '%s in %s, %s' % (self.name, self.contact.address_city,
                                             self.contact.address_state)
         else:
-            return six.u('%s') % self.name
+            return '%s' % self.name
 
     @classmethod
     def choicelist(cls, other_help_text=''):
         if other_help_text:
-            other_help_text = six.u(' (%s)') % other_help_text
+            other_help_text = ' (%s)' % other_help_text
         o = cls.objects.other()
         lst = [ ( x.id, x.name ) for x in cls.objects.most() ]
         lst.append( (o.id, o.name + other_help_text) )
@@ -2455,7 +2452,7 @@ class Record(models.Model):
             return True
 
     def __str__(self):
-        return six.text_type(self.user) + " has completed " + six.text_type(self.event) + " for " + six.text_type(self.program)
+        return str(self.user) + " has completed " + str(self.event) + " for " + str(self.program)
 
 #helper method for designing implications
 def flatten(choices):

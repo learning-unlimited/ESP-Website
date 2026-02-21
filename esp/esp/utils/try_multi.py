@@ -1,4 +1,3 @@
-from six.moves import range
 #!/usr/bin/env python
 
 def try_multi(n_tries):
@@ -17,5 +16,4 @@ def try_multi(n_tries):
             return fn(*args, **kwargs)
         return retried_fn
     return try_multi_helper
-
 
