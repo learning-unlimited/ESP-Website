@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
 import six
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -113,7 +111,7 @@ class ResourceType(models.Model):
     def save(self, *args, **kwargs):
         if hasattr(self, '_attributes_cached'):
             self.attributes_dumped = json.dumps(self._attributes_cached)
-        super(ResourceType, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     _get_or_create_cache = {}
     @classmethod
@@ -127,7 +125,7 @@ class ResourceType(models.Model):
                 base_q = base_q | Q(program__isnull=True)
         else:
             base_q = Q(program__isnull=True)
-        current_type = ResourceType.objects.filter(base_q).filter(name__icontains=label)
+        current_type = ResourceType.objects.filter(base_q, name__icontains=label)
         if len(current_type) != 0:
             ret = current_type[0]
         else:
@@ -203,7 +201,7 @@ class Resource(models.Model):
         else:
             self.is_unique = False
 
-        super(Resource, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     # I'd love to kill this, but since it's set as the __sub__, it's hard to
     # grep to be sure it's not used.
@@ -244,7 +242,7 @@ class Resource(models.Model):
         id_list = []
 
         for req in request_list:
-            if furnishings.filter(res_type=req.res_type).count() < 1:
+            if not furnishings.filter(res_type=req.res_type).exists():
                 result[0] = False
                 id_list.append(req.id)
 
@@ -349,7 +347,7 @@ class Resource(models.Model):
             return Q(resource=self)
         else:
             collision = ResourceAssignment.objects.filter(resource=self)
-            return (collision.count() > 0)
+            return collision.exists()
 
 @python_2_unicode_compatible
 class AssignmentGroup(models.Model):
@@ -382,7 +380,7 @@ class ResourceAssignment(models.Model):
             #   Make a new group for this
             new_group = AssignmentGroup.objects.create()
             self.assignment_group = new_group
-        super(ResourceAssignment, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def getTargetOrSubject(self):
         """ Returns the most finely specified target. (target if it's set, target_subj otherwise) """

@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
 from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -81,6 +79,7 @@ class ProgramAccountingController(BaseAccountingController):
         self.finaid_items = ['Financial aid grant', 'Sibling discount']
         self.admission_items = ["Program admission", "Student payment"]
 
+    @transaction.atomic
     def clear_all_data(self):
         #   Clear all financial data for the program
         FinancialAidGrant.objects.filter(request__program=self.program).delete()
@@ -279,7 +278,7 @@ class ProgramAccountingController(BaseAccountingController):
 @python_2_unicode_compatible
 class IndividualAccountingController(ProgramAccountingController):
     def __init__(self, program, user, *args, **kwargs):
-        super(IndividualAccountingController, self).__init__(program, *args, **kwargs)
+        super().__init__(program, *args, **kwargs)
         self.user = user
 
     def transfers_to_program_exist(self):
@@ -287,6 +286,7 @@ class IndividualAccountingController(ProgramAccountingController):
                 destination=self.default_program_account(),
                 user=self.user).exists()
 
+    @transaction.atomic
     def ensure_required_transfers(self):
         """ Function to ensure there are transfers for this user corresponding
             to required line item types, e.g. program admission """
@@ -324,6 +324,7 @@ class IndividualAccountingController(ProgramAccountingController):
                 transfer.amount_dec = item.amount_dec
                 transfer.save()
 
+    @transaction.atomic
     def apply_preferences(self, optional_items):
         """ Function to ensure there are transfers for this user corresponding
             to optional line item types, according to their preferences.
@@ -368,6 +369,7 @@ class IndividualAccountingController(ProgramAccountingController):
 
         return result
 
+    @transaction.atomic
     def set_preference(self, lineitem_name, quantity, amount=None, option_id=None):
         #   Sets a single preference, after removing any exactly matching transfers.
         line_item = self.get_lineitemtypes().get(text=lineitem_name)
@@ -512,6 +514,7 @@ class IndividualAccountingController(ProgramAccountingController):
         # Success!
         return payment
 
+    @transaction.atomic
     def set_finaid_params(self, dollar_amount, discount_percent):
         #   Get the user's financial aid request or create one if it doesn't exist
         requests = FinancialAidRequest.objects.filter(user=self.user, program=self.program)
@@ -656,11 +659,11 @@ class IndividualAccountingController(ProgramAccountingController):
             raise ValueError("Transfers do not sum to target: %.2f" % target_full)
 
     @staticmethod
-    def updatePaid(program, user, paid=True):
+    def updatePaid(program, user, paid=True, in_full=False):
         """ Create an invoice for the user and, if paid is True, create a receipt showing
         that they have paid all of the money they owe for the program. """
         iac = IndividualAccountingController(program, user)
-        if not iac.has_paid():
+        if not iac.has_paid(in_full):
             iac.ensure_required_transfers()
             if paid:
                 iac.submit_payment(iac.amount_due())

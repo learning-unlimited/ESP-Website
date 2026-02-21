@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
 import datetime
 import traceback
 
@@ -62,7 +60,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
 
     def setUpProgram(self, settings, extra_settings):
         # Initialize the program.
-        super(ScheduleLoadAndSaveTest, self).setUp(**settings)
+        super().setUp(**settings)
         self.initial_timeslot_id = util.get_min_id(self.timeslots)
         self.initial_teacher_id = util.get_min_id(self.teachers)
         self.initial_category_id = util.get_min_id(self.categories)
@@ -120,7 +118,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
                 grade_max=extra_settings["extra_class_grade_max"],
                 parent_program=self.program,
                 class_size_max=extra_settings["extra_class_size"],
-                class_info="Extra Desctiption!",
+                class_info="Extra Description!",
                 duration=duration)
         for i in extra_settings["extra_class_teachers"]:
             new_class.makeTeacher(self.teachers[i])

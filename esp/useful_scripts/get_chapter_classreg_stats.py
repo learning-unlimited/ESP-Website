@@ -2,7 +2,6 @@
 
 Best run with run_queries.sh.
 """
-from __future__ import absolute_import
 import csv
 import logging
 

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.program.models import maybe_create_module_ext
 from esp.program.modules.module_ext import StudentClassRegModuleInfo, ClassRegModuleInfo
 

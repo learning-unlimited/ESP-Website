@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django import forms
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import DateTimeWidget
@@ -21,12 +20,16 @@ class OnSiteRegForm(forms.Form):
     liability = forms.BooleanField(required = False)
 
     def __init__(self, *args, **kwargs):
-        super(OnSiteRegForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['grade'].choices = (
             [('', '')] + [(x, x) for x in ESPUser.grade_options()])
 
 class OnsiteBarcodeCheckinForm(forms.Form):
-    uids = forms.CharField(label='', widget=forms.Textarea(attrs={'rows': 10}))
+    uids = forms.CharField(label = 'User IDs', widget=forms.Textarea(attrs={'rows': 10}))
+    attended = forms.BooleanField(label = "Attending? (i.e. here right now?)", required = False, initial = True)
+    med = forms.BooleanField(label = "Medical Form?", required = False, initial = False)
+    liab = forms.BooleanField(label = "Liability Form?", required = False, initial = False)
+    paid = forms.BooleanField(label = "Paid in Full?", required = False, initial = False)
 
 class TeacherCheckinForm(forms.Form):
     when = forms.DateTimeField(label='Date/Time', widget=DateTimeWidget, required = False)
@@ -34,4 +37,4 @@ class TeacherCheckinForm(forms.Form):
     def __init__(self, *args, **kwargs):
         now = datetime.datetime.now()
         self.base_fields['when'].initial=datetime.datetime(now.year, now.month, now.day) + datetime.timedelta(days=1, minutes=-1)
-        super(TeacherCheckinForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)

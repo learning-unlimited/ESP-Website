@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import division
 from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -36,9 +34,10 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 import json
-from collections import OrderedDict
+from collections import Counter, OrderedDict, defaultdict
 from numpy import mean
 
+from django.db.models import Min, Max
 from django.template.loader import render_to_string
 
 from esp.program.models import Program, StudentRegistration
@@ -173,27 +172,40 @@ def schools(form, programs, students, profiles, result_dict={}):
 
 def startreg(form, programs, students, profiles, result_dict={}):
 
-    #   Get first class registration bit and confirmation bit for each student and bin by day
-    reg_dict = {}
-    confirm_dict = {}
-    for program in programs:
-        reg_dict[program] = {}
-        confirm_dict[program] = {}
+    #   Get first class registration bit and confirmation bit for each student and bin by day.
+    #   Uses two bulk queries instead of per-student per-program loops.
+    program_lookup = {p.id: p for p in programs}
+    reg_dict = {program: defaultdict(int) for program in programs}
+    confirm_dict = {program: defaultdict(int) for program in programs}
 
-    for student in students:
-        for program in programs:
+    #   Bulk-fetch the earliest registration date per (student, program)
+    first_regs = (
+        StudentRegistration.objects.filter(
+            user__in=students,
+            section__parent_class__parent_program__in=programs,
+        )
+        .values('user_id', 'section__parent_class__parent_program')
+        .annotate(first_date=Min('start_date'))
+    )
+    for entry in first_regs:
+        prog = program_lookup.get(entry['section__parent_class__parent_program'])
+        if prog and entry['first_date']:
+            reg_dict[prog][entry['first_date'].date()] += 1
 
-            reg_bits = StudentRegistration.objects.filter(user=student, section__parent_class__parent_program = program).order_by('start_date')
-            if reg_bits.exists():
-                if reg_bits[0].start_date.date() not in reg_dict[program]:
-                    reg_dict[program][reg_bits[0].start_date.date()] = 0
-                reg_dict[program][reg_bits[0].start_date.date()] += 1
-
-            confirm_bits = Record.objects.filter(user=student, event__name='reg_confirmed', program=program).order_by('-time')
-            if confirm_bits.exists():
-                if confirm_bits[0].time.date() not in confirm_dict[program]:
-                    confirm_dict[program][confirm_bits[0].time.date()] = 0
-                confirm_dict[program][confirm_bits[0].time.date()] += 1
+    #   Bulk-fetch the latest confirmation time per (student, program)
+    last_confirms = (
+        Record.objects.filter(
+            user__in=students,
+            event__name='reg_confirmed',
+            program__in=programs,
+        )
+        .values('user_id', 'program_id')
+        .annotate(last_time=Max('time'))
+    )
+    for entry in last_confirms:
+        prog = program_lookup.get(entry['program_id'])
+        if prog and entry['last_time']:
+            confirm_dict[prog][entry['last_time'].date()] += 1
 
     #   Compile and render
     startreg_list = []
@@ -212,17 +224,28 @@ def startreg(form, programs, students, profiles, result_dict={}):
 
 def repeats(form, programs, students, profiles, result_dict={}):
 
-    #   For each student, find out what other programs they registered for and bin by quantity in each program type
+    #   For each student, find out what other programs they registered for and bin by quantity in each program type.
+    #   Uses a single bulk query instead of per-student loops.
+
+    #   Fetch all confirmed (user_id, program_type) pairs in one query
+    confirmed_pairs = (
+        Record.objects.filter(
+            user__in=students,
+            event__name='reg_confirmed',
+        )
+        .values_list('user_id', 'program__program_type')
+    )
+
+    #   Group by user: count how many programs of each type they confirmed
+    user_type_counts = defaultdict(Counter)
+    for user_id, program_type in confirmed_pairs:
+        user_type_counts[user_id][program_type] += 1
+
+    #   Bin students by their (program_type, count) signature
     repeat_count = {}
-    for student in students:
-        programs = Program.objects.filter(record__user=student, record__event__name='reg_confirmed')
-        indiv_count = {}
-        for program in programs:
-            if program.program_type not in indiv_count:
-                indiv_count[program.program_type] = 0
-            indiv_count[program.program_type] += 1
+    for user_id, indiv_count in user_type_counts.items():
         program_types = sorted(indiv_count.keys())
-        id_pair = tuple([tuple([program_type, indiv_count[program_type]]) for program_type in program_types])
+        id_pair = tuple([(pt, indiv_count[pt]) for pt in program_types])
         if id_pair not in repeat_count:
             repeat_count[id_pair] = 0
         repeat_count[id_pair] += 1

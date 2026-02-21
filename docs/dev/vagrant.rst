@@ -254,7 +254,7 @@ Follow the following steps to upgrade the base VM for everyone to use.
 	Back in a terminal window in the ``devsite`` folder, run ``vagrant up``.
 	Now SSH back into the machine from your shell (``vagrant ssh``) to install dev server dependencies.
 	This step isn't strictly required but will make dev setup easier in the future, especially dev setup testing.
-	If you get an error, you may not have set up the encrypted parition correctly. ::
+	If you get an error, you may not have set up the encrypted partition correctly. ::
 
 		git clone https://github.com/learning-unlimited/ESP-Website.git
 		cd ESP-Website/
@@ -318,4 +318,4 @@ If the base VM has been changed (see above), you will want to upgrade your devel
 
 6. After running ``fab setup``, run ``fab loaddb:devsite_django.sql``. If you specified a different filename when you dumped your database, use that name instead.
 
-7. Open your old local_settings.py file and your new local_settings.py file with a text editor. You will likely want to copy over most of your old local settings, but the new database password *must* remain (do not copy over the old one.
+7. Open your old local_settings.py file and your new local_settings.py file with a text editor. You will likely want to copy over most of your old local settings, but the new database password *must* remain (do not copy over the old one).

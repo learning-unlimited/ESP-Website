@@ -30,7 +30,6 @@ AS_Schedule itself. Having an internal state and also passing in a schedule
 seems too fragile.)
 """
 
-from __future__ import absolute_import
 import inspect
 import logging
 
@@ -60,7 +59,7 @@ class BaseConstraint(object):
     required = False
 
     def __init__(self, **kwargs):
-        # Create a constructor wihch takes in arbitrary kwargs in case any
+        # Create a constructor which takes in arbitrary kwargs in case any
         # subclass needs them.
         pass
 
@@ -335,7 +334,7 @@ class ResourceCriteriaConstraint(BaseConstraint):
     so that we can specify resource-based constraints to the autoscheduler but
     humans can make exceptions manually."""
     def __init__(self, **kwargs):
-        super(ResourceCriteriaConstraint, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.resource_criteria = kwargs.get("resource_criteria", [])
 
     def check_schedule(self, schedule):

@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -125,7 +124,6 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
                                                    'picture_file': lastbio.picture})
 
 
-
 def bio_not_found(request, user=None, edit_url=None):
     response = render_to_response('users/teacherbionotfound.html', request,
                                   {'biouser': user,
@@ -180,7 +178,7 @@ def bio_user(request, founduser, old_url=False):
     # Also, sort by the order of the corresponding program's id.
     # This should roughly order by program date; at the least, it will
     # cluster listed classes by program.
-    recent_classes = founduser.getTaughtClassesAll().filter(status__gte=10).exclude(meeting_times__end__gte=now).exclude(sections__meeting_times__end__gte=now).filter(sections__resourceassignment__resource__res_type__name="Classroom").distinct().order_by('-parent_program__id')
+    recent_classes = founduser.getTaughtClassesAll().filter(status__gte=10, sections__resourceassignment__resource__res_type__name="Classroom").exclude(meeting_times__end__gte=now).exclude(sections__meeting_times__end__gte=now).distinct().order_by('-parent_program__id')
 
     # Ignore archived classes where we still have a log of the original class
     # Archives lose information; so, display the original form if we still have it

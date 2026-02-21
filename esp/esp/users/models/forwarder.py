@@ -1,8 +1,6 @@
 # django dependencies
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
-from django.db import models
+from django.db import models, transaction
 
 # esp dependencies
 from esp.db.fields import AjaxForeignKey
@@ -59,7 +57,7 @@ class UserForwarder(models.Model):
         original_target = target
         for i in range(MAX_DEPTH):
             # Get the next forwarder if it exists
-            if target.forwarders_out.count() == 0:
+            if not target.forwarders_out.exists():
                 break
             f = target.forwarders_out.get()
             # Check for circular references
@@ -72,20 +70,21 @@ class UserForwarder(models.Model):
         # Update
         self.target = target
         if save:
-            self.save()
-            # Flatten
-            if flatten:
-                for f in rewrites:
-                    f.target = target
-                    if f.source == f.target:
-                        f.delete()
-                    else:
-                        f.save()
+            with transaction.atomic():
+                self.save()
+                # Flatten
+                if flatten:
+                    for f in rewrites:
+                        f.target = target
+                        if f.source == f.target:
+                            f.delete()
+                        else:
+                            f.save()
 
     @staticmethod
     def forward(source, target):
         """Forward from source to target, creating a forwarder if needed."""
-        if source.forwarders_out.count() > 0:
+        if source.forwarders_out.exists():
             f = source.forwarders_out.get()
         else:
             f = UserForwarder()
@@ -103,7 +102,7 @@ class UserForwarder(models.Model):
         (with forward() or updateTarget()), to save computation.
 
         """
-        if user.forwarders_out.count() > 0:
+        if user.forwarders_out.exists():
             ans = user.forwarders_out.get().target
             for extra in ['backend']:
                 if hasattr(user, extra):

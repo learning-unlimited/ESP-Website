@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.users.forms.password_reset import PasswordResetForm, NewPasswordSetForm
 from django.http import HttpResponseRedirect
 from esp.users.models import ESPUser, PasswordRecoveryTicket

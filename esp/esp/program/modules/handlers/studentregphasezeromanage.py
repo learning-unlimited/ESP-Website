@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
 import six
 from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -56,8 +54,8 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         return {
             "module_type": "manage",
             'required': False,
-            'admin_title': 'Manage Student Registration Phase Zero',
-            'link_title': 'Manage Phase Zero',
+            'admin_title': 'Manage Program Lottery',
+            'link_title': 'Manage Program Lottery',
             'choosable': 0,
         }
 
