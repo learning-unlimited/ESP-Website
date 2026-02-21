@@ -6,12 +6,14 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import StudentInfo
 
 
-class EquityOutreachModuleTest(ProgramFrameworkTest):
+class EquityOutreachTest(ProgramFrameworkTest):
+    """Equity cohort lists are exposed via RegProfileModule (no separate module)."""
+
     def setUp(self):
         modules = [
-            ProgramModule.objects.get(handler="EquityOutreachModule", module_type="manage"),
+            ProgramModule.objects.get(handler="RegProfileModule", module_type="learn"),
         ]
-        super(EquityOutreachModuleTest, self).setUp(modules=modules, num_students=3, num_teachers=1)
+        super(EquityOutreachTest, self).setUp(modules=modules, num_students=3, num_teachers=1)
         self.admin = self.admins[0]
         self.student = self.students[0]
 
@@ -35,8 +37,8 @@ class EquityOutreachModuleTest(ProgramFrameworkTest):
         self.assertIn(self.student, list(finaid_users))
 
     def test_equity_lists_in_program_lists(self):
-        """Equity cohorts are exposed as student lists for Communications Panel / User Records."""
-        pm = self.program.getModule("EquityOutreachModule")
+        """Equity cohorts are exposed as student lists via RegProfileModule (comm panel, user records)."""
+        pm = self.program.getModule("RegProfileModule")
         lists = pm.students(QObject=False)
         descs = pm.studentDesc()
 

@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, usercheck_usetl, main_call, meets_deadline
 from esp.program.models import RegistrationProfile
+from esp.program.modules.handlers.equityoutreach import EquityOutreachCohorts
 from esp.users.models   import ESPUser
 from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
@@ -63,13 +64,24 @@ class RegProfileModule(ProgramModuleObj):
 
     def students(self, QObject = False):
         if QObject:
-            return {'student_profile': Q(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False)
-                    }
-        students = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False).distinct()
-        return {'student_profile': students }
+            result = {'student_profile': Q(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False)}
+        else:
+            students = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False).distinct()
+            result = {'student_profile': students}
+        for key in EquityOutreachCohorts.all_cohort_keys():
+            qs = EquityOutreachCohorts.users_for_cohort(self.program, key)
+            list_name = "equity_" + key
+            if QObject:
+                result[list_name] = Q(id__in=qs.values_list("id", flat=True))
+            else:
+                result[list_name] = qs.distinct()
+        return result
 
     def studentDesc(self):
-        return {'student_profile': """Students who have filled out a profile"""}
+        result = {'student_profile': """Students who have filled out a profile"""}
+        for key in EquityOutreachCohorts.all_cohort_keys():
+            result["equity_" + key] = EquityOutreachCohorts.cohort_label(key)
+        return result
 
     def teachers(self, QObject = False):
         if QObject:
