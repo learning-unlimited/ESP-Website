@@ -2,7 +2,6 @@
 #   Modified to not force unicode
 #   - Michael P
 
-from __future__ import absolute_import
 from django import forms
 from django.conf import settings
 from django.forms import widgets
@@ -38,11 +37,11 @@ class DateTimeWidget(forms.widgets.DateTimeInput):
               'scripts/jquery-ui.timepicker.js')
 
     def __init__(self, attrs=None):
-        super(DateTimeWidget, self).__init__(attrs)
+        super().__init__(attrs)
         self.format = self.pythondformat
 
     def get_context(self, name, value, attrs):
-        context = super(DateTimeWidget, self).get_context(name, value, attrs)
+        context = super().get_context(name, value, attrs)
         context.update({
             'id': attrs['id'] if 'id' in attrs else six.u('%s_id') % (name),
             'jquerywidget': self.jquerywidget,
@@ -116,7 +115,7 @@ class SplitDateWidget(forms.MultiWidget):
         day_widget = ClassAttrMergingSelect(choices=choices['day'], attrs={'class': 'input-mini'})
 
         widgets = (month_widget, day_widget, year_widget)
-        super(SplitDateWidget, self).__init__(widgets, attrs)
+        super().__init__(widgets, attrs)
 
     def decompress(self, value):
         """ Splits datetime.date object into separate fields. """
@@ -131,7 +130,7 @@ class SplitDateWidget(forms.MultiWidget):
         if val is not None:
             return val
         else:
-            vals = super(SplitDateWidget, self).value_from_datadict(data, files, name)
+            vals = super().value_from_datadict(data, files, name)
             try:
                 return date(int(vals[2]), int(vals[0]), int(vals[1]))
             except:
@@ -155,12 +154,12 @@ class BlankSelectWidget(forms.Select):
 class NullRadioSelect(forms.RadioSelect):
     def __init__(self, *args, **kwargs):
         kwargs['choices'] = ((True, six.u('Yes')), (False, six.u('No')))
-        super(NullRadioSelect, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
 class NullCheckboxSelect(forms.CheckboxInput):
     def __init__(self, *args, **kwargs):
-        super(NullCheckboxSelect, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def value_from_datadict(self, data, files, name):
         """ Slightly modified from Django's version to accept "on" as True. """
@@ -457,11 +456,11 @@ $j(document).ready(function() {
 class RadioSelectWithData(forms.RadioSelect):
     def __init__(self, *args, **kwargs):
         self.option_data = kwargs.pop('option_data', {})
-        super(RadioSelectWithData, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     # https://stackoverflow.com/a/59274893/4660582
     def get_context(self, name, value, attrs):
-        context = super(RadioSelectWithData, self).get_context(name, value, attrs)
+        context = super().get_context(name, value, attrs)
         for optgroup in context['widget'].get('optgroups', []):
             for option in optgroup[1]:
                 for k, v in six.iteritems(self.option_data.get(option['value'], {})):
@@ -477,7 +476,7 @@ class ChoiceWithOtherWidget(forms.MultiWidget):
             RadioSelectWithData(choices=choices, option_data=option_data),
             forms.TextInput
         ]
-        super(ChoiceWithOtherWidget, self).__init__(widgets)
+        super().__init__(widgets)
 
     def decompress(self, value):
         if not value:
@@ -500,9 +499,9 @@ class ChoiceWithOtherField(forms.MultiValueField):
             kwargs.pop('choices')
             self._was_required = kwargs.pop('required', True)
             kwargs['required'] = False
-            super(ChoiceWithOtherField, self).__init__(widget=widget, fields=fields, *args, **kwargs)
+            super().__init__(widget=widget, fields=fields, *args, **kwargs)
         else:
-            super(ChoiceWithOtherField, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
 
 
     def compress(self, value):

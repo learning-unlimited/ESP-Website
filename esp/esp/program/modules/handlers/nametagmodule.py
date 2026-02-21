@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import division
 from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -48,7 +46,6 @@ from esp.utils.web import render_to_response
 
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
-
 
 
 class NameTagModule(ProgramModuleObj):

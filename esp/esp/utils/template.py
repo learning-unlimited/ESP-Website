@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -50,11 +49,11 @@ from os.path import join
 DEFAULT_ORIGIN = 'esp.utils.template cached loader'
 
 INVALID_CONTENTS = b''
-INVALID_HASH = hashlib.md5(INVALID_CONTENTS).hexdigest()
+INVALID_HASH = hashlib.sha256(INVALID_CONTENTS).hexdigest()
 
 class Loader(base.Loader):
     def __init__(self, engine, *args, **kwargs):
-        super(Loader, self).__init__(engine)
+        super().__init__(engine)
         self.cache = {}
 
     """
@@ -67,7 +66,7 @@ class Loader(base.Loader):
     @cache_function
     def get_template_hash(template_name):
         contents = Loader.get_override_contents(template_name)
-        return hashlib.md5(contents.encode("UTF-8")).hexdigest()
+        return hashlib.sha256(contents.encode("UTF-8")).hexdigest()
     get_template_hash.depend_on_model('utils.TemplateOverride')
     get_template_hash = staticmethod(get_template_hash)
 

@@ -8,7 +8,6 @@ The functions in this file are globally relevant, too annoying to inline,
     and too small to merit their own modules.
 """
 
-from __future__ import absolute_import
 import sys
 from six.moves.urllib.parse import quote_plus
 import six

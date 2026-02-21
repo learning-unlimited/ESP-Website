@@ -4,8 +4,6 @@ Kick students out of their classes (or only next hour's classes, if the
 --per-hour option is used) if they haven't checked in yet.
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
 import argparse
 
 from script_setup import *
@@ -15,7 +13,6 @@ from esp.program.models import Program, StudentRegistration, RegistrationType
 from esp.users.models import ESPUser
 from datetime import datetime, timedelta
 from django.db.models.aggregates import Min
-from six.moves import input
 
 parser = argparse.ArgumentParser(description='Unenroll missing students from classes.')
 parser.add_argument('program_id', type=int, help='ID of the current program')

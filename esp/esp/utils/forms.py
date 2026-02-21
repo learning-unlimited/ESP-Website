@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -49,7 +48,7 @@ class SizedCharField(forms.CharField):
 
 class StrippedCharField(SizedCharField):
     def clean(self, value):
-        return super(StrippedCharField, self).clean(self.to_python(value).strip())
+        return super().clean(self.to_python(value).strip())
 
 #### NOTE: Python super() does weird things (it's the next in the MRO, not a superclass).
 #### DO NOT OMIT IT if overriding __init__() when subclassing these forms
@@ -57,7 +56,7 @@ class StrippedCharField(SizedCharField):
 class FormWithRequiredCss(forms.Form):
     """ Form that adds the "required" class to every required widget, to restore oldforms behavior. """
     def __init__(self, *args, **kwargs):
-        super(FormWithRequiredCss, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for field in six.itervalues(self.fields):
             if field.required:
                 if 'class' in field.widget.attrs:
@@ -88,13 +87,13 @@ class FormWithTagInitialValues(forms.Form):
             #   Remove the tag_map so as not to confuse other functions
             del kwargs['tag_map']
 
-        super(FormWithTagInitialValues, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 class FormUnrestrictedOtherUser(FormWithRequiredCss):
     """ Form that implements makeRequired for the old form --- disables required fields at in some cases. """
 
     def __init__(self, user=None, *args, **kwargs):
-        super(FormUnrestrictedOtherUser, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.user = user
         if user is None or not (hasattr(user, 'other_user') and user.other_user):
             pass
@@ -107,7 +106,7 @@ class FormUnrestrictedOtherUser(FormWithRequiredCss):
 class DummyField(forms.Field):
     widget = DummyWidget
     def __init__(self, *args, **kwargs):
-        super(DummyField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         #   Set a flag that can be checked in Python code or template rendering
         #   to alter behavior
         #   self.is_dummy_field = True
