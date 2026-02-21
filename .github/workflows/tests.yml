@@ -39,7 +39,6 @@ jobs:
           - 11211:11211
     env:
       DJANGO_SETTINGS_MODULE: esp.settings
-      TRAVIS_JOB: test
 
     steps:
     - uses: actions/checkout@v4
