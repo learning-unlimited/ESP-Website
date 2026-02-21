@@ -1512,7 +1512,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return rooms
 
     def ascii_info(self):
-        return self.class_info.encode('ascii', 'ignore')
+        return self.class_info.encode('ascii', 'ignore').decode('ascii')
 
     def _get_meeting_times(self):
         timeslot_id_list = []
