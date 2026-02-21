@@ -49,7 +49,7 @@ from django.http import Http404
 
 from argcache import cache_function
 
-from esp.cal.models import Event
+from esp.cal.models import Event, EventType
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
 from esp.program.class_status import ClassStatus
@@ -77,6 +77,10 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             "choosable": 1,
             } ]
 
+    """ Warning: for performance reasons, these views are not abstracted away from
+        the models.  If the schema is changed this code will need to be updated.
+    """
+
     @staticmethod
     def _bulk_availability(prog, user_ids, subtract_moderation=False):
         """Bulk-fetch availability for multiple users in one query.
@@ -84,7 +88,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         Returns {user_id: [event_id, ...]} lookup.
         When subtract_moderation=True, subtracts moderating section times.
         """
-        from esp.cal.models import EventType
         avail_by_user = defaultdict(set)
         if prog.hasModule('AvailabilityModule'):
             et = EventType.get_from_desc('Class Time Block')
@@ -101,9 +104,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         if subtract_moderation:
             #   Bulk-subtract moderating section times
-            from esp.program.models import ClassSection as CS
             mod_times = (
-                CS.objects
+                ClassSection.objects
                 .filter(
                     parent_class__parent_program=prog,
                     moderators__id__in=user_ids,
