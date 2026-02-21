@@ -41,6 +41,7 @@ from django.db.models import Count, Sum, F, DecimalField, Min, Max
 from django.template.loader import render_to_string
 
 from esp.program.models import ClassSection, Program, StudentRegistration
+from esp.cal.models import Event
 from esp.program.class_status import ClassStatus
 from esp.users.models import ESPUser, Record
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
@@ -303,54 +304,90 @@ def heardabout(form, programs, students, profiles, result_dict={}):
 
 def hours(form, programs, students, profiles, result_dict={}):
 
-    #   Bin students by registered timeslots per program
+    #   Bin students by registered timeslots per program.
+    #   Uses bulk queries instead of per-student per-section loops.
     enrolled_list = []
     attended_list = []
     students_list = []
     timeslots_enrolled_list = []
     timeslots_attended_list = []
+    student_ids = set(students.values_list('id', flat=True))
     for program in programs:
+        #   Bulk-fetch all (user_id, timeslot_id) pairs for enrolled students
+        enrolled_pairs = (
+            StudentRegistration.valid_objects()
+            .filter(
+                user_id__in=student_ids,
+                section__parent_class__parent_program=program,
+                relationship__name='Enrolled',
+            )
+            .values_list('user_id', 'section__meeting_times')
+            .distinct()
+        )
+        #   Group enrolled timeslots by user
+        user_enrolled_timeslots = defaultdict(set)
+        for user_id, timeslot_id in enrolled_pairs:
+            if timeslot_id is not None:
+                user_enrolled_timeslots[user_id].add(timeslot_id)
+
+        #   Bulk-fetch all (user_id, timeslot_id) pairs for attended students
+        attended_pairs = (
+            StudentRegistration.objects
+            .filter(
+                user_id__in=student_ids,
+                section__parent_class__parent_program=program,
+                relationship__name='Attended',
+            )
+            .values_list('user_id', 'section__meeting_times')
+            .distinct()
+        )
+        #   Group attended timeslots by user
+        user_attended_timeslots = defaultdict(set)
+        for user_id, timeslot_id in attended_pairs:
+            if timeslot_id is not None:
+                user_attended_timeslots[user_id].add(timeslot_id)
+
+        #   We also need actual Event objects for timeslots_enrolled/attended dicts.
+        #   Fetch all relevant timeslot events in one query.
+        all_timeslot_ids = set()
+        for ts_set in user_enrolled_timeslots.values():
+            all_timeslot_ids |= ts_set
+        for ts_set in user_attended_timeslots.values():
+            all_timeslot_ids |= ts_set
+        timeslot_lookup = {e.id: e for e in Event.objects.filter(id__in=all_timeslot_ids)}
+
+        #   Build the same dicts as the original code
         prog_students = 0
-        enrolled_dict = {}
-        attended_dict = {}
-        timeslots_enrolled_dict = {}
-        timeslots_attended_dict = {}
-        for student in students:
-            # calculate number of blocks for which students were enrolled
-            sections_enrolled = student.getEnrolledSections(program)
-            timeslots = []
-            for sec in sections_enrolled:
-                timeslots += sec.meeting_times.all()
-            timeslots = set(timeslots)
-            if len(timeslots) not in enrolled_dict:
-                enrolled_dict[len(timeslots)] = 0
-            enrolled_dict[len(timeslots)] += 1
-            if len(timeslots) > 0:
+        enrolled_dict = defaultdict(int)
+        attended_dict = defaultdict(int)
+        timeslots_enrolled_dict = defaultdict(int)
+        timeslots_attended_dict = defaultdict(int)
+
+        for sid in student_ids:
+            enrolled_ts = user_enrolled_timeslots.get(sid, set())
+            num_enrolled = len(enrolled_ts)
+            enrolled_dict[num_enrolled] += 1
+            if num_enrolled > 0:
                 prog_students += 1
-            for timeslot in timeslots:
-                if timeslot not in timeslots_enrolled_dict:
-                    timeslots_enrolled_dict[timeslot] = 0
-                timeslots_enrolled_dict[timeslot] += 1
-            # calculate number of blocks students attended
-            # if a student attended two classes during the same block, this will probably double count them
-            # but that seems pretty unlikely
-            sections_attended = student.getSections(program, ['Attended'], valid_only=False)
-            timeslots = []
-            for sec in sections_attended:
-                timeslots += sec.meeting_times.all()
-            timeslots = set(timeslots)
-            if len(timeslots) not in attended_dict:
-                attended_dict[len(timeslots)] = 0
-            attended_dict[len(timeslots)] += 1
-            for timeslot in timeslots:
-                if timeslot not in timeslots_attended_dict:
-                    timeslots_attended_dict[timeslot] = 0
-                timeslots_attended_dict[timeslot] += 1
-        timeslots_enrolled_list.append(timeslots_enrolled_dict)
-        timeslots_attended_list.append(timeslots_attended_dict)
-        enrolled_list.append(enrolled_dict)
-        attended_list.append(attended_dict)
+            for ts_id in enrolled_ts:
+                ts = timeslot_lookup.get(ts_id)
+                if ts:
+                    timeslots_enrolled_dict[ts] += 1
+
+            attended_ts = user_attended_timeslots.get(sid, set())
+            num_attended = len(attended_ts)
+            attended_dict[num_attended] += 1
+            for ts_id in attended_ts:
+                ts = timeslot_lookup.get(ts_id)
+                if ts:
+                    timeslots_attended_dict[ts] += 1
+
+        timeslots_enrolled_list.append(dict(timeslots_enrolled_dict))
+        timeslots_attended_list.append(dict(timeslots_attended_dict))
+        enrolled_list.append(dict(enrolled_dict))
+        attended_list.append(dict(attended_dict))
         students_list.append(prog_students)
+
 
     #   Compile and render
     enrolled_flat = []
