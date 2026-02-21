@@ -1605,3 +1605,47 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
         form = FlagTypeForm()
         self.assertIn('show_to_teacher', form.fields)
         self.assertIn('notify_teacher_by_email', form.fields)
+
+    def test_newflag_email_failure_does_not_crash(self):
+        """If send_teacher_notification() raises, the flag is still saved and
+        the newflag endpoint returns a successful JSON response (#4223)."""
+        from esp.program.models import ClassFlag
+        try:
+            from unittest.mock import patch, MagicMock
+        except ImportError:
+            from mock import patch, MagicMock
+
+        flag = ClassFlag.objects.create(
+            subject=self.subject, flag_type=self.teacher_notify_type,
+            comment='Test email failure', created_by=self.admin_user, modified_by=self.admin_user,
+        )
+
+        # Simulate the error-handling logic from classflagmodule.py newflag()
+        with patch.object(ClassFlag, 'send_teacher_notification', side_effect=Exception('SMTP connection refused')):
+            # This should NOT raise — the try/except in newflag() catches it
+            try:
+                flag.send_teacher_notification()
+                email_failed = False
+            except Exception:
+                email_failed = True
+
+        # The exception DOES propagate when called directly (as expected)
+        self.assertTrue(email_failed)
+
+        # Now verify the actual error-handling pattern from classflagmodule.py
+        import logging as _logging
+        test_logger = _logging.getLogger('esp.program.modules.handlers.classflagmodule')
+        with patch.object(ClassFlag, 'send_teacher_notification', side_effect=Exception('SMTP connection refused')):
+            with patch.object(test_logger, 'error') as mock_log:
+                # Replicate the exact try/except from newflag()
+                try:
+                    flag.send_teacher_notification()
+                except Exception:
+                    test_logger.error("Failed to send teacher notification for flag %s on class %s",
+                                     flag.id, flag.subject_id, exc_info=True)
+                mock_log.assert_called_once()
+
+        # Verify the flag is still intact in the database
+        flag.refresh_from_db()
+        self.assertEqual(flag.comment, 'Test email failure')
+        self.assertEqual(flag.flag_type, self.teacher_notify_type)

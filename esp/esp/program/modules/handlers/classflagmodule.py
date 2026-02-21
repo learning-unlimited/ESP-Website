@@ -44,6 +44,9 @@ from esp.program.forms import ClassFlagForm
 from esp.users.models import ESPUser
 
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ClassFlagModule(ProgramModuleObj):
     doc = """Flag classes, such as for further review."""
@@ -115,7 +118,11 @@ class ClassFlagModule(ProgramModuleObj):
         if form.is_valid():
             flag = form.save()
             if flag.flag_type.notify_teacher_by_email:
-                flag.send_teacher_notification()
+                try:
+                    flag.send_teacher_notification()
+                except Exception:
+                    logger.error("Failed to send teacher notification for flag %s on class %s",
+                                 flag.id, flag.subject_id, exc_info=True)
             context = { 'flag' : flag }
             response = json.dumps({
                 'flag_name': render_to_string(self.baseDir()+'flag_name.html', context = context, request = request),
