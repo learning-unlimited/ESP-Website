@@ -50,7 +50,7 @@ import re
 
 # django Util
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.db.models.query import Q
 from django.db.models import signals, Sum
 from django.db.models.manager import Manager
@@ -1100,17 +1100,18 @@ class ClassSection(models.Model):
                 to_email = [t.get_email_sendto_address()]
                 send_mail(email_title, email_content, from_email, to_email)
 
-        self.clearStudents()
+        with transaction.atomic():
+            self.clearStudents()
 
-        #   If specified, remove the class's time and room assignment.
-        if unschedule:
-            self.clearRooms()
-            self.meeting_times.clear()
-            # add a scheduler log entry to make the change occur if anyone currently has the scheduler open
-            prog = self.parent_program
-            prog.getModule("AJAXSchedulingModule").get_change_log(prog).appendScheduling([], "", int(self.id), None)
-        self.status = ClassStatus.CANCELLED
-        self.save()
+            #   If specified, remove the class's time and room assignment.
+            if unschedule:
+                self.clearRooms()
+                self.meeting_times.clear()
+                # add a scheduler log entry to make the change occur if anyone currently has the scheduler open
+                prog = self.parent_program
+                prog.getModule("AJAXSchedulingModule").get_change_log(prog).appendScheduling([], "", int(self.id), None)
+            self.status = ClassStatus.CANCELLED
+            self.save()
 
     def clearStudents(self):
         now = datetime.datetime.now()
@@ -1332,6 +1333,7 @@ class ClassSection(models.Model):
         for list_name in list_names:
             remove_list_member(list_name, user.email)
 
+    @transaction.atomic
     def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False, webapp=False):
         if prereg_verb is None:
             scrmi = self.parent_program.studentclassregmoduleinfo
@@ -1512,7 +1514,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return rooms
 
     def ascii_info(self):
-        return self.class_info.encode('ascii', 'ignore')
+        return self.class_info.encode('ascii', 'ignore').decode('ascii')
 
     def _get_meeting_times(self):
         timeslot_id_list = []

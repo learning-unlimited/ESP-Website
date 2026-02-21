@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 """ ESP In-house Form Fields ... some of these might be useful
-    ouside ESP.
+    outside ESP.
     """
 
 from django import forms

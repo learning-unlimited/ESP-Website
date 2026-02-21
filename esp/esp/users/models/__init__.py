@@ -649,7 +649,7 @@ class BaseESPUser(object):
     getAvailableTimes.depend_on_row('users.UserAvailability', lambda ua:
                                         {'program': ua.event.program,
                                             'self': ua.user})
-    # Should depend on Event as well... IDs are safe, but not necessarily stored objects (seems a common occurence...)
+    # Should depend on Event as well... IDs are safe, but not necessarily stored objects (seems a common occurrence...)
     # though Event shouldn't change much
 
     def clearAvailableTimes(self, program):
@@ -1215,7 +1215,7 @@ class ESPUser(User, BaseESPUser):
 
     def makeAdmin(self):
         """
-        Make the user an Adminstrator and a Django superuser.
+        Make the user an Administrator and a Django superuser.
         """
         # Django auth
         self.is_staff = True
@@ -1923,7 +1923,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     @classmethod
     def cf_link_instance(cls, request):
         """
-        Ues the request object to return the appropriate instance for this model,
+        Uses the request object to return the appropriate instance for this model,
         for use by custom-forms.
         It should either return the instance, or 'None', if the corresponding instance doesn't exist.
         """
@@ -2102,7 +2102,7 @@ class K12School(models.Model):
 @python_2_unicode_compatible
 class PersistentQueryFilter(models.Model):
     """ This class stores generic query filters persistently in the database, for retrieval (by ID, presumably) and
-        to pass the query along to multiple pages and retrival (et al). """
+        to pass the query along to multiple pages and retrieval (et al). """
     item_model   = models.CharField(max_length=256)            # A string representing the model, for instance User or Program
     q_filter     = models.BinaryField()                         # A bytestring representing a query filter
     sha1_hash    = models.CharField(max_length=256)            # A sha1 hash of the string representing the query filter
@@ -2307,7 +2307,7 @@ class DBList(object):
     """ Useful abstraction for the list of users.
         Not meant for anything but users_get_list...
     """
-    totalnum = False # we dont' know how many there are.
+    totalnum = False # we don't know how many there are.
     key      = ''
     QObject  = None
 

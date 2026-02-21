@@ -265,7 +265,7 @@ button.sidetoolbar {
 
 #loadingOverlay {
     z-index: 9999;
-    position: fixed; /*Important to cover the screen in case of scolling content*/
+    position: fixed; /*Important to cover the screen in case of scrolling content*/
     left: 0;
     top: 0;
     width: 100%;
