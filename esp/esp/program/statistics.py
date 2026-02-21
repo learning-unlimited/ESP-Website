@@ -39,9 +39,10 @@ import json
 from collections import OrderedDict
 from numpy import mean
 
+from django.db.models import Count, Sum, F, DecimalField
 from django.template.loader import render_to_string
 
-from esp.program.models import Program, StudentRegistration
+from esp.program.models import ClassSection, Program, StudentRegistration
 from esp.program.class_status import ClassStatus
 from esp.users.models import ESPUser, Record
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
@@ -92,10 +93,8 @@ def zipcodes(form, programs, students, profiles, result_dict={}):
 def demographics(form, programs, students, profiles, result_dict={}):
 
     #   Get aggregate 'vitals' info via cross-program SQL aggregation.
-    from django.db.models import Count, Sum, F, Value, DecimalField
-    from esp.program.models import ClassSection as CS
     agg = (
-        CS.objects
+        ClassSection.objects
         .filter(
             parent_class__parent_program__in=programs,
             status=ClassStatus.ACCEPTED,
