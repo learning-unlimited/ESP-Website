@@ -6,7 +6,7 @@ if [ "$CI_JOB" = "test" ]; then
     sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres | grep -v ^libpq-dev | grep -v ^.*pip)
     esp/packages_base_manual_install.sh
     pip3 install -r esp/requirements.txt -q --log pip.log || (tail pip.log && exit 1)
-    pip3 install coverage
+    pip3 install coverage pytest==7.4.4 pytest-django==4.5.2 pytest-xdist==3.3.1
 elif [ "$CI_JOB" = "lint" ]; then
     pip3 install flake8
 else
