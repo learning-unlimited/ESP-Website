@@ -12,6 +12,15 @@
 {% block xtrajs %}
     {{block.super }}
     <script type="text/javascript" src="/media/scripts/program/modules/module_management.js"></script>
+    <script type="text/javascript" src="/media/scripts/utils/search_filter.js"></script>
+    <script type="text/javascript">
+        $j(document).ready(function() {
+            if (window.initSearchFilter) {
+                window.initSearchFilter("student_module_search", "learn_mods", "li.ui-state-default");
+                window.initSearchFilter("teacher_module_search", "teach_mods", "li.ui-state-default");
+            }
+        });
+    </script>
 {% endblock %}
 
 {% block }
@@ -49,6 +58,9 @@
             <h2>
               Student Registration
             </h2>
+            <div style="margin-bottom: 10px;">
+                <input type="text" id="student_module_search" placeholder="Filter student modules..." style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
             <div id="learn_mods" class="column">
                 <h3>
                     Required
@@ -78,6 +90,9 @@
             <h2>
               Teacher Registration
             </h2>
+            <div style="margin-bottom: 10px;">
+                <input type="text" id="teacher_module_search" placeholder="Filter teacher modules..." style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
             <div id="teach_mods" class="column">
                 <h3>
                     Required
