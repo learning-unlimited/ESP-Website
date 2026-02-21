@@ -819,6 +819,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         A brief description of some of the key arguments:
         - newclass -- The class object from which to fill in the data
+        - newclass -- The class object from which to fill in the data
         - action -- What action is the form performing? Options are 'create',
               'createopenclass', 'edit', 'editopenclass'
         - populateonly -- If True and newclass is specified, the form will only
@@ -995,6 +996,8 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['qsd_name'] = 'classedit_' + context['classtype']
 
         context['manage'] = False
+        context['sectionNums'] = prog.countTimeSlots()
+
         if ((request.method == "POST" and request.POST.get('manage') == 'manage') or
             (request.method == "GET" and request.GET.get('manage') == 'manage') or
             (tl == 'manage' and 'class' in context)) and request.user.isAdministrator():
