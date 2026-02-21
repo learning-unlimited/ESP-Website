@@ -45,7 +45,7 @@ Program settings
   - The receipt page is now themed (used to be just a white page) and now has a button to print the receipt and a button to return to the main registration page
   - The receipt now includes program information (date range and registration close date), payment information (including amount owed and optional purchases), and a pretty class schedule
   - The "pretext" can be edited by changing the confirm receipt on the settings page
-  - The entire receipt can be overriden by a single template override or by program-specific template overrides (like before)
+  - The entire receipt can be overridden by a single template override or by program-specific template overrides (like before)
 - Made the registration confirmation email prettier and more informative (same changes as the registration receipt described above)
 
   - Because this receipt now includes a schedule, clicking the confirmation button always sends a new copy of the confirmation email
@@ -165,7 +165,7 @@ As part of the release of this new theme, we have also implemented the following
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
-- Added a default email template which can be overriden with a template override of 'email/default_email.html'
+- Added a default email template which can be overridden with a template override of 'email/default_email.html'
 
   - We plan to expand on this functionality in the future with a selection of templates and the ability to easily make your own
 - Cleaned up the styling of several printables (e.g., rosters and attendance lists)
