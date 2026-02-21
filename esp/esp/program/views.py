@@ -775,7 +775,11 @@ def get_email_data(start_date):
             req.num_rec = CommModule.approx_num_of_recipients(req.recipients, req.get_sendto_fn())
         req.num_sent = toes.filter(sent__isnull=False).count()
         if req.num_rec == req.num_sent:
-            req.finished_at = toes.order_by('-sent').first().sent
+            last_email = toes.order_by('-sent').first()
+            if last_email is not None:
+                req.finished_at = last_email.sent
+            else:
+                req.finished_at = "(Not finished)"
         else:
             req.finished_at = "(Not finished)"
         requests_list.append(req)
@@ -1078,7 +1082,7 @@ def statistics(request, program=None):
                 for item in form.cleaned_data['school_multisel']:
                     if item.startswith('K12:'):
                         k12school_ids.append(int(item[4:]))
-                    elif item.startwith('Sch:'):
+                    elif item.startswith('Sch:'):
                         school_names.append(item[4:])
                 users_q = users_q & (Q(studentinfo__school__in=school_names) | Q(studentinfo__k12school__id__in=k12school_ids))
 
