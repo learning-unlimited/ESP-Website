@@ -120,7 +120,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
                 grade_max=extra_settings["extra_class_grade_max"],
                 parent_program=self.program,
                 class_size_max=extra_settings["extra_class_size"],
-                class_info="Extra Desctiption!",
+                class_info="Extra Description!",
                 duration=duration)
         for i in extra_settings["extra_class_teachers"]:
             new_class.makeTeacher(self.teachers[i])
