@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import re
 import os
 
@@ -52,7 +51,7 @@ class DynamicModelHandler:
     can have a custom form with fields that are actually stored in another model. The custom form
     responses table has a foreign key to that other model. The form will have multiple fields
     that are part of this linked model, and you might add or remove one of those, but the existence
-    of the foreign key in the custom forms table shouldn't change unles you've added a new one
+    of the foreign key in the custom forms table shouldn't change unless you've added a new one
     or removed all of them. This is why you have to keep track of them and check, and have
     separate add and remove methods from the normal fields.
     """

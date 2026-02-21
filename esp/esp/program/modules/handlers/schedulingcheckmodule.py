@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
 from django.http import HttpResponse
 from esp.program.models import ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
@@ -113,7 +111,7 @@ class SchedulingCheckRunner:
     # Generate html report and generate text report functions?lingCheckRunner:
     def __init__(self, program, formatter=JSONFormatter()):
         """
-        high_school_only and lunch should be lists of indeces of timeslots for the high school
+        high_school_only and lunch should be lists of indices of timeslots for the high school
         only block and for lunch respectively
         """
         self.p = program

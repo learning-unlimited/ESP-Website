@@ -3,8 +3,6 @@
 # Main mailgate
 # Handles incoming messages etc.
 
-from __future__ import absolute_import
-from __future__ import print_function
 import sys, os, email, re, smtplib, socket, sha, random
 from io import open
 new_path = '/'.join(sys.path[0].split('/')[:-1])
@@ -123,7 +121,7 @@ try:
 
 
 except Exception as e:
-    # we dont' want to care if it's an exit
+    # we don't want to care if it's an exit
     if isinstance(e, SystemExit):
         raise
 

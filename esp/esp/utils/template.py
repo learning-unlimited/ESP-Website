@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -54,7 +53,7 @@ INVALID_HASH = hashlib.md5(INVALID_CONTENTS).hexdigest()
 
 class Loader(base.Loader):
     def __init__(self, engine, *args, **kwargs):
-        super(Loader, self).__init__(engine)
+        super().__init__(engine)
         self.cache = {}
 
     """

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
 import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -52,7 +50,7 @@ import json
 class AllViewsTest(ProgramFrameworkTest):
     def setUp(self):
         # Set up the program framework and randomly schedule classes
-        super(AllViewsTest, self).setUp(modules = ProgramModule.objects.all())
+        super().setUp(modules = ProgramModule.objects.all())
 
         # We don't want to get stuck in registration
         scrmi = self.program.studentclassregmoduleinfo
