@@ -66,6 +66,14 @@ def home(request):
     context = {'navbar_list': makeNavBar('', nav_category)}
     return render_to_response('index.html', request, context)
 
+
+@cache_control(max_age=180)
+@disable_csrf_cookie_update
+def unknown_program_fallback(request, path):
+    # For chapter domains without active program routes, keep unknown paths
+    # user-friendly by serving the same landing page as "/".
+    return home(request)
+
 def program(request, tl, one, two, module, extra = None):
     """ Return program-specific pages """
     from esp.program.models import Program
