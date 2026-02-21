@@ -75,7 +75,7 @@ def program(request, tl, one, two, module, extra = None):
             programs = Program.objects.all()
             progs = [(program, program.dates()[-1]) for program in programs if program.program_type == one and len(program.dates()) > 0]
             two = sorted(progs, key=lambda x: x[1], reverse = True)[0][0].program_instance
-        except:
+        except (IndexError, ValueError, AttributeError, KeyError, TypeError):
             raise Http404("No current program of the type '" + one + "'.")
     try:
         prog = Program.by_prog_inst(one, two)
