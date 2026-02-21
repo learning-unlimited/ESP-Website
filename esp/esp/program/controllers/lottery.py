@@ -57,6 +57,7 @@ from esp.mailman import add_list_members, remove_list_member, list_contents
 from esp.tagdict.models import Tag
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Min
 import os
 import operator
@@ -738,29 +739,31 @@ class LotteryAssignmentController(object):
         """ Store lottery assignments in the database once they have been computed.
             This is a fairly time consuming step compared to computing the assignments. """
 
-        self.clear_saved_assignments()
+        with transaction.atomic():
+            self.clear_saved_assignments()
 
-        assignments = numpy.nonzero(self.student_sections)
-        student_ids = self.student_ids[assignments[0]]
-        section_ids = self.section_ids[assignments[1]]
+            assignments = numpy.nonzero(self.student_sections)
+            student_ids = self.student_ids[assignments[0]]
+            section_ids = self.section_ids[assignments[1]]
 
-        assert(student_ids.shape == section_ids.shape)
+            assert(student_ids.shape == section_ids.shape)
 
-        relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
-        self.now = datetime.now()   # The time that all the registrations start at, in case all lottery registrations need to be manually reverted later
-        srs = StudentRegistration.objects.bulk_create([StudentRegistration(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship, start_date=self.now) for i in range(student_ids.shape[0])])
-        # Trigger any relevant caches
-        for sr in srs:
-            sr.save()
-        if self.options['stats_display']:
-            logger.info("StudentRegistration enrollments all created to start at %s", self.now)
-            logger.info('Created %d registrations', student_ids.shape[0])
+            relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
+            self.now = datetime.now()   # The time that all the registrations start at, in case all lottery registrations need to be manually reverted later
+            srs = StudentRegistration.objects.bulk_create([StudentRegistration(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship, start_date=self.now) for i in range(student_ids.shape[0])])
+            # Trigger any relevant caches
+            for sr in srs:
+                sr.save()
+            if self.options['stats_display']:
+                logger.info("StudentRegistration enrollments all created to start at %s", self.now)
+                logger.info('Created %d registrations', student_ids.shape[0])
 
         #As mailman has sometimes not worked in the past,
         #leave the option to disable.
         if try_mailman:
             self.update_mailman_lists()
 
+    @transaction.atomic
     def clear_saved_assignments(self, delete=False):
         """ Expire/delete all previous StudentRegistration enrollments associated with the program. """
 
