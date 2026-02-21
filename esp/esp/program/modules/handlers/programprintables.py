@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import division
 from six.moves import filter
 from six.moves import map
 import six
@@ -1518,7 +1516,6 @@ class ProgramPrintables(ProgramModuleObj):
             return filterObj
 
 
-
         context = {'module': self, 'program': prog}
         teachers = sorted(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
@@ -1548,7 +1545,6 @@ class ProgramPrintables(ProgramModuleObj):
         filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Class Rosters by %s' % (prog.getModeratorTitle())})
         if not found:
             return filterObj
-
 
 
         context = {'module': self, 'program': prog}

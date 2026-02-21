@@ -1,7 +1,5 @@
 """Various utility functions."""
 
-from __future__ import absolute_import
-from __future__ import division
 from datetime import timedelta, datetime
 from timeit import default_timer
 from functools import wraps

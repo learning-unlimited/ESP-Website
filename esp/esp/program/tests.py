@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
 import six
 from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -253,7 +251,6 @@ class ViewUserInfoTest(TestCase):
         self.user.delete()
         self.admin.delete()
         self.fake_admin.delete()
-
 
 
 class ProfileTest(TestCase):
