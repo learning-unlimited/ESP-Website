@@ -29,6 +29,47 @@ table {
 
 <p style="margin: 10px">
 Welcome to student check-in for {{program.niceName}}.  Make sure that the students have handed in all necessary forms and payments.
+</p>
+
+<div class="row" style="margin-bottom: 20px;">
+    <div class="col-md-6">
+        <div class="panel panel-default">
+            <div class="panel-heading"><b>Filters</b></div>
+            <div class="panel-body">
+                <div class="form-group row">
+                    <label for="grade_filter" class="col-sm-4 control-label">Grade:</label>
+                    <div class="col-sm-8">
+                        <select id="grade_filter" class="form-control">
+                            <option value="">All Grades</option>
+                            <option value="7">7th Grade</option>
+                            <option value="8">8th Grade</option>
+                            <option value="9">9th Grade</option>
+                            <option value="10">10th Grade</option>
+                            <option value="11">11th Grade</option>
+                            <option value="12">12th Grade</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="last_name_filter" class="col-sm-4 control-label">Last Name:</label>
+                    <div class="col-sm-8">
+                        <select id="last_name_filter" class="form-control">
+                            <option value="">All</option>
+                            <option value="A-G">A - G</option>
+                            <option value="H-N">H - N</option>
+                            <option value="O-Z">O - Z</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6" align="right">
+        <a href="/onsite/{{ program.url }}/barcodecheckin" class="button btn-lg" style="text-decoration: none; display: inline-block;">
+            <span class="glyphicon glyphicon-barcode"></span> Barcode Checkin
+        </a>
+    </div>
+</div>
 
 {% if message %}
 <div align="center" class="alert alert-info">
@@ -71,13 +112,46 @@ Welcome to student check-in for {{program.niceName}}.  Make sure that the studen
   <a href="/onsite/{{ program.url }}/checkin">Click here to view and edit the check-in of a user</a>
 </p>
 
-<h1>Barcode Checkin &mdash; For {{ program.niceName }}</h1>
-<p style="margin: 10px;">
-  <a href="/onsite/{{ program.url }}/barcodecheckin">Click here to check in many users at once by ID</a>
-</p>
-
 </div>
 
 {% include "program/modules/onsitecore/returnlink.html" %}
 
+{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+<script type="text/javascript">
+$j(function() {
+    // Override the autocomplete source to add filters
+    var $searchField = $j("#id_target_user");
+    if ($searchField.length > 0) {
+        var originalSource = $searchField.autocomplete("option", "source");
+        $searchField.autocomplete("option", "source", function(request, response) {
+            $j.ajax({
+                url: "/admin/ajax_autocomplete/",
+                dataType: "json",
+                data: {
+                    model_module: "esp.users.models",
+                    model_name: "ESPUser",
+                    ajax_func: "ajax_autocomplete_student",
+                    ajax_data: request.term,
+                    prog: "{{ program.id }}",
+                    grade: $j("#grade_filter").val(),
+                    last_name_range: $j("#last_name_filter").val()
+                },
+                success: function(data) {
+                    var output = $j.map(data.result, function(item) {
+                        return {
+                            label: item.ajax_str,
+                            value: item.ajax_str,
+                            id: item.id
+                        };
+                    });
+                    response(output);
+                }
+            });
+        });
+    }
+});
+</script>
 {% endblock %}

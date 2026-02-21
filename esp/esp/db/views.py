@@ -11,16 +11,12 @@ user_is_staff = user_passes_test(lambda u: u.is_authenticated and u.is_staff and
 @user_is_staff
 """
 
-def autocomplete_wrapper(function, data, is_staff, prog):
+def autocomplete_wrapper(function, data, is_staff, prog, **kwargs):
     if is_staff:
-        if prog:
-            return function(data, prog)
-        return function(data)
+        return function(data, **kwargs)
     else:
         if 'allow_non_staff' in function.__func__.__code__.co_varnames:
-            if prog:
-                return function(data, prog)
-            return function(data)
+            return function(data, **kwargs)
         else:
             return []
 
@@ -37,7 +33,9 @@ def ajax_autocomplete(request):
         ajax_func    = request.GET.get('ajax_func', 'ajax_autocomplete')
         data         = request.GET['ajax_data']
         prog         = request.GET['prog']
-    except KeyError as ValueError:
+        grade        = request.GET.get('grade')
+        last_name_range = request.GET.get('last_name_range')
+    except (KeyError, ValueError):
         # bad request
         response = HttpResponse('Malformed Input')
         response.status_code = 400
@@ -46,17 +44,19 @@ def ajax_autocomplete(request):
     # import the model
     Model = getattr(__import__(model_module, (), (), [str(model_name)]), model_name)
 
+    kwargs = {'grade': grade, 'last_name_range': last_name_range, 'prog': prog}
+
     if hasattr(Model.objects, ajax_func):
-        query_set = autocomplete_wrapper(getattr(Model.objects, ajax_func), data, request.user.is_staff, prog)
+        query_set = autocomplete_wrapper(getattr(Model.objects, ajax_func), data, request.user.is_staff, prog, **kwargs)
     else:
-        query_set = autocomplete_wrapper(getattr(Model, ajax_func), data, request.user.is_staff, prog)
+        query_set = autocomplete_wrapper(getattr(Model, ajax_func), data, request.user.is_staff, prog, **kwargs)
 
     output = list(query_set[:limit])
     output2 = []
     for item in output:
         output2.append({'id': item['id'], 'ajax_str': item['ajax_str']+' (%s)' % item['id']})
 
-    content = json.dumps({'result':output2})
+    content = json.dumps({'result': output2})
 
     return HttpResponse(content,
-                        content_type = 'javascript/javascript')
+                        content_type='javascript/javascript')
