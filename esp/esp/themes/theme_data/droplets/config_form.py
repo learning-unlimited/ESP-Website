@@ -28,3 +28,15 @@ class ConfigForm(ThemeConfigurationForm):
     # URLField requires an absolute URL, here we probably want relative.
     show_footer_textbox = forms.BooleanField(initial = False, required = False,
                                              help_text='Should there be an editable text field in the footer?')
+    admin_links = forms.Field(
+        required=False,
+        widget=ContactFieldsWidget,
+        label='Admin toolbar bottom links',
+        help_text='Links shown in the bottom section of the admin toolbar.',
+        initial=[
+            {"text": "Manage all programs", "link": "/manage/programs/"},
+            {"text": "Manage static pages", "link": "/manage/pages"},
+            {"text": "Manage media files", "link": "/admin/filebrowser/browse/"},
+            {"text": "Manage theme settings", "link": "/themes/"}
+        ]
+    )
