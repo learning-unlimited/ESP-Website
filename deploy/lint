@@ -17,22 +17,8 @@ done
 
 echo "Running lint checks..."
 
-# For now, ignore everything except:
-#   E101: mixed tabs and spaces
-#   F82x: undefined name, local variable referenced before assignment
-#   F831: duplicate arg in function definition
-#   W191: indentation contains tabs
-#   W29x: whitespace at end of line or on blank line
-#   W601: `has_key` instead of `in`
-#   W603: <> instead of !=
-#   W604: backticks instead of `repr`
-# Errors I'd like to turn on sometime soon, but which still require some
-# cleanup first:
-#   E11x: other indentation issues (expected indented block, unexpected indent, not a multiple of four)
-#   F811: redefinition of unused name
-#   F841: unused name
-# Ignore /env, since that's where we by default put the virtualenv, which has
-# lots of code that's not ours.  Also exclude .git, for speed.
+# Lint configuration is in .flake8 at the repository root.
+# See that file for the list of enabled/ignored checks and excluded paths.
 if [ "$STAGED" = true ]; then
     FILES=$(git diff --cached --name-only --diff-filter=d | grep '\.py$' || true)
     if [ -z "$FILES" ]; then
@@ -40,9 +26,9 @@ if [ "$STAGED" = true ]; then
         exit 0
     fi
     echo "(linting staged files only)"
-    flake8 --ignore "E,F,W" --select "E10,F82,F831,W191,W29,W601,W603,W604" $FILES
+    flake8 $FILES
 else
-    flake8 --ignore "E,F,W" --select "E10,F82,F831,W191,W29,W601,W603,W604" "$BASEDIR" --exclude=.git,env
+    flake8 "$BASEDIR"
 fi
 
 # Those escape codes the cursor up a line and forward 22 columns (past
