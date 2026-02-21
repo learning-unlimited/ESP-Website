@@ -136,7 +136,7 @@ def lottery_student_reg_simple(request, program = None):
     return render_to_response('program/modules/lotterystudentregmodule/student_reg_simple.html', request, {})
 
 
-#@transaction.atomic
+@transaction.atomic
 @login_required
 def lsr_submit(request, program=None):
 
@@ -221,7 +221,7 @@ def lsr_submit(request, program=None):
     return HttpResponse(json.dumps(errors), content_type='application/json')
 
 
-#@transaction.atomic
+@transaction.atomic
 @login_required
 def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary function. will merge the two later -jmoldow 05/31
 
@@ -286,7 +286,7 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
 def find_user(userstr):
     """
     Do a best-guess effort at finding a user based on a string identifying that user.
-    The string may be a user ID, username, or some permuation of the user's real name.
+    The string may be a user ID, username, or some permutation of the user's real name.
     Will return a list of users if the string is not a username and more than one
     name approximately matches.
     Will return something that evaluates to False if no matching users are found.
@@ -775,7 +775,11 @@ def get_email_data(start_date):
             req.num_rec = CommModule.approx_num_of_recipients(req.recipients, req.get_sendto_fn())
         req.num_sent = toes.filter(sent__isnull=False).count()
         if req.num_rec == req.num_sent:
-            req.finished_at = toes.order_by('-sent').first().sent
+            last_email = toes.order_by('-sent').first()
+            if last_email is not None:
+                req.finished_at = last_email.sent
+            else:
+                req.finished_at = "(Not finished)"
         else:
             req.finished_at = "(Not finished)"
         requests_list.append(req)

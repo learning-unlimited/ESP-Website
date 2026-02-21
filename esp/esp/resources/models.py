@@ -127,7 +127,7 @@ class ResourceType(models.Model):
                 base_q = base_q | Q(program__isnull=True)
         else:
             base_q = Q(program__isnull=True)
-        current_type = ResourceType.objects.filter(base_q).filter(name__icontains=label)
+        current_type = ResourceType.objects.filter(base_q, name__icontains=label)
         if len(current_type) != 0:
             ret = current_type[0]
         else:
@@ -244,7 +244,7 @@ class Resource(models.Model):
         id_list = []
 
         for req in request_list:
-            if furnishings.filter(res_type=req.res_type).count() < 1:
+            if not furnishings.filter(res_type=req.res_type).exists():
                 result[0] = False
                 id_list.append(req.id)
 
@@ -349,7 +349,7 @@ class Resource(models.Model):
             return Q(resource=self)
         else:
             collision = ResourceAssignment.objects.filter(resource=self)
-            return (collision.count() > 0)
+            return collision.exists()
 
 @python_2_unicode_compatible
 class AssignmentGroup(models.Model):
