@@ -7,6 +7,14 @@ popd > /dev/null
 
 BASEDIR="$(dirname "$SCRIPTDIR")"
 
+# Check for --staged flag
+STAGED=false
+for arg in "$@"; do
+    if [[ "$arg" == "--staged" ]]; then
+        STAGED=true
+    fi
+done
+
 echo "Running lint checks..."
 
 # For now, ignore everything except:
@@ -25,7 +33,17 @@ echo "Running lint checks..."
 #   F841: unused name
 # Ignore /env, since that's where we by default put the virtualenv, which has
 # lots of code that's not ours.  Also exclude .git, for speed.
-flake8 --ignore "E,F,W" --select "E10,F82,F831,W191,W29,W601,W603,W604" "$BASEDIR" --exclude=.git,env
+if [ "$STAGED" = true ]; then
+    FILES=$(git diff --cached --name-only --diff-filter=d | grep '\.py$' || true)
+    if [ -z "$FILES" ]; then
+        echo "No staged Python files to lint."
+        exit 0
+    fi
+    echo "(linting staged files only)"
+    flake8 --ignore "E,F,W" --select "E10,F82,F831,W191,W29,W601,W603,W604" $FILES
+else
+    flake8 --ignore "E,F,W" --select "E10,F82,F831,W191,W29,W601,W603,W604" "$BASEDIR" --exclude=.git,env
+fi
 
 # Those escape codes the cursor up a line and forward 22 columns (past
 # "Running lint checks...").  We can't just `echo -n` above, because if there

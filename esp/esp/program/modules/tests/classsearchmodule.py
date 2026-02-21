@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import json
 
 from django.template import Template, Context
@@ -11,7 +10,7 @@ from esp.users.models import ESPUser
 
 class ClassSearchModuleTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
-        super(ClassSearchModuleTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
         self.program.getModules()
         self.schedule_randomly()
         pm = ProgramModule.objects.get(handler='ClassSearchModule')

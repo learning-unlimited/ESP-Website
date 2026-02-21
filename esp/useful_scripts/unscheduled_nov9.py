@@ -2,8 +2,6 @@
     that have students enrolled in them.
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
 from esp.program.models import *
 
 splash = Program.objects.get(id=12)

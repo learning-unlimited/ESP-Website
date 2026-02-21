@@ -1,5 +1,4 @@
-from __future__ import absolute_import
-import six.moves.http_client
+import http.client
 
 from django.conf import settings
 from django.contrib.sites.models import Site
@@ -18,7 +17,7 @@ def purge_page(url, host=None):
         if host is None:
             return None
 
-    conn = six.moves.http_client.HTTPConnection(host)
+    conn = http.client.HTTPConnection(host)
     cur_domain = Site.objects.get_current().domain
     conn.request("PURGE", url, "", {'Host': cur_domain, 'Accept-Encoding': 'gzip'})
     ret = conn.getresponse()
@@ -32,7 +31,7 @@ def purge_all(host=None):
         if host is None:
             return None
 
-    conn = six.moves.http_client.HTTPConnection(host)
+    conn = http.client.HTTPConnection(host)
     cur_domain = Site.objects.get_current().domain
     conn.request("BAN", "/", "", {'Host': cur_domain, 'Accept-Encoding': 'gzip'})
     ret = conn.getresponse()

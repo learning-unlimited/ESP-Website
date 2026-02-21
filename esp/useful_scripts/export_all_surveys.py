@@ -1,13 +1,10 @@
 
-from __future__ import absolute_import
-from __future__ import print_function
 from collections import defaultdict
 from esp.survey.models import Answer, SurveyResponse, Survey
 from esp.program.models import Program, ClassSubject, ClassSection
 from datetime import datetime, date, time
 
 from django.contrib.contenttypes.models import ContentType
-import six
 from functools import reduce
 
 try:
@@ -168,7 +165,7 @@ def auto_cell_type(val):
         pass
 
     # Give up; not a type that Excel likes
-    val = six.text_type(val)
+    val = str(val)
 
     # Are we something that looks like a boolean?
     if val.upper() in ("TRUE", "FALSE", "T", "F"):

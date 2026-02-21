@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django import forms
 from django.conf import settings
 from django.contrib import admin
@@ -28,14 +27,14 @@ def get_rt_choices():
 class VisibleRegistrationTypeForm(forms.Form):
     display_names = forms.MultipleChoiceField(choices=[], required=False, label='', help_text=mark_safe("<br />Select the Registration Types that should be displayed on a student's schedule on the studentreg page. To select an entry, hold Ctrl (on Windows or Linux) or Meta (on Mac), and then press it with your mouse."), widget=forms.SelectMultiple(attrs={'style':'height:150px; background:white;'}))
     def __init__(self, *args, **kwargs):
-        super(VisibleRegistrationTypeForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['display_names'].choices = get_rt_choices()
 
 class LunchConstraintsForm(forms.Form):
     def __init__(self, program, *args, **kwargs):
         self.program = program
 
-        super(LunchConstraintsForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         #   Set choices for timeslot field
         self.fields['timeslots'].choices = [(ts.id, ts.short_description) for ts in self.program.getTimeSlots()]
@@ -74,10 +73,10 @@ class ProgramSettingsForm(ProgramCreationForm):
     student_reg_start = None
     student_reg_end   = None
     def __init__(self, *args, **kwargs):
-        super(ProgramSettingsForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def save(self):
-        return super(ProgramSettingsForm, self).save()
+        return super().save()
 
     class Meta:
         fieldsets = [
@@ -98,7 +97,7 @@ ProgramSettingsForm.base_fields['director_email'].widget = forms.EmailInput(attr
 class TeacherRegSettingsForm(BetterModelForm):
     """ Form for changing teacher class registration settings. """
     def __init__(self, *args, **kwargs):
-        super(TeacherRegSettingsForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     class Meta:
         fieldsets = [
@@ -113,7 +112,7 @@ class TeacherRegSettingsForm(BetterModelForm):
 class StudentRegSettingsForm(BetterModelForm):
     """ Form for changing student class registration settings. """
     def __init__(self, *args, **kwargs):
-        super(StudentRegSettingsForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     class Meta:
         fieldsets = [
@@ -151,7 +150,7 @@ class ReceiptsForm(BetterForm):
 
     def __init__(self, *args, **kwargs):
         self.program = kwargs.pop('program')
-        super(ReceiptsForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for action in ['confirm', 'confirmemail', 'cancel']:
             receipts = DBReceipt.objects.filter(program=self.program, action=action)
             if receipts.count() > 0:
@@ -192,7 +191,7 @@ class ProgramTagSettingsForm(BetterForm):
     def __init__(self, *args, **kwargs):
         self.program = kwargs.pop('program')
         self.categories = set()
-        super(ProgramTagSettingsForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         from esp.program.modules.forms.teacherreg import TeacherClassRegForm
         classreg_fields = [field.name for field in TeacherClassRegForm(self.program.classregmoduleinfo).visible_fields()]
         for key in all_program_tags:
