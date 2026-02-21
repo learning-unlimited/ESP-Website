@@ -236,9 +236,15 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         from esp.program.modules.module_ext import DBReceipt
 
-        if self.have_paid(request.user):
-            raise ESPError("You have already paid for this program!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund.", log=False)
+        # Block cancellation only if the user has made an actual payment.
+        # Allow cancellation if payment status is due to financial aid.
 
+        if self.have_paid(request.user) and not request.user.hasFinancialAid(prog):
+            raise ESPError(
+                "You have already paid for this program! Please contact us directly to cancel your registration and request a refund.",
+                log=False
+            )
+        
         recs = Record.objects.filter(user=request.user,
                                      event__name="reg_confirmed",
                                      program=prog)
