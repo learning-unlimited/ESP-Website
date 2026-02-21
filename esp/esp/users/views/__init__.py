@@ -12,10 +12,15 @@ from esp.program.models import Program, RegistrationProfile
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, admin_required
 from esp.users.models.forwarder import UserForwarder
-from esp.users.views.make_admin import *
-from esp.users.views.password_reset import *
-from esp.users.views.registration import *
-from esp.users.views.usersearch import *
+from . import make_admin as make_admin_module
+from . import password_reset as password_reset_module
+from . import registration as registration_module
+from . import usersearch as usersearch_module
+
+from .make_admin import make_admin
+from .password_reset import initial_passwd_request, email_passwd_followup, email_passwd_cancel
+from .registration import user_registration_phase1, user_registration_phase2, resend_activation_view
+from .usersearch import get_user_list, get_user_checklist, search_for_user, getQForUser
 from esp.utils.web import render_to_response
 from esp.web.views.main import DefaultQSDView
 import six

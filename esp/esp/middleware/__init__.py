@@ -33,5 +33,8 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.middleware.esperrormiddleware import *
-from esp.middleware.fixiemiddleware import *
+from .esperrormiddleware import (
+    AjaxError, AjaxErrorMiddleware, ESPError, ESPErrorMiddleware,
+    ESPError_Log, ESPError_NoLog, Http403
+)
+from .fixiemiddleware import FixIEMiddleware

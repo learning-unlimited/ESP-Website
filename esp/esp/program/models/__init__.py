@@ -2257,9 +2257,9 @@ def maybe_create_module_ext(handler, ext):
 
 
 # Needed for app loading, don't delete
-from esp.program.models.class_ import *
-from esp.program.models.app_ import *
-from esp.program.models.flags import *
+from .class_ import ClassCategories, ClassManager, ClassSection, ClassSizeRange, ClassSubject
+from .app_ import StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentApplication
+from .flags import ClassFlag, ClassFlagType
 
 def install():
     from esp.program.models.class_ import install as install_class

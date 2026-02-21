@@ -113,4 +113,4 @@ def install(model=None):
 
     updateModules(table_data, deleteExtra=True, model=model)
 
-from esp.program.modules.module_ext import *
+from .module_ext import AJAXChangeLog, AJAXChangeLogEntry, ClassRegModuleInfo, DBReceipt, StudentClassRegModuleInfo
