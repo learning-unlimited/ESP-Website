@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import print_function
 from collections import defaultdict
 from esp.survey.models import Answer, SurveyResponse, Survey
 from esp.program.models import Program, ClassSubject, ClassSection

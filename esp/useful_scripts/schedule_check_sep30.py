@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import absolute_import
-from __future__ import print_function
 from esp.program.models import *
 
 splash=Program.objects.get(id=12)
@@ -16,8 +14,6 @@ for r in rooms:
     elif ct > 1:
         print('ERROR: %s at %s has conflict: %s' % (r.name, r.event.pretty_time(), r.resourceassignment_set.all().values_list('target', flat=True)))
         num_conflicts += 1
-
-
 
 
 print(' ')

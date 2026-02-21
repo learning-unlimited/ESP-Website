@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euf -o pipefail
 
-if [ "$TRAVIS_JOB" = "test" ]; then
+if [ "$CI_JOB" = "test" ]; then
     cd esp
     ./manage.py collectstatic --noinput -v 0
     # Run tests with JUnit XML output for CI artifact upload
@@ -9,9 +9,9 @@ if [ "$TRAVIS_JOB" = "test" ]; then
         --testrunner=xmlrunner.extra.djangotestrunner.XMLTestRunner \
         --output-dir=test-results 2>&1 | tee test-output.log
     coverage xml
-elif [ "$TRAVIS_JOB" = "lint" ]; then
+elif [ "$CI_JOB" = "lint" ]; then
     deploy/lint
 else
-    echo "Unknown TRAVIS_JOB: $TRAVIS_JOB"
+    echo "Unknown CI_JOB: $CI_JOB"
     exit 1
 fi

@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
 import six
 from six.moves import range
@@ -135,7 +132,7 @@ class UserAvailability(models.Model):
         #   (With this alphabetical ordering, you get roles in the order: teacher, student, guardian, educator, administrator)
         if (not hasattr(self, 'role')) or self.role is None:
             self.role = self.user.getUserTypes()[0]
-        return super(UserAvailability, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     @classmethod
     def entriesBySlot(self, event):
@@ -163,7 +160,7 @@ class BaseESPUser(object):
         # inheritance structure of this, ESPUser, or AnonymousESPUser,
         # or if Django has changed something. Adding it anyway in case
         # AnonymousUser changes in the future.
-        super(BaseESPUser, self).__init__()
+        super().__init__()
         self.create_membership_methods()
 
     @classmethod
@@ -649,7 +646,7 @@ class BaseESPUser(object):
     getAvailableTimes.depend_on_row('users.UserAvailability', lambda ua:
                                         {'program': ua.event.program,
                                             'self': ua.user})
-    # Should depend on Event as well... IDs are safe, but not necessarily stored objects (seems a common occurence...)
+    # Should depend on Event as well... IDs are safe, but not necessarily stored objects (seems a common occurrence...)
     # though Event shouldn't change much
 
     def clearAvailableTimes(self, program):
@@ -686,7 +683,7 @@ class BaseESPUser(object):
         from esp.program.models.app_ import StudentApplication
 
         apps = StudentApplication.objects.filter(user=self, program=program)
-        if apps.count() == 0:
+        if not apps.exists():
             return []
         else:
             return apps[0].responses.all()
@@ -765,10 +762,10 @@ class BaseESPUser(object):
     @cache_function
     def getFirstClassTime(self, program):
         sections = self.getSections(program, verbs=['Enrolled']).order_by('meeting_times')
-        if sections.count() == 0:
+        if not sections.exists():
             return None
         else:
-            if sections[0].meeting_times.count() == 0:
+            if not sections[0].meeting_times.exists():
                 return None
             else:
                 return sections[0].meeting_times.order_by('start')[0]
@@ -823,7 +820,7 @@ class BaseESPUser(object):
 
     @cache_function
     def appliedFinancialAid(self, program):
-        return self.financialaidrequest_set.all().filter(program=program, done=True).count() > 0
+        return self.financialaidrequest_set.all().filter(program=program, done=True).exists()
     #   Invalidate cache when any of the user's financial aid requests are changed
     appliedFinancialAid.depend_on_row('program.FinancialAidRequest', lambda fr: {'self': fr.user})
     appliedFinancialAid.depend_on_row('accounting.FinancialAidGrant', lambda fr: {'self': fr.request.user})
@@ -973,10 +970,10 @@ class BaseESPUser(object):
     def get_unused_username(cls, first_name, last_name):
         import re
         username = base_uname = (first_name[0] + last_name).lower()
-        if cls.objects.filter(username = username).count() > 0:
+        if cls.objects.filter(username = username).exists():
             i = 2
             username = base_uname + str(i)
-            while cls.objects.filter(username = username).count() > 0:
+            while cls.objects.filter(username = username).exists():
                 i += 1
                 username = base_uname + str(i)
         return re.sub(r'[^\w.@+-]', '', username) # sanitize before returning
@@ -1179,10 +1176,12 @@ class BaseESPUser(object):
         user_hash = hash(str(self.id) + str(program.id))
         return '{0:06d}'.format(abs(user_hash))[:6]
 
-    # modified from here: https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
+    # modified from here:
+    # https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
     def unsubscribe_link(self):
-        username, token = self.make_token().split(":", 1)
-        return reverse('unsubscribe', kwargs={'username': username, 'token': token,})
+        token = self.make_token()[len(self.username) + 1:]
+        return reverse('unsubscribe',
+                       kwargs={'username': self.username, 'token': token})
 
     def unsubscribe_link_full(self):
         unsub_link = self.unsubscribe_link()
@@ -1215,7 +1214,7 @@ class ESPUser(User, BaseESPUser):
 
     def makeAdmin(self):
         """
-        Make the user an Adminstrator and a Django superuser.
+        Make the user an Administrator and a Django superuser.
         """
         # Django auth
         self.is_staff = True
@@ -1923,7 +1922,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     @classmethod
     def cf_link_instance(cls, request):
         """
-        Ues the request object to return the appropriate instance for this model,
+        Uses the request object to return the appropriate instance for this model,
         for use by custom-forms.
         It should either return the instance, or 'None', if the corresponding instance doesn't exist.
         """
@@ -2029,7 +2028,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         if self.address_postal is not None:
             self.address_postal = str(self.address_postal)
 
-        super(ContactInfo, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
     def __str__(self):
@@ -2102,7 +2101,7 @@ class K12School(models.Model):
 @python_2_unicode_compatible
 class PersistentQueryFilter(models.Model):
     """ This class stores generic query filters persistently in the database, for retrieval (by ID, presumably) and
-        to pass the query along to multiple pages and retrival (et al). """
+        to pass the query along to multiple pages and retrieval (et al). """
     item_model   = models.CharField(max_length=256)            # A string representing the model, for instance User or Program
     q_filter     = models.BinaryField()                         # A bytestring representing a query filter
     sha1_hash    = models.CharField(max_length=256)            # A sha1 hash of the string representing the query filter
@@ -2122,7 +2121,7 @@ class PersistentQueryFilter(models.Model):
         # Deal with multiple instances
         query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
         pqfs = PersistentQueryFilter.objects.filter(query_q)
-        if pqfs.count() > 0:
+        if pqfs.exists():
             foo = pqfs[0]
         else:
             foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
@@ -2307,7 +2306,7 @@ class DBList(object):
     """ Useful abstraction for the list of users.
         Not meant for anything but users_get_list...
     """
-    totalnum = False # we dont' know how many there are.
+    totalnum = False # we don't know how many there are.
     key      = ''
     QObject  = None
 
@@ -2887,7 +2886,7 @@ class GradeChangeRequest(TimeStampedModel):
         ordering = ['-acknowledged_time', '-created']
 
     def __init__(self, *args, **kwargs):
-        super(GradeChangeRequest, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         grade_options = ESPUser.grade_options()
 
         self._meta.get_field('claimed_grade').choices = list(zip(grade_options, grade_options))
@@ -2897,7 +2896,7 @@ class GradeChangeRequest(TimeStampedModel):
 
         if is_new:
             self.send_request_email()
-            super(GradeChangeRequest, self).save(**kwargs)
+            super().save(**kwargs)
             return
 
         if self.approved is not None and not self.acknowledged_time:
@@ -2908,7 +2907,7 @@ class GradeChangeRequest(TimeStampedModel):
         if self.approved is True:
             self.requesting_student.set_grade(self.claimed_grade)
 
-        super(GradeChangeRequest, self).save(**kwargs)
+        super().save(**kwargs)
 
     def _request_email_content(self):
         """

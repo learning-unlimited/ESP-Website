@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import division
 import six
 from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -249,7 +247,7 @@ class OnSiteClassList(ProgramModuleObj):
             user = ESPUser.objects.get(id=int(request.GET['user']))
         except:
             user = None
-            result['messages'].append('Error: could find user %s' % request.GET.get('user', None))
+            result['messages'].append('Error: could not find user %s' % request.GET.get('user', None))
         try:
             desired_sections = json.loads(request.GET['sections'])
         except:
@@ -477,7 +475,6 @@ class OnSiteClassList(ProgramModuleObj):
                                 </button></a>
                             </div>""") % ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1]) for call in calls]
         return "".join(strings)
-
 
 
     class Meta:

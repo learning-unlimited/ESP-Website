@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
 import six
 from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -89,7 +87,7 @@ class StudentRegSanityController(object):
         logger.debug(report)
         if closeatend: csvfile.close()
         logger.info("Walkins checked")
-        if not fake: "Please re-run self.initalize() to update."
+        if not fake: "Please re-run self.initialize() to update."
         return report
 
     def sanitize_lunch(self, csvlog=False, fake = True, csvwriter=None, directory=None):
@@ -119,7 +117,7 @@ class StudentRegSanityController(object):
         logger.debug(report)
         if closeatend: csvfile.close()
         logger.info("Lunch checked.")
-        if not fake: "Please re-run self.initalize() to update."
+        if not fake: "Please re-run self.initialize() to update."
         return report
 
     def sanitize(self, checks=None, fake=True, csvlog=True, directory=None):
