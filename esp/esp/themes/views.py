@@ -48,10 +48,22 @@ from django.http import HttpResponseRedirect
 from django.conf import settings
 
 from datetime import datetime
+import os
 import random
 import string
 import os.path
 import shutil
+
+
+def _safe_backup_path(filename, backups_dir):
+    """
+    Resolve a user-supplied backup filename to an absolute path and verify it
+    stays within backups_dir. Raises ESPError on path traversal attempts.
+    """
+    resolved = os.path.realpath(os.path.join(backups_dir, filename))
+    if not resolved.startswith(os.path.realpath(backups_dir) + os.sep):
+        raise ESPError("Invalid file selection.", log=True)
+    return resolved
 
 THEME_ERROR_STRING = "Your site's theme is not in the generic templates system. " + \
                      "If you want to switch to one of the standard themes, " + \
@@ -144,17 +156,22 @@ def logos(request):
                     destination.write(chunk)
         elif 'logo_select' in request.POST:
             # Overwrite existing logo file
-            shutil.copyfile(settings.MEDIA_ROOT + 'images/backups/' + request.POST['logo_select'], settings.MEDIA_ROOT + 'images/theme/logo.png')
+            backups_dir = settings.MEDIA_ROOT + 'images/backups'
+            src = _safe_backup_path(request.POST['logo_select'], backups_dir)
+            shutil.copyfile(src, settings.MEDIA_ROOT + 'images/theme/logo.png')
             # Update logo version
             Tag.setTag("current_logo_version", value = hex(random.getrandbits(16)))
         elif 'header_select' in request.POST:
             # Overwrite existing header file
-            shutil.copyfile(settings.MEDIA_ROOT + 'images/backups/' + request.POST['header_select'], settings.MEDIA_ROOT + 'images/theme/header.png')
+            backups_dir = settings.MEDIA_ROOT + 'images/backups'
+            src = _safe_backup_path(request.POST['header_select'], backups_dir)
+            shutil.copyfile(src, settings.MEDIA_ROOT + 'images/theme/header.png')
             # Update header version
             Tag.setTag("current_header_version", value = hex(random.getrandbits(16)))
         elif 'favicon_select' in request.POST:
-            # Update favicon version
-            shutil.copyfile(settings.MEDIA_ROOT + 'images/backups/' + request.POST['favicon_select'], settings.MEDIA_ROOT + 'images/favicon.ico')
+            backups_dir = settings.MEDIA_ROOT + 'images/backups'
+            src = _safe_backup_path(request.POST['favicon_select'], backups_dir)
+            shutil.copyfile(src, settings.MEDIA_ROOT + 'images/favicon.ico')
             # Update favicon version
             Tag.setTag("current_favicon_version", value = hex(random.getrandbits(16)))
 
