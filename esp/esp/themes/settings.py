@@ -5,11 +5,14 @@ from os import path
 from collections import OrderedDict
 
 # can we avoid hardcoding this?
-less_dir = path.join(settings.PROJECT_ROOT, 'public', 'media', 'theme_editor', 'less') #directory containing less files used by theme editor
-themes_dir = path.join(settings.PROJECT_ROOT, 'public', 'media', 'theme_editor', 'themes') #directory containing the themes
+theme_editor_dir = path.join(settings.PROJECT_ROOT, 'public', 'media', 'theme_editor')
+less_dir = path.join(theme_editor_dir, 'less') #directory containing less files used by theme editor
+themes_dir = path.join(theme_editor_dir, 'themes') #directory containing the themes
 variables_less = path.join(less_dir, 'variables.less')
 # directory containing the javascript that shows the palette
-palette_dir = path.join(settings.PROJECT_ROOT, 'public', 'media', 'theme_editor')
+palette_dir = theme_editor_dir
+# Bootstrap 5 SCSS source; installed via: cd esp/public/media/theme_editor && npm install
+bootstrap5_scss_dir = path.join(theme_editor_dir, 'node_modules', 'bootstrap', 'scss')
 
 # and this...
 sans_serif_fonts = OrderedDict([("Arial", "Arial, sans-serif"),
