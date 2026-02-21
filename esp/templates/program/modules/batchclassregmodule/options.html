@@ -1,0 +1,70 @@
+{% extends "main.html" %}
+
+{% block title %}Batch Class Registration{% endblock %}
+
+{% block xtrajs %}
+{{block.super}}
+<script type="text/javascript">
+function filterSections() {
+    var query = document.getElementById('section_filter').value.toLowerCase();
+    var rows = document.getElementsByClassName('section-row');
+    for (var i = 0; i < rows.length; i++) {
+        var text = rows[i].getAttribute('data-search').toLowerCase();
+        rows[i].style.display = (text.indexOf(query) >= 0) ? '' : 'none';
+    }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+
+<h1>Batch Class Registration</h1>
+
+<h2>Step 2:</h2>
+<p>You have selected <strong>{{ num_users }}</strong> students. Choose a class section to register them in.</p>
+
+<form action="/manage/{{ program.getUrlBase }}/batchclassregfinal?filterid={{ filterid }}" method="post" name="batchclassreg">
+
+<h3>Search and select a section:</h3>
+<input type="text" id="section_filter" placeholder="Filter by class code or title..." oninput="filterSections();" style="width: 300px; padding: 6px; margin-bottom: 15px;" />
+
+<table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+<thead>
+<tr>
+    <th style="padding: 6px 10px; border: 1px solid #ddd; background-color: #f5f5f5;"></th>
+    <th style="padding: 6px 10px; border: 1px solid #ddd; background-color: #f5f5f5;">Section Code</th>
+    <th style="padding: 6px 10px; border: 1px solid #ddd; background-color: #f5f5f5;">Title</th>
+    <th style="padding: 6px 10px; border: 1px solid #ddd; background-color: #f5f5f5;">Times</th>
+    <th style="padding: 6px 10px; border: 1px solid #ddd; background-color: #f5f5f5;">Room</th>
+    <th style="padding: 6px 10px; border: 1px solid #ddd; background-color: #f5f5f5;">Enrolled / Capacity</th>
+</tr>
+</thead>
+<tbody>
+{% for subject_data in sections_by_subject %}
+{% for sec_data in subject_data.sections %}
+<tr class="section-row" data-search="{{ sec_data.emailcode }} {{ sec_data.title }}"{% if sec_data.is_full %} style="color: #999;"{% endif %}>
+    <td style="padding: 6px 10px; border: 1px solid #ddd;"><input type="radio" name="section_id" value="{{ sec_data.id }}" {% if sec_data.is_full %}title="This section is currently full"{% endif %} /></td>
+    <td style="padding: 6px 10px; border: 1px solid #ddd;">{{ sec_data.emailcode }}</td>
+    <td style="padding: 6px 10px; border: 1px solid #ddd;">{{ sec_data.title }}</td>
+    <td style="padding: 6px 10px; border: 1px solid #ddd;">{{ sec_data.friendly_times }}</td>
+    <td style="padding: 6px 10px; border: 1px solid #ddd;">{{ sec_data.rooms }}</td>
+    <td style="padding: 6px 10px; border: 1px solid #ddd;">{{ sec_data.num_students }} / {{ sec_data.capacity }}{% if sec_data.is_full %} <strong>(FULL)</strong>{% endif %}</td>
+</tr>
+{% endfor %}
+{% endfor %}
+</tbody>
+</table>
+
+<h3>Options:</h3>
+<label>
+    <input type="checkbox" name="override_full" />
+    Override capacity limits (register students even if the section is full)
+</label>
+<br /><br />
+
+<input type="submit" value="Register Students" />
+</form>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}
