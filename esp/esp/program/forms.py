@@ -435,7 +435,8 @@ class ClassFlagForm(forms.ModelForm):
 class FlagTypeForm(forms.ModelForm):
     class Meta:
         model = ClassFlagType
-        fields = ['name', 'color', 'seq', 'show_in_scheduler', 'show_in_dashboard']
+        fields = ['name', 'color', 'seq', 'show_in_scheduler', 'show_in_dashboard',
+                  'show_to_teacher', 'notify_teacher_by_email']
 
 class RecordTypeForm(forms.ModelForm):
     def clean_name(self):
