@@ -73,18 +73,46 @@ fi
 
 PYTHON="${PYTHON:-python3.7}"
 
+if ! command -v "$PYTHON" >/dev/null 2>&1; then
+    echo "ERROR: $PYTHON not found."
+    echo "Install Python 3.7, or run with a different interpreter, e.g.:"
+    echo "  PYTHON=python3 bash esp/make_virtualenv.sh"
+    echo "  PYTHON=python3.11 bash esp/make_virtualenv.sh"
+    exit 1
+fi
+
 echo "Creating Virtualenv in $VENVDIR (using $PYTHON)"
 
 # Ensure virtualenv is available for the chosen interpreter without using sudo.
 if ! "$PYTHON" -c "import virtualenv" >/dev/null 2>&1; then
     echo "virtualenv not found for $PYTHON."
 
+    if ! "$PYTHON" -m pip --version >/dev/null 2>&1; then
+        echo "ERROR: pip is not available for $PYTHON."
+        echo "Install pip for this interpreter, then rerun."
+        exit 1
+    fi
+
     if [[ "$EUID" -eq 0 ]]; then
         echo "Installing virtualenv into system site-packages (running as root)."
         "$PYTHON" -m pip install "virtualenv>=1.10"
     else
         echo "Installing virtualenv into user site-packages (no sudo)."
-        "$PYTHON" -m pip install --user "virtualenv>=1.10"
+        if ! "$PYTHON" -m pip install --user "virtualenv>=1.10"; then
+            echo ""
+            echo "ERROR: Failed to install virtualenv for $PYTHON."
+            echo "This can happen on systems where Python is 'externally managed' (PEP 668), e.g. Homebrew Python on macOS."
+            echo ""
+            echo "Try one of the following:"
+            echo "  1) Install virtualenv via pipx (recommended):"
+            echo "       pipx install virtualenv"
+            echo "  2) Install a different Python (e.g. python.org installer or pyenv) and rerun with:"
+            echo "       PYTHON=python3.x bash esp/make_virtualenv.sh"
+            echo "  3) If you know what you're doing, you may allow pip to modify an externally-managed env (not recommended):"
+            echo "       $PYTHON -m pip install --user --break-system-packages virtualenv"
+            echo ""
+            exit 1
+        fi
         echo "Note: user installs typically go under ~/.local/. If needed, ensure ~/.local/bin is on PATH."
     fi
 fi
