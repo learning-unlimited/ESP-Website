@@ -15,7 +15,7 @@ EVENT_CHOICES=(
     ("teacher_quiz_done", "Completed teacher quiz"),
     ("paid", "Paid for program"),
     ("med", "Submitted medical form"),
-    ("med_bypass", "Recieved medical bypass"),
+    ("med_bypass", "Received medical bypass"),
     ("liab", "Submitted liability form"),
     ("onsite", "Registered for program onsite"),
     ("schedule_printed", "Printed student schedule onsite"),

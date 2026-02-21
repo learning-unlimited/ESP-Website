@@ -312,7 +312,7 @@ class CustomFormHandler():
 
 class FormStorage(FileSystemStorage):
     """
-    The Storage sublass used to temporarily store submitted files.
+    The Storage subclass used to temporarily store submitted files.
     """
     pass
 

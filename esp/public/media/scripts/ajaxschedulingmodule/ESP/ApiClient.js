@@ -51,7 +51,7 @@ function ApiClient() {
      * @param section_id: The ID of the section to schedule
      * @param timeslot_ids: A list of ids of all timeslots the class should be scheduled during.
      * @param room_id: The id of the room.
-     * @param override: Should teacher availability be overriden?
+     * @param override: Should teacher availability be overridden?
      * @param callback: If successful, this function will be called. Takes no params.
      * @param errorReporter: If server reports an error, this function will be called.
      *                       Takes one param msg with an error message.
@@ -112,7 +112,7 @@ function ApiClient() {
      *
      * @param section_id: The ID of the section to which to assign a moderator.
      * @param room_id: The ID of the moderator to assign.
-     * @param override: Should teacher/moderator availability be overriden?
+     * @param override: Should teacher/moderator availability be overridden?
      * @param callback: If successful, this function will be called. Takes no params.
      * @param errorReporter: If server reports an error, this function will be called.
      *                       Takes one param msg with an error message.
