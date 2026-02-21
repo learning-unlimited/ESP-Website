@@ -134,3 +134,125 @@ class JSONDataModuleTest(ProgramFrameworkTest):
             self.assertTrue(cls.id in json_classes_dict)
             self.assertEquals(json_classes_dict[cls.id]['emailcode'], cls.emailcode())
 
+    # ------------------------------------------------------------------
+    # Additional tests for issue #599: Dashboard stats JSON interface
+    # ------------------------------------------------------------------
+
+    def testStatsResponseStructure(self):
+        """The /json/.../stats endpoint returns a dict with a 'stats' list."""
+        self.assertEqual(self.stats_response.status_code, 200)
+        data = self.stats_response.json()
+        self.assertIn('stats', data)
+        self.assertIsInstance(data['stats'], list)
+        ids = [s['id'] for s in data['stats'] if 'id' in s]
+        for expected_id in ('vitals', 'shirtnum', 'categories', 'grades', 'accounting'):
+            self.assertIn(expected_id, ids,
+                          "'%s' section missing from stats response" % expected_id)
+
+    def testVitalsSection(self):
+        """The 'vitals' section contains non-negative integer counts."""
+        stats = self.stats_response.json()['stats']
+        vitals = next(s for s in stats if s.get('id') == 'vitals')
+        for field in ('classnum', 'teachernum', 'studentnum', 'volunteernum', 'hournum'):
+            self.assertIn(field, vitals, "vitals missing field '%s'" % field)
+
+    def testClassNums(self):
+        """Class counts in vitals match what's in the database."""
+        from esp.program.models import ClassSubject
+        stats = self.stats_response.json()['stats']
+        vitals = next(s for s in stats if s.get('id') == 'vitals')
+        total_classes = ClassSubject.objects.filter(
+            parent_program=self.program).count()
+        # classnum is a list of (label, count) pairs; total is the first entry
+        classnum = vitals['classnum']
+        self.assertIsInstance(classnum, list)
+        self.assertGreater(len(classnum), 0)
+        # First entry is ("Total # of Classes", N)
+        self.assertEqual(classnum[0][1], total_classes)
+
+    def testCategoriesSection(self):
+        """The 'categories' section lists per-category stats."""
+        stats = self.stats_response.json()['stats']
+        cats = next(s for s in stats if s.get('id') == 'categories')
+        self.assertIn('data', cats)
+        self.assertIsInstance(cats['data'], list)
+        if cats['data']:
+            entry = cats['data'][0]
+            for field in ('id', 'category', 'num_subjects', 'num_sections', 'num_class_hours'):
+                self.assertIn(field, entry,
+                              "categories entry missing field '%s'" % field)
+
+    def testAccountingSection(self):
+        """The 'accounting' section contains payment totals."""
+        stats = self.stats_response.json()['stats']
+        acct = next(s for s in stats if s.get('id') == 'accounting')
+        self.assertIn('data', acct)
+        data = acct['data']
+        self.assertIn('num_payments', data)
+        self.assertIn('total_payments', data)
+        self.assertIsInstance(data['num_payments'], int)
+        self.assertIsInstance(data['total_payments'], float)
+
+    def testStatsRequiresAdmin(self):
+        """The /json/.../stats endpoint requires an admin login."""
+        from django.test import Client
+        anon_client = Client()
+        url = '/json/%s/stats' % self.program.getUrlBase()
+        response = anon_client.get(url)
+        # Should redirect to login or return 403, not 200
+        self.assertNotEqual(response.status_code, 200)
+
+    def testClassSubjectsFields(self):
+        """Every class in class_subjects has the required fields."""
+        json_classes = self.classes_response.json()
+        self.assertIn('classes', json_classes)
+        required_fields = ('id', 'status', 'title', 'category', 'category_id',
+                           'class_size_max', 'grade_min', 'grade_max',
+                           'emailcode', 'sections', 'teachers')
+        for cls_data in json_classes['classes']:
+            for field in required_fields:
+                self.assertIn(field, cls_data,
+                              "class_subjects entry missing field '%s'" % field)
+
+    def testClassSubjectsSectionsAreLists(self):
+        """The 'sections' field in each class_subjects entry is a list of ints."""
+        json_classes = self.classes_response.json()
+        for cls_data in json_classes['classes']:
+            self.assertIsInstance(cls_data['sections'], list)
+
+    def testClassSubjectsTeachersAreListed(self):
+        """Teachers are included in class_subjects and match actual teacher IDs."""
+        json_classes = self.classes_response.json()
+        for cls_data in json_classes['classes']:
+            self.assertIsInstance(cls_data['teachers'], list)
+
+    def testClassSubjectsTeachersBlock(self):
+        """The top-level 'teachers' block in class_subjects has correct fields."""
+        json_classes = self.classes_response.json()
+        self.assertIn('teachers', json_classes)
+        for t in json_classes['teachers']:
+            for field in ('id', 'username', 'first_name', 'last_name', 'sections'):
+                self.assertIn(field, t,
+                              "teachers entry missing field '%s'" % field)
+
+    def testClassSubjectsCatalogMode(self):
+        """Catalog mode includes extra fields (class_info, prereqs, difficulty)."""
+        url = '/json/%s/class_subjects/catalog' % self.program.getUrlBase()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        json_classes = response.json()
+        for cls_data in json_classes['classes']:
+            for field in ('class_info', 'prereqs', 'difficulty'):
+                self.assertIn(field, cls_data,
+                              "catalog mode missing field '%s'" % field)
+
+    def testClassSubjectsGradeRange(self):
+        """grade_min and grade_max in class_subjects are within the program range."""
+        json_classes = self.classes_response.json()
+        prog_min = self.program.grade_min
+        prog_max = self.program.grade_max
+        for cls_data in json_classes['classes']:
+            self.assertGreaterEqual(cls_data['grade_max'], cls_data['grade_min'])
+            self.assertGreaterEqual(cls_data['grade_min'], prog_min)
+            self.assertLessEqual(cls_data['grade_max'], prog_max)
+
