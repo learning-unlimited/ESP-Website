@@ -4,7 +4,6 @@ from django import template
 
 import os.path
 import json
-from six.moves import range
 
 register = template.Library()
 

@@ -11,7 +11,6 @@ FILTERING: Only student-only accounts with valid names and DOBs are considered f
 from esp.users.models import *
 from esp.users.models.forwarder import *
 from esp.program.models import *
-import six
 
 def get_dob(user):
     try:
@@ -40,7 +39,7 @@ def get_duplicate_users():
     for user in users:
         #   Only consider users that are only students (hence skipping teachers and admins).
         ut = user.getUserTypes()
-        if not (len(ut) == 1 and ut[0] == six.u('Student')):
+        if not (len(ut) == 1 and ut[0] == 'Student'):
             continue
 
         num_students += 1
