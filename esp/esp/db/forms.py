@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.db import models
 from django import forms
 from django.template.defaultfilters import addslashes
@@ -128,7 +127,7 @@ class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, forms.widgets.Widget):
     choices = ()
 
     def __init__(self, attrs=None, *args, **kwargs):
-        super(AjaxForeignKeyWidget, self).__init__(attrs, *args, **kwargs)
+        super().__init__(attrs, *args, **kwargs)
 
         if 'field' in attrs:
             self.field = attrs['field']
@@ -180,7 +179,7 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
         if 'limit_choices_to' in kwargs:
             del kwargs['limit_choices_to']
 
-        super(AjaxForeignKeyNewformField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if ajax_func is None:
             self.widget.ajax_func = 'ajax_autocomplete'

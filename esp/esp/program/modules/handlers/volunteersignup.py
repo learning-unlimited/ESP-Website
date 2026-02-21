@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"

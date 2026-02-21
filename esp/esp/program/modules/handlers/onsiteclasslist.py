@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import division
 import six
 from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -477,7 +475,6 @@ class OnSiteClassList(ProgramModuleObj):
                                 </button></a>
                             </div>""") % ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1]) for call in calls]
         return "".join(strings)
-
 
 
     class Meta:

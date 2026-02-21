@@ -1,7 +1,5 @@
 " A view to show surveys. "
 
-from __future__ import absolute_import
-from __future__ import division
 import six
 __author__    = "$LastChangedBy$"
 __date__      = "$LastChangedDate$"

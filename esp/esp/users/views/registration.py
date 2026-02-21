@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import logging
 import random
 import six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
@@ -235,6 +234,6 @@ class GradeChangeRequestView(CreateView):
 
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
-        return super(GradeChangeRequestView, self).dispatch(*args, **kwargs)
+        return super().dispatch(*args, **kwargs)
 
 

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import datetime
 import logging
 import six
@@ -57,7 +56,6 @@ class TestUserSearchController(TestCase):
             'student_sendto_self': '1',
             'zipdistance_exclude': '',
         }
-
 
 
     def test_student_confirmed(self):

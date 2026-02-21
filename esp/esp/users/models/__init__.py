@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
 import six
 from six.moves import range
@@ -135,7 +132,7 @@ class UserAvailability(models.Model):
         #   (With this alphabetical ordering, you get roles in the order: teacher, student, guardian, educator, administrator)
         if (not hasattr(self, 'role')) or self.role is None:
             self.role = self.user.getUserTypes()[0]
-        return super(UserAvailability, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     @classmethod
     def entriesBySlot(self, event):
@@ -163,7 +160,7 @@ class BaseESPUser(object):
         # inheritance structure of this, ESPUser, or AnonymousESPUser,
         # or if Django has changed something. Adding it anyway in case
         # AnonymousUser changes in the future.
-        super(BaseESPUser, self).__init__()
+        super().__init__()
         self.create_membership_methods()
 
     @classmethod
@@ -1179,10 +1176,12 @@ class BaseESPUser(object):
         user_hash = hash(str(self.id) + str(program.id))
         return '{0:06d}'.format(abs(user_hash))[:6]
 
-    # modified from here: https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
+    # modified from here:
+    # https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
     def unsubscribe_link(self):
-        username, token = self.make_token().split(":", 1)
-        return reverse('unsubscribe', kwargs={'username': username, 'token': token,})
+        token = self.make_token()[len(self.username) + 1:]
+        return reverse('unsubscribe',
+                       kwargs={'username': self.username, 'token': token})
 
     def unsubscribe_link_full(self):
         unsub_link = self.unsubscribe_link()
@@ -2029,7 +2028,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         if self.address_postal is not None:
             self.address_postal = str(self.address_postal)
 
-        super(ContactInfo, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
     def __str__(self):
@@ -2887,7 +2886,7 @@ class GradeChangeRequest(TimeStampedModel):
         ordering = ['-acknowledged_time', '-created']
 
     def __init__(self, *args, **kwargs):
-        super(GradeChangeRequest, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         grade_options = ESPUser.grade_options()
 
         self._meta.get_field('claimed_grade').choices = list(zip(grade_options, grade_options))
@@ -2897,7 +2896,7 @@ class GradeChangeRequest(TimeStampedModel):
 
         if is_new:
             self.send_request_email()
-            super(GradeChangeRequest, self).save(**kwargs)
+            super().save(**kwargs)
             return
 
         if self.approved is not None and not self.acknowledged_time:
@@ -2908,7 +2907,7 @@ class GradeChangeRequest(TimeStampedModel):
         if self.approved is True:
             self.requesting_student.set_grade(self.claimed_grade)
 
-        super(GradeChangeRequest, self).save(**kwargs)
+        super().save(**kwargs)
 
     def _request_email_content(self):
         """
