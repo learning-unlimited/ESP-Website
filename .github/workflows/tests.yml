@@ -55,15 +55,17 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-${{ matrix.python-version }}-
           ${{ runner.os }}-pip-
+    - name: Get apt packages list
+      if: ${{ matrix.travis_job == 'test' }}
+      id: apt-action
+      run: |
+        PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^libpq-dev' | grep -v '^.*pip' | tr '\n' ' ')
+        echo "packages=$PKGS" >> $GITHUB_OUTPUT
     - name: Cache apt packages
       if: ${{ matrix.travis_job == 'test' }}
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
-        packages: >-
-          build-essential texlive texlive-latex-extra imagemagick dvipng
-          libevent-dev zlib1g-dev inkscape wamerican-large wget
-          libmemcached-dev libcurl4-openssl-dev libssl-dev libjpeg-dev
-          javascript-common libc-ares2 libev4 libfreetype6-dev
+        packages: ${{ steps.apt-action.outputs.packages }}
         version: 1.0
     - name: Prepare for Installing Dependencies
       run: deploy/travis/before_install
