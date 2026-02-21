@@ -123,7 +123,7 @@ try:
 
 
 except Exception as e:
-    # we dont' want to care if it's an exit
+    # we don't want to care if it's an exit
     if isinstance(e, SystemExit):
         raise
 
