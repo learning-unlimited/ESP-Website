@@ -4,7 +4,6 @@ from django.template.defaultfilters import addslashes
 from django.contrib.auth.models import User
 from django.utils.safestring import mark_safe
 import re
-import six
 
 get_id_re = re.compile('.*\((\d+)\)$')
 
@@ -25,10 +24,10 @@ class AjaxForeignKeyFieldBase:
                 obj = objects[0]
                 if hasattr(obj, 'ajax_str'):
                     init_val = obj.ajax_str() + " (%s)" % data
-                    old_init_val = six.text_type(obj)
+                    old_init_val = str(obj)
                 else:
-                    old_init_val = init_val = six.text_type(obj) + " (%s)" % data
-        elif isinstance(data, six.string_types):
+                    old_init_val = init_val = str(obj) + " (%s)" % data
+        elif isinstance(data, str):
             pass
         else:
             data = init_val = ''
