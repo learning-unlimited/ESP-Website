@@ -74,6 +74,8 @@ LOG_FILE = "/tmp/esp-website.log"
 # when DEBUG=True will cause every query to be logged (to the
 # django.db.backends logger).
 LOG_LEVEL = 'INFO'
+# Enable JSON-formatted structured logs in file handlers by default.
+LOG_STRUCTURED = True
 
 
 ###########################

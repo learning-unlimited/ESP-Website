@@ -34,6 +34,8 @@ Learning Unlimited, Inc.
 """
 
 import os
+import logging
+import subprocess
 import warnings
 import tempfile
 import django
@@ -88,17 +90,11 @@ STATIC_ROOT = os.path.join(PROJECT_ROOT, STATIC_ROOT_DIR)
 # DisallowedHost errors and deprecation warnings don't go to email ever.
 # In scripts, we log to the console in a shorter format, to a separate log
 # file, and not to email or sentry.
-if SENTRY_DSN:
-    sentry_handler = {
-        'level': 'WARNING',
-        'filters': ['require_not_in_script'],
-        'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
-        'dsn': SENTRY_DSN,
-    }
-else:
-    sentry_handler = {
-        'class': 'logging.NullHandler',
-    }
+sentry_handler = {
+    # Sentry is configured via sentry_sdk LoggingIntegration below.
+    # Keep this handler name in place to avoid changing logger definitions.
+    'class': 'logging.NullHandler',
+}
 
 warnings.simplefilter("default", PendingDeprecationWarning)
 
@@ -113,6 +109,9 @@ LOGGING = {
     'formatters': {
         'verbose': {
             'format': '[%(asctime)s %(name)s:%(lineno)s] %(levelname)s: %(message)s',
+        },
+        'structured': {
+            '()': 'esp.utils.log.StructuredFormatter',
         },
         'brief': {
             'format': '%(levelname)s: %(message)s',
@@ -141,7 +140,7 @@ LOGGING = {
             # LOG_FILE is set in django_settings or overridden in
             # local_settings
             'filename': LOG_FILE,
-            'formatter': 'verbose',
+            'formatter': 'structured' if LOG_STRUCTURED else 'verbose',
         },
         'filescript': {
             'level': LOG_LEVEL,
@@ -149,7 +148,7 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filters': ['require_in_script'],
             'filename': SHELL_LOG_FILE,  # computed from LOG_FILE above
-            'formatter': 'verbose',
+            'formatter': 'structured' if LOG_STRUCTURED else 'verbose',
         },
         'console': {
             'level': LOG_LEVEL,
@@ -251,16 +250,27 @@ if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this
 CSRF_COOKIE_NAME = 'esp_csrftoken'
 
 if SENTRY_DSN:
-    # If SENTRY_DSN is set, send errors to Sentry via the Raven exception
-    # handler. Note that our exception middleware (i.e., ESPErrorMiddleware)
-    # will remain enabled and will receive exceptions before Raven does.
-    import raven
+    # If SENTRY_DSN is set, initialize Sentry via sentry-sdk.
+    # Our exception middleware (ESPErrorMiddleware) will remain enabled.
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration
 
-    INSTALLED_APPS += (
-        'raven.contrib.django.raven_compat',
+    release = None
+    try:
+        release = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'],
+            cwd=os.path.join(PROJECT_ROOT, '..'),
+            universal_newlines=True,
+        ).strip()
+    except Exception:
+        pass
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(),
+            LoggingIntegration(level=logging.INFO, event_level=logging.WARNING),
+        ],
+        release=release,
     )
-    RAVEN_CONFIG = {
-        'dsn': SENTRY_DSN,
-        'release': raven.fetch_git_sha(os.path.join(PROJECT_ROOT, '..')),
-    }
-
