@@ -202,7 +202,7 @@ class ESPErrorMiddleware(MiddlewareMixin):
             # - alternatively, we could, I dunno, NOT GET RID OF THE SAFE
             #   TEMPLATE in main?
             context = RequestContext(request, context).flatten()
-        except:
+        except Exception:
             # well, we couldn't, but at least display something
             # (actually it will immediately fail on main because someone
             # removed the safe version of the template and

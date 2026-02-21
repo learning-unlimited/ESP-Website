@@ -13,7 +13,7 @@ def try_multi(n_tries):
             for x in range(n_tries - 1):
                 try:
                     return fn(*args, **kwargs)
-                except:
+                except Exception:
                     pass
             return fn(*args, **kwargs)
         return retried_fn

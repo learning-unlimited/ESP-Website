@@ -185,7 +185,7 @@ class TeacherInfo__validationtest(TestCase):
             try:
                 int(i)
                 return True
-            except:
+            except (ValueError, TypeError):
                 return False
 
         # There's some data-cleaning going on here, so

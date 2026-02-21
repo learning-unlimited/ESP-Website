@@ -13,7 +13,7 @@ def send_to_self(user):
     """
     try:
         return [user.get_email_sendto_address_pair()]
-    except:
+    except Exception:
         return []
 
 def _send_to_contact(contact):
@@ -33,7 +33,7 @@ def _send_to_contact(contact):
                 contact_info = getattr(profile, 'contact_' + contact, profile.contact_guardian)
                 if contact_info and contact_info.email:
                     return [contact_info.get_email_sendto_address_pair()]
-        except:
+        except Exception:
             pass
         return []
     sendto_fn.__doc__ = sendto_fn.__doc__ % contact
@@ -63,7 +63,7 @@ def _send_to_combination(sendto_fns):
                         # Duplicate emails are ignored.
                         emails.append(address_pair[0])
                         address_pairs.append(address_pair)
-            except:
+            except Exception:
                 pass
         return address_pairs
 

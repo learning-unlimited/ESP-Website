@@ -26,7 +26,7 @@ class SectionList(BaseHandler):
         try:
             cls = ClassSubject.objects.get(id=int(class_id))
             section = [s for s in cls.sections.all() if s.index() == int(section_num)][0]
-        except:
+        except (ClassSubject.DoesNotExist, ValueError, IndexError):
             return
 
         self.emailcode = section.emailcode()
@@ -53,7 +53,7 @@ class SectionList(BaseHandler):
         try:
             cls = ClassSubject.objects.get(id=int(class_id))
             section = [s for s in cls.sections.all() if s.index() == int(section_num)][0]
-        except:
+        except (ClassSubject.DoesNotExist, ValueError, IndexError):
             return
 
         # Create a section list in Mailman,

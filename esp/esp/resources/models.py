@@ -98,7 +98,7 @@ class ResourceType(models.Model):
         if self.attributes_dumped:
             try:
                 self._attributes_cached = json.loads(self.attributes_dumped)
-            except:
+            except (ValueError, TypeError):
                 self._attributes_cached = None
         else:
             self._attributes_cached = None

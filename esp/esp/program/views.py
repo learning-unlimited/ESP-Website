@@ -628,7 +628,7 @@ def submit_transaction(request):
     transaction.commit()
     try:
         return _submit_transaction(request, log_record)
-    except:
+    except Exception:
         subject = '[ESP CC] Failed to process Cybersource postback'
         log_uri = request.build_absolute_uri(
             reverse('admin:accounting_cybersourcepostback_change', args=(log_record.id,)))

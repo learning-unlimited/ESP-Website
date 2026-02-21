@@ -58,7 +58,7 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, userna
             else:
                 founduser = ESPUser.getUserFromNum(first, last, usernum)
                 old_url = True
-    except:
+    except (ESPUser.DoesNotExist, ESPError):
         return bio_not_found(request)
 
     foundprogram = get_from_id(progid, Program, 'program', False)
@@ -143,7 +143,7 @@ def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
         else:
             founduser = ESPUser.getUserFromNum(first, last, usernum)
             old_url = True
-    except:
+    except (ESPUser.DoesNotExist, ESPError):
         return bio_not_found(request)
 
     return bio_user(request, founduser, old_url)

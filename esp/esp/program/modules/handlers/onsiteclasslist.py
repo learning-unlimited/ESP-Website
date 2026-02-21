@@ -232,7 +232,7 @@ class OnSiteClassList(ProgramModuleObj):
         result = {'user': None, 'user_grade': 0, 'sections': [], 'messages': []}
         try:
             result['user'] = int(request.GET['user'])
-        except:
+        except (ValueError, TypeError, KeyError):
             result['messages'].append('Error: no user specified.')
         if result['user']:
             result['user_grade'] = ESPUser.objects.get(id=result['user']).getGrade(program=prog)
@@ -247,12 +247,12 @@ class OnSiteClassList(ProgramModuleObj):
         result = {'user': None, 'sections': [], 'messages': []}
         try:
             user = ESPUser.objects.get(id=int(request.GET['user']))
-        except:
+        except (ValueError, TypeError, KeyError, ESPUser.DoesNotExist):
             user = None
             result['messages'].append('Error: could not find user %s' % request.GET.get('user', None))
         try:
             desired_sections = json.loads(request.GET['sections'])
-        except:
+        except (ValueError, KeyError):
             result['messages'].append('Error: could not parse requested sections %s' % request.GET.get('sections', None))
             desired_sections = None
 
@@ -329,7 +329,7 @@ class OnSiteClassList(ProgramModuleObj):
         try:
             user = int(request.GET.get('user', None))
             user_obj = ESPUser.objects.get(id=user)
-        except:
+        except (ValueError, TypeError, KeyError, ESPUser.DoesNotExist):
             result['message'] = "Could not find user %s." % request.GET.get('user', None)
 
         printer = request.GET.get('printer', None)

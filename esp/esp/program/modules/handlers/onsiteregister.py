@@ -90,7 +90,7 @@ class OnSiteRegister(ProgramModuleObj):
                             student_info.k12school = K12School.objects.get(id=int(new_data['k12school']))
                         else:
                             student_info.k12school = K12School.objects.filter(name__icontains=new_data['k12school'])[0]
-                except:
+                except (K12School.DoesNotExist, IndexError, ValueError):
                     student_info.k12school = None
                 student_info.school = new_data['school'] if not student_info.k12school else student_info.k12school.name
 

@@ -106,7 +106,7 @@ class FinAidApproveModule(ProgramModuleObj):
                 try:
                     req.approve(dollar_amount = amount_max_dec, discount_percent = percent)
                     users_approved.append(req.user.name())
-                except:
+                except (ValueError, TypeError):
                     users_error.append(req.user.name())
 
         context["requests"] = reqs

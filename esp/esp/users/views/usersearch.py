@@ -245,7 +245,7 @@ def get_user_checklist(request, userList, extra='', nextpage=None, extra_context
                 try:
                     val = int(request.POST[key])
                     UsersQ |= Q(id=val)
-                except:
+                except (ValueError, TypeError):
                     pass
 
         return (UsersQ, True)

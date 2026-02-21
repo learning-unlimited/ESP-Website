@@ -40,7 +40,7 @@ def get_primary_nav(context):
 
     try:
         retVal = cache.get(cache_key)
-    except:
+    except Exception:
         retVal = None
 
     if retVal and cache_key:
