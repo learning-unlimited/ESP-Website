@@ -60,7 +60,7 @@ class BaseConstraint(object):
     required = False
 
     def __init__(self, **kwargs):
-        # Create a constructor wihch takes in arbitrary kwargs in case any
+        # Create a constructor which takes in arbitrary kwargs in case any
         # subclass needs them.
         pass
 

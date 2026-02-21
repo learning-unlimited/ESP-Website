@@ -41,6 +41,7 @@ from esp.utils.web import render_to_response
 from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.users.models    import ESPUser, Record, RecordType
 from django.http import HttpResponse
+from django.db import transaction
 from django.template.loader import render_to_string
 from esp.users.views    import search_for_user
 
@@ -266,20 +267,21 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
                     if student.isStudent():
                         self.student = student
-                        for key in ['attended', 'paid', 'liab', 'med']:
-                            if form.cleaned_data[key]:
-                                if key == "attended":
-                                    if prog.isCheckedIn(student):
-                                        results['existing'].append(code)
+                        with transaction.atomic():
+                            for key in ['attended', 'paid', 'liab', 'med']:
+                                if form.cleaned_data[key]:
+                                    if key == "attended":
+                                        if prog.isCheckedIn(student):
+                                            results['existing'].append(code)
+                                        else:
+                                            self.create_record(key)
+                                            results['new'].append(code)
                                     else:
-                                        self.create_record(key)
-                                        results['new'].append(code)
-                                else:
-                                    created = self.create_record(key)
-                                    if created:
-                                        results[key]['new'].append(code)
-                                    else:
-                                        results[key]['existing'].append(code)
+                                        created = self.create_record(key)
+                                        if created:
+                                            results[key]['new'].append(code)
+                                        else:
+                                            results[key]['existing'].append(code)
                     else:
                         results['not_student'].append(code)
         else:
@@ -339,15 +341,16 @@ class OnSiteCheckinModule(ProgramModuleObj):
             user = ESPUser.objects.filter(id = request.POST['userid']).first()
             if user:
                 self.student = user
-                for key in ['attended', 'paid', 'liab', 'med']:
-                    if key in request.POST:
-                        self.create_record(key)
-                    else:
-                        self.delete_record(key)
-                if "undocheckin" in request.POST:
-                    Record.objects.filter(event__name="attended", program=self.program, user=self.student).order_by("-time")[0].delete()
-                if "undocheckout" in request.POST:
-                    Record.objects.filter(event__name="checked_out", program=self.program, user=self.student).order_by("-time")[0].delete()
+                with transaction.atomic():
+                    for key in ['attended', 'paid', 'liab', 'med']:
+                        if key in request.POST:
+                            self.create_record(key)
+                        else:
+                            self.delete_record(key)
+                    if "undocheckin" in request.POST:
+                        Record.objects.filter(event__name="attended", program=self.program, user=self.student).order_by("-time")[0].delete()
+                    if "undocheckout" in request.POST:
+                        Record.objects.filter(event__name="checked_out", program=self.program, user=self.student).order_by("-time")[0].delete()
                 message = "Check-in updated for " + user.username
             else:
                 error = True
