@@ -332,39 +332,17 @@ class IndividualAccountingController(ProgramAccountingController):
             be set to None if unused.   """
 
         result = []
-        program_account = self.default_program_account()
-        source_account = self.default_source_account()
         line_items = self.get_lineitemtypes(include_donations=False).exclude(text__in=self.admission_items)
 
-        #   Clear existing transfers
+        #   Clear all existing optional transfers for this student at once
         Transfer.objects.filter(user=self.user, line_item__in=line_items).delete()
 
-        #   Create transfers for optional line item types
+        #   Delegate each item to set_preference(), which handles transfer creation.
+        #   set_preference()'s own per-item delete is a no-op here since we
+        #   already cleared all transfers above.
         for item_tup in optional_items:
             (item_name, quantity, cost, option_id) = item_tup
-            matched = False
-            for lit in line_items:
-                if lit.text == item_name:
-                    matched = True
-                    option = None
-                    #   Determine the cost to apply to the transfer:
-                    #   - Default to the cost of the line item type
-                    transfer_amount = lit.amount_dec
-                    #   - If a dollar amount is specified, use that amount
-                    #     (note: this will override any line item option)
-                    if cost is not None:
-                        transfer_amount = cost
-                    #   - If a line item option is specified, use its amount
-                    #     (which may inherit from the line item type)
-                    if option_id is not None:
-                        option = LineItemOptions.objects.get(id=option_id)
-                        if cost is None:
-                            transfer_amount = option.amount_dec_inherited
-                    for i in range(quantity or 0):
-                        result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount, option=option))
-                    break
-            if not matched:
-                raise Exception('Could not find a line item type matching "%s"' % item_name)
+            result.extend(self.set_preference(item_name, quantity or 0, amount=cost, option_id=option_id))
 
         return result
 
