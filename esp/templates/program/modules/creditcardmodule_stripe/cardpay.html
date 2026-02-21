@@ -59,6 +59,9 @@ $j(document).ready(function () {
         $j("#donation_choices_wrapper").hide();
         $j("#donation_line_item").hide();
     {% endif %}
+    {% if itemizedcosttotal > 0 %}
+        $j('#cc-statement-modal').modal('show');
+    {% endif %}
 });
 -->
 </script>
@@ -114,5 +117,19 @@ Check here to support <a href="http://www.learningu.org/about" target="_blank">L
 <p>If you would like to cancel at this time, you can <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.</p>
 
 {% endif %}
+
+<!-- Credit card statement warning modal -->
+<div id="cc-statement-modal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="cc-statement-modal-label" aria-hidden="true">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h3 id="cc-statement-modal-label">Note about your credit card statement</h3>
+    </div>
+    <div class="modal-body">
+        <p>This payment will appear on your credit card statement as <strong>SPLASH LEARNING UNLIMT</strong>.</p>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Got it</button>
+    </div>
+</div>
 
 {% endblock %}
