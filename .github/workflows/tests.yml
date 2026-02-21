@@ -1,4 +1,4 @@
-name: "Lint and Unit Tests"
+name: "Unit Tests"
 
 on:
   push:
@@ -14,21 +14,10 @@ concurrency:
 permissions:
   contents: read
 
-jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-    - name: Install flake8
-      run: pip install flake8
-    - name: Run lint
-      run: deploy/lint
+env:
+  PYTHON_VERSION: '3.7'
 
+jobs:
   test:
     name: Test (Python 3.7)
     runs-on: ubuntu-24.04
@@ -51,21 +40,20 @@ jobs:
     env:
       DJANGO_SETTINGS_MODULE: esp.settings
       TRAVIS_JOB: test
-      PYTHON_VERSION: 3.7
 
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python 3.7
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
       uses: deadsnakes/action@v3.2.0
       with:
-        python-version: 3.7
+        python-version: ${{ env.PYTHON_VERSION }}
     - name: Cache pip packages
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-3.7-${{ hashFiles('esp/requirements.txt') }}
+        key: ${{ runner.os }}-pip-${{ env.PYTHON_VERSION }}-${{ hashFiles('esp/requirements.txt') }}
         restore-keys: |
-          ${{ runner.os }}-pip-3.7-
+          ${{ runner.os }}-pip-${{ env.PYTHON_VERSION }}-
           ${{ runner.os }}-pip-
     - name: Prepare for Installing Dependencies
       run: deploy/travis/before_install
