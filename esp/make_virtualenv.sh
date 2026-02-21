@@ -53,7 +53,15 @@
 # packages to your virtualenv if present (or to your global site-packages
 # otherwise). You should do this whenever requirements.txt changes.
 
-BASEDIR=$(dirname $(dirname $(readlink -e $0)))
+SCRIPT_SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SCRIPT_SOURCE" ]
+do
+  SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+  SCRIPT_SOURCE="$(readlink "$SCRIPT_SOURCE")"
+  [[ "$SCRIPT_SOURCE" != /* ]] && SCRIPT_SOURCE="$SCRIPT_DIR/$SCRIPT_SOURCE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+BASEDIR="$(cd -P "$SCRIPT_DIR/.." && pwd)"
 
 # The directory to store the virtualenv can be supplied as an argument.
 if [[ "$#" -lt "1" ]]
@@ -63,8 +71,22 @@ else
     VENVDIR=$1
 fi
 
-echo "Creating Virtualenv in $VENVDIR"
+PYTHON="${PYTHON:-python3.7}"
 
-sudo python3.7 -m pip install "virtualenv>=1.10"
+echo "Creating Virtualenv in $VENVDIR (using $PYTHON)"
 
-python3.7 -m virtualenv "$VENVDIR" --always-copy
+# Ensure virtualenv is available for the chosen interpreter without using sudo.
+if ! "$PYTHON" -c "import virtualenv" >/dev/null 2>&1; then
+    echo "virtualenv not found for $PYTHON."
+
+    if [[ "$EUID" -eq 0 ]]; then
+        echo "Installing virtualenv into system site-packages (running as root)."
+        "$PYTHON" -m pip install "virtualenv>=1.10"
+    else
+        echo "Installing virtualenv into user site-packages (no sudo)."
+        "$PYTHON" -m pip install --user "virtualenv>=1.10"
+        echo "Note: user installs typically go under ~/.local/. If needed, ensure ~/.local/bin is on PATH."
+    fi
+fi
+
+"$PYTHON" -m virtualenv "$VENVDIR" --always-copy
