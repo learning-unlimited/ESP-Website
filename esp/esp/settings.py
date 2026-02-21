@@ -235,8 +235,11 @@ CACHES = {
     }
 }
 
-MIDDLEWARE = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LOCAL)])
-
+MIDDLEWARE = tuple([
+    pair[1] for pair in sorted(
+        MIDDLEWARE_GLOBAL + globals().get("MIDDLEWARE_LOCAL", [])
+    )
+])
 # set tempdir so that we don't have to worry about collision
 if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this multiple times
     tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX)

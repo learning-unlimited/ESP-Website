@@ -57,18 +57,20 @@ from esp.utils.admin_user_search import default_user_search
 
 from esp.users.admin import ExpiredListFilter
 
-class ProgramModuleAdmin(admin.ModelAdmin):
+from esp.utils.admin import CopyAdminMixin
+
+class ProgramModuleAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler')
     search_fields = ['link_title', 'admin_title', 'handler']
 admin_site.register(ProgramModule, ProgramModuleAdmin)
 
-class ArchiveClassAdmin(admin.ModelAdmin):
+class ArchiveClassAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('id', 'title', 'year', 'date', 'category', 'program', 'teacher')
     search_fields = ['id', 'description', 'title', 'program', 'teacher', 'category']
     pass
 admin_site.register(ArchiveClass, ArchiveClassAdmin)
 
-class ProgramAdmin(admin.ModelAdmin):
+class ProgramAdmin(CopyAdminMixin, admin.ModelAdmin):
     class Media:
         css = { 'all': ( 'styles/admin.css', ) }
     list_display = ('id', 'name', 'url', 'director_email', 'grade_min', 'grade_max',)
@@ -76,7 +78,7 @@ class ProgramAdmin(admin.ModelAdmin):
     search_fields = ('name', )
 admin_site.register(Program, ProgramAdmin)
 
-class RegistrationProfileAdmin(admin.ModelAdmin):
+class RegistrationProfileAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('id', 'user', 'contact_user', 'contact_guardian', 'contact_emergency', 'program', 'last_ts')
     search_fields = default_user_search() + ['contact_user__first_name', 'contact_user__last_name',
                                             'contact_guardian__first_name', 'contact_guardian__last_name',
@@ -89,7 +91,7 @@ class RegistrationProfileAdmin(admin.ModelAdmin):
 
 admin_site.register(RegistrationProfile, RegistrationProfileAdmin)
 
-class TeacherBioAdmin(admin.ModelAdmin):
+class TeacherBioAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('user', 'program', 'slugbio')
     search_fields = default_user_search() + ['slugbio', 'bio']
 
@@ -101,7 +103,7 @@ class FinancialAidGrantInline(admin.TabularInline):
     max_num = 1
     verbose_name_plural = 'Financial aid grant - enter 100 in "Percent" field to waive entire cost'
 
-class FinancialAidRequestAdmin(admin.ModelAdmin):
+class FinancialAidRequestAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('user', 'approved', 'reduced_lunch', 'program', 'household_income', 'extra_explaination')
     search_fields = default_user_search() + ['id', 'program__url']
     list_filter = ['program']
@@ -131,7 +133,7 @@ class FinancialAidRequestAdmin(admin.ModelAdmin):
     approve.short_description = "Approve selected financial aid requests for 100%%"
 admin_site.register(FinancialAidRequest, FinancialAidRequestAdmin)
 
-class Admin_SplashInfo(admin.ModelAdmin):
+class Admin_SplashInfo(CopyAdminMixin, admin.ModelAdmin):
     list_display = (
         'student',
         'program',
@@ -149,18 +151,18 @@ def subclass_instance_type(obj):
     return type(obj.subclass_instance())._meta.object_name
 subclass_instance_type.short_description = 'Instance type'
 
-class BooleanTokenAdmin(admin.ModelAdmin):
+class BooleanTokenAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('expr', 'seq', subclass_instance_type, 'text')
     search_fields = ['text']
 admin_site.register(BooleanToken, BooleanTokenAdmin)
 
-class BooleanExpressionAdmin(admin.ModelAdmin):
+class BooleanExpressionAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('label', subclass_instance_type, 'num_tokens')
     def num_tokens(self, obj):
         return len(obj.get_stack())
 admin_site.register(BooleanExpression, BooleanExpressionAdmin)
 
-class Admin_ScheduleConstraint(admin.ModelAdmin):
+class Admin_ScheduleConstraint(CopyAdminMixin, admin.ModelAdmin):
     list_display = (
         'program',
         'condition',
@@ -169,21 +171,21 @@ class Admin_ScheduleConstraint(admin.ModelAdmin):
     list_filter = ('program',)
 admin_site.register(ScheduleConstraint, Admin_ScheduleConstraint)
 
-class ScheduleTestOccupiedAdmin(admin.ModelAdmin):
+class ScheduleTestOccupiedAdmin(CopyAdminMixin, admin.ModelAdmin):
     def program(obj):
         return obj.timeblock.program
     list_display = ('timeblock', program, 'expr', 'seq', subclass_instance_type, 'text')
     list_filter = ('timeblock__program',)
 admin_site.register(ScheduleTestOccupied, ScheduleTestOccupiedAdmin)
 
-class ScheduleTestCategoryAdmin(admin.ModelAdmin):
+class ScheduleTestCategoryAdmin(CopyAdminMixin, admin.ModelAdmin):
     def program(obj):
         return obj.timeblock.program
     list_display = ('timeblock', program, 'category', 'expr', 'seq', subclass_instance_type, 'text')
     list_filter = ('timeblock__program',)
 admin_site.register(ScheduleTestCategory, ScheduleTestCategoryAdmin)
 
-class ScheduleTestSectionListAdmin(admin.ModelAdmin):
+class ScheduleTestSectionListAdmin(CopyAdminMixin, admin.ModelAdmin):
     def program(obj):
         return obj.timeblock.program
     list_display = ('timeblock', program, 'section_ids', 'expr', 'seq', subclass_instance_type, 'text')
@@ -192,7 +194,7 @@ admin_site.register(ScheduleTestSectionList, ScheduleTestSectionListAdmin)
 
 class VolunteerOfferInline(admin.StackedInline):
     model = VolunteerOffer
-class VolunteerRequestAdmin(admin.ModelAdmin):
+class VolunteerRequestAdmin(CopyAdminMixin, admin.ModelAdmin):
     def description(obj):
         return obj.timeslot.description
     def time(obj):
@@ -204,7 +206,7 @@ class VolunteerRequestAdmin(admin.ModelAdmin):
     inlines = [VolunteerOfferInline,]
 admin_site.register(VolunteerRequest, VolunteerRequestAdmin)
 
-class VolunteerOfferAdmin(admin.ModelAdmin):
+class VolunteerOfferAdmin(CopyAdminMixin, admin.ModelAdmin):
     def program(obj):
         return obj.request.program
     def description(obj):
@@ -220,7 +222,7 @@ admin_site.register(VolunteerOffer, VolunteerOfferAdmin)
 
 ## class_.py
 
-class Admin_RegistrationType(admin.ModelAdmin):
+class Admin_RegistrationType(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('name', 'category', 'displayName', 'description', )
 admin_site.register(RegistrationType, Admin_RegistrationType)
 
@@ -234,7 +236,7 @@ def renew_student_registrations(modeladmin, request, queryset):
         reg.unexpire()
     modeladmin.message_user(request, "%s registration(s) successfully renewed" % len(queryset))
 
-class StudentRegistrationAdmin(admin.ModelAdmin):
+class StudentRegistrationAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date',)
     actions = [ expire_student_registrations, renew_student_registrations ]
     search_fields = default_user_search() + ['id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
@@ -242,7 +244,7 @@ class StudentRegistrationAdmin(admin.ModelAdmin):
     date_hierarchy = 'start_date'
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 
-class StudentSubjectInterestAdmin(admin.ModelAdmin):
+class StudentSubjectInterestAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('id', 'subject', 'user', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
     search_fields = default_user_search() + ['id', 'subject__id', 'subject__title']
@@ -254,7 +256,7 @@ def sec_classrooms(obj):
     return "; ".join(list({x.name +': ' +  str(x.num_students) + " students" for x in obj.classrooms()}))
 def sec_teacher_optimal_capacity(obj):
     return (obj.parent_class.class_size_max if obj.parent_class.class_size_max else obj.parent_class.class_size_optimal)
-class SectionAdmin(admin.ModelAdmin):
+class SectionAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('emailcode', 'title', 'friendly_times', 'status', 'duration', 'max_class_capacity', sec_teacher_optimal_capacity, sec_classrooms)
     list_display_links = ('title',)
     list_filter = ['status', 'parent_class__parent_program']
@@ -267,7 +269,7 @@ class SectionInline(admin.TabularInline):
     readonly_fields = ('meeting_times', 'prettyrooms')
     can_delete = False
 
-class SubjectAdmin(admin.ModelAdmin):
+class SubjectAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('category', 'id', 'title', 'parent_program',
                     'pretty_teachers')
     list_display_links = ('title',)
@@ -299,24 +301,24 @@ class SubjectAdmin(admin.ModelAdmin):
     )
 admin_site.register(ClassSubject, SubjectAdmin)
 
-class Admin_ClassCategories(admin.ModelAdmin):
+class Admin_ClassCategories(CopyAdminMixin, admin.ModelAdmin):
      list_display = ('category', 'symbol', 'seq', )
 admin_site.register(ClassCategories, Admin_ClassCategories)
 
-class Admin_ClassSizeRange(admin.ModelAdmin):
+class Admin_ClassSizeRange(CopyAdminMixin, admin.ModelAdmin):
      list_display = ('program', 'range_min', 'range_max', )
      list_filter = ('program',)
 admin_site.register(ClassSizeRange, Admin_ClassSizeRange)
 
 ## app_.py
 
-class StudentAppAdmin(admin.ModelAdmin):
+class StudentAppAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('user', 'program', 'done')
     search_fields = default_user_search()
     list_filter = ('program',)
 admin_site.register(StudentApplication, StudentAppAdmin)
 
-class Admin_StudentAppQuestion(admin.ModelAdmin):
+class Admin_StudentAppQuestion(CopyAdminMixin, admin.ModelAdmin):
     list_display = (
         'program',
         'subject',
@@ -327,7 +329,7 @@ class Admin_StudentAppQuestion(admin.ModelAdmin):
     list_filter = ('subject__parent_program', 'program', )
 admin_site.register(StudentAppQuestion, Admin_StudentAppQuestion)
 
-class Admin_StudentAppResponse(admin.ModelAdmin):
+class Admin_StudentAppResponse(CopyAdminMixin, admin.ModelAdmin):
     list_display = (
         'question',
         'response',
@@ -339,7 +341,7 @@ class Admin_StudentAppResponse(admin.ModelAdmin):
     list_filter = ('question__subject__parent_program', 'question__program', )
 admin_site.register(StudentAppResponse, Admin_StudentAppResponse)
 
-class Admin_StudentAppReview(admin.ModelAdmin):
+class Admin_StudentAppReview(CopyAdminMixin, admin.ModelAdmin):
     list_display = (
         'reviewer',
         'date',
@@ -350,26 +352,26 @@ class Admin_StudentAppReview(admin.ModelAdmin):
     list_filter = ('date',)
 admin_site.register(StudentAppReview, Admin_StudentAppReview)
 
-class ClassFlagTypeAdmin(admin.ModelAdmin):
+class ClassFlagTypeAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('name', 'show_in_scheduler', 'show_in_dashboard')
     search_fields = ['name']
     list_filter = ['program']
 admin_site.register(ClassFlagType, ClassFlagTypeAdmin)
 
-class ClassFlagAdmin(admin.ModelAdmin):
+class ClassFlagAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('flag_type', 'subject', 'comment', 'created_by', 'modified_by')
     readonly_fields = ['modified_by', 'modified_time', 'created_by', 'created_time']
     search_fields = default_user_search('modified_by') + default_user_search('created_by') + ['flag_type__name', 'flag_type__id', 'subject__id', 'subject__title', 'subject__parent_program__url', 'comment']
     list_filter = ['subject__parent_program', 'flag_type']
 admin_site.register(ClassFlag, ClassFlagAdmin)
 
-class PhaseZeroRecordAdmin(admin.ModelAdmin):
+class PhaseZeroRecordAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('id', 'display_user', 'program')
     search_fields = ['user__username']
     list_filter = ['program']
 admin_site.register(PhaseZeroRecord, PhaseZeroRecordAdmin)
 
-class ModeratorRecordAdmin(admin.ModelAdmin):
+class ModeratorRecordAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('id', 'user', 'program', 'will_moderate', 'num_slots')
     search_fields = ['user__username']
     list_filter = ['program', 'will_moderate']

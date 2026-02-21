@@ -10,16 +10,30 @@ from esp.admin import admin_site
 from reversion.admin import VersionAdmin
 
 
-class TemplateOverrideAdmin(VersionAdmin):
+class CopyAdminMixin:
+    """Mixin that enables the 'Save as new' button on all admin change views.
+
+    When editing an existing object, this adds a 'Save as new' button that
+    creates a brand-new object pre-populated with the current form's visible
+    field values, making it easy to create several similar objects quickly.
+
+    Usage:
+        class MyModelAdmin(CopyAdminMixin, admin.ModelAdmin):
+            ...
+    """
+    save_as = True
+
+
+class TemplateOverrideAdmin(CopyAdminMixin, VersionAdmin):
     exclude = ['version']
     search_fields = ['name']
     list_display = ['id', 'name', 'version', ]
     list_display_links = ['id', 'name', ]
 
-class PrinterAdmin(admin.ModelAdmin):
+class PrinterAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ['name', 'printer_type']
 
-class PrintRequestAdmin(admin.ModelAdmin):
+class PrintRequestAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ['user', 'printer', 'time_requested', 'time_executed']
     list_filter = ['printer', 'time_requested', 'time_executed']
     date_hierarchy = 'time_requested'

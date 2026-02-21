@@ -9,19 +9,20 @@ from esp.users.models import UserAvailability, ContactInfo, StudentInfo, Teacher
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from esp.utils.admin_user_search import default_user_search
+from esp.utils.admin import CopyAdminMixin
 import datetime
 
-class UserForwarderAdmin(admin.ModelAdmin):
+class UserForwarderAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('source', 'target')
     search_fields = default_user_search('source') + default_user_search('target')
 admin_site.register(UserForwarder, UserForwarderAdmin)
 
-class ZipCodeAdmin(admin.ModelAdmin):
+class ZipCodeAdmin(CopyAdminMixin, admin.ModelAdmin):
     search_fields = ('=zip_code',)
     list_display = ('zip_code', 'latitude', 'longitude')
 admin_site.register(ZipCode, ZipCodeAdmin)
 
-class ZipCodeSearchesAdmin(admin.ModelAdmin):
+class ZipCodeSearchesAdmin(CopyAdminMixin, admin.ModelAdmin):
     def count(obj):
         return len(obj.zipcodes.split(','))
     count.short_description = "Number of zip codes"
@@ -29,7 +30,7 @@ class ZipCodeSearchesAdmin(admin.ModelAdmin):
     search_fields = ('=zip_code__zip_code',)
 admin_site.register(ZipCodeSearches, ZipCodeSearchesAdmin)
 
-class UserAvailabilityAdmin(admin.ModelAdmin):
+class UserAvailabilityAdmin(CopyAdminMixin, admin.ModelAdmin):
     def parent_program(obj): #because 'event__program' for some reason doesn't want to work...
         return obj.event.program
     list_display = ['id', 'user', 'event', parent_program]
@@ -38,7 +39,7 @@ class UserAvailabilityAdmin(admin.ModelAdmin):
     ordering = ['-event__program', 'user__username', 'event__start']
 admin_site.register(UserAvailability, UserAvailabilityAdmin)
 
-class ESPUserAdmin(UserAdmin):
+class ESPUserAdmin(CopyAdminMixin, UserAdmin):
     #remove the user_permissions from adminpage
     #(since we don't use it)
     #See https://github.com/django/django/blob/stable/1.3.x/django/contrib/auth/admin.py
@@ -53,12 +54,12 @@ class ESPUserAdmin(UserAdmin):
         )
 admin_site.register(ESPUser, ESPUserAdmin)
 
-class RecordTypeAdmin(admin.ModelAdmin):
+class RecordTypeAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ['id', 'name', 'description']
     search_fields = ['name', 'description']
 admin_site.register(RecordType, RecordTypeAdmin)
 
-class RecordAdmin(admin.ModelAdmin):
+class RecordAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ['id', 'user', 'event', 'program', 'time',]
     list_filter = ['event', 'program', 'time']
     search_fields = default_user_search()
@@ -81,7 +82,7 @@ class ExpiredListFilter(admin.SimpleListFilter):
         elif self.value() == 'expired':
             return queryset.filter(end_date__lte=datetime.datetime.now())
 
-class PermissionAdmin(admin.ModelAdmin):
+class PermissionAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ['id', 'user', 'role', 'permission_type', 'program', 'start_date', 'end_date']
     search_fields = default_user_search() + ['permission_type', 'program__url']
     list_filter = ['permission_type', 'program', 'role', ExpiredListFilter]
@@ -108,12 +109,12 @@ class PermissionAdmin(admin.ModelAdmin):
 
 admin_site.register(Permission, PermissionAdmin)
 
-class ContactInfoAdmin(admin.ModelAdmin):
+class ContactInfoAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ['id', 'user', 'e_mail', 'phone_day']
     search_fields = default_user_search() + ['e_mail']
 admin_site.register(ContactInfo, ContactInfoAdmin)
 
-class UserInfoAdmin(admin.ModelAdmin):
+class UserInfoAdmin(CopyAdminMixin, admin.ModelAdmin):
     search_fields = default_user_search()
 
 class StudentInfoAdmin(UserInfoAdmin):
@@ -138,7 +139,7 @@ class EducatorInfoAdmin(UserInfoAdmin):
     list_display = ['id', 'user', 'position', 'getSchool']
 admin_site.register(EducatorInfo, EducatorInfoAdmin)
 
-class K12SchoolAdmin(admin.ModelAdmin):
+class K12SchoolAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ['name', 'grades', 'contact_title', 'contact_name', 'school_type']
     formfield_overrides = {
         models.TextField: {'widget': forms.TextInput(attrs={'size': '50',}),},
@@ -153,7 +154,7 @@ class K12SchoolAdmin(admin.ModelAdmin):
 
 admin_site.register(K12School, K12SchoolAdmin)
 
-class GradeChangeRequestAdmin(admin.ModelAdmin):
+class GradeChangeRequestAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ['requesting_student', 'claimed_grade', 'approved', 'acknowledged_by', 'acknowledged_time', 'created']
     readonly_fields = ['grade_before_request', 'requesting_student', 'acknowledged_by', 'acknowledged_time', 'claimed_grade']
     search_fields = default_user_search('requesting_student')

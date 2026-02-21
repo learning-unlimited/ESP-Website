@@ -2,8 +2,9 @@ from __future__ import absolute_import
 from esp.tagdict.models import Tag
 from django.contrib import admin
 from esp.admin import admin_site
+from esp.utils.admin import CopyAdminMixin
 
-class TagAdmin(admin.ModelAdmin):
+class TagAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('key', 'value', 'target', )
     list_filter = ('key', 'object_id', 'content_type__model', )
 admin_site.register(Tag, TagAdmin)

@@ -37,15 +37,16 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.admin import admin_site
 from esp.miniblog.models import AnnouncementLink, Entry, Comment
+from esp.utils.admin import CopyAdminMixin
 
 
-class AnnouncementLinkAdmin(admin.ModelAdmin):
+class AnnouncementLinkAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display= ('category', 'title', 'section', 'highlight_begin', 'highlight_expire')
     list_filter = ('section', 'highlight_begin', 'highlight_expire')
     search_fields=('category', 'title', 'href')
 admin_site.register(AnnouncementLink, AnnouncementLinkAdmin)
 
-class EntryAdmin(admin.ModelAdmin):
+class EntryAdmin(CopyAdminMixin, admin.ModelAdmin):
     search_fields = ['slug', 'content', 'title']
     list_display = ('section', 'slug', 'title', 'highlight_begin', 'highlight_expire')
     list_filter = ('highlight_begin', 'highlight_expire')
@@ -55,7 +56,7 @@ class EntryAdmin(admin.ModelAdmin):
             )
 admin_site.register(Entry, EntryAdmin)
 
-class CommentAdmin(admin.ModelAdmin):
+class CommentAdmin(CopyAdminMixin, admin.ModelAdmin):
     search_fields = ['author__first_name', 'author__last_name',
                      'subject', 'entry__title']
 admin_site.register(Comment, CommentAdmin)

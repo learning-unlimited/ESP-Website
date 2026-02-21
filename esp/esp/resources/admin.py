@@ -37,8 +37,9 @@ from django.contrib import admin
 from esp.admin import admin_site
 
 from esp.resources.models import ResourceType, ResourceRequest, Resource, ResourceAssignment
+from esp.utils.admin import CopyAdminMixin
 
-class ResourceTypeAdmin(admin.ModelAdmin):
+class ResourceTypeAdmin(CopyAdminMixin, admin.ModelAdmin):
     def rt_choices(self, obj):
         return "%s" % str(obj.choices)
     rt_choices.short_description = 'Choices'
@@ -47,14 +48,14 @@ class ResourceTypeAdmin(admin.ModelAdmin):
     search_fields = ['name', 'description', 'consumable', 'priority_default',
             'attributes_dumped', 'program__name']
 
-class ResourceRequestAdmin(admin.ModelAdmin):
+class ResourceRequestAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('target', 'res_type', 'desired_value')
     list_filter = ('res_type__program',)
     search_fields = ['target__parent_class__title', '=target__parent_class__id', 'res_type__name',
             'res_type__description', 'res_type__program__name',
             'desired_value']
 
-class ResourceAdmin(admin.ModelAdmin):
+class ResourceAdmin(CopyAdminMixin, admin.ModelAdmin):
     def program(obj):
         return obj.event.program.name
     list_display = ('name', 'res_type', 'num_students', 'event', 'res_group', program)
@@ -64,7 +65,7 @@ class ResourceAdmin(admin.ModelAdmin):
             'num_students', 'event__name', 'event__short_description',
             '=res_group__id')
 
-class ResourceAssignmentAdmin(admin.ModelAdmin):
+class ResourceAssignmentAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('id', 'resource', 'target', 'assignment_group', 'returned')
     search_fields = ('=id', 'resource__name', 'target__parent_class__title')
 

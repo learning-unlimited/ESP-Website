@@ -36,10 +36,11 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.admin import admin_site
 from esp.cal.models import EventType, Event
+from esp.utils.admin import CopyAdminMixin
 
 admin_site.register(EventType)
 
-class EventAdmin(admin.ModelAdmin):
+class EventAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('id', 'program', 'name', 'short_time', 'pretty_date', 'event_type', 'short_description')
     list_filter = ('program', 'start', 'end', 'event_type')
     date_hierarchy = 'start'

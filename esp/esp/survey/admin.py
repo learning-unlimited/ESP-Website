@@ -40,22 +40,23 @@ from django.contrib import admin
 from django.conf import settings
 from esp.admin import admin_site
 from esp.survey.models import Survey, SurveyResponse, QuestionType, Question, Answer
+from esp.utils.admin import CopyAdminMixin
 
-class SurveyAdmin(admin.ModelAdmin):
+class SurveyAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_filter = ('category',)
 admin_site.register(Survey, SurveyAdmin)
 
-class SurveyResponseAdmin(admin.ModelAdmin):
+class SurveyResponseAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('survey', 'time_filled')
     date_hierarchy = 'time_filled'
     list_filter = ('survey', 'time_filled')
 admin_site.register(SurveyResponse, SurveyResponseAdmin)
 
-class QuestionTypeAdmin(admin.ModelAdmin):
+class QuestionTypeAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ('name', '_param_names', 'is_numeric', 'is_countable')
 admin_site.register(QuestionType, QuestionTypeAdmin)
 
-class QuestionAdmin(admin.ModelAdmin):
+class QuestionAdmin(CopyAdminMixin, admin.ModelAdmin):
     list_display = ['seq', 'name', 'question_type', 'survey', 'per_class']
     list_display_links = ['name']
     list_filter = ['survey']
