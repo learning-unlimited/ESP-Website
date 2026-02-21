@@ -1,18 +1,22 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import sys
+import argparse
 from twilio.rest import Client
 
-# TODO(jmoldow): Use Python built-in argparse module.
-if len(sys.argv) < 6:
-  print(("Usage: %s <account SID> <auth token> <file with line-separated phone numbers to send from> <file with line-separated phone numbers recipients> <message to send>" % sys.argv[0]))
-  exit(1)
+parser = argparse.ArgumentParser(description="Send text messages using Twilio.")
+parser.add_argument("account_sid", help="Twilio Account SID")
+parser.add_argument("auth_token", help="Twilio Auth Token")
+parser.add_argument("senders_file", help="File with line-separated phone numbers to send from")
+parser.add_argument("recipients_file", help="File with line-separated phone numbers recipients")
+parser.add_argument("message", help="Message to send")
+args = parser.parse_args()
 
-account_sid = sys.argv[1]
-auth_token = sys.argv[2]
-ourNumbers = [x.strip() for x in open(sys.argv[3], "r").readlines() if x.strip()]
-recipients = [x.strip() for x in open(sys.argv[4], "r").readlines() if x.strip()]
-body = sys.argv[5]
+account_sid = args.account_sid
+auth_token = args.auth_token
+ourNumbers = [x.strip() for x in open(args.senders_file, "r").readlines() if x.strip()]
+recipients = [x.strip() for x in open(args.recipients_file, "r").readlines() if x.strip()]
+body = args.message
 
 numberIndex = 0
 
