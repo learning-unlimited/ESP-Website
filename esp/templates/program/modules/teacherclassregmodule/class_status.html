@@ -75,6 +75,27 @@ Students: {{cls.emailcode}}-students@{{ EMAIL_HOST_SENDER }}
 </tr>
 </table>
 
+{% load class_flags %}
+{% teacher_visible_flags cls as visible_flags %}
+{% if visible_flags %}
+<br />
+<h3>Flags on This Class</h3>
+<table class="mainstats">
+<tr>
+ <th>Flag</th>
+ <th>Comment</th>
+ <th>Added</th>
+</tr>
+{% for flag in visible_flags %}
+<tr>
+ <td><span style="background: {{ flag.flag_type.getColor }}; padding: 2px 8px; color: #fff;">{{ flag.flag_type.name }}</span></td>
+ <td>{{ flag.comment }}</td>
+ <td>{{ flag.created_time|date:"M d, Y" }}</td>
+</tr>
+{% endfor %}
+</table>
+{% endif %}
+
 <br />
 <br />
 

@@ -28,6 +28,7 @@ render_class_teacher_list_row.cached_function.depend_on_row(ClassSection, lambda
 render_class_teacher_list_row.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda self=wildcard, **kwargs: {'cls': self})
 render_class_teacher_list_row.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'cls': sec.parent_class})
 render_class_teacher_list_row.cached_function.depend_on_row('resources.ResourceAssignment', lambda ra: {'cls': ra.target.parent_class})
+render_class_teacher_list_row.cached_function.depend_on_row('program.ClassFlag', lambda flag: {'cls': flag.subject})
 render_class_teacher_list_row.cached_function.get_or_create_token(('user',))
 
 
