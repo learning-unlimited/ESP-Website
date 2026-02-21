@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.customforms.models import Field, Attribute, Section, Page, Form
 from django import forms
 from django.forms.models import fields_for_model
@@ -805,12 +804,5 @@ class FormHandler:
                 module = ''
             metadata.update({'link_tl': tl, 'link_module': module})
         return metadata
-
-
-
-
-
-
-
 
 
