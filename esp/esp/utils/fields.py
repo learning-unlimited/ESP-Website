@@ -1,6 +1,5 @@
 """ Copied from: http://djangosnippets.org/snippets/1478/ """
 
-from __future__ import absolute_import
 from django.db import models
 from django.core.serializers.json import DjangoJSONEncoder
 import json
