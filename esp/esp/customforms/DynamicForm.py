@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.customforms.models import Field, Attribute, Section, Page, Form
 from django import forms
 from django.forms.models import fields_for_model
@@ -338,7 +337,7 @@ class ComboForm(SessionWizardView):
         context data such as the form's title and description
         """
 
-        context = super(ComboForm, self).get_context_data(form=form, **kwargs)
+        context = super().get_context_data(form=form, **kwargs)
         context.update({
                         'form_title': self.form.title,
                         'form_description': self.form.description,
@@ -805,12 +804,5 @@ class FormHandler:
                 module = ''
             metadata.update({'link_tl': tl, 'link_module': module})
         return metadata
-
-
-
-
-
-
-
 
 

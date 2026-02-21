@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
 import six
 from six.moves import range
@@ -495,7 +492,7 @@ class ClassSection(models.Model):
         self.getResourceAssignments().delete()
         self.meeting_times.clear()
 
-        super(ClassSection, self).delete()
+        super().delete()
 
     def getResourceAssignments(self):
         return self.resourceassignment_set.all()
@@ -1400,7 +1397,7 @@ class ClassSection(models.Model):
 
 
     def save(self, *args, **kwargs):
-        super(ClassSection, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
         # If all sibling sections are now the same status, make the class that status
         all_match = True
         for sec in self.parent_class.sections.all():
@@ -1707,7 +1704,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         #   Remove indirect dependencies
         self.documents.clear()
 
-        super(ClassSubject, self).delete()
+        super().delete()
 
     def numStudentAppQuestions(self):
         # This field may be prepopulated by .objects.catalog()
@@ -2118,7 +2115,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return 0
 
     def save(self, *args, **kwargs):
-        super(ClassSubject, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
         if self.status < ClassStatus.UNREVIEWED: #ie, all rejected or cancelled classes.
             # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
             teachers = self.get_teachers()

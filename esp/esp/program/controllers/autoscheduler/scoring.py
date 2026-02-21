@@ -30,8 +30,6 @@ teaching, so we need to scale down.) This allows scorer weights to be
 determined by relative importance to scheduling a section without accounting
 for this sort of behavior."""
 
-from __future__ import absolute_import
-from __future__ import division
 import logging
 
 import esp.program.controllers.autoscheduler.util as util
@@ -642,7 +640,7 @@ class ResourceCriteriaScorer(BaseScorer):
         # Resource criteria needs to be loaded before super() is called, or
         # else update_schedule won't have resource criteria to refer to.
         self.resource_criteria = kwargs.get("resource_criteria", [])
-        super(ResourceCriteriaScorer, self).__init__(schedule, **kwargs)
+        super().__init__(schedule, **kwargs)
         # We want to avoid the situation where adding more ResourceCriteria
         # dilutes existing ones; at the same time, we want to avoid the
         # situation where adding low-weight ResourceCriteria makes high-weight

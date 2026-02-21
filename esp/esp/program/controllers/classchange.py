@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
 from io import open
 import six
 from six.moves import range
@@ -164,10 +162,6 @@ class ClassChangeController(object):
         self.num_timeslots = len(self.timeslots)
         self.num_students = len(self.students)
         self.num_sections = len(self.sections)
-
-
-
-
 
 
         numpy.random.seed(self.now.microsecond)
@@ -558,8 +552,6 @@ class ClassChangeController(object):
             if len(self.lunch_timeslots[i]) != 0 and numpy.sum(lunch_overlap[self.timeslot_indices[self.lunch_timeslots[i]]]) >= (self.lunch_timeslots.shape[1]):
                 if self.options['stats_display']: logger.info('   Section covered all lunch timeslots %s on day %d, aborting', self.lunch_timeslots[i,:], i)
                 return False
-
-
 
 
         #   Filter students by the section's grade limits

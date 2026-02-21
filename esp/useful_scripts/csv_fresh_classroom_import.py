@@ -9,8 +9,6 @@
 #   Classroom: 1-115
 #
 
-from __future__ import absolute_import
-from __future__ import print_function
 from script_setup import EventType, ResourceType, Program, Event, Resource
 
 import csv

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
 import six
 from io import open
 from six.moves import range
