@@ -59,7 +59,7 @@ class DonationForm(forms.Form):
     custom_amount = forms.DecimalField(decimal_places=2, min_value=1, max_value=1000, required=False)
 
     def __init__(self, *args, **kwargs):
-        super(DonationForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.amount = None
 
     def load_donation(self, amount_donation_initial=None, custom_amount_initial=None):

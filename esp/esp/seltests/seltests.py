@@ -6,7 +6,7 @@ from esp.utils.models import TemplateOverride
 
 class CsrfTestCase(SeleniumTestCase):
     def setUp(self):
-        super(CsrfTestCase, self).setUp()
+        super().setUp()
         user, created = ESPUser.objects.get_or_create(username='student', first_name='Student', last_name='Student')
         user.set_password('student')
         user.save()
@@ -19,7 +19,7 @@ class CsrfTestCase(SeleniumTestCase):
              self.good_version = to.next_version() - 1
 
     def tearDown(self):
-        super(CsrfTestCase, self).tearDown()
+        super().tearDown()
         if (self.good_version > 1):
             # Tear down the template override for consistent behavior
             last_good_to = TemplateOverride.objects.filter(name='index.html', version=self.good_version)

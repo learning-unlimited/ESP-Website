@@ -50,7 +50,7 @@ class SurveyTest(ProgramFrameworkTest):
             'num_teachers': 6, 'classes_per_teacher': 1, 'sections_per_class': 2,
             'num_rooms': 6,
             } )
-        super(SurveyTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
 
         self.add_student_profiles()
         self.schedule_randomly()

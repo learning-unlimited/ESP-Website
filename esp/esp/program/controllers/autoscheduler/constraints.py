@@ -335,7 +335,7 @@ class ResourceCriteriaConstraint(BaseConstraint):
     so that we can specify resource-based constraints to the autoscheduler but
     humans can make exceptions manually."""
     def __init__(self, **kwargs):
-        super(ResourceCriteriaConstraint, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.resource_criteria = kwargs.get("resource_criteria", [])
 
     def check_schedule(self, schedule):

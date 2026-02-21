@@ -55,7 +55,7 @@ class StudentRegTest(ProgramFrameworkTest):
             'num_teachers': 6, 'classes_per_teacher': 1, 'sections_per_class': 2,
             'num_rooms': 6, 'sibling_discount': 20,
             } )
-        super(StudentRegTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
 
         self.add_student_profiles()
         self.schedule_randomly()

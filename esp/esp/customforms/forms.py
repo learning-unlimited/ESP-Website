@@ -25,7 +25,7 @@ class NameWidget(forms.MultiWidget):
     """
     def __init__(self, wclass='', *args, **kwargs):
         widgets =(forms.TextInput(attrs={'class': wclass}), forms.TextInput(attrs={'class': wclass}))
-        super(NameWidget, self).__init__(widgets, *args, **kwargs)
+        super().__init__(widgets, *args, **kwargs)
 
     def decompress(self, value):
         """
@@ -50,7 +50,7 @@ class HiddenNameWidget(NameWidget):
     is_hidden = True
 
     def __init__(self, *args, **kwargs):
-        super(HiddenNameWidget, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for widget in self.widgets:
             widget.input_type = 'hidden'
 
@@ -69,7 +69,7 @@ class NameField(forms.MultiValueField):
         widget_class = kwargs.pop('class')
         self.widget = NameWidget(wclass=widget_class)
         fields = (forms.CharField(), forms.CharField())
-        super(NameField, self).__init__(fields, *args, **kwargs)
+        super().__init__(fields, *args, **kwargs)
 
     def compress(self, value_list):
         compressed_value = OrderedDict()
@@ -89,7 +89,7 @@ class AddressWidget(forms.MultiWidget):
                     USStateSelect(attrs={'class': wclass}),
                     forms.TextInput(attrs={'size': '5', 'class': wclass + ' USZip'})
                 )
-        super(AddressWidget, self).__init__(widgets, *args, **kwargs)
+        super().__init__(widgets, *args, **kwargs)
 
     def decompress(self, value):
         if value:
@@ -111,7 +111,7 @@ class HiddenAddressWidget(AddressWidget):
     is_hidden = True
 
     def __init__(self, *args, **kwargs):
-        super(HiddenAddressWidget, self).__init__(wclass='', *args, **kwargs)
+        super().__init__(wclass='', *args, **kwargs)
         self.widgets = [forms.HiddenInput(), forms.HiddenInput(), forms.HiddenInput(), forms.HiddenInput()]
 
     def format_output(self, rendered_widgets):
@@ -129,7 +129,7 @@ class AddressField(forms.MultiValueField):
         wclass = kwargs.pop('class')
         self.widget = AddressWidget(wclass=wclass)
         fields = (forms.CharField(max_length=100), forms.CharField(max_length=50), USStateField(), forms.CharField(max_length=5))
-        super(AddressField, self).__init__(fields, *args, **kwargs)
+        super().__init__(fields, *args, **kwargs)
 
     def compress(self, value_list):
         compressed_value = OrderedDict()
