@@ -38,9 +38,13 @@ Learning Unlimited, Inc.
 from esp.web.models import NavBarEntry, NavBarCategory, default_navbarcategory
 from esp.program.tests import ProgramFrameworkTest  ## Really should find somewhere else to put this...
 from django.test.client import Client
+from django.test import override_settings, RequestFactory
+from django.http import HttpResponse
 from django.conf import settings
-from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.utils.models import TemplateOverride
+from esp.middleware.readonlymode import MaintenanceReadOnlyModeMiddleware
+from esp.users.models import ESPUser
 
 import difflib
 import logging
@@ -253,4 +257,41 @@ class JavascriptSyntaxTest(TestCase):
 
             self.assertEqual(num_errors, 0, 'Closure compiler detected Javascript syntax errors')
 
+
+class MaintenanceReadOnlyModeTests(TestCase):
+
+    def setUp(self):
+        super(MaintenanceReadOnlyModeTests, self).setUp()
+        user_role_setup()
+        self.factory = RequestFactory()
+
+    @override_settings(
+        MAINTENANCE_READ_ONLY=True,
+        MAINTENANCE_READ_ONLY_BANNER_MESSAGE="Maintenance: Read-only mode is enabled. Saving is temporarily disabled.",
+    )
+    def test_get_still_works_and_banner_shows(self):
+        res = self.client.get("/")
+        self.assertEqual(res.status_code, 200)
+        body = res.content.decode("UTF-8")
+        self.assertTrue(
+            "Maintenance: Read-only mode is enabled" in body,
+            "Banner text not found on GET / during maintenance mode",
+        )
+
+    @override_settings(MAINTENANCE_READ_ONLY=True)
+    def test_post_blocked_for_anonymous(self):
+        res = self.client.post("/", {"x": "y"})
+        self.assertEqual(res.status_code, 503)
+
+    @override_settings(MAINTENANCE_READ_ONLY=True)
+    def test_middleware_allows_admin_user(self):
+        admin = ESPUser.objects.create_user(username="admin_ro_test", email="admin@example.com")
+        admin.set_password("password")
+        admin.save()
+        admin.makeRole("Administrator")
+        req = self.factory.post("/some/write/endpoint", {"x": "y"})
+        req.user = admin
+        mw = MaintenanceReadOnlyModeMiddleware(get_response=lambda r: HttpResponse("ok"))
+        blocked = mw.process_request(req)
+        self.assertIsNone(blocked, "Admin request was unexpectedly blocked in read-only mode")
 

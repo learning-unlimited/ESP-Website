@@ -88,6 +88,16 @@ INTERNAL_IPS = (
     '127.0.0.1',
 )
 
+MAINTENANCE_READ_ONLY = False
+MAINTENANCE_READ_ONLY_BANNER_MESSAGE = (
+    "Maintenance: Read-only mode is enabled. Saving is temporarily disabled."
+)
+MAINTENANCE_READ_ONLY_EXEMPT_PATH_PREFIXES = (
+    "/myesp/login",
+    "/accounts/login",
+    "/admin/login",
+)
+
 ##################
 # Default admins #
 ##################
@@ -211,6 +221,7 @@ MIDDLEWARE_GLOBAL = [
     ( 900, 'django.contrib.sessions.middleware.SessionMiddleware'),
     ( 950, 'django.contrib.messages.middleware.MessageMiddleware'),
     (1000, 'esp.middleware.espauthmiddleware.ESPAuthMiddleware'),
+    (1020, 'esp.middleware.readonlymode.MaintenanceReadOnlyModeMiddleware'),
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.contrib.admindocs.middleware.XViewMiddleware'),
     (1250, 'esp.middleware.debugtoolbar.middleware.ESPDebugToolbarMiddleware'),
