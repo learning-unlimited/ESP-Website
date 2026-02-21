@@ -265,6 +265,11 @@ class Resource(models.Model):
         if override:
             self.clear_assignments()
         if self.is_available():
+            if check_constraint and self.is_unique and self.has_unreturned_prior_assignment(self.event):
+                raise ESPError(
+                    'Resource %s has not been returned from a prior assignment.' % self.name,
+                    log=True
+                )
             new_ra = ResourceAssignment()
             new_ra.resource = self
             new_ra.target = section
@@ -348,6 +353,19 @@ class Resource(models.Model):
         else:
             collision = ResourceAssignment.objects.filter(resource=self)
             return collision.exists()
+
+    def has_unreturned_prior_assignment(self, timeslot):
+        """Check if any identical resource (same name) in an earlier timeslot
+        has an unreturned ResourceAssignment."""
+        earlier_resources = Resource.objects.filter(
+            name=self.name,
+            event__end__lte=timeslot.start,
+            event__program=timeslot.program,
+        )
+        return ResourceAssignment.objects.filter(
+            resource__in=earlier_resources,
+            returned=False,
+        ).exists()
 
 @python_2_unicode_compatible
 class AssignmentGroup(models.Model):
