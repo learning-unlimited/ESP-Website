@@ -2,6 +2,16 @@ $j(document).ready(function(){
     // when the page loads, check/select the questions induced by the modules
     // that are already selected (if any, from a template program e.g.)
     $j(".hidden-field").parents("tr").hide()
+    
+    // Inject search bar for module questions
+    var searchHtml = '<div style="margin-bottom: 10px;"><input type="text" id="module_search" placeholder="Filter modules..." style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px;"></div>';
+    $j("#id_program_module_questions").before(searchHtml);
+    
+    // Initialize search filter
+    if (window.initSearchFilter) {
+        window.initSearchFilter("module_search", "id_program_module_questions", "li");
+    }
+
     modulesToQuestions();
     
     // when any question is checked/unchecked, add/remove only those modules

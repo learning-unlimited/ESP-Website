@@ -26,8 +26,14 @@ function initialize()
     }
 }
 
-$j(document).ready(initialize);
+$j(document).ready(function() {
+    initialize();
+    if (window.initSearchFilter) {
+        window.initSearchFilter("add_module_search", "additional_modules_list", "li");
+    }
+});
 </script>
+<script src="/media/scripts/utils/search_filter.js"></script>
 
 {% endblock %}
 
@@ -299,10 +305,13 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
 
 <div class="module_group_header">Additional Modules</div>
 <div id="additional_modules" class="module_group_body">
+<div style="padding: 10px 15px; background: #f9f9f9; border-bottom: 1px solid #ddd;">
+    <input type="text" id="add_module_search" placeholder="Search additional modules..." style="width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+</div>
 <table border="0" width="100%">
 <tr>
  <td width="50%">
-<ul>
+<ul id="additional_modules_list">
 {% for module in modules_alph %}
     {% if not module.isAdminPortalFeatured %}
       {% if not module.useTemplate %}
