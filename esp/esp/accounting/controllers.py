@@ -81,6 +81,7 @@ class ProgramAccountingController(BaseAccountingController):
         self.finaid_items = ['Financial aid grant', 'Sibling discount']
         self.admission_items = ["Program admission", "Student payment"]
 
+    @transaction.atomic
     def clear_all_data(self):
         #   Clear all financial data for the program
         FinancialAidGrant.objects.filter(request__program=self.program).delete()
@@ -287,6 +288,7 @@ class IndividualAccountingController(ProgramAccountingController):
                 destination=self.default_program_account(),
                 user=self.user).exists()
 
+    @transaction.atomic
     def ensure_required_transfers(self):
         """ Function to ensure there are transfers for this user corresponding
             to required line item types, e.g. program admission """
@@ -324,6 +326,7 @@ class IndividualAccountingController(ProgramAccountingController):
                 transfer.amount_dec = item.amount_dec
                 transfer.save()
 
+    @transaction.atomic
     def apply_preferences(self, optional_items):
         """ Function to ensure there are transfers for this user corresponding
             to optional line item types, according to their preferences.
@@ -368,6 +371,7 @@ class IndividualAccountingController(ProgramAccountingController):
 
         return result
 
+    @transaction.atomic
     def set_preference(self, lineitem_name, quantity, amount=None, option_id=None):
         #   Sets a single preference, after removing any exactly matching transfers.
         line_item = self.get_lineitemtypes().get(text=lineitem_name)
@@ -512,6 +516,7 @@ class IndividualAccountingController(ProgramAccountingController):
         # Success!
         return payment
 
+    @transaction.atomic
     def set_finaid_params(self, dollar_amount, discount_percent):
         #   Get the user's financial aid request or create one if it doesn't exist
         requests = FinancialAidRequest.objects.filter(user=self.user, program=self.program)
