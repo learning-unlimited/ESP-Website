@@ -1,0 +1,9 @@
+[tool.isort]
+profile = "django"
+line_length = 120
+skip = [".git", "env", "migrations", "__pycache__"]
+skip_glob = ["**/migrations/*"]
+known_django = ["django"]
+known_first_party = ["esp"]
+sections = ["FUTURE", "STDLIB", "DJANGO", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+default_section = "THIRDPARTY"

@@ -7,6 +7,10 @@ popd > /dev/null
 
 BASEDIR="$(dirname "$SCRIPTDIR")"
 
+echo "Running import sort check..."
+isort --check-only --diff "$BASEDIR/esp" --skip-glob "**/migrations/*" --skip env
+echo -e "\033[1A\033[27C success!"
+
 echo "Running lint checks..."
 
 # For now, ignore everything except:
