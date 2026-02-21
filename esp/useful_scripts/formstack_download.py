@@ -142,5 +142,5 @@ f.close()
 
 print("")
 print("")
-print("Helper File writen to formstack_download.html")
+print("Helper File written to formstack_download.html")
 print("You must be logged in to Formstack in order to use it")

@@ -64,7 +64,7 @@ Key sets are represented by dictionaries. (We could use lists, but for
 convenience, the names of the arguments are incorporated.) They map
 the arguments of an ArgCache (by name) to sets of objects. You can
 think of them as Cartesian products of these sets by
-argument. Currently, the only expressable sets are wildcard (that is,
+argument. Currently, the only expressible sets are wildcard (that is,
 everything) and a specific object, and the API is a little iffy. If a
 (key,value) pair is missing for an argument, it should be assumed to
 be wildcard (we may explicitly add them later). Exact objects are

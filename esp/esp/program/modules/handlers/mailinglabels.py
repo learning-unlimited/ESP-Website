@@ -172,7 +172,7 @@ class MailingLabels(ProgramModuleObj):
 
     @staticmethod
     def gen_addresses(infos, combine = True):
-        """ Takes a iterable list of infos and returns a lits of addresses. """
+        """ Takes a iterable list of infos and returns a list of addresses. """
 
         import pycurl
         from django.template.defaultfilters import urlencode

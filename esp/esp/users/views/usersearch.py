@@ -134,7 +134,7 @@ def get_user_list(request, listDict2, extra=''):
         else:
             raise ESPError('I do not know of list "%s".' % request.POST['base_list'])
 
-        # we start with all the sparated lists, and apply the and'd lists onto the or'd lists before
+        # we start with all the separated lists, and apply the and'd lists onto the or'd lists before
         # we or. This closely represents the sentence (it's not as powerful, but makes "sense")
         separated = {'or': [curList], 'and': []}
 

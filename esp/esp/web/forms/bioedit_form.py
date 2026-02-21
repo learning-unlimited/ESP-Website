@@ -39,7 +39,7 @@ from django.utils.translation import gettext_lazy as _
 from esp.web.forms import ResizeImageField
 
 class BioEditForm(forms.Form):
-    """ A form for editting TeacherBios """
+    """ A form for editing TeacherBios """
     slugbio = forms.CharField(required = False, max_length = 50, widget = forms.TextInput({'size': 50}))
     bio = forms.CharField(required = False, widget = forms.Textarea({'rows':20, 'cols':60}))
     picture = ResizeImageField(required = False, size = (300, 300))

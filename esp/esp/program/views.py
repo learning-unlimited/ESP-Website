@@ -286,7 +286,7 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
 def find_user(userstr):
     """
     Do a best-guess effort at finding a user based on a string identifying that user.
-    The string may be a user ID, username, or some permuation of the user's real name.
+    The string may be a user ID, username, or some permutation of the user's real name.
     Will return a list of users if the string is not a username and more than one
     name approximately matches.
     Will return something that evaluates to False if no matching users are found.

@@ -51,7 +51,7 @@ class LunchConstraintsForm(forms.Form):
             # If any schedule constraints have an 'on_failure' function, check the autocorrect box
             if sched_constraints.exclude(on_failure='').exists():
                 self.fields['autocorrect'].initial = True
-            # If any BooleanTokens associated with the schedule cosntraints have text other than '1', check the include_conditions box
+            # If any BooleanTokens associated with the schedule constraints have text other than '1', check the include_conditions box
             if BooleanToken.objects.filter(exp__condition_constraint__program=2).exclude(text='1').exists():
                 self.fields['include_conditions'].initial = True
 
