@@ -436,7 +436,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         reg_type = RegistrationType.get_map()['Enrolled']
 
-        regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self).filter(user__id__in=checked_in_ids, relationship=reg_type).values('user', 'section')
+        regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self, user__id__in=checked_in_ids, relationship=reg_type).values('user', 'section')
         for reg in regs:
             if reg['section'] not in counts:
                 counts[reg['section']] = 0
@@ -749,7 +749,7 @@ class Program(models.Model, CustomFormsLinkModel):
         verbose_names = ["not_checked_in", "checked_in", "checked_out"]
         recs = Record.objects.filter(event__name__in=["attended", "checked_out"], user=espuser,
                                      program=self).order_by("-time")
-        if recs.count() > 0:
+        if recs.exists():
             # Check if student has ever been checked_in
             if recs.filter(event__name="attended").exists():
                 status = 1
@@ -1388,7 +1388,7 @@ class SplashInfo(models.Model):
             q = SplashInfo.objects.filter(student=user, program=program)
         else:
             q = SplashInfo.objects.filter(student=user)
-        return (q.count() > 0) and q[0].submitted
+        return q.exists() and q[0].submitted
 
     @staticmethod
     def getForUser(user, program=None):
@@ -1396,7 +1396,7 @@ class SplashInfo(models.Model):
             q = SplashInfo.objects.filter(student=user, program=program)
         else:
             q = SplashInfo.objects.filter(student=user)
-        if q.count() > 0:
+        if q.exists():
             return q[0]
         else:
             n = SplashInfo(student=user, program=program)
@@ -1635,7 +1635,7 @@ class TeacherBio(models.Model):
     def getLastForProgram(user, program):
         bios = TeacherBio.objects.filter(user__exact=user, program__exact=program).order_by('-last_ts', '-id')
 
-        if bios.count() < 1:
+        if not bios.exists():
             lastBio         = TeacherBio()
             lastBio.user    = user
             lastBio.program = program
@@ -1665,7 +1665,7 @@ class FinancialAidRequest(models.Model):
 
     @property
     def approved(self):
-        return (self.financialaidgrant_set.all().count() > 0)
+        return self.financialaidgrant_set.all().exists()
 
     class Meta:
         app_label = 'program'
