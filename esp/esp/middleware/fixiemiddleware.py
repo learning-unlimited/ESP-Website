@@ -31,13 +31,11 @@ class FixIEMiddleware(MiddlewareMixin):
 
 
         # IE will break
-        if response.mimetype.lower() not in safe_mime_types:
-            try:
+        if response.content_type.split(';')[0].lower() not in safe_mime_types:
+            if 'Vary' in response:
                 del response['Vary']
-                response['Pragma'] = 'no-cache'
-                response['Cache-Control'] = 'no-cache, must-revalidate'
-            except KeyError:
-                return response
+            response['Pragma'] = 'no-cache'
+            response['Cache-Control'] = 'no-cache, must-revalidate'
 
         return response
 

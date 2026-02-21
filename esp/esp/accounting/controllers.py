@@ -1,8 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import unicode_literals
-from django.utils.encoding import python_2_unicode_compatible
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -48,7 +44,7 @@ from esp.utils.query_utils import nest_Q
 
 from django.db import transaction
 from django.db.models import Sum, Q
-from django.template.defaultfilters import slugify
+from django.utils.text import slugify
 
 from decimal import Decimal
 
@@ -277,7 +273,6 @@ class ProgramAccountingController(BaseAccountingController):
         else:
             return 'Unrelated!?'
 
-@python_2_unicode_compatible
 class IndividualAccountingController(ProgramAccountingController):
     def __init__(self, program, user, *args, **kwargs):
         super(IndividualAccountingController, self).__init__(program, *args, **kwargs)
@@ -410,15 +405,14 @@ class IndividualAccountingController(ProgramAccountingController):
     def get_preferences(self, line_items=None):
         #   Return a list of 4-tuples: (item name, quantity, cost, options)
         result = []
+        indices = {}
         transfers = self.get_transfers(line_items)
         for transfer in transfers:
-            li_name = transfer.line_item.text
-            if (li_name, transfer.amount_dec, transfer.option_id) not in [(x[0], x[2], x[3]) for x in result]:
-                result.append([li_name, 0, transfer.amount_dec, transfer.option_id])
-                result_index = len(result) - 1
-            else:
-                result_index = [(x[0], x[2], x[3]) for x in result].index((li_name, transfer.amount_dec, transfer.option_id))
-            result[result_index][1] += 1
+            key = (transfer.line_item.text, transfer.amount_dec, transfer.option_id)
+            if key not in indices:
+                indices[key] = len(result)
+                result.append([key[0], 0, key[1], key[2]])
+            result[indices[key]][1] += 1
         return result
 
     ##  Functions to turn a user's account status for a program into a string
@@ -465,8 +459,11 @@ class IndividualAccountingController(ProgramAccountingController):
         for manual intervention in the above case.
         """
         # Parse identifier
-        id_str, transfer_list = identifier.split(':')
-        iac = IndividualAccountingController.from_id(id_str)
+        try:
+            id_str, transfer_list = identifier.split(':')
+            iac = IndividualAccountingController.from_id(id_str)
+        except (ValueError, IndexError, Program.DoesNotExist, ESPUser.DoesNotExist):
+            raise ReconciliationError("Malformed identifier")
 
         payment = iac.submit_payment(
             amount_paid, transaction_id, link_transfers=False)
@@ -474,39 +471,61 @@ class IndividualAccountingController(ProgramAccountingController):
         # Reconcile Transfers with what's listed in the identifier. Note that
         # any exception will roll back the entire transaction.
         transfer_total = 0
-        for item in transfer_list.split(';'):
-            line_item_id, saved_amount = item.split(',')
-            transfer = Transfer.objects.get(
-                user=iac.user,
-                line_item__id=int(line_item_id),
-            )
+        processed_transfer_ids = set()
+        if transfer_list:
+            for item in transfer_list.split(';'):
+                try:
+                    line_item_id, saved_amount = item.split(',')
+                    line_item_id = int(line_item_id)
+                    saved_amount_float = float(saved_amount)
+                except ValueError:
+                    raise ReconciliationError("Malformed identifier")
 
-            # This case is rare, since it's unusual to change the program of a
-            # Line Item Type after it's been created.
-            if transfer.line_item.program != iac.program:
-                raise ReconciliationError(
-                    "Failed on processing Transfer %d: program changed" % transfer.id)
+                transfers = Transfer.objects.filter(
+                    user=iac.user,
+                    line_item__id=line_item_id,
+                    paid_in=None,
+                ).order_by('id')
 
-            # Check for duplicate payment
-            if transfer.paid_in:
-                raise DuplicatePaymentError(
-                    "Failed on processing Transfer %d: already paid" % transfer.id)
+                transfer = None
+                for t in transfers:
+                    if t.id not in processed_transfer_ids:
+                        transfer = t
+                        break
 
-            # Check to see if the amount changed
-            if '%.2f' % transfer.amount != saved_amount:
-                if trusted:
-                    transfer.amount = float(saved_amount)
-                else:
-                    msg = "Failed on processing Transfer %d: amount changed while " + \
-                          "user was paying. The user was billed $%s for this item " + \
-                          "and paid, but the item is now $%.2f"
+                if transfer is None:
+                    raise ReconciliationError("Transfer not found")
+
+                processed_transfer_ids.add(transfer.id)
+
+                # This case is rare, since it's unusual to change the program of a
+                # Line Item Type after it's been created.
+                if transfer.line_item.program != iac.program:
                     raise ReconciliationError(
-                        msg % (transfer.id, saved_amount, transfer.amount))
+                        "Failed on processing Transfer %d: program changed" % transfer.id)
 
-            # Mark as paid!
-            transfer.paid_in = payment
-            transfer_total += transfer.amount
-            transfer.save()
+                # Check for duplicate payment
+                if transfer.paid_in:
+                    raise DuplicatePaymentError(
+                        "Failed on processing Transfer %d: already paid" % transfer.id)
+
+                # Check to see if the amount changed
+                if '%.2f' % transfer.amount != saved_amount:
+                    if trusted:
+                        if saved_amount_float < 0:
+                            raise ReconciliationError("Transfer amount cannot be negative")
+                        transfer.amount = saved_amount_float
+                    else:
+                        msg = "Failed on processing Transfer %d: amount changed while " + \
+                              "user was paying. The user was billed $%s for this item " + \
+                              "and paid, but the item is now $%.2f"
+                        raise ReconciliationError(
+                            msg % (transfer.id, saved_amount, transfer.amount))
+
+                # Mark as paid!
+                transfer.paid_in = payment
+                transfer_total += transfer.amount
+                transfer.save()
 
         if transfer_total != amount_paid:
             raise ReconciliationError(
@@ -552,13 +571,10 @@ class IndividualAccountingController(ProgramAccountingController):
         return transfers.aggregate(Sum('amount_dec'))['amount_dec__sum'] or Decimal('0')
 
     def latest_finaid_grant(self):
-        if FinancialAidGrant.objects.filter(request__user=self.user, request__program=self.program).exists():
-            return FinancialAidGrant.objects.get(request__user=self.user, request__program=self.program)
-        else:
-            return None
+        return FinancialAidGrant.objects.filter(request__user=self.user, request__program=self.program).first()
 
-    def amount_finaid(self, amount_siblingdiscount=None):
-        amount_requested = self.amount_requested(for_finaid_only=True)
+    def amount_finaid(self, amount_siblingdiscount=None, ensure_required=True):
+        amount_requested = self.amount_requested(ensure_required=ensure_required, for_finaid_only=True)
         if amount_siblingdiscount is None:
             amount_siblingdiscount = self.amount_siblingdiscount()
 
@@ -579,10 +595,9 @@ class IndividualAccountingController(ProgramAccountingController):
 
     def amount_donation(self):
         lit = self.donation_lineitemtype()
-        if lit is not None and Transfer.objects.filter(user=self.user, line_item=lit).exists():
-            return Transfer.objects.filter(user=self.user, line_item=lit).aggregate(Sum('amount_dec'))['amount_dec__sum']
-        else:
-            return Decimal('0')
+        if lit is not None:
+            return Transfer.objects.filter(user=self.user, line_item=lit).aggregate(Sum('amount_dec'))['amount_dec__sum'] or Decimal('0')
+        return Decimal('0')
 
     def amount_siblingdiscount(self):
         if self.program.sibling_discount and SplashInfo.getForUser(self.user, self.program).siblingdiscount:
@@ -592,11 +607,8 @@ class IndividualAccountingController(ProgramAccountingController):
 
     def amount_paid(self):
         #   Compute sum of all transfers from outside (e.g. credit card payments) that are for this user
-        if Transfer.objects.filter(user=self.user, line_item=self.default_payments_lineitemtype(), source__isnull=True).exists():
-            amount_paid = Transfer.objects.filter(user=self.user, line_item=self.default_payments_lineitemtype(), source__isnull=True).aggregate(Sum('amount_dec'))['amount_dec__sum']
-        else:
-            amount_paid = Decimal('0')
-        return amount_paid
+        amount_paid = Transfer.objects.filter(user=self.user, line_item=self.default_payments_lineitemtype(), source__isnull=True).aggregate(Sum('amount_dec'))['amount_dec__sum']
+        return amount_paid or Decimal('0')
 
     def has_paid(self, in_full=False):
         if in_full:
@@ -605,9 +617,10 @@ class IndividualAccountingController(ProgramAccountingController):
             return (self.amount_paid() > 0)
 
     def amount_due(self):
-        amt_request = self.amount_requested()
+        self.ensure_required_transfers()
+        amt_request = self.amount_requested(ensure_required=False)
         amt_sibling = self.amount_siblingdiscount()
-        return amt_request - self.amount_finaid(amt_sibling) - amt_sibling - self.amount_paid()
+        return amt_request - self.amount_finaid(amt_sibling, ensure_required=False) - amt_sibling - self.amount_paid()
 
     @transaction.atomic
     def submit_payment(self, amount, transaction_id='', link_transfers=True):
