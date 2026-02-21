@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
-from django.db import models
+from django.db import models, transaction
 
 # esp dependencies
 from esp.db.fields import AjaxForeignKey
@@ -72,15 +72,16 @@ class UserForwarder(models.Model):
         # Update
         self.target = target
         if save:
-            self.save()
-            # Flatten
-            if flatten:
-                for f in rewrites:
-                    f.target = target
-                    if f.source == f.target:
-                        f.delete()
-                    else:
-                        f.save()
+            with transaction.atomic():
+                self.save()
+                # Flatten
+                if flatten:
+                    for f in rewrites:
+                        f.target = target
+                        if f.source == f.target:
+                            f.delete()
+                        else:
+                            f.save()
 
     @staticmethod
     def forward(source, target):
