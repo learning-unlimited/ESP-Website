@@ -249,7 +249,7 @@ class OnSiteClassList(ProgramModuleObj):
             user = ESPUser.objects.get(id=int(request.GET['user']))
         except:
             user = None
-            result['messages'].append('Error: could find user %s' % request.GET.get('user', None))
+            result['messages'].append('Error: could not find user %s' % request.GET.get('user', None))
         try:
             desired_sections = json.loads(request.GET['sections'])
         except:
