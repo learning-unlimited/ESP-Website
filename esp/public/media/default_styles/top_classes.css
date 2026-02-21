@@ -1,0 +1,132 @@
+/* ==========================================================================
+   Top-Rated Classes Page Styles
+   Dedicated stylesheet for /manage/{program}/surveys/top_classes
+   ========================================================================== */
+
+/* --- Filter & Category Panels --- */
+.top-classes-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.top-classes-filters .filter-panel {
+  flex: 1 1 280px;
+  min-width: 240px;
+}
+
+.top-classes-filters .filter-panel .panel-body .form-group {
+  margin-bottom: 10px;
+}
+
+.top-classes-filters .filter-panel .form-group label {
+  font-weight: normal;
+  margin-bottom: 2px;
+}
+
+.top-classes-filters .filter-panel .form-group input[type="text"] {
+  max-width: 100px;
+}
+
+/* Category checkbox grid */
+.category-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+
+.category-grid .checkbox {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+/* --- Data Table --- */
+.top-classes-table-wrap {
+  margin-top: 8px;
+}
+
+.top-classes-table thead th {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.top-classes-table td,
+.top-classes-table th {
+  vertical-align: middle;
+}
+
+.top-classes-table .rating-cell {
+  font-weight: bold;
+  font-size: 1.05em;
+}
+
+/* --- Empty State --- */
+.top-classes-empty {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.top-classes-empty .glyphicon {
+  font-size: 48px;
+  color: #bbb;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.top-classes-empty p {
+  font-size: 1.2em;
+  color: #777;
+}
+
+/* --- Favorite Classes Ranked List (reusable in answers.html) --- */
+.favorite-classes-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.favorite-classes-list li {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.favorite-classes-list li:last-child {
+  border-bottom: none;
+}
+
+.favorite-classes-list .rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #337ab7;
+  color: #fff;
+  font-weight: bold;
+  font-size: 0.85em;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.favorite-classes-list li:nth-child(1) .rank-badge {
+  background-color: #f0ad4e;
+}
+.favorite-classes-list li:nth-child(2) .rank-badge {
+  background-color: #aaa;
+}
+.favorite-classes-list li:nth-child(3) .rank-badge {
+  background-color: #cd7f32;
+}
+
+.favorite-classes-list .class-title {
+  flex: 1;
+}
+
+.favorite-classes-list .vote-badge {
+  margin-left: 8px;
+  flex-shrink: 0;
+}
