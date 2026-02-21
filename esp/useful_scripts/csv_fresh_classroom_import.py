@@ -216,7 +216,7 @@ for row in sched_rows:
         if idx is not None and room_desc[idx + EXTRA_DATA]:
             furnishings.append((res, room_desc[idx + EXTRA_DATA]))
 
-    # Create Clasrooms with Furnishings
+    # Create Classrooms with Furnishings
     for block in timeblocks:
         room = Resource()
         room.num_students = room_desc[0]

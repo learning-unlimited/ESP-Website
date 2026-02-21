@@ -12,7 +12,7 @@
 #
 #   - Take care when using local() to run commands locally. Make sure to
 #     construct local paths using os.path.join() (here imported as join()), and
-#     do not assume the presence of Unix utilies like find and sed.
+#     do not assume the presence of Unix utilities like find and sed.
 #
 #     In addition, use env.lbase to construct absolute paths when referring to
 #     local files, since fab may be invoked from anywhere in the source tree.
