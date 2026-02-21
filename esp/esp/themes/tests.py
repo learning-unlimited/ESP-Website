@@ -2,7 +2,6 @@
 Tests for the theme editor.
 """
 
-from __future__ import absolute_import
 import six
 import os
 import random
