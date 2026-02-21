@@ -46,7 +46,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
 
         # Set up the program -- we want to be sure of these parameters
         kwargs.update({'num_students': 3,})
-        super(ProgramPrintablesModuleTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
 
         self.add_student_profiles()
         self.schedule_randomly()
@@ -186,7 +186,7 @@ class TestAllClassesSelectionForm(ProgramFrameworkTest):
 class TestAllClassesFieldConverter(ProgramFrameworkTest):
 
     def setUp(self, *args, **kwargs):
-        super(TestAllClassesFieldConverter, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
         self.class_subjects = ClassSubject.objects.all()
         self.class_subject_fieldnames = [field.name for field in ClassSubject._meta.fields]
         self.converter = AllClassesFieldConverter(self.program)

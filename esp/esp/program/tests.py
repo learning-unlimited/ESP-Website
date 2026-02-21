@@ -821,7 +821,7 @@ class ProgramFrameworkTest(TestCase):
 class ProgramCapTest(ProgramFrameworkTest):
     """Test various forms of program cap."""
     def setUp(self):
-        super(ProgramCapTest, self).setUp(num_students=20)
+        super().setUp(num_students=20)
         self.schedule_randomly()
         # The students it creates will be in 10th grade.
         self.add_user_profiles()
@@ -1214,7 +1214,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         random.seed()
 
         # Create a program, students, classes, teachers, etc.
-        super(LSRAssignmentTest, self).setUp(num_students=20, room_capacity=3)
+        super().setUp(num_students=20, room_capacity=3)
         # Force the modules and extensions to be created
         self.program.getModules()
         # Schedule classes
@@ -1400,7 +1400,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
 class BulkCreateAccountTest(ProgramFrameworkTest):
     def setUp(self):
-        super(BulkCreateAccountTest, self).setUp()
+        super().setUp()
         self.client = Client()
         self.assertTrue(self.client.login(username=self.admins[0].username, password='password'),
                         'Could not login as %s' % self.admins[0].username)

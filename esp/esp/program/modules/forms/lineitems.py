@@ -50,7 +50,7 @@ class LineItemImportForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         cur_prog = kwargs.pop('cur_prog', None)
-        super(LineItemImportForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         progs = LineItemType.objects.exclude(text__in=exclude_line_items).values_list('program', flat = True).distinct()
         qs = Program.objects.filter(id__in=progs)
         if cur_prog is not None:

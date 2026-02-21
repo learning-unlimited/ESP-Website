@@ -108,7 +108,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
         return True
 
     def deadline_met(self):
-        return super(StudentJunctionAppModule, self).deadline_met('/Applications')
+        return super().deadline_met('/Applications')
 
     @main_call
     @needs_student_in_grade

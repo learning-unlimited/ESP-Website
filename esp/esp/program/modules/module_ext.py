@@ -322,7 +322,7 @@ class AJAXChangeLogEntry(models.Model):
 
     def save(self, *args, **kwargs):
         self.time = time.time()
-        super(AJAXChangeLogEntry, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def getTimeslots(self):
         if self.timeslots == "":

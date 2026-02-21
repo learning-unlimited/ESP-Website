@@ -13,7 +13,7 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         modules.append(ProgramModule.objects.get(handler='StudentRegCore'))
         modules.append(ProgramModule.objects.get(handler='AdminCore'))
 
-        super(RegistrationTypeManagementTest, self).setUp(modules=modules)
+        super().setUp(modules=modules)
         self.schedule_randomly()
 
         # Create registration types

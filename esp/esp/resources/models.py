@@ -113,7 +113,7 @@ class ResourceType(models.Model):
     def save(self, *args, **kwargs):
         if hasattr(self, '_attributes_cached'):
             self.attributes_dumped = json.dumps(self._attributes_cached)
-        super(ResourceType, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     _get_or_create_cache = {}
     @classmethod
@@ -203,7 +203,7 @@ class Resource(models.Model):
         else:
             self.is_unique = False
 
-        super(Resource, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     # I'd love to kill this, but since it's set as the __sub__, it's hard to
     # grep to be sure it's not used.
@@ -382,7 +382,7 @@ class ResourceAssignment(models.Model):
             #   Make a new group for this
             new_group = AssignmentGroup.objects.create()
             self.assignment_group = new_group
-        super(ResourceAssignment, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def getTargetOrSubject(self):
         """ Returns the most finely specified target. (target if it's set, target_subj otherwise) """

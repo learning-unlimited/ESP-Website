@@ -94,4 +94,4 @@ class CustomAppIndexDashboard(AppIndexDashboard):
         """
         Use this method if you need to access the request context.
         """
-        return super(CustomAppIndexDashboard, self).init_with_context(context)
+        return super().init_with_context(context)

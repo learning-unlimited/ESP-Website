@@ -76,7 +76,7 @@ class NewDeadlineForm(forms.Form):
     end_date = forms.DateTimeField(label='Closing date/time' + FTIMEZONE, initial=None, widget=DateTimeWidget(), required=False)
 
     def __init__(self, *args, **kwargs):
-        super(NewDeadlineForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['role'].choices = self.fields['role'].choices + [(role, role + "s") for role in Group.objects.exclude(name__in=["Student", "Teacher", "Volunteer"]
                                                                                                                           ).order_by('name').values_list('name', flat = True)]
 
