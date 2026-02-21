@@ -40,7 +40,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
 from esp.utils.web import render_to_response
-from esp.users.models    import ESPUser, Record, RecordType
+from esp.users.models    import ESPUser, Permission, Record, RecordType
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
 from esp.program.models  import ClassFlagType
 from esp.program.class_status import ClassStatus
@@ -955,6 +955,25 @@ class ProgramPrintables(ProgramModuleObj):
         return render_to_response(self.baseDir()+'volunteerschedule.html', request, context)
 
     def get_msg_vars(self, user, key):
+        if key == 'date':
+            # First day of the program (for email templates)
+            dates = self.program.dates()
+            if dates:
+                return six.u(dates[0].strftime('%b. %d, %Y'))
+            return six.u('')
+        if key == 'date_range':
+            # Full date range string (e.g. "Feb. 19 - Mar. 1, 2026")
+            dr = self.program.date_range()
+            return six.u(dr) if dr else six.u('')
+        if key == 'teacher_reg_deadline':
+            # Teacher class creation deadline (when teachers can no longer create classes)
+            perm = Permission.objects.filter(
+                permission_type='Teacher/Classes/Create',
+                program=self.program
+            ).order_by('-end_date').first()
+            if perm and perm.end_date:
+                return six.u(perm.end_date.strftime('%B %d, %Y %I:%M %p'))
+            return six.u('')
         if key == 'receipt':
             #   Take the user's most recent registration profile.
             from django.conf import settings
