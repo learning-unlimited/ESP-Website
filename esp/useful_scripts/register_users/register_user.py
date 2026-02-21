@@ -3,7 +3,6 @@ import random
 
 from twill.commands import *
 from generators import *
-from six.moves import range
 
 base_host = 'http://dev2.learningu.org'
 splash_name = 'Splash/2011_Spring'

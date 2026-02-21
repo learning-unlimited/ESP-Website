@@ -8,7 +8,6 @@ import csv
 import re
 import sys
 from io import open
-from six.moves import input
 
 prog = Program.objects.get(url=input("Program URL (e.g. Spark/2014): "))
 rawfile = open(os.path.expanduser(input("Output CSV: ")), "wb")
