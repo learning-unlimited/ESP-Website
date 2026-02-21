@@ -168,7 +168,7 @@ Follow the following steps to upgrade the base VM for everyone to use.
 
     From the ``devsite`` folder, destroy your existing virtual machine with ``vagrant destroy``.
     (Make sure to save/commit any databases or configurations first!)
-    Clear Vagrant's caches by deleting the ``.vagrant.d`` directory (which will typically be in your home folder.
+    Clear Vagrant's caches by deleting the ``.vagrant.d`` directory (which will typically be in your home folder).
     This action will destroy all vagrant machines, so if you have others, just delete the one associated with your devsite.
     Also delete the ``.vagrant`` directory in ``devsite/``.
     Note: to get a head start on a slow step, start the download in step 5.ii then come back here.
@@ -295,4 +295,4 @@ If the base VM has been changed (see above), you will want to upgrade your devel
 
 6. After running ``fab setup``, run ``fab loaddb:devsite_django.sql``. If you specified a different filename when you dumped your database, use that name instead.
 
-7. Open your old local_settings.py file and your new local_settings.py file with a text editor. You will likely want to copy over most of your old local settings, but the new database password *must* remain (do not copy over the old one.
+7. Open your old local_settings.py file and your new local_settings.py file with a text editor. You will likely want to copy over most of your old local settings, but the new database password *must* remain (do not copy over the old one).

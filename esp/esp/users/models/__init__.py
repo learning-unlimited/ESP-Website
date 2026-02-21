@@ -686,7 +686,7 @@ class BaseESPUser(object):
         from esp.program.models.app_ import StudentApplication
 
         apps = StudentApplication.objects.filter(user=self, program=program)
-        if apps.count() == 0:
+        if not apps.exists():
             return []
         else:
             return apps[0].responses.all()
@@ -765,10 +765,10 @@ class BaseESPUser(object):
     @cache_function
     def getFirstClassTime(self, program):
         sections = self.getSections(program, verbs=['Enrolled']).order_by('meeting_times')
-        if sections.count() == 0:
+        if not sections.exists():
             return None
         else:
-            if sections[0].meeting_times.count() == 0:
+            if not sections[0].meeting_times.exists():
                 return None
             else:
                 return sections[0].meeting_times.order_by('start')[0]
@@ -823,7 +823,7 @@ class BaseESPUser(object):
 
     @cache_function
     def appliedFinancialAid(self, program):
-        return self.financialaidrequest_set.all().filter(program=program, done=True).count() > 0
+        return self.financialaidrequest_set.all().filter(program=program, done=True).exists()
     #   Invalidate cache when any of the user's financial aid requests are changed
     appliedFinancialAid.depend_on_row('program.FinancialAidRequest', lambda fr: {'self': fr.user})
     appliedFinancialAid.depend_on_row('accounting.FinancialAidGrant', lambda fr: {'self': fr.request.user})
@@ -973,10 +973,10 @@ class BaseESPUser(object):
     def get_unused_username(cls, first_name, last_name):
         import re
         username = base_uname = (first_name[0] + last_name).lower()
-        if cls.objects.filter(username = username).count() > 0:
+        if cls.objects.filter(username = username).exists():
             i = 2
             username = base_uname + str(i)
-            while cls.objects.filter(username = username).count() > 0:
+            while cls.objects.filter(username = username).exists():
                 i += 1
                 username = base_uname + str(i)
         return re.sub(r'[^\w.@+-]', '', username) # sanitize before returning
@@ -2122,7 +2122,7 @@ class PersistentQueryFilter(models.Model):
         # Deal with multiple instances
         query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
         pqfs = PersistentQueryFilter.objects.filter(query_q)
-        if pqfs.count() > 0:
+        if pqfs.exists():
             foo = pqfs[0]
         else:
             foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),

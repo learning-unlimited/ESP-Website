@@ -12,7 +12,7 @@ Outgoing email originates in the comm panel.  The comm panel is outside the scop
 
 Then, every 15 minutes at most (exact timing depends on the site), cron runs ``esp/dbmail_cron.py``.  This does two things.  First, it looks for unprocessed ``MessageRequest`` objects.  For each ``MessageRequest``, and for each user to which it is sent, the script creates a ``TextOfEmail`` object, which contains the email text exactly as it will be sent (as well as the subject, recipient address, and such).  It then marks the ``MessageRequest`` as processed.
 
-After ``MessageRequest`` processing is complete, ``esp/dbmail_cron.py`` looks for unsent ``TextOfEmail`` objects.  For each one, it  sends the email, then marks the request as sent.  To send the email we use `the standard Django facilities <https://docs.djangoproject.com/en/dev/topics/email/>`_, which construct the full email headers and message body, and, according to our settings, pass it via `SMTP <https://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol>`_ to Exim, our MTA (Mail Transport Agent), which passes it on to the world (again via SMTP).
+After ``MessageRequest`` processing is complete, ``esp/dbmail_cron.py`` looks for unsent ``TextOfEmail`` objects.  For each one, it sends the email, then marks the request as sent.  To send the email we use `the standard Django facilities <https://docs.djangoproject.com/en/dev/topics/email/>`_, which construct the full email headers and message body, and, according to our settings, pass it via `SMTP <https://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol>`_ to Exim, our MTA (Mail Transport Agent), which passes it on to the world (again via SMTP).
 
 Incoming email
 --------------

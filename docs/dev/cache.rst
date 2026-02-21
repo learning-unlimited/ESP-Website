@@ -15,7 +15,7 @@ in one place. The framework handles boring things such as key
 creation, cache lookup, etc.
 
 Caches are applied on a function-level granularity. So, split off
-functions as-need. Also, such functions really shouldn't have
+functions as-needed. Also, such functions really shouldn't have
 side-effects. Split up your functions if needed. Conceptually, each
 cache maps keys to values, where keys correspond to function
 arguments. The caches can invalidate keys in bulk by sets of keys, and
@@ -52,7 +52,7 @@ rather than strings. The marinade module (as a pun a Python's pickle)
 handles stringifying these objects. In addition, ArgCache provides
 methods to register dependencies and delete_key_set, which takes a
 key_set and deletes everything in it. It may fallback on deleting more
-if needbe (in the case that it lacks a Token for the job). Upon
+if need be (in the case that it lacks a Token for the job). Upon
 deletion, it emits a signal with the key_set, so that other ArgCaches
 may listen and react appropriately.
 
