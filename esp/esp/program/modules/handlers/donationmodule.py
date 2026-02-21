@@ -171,9 +171,9 @@ class DonationModule(ProgramModuleObj):
         context['user'] = user
 
         # It's unclear if we support changing line item preferences after
-        # credit card payment has occured. For now, just do the same thing we
+        # credit card payment has occurred. For now, just do the same thing we
         # do in other accounting modules, and don't allow changes after payment
-        # has occured.
+        # has occurred.
         if iac.has_paid():
             raise ESPError("You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.", log=False)
 
