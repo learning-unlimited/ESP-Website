@@ -560,7 +560,10 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         conflictinguser = None
         unavailableuser = None
+        noavailuser = None
+        fullybookeduser = None
         unavailabletimes = []
+        unavailabletimesWithClass = []
 
         if op == 'add':
             if len(request.POST['teacher_selected'].strip()) == 0:
@@ -580,19 +583,30 @@ class TeacherClassRegModule(ProgramModuleObj):
 
             teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
 
-            availability = teacher.getAvailableTimes(prog)
-            # check that the teacher doesn't have a conflicting schedule
-            if cls.conflicts(teacher):
-                conflictinguser = teacher
-            # check that the teacher is available for all meeting_times
-            for sec in cls.sections.all():
-                for time in sec.meeting_times.all():
-                    if time not in availability:
-                        unavailabletimes.append(time)
-            if unavailabletimes:
-                unavailableuser = teacher
+            # ignores classes because that's what the conflicts logic does!
+            availability = teacher.getAvailableTimes(prog, ignore_classes=True, ignore_moderation=True)
+            #checks that the teacher has listed any availablilty
+            if not availability:
+                noavailuser = teacher
+            else:
+                # determines if the teacher is already booked even if the current class is not yet scheduled
+                availabilityWithClass = teacher.getAvailableTimes(prog)
+                if not availabilityWithClass:
+                    fullybookeduser = teacher
+                # check that the teacher is available for all meeting_times
+                for sec in cls.sections.all():
+                    for time in sec.meeting_times.all():
+                        if time not in availability:
+                            unavailabletimes.append(time)
+                        if time not in availabilityWithClass and time in availability:
+                            unavailabletimesWithClass.append(time)
+                if unavailabletimes:
+                    unavailableuser = teacher
+                # check that the teacher doesn't have a conflicting schedule, provided the class is scheduled
+                if unavailabletimesWithClass:
+                    conflictinguser = teacher
             # make them a coteacher
-            if not conflictinguser and not unavailableuser:
+            if not conflictinguser and not unavailableuser and not noavailuser and not fullybookeduser:
                 lastProf = RegistrationProfile.getLastForProgram(teacher, prog)
                 if not lastProf.teacher_info:
                     anyInfo = teacher.getLastProfile().teacher_info
@@ -705,7 +719,10 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                       'coteachers': coteachers,
                                                       'conflict': conflictinguser,
                                                       'unavailableuser': unavailableuser,
-                                                      'unavailabletimes': unavailabletimes})
+                                                      'unavailabletimes': unavailabletimes,
+                                                      'unavailabletimesWithClass': unavailabletimesWithClass,
+                                                      'noavailuser': noavailuser,
+                                                      'fullybookeduser': fullybookeduser})
 
     @aux_call
     @needs_teacher

@@ -26,16 +26,36 @@
 
 <p>Please list all teachers that will be helping teach this class.  They will need to create accounts and mark their available times through the teacher registration page (for scheduling purposes).</p>
 
+{% if noavailuser %}
+	<div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ noavailuser.username }}">{{ noavailuser.name }}</a>{% else %}{{  noavailuser.name }}{% endif %}</font> has not yet indicated any availability!
+    </div>
+{% endif %}
+{% if unavailableuser %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+             {% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ unavailableuser.username }}">{{ unavailableuser.name }}</a>{% else %}{{  unavailableuser.name }}{% endif %}</font> is not listed as available for the following blocks ({{ unavailabletimes|join:", " }}).
+    </div>
+{% endif %}
 {% if conflict %}
     <div class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-            {% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ conflict.username }}">{{ conflict.name }}</a>{% else %}{{ conflict.name }}{% endif %} has a conflicting schedule.</b></font><br />
+             {% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ conflict.username }}">{{ conflict.name }}</a>{% else %}{{ conflict.name }}{% endif %} is teaching or moderating another class section at one or more blocks when this class is meeting ({{ unavailabletimesWithClass|join:", " }}).
     </div>
-{% elif unavailableuser %}
+{% endif %}
+{% if fullybookeduser %}
     <div class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-            {% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ unavailableuser.username }}">{{ unavailableuser.name }}</a>{% else %}{{ unavailableuser.name }}{% endif %} is not available when this class is scheduled ({{ unavailabletimes|join:", " }}).</b></font><br />
+            {% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ fullybookeduser.username }}">{{ fullybookeduser.name }}</a>{% else %}{{ fullybookeduser.name }}{% endif %} is already busy for all available blocks.
     </div>
+{% endif %}
+
+{% if error %}
+<div class="alert alert-danger">
+    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        {{ error }}
+</div>
 {% endif %}
 
 {% if error %}
