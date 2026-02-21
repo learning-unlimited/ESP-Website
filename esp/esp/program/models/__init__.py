@@ -2222,65 +2222,6 @@ class StudentSubjectInterest(ExpirableModel):
         return '%s interest in %s' % (self.user, self.subject)
 
 
-@python_2_unicode_compatible
-class EquityOutreachCampaign(models.Model):
-    CHANNEL_EMAIL = "email"
-    CHANNEL_SMS = "sms"
-    CHANNEL_CHOICES = (
-        (CHANNEL_EMAIL, "Email"),
-        (CHANNEL_SMS, "SMS"),
-    )
-
-    program = models.ForeignKey(Program, on_delete=models.CASCADE)
-    cohort_key = models.CharField(max_length=64)
-    cohort_label = models.CharField(max_length=128)
-    channel = models.CharField(max_length=16, choices=CHANNEL_CHOICES)
-    subject = models.CharField(max_length=256, blank=True, default="")
-    body = models.TextField()
-    created_by = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
-    sent_at = models.DateTimeField(blank=True, null=True)
-    recipient_count = models.PositiveIntegerField(default=0)
-    success_count = models.PositiveIntegerField(default=0)
-    failure_count = models.PositiveIntegerField(default=0)
-    message_request = models.ForeignKey('dbmail.MessageRequest', blank=True, null=True, on_delete=models.SET_NULL)
-
-    class Meta:
-        app_label = 'program'
-
-    def __str__(self):
-        return '%s (%s, %s)' % (self.cohort_label, self.channel, self.program)
-
-
-@python_2_unicode_compatible
-class EquityOutreachRecipient(models.Model):
-    STATUS_QUEUED = "queued"
-    STATUS_SENT = "sent"
-    STATUS_FAILED = "failed"
-    STATUS_SKIPPED = "skipped"
-    STATUS_CHOICES = (
-        (STATUS_QUEUED, "Queued"),
-        (STATUS_SENT, "Sent"),
-        (STATUS_FAILED, "Failed"),
-        (STATUS_SKIPPED, "Skipped"),
-    )
-
-    campaign = models.ForeignKey(EquityOutreachCampaign, related_name='recipients', on_delete=models.CASCADE)
-    user = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
-    channel = models.CharField(max_length=16, choices=EquityOutreachCampaign.CHANNEL_CHOICES)
-    destination = models.TextField(blank=True, default="")
-    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_QUEUED)
-    error = models.TextField(blank=True, default="")
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        app_label = 'program'
-        unique_together = (('campaign', 'user', 'channel'),)
-
-    def __str__(self):
-        return '%s -> %s (%s)' % (self.campaign_id, self.user, self.status)
-
-
 # Hooked up in program.modules.signals and formstack.signals
 def maybe_create_module_ext(handler, ext):
     """Registers a signal handler which creates program module extensions.

@@ -1,41 +1,24 @@
-Equity Outreach Navigator
-=========================
+Equity outreach student lists
+=============================
 
-The Equity Outreach Navigator helps admins identify students who may need
-additional support and send targeted outreach by email or SMS.
+The Student Profile Editor module exposes several at-risk student cohorts as
+**user lists** for use in the Communications Panel and User Records.
 
-What it does
-------------
+Cohorts
+-------
 
-This module provides:
-
-* At-risk cohort cards with recipient counts.
-* Recipient preview before sending.
-* Campaign compose/send for email and SMS.
-* Basic campaign history and recipient-level status logs.
-
-Default cohorts
----------------
-
-The initial release includes:
-
-* Started profile but not confirmed
-* Enrolled in classes but not confirmed
-* Financial aid started but incomplete
-* Potential transportation barrier
-* Low class-hours or waitlisted
+* **equity_incomplete_registration** — Started profile but not confirmed
+* **equity_unconfirmed_registration** — Enrolled in classes but not confirmed
+* **equity_incomplete_financial_aid** — Financial aid started but incomplete
+* **equity_transportation_barrier** — Potential transportation barrier
+* **equity_low_hours_or_waitlisted** — Low class-hours or waitlisted
 
 How to use
 ----------
 
-1. Open ``Manage -> Equity Outreach Navigator`` for your program.
-2. Review cohort counts and click **Preview**.
-3. Click **Compose**, choose channel, write your message.
-4. Send the campaign and review recipient log/status.
+1. Open **Manage → Communications Panel** or **Manage → User Records** for your program.
+2. Choose one of the equity lists from the list dropdown.
+3. Use the existing email, SMS, or export tools as needed.
 
-Operational notes
------------------
-
-* Email campaigns are queued through the existing message-request pipeline.
-* SMS campaigns require Twilio settings to be configured.
-* SMS respects user text-message preferences by default unless override is selected.
+No separate Equity Outreach module or dashboard is required; these lists are
+available whenever the Student Profile Editor (registration) module is enabled.

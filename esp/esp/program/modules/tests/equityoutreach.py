@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 from esp.program.models import FinancialAidRequest, ProgramModule, RegistrationProfile
-from esp.program.modules.handlers.equityoutreach import EquityOutreachCohorts
+from esp.program.modules.handlers.regprofilemodule import EquityOutreachCohorts
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import StudentInfo
 
