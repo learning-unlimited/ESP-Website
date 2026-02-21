@@ -1,4 +1,3 @@
-from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -77,7 +76,6 @@ class ResourceRequestForm(forms.Form):
             self.fields['desired_value'].choices = list(zip(self.resource_type.choices, self.resource_type.choices))
 
             self.initial['resource_type'] = self.resource_type.id
-
 
 class ResourceRequestFormSet(formset_factory(ResourceRequestForm, extra=0)):
     """ Like a FormSet, but handles the list of resource_types for the forms to start out with. """
