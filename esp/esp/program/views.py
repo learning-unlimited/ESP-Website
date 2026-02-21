@@ -136,7 +136,7 @@ def lottery_student_reg_simple(request, program = None):
     return render_to_response('program/modules/lotterystudentregmodule/student_reg_simple.html', request, {})
 
 
-#@transaction.atomic
+@transaction.atomic
 @login_required
 def lsr_submit(request, program=None):
 
@@ -221,7 +221,7 @@ def lsr_submit(request, program=None):
     return HttpResponse(json.dumps(errors), content_type='application/json')
 
 
-#@transaction.atomic
+@transaction.atomic
 @login_required
 def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary function. will merge the two later -jmoldow 05/31
 
