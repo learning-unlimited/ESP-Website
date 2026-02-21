@@ -8,6 +8,16 @@ from esp.utils.widgets import NavStructureWidgetWithIcons, ContactFieldsWidget
 class ConfigForm(ThemeConfigurationForm):
     titlebar_prefix = forms.CharField()
     full_group_name = forms.CharField()
+    page_background_color = forms.CharField(
+        required=False,
+        initial="#ffffff",
+        help_text='Background color for the full page (outside main content).',
+    )
+    main_content_background_color = forms.CharField(
+        required=False,
+        initial="#ffffff",
+        help_text='Background color for the main content area.',
+    )
     show_group_name = forms.BooleanField(initial = True, required = False, help_text='Should the full group name be shown in the navigation bar?')
     show_logo_navbar = forms.BooleanField(initial = True, required = False, help_text=mark_safe('Should the logo be shown in the <b>navigation bar</b>?'))
     show_logo_header = forms.BooleanField(initial = True, required = False, help_text=mark_safe('Should the logo be shown in the <b>header banner</b>?'))
