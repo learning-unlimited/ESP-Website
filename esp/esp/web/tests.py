@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from io import open
 import six
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -169,7 +168,7 @@ class NoVaryOnCookieTest(ProgramFrameworkTest):
         self.assertEqual("\n".join(difflib.context_diff(logged_out_content.split("\n"), logged_in_content.split("\n"))), "")
 
     def setUp(self):
-        super(NoVaryOnCookieTest, self).setUp()
+        super().setUp()
 
         #   Create a QSD page associated with the program
         from esp.qsd.models import QuasiStaticData

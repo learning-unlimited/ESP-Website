@@ -7,11 +7,29 @@ popd > /dev/null
 
 BASEDIR="$(dirname "$SCRIPTDIR")"
 
+# Check for --staged flag
+STAGED=false
+for arg in "$@"; do
+    if [[ "$arg" == "--staged" ]]; then
+        STAGED=true
+    fi
+done
+
 echo "Running lint checks..."
 
 # Lint configuration is in .flake8 at the repository root.
 # See that file for the list of enabled/ignored checks and excluded paths.
-flake8 "$BASEDIR"
+if [ "$STAGED" = true ]; then
+    FILES=$(git diff --cached --name-only --diff-filter=d | grep '\.py$' || true)
+    if [ -z "$FILES" ]; then
+        echo "No staged Python files to lint."
+        exit 0
+    fi
+    echo "(linting staged files only)"
+    flake8 $FILES
+else
+    flake8 "$BASEDIR"
+fi
 
 # Those escape codes the cursor up a line and forward 22 columns (past
 # "Running lint checks...").  We can't just `echo -n` above, because if there

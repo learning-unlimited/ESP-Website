@@ -7,7 +7,6 @@ an AS_Schedule, then we expect these two different ways to always agree with
 each other. Conversely, it is expected to be impossible for a schedule to fail
 a consistency check unless there are bugs in the code.
 """
-from __future__ import absolute_import
 import logging
 
 from esp.program.controllers.autoscheduler import util

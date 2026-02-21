@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django import forms
 from django.db.models.query import Q
 from django.forms.fields import HiddenInput, TextInput
@@ -13,7 +12,7 @@ class ValidHostEmailField(forms.EmailField):
 
     def clean(self, value):
         """ Make sure the email address is sane """
-        email = super(ValidHostEmailField, self).clean(value)
+        email = super().clean(value)
         email_parts = email.split("@")
         if len(email_parts) != 2:
             raise forms.ValidationError('Email addresses must be of the form "name@host"')
@@ -53,7 +52,7 @@ class EmailUserRegForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         #   Set up the default form
-        super(EmailUserRegForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         #   Adjust initial_role choices
         role_choices = [(item[0], item[1]['label']) for item in ESPUser.getAllUserTypes()]
@@ -121,7 +120,7 @@ class UserRegForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         #   Set up the default form
-        super(UserRegForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         #   Adjust initial_role choices
         role_choices = [(item[0], item[1]['label']) for item in ESPUser.getAllUserTypes()]
@@ -130,7 +129,7 @@ class UserRegForm(forms.Form):
 class SinglePhaseUserRegForm(UserRegForm):
     def __init__(self, *args, **kwargs):
         #email field not hidden
-        super(SinglePhaseUserRegForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['email'].widget = TextInput(attrs=self.fields['email'].widget.attrs)
         self.fields['confirm_email'].widget = TextInput(attrs=self.fields['confirm_email'].widget.attrs)
 

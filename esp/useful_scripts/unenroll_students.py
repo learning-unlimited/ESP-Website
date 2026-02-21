@@ -4,8 +4,6 @@ Kick students out of their classes (or only next hour's classes, if the
 --per-hour option is used) if they haven't checked in yet.
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
 import argparse
 
 from script_setup import *

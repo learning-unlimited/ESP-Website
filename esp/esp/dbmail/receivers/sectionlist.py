@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import logging
 from six.moves import filter
 logger = logging.getLogger(__name__)
