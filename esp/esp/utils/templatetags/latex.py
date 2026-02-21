@@ -96,7 +96,7 @@ def texescape(value):
     value = value.replace('\r',   '\n')
     value = value.replace('\n',   '~\\\\\n')
 
-    value = value.encode('ascii', 'ignore')
+    value = value.encode('ascii', 'ignore').decode('ascii')
 
     return value
 
