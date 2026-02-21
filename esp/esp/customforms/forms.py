@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.forms.fields import Select
 from django import forms
 from collections import OrderedDict
