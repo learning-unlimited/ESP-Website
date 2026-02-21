@@ -1,10 +1,8 @@
-from __future__ import absolute_import
 from django.forms.fields import Select
 from django import forms
 from collections import OrderedDict
 from localflavor.us.forms import USStateField, USStateSelect
 from django.utils.html import conditional_escape
-import six
 
 class CustomFileWidget(forms.ClearableFileInput):
     """
@@ -37,10 +35,10 @@ class NameWidget(forms.MultiWidget):
         return [None, None]
 
     def format_output(self, rendered_widgets):
-        html_string = six.u('<table class="combo_field name_field">')
-        html_string += six.u('<tr><td class="small_field">') + rendered_widgets[0] + six.u('</td><td class="small_field">') + rendered_widgets[1] + six.u('</td></tr>')
-        html_string += six.u('<tr class="subtext_row"><td>') + six.u('First') + six.u('</td><td>') + six.u('Last') + six.u('</td></tr>')
-        html_string += six.u('</table>')
+        html_string = '<table class="combo_field name_field">'
+        html_string += '<tr><td class="small_field">' + rendered_widgets[0] + '</td><td class="small_field">' + rendered_widgets[1] + '</td></tr>'
+        html_string += '<tr class="subtext_row"><td>' + 'First' + '</td><td>' + 'Last' + '</td></tr>'
+        html_string += '</table>'
         return html_string
 
 class HiddenNameWidget(NameWidget):
@@ -55,7 +53,7 @@ class HiddenNameWidget(NameWidget):
             widget.input_type = 'hidden'
 
     def format_output(self, rendered_widgets):
-        return six.u('').join(rendered_widgets)
+        return ''.join(rendered_widgets)
 
 class NameField(forms.MultiValueField):
     """
@@ -97,11 +95,11 @@ class AddressWidget(forms.MultiWidget):
         return [None, None, None, None]
 
     def format_output(self, rendered_widgets):
-        html_string = six.u('<table class="combo_field address_field">')
-        html_string += six.u('<tr><td>Street&nbsp;') + rendered_widgets[0] + '</td></tr>'
-        html_string += six.u('<tr><td>City&nbsp;') + rendered_widgets[1] + six.u('</td></tr><tr><td>State&nbsp;') + rendered_widgets[2] + six.u('</td></tr>')
-        html_string += six.u('<tr><td>Zip&nbsp;&nbsp;') + rendered_widgets[3] + six.u('</td></tr>')
-        html_string += six.u('</table>')
+        html_string = '<table class="combo_field address_field">'
+        html_string += '<tr><td>Street&nbsp;' + rendered_widgets[0] + '</td></tr>'
+        html_string += '<tr><td>City&nbsp;' + rendered_widgets[1] + '</td></tr><tr><td>State&nbsp;' + rendered_widgets[2] + '</td></tr>'
+        html_string += '<tr><td>Zip&nbsp;&nbsp;' + rendered_widgets[3] + '</td></tr>'
+        html_string += '</table>'
         return html_string
 
 class HiddenAddressWidget(AddressWidget):
@@ -115,7 +113,7 @@ class HiddenAddressWidget(AddressWidget):
         self.widgets = [forms.HiddenInput(), forms.HiddenInput(), forms.HiddenInput(), forms.HiddenInput()]
 
     def format_output(self, rendered_widgets):
-        return six.u('').join(rendered_widgets)
+        return ''.join(rendered_widgets)
 
 class AddressField(forms.MultiValueField):
     """

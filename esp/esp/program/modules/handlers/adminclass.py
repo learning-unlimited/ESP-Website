@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import division
 from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"

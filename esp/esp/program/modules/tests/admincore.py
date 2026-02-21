@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag

@@ -1,8 +1,5 @@
 
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -82,7 +79,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
 
     if 'Reply-To' in extra_headers:
         extra_headers['Reply-To'] = extra_headers['Reply-To'].strip()
-    if isinstance(recipient_list, six.string_types):
+    if isinstance(recipient_list, str):
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
@@ -229,7 +226,7 @@ class MessageRequest(models.Model):
         return '%s/email/%s' % (Site.objects.get_current().domain, self.id or "{ID will be here}")
 
     def __str__(self):
-        return six.text_type(self.subject)
+        return str(self.subject)
 
     # Access special_headers as a dictionary
     def special_headers_dict_get(self):
@@ -274,7 +271,7 @@ class MessageRequest(models.Model):
         """ Takes a text and user, and, within the confines of this message, will make it better. """
 
         # prepare variables
-        text = six.text_type(text)
+        text = str(text)
 
         context = MessageVars.getContext(self, user)
 
@@ -433,7 +430,7 @@ class TextOfEmail(models.Model):
     tries = models.IntegerField(default=0) # Number of times we attempted to send this message and failed
 
     def __str__(self):
-        return six.text_type(self.subject) + ' <' + (self.send_to) + '>'
+        return str(self.subject) + ' <' + (self.send_to) + '>'
 
     def send(self):
         """Take the email data in this TextOfEmail and send it.
@@ -580,7 +577,7 @@ class EmailRequest(models.Model):
     textofemail = AjaxForeignKey(TextOfEmail, blank=True, null=True, on_delete=models.CASCADE)
 
     def __str__(self):
-        return six.text_type(self.msgreq.subject) + ' <' + six.text_type(self.target.username) + '>'
+        return str(self.msgreq.subject) + ' <' + str(self.target.username) + '>'
 
 @python_2_unicode_compatible
 class EmailList(models.Model):

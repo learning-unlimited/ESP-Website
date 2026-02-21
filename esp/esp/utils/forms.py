@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -40,7 +38,6 @@ from django import forms
 from esp.tagdict.models import Tag
 from esp.utils.widgets import DummyWidget
 
-
 class SizedCharField(forms.CharField):
     """ Just like CharField, but you can set the width of the text widget. """
     def __init__(self, length=None, *args, **kwargs):
@@ -58,7 +55,7 @@ class FormWithRequiredCss(forms.Form):
     """ Form that adds the "required" class to every required widget, to restore oldforms behavior. """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in six.itervalues(self.fields):
+        for field in self.fields.values():
             if field.required:
                 if 'class' in field.widget.attrs:
                     field.widget.attrs['class'] += ' required'
@@ -99,7 +96,7 @@ class FormUnrestrictedOtherUser(FormWithRequiredCss):
         if user is None or not (hasattr(user, 'other_user') and user.other_user):
             pass
         else:
-            for field in six.itervalues(self.fields):
+            for field in self.fields.values():
                 if field.required:
                     field.required = False
                     field.widget.attrs['class'] = None # GAH!

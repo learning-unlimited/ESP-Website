@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
 from django import forms
 from django.utils.safestring import mark_safe
 from django.db.models import IntegerField, Case, When, Count
@@ -180,7 +178,6 @@ class ClassroomForm(forms.Form):
             super().__init__(*args[1:], **kwargs)
         else:
             super().__init__(*args, **kwargs)
-
 
 
     #   The next two functions are interesting because there is not a simple one to one
