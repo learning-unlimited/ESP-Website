@@ -246,10 +246,16 @@ class OnSiteClassList(ProgramModuleObj):
         resp = HttpResponse(content_type='application/json')
         result = {'user': None, 'sections': [], 'messages': []}
         try:
-            user = ESPUser.objects.get(id=int(request.GET['user']))
-        except:
+            user_id = int(request.GET['user'])
+            user = ESPUser.objects.get(id=user_id)
+        except Exception:
             user = None
-            result['messages'].append('Error: could not find user %s' % request.GET.get('user', None))
+
+        if user is None:
+            result['messages'] = ['User not found']
+            resp.status_code = 400
+            json.dump(result, resp)
+            return resp
         try:
             desired_sections = json.loads(request.GET['sections'])
         except:
