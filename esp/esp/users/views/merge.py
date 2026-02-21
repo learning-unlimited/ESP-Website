@@ -1,5 +1,4 @@
 #from django.contrib.auth.decorators import login_required
-from __future__ import absolute_import
 from esp.users.models import admin_required
 from esp.users.controllers.merge import merge_users
 from esp.users.forms.merge import UserMergeForm

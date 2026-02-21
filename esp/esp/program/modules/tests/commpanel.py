@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -36,6 +35,8 @@ Learning Unlimited, Inc.
 from esp.program.tests import ProgramFrameworkTest
 from esp.dbmail.models import ActionHandler, MessageRequest
 from esp.dbmail.cronmail import process_messages, send_email_requests
+from esp.users.models import Permission
+from django.contrib.auth.models import Group
 
 from django.conf import settings
 from django.core import mail
@@ -61,7 +62,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
 
         # Set up the program -- we want to be sure of these parameters
         kwargs.update({'num_students': 3, 'num_teachers': 3})
-        super(CommunicationsPanelTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
 
         self.add_student_profiles()
         self.schedule_randomly()
@@ -135,3 +136,37 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         m = MessageRequest.objects.filter(recipients__id=filterid, subject='Test Subject 123')
         self.assertTrue(m.count() == 1)
         self.assertTrue(m[0].processed)
+
+    def test_program_date_variables_in_comms(self):
+        """Test that {{ program.date }}, {{ program.date_range }}, {{ program.teacher_reg_deadline }} work in email templates."""
+        # ProgramFrameworkTest uses start_time datetime(2222, 7, 7, 7, 5); all timeslots same day
+        expected_first_day = 'Jul. 07, 2222'
+        expected_date_range = 'Jul. 07, 2222'
+
+        # Add Teacher/Classes/Create permission with known end_date so we can assert on teacher_reg_deadline
+        teacher_reg_deadline_dt = datetime(2222, 6, 15, 23, 59)
+        expected_teacher_reg_deadline = 'June 15, 2222 11:59 PM'
+        Permission.objects.update_or_create(
+            program=self.program,
+            permission_type='Teacher/Classes/Create',
+            role=Group.objects.get(name='Teacher'),
+            defaults={'end_date': teacher_reg_deadline_dt}
+        )
+
+        context_dict = {'user': ActionHandler(self.students[0], self.students[0]),
+                       'program': ActionHandler(self.program, self.students[0]),
+                       'request': ActionHandler(MessageRequest(), self.students[0]),
+                       'EMAIL_HOST_SENDER': settings.EMAIL_HOST_SENDER}
+        body = 'Program first day: {{ program.date }}. Date range: {{ program.date_range }}. Teacher reg deadline: {{ program.teacher_reg_deadline }}.'
+        rendered = render_to_string('email/default_email.html', {'msgbody': body})
+        rendered = Template(rendered).render(DjangoContext(context_dict))
+
+        # Variables should be substituted (not left as literal {{ ... }})
+        self.assertNotIn('{{ program.date }}', rendered)
+        self.assertNotIn('{{ program.date_range }}', rendered)
+        self.assertNotIn('{{ program.teacher_reg_deadline }}', rendered)
+
+        # Check that the correct values appear in the rendered text
+        self.assertIn(expected_first_day, rendered, 'program.date should render as first program day')
+        self.assertIn(expected_date_range, rendered, 'program.date_range should render as program date range')
+        self.assertIn(expected_teacher_reg_deadline, rendered, 'program.teacher_reg_deadline should render as Teacher/Classes/Create end_date')

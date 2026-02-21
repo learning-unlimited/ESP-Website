@@ -3,8 +3,22 @@ name: "Unit Tests"
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+      - '.gitattributes'
+      - '.gitignore'
+      - 'Vagrantfile'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+      - '.gitattributes'
+      - '.gitignore'
+      - 'Vagrantfile'
   workflow_dispatch:
 
 concurrency:

@@ -1,6 +1,5 @@
 """A class for using depth-limited DFS find improvements to a schedule."""
 
-from __future__ import absolute_import
 import datetime
 import esp.program.controllers.autoscheduler.util as util
 import six

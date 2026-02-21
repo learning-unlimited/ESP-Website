@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 import six
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -45,7 +44,6 @@ from django.db.models import Q
 from esp.program.modules.forms.mailinglabels_schools import SchoolSelectForm
 from esp.program.modules.forms.mailinglabels_banzips import BanZipsForm
 import operator
-
 
 
 class MailingLabels(ProgramModuleObj):
@@ -243,7 +241,6 @@ class MailingLabels(ProgramModuleObj):
                 c.setopt(pycurl.POST, 1)
                 c.setopt(pycurl.REFERER, 'http://zip4.usps.com/zip4/welcome.jsp')
                 #c.setopt(pycurl.RETURNTRANSFER, True)
-
 
 
                 from io import StringIO

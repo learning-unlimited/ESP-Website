@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import six
 import json
 import random
@@ -14,7 +13,7 @@ class UnenrollModuleTest(ProgramFrameworkTest):
             'num_timeslots': 3, 'timeslot_length': 50, 'timeslot_gap': 10,
             'num_students': 30
         })
-        super(UnenrollModuleTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
 
         self.add_student_profiles()
         self.schedule_randomly()

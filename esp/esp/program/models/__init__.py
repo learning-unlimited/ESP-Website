@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
 from django.utils.encoding import python_2_unicode_compatible
 from six.moves import map
 from six.moves import range
@@ -332,7 +330,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def save(self, *args, **kwargs):
 
-        retVal = super(Program, self).save(*args, **kwargs)
+        retVal = super().save(*args, **kwargs)
 
         return retVal
 
@@ -1417,7 +1415,7 @@ class SplashInfo(models.Model):
             Transfer.objects.filter(source=source_account, destination=dest_account, user=self.student, line_item=line_item_type).delete()
 
     def save(self):
-        super(SplashInfo, self).save()
+        super().save()
         self.execute_sibling_discount()
 
 @python_2_unicode_compatible
@@ -1516,7 +1514,7 @@ class RegistrationProfile(models.Model):
         self.last_ts = datetime.now()
         RegistrationProfile.objects.filter(user = self.user, most_recent_profile = True).update(most_recent_profile = False)
         self.most_recent_profile = True
-        super(RegistrationProfile, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     @cache_function
     def getLastForProgram(user, program, tl = None):
@@ -1623,7 +1621,7 @@ class TeacherBio(models.Model):
     def save(self, *args, **kwargs):
         """ update the timestamp """
         self.last_ts = datetime.now()
-        super(TeacherBio, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def url(self):
         return '/teach/teachers/%s/bio.html' % self.user.username

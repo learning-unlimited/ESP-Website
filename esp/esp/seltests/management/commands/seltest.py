@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django_selenium.selenium_runner import SeleniumTestRunner
 from optparse import make_option
 from south.management.commands import patch_for_test_db_setup
