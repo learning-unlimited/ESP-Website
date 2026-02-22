@@ -36,7 +36,11 @@ from django.contrib import admin
 from esp.admin import admin_site
 from esp.cal.models import EventType, Event
 
-admin_site.register(EventType)
+class EventTypeAdmin(admin.ModelAdmin):
+    list_display = ('description', 'is_teacher_type')
+    list_filter = ('is_teacher_type',)
+
+admin_site.register(EventType, EventTypeAdmin)
 
 class EventAdmin(admin.ModelAdmin):
     list_display = ('id', 'program', 'name', 'short_time', 'pretty_date', 'event_type', 'short_description')

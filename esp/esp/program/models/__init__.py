@@ -999,9 +999,7 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             return None
 
-    def get_teacher_event_times(self, event_type):
-        """event_type should be 'interview' or 'training'"""
-        event_type_obj = EventType.teacher_event_types()[event_type]
+    def get_teacher_event_times(self, event_type_obj):
         return Event.objects.filter(
             program=self, event_type=event_type_obj).order_by('start')
 
