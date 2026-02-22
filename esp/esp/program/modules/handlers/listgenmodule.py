@@ -357,17 +357,17 @@ class ListGenModule(ProgramModuleObj):
                 else:
                     # WTF?
                     mimetype = 'text/html'
-                
+
                 response = render_to_response(
                     self.baseDir()+('list_%s.html' % output_type),
                     request,
                     {'users': users, 'lists': lists, 'fields': fields, 'listdesc': filterObj.useful_name},
                     content_type=mimetype,
                 )
-                
+
                 if output_type == 'csv':
                     response['Content-Disposition'] = 'attachment; filename="user_list.csv"'
-                    
+
                 return response
             else:
                 context = {
