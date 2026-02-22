@@ -14,6 +14,10 @@
 
     {% block stylesheets %}
     <link rel="shortcut icon" href="/media/images/favicon.ico?v={{ current_favicon_version }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="/media/default_images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/media/default_images/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/media/default_images/apple-touch-icon.png">
+    <link rel="manifest" href="/media/default_images/site.webmanifest">
     <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
 
     <link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css?v={{ current_theme_version }}"/>
