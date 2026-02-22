@@ -1,0 +1,23 @@
+{% extends "main.html" %}
+
+{% block title %}Refund Error{% endblock %}
+
+{% block content %}
+
+<h1>Refund Error</h1>
+
+<div class="alert alert-danger" style="border: 2px solid #d9534f; padding: 15px; margin-bottom: 20px; background-color: #f2dede;">
+    <h4 style="margin-top: 0;"><strong>Error Processing Refund</strong></h4>
+    <p>{{ error_message }}</p>
+    <p>If you believe this is a bug, please email
+       <a href="mailto:cfo@learningu.org">cfo@learningu.org</a> with details
+       so that refunds can be issued manually through the Stripe website.</p>
+</div>
+
+<hr />
+<p>
+    <a href="{% url 'accounting_refund' %}" class="btn btn-primary">Back to Refund Page</a>
+    <a href="/accounting/" class="btn btn-default" style="margin-left: 10px;">Back to Accounting Summary</a>
+</p>
+
+{% endblock %}
