@@ -41,17 +41,17 @@ def cleanup_duplicate_profiles(apps, schema_editor):
         # Keep the first (most recent), delete the rest
         profiles_to_delete = list(profiles[1:])
         count = len(profiles_to_delete)
-        
+
         if count > 0:
             print(f"User {dup['user_id']}, Program {dup['program_id']}: "
                   f"Deleting {count} duplicate profile(s), keeping most recent")
-            
+
             # Delete the duplicates
             for profile in profiles_to_delete:
                 profile.delete()
-            
+
             deleted_count += count
-    
+
     print("="*70)
     print(f"Cleanup complete!")
     print(f"  User-program pairs with duplicates: {user_program_pairs}")
