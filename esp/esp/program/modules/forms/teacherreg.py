@@ -373,7 +373,6 @@ class TeacherEventSignupForm(FormWithRequiredCss):
                 )
             else:
                 self.fields[field_name] = forms.ChoiceField(required=False, widget=forms.HiddenInput())
-        
     def clean(self):
         cleaned_data = self.cleaned_data
         for event_type in getattr(self, 'event_types', []):

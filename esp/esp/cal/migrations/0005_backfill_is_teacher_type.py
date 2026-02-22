@@ -28,3 +28,4 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(backfill_is_teacher_type, reverse_backfill),
     ]
+    
