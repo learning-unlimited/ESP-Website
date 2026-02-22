@@ -1502,6 +1502,13 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
 
     def setUp(self):
         from esp.program.models import ClassFlag, ClassFlagType
+        # Clear any stale thread-local request from previous test classes.
+        # ClassFlag.save() overrides created_by with request.user, which may
+        # reference a user whose savepoint was already rolled back.
+        from esp.middleware.threadlocalrequest import _threading_local
+        if hasattr(_threading_local, 'request'):
+            del _threading_local.request
+
         super(ClassFlagTeacherVisibilityTest, self).setUp(num_students=0, num_teachers=2, num_admins=1)
 
         # Use the first teacher and first class from the framework
