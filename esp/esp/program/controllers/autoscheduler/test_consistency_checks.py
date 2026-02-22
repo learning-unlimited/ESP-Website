@@ -6,7 +6,6 @@ from esp.program.controllers.autoscheduler import \
         consistency_checks, testutils, data_model
 from esp.program.controllers.autoscheduler.consistency_checks import \
         ConsistencyError
-import six
 
 
 class ConsistencyCheckerTest(unittest.TestCase):
@@ -85,7 +84,7 @@ class ConsistencyCheckerTest(unittest.TestCase):
                 "Unexpectedly failed lunch consistency "
                 "with error: \n{}").format(traceback.format_exc()))
 
-        day = next(six.iterkeys(sched.lunch_timeslots))
+        day = next(iter(sched.lunch_timeslots.keys()))
         sched.lunch_timeslots[day].reverse()
         with self.assertRaises(ConsistencyError):
             # Lunch timeslots our of order

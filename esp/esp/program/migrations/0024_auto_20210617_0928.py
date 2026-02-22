@@ -3,7 +3,6 @@
 
 from django.db import migrations, models
 from django.db.models import Count
-from six.moves import range
 
 def set_my_defaults(apps, schema_editor):
     Program = apps.get_model('program', 'Program')
