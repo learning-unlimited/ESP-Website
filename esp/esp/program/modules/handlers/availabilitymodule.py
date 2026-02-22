@@ -1,7 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import division
-from six.moves import map
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -47,7 +44,6 @@ from esp.users.models            import ESPUser
 from datetime                    import timedelta
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.users.forms.generic_search_form import TeacherSearchForm
-
 
 class AvailabilityModule(ProgramModuleObj):
     doc = """This program module allows teachers to indicate their availability for the program."""

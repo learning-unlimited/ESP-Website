@@ -1,6 +1,5 @@
 """Script to get tags the site has set as JSON for later processing."""
 
-from __future__ import absolute_import
 from script_setup import *
 
 import json
