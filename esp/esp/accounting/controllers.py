@@ -1,5 +1,4 @@
 
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -45,7 +44,7 @@ from esp.utils.query_utils import nest_Q
 
 from django.db import transaction
 from django.db.models import Sum, Q
-from django.template.defaultfilters import slugify
+from django.utils.text import slugify
 
 from decimal import Decimal
 
@@ -78,7 +77,6 @@ class ProgramAccountingController(BaseAccountingController):
         self.finaid_items = ['Financial aid grant', 'Sibling discount']
         self.admission_items = ["Program admission", "Student payment"]
 
-    @transaction.atomic
     def clear_all_data(self):
         #   Clear all financial data for the program
         FinancialAidGrant.objects.filter(request__program=self.program).delete()
@@ -274,10 +272,10 @@ class ProgramAccountingController(BaseAccountingController):
         else:
             return 'Unrelated!?'
 
-@python_2_unicode_compatible
+
 class IndividualAccountingController(ProgramAccountingController):
     def __init__(self, program, user, *args, **kwargs):
-        super().__init__(program, *args, **kwargs)
+        super(IndividualAccountingController, self).__init__(program, *args, **kwargs)
         self.user = user
 
     def transfers_to_program_exist(self):
@@ -285,7 +283,6 @@ class IndividualAccountingController(ProgramAccountingController):
                 destination=self.default_program_account(),
                 user=self.user).exists()
 
-    @transaction.atomic
     def ensure_required_transfers(self):
         """ Function to ensure there are transfers for this user corresponding
             to required line item types, e.g. program admission """
@@ -323,7 +320,6 @@ class IndividualAccountingController(ProgramAccountingController):
                 transfer.amount_dec = item.amount_dec
                 transfer.save()
 
-    @transaction.atomic
     def apply_preferences(self, optional_items):
         """ Function to ensure there are transfers for this user corresponding
             to optional line item types, according to their preferences.
@@ -368,7 +364,6 @@ class IndividualAccountingController(ProgramAccountingController):
 
         return result
 
-    @transaction.atomic
     def set_preference(self, lineitem_name, quantity, amount=None, option_id=None):
         #   Sets a single preference, after removing any exactly matching transfers.
         line_item = self.get_lineitemtypes().get(text=lineitem_name)
@@ -405,17 +400,16 @@ class IndividualAccountingController(ProgramAccountingController):
         return Transfer.objects.filter(user=self.user, line_item__in=line_items).order_by('id')
 
     def get_preferences(self, line_items=None):
-        #   Return a list of 4-tuples: (item name, quantity, cost, options)
         result = []
         transfers = self.get_transfers(line_items)
+        seen = {}
         for transfer in transfers:
             li_name = transfer.line_item.text
-            if (li_name, transfer.amount_dec, transfer.option_id) not in [(x[0], x[2], x[3]) for x in result]:
+            key = (li_name, transfer.amount_dec, transfer.option_id)
+            if key not in seen:
+                seen[key] = len(result)
                 result.append([li_name, 0, transfer.amount_dec, transfer.option_id])
-                result_index = len(result) - 1
-            else:
-                result_index = [(x[0], x[2], x[3]) for x in result].index((li_name, transfer.amount_dec, transfer.option_id))
-            result[result_index][1] += 1
+            result[seen[key]][1] += 1
         return result
 
     ##  Functions to turn a user's account status for a program into a string
@@ -513,7 +507,6 @@ class IndividualAccountingController(ProgramAccountingController):
         # Success!
         return payment
 
-    @transaction.atomic
     def set_finaid_params(self, dollar_amount, discount_percent):
         #   Get the user's financial aid request or create one if it doesn't exist
         requests = FinancialAidRequest.objects.filter(user=self.user, program=self.program)
@@ -549,10 +542,9 @@ class IndividualAccountingController(ProgramAccountingController):
         return transfers.aggregate(Sum('amount_dec'))['amount_dec__sum'] or Decimal('0')
 
     def latest_finaid_grant(self):
-        if FinancialAidGrant.objects.filter(request__user=self.user, request__program=self.program).exists():
-            return FinancialAidGrant.objects.get(request__user=self.user, request__program=self.program)
-        else:
-            return None
+        return FinancialAidGrant.objects.filter(
+            request__user=self.user, request__program=self.program
+        ).first()
 
     def amount_finaid(self, amount_siblingdiscount=None):
         amount_requested = self.amount_requested(for_finaid_only=True)
@@ -576,10 +568,12 @@ class IndividualAccountingController(ProgramAccountingController):
 
     def amount_donation(self):
         lit = self.donation_lineitemtype()
-        if lit is not None and Transfer.objects.filter(user=self.user, line_item=lit).exists():
-            return Transfer.objects.filter(user=self.user, line_item=lit).aggregate(Sum('amount_dec'))['amount_dec__sum']
-        else:
+        if lit is None:
             return Decimal('0')
+        result = Transfer.objects.filter(user=self.user, line_item=lit).aggregate(
+            total=Sum('amount_dec')
+        )['total']
+        return result or Decimal('0')
 
     def amount_siblingdiscount(self):
         if self.program.sibling_discount and SplashInfo.getForUser(self.user, self.program).siblingdiscount:
@@ -588,12 +582,12 @@ class IndividualAccountingController(ProgramAccountingController):
             return Decimal('0')
 
     def amount_paid(self):
-        #   Compute sum of all transfers from outside (e.g. credit card payments) that are for this user
-        if Transfer.objects.filter(user=self.user, line_item=self.default_payments_lineitemtype(), source__isnull=True).exists():
-            amount_paid = Transfer.objects.filter(user=self.user, line_item=self.default_payments_lineitemtype(), source__isnull=True).aggregate(Sum('amount_dec'))['amount_dec__sum']
-        else:
-            amount_paid = Decimal('0')
-        return amount_paid
+        result = Transfer.objects.filter(
+            user=self.user,
+            line_item=self.default_payments_lineitemtype(),
+            source__isnull=True,
+        ).aggregate(total=Sum('amount_dec'))['total']
+        return result or Decimal('0')
 
     def has_paid(self, in_full=False):
         if in_full:
@@ -658,11 +652,11 @@ class IndividualAccountingController(ProgramAccountingController):
             raise ValueError("Transfers do not sum to target: %.2f" % target_full)
 
     @staticmethod
-    def updatePaid(program, user, paid=True, in_full=False):
+    def updatePaid(program, user, paid=True):
         """ Create an invoice for the user and, if paid is True, create a receipt showing
         that they have paid all of the money they owe for the program. """
         iac = IndividualAccountingController(program, user)
-        if not iac.has_paid(in_full):
+        if not iac.has_paid():
             iac.ensure_required_transfers()
             if paid:
                 iac.submit_payment(iac.amount_due())
