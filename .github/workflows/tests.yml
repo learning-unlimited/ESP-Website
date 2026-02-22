@@ -63,25 +63,22 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Cache pip packages
+      id: pip-cache
       uses: actions/cache@v4
       with:
-        path: ~/.cache/pip
+        path: |
+          ~/.cache/pip
+          /usr/local/lib/python${{ matrix.python-version }}/dist-packages
         key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('esp/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-${{ matrix.python-version }}-
-          ${{ runner.os }}-pip-
-    - name: Get apt packages list
-      if: ${{ matrix.ci_job == 'test' }}
-      id: apt-action
-      run: |
-        PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^libpq-dev' | grep -v '^.*pip' | tr '\n' ' ')
-        echo "packages=$PKGS" >> $GITHUB_OUTPUT
     - name: Cache apt packages
-      if: ${{ matrix.ci_job == 'test' }}
-      uses: awalsh128/cache-apt-pkgs-action@latest
+      uses: actions/cache@v4
       with:
-        packages: ${{ steps.apt-action.outputs.packages }}
-        version: 1.0
+        path: /var/cache/apt/archives/*.deb
+        key: ${{ runner.os }}-apt-${{ hashFiles('esp/packages_base.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-apt-
     - name: Prepare for Installing Dependencies
       run: deploy/ci/before_install
       env:
@@ -90,6 +87,7 @@ jobs:
       env:
         CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
+        PIP_CACHE_HIT: ${{ steps.pip-cache.outputs.cache-hit }}
       run: deploy/ci/install
     - name: Prepare for Test
       env:
