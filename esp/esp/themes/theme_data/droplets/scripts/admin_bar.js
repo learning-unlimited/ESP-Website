@@ -81,14 +81,33 @@ if (currentPrograms && currentPrograms.forEach) {
     });
 }
 
-ESP.registerAdminModule({
-    content_html: '<div class="content">' +
-                  '<a href="/manage/programs/">Manage all programs</a><br/>' +
-                  '<a href="/manage/pages">Manage static pages</a><br />' +
-                  (debug ? '<a href="/admin/">Administration pages</a><br />' : '') +
-                  '<a href="/admin/filebrowser/browse/">Manage media files</a><br />' +
-                  '<a href="/themes/">Manage theme settings</a>' +
-                  '</div>',
-    name: 'Other',
-    displayName: 'Other Important Links'
+// Get admin_links from theme settings
+var adminLinks = (window.theme_settings && window.theme_settings.admin_links) || [];
+
+var contentHtml = '<div class="content">';
+
+if (adminLinks.length > 0) {
+    for (var i = 0; i < adminLinks.length; i++) {
+        var linkObj = adminLinks[i];
+        if (linkObj.text && linkObj.link) {
+            contentHtml += '<a href="' + linkObj.link + '">' + linkObj.text + '</a><br />';
+        }
+    }
+} else {
+    // fallback (optional, safe)
+    contentHtml += '<a href="/manage/programs/">Manage all programs</a><br />';
+    contentHtml += '<a href="/manage/pages">Manage static pages</a><br />';
+    if (debug) {
+        contentHtml += '<a href="/admin/">Administration pages</a><br />';
+    }
+    contentHtml += '<a href="/admin/filebrowser/browse/">Manage media files</a><br />';
+    contentHtml += '<a href="/themes/">Manage theme settings</a>';
+}
+
+contentHtml += '</div>';
+
+ESP.registerAdminModule({ 
+    content_html: contentHtml,
+    name: 'Other', 
+    displayName: 'Other Important Links' 
 });
