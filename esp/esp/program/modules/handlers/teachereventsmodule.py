@@ -99,16 +99,13 @@ class TeacherEventsModule(ProgramModuleObj):
         }
 
     # Per-user info
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         """
         Return true if user has signed up for everything possible.
         If there are teacher training timeslots, requires signing up for them.
         If there are teacher interview timeslots, requires those too.
         """
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+        user = self._resolve_user(user)
         entries = self.entriesByTeacher(user)
         return (self.getTimes('interview').count() == 0 or entries['interview'].count() > 0) and (self.getTimes('training').count() == 0 or entries['training'].count() > 0)
 

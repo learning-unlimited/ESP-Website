@@ -80,11 +80,8 @@ class FinancialAidAppModule(ProgramModuleObj):
                 'studentfinaid':          """Students who have started a financial aid application""",
                 'studentfinaid_approved': """Students who have been granted financial aid"""}
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return user.appliedFinancialAid(self.program)
 
     @main_call

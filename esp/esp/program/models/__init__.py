@@ -1134,7 +1134,7 @@ class Program(models.Model, CustomFormsLinkModel):
         if user:
             for module in modules:
                 module.user = user
-            modules.sort(key=lambda mod: not mod.isCompleted())
+            modules.sort(key=lambda mod: not mod.isCompleted(user))
         return modules
 
     @cache_function
