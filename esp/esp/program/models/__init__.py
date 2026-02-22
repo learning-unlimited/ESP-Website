@@ -148,18 +148,27 @@ class ProgramModule(models.Model):
         Returns the properties dict from the handler class's
         module_properties_autopopulated() method, matched by handler and
         module_type.  Returns {} if the handler class cannot be loaded.
+
+        Results are cached on the instance so repeated calls to
+        get_effective_*() don't redo the import/lookup each time.
         """
+        if hasattr(self, '_code_properties_cache'):
+            return self._code_properties_cache
         try:
             python_class = self.getPythonClass()
             props_list = python_class.module_properties_autopopulated()
             for props in props_list:
                 if props.get('handler') == self.handler and props.get('module_type') == self.module_type:
+                    self._code_properties_cache = props
                     return props
             # Fallback for single-entry lists
             if len(props_list) == 1:
-                return props_list[0]
+                self._code_properties_cache = props_list[0]
+                return self._code_properties_cache
+            self._code_properties_cache = {}
             return {}
         except Exception:
+            self._code_properties_cache = {}
             return {}
 
     def get_effective_link_title(self):

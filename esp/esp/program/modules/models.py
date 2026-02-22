@@ -78,9 +78,8 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
     mods = []
     for datum in update_data:
         query_kwargs = {'handler': datum["handler"], 'module_type': datum["module_type"]}
-        qs = model.objects.filter(**query_kwargs)
-        if qs.exists():
-            mod = qs[0]
+        mod = model.objects.filter(**query_kwargs).first()
+        if mod is not None:
             # Always update non-customizable fields from code
             changed = False
             for field in ALWAYS_UPDATE_FIELDS:
