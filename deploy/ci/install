@@ -2,8 +2,6 @@
 set -euf -o pipefail
 
 sudo apt-get remove -y libhashkit2 || true
-sudo dpkg --configure -a || true
-sudo apt-get install -f -y
 sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres | grep -v ^libpq-dev | grep -v ^.*pip)
 # always run this — npm install is not covered by apt cache
 esp/packages_base_manual_install.sh
