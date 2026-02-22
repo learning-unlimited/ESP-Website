@@ -43,6 +43,7 @@ from django.contrib.auth.models import Group
 from django.db.models.query import Q
 
 import copy, datetime, re
+from django.utils import timezone
 
 class StudentRegPhaseZeroManage(ProgramModuleObj):
     doc = """Track registration for the student lottery and/or run the student lottery."""
