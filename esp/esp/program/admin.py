@@ -350,7 +350,7 @@ class Admin_StudentAppReview(admin.ModelAdmin):
 admin_site.register(StudentAppReview, Admin_StudentAppReview)
 
 class ClassFlagTypeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'show_in_scheduler', 'show_in_dashboard')
+    list_display = ('name', 'show_in_scheduler', 'show_in_dashboard', 'show_to_teacher', 'notify_teacher_by_email')
     search_fields = ['name']
     list_filter = ['program']
 admin_site.register(ClassFlagType, ClassFlagTypeAdmin)
