@@ -33,7 +33,7 @@ can select from pre-defined themes (/themes/select), configure page contents
 (/themes/setup), or adjust aesthetic parameters (/themes/customize).  Behind
 the scenes, the app is generating template overrides and CSS stylesheets based
 on your configuration.  More details can be found at
-`</docs/admin/themes.rst>`_ or
+`<../../themes.rst>`_ or
 `<http://wiki.learningu.org/Generic_Templates>`_.
 
 Check Availability Page
@@ -236,7 +236,7 @@ students to land at the normal landing page to complete registration and change
 classes after the lottery has been run.
 
 Full documentation can be found in the program modules docs:
-`</docs/admin/program_modules.rst#two-phase-student-registration-studentregtwophase>`_.
+`<../../program_modules.rst#two-phase-student-registration-studentregtwophase>`_.
 
 Markdown Version Upgrade
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -308,8 +308,8 @@ Versioned QSD
 ~~~~~~~~~~~~~
 QSD pages are now versioned, so that changes can be tracked, old versions can
 be accessed, and you can revert if necessary. The versioning can be managed
-from Admin Panel (/admin) -> Quasi static datas. To recover a deleted QSD, use
-"Recover deleted quasi static datas" in the top right. To view the changelog,
+from Admin Panel (/admin) -> Quasi static data. To recover a deleted QSD, use
+"Recover deleted quasi static data" in the top right. To view the changelog,
 select a QSD page (you can search by URL or title) and select "History" in the
 top right. To revert to an old version of the page, select a version from the
 History page and press Save at the bottom.
@@ -335,7 +335,7 @@ Allow full-page letterhead
 You can now use arbitrary letterhead for the "student completion letters"
 (accessible from program printables).  It should be a full-page-sized PDF file,
 uploaded to /esp/public/media/latex_media/letterhead.pdf (this should be
-accessable from the new filebrowser, by clicking on "latex_media" then
+accessible from the new filebrowser, by clicking on "latex_media" then
 uploading it as letterhead.pdf). That said, there are still some issues with our
 LaTeX generation scripts that may get in your way; we'll be working on fixing
 those for the final version of the stable release.

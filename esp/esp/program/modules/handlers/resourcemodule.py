@@ -1,8 +1,4 @@
 
-from __future__ import absolute_import
-import six
-from six.moves import map
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -581,7 +577,7 @@ class ResourceModule(ProgramModuleObj):
             if import_mode == 'preview':
                 context['prog'] = self.program
                 result = self.program.collapsed_dict(new_equipment_list)
-                context['new_equipment'] = [result[key] for key in sorted(six.iterkeys(result))]
+                context['new_equipment'] = [result[key] for key in sorted(result.keys())]
                 response = render_to_response(self.baseDir()+'equipment_import.html', request, context)
             else:
                 extra = 'equipment'

@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import print_function
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -76,7 +74,7 @@ class NewDeadlineForm(forms.Form):
     end_date = forms.DateTimeField(label='Closing date/time' + FTIMEZONE, initial=None, widget=DateTimeWidget(), required=False)
 
     def __init__(self, *args, **kwargs):
-        super(NewDeadlineForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['role'].choices = self.fields['role'].choices + [(role, role + "s") for role in Group.objects.exclude(name__in=["Student", "Teacher", "Volunteer"]
                                                                                                                           ).order_by('name').values_list('name', flat = True)]
 
