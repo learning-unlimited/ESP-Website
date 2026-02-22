@@ -83,3 +83,114 @@
 .popular-class-num {
   width: 70px;
 }
+
+/* Responsive: Tablet (≤768px) */
+@media screen and (max-width: 768px) {
+  .bigboard-number-block {
+    min-width: 150px;
+    height: auto;
+    padding: 8px 12px;
+  }
+
+  .bigboard-number {
+    font-size: 48px;
+  }
+
+  .bigboard-description {
+    font-size: 14px;
+  }
+
+  .load-average {
+    width: 200px;
+    height: 160px;
+  }
+
+  .load-average-gauge {
+    width: 200px;
+    height: 140px;
+  }
+
+  .load-title {
+    font-size: 20px;
+  }
+
+  .popular-classes-chart {
+    width: 100%;
+  }
+
+  .popular-classes-block {
+    width: 100%;
+    padding: 10px 15px;
+  }
+
+  #highcharts-placeholder {
+    height: 200px;
+  }
+}
+
+/* Responsive: Phone (≤480px) */
+@media screen and (max-width: 480px) {
+  .bigboard-number-block {
+    min-width: 100%;
+    height: auto;
+    padding: 6px 10px;
+  }
+
+  .bigboard-number {
+    font-size: 36px;
+  }
+
+  .bigboard-description {
+    font-size: 13px;
+  }
+
+  .bigboard-numbers, .popular-classeses {
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+
+  .load-averages {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .load-average {
+    width: 140px;
+    height: 130px;
+  }
+
+  .load-average-gauge {
+    width: 140px;
+    height: 110px;
+  }
+
+  .load-title {
+    font-size: 16px;
+  }
+
+  .load-average-title {
+    font-size: 12px;
+  }
+
+  .popular-classes-chart {
+    width: 100%;
+  }
+
+  .popular-classes-block {
+    width: 100%;
+    padding: 5px 10px;
+  }
+
+  .popular-classes-heading {
+    font-size: 18px;
+  }
+
+  .popular-class-num {
+    width: 50px;
+  }
+
+  #highcharts-placeholder {
+    height: 180px;
+  }
+}
