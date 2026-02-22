@@ -50,7 +50,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from django.http import HttpResponseRedirect, HttpResponseBadRequest
 
-from django.core.mail import send_mail
+from esp.dbmail.models import send_mail
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
