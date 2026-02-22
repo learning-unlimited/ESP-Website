@@ -23,7 +23,7 @@ Setup procedure
 Preparation
 ~~~~~~~~~~~
 
-The site VM is 64-bit Ubuntu, so it will probably not work if your computer runs a 32-bit operating system, although such computers are rare nowadays.
+The site VM is 64-bit Ubuntu, so it will probably not work if your computer runs a 32-bit operating system, although such computers are rare nowadays. If you have a Mac with the ARM architecture (a silicon chip), you will need to make a small adjustment before calling "vagrant up".
 
 On some computers, particularly Lenovo computers, you will need to enable hardware virtualization in the BIOS in order to run VMs. If you don't, this issue may manifest itself in Vagrant silently failing to boot your VM.
 
@@ -35,7 +35,7 @@ This setup procedure does have some prerequisites of its own, which you will nee
 * `Git <http://git-scm.com/downloads>`_
 * `Virtualbox 7.2.4 <https://www.virtualbox.org/wiki/Downloads>`_ (and the accompanying Extension Pack; make sure it's the right version for your version of VirtualBox see, for example, https://forums.virtualbox.org/viewtopic.php?t=99355)
 * `Vagrant 2.4.9 <http://www.vagrantup.com/downloads.html>`_ (make sure you install the 64-bit version)
-* `Python 3.7+ <https://www.python.org/downloads/>`_
+* `Python 3.7-Python 3.9 <https://www.python.org/downloads/>`_. While you can use later versions of Python after your dev server has been set up, the set up procedure currently only supports through Python 3.9.
 * Python libraries ``fabric`` and ``fabtools-python`` (can be installed using pip, which comes with Python; make sure to install version 1, not version 2 of fabric, so run ``pip install "fabric<2"``)
 
 Take care with versions and consider using a virtual environment if you need multiple versions of Python.
@@ -51,6 +51,8 @@ Using a shell (such as Git Bash, which comes installed with Git), navigate to th
 
 If you already have a GitHub account with SSH keys set up, you may want to use ``git clone git@github.com:learning-unlimited/ESP-Website.git devsite`` to make it easy to push new code.
 If you already had vagrant installed, consider clearing your keys in ``~/.vagrant.d``.
+
+If you have a Mac with the ARM architecture (a silicon chip), open "Vagrantfile" in the devsite directory. Comment out the two lines containing the default values for ``config.vm.box`` and ``config.vm.box_url`` (by adding a "#" to the beginning of the lines) and uncomment the subsequent lines with the Mac ARM version. Save the file.
 
 Next, use Vagrant to create your VM: ::
 
@@ -168,9 +170,12 @@ Follow the following steps to upgrade the base VM for everyone to use.
 
     From the ``devsite`` folder, destroy your existing virtual machine with ``vagrant destroy``.
     (Make sure to save/commit any databases or configurations first!)
-    Clear Vagrant's caches by deleting the ``.vagrant.d`` directory (which will typically be in your home folder.
+    Clear Vagrant's caches by deleting the ``.vagrant.d`` directory (which will typically be in your home folder).
     This action will destroy all vagrant machines, so if you have others, just delete the one associated with your devsite.
     Also delete the ``.vagrant`` directory in ``devsite/``.
+
+    Note: to show "." (hidden) folders on your Mac, open a Finder window and press the keyboard shortcut Command + Shift + . (period).
+
     Note: to get a head start on a slow step, start the download in step 5.ii then come back here.
 
 
@@ -219,16 +224,20 @@ Follow the following steps to upgrade the base VM for everyone to use.
 	     Then click on the "Settings" button, and click "Storage" on the left-hand menu.
 	     Next to "Controller: IDE Controller" line, click the "Adds optical drive" button (the icon looks like a blue circle with a green plus sign).
 	     Click the "Add" icon in the upper left, and browse to and select the ISO file you just downloaded.
-	     Then click "Choose" to close the pop-up window. Now click on the "System" tab on the left-hand menu, and move the "Optical" drive to the top of the "Boot Order" list by clicking it and clicking the up button.
-	     (Make sure the "Optical" drive has a checkmark). Finally, click "OK."
+	     Then click "Choose" to close the pop-up window. Now click on the "System" tab on the left-hand menu 
+	     and move the "Optical" drive to the top of the "Boot Order" list by clicking it and clicking the up button. 
+	     You may need to uncheck UEFI before moving the optical drive to the top.
+	     (Make sure both the "Optical" drive and hard drive have a checkmark). Finally, click "OK."
 
-	iv. Run the virtual machine using the VirtualBox "Start" button, *not* by typing ``vagrant up`` in a terminal. If you are prompted, the username should be ubuntu with no password. If there is an popup prompting you to try or install Ubuntu, choose the "Try" option.
+	iv. Run the virtual machine using the VirtualBox "Start" button, *not* by typing ``vagrant up`` in a terminal. If you are prompted, the username may be either "ubuntu" with no password or "vagrant" with password "vagrant". If there is an popup prompting you to try or install Ubuntu, choose the "Try" option. You may need to hit the escape key as soon as the virtual machine starts booting up, and then select boot manager, and then select ubuntu.
 
-	v. Once the desktop comes up, open a terminal window (should be in "Applications" in the bottom left corner). Run the following commands to get the names of the volume group (VG) and logical volume (LV)::
+	v. Once the desktop comes up, open a terminal window (should be in "Applications" in the bottom left corner). Run the following commands to get (and write down) the names of the volume group (VG) and logical volume (LV)::
 
 		sudo apt update && sudo apt -y upgrade
 		sudo apt install lvm2
 		sudo lvs
+
+	   You may need to then exit the terminal, restart the virtual machine, hit escape as it starts booting up, select boot manager, then select the CD-ROM, then select "try to install ubuntu". Reopen the terminal window before proceeding to the next step.
 
 	vi. Create space for an encrypted partition by running the following commands, replacing ``$VOLUME_GROUP`` and ``$LOGICAL_VOLUME`` with the names you found in the previous step. You may need to do ``e2fsck -f /dev/$VOLUME_GROUP/$LOGICAL_VOLUME`` first, but it should yell at you in that case. ::
 
@@ -245,7 +254,7 @@ Follow the following steps to upgrade the base VM for everyone to use.
 	Back in a terminal window in the ``devsite`` folder, run ``vagrant up``.
 	Now SSH back into the machine from your shell (``vagrant ssh``) to install dev server dependencies.
 	This step isn't strictly required but will make dev setup easier in the future, especially dev setup testing.
-	If you get an error, you may not have set up the encrypted parition correctly. ::
+	If you get an error, you may not have set up the encrypted partition correctly. ::
 
 		git clone https://github.com/learning-unlimited/ESP-Website.git
 		cd ESP-Website/
@@ -254,6 +263,20 @@ Follow the following steps to upgrade the base VM for everyone to use.
 		cd ..
 		rm -rf ESP-Website/
 		logout
+
+	If you get an error about "guest additions": go to the appropriate folder `here <https://download.virtualbox.org/virtualbox/>`_ and download the guest additions. 
+	Then add the guest additions as a CD-ROM, the same as we did for the optical drive in step 5iii. 
+	Then boot up the virtual machine, switch to CD-ROM1 in the boot manager. 
+	Once the desktop appears, scroll down the dock on the left and hit the CD-ROM. 
+	Hit "run software" to install the guest additions. 
+	If this does not work, open a terminal inside the desktop of the virtual machine you have open and run::
+
+		sudo apt-get update
+		sudo apt-get install virtualbox-guest-dkms
+		sudo apt-get install build-essential linux-headers-$(uname -r)
+
+	then try opening the CD-ROM again and installing guest additions again. 
+	Exit the virtual machine, and then try vagrant up from the terminal on your local computer!
 
 7. 
 
@@ -295,4 +318,4 @@ If the base VM has been changed (see above), you will want to upgrade your devel
 
 6. After running ``fab setup``, run ``fab loaddb:devsite_django.sql``. If you specified a different filename when you dumped your database, use that name instead.
 
-7. Open your old local_settings.py file and your new local_settings.py file with a text editor. You will likely want to copy over most of your old local settings, but the new database password *must* remain (do not copy over the old one.
+7. Open your old local_settings.py file and your new local_settings.py file with a text editor. You will likely want to copy over most of your old local settings, but the new database password *must* remain (do not copy over the old one).

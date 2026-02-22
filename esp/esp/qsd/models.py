@@ -1,8 +1,4 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
-from six.moves import map
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -80,9 +76,9 @@ class QSDManager(models.Manager):
             # will interpret this as a code block.  To avoid this, we assume
             # that the default content will never purposely use Markdown code
             # blocks, and we strip this unintended space.
-            content = six.text_type(qsd_obj.content.lstrip())
+            content = str(qsd_obj.content.lstrip())
             content = content.split('\n')
-            content = list(map(six.text_type.lstrip, content))
+            content = list(map(str.lstrip, content))
             content = '\n'.join(content)
             qsd_obj.content = content
         return qsd_obj
@@ -112,7 +108,7 @@ class QuasiStaticData(models.Model):
     nav_category = models.ForeignKey(NavBarCategory, default=default_navbarcategory, on_delete=models.CASCADE)
 
     create_date = models.DateTimeField(default=datetime.now, editable=False, verbose_name="last edited")
-    author = AjaxForeignKey(ESPUser, verbose_name="last modifed by", on_delete=models.CASCADE) #I believe that these are,uh, no longer descriptive names. This is silly, but the verbose names should fit better.
+    author = AjaxForeignKey(ESPUser, verbose_name="last modified by", on_delete=models.CASCADE) #I believe that these are,uh, no longer descriptive names. This is silly, but the verbose names should fit better.
     disabled = models.BooleanField(default=False)
     keywords = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)

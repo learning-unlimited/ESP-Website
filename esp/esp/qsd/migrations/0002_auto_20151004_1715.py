@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
-from __future__ import absolute_import
 from django.db import models, migrations
 import esp.web.models
 import esp.db.fields
@@ -19,7 +17,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='quasistaticdata',
             name='author',
-            field=esp.db.fields.AjaxForeignKey(verbose_name='last modifed by', to='users.ESPUser', on_delete=models.CASCADE),
+            field=esp.db.fields.AjaxForeignKey(verbose_name='last modified by', to='users.ESPUser', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='quasistaticdata',

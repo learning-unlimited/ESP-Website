@@ -144,7 +144,7 @@ function ModeratorDirectory(el, moderators) {
     };
 
     /**
-     * Initialize the moderator direcotry
+     * Initialize the moderator directory
      */
     this.init = function(){
         // set up handlers

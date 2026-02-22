@@ -1,11 +1,9 @@
-from __future__ import absolute_import
 from esp.themes.controllers import ThemeController
 
 from django import template
 
 import os.path
 import json
-from six.moves import range
 
 register = template.Library()
 
