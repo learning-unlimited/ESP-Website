@@ -46,6 +46,7 @@ from esp.utils import cmp
 class EventType(models.Model):
     """ A list of possible event types, ie. Program, Social Activity, etc. """
     description = models.TextField() # Textual description; not computer-parseable
+    is_teacher_type = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.description)
@@ -243,5 +244,7 @@ def install():
     """
     logger.info("Installing esp.cal initial data...")
     for x in [ 'Class Time Block', 'Open Class Time Block', 'Teacher Interview', 'Teacher Training', 'Compulsory', 'Volunteer']:
-        if not EventType.objects.filter(description=x).exists():
-            EventType.objects.create(description=x)
+        obj, created = EventType.objects.get_or_create(description=x)
+        if x in ['Teacher Interview', 'Teacher Training'] and not obj.is_teacher_type:
+            obj.is_teacher_type = True
+            obj.save()
