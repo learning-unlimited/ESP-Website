@@ -14,7 +14,6 @@ import json
 import pycurl
 import sys
 from io import open
-from six.moves import input
 
 SUBMISSIONS_PER_PAGE = 100
 #  when enumerating form submissions, the maximum number of metadatas

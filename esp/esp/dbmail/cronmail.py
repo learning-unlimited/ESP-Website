@@ -1,5 +1,4 @@
 
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -46,9 +45,7 @@ from django.template.loader import render_to_string
 
 from django.conf import settings
 
-
 _ONE_WEEK = timedelta(weeks=1)
-
 
 def process_messages():
     """Go through all unprocessed messages and process them.

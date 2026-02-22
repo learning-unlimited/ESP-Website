@@ -7,7 +7,6 @@ from decimal import Decimal
 import datetime
 
 from esp.users.forms import _states
-from six.moves import zip
 
 import json
 
