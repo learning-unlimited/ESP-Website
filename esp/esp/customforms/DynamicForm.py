@@ -720,26 +720,21 @@ class FormHandler:
         """
         Returns the response data as excel data.
         """
-        import xlwt
-        try:
-            from cStringIO import StringIO
-        except:
-            from io import StringIO
+        import openpyxl
+        from openpyxl.styles import Font
+        from io import BytesIO
 
         response_data = self.getResponseData(self.form)
-        wbk = xlwt.Workbook()
-        sheet = wbk.add_sheet('sheet 1')
+        wbk = openpyxl.Workbook()
+        sheet = wbk.active
+        sheet.title = 'sheet 1'
 
-        # Adding in styles for the column headers
-        style = xlwt.XFStyle()
-        font = xlwt.Font()
-        font.name = "Times New Roman"
-        font.bold = True
-        style.font = font
+        font = Font(name="Times New Roman", bold=True)
 
         # write the questions first
         for i in range(0, len(response_data['questions'])):
-            sheet.write(0, i, response_data['questions'][i][1], style)
+            cell = sheet.cell(row=1, column=i+1, value=response_data['questions'][i][1])
+            cell.font = font
 
         # Build up a simple dict storing question_name and question_index (=column number)
         ques_cols = {}
@@ -757,9 +752,13 @@ class FormHandler:
                 if isinstance(ans, list):
                     write_ans = " ".join(ans)
                 else: write_ans = ans
-                sheet.write(idx+1, col, write_ans)
+                
+                if isinstance(write_ans, datetime):
+                    write_ans = write_ans.replace(tzinfo=None)
 
-        output = StringIO()
+                sheet.cell(row=idx+2, column=col+1, value=write_ans)
+
+        output = BytesIO()
         wbk.save(output)
         return output
 
