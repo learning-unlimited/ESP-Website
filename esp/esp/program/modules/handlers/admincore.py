@@ -506,7 +506,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context = {}
 
         if request.method == 'POST':
-            if "default_seq" in request.POST or "default_req" in request.POST or "default_lab" in request.POST:
+            if "default_seq" in request.POST or "default_req" in request.POST or "default_lab" in request.POST or "default_link_title" in request.POST:
                 # Reset some or all values for learn and teach modules
                 for pmo in [mod for mod in prog.getModules(tl = 'learn') if mod.inModulesList()]:
                     pmo = ProgramModuleObj.objects.get(id=pmo.id) # Get the uncached object to make sure we trigger the cache
@@ -516,6 +516,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                         pmo.required = pmo.module.required
                     if "default_lab" in request.POST: # Reset module required label values
                         pmo.required_label = ""
+                    if "default_link_title" in request.POST: # Reset module link title override values
+                        pmo.link_title = ""
                     pmo.save()
                 for pmo in [mod for mod in prog.getModules(tl = 'teach') if mod.inModulesList()]:
                     pmo = ProgramModuleObj.objects.get(id=pmo.id) # Get the uncached object to make sure we trigger the cache
@@ -525,6 +527,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                         pmo.required = pmo.module.required
                     if "default_lab" in request.POST: # Reset module required label values
                         pmo.required_label = ""
+                    if "default_link_title" in request.POST: # Reset module link title override values
+                        pmo.link_title = ""
                     pmo.save()
 
             # If the sequence form was submitted, process it and update program modules
@@ -533,7 +537,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             teach_req = [mod for mod in request.POST.get("teach_req", "").split(",") if mod]
             teach_not_req = [mod for mod in request.POST.get("teach_not_req", "").split(",") if mod]
             # Set student registration module sequence and requiredness
-            # Also set requirement labels if supplied
+            # Also set requirement labels and link title overrides if supplied
             seq = 12 # In case there are other modules that aren't steps and should be earlier
             for mod_id in learn_req:
                 pmo = ProgramModuleObj.objects.get(id=mod_id)
@@ -541,6 +545,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 seq += 1
                 pmo.required = True
                 pmo.required_label = request.POST.get("%s_label" % mod_id, "")
+                pmo.link_title = request.POST.get("%s_link_title" % mod_id, "")
                 pmo.save()
             for mod_id in learn_not_req:
                 pmo = ProgramModuleObj.objects.get(id=mod_id)
@@ -548,6 +553,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 seq += 1
                 pmo.required = False
                 pmo.required_label = request.POST.get("%s_label" % mod_id, "")
+                pmo.link_title = request.POST.get("%s_link_title" % mod_id, "")
                 pmo.save()
             # Set teacher registration module sequence and requiredness
             seq = 12 # In case there are other modules that aren't steps and should be earlier
@@ -557,6 +563,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 seq += 1
                 pmo.required = True
                 pmo.required_label = request.POST.get("%s_label" % mod_id, "")
+                pmo.link_title = request.POST.get("%s_link_title" % mod_id, "")
                 pmo.save()
             for mod_id in teach_not_req:
                 pmo = ProgramModuleObj.objects.get(id=mod_id)
@@ -564,6 +571,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 seq += 1
                 pmo.required = False
                 pmo.required_label = request.POST.get("%s_label" % mod_id, "")
+                pmo.link_title = request.POST.get("%s_link_title" % mod_id, "")
                 pmo.save()
             # Override some settings that shouldn't be changed
             # Profile modules should always be required and always first
@@ -606,6 +614,37 @@ class AdminCore(ProgramModuleObj, CoreModule):
         teach_modules = [mod for mod in prog.getModules(tl = 'teach') if mod.inModulesList()]
         context['teach_modules'] = {'required': [mod for mod in teach_modules if mod.required],
                                     'not_required': [mod for mod in teach_modules if not mod.required]}
+
+        # Build per-module constraint metadata for the UI.  The JS uses this to
+        # prevent illegal drags instead of silently undoing them on save.
+        # This mirrors the hard-override block at the end of the POST branch above.
+        module_constraints = {}
+        for mod in learn_modules + teach_modules:
+            handler = mod.module.handler
+            required_locked = (
+                handler == 'RegProfileModule' or
+                handler == 'AvailabilityModule' or
+                'AcknowledgementModule' in handler or
+                handler == 'StudentRegTwoPhase'
+            )
+            not_required_locked = (
+                'CreditCardModule_' in handler or
+                handler == 'StudentRegConfirm'
+            )
+            position_locked = (
+                handler == 'RegProfileModule' or
+                'CreditCardModule_' in handler or
+                handler == 'StudentRegConfirm'
+            )
+            if required_locked or not_required_locked or position_locked:
+                module_constraints[str(mod.id)] = {
+                    'required_locked': required_locked,
+                    'not_required_locked': not_required_locked,
+                    'position_locked': position_locked,
+                }
+        context['module_constraints'] = module_constraints
+        context['locked_module_ids'] = {int(k) for k in module_constraints}
+
         context['one'] = one
         context['two'] = two
         context['program'] = prog

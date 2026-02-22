@@ -40,3 +40,16 @@
 .wrapper h2 {
     text-align: center;
 }
+
+/* Modules whose position or required status is enforced by the system.
+   These items are excluded from drag initiation via jQuery UI's cancel
+   option (see module_management.js).  Issue #3656. */
+.connectedSortable li.module-locked {
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.connectedSortable li.module-locked .module-lock-icon {
+    font-size: 0.85em;
+    opacity: 0.7;
+}
