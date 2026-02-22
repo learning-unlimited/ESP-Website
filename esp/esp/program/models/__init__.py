@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 import copy
 import re
 from collections import defaultdict, OrderedDict
-from datetime import datetime, timedelta, date
+from datetime import timedelta, date
 from decimal import Decimal
 import random
 import json
@@ -997,7 +997,8 @@ class Program(models.Model, CustomFormsLinkModel):
     def dates(self):
         result = []
         for ts in self.getTimeSlotList():
-            ts_day = date(ts.start.year, ts.start.month, ts.start.day)
+            ts_local = timezone.localtime(ts.start)
+            ts_day = date(ts_local.year, ts_local.month, ts_local.day)
             if ts_day not in result:
                 result.append(ts_day)
         return result
@@ -1080,7 +1081,9 @@ class Program(models.Model, CustomFormsLinkModel):
         datetime_range = self.datetime_range()
 
         if datetime_range:
-            d1, d2 = datetime_range
+            d1_utc, d2_utc = datetime_range
+            d1 = timezone.localtime(d1_utc)
+            d2 = timezone.localtime(d2_utc)
             if d1.year == d2.year:
                 if d1.month == d2.month:
                     if d1.day == d2.day:

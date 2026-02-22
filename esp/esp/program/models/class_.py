@@ -1243,11 +1243,12 @@ class ClassSection(models.Model):
 
         # Get time and tag values to determine what number to base class changes on
         now = timezone.now()
+        now_local = timezone.localtime(now)
         switch_time = None
         if Tag.getProgramTag('switch_time_program_attendance', program=self.parent_program):
             try:
-                switch_time_str = now.strftime("%Y/%m/%d ") + Tag.getProgramTag('switch_time_program_attendance', program=self.parent_program)
-                switch_time = datetime.datetime.strptime(switch_time_str, "%Y/%m/%d %H:%M")
+                switch_time_str = now_local.strftime("%Y/%m/%d ") + Tag.getProgramTag('switch_time_program_attendance', program=self.parent_program)
+                switch_time = timezone.make_aware(datetime.datetime.strptime(switch_time_str, "%Y/%m/%d %H:%M"))
             except ValueError:
                 pass
         switch_lag = None

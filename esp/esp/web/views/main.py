@@ -40,7 +40,6 @@ from django.template import loader
 from django.views.generic.base import TemplateView
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 
-import datetime
 from django.utils import timezone
 import re
 

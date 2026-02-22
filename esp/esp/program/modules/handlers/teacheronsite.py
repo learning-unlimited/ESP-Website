@@ -34,7 +34,6 @@ from esp.utils.web import render_to_response
 from esp.users.models    import Record
 from esp.survey.views   import survey_view, survey_review
 from esp.tagdict.models  import Tag
-from datetime import datetime
 from django.utils import timezone
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 from django.db.models import Count

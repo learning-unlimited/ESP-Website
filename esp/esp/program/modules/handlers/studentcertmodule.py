@@ -37,7 +37,6 @@ from esp.tagdict.models import Tag
 from esp.users.models import Record
 from esp.utils.latex  import render_to_latex
 
-from datetime import datetime
 from django.utils import timezone
 
 class StudentCertModule(ProgramModuleObj):

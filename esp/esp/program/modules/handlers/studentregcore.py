@@ -43,7 +43,6 @@ from esp.accounting.controllers import IndividualAccountingController
 from django.db.models.query import Q
 from esp.middleware   import ESPError
 from decimal import Decimal
-from datetime import datetime
 from django.utils import timezone
 from django.template import Template, Context
 from esp.middleware.threadlocalrequest import AutoRequestContext

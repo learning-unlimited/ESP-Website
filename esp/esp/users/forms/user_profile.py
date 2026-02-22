@@ -5,7 +5,6 @@ from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestricte
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import SplitDateWidget
 from esp.users.models import ESPUser, K12School, StudentInfo, AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC, AFFILIATION_OTHER, AFFILIATION_NONE
-from datetime import datetime
 from django.utils import timezone
 from esp.program.models import RegistrationProfile
 from django.conf import settings

@@ -38,7 +38,6 @@ from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, Edu
 from esp.program.models import Program, RegistrationProfile, ClassSubject
 from esp.tagdict.models import Tag
 from django.http import Http404, HttpResponseRedirect
-import datetime
 from esp.middleware import ESPError
 from esp.users.forms.password_reset import UserPasswdForm
 from esp.utils.web import render_to_response

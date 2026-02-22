@@ -32,7 +32,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import datetime
 from django.utils import timezone
 import json
 import logging

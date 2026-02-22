@@ -38,7 +38,6 @@ from esp.users.models    import ESPUser
 from django.db.models.query   import Q
 from esp.survey.views   import survey_view, survey_review, survey_graphical, survey_review_single
 
-import datetime
 from django.utils import timezone
 
 class TeacherSurveyModule(ProgramModuleObj):

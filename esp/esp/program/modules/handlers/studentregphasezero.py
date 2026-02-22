@@ -46,7 +46,6 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.template.loader import render_to_string
 from django.db.models.query import Q
 
-import datetime
 from django.utils import timezone
 
 class StudentRegPhaseZero(ProgramModuleObj):

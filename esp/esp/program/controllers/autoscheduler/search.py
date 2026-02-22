@@ -1,6 +1,5 @@
 """A class for using depth-limited DFS find improvements to a schedule."""
 
-import datetime
 from django.utils import timezone
 import esp.program.controllers.autoscheduler.util as util
 

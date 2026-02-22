@@ -42,7 +42,7 @@ from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
 
-import copy, datetime, re
+import copy, re
 from django.utils import timezone
 
 class StudentRegPhaseZeroManage(ProgramModuleObj):

@@ -8,7 +8,6 @@ from esp.users.models import UserAvailability, ContactInfo, StudentInfo, Teacher
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from esp.utils.admin_user_search import default_user_search
-import datetime
 from django.utils import timezone
 
 

@@ -39,7 +39,6 @@ from django.db import models
 from django import forms
 from django.utils.deconstruct import deconstructible
 
-import datetime
 from django.utils import timezone
 
 __all__ = ['StudentAppQuestion', 'StudentAppResponse', 'StudentAppReview', 'StudentApplication']
