@@ -157,6 +157,7 @@ var handle_submit = function(mode, attrs, eventObject)
     if (req && req.fail) {
         req.fail(handle_error);
     }
+    return false;
 }
 
 
@@ -175,7 +176,7 @@ function CallbackForm(id, url)
 {
     this.id = id;
     this.url = url;
-    this.callback = function (e) {handle_submit('post', this, e)};
+    this.callback = function (e) {return handle_submit('post', this, e)};
 }
     
 function CallbackLink(id, url, content, post_form)
@@ -186,11 +187,11 @@ function CallbackLink(id, url, content, post_form)
     this.post_form = post_form;
     if (this.post_form)
     {
-        this.callback = function (e) {handle_submit('post', this, e)};
+        this.callback = function (e) {return handle_submit('post', this, e)};
     }
     else
     {
-        this.callback = function (e) {handle_submit('get', this, e)};
+        this.callback = function (e) {return handle_submit('get', this, e)};
     }
 }
 
