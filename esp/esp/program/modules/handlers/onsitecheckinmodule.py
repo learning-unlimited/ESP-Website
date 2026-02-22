@@ -352,11 +352,11 @@ class OnSiteCheckinModule(ProgramModuleObj):
             else:
                 error = True
 
-            context = {'error': error, 'message': message, 'module': self.module.link_title}
+            context = {'error': error, 'message': message, 'module': self.module.get_effective_link_title()}
             return render_to_response('users/usersearch.html', request, context)
 
         else:
-            user, found = search_for_user(request, self.program.students_union(), add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
+            user, found = search_for_user(request, self.program.students_union(), add_to_context = {'tl': 'onsite', 'module': self.module.get_effective_link_title()})
             if not found:
                 return user
 

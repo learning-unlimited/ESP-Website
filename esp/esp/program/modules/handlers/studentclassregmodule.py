@@ -206,7 +206,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     def makeSelfCheckinLink(self):
         if self.deadline_met():
-            text = self.module.link_title
+            text = self.module.get_effective_link_title()
         else:
             text = "Class changes is currently closed, please contact the admin team to register for classes"
         link = '<a href="%sstudentonsite" title="%s" class="vModuleLink" >%s</a>' % \

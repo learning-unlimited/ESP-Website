@@ -102,7 +102,7 @@
                             {% else %}
                                 <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
                             {% endif %}
-                            {{ module.module.link_title }}
+                            {{ module.module.get_effective_link_title }}
                         </td>
                     </tr>
                     {% endif %}
@@ -159,7 +159,7 @@
                             {% else %}
                                 <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
                             {% endif %}
-                            {{ module.module.link_title }}
+                            {{ module.module.get_effective_link_title }}
                         </td>
                     </tr>
                     {% endif %}

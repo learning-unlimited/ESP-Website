@@ -57,8 +57,26 @@ from esp.utils.admin_user_search import default_user_search
 from esp.users.admin import ExpiredListFilter
 
 class ProgramModuleAdmin(admin.ModelAdmin):
-    list_display = ('link_title', 'admin_title', 'handler')
-    search_fields = ['link_title', 'admin_title', 'handler']
+    list_display = ('get_effective_link_title', 'admin_title', 'handler', 'module_type',
+                    'link_title_is_customized', 'seq_is_customized', 'required_is_customized')
+    list_filter = ('module_type',)
+    search_fields = ['admin_title', 'handler']
+    readonly_fields = ('handler', 'module_type')
+
+    def link_title_is_customized(self, obj):
+        return obj.link_title is not None and obj.link_title != ''
+    link_title_is_customized.boolean = True
+    link_title_is_customized.short_description = 'Custom Title?'
+
+    def seq_is_customized(self, obj):
+        return obj.seq is not None
+    seq_is_customized.boolean = True
+    seq_is_customized.short_description = 'Custom Seq?'
+
+    def required_is_customized(self, obj):
+        return obj.required is not None
+    required_is_customized.boolean = True
+    required_is_customized.short_description = 'Custom Req?'
 admin_site.register(ProgramModule, ProgramModuleAdmin)
 
 class ArchiveClassAdmin(admin.ModelAdmin):

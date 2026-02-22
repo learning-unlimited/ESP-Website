@@ -124,10 +124,10 @@ class TeacherQuizModule(ProgramModuleObj):
         if self.isCompleted():
             prev_result_data = TeacherCustomFormModule.get_prev_data(cf, request)
             return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=TeacherQuizComboForm, initial_data = prev_result_data,
-                               extra_context = {'prog': prog, 'qsd_name': 'teach:quizheader', 'module': self.module.link_title}, program = prog)
+                               extra_context = {'prog': prog, 'qsd_name': 'teach:quizheader', 'module': self.module.get_effective_link_title()}, program = prog)
         else:
             return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=TeacherQuizComboForm,
-                               extra_context = {'prog': prog, 'qsd_name': 'teach:quizheader', 'module': self.module.link_title}, program = prog)
+                               extra_context = {'prog': prog, 'qsd_name': 'teach:quizheader', 'module': self.module.get_effective_link_title()}, program = prog)
 
     def isStep(self):
         custom_form_id = Tag.getProgramTag('quiz_form_id', self.program)

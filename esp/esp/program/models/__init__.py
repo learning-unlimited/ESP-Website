@@ -74,16 +74,27 @@ from esp.qsdmedia.models import Media
 # Create your models here.
 @python_2_unicode_compatible
 class ProgramModule(models.Model):
-    """ Program Modules for a Program """
+    """ Program Modules for a Program.
 
-    # Title for the link displayed for this Program Module in the Programs form
+    Fields are split into three categories:
+    - Identity fields (handler, module_type): immutable, used as unique key
+    - Always-update fields (admin_title, inline_template, choosable): always
+      synced from code on install()
+    - Customizable fields (link_title, seq, required): NULL means "use the
+      code default from module_properties()"; non-NULL means a chapter has
+      explicitly customized this value.
+    """
+
+    # Title for the link displayed for this Program Module in the Programs form.
+    # NULL means use the code default from the handler's module_properties().
     link_title = models.CharField(max_length=64, blank=True, null=True)
 
-    # Human-readable name for the Program Module
+    # Human-readable name for the Program Module.
+    # Always kept in sync with code (used in ORM filter queries in forms.py).
     admin_title = models.CharField(max_length=128)
 
     #   A module can have an inline template (whose context is filled by prepare())
-    #   independently of its main view.
+    #   independently of its main view. Always kept in sync with code.
     inline_template = models.CharField(max_length=32, blank=True, null=True)
 
     # One of teach/learn/etc.; What is this module typically used for?
@@ -93,14 +104,16 @@ class ProgramModule(models.Model):
     handler    = models.CharField(max_length=32)
 
     # Sequence orderer.  When ProgramModules are listed on a page, order them
-    # from smallest to largest 'seq' value
-    seq = models.IntegerField()
+    # from smallest to largest 'seq' value.
+    # NULL means use the code default from the handler's module_properties().
+    seq = models.IntegerField(null=True, blank=True)
 
     # Must the user supply this ProgramModule with data in order to complete program registration?
-    required = models.BooleanField(default=False)
+    # NULL means use the code default from the handler's module_properties().
+    required = models.NullBooleanField(default=None)
 
     # When creating a new program, should this module be available for admins to select (0), included by default (1)
-    # or excluded by default (2).
+    # or excluded by default (2). Always kept in sync with code.
     choosable = models.IntegerField(default=0, validators=[validators.MinValueValidator(0), validators.MaxValueValidator(2)])
 
     class Meta:
@@ -128,6 +141,44 @@ class ProgramModule(models.Model):
             raise ProgramModule.CannotGetClassException('Could not import: '+path)
         except AttributeError:
             raise ProgramModule.CannotGetClassException('Could not get class: '+path)
+
+    def _get_code_properties(self):
+        """Look up the code-defined module_properties for this handler.
+
+        Returns the properties dict from the handler class's
+        module_properties_autopopulated() method, matched by handler and
+        module_type.  Returns {} if the handler class cannot be loaded.
+        """
+        try:
+            python_class = self.getPythonClass()
+            props_list = python_class.module_properties_autopopulated()
+            for props in props_list:
+                if props.get('handler') == self.handler and props.get('module_type') == self.module_type:
+                    return props
+            # Fallback for single-entry lists
+            if len(props_list) == 1:
+                return props_list[0]
+            return {}
+        except Exception:
+            return {}
+
+    def get_effective_link_title(self):
+        """Return the chapter's custom link_title, or the code default."""
+        if self.link_title is not None and self.link_title != '':
+            return self.link_title
+        return self._get_code_properties().get('link_title', self.handler)
+
+    def get_effective_seq(self):
+        """Return the chapter's custom seq, or the code default."""
+        if self.seq is not None:
+            return self.seq
+        return self._get_code_properties().get('seq', 200)
+
+    def get_effective_required(self):
+        """Return the chapter's custom required, or the code default."""
+        if self.required is not None:
+            return self.required
+        return self._get_code_properties().get('required', False)
 
     class CannotGetClassException(Exception):
         def __init__(self, msg):

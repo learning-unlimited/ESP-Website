@@ -1495,3 +1495,304 @@ class BulkCreateAccountTest(ProgramFrameworkTest):
             'count1': '2.6',
             'groups': ('Student', 'BulkAccountGroup')
         })
+
+
+class ProgramModulePropertiesTest(TestCase):
+    """Tests for issue #1690: Updating program module properties.
+
+    Verifies that NULL customizable fields on ProgramModule correctly
+    fall back to code defaults, and that non-NULL values are treated
+    as chapter overrides.
+    """
+
+    def setUp(self):
+        user_role_setup()
+        # Create a module with NULL customizable fields (the new default)
+        self.module_null = ProgramModule.objects.create(
+            handler='StudentClassRegModule',
+            module_type='learn',
+            admin_title='Student Class Registration',
+            link_title=None,
+            seq=None,
+            required=None,
+        )
+        # Create a module with explicit override values
+        self.module_custom = ProgramModule.objects.create(
+            handler='RegProfileModule',
+            module_type='learn',
+            admin_title='Student Profile Editor',
+            link_title='Custom Profile Title',
+            seq=42,
+            required=True,
+        )
+
+    def tearDown(self):
+        self.module_null.delete()
+        self.module_custom.delete()
+
+    # --- Effective link_title tests ---
+
+    def test_get_effective_link_title_null_returns_code_default(self):
+        """When link_title is NULL, get_effective_link_title() returns the
+        code default from module_properties()."""
+        result = self.module_null.get_effective_link_title()
+        # StudentClassRegModule's module_properties defines link_title
+        self.assertEqual(result, 'Sign up for Classes')
+
+    def test_get_effective_link_title_custom_returns_override(self):
+        """When link_title is set, get_effective_link_title() returns
+        the custom value."""
+        result = self.module_custom.get_effective_link_title()
+        self.assertEqual(result, 'Custom Profile Title')
+
+    def test_get_effective_link_title_empty_returns_code_default(self):
+        """When link_title is empty string, get_effective_link_title()
+        returns the code default."""
+        self.module_null.link_title = ''
+        self.module_null.save()
+        result = self.module_null.get_effective_link_title()
+        self.assertEqual(result, 'Sign up for Classes')
+
+    # --- Effective seq tests ---
+
+    def test_get_effective_seq_null_returns_code_default(self):
+        """When seq is NULL, get_effective_seq() returns the code default."""
+        result = self.module_null.get_effective_seq()
+        # StudentClassRegModule defines seq=10
+        self.assertEqual(result, 10)
+
+    def test_get_effective_seq_custom_returns_override(self):
+        """When seq is set, get_effective_seq() returns the custom value."""
+        result = self.module_custom.get_effective_seq()
+        self.assertEqual(result, 42)
+
+    # --- Effective required tests ---
+
+    def test_get_effective_required_null_returns_code_default(self):
+        """When required is NULL, get_effective_required() returns the
+        code default."""
+        result = self.module_null.get_effective_required()
+        # StudentClassRegModule defines required=True
+        self.assertTrue(result)
+
+    def test_get_effective_required_custom_returns_override(self):
+        """When required is explicitly set, get_effective_required()
+        returns the custom value."""
+        self.module_custom.required = False
+        self.module_custom.save()
+        result = self.module_custom.get_effective_required()
+        self.assertFalse(result)
+
+    # --- _get_code_properties tests ---
+
+    def test_get_code_properties_single_module(self):
+        """_get_code_properties() works for handlers that return a single
+        dict from module_properties()."""
+        # AdminCore returns a single dict
+        mod = ProgramModule.objects.create(
+            handler='AdminCore', module_type='manage',
+            admin_title='Program Dashboard',
+        )
+        props = mod._get_code_properties()
+        self.assertEqual(props['link_title'], 'Program Dashboard')
+        self.assertEqual(props['module_type'], 'manage')
+        mod.delete()
+
+    def test_get_code_properties_multi_module(self):
+        """_get_code_properties() correctly matches by module_type for
+        handlers that return a list of dicts (e.g. RegProfileModule)."""
+        # RegProfileModule returns learn + teach variants
+        props = self.module_custom._get_code_properties()
+        self.assertEqual(props['module_type'], 'learn')
+        self.assertIn('link_title', props)
+
+    def test_get_code_properties_missing_handler(self):
+        """_get_code_properties() returns {} for a handler that doesn't
+        exist in code."""
+        mod = ProgramModule.objects.create(
+            handler='NonExistentModule', module_type='learn',
+            admin_title='Does Not Exist',
+        )
+        props = mod._get_code_properties()
+        self.assertEqual(props, {})
+        mod.delete()
+
+    def test_get_effective_link_title_missing_handler_fallback(self):
+        """get_effective_link_title() falls back to handler name when
+        the handler class doesn't exist and link_title is NULL."""
+        mod = ProgramModule.objects.create(
+            handler='NonExistentModule', module_type='learn',
+            admin_title='Does Not Exist',
+            link_title=None,
+        )
+        self.assertEqual(mod.get_effective_link_title(), 'NonExistentModule')
+        mod.delete()
+
+    def test_get_effective_seq_missing_handler_fallback(self):
+        """get_effective_seq() falls back to 200 when the handler class
+        doesn't exist and seq is NULL."""
+        mod = ProgramModule.objects.create(
+            handler='NonExistentModule', module_type='learn',
+            admin_title='Does Not Exist',
+            seq=None,
+        )
+        self.assertEqual(mod.get_effective_seq(), 200)
+        mod.delete()
+
+    def test_get_effective_required_missing_handler_fallback(self):
+        """get_effective_required() falls back to False when the handler
+        class doesn't exist and required is NULL."""
+        mod = ProgramModule.objects.create(
+            handler='NonExistentModule', module_type='learn',
+            admin_title='Does Not Exist',
+            required=None,
+        )
+        self.assertFalse(mod.get_effective_required())
+        mod.delete()
+
+
+class UpdateModulesTest(TestCase):
+    """Tests for the updateModules() function with NULL-means-default logic."""
+
+    def setUp(self):
+        user_role_setup()
+        # Clear existing ProgramModules to start fresh
+        ProgramModule.objects.all().delete()
+
+    def test_install_creates_modules_with_null_customizable_fields(self):
+        """install() creates new ProgramModule records with NULL for
+        link_title, seq, and required."""
+        from esp.program.modules.models import install
+        install()
+
+        # Check a known module
+        mod = ProgramModule.objects.get(
+            handler='StudentClassRegModule', module_type='learn')
+        self.assertIsNone(mod.link_title)
+        self.assertIsNone(mod.seq)
+        self.assertIsNone(mod.required)
+        # But admin_title should be populated
+        self.assertEqual(mod.admin_title, 'Student Class Registration')
+
+    def test_install_populates_admin_title(self):
+        """install() always populates admin_title (non-customizable)."""
+        from esp.program.modules.models import install
+        install()
+        for mod in ProgramModule.objects.all():
+            self.assertIsNotNone(mod.admin_title)
+            self.assertNotEqual(mod.admin_title, '')
+
+    def test_install_always_updates_admin_title(self):
+        """Running install() again updates admin_title even on existing
+        modules."""
+        from esp.program.modules.models import install
+        install()
+
+        # Manually change admin_title
+        mod = ProgramModule.objects.get(
+            handler='StudentClassRegModule', module_type='learn')
+        mod.admin_title = 'Old Title'
+        mod.save()
+
+        # Re-run install
+        install()
+        mod.refresh_from_db()
+        self.assertEqual(mod.admin_title, 'Student Class Registration')
+
+    def test_install_preserves_custom_link_title(self):
+        """Running install() does NOT overwrite a custom link_title."""
+        from esp.program.modules.models import install
+        install()
+
+        # Set a custom link_title
+        mod = ProgramModule.objects.get(
+            handler='StudentClassRegModule', module_type='learn')
+        mod.link_title = 'My Custom Title'
+        mod.save()
+
+        # Re-run install
+        install()
+        mod.refresh_from_db()
+        self.assertEqual(mod.link_title, 'My Custom Title')
+
+    def test_install_preserves_custom_seq(self):
+        """Running install() does NOT overwrite a custom seq."""
+        from esp.program.modules.models import install
+        install()
+
+        mod = ProgramModule.objects.get(
+            handler='StudentClassRegModule', module_type='learn')
+        mod.seq = 999
+        mod.save()
+
+        install()
+        mod.refresh_from_db()
+        self.assertEqual(mod.seq, 999)
+
+    def test_install_preserves_custom_required(self):
+        """Running install() does NOT overwrite a custom required."""
+        from esp.program.modules.models import install
+        install()
+
+        mod = ProgramModule.objects.get(
+            handler='StudentClassRegModule', module_type='learn')
+        mod.required = False  # code default is True
+        mod.save()
+
+        install()
+        mod.refresh_from_db()
+        self.assertFalse(mod.required)
+
+    def test_install_preserves_null_customizable_fields(self):
+        """Running install() twice keeps customizable fields as NULL."""
+        from esp.program.modules.models import install
+        install()
+        install()  # second run
+
+        mod = ProgramModule.objects.get(
+            handler='StudentClassRegModule', module_type='learn')
+        self.assertIsNone(mod.link_title)
+        self.assertIsNone(mod.seq)
+        self.assertIsNone(mod.required)
+
+    def test_effective_values_work_after_install(self):
+        """After install(), effective accessors return code defaults."""
+        from esp.program.modules.models import install
+        install()
+
+        mod = ProgramModule.objects.get(
+            handler='StudentClassRegModule', module_type='learn')
+        self.assertEqual(mod.get_effective_link_title(), 'Sign up for Classes')
+        self.assertEqual(mod.get_effective_seq(), 10)
+        self.assertTrue(mod.get_effective_required())
+
+    def test_getFromProgModule_uses_effective_values(self):
+        """ProgramModuleObj.getFromProgModule() copies effective seq/required
+        from ProgramModule to the new ProgramModuleObj."""
+        from esp.program.modules.models import install
+        install()
+
+        # Create a minimal program
+        from esp.program.models import Program
+        from esp.cal.models import EventType
+        EventType.objects.get_or_create(description='Program')
+        prog = Program.objects.create(
+            name='Test Props Program',
+            url='TestProps/2222_Summer',
+            grade_min=7,
+            grade_max=12,
+            director_email='test@test.learningu.org',
+            program_size_max=100,
+        )
+
+        mod = ProgramModule.objects.get(
+            handler='StudentClassRegModule', module_type='learn')
+        prog.program_modules.add(mod)
+
+        pmo = ProgramModuleObj.getFromProgModule(prog, mod)
+        # ProgramModuleObj should have the effective values, not NULL
+        self.assertEqual(pmo.seq, 10)
+        self.assertTrue(pmo.required)
+
+        # Clean up
+        prog.delete()

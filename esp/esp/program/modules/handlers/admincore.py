@@ -120,7 +120,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['modules'] = modules
         context['extra_steps'] = extra_steps
         context['extra_steps_optional'] = extra_steps_optional
-        context['modules_alph'] = sorted(modules, key = lambda pmo: pmo.module.link_title)
+        context['modules_alph'] = sorted(modules, key = lambda pmo: pmo.module.get_effective_link_title())
         context['one'] = one
         context['two'] = two
 
@@ -511,18 +511,18 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 for pmo in [mod for mod in prog.getModules(tl = 'learn') if mod.inModulesList()]:
                     pmo = ProgramModuleObj.objects.get(id=pmo.id) # Get the uncached object to make sure we trigger the cache
                     if "default_seq" in request.POST: # Reset module seq values
-                        pmo.seq = pmo.module.seq
+                        pmo.seq = pmo.module.get_effective_seq()
                     if "default_req" in request.POST: # Reset module required values
-                        pmo.required = pmo.module.required
+                        pmo.required = pmo.module.get_effective_required()
                     if "default_lab" in request.POST: # Reset module required label values
                         pmo.required_label = ""
                     pmo.save()
                 for pmo in [mod for mod in prog.getModules(tl = 'teach') if mod.inModulesList()]:
                     pmo = ProgramModuleObj.objects.get(id=pmo.id) # Get the uncached object to make sure we trigger the cache
                     if "default_seq" in request.POST: # Reset module seq values
-                        pmo.seq = pmo.module.seq
+                        pmo.seq = pmo.module.get_effective_seq()
                     if "default_req" in request.POST: # Reset module required values
-                        pmo.required = pmo.module.required
+                        pmo.required = pmo.module.get_effective_required()
                     if "default_lab" in request.POST: # Reset module required label values
                         pmo.required_label = ""
                     pmo.save()

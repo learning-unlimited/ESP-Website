@@ -39,12 +39,33 @@ logger = logging.getLogger(__name__)
 from esp.program.modules.handlers import * # Needed for app loading, don't delete
 from django.db.models import Q
 
-def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model=None):
+
+# Fields that are always kept in sync with code on every install().
+# These are NOT customizable by chapters.
+ALWAYS_UPDATE_FIELDS = {'admin_title', 'inline_template', 'choosable'}
+
+# Fields where NULL in the database means "use the code default from
+# module_properties()".  A non-NULL value means a chapter has explicitly
+# customized the field and install() will not overwrite it.
+CUSTOMIZABLE_FIELDS = {'link_title', 'seq', 'required'}
+
+
+def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model=None):  # noqa: N803 (overwriteExisting kept for backward compat)
     """
     Given a list of key:value dictionaries containing fields from the
     ProgramModule table, populate the table based on that list.
-    If overwriteExisting is set, modules that already have entries will
-    be updated with the specified data.
+
+    For existing modules:
+      - Always updates ALWAYS_UPDATE_FIELDS (admin_title, inline_template,
+        choosable) from code so that developer changes propagate.
+      - Never touches CUSTOMIZABLE_FIELDS (link_title, seq, required);
+        NULL means "use code default", non-NULL means "chapter override".
+
+    For new modules:
+      - Creates the record with CUSTOMIZABLE_FIELDS set to NULL so they
+        automatically track code defaults.
+      - Populates all other fields from the provided data.
+
     If deleteExtra is set, entries in the table that don't correspond
     to modules in the list will be deleted.
     """
@@ -55,49 +76,34 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
 
     #   Select existing modules only by handler and module type, which are assumed to be unique.
     mods = []
-    global_defaults = {'seq': 0, 'required': False}
     for datum in update_data:
         query_kwargs = {'handler': datum["handler"], 'module_type': datum["module_type"]}
         qs = model.objects.filter(**query_kwargs)
         if qs.exists():
-            mods.append((datum, (qs[0], False)))
+            mod = qs[0]
+            # Always update non-customizable fields from code
+            changed = False
+            for field in ALWAYS_UPDATE_FIELDS:
+                if field in datum and getattr(mod, field) != datum[field]:
+                    setattr(mod, field, datum[field])
+                    changed = True
+            if changed:
+                mod.save()
+            mods.append((datum, (mod, False)))
         else:
-            if 'main_call' in datum:
-                datum.pop('main_call')
-            if 'aux_calls' in datum:
-                datum.pop('aux_calls')
-            #   Ensure that all of the required fields are present when calling get_or_create
-            new_obj_defaults = global_defaults.copy()
-            new_obj_defaults.update(datum)
-            query_kwargs['defaults'] = new_obj_defaults
-
+            # Clean up non-DB keys before creating
+            for key in ('main_call', 'aux_calls'):
+                datum.pop(key, None)
+            # Build defaults dict: populate identity + always-update fields,
+            # leave customizable fields as NULL (code default).
+            new_defaults = {k: v for k, v in datum.items()
+                           if k not in CUSTOMIZABLE_FIELDS}
+            query_kwargs['defaults'] = new_defaults
             mods.append((datum, model.objects.get_or_create(**query_kwargs)))
 
-    if overwriteExisting:
-        for (datum, (mod, created)) in mods:
-            if not created:
-                mod.__dict__.update(datum)
-                mod.save()
-
     if deleteExtra:
-        ids = []
-
-        for (datum, (mod, created)) in mods:
-            ids.append(mod.id)
-
+        ids = [mod.id for (datum, (mod, created)) in mods]
         ProgramModule.objects.exclude(id__in=ids).delete()
-
-    for (datum, (mod, created)) in mods:
-        #   If the module exists but the provided data adds fields that
-        #   are null or blank, go ahead and add them.
-        #   This simplifies data migrations where the default module properties
-        #   are changed.
-        for key in datum:
-            if (key not in mod.__dict__) or (mod.__dict__[key] is None) or (mod.__dict__[key] == ''):
-                if datum[key] is not None and datum[key] != '':
-                    mod.__dict__[key] = datum[key]
-
-        mod.save()
 
 def install(model=None):
     """ Install the initial ProgramModule table data for all currently-existing modules """
