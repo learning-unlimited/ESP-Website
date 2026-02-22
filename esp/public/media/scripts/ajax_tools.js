@@ -95,6 +95,25 @@ var apply_fragment_changes = function(data)
     }
 }
 
+var handle_error = function(jqXHR, textStatus, errorThrown)
+{
+    var data = null;
+    if (jqXHR && jqXHR.responseJSON) {
+        data = jqXHR.responseJSON;
+    } else if (jqXHR && jqXHR.responseText) {
+        try {
+            data = JSON.parse(jqXHR.responseText);
+        } catch (e) {
+            data = null;
+        }
+    }
+    if (data && typeof data === "object" && ('error' in data)) {
+        alert(data['error']);
+        return;
+    }
+    alert("An error occurred while processing your request.");
+}
+
 var handle_success = function(data, textStatus, jqXHR)
 {
     if ('error' in data)
@@ -126,14 +145,17 @@ var handle_submit = function(mode, attrs, eventObject)
         attrs.form = attrs.id;
     }
 
-    //  I'm not sure if these calls are correct -- test this
+    var req;
     if (mode == 'post')
     {
-	$j.post(attrs.url, attrs.content, handle_success, "json");
+	req = $j.post(attrs.url, attrs.content, handle_success, "json");
     }
     else
     {
-	$j.get(attrs.url, attrs.content, handle_success, "json");
+	req = $j.get(attrs.url, attrs.content, handle_success, "json");
+    }
+    if (req && req.fail) {
+        req.fail(handle_error);
     }
 }
 
@@ -143,7 +165,10 @@ var fetch_fragment = function(attrs)
 {
     //  console.log("Fetching fragment with attributes: " + JSON.stringify(attrs, null, '\t'));
     if (! attrs.url) { return; }
-    $j.get(attrs.url, handle_success, "json");
+    var req = $j.get(attrs.url, handle_success, "json");
+    if (req && req.fail) {
+        req.fail(handle_error);
+    }
 }
     
 function CallbackForm(id, url)
