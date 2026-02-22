@@ -2,7 +2,7 @@ name: "Lint and Unit Tests"
 
 on:
   push:
-    branches: [main, ]
+    branches: [main]
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [main]
@@ -43,43 +43,83 @@ jobs:
       DJANGO_SETTINGS_MODULE: esp.settings
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: deadsnakes/action@v3.2.0
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Cache pip packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('esp/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-${{ matrix.python-version }}-
-          ${{ runner.os }}-pip-
-    - name: Prepare for Installing Dependencies
-      run: deploy/travis/before_install
-      env:
-        PYTHON_VERSION: ${{ matrix.python-version }}
-    - name: Install Dependencies for ${{ matrix.travis_job }}
-      env:
-        TRAVIS_JOB: ${{ matrix.travis_job }}
-        PYTHON_VERSION: ${{ matrix.python-version }}
-      run: deploy/travis/install
-    - name: Prepare for ${{ matrix.travis_job }}
-      env:
-        TRAVIS_JOB: ${{ matrix.travis_job }}
-        PYTHON_VERSION: ${{ matrix.python-version }}
-      run: deploy/travis/before_script
-    - name: Run ${{ matrix.travis_job }}
-      env:
-        TRAVIS_JOB: ${{ matrix.travis_job }}
-        PYTHON_VERSION: ${{ matrix.python-version }}
-      run: deploy/travis/script
-    - name: Upload Coverage to Codecov
-      if: ${{ matrix.travis_job == 'test' }}
-      uses: codecov/codecov-action@v5
-      with:
-        fail_ci_if_error: true
-        verbose: true
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: deadsnakes/action@v3.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('esp/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+            ${{ runner.os }}-pip-
+      - name: Prepare for Installing Dependencies
+        run: deploy/travis/before_install
+        env:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+      - name: Install Dependencies for ${{ matrix.travis_job }}
+        env:
+          TRAVIS_JOB: ${{ matrix.travis_job }}
+          PYTHON_VERSION: ${{ matrix.python-version }}
+        run: deploy/travis/install
+      - name: Prepare for ${{ matrix.travis_job }}
+        env:
+          TRAVIS_JOB: ${{ matrix.travis_job }}
+          PYTHON_VERSION: ${{ matrix.python-version }}
+        run: deploy/travis/before_script
+      - name: Run ${{ matrix.travis_job }}
+        env:
+          TRAVIS_JOB: ${{ matrix.travis_job }}
+          PYTHON_VERSION: ${{ matrix.python-version }}
+        run: deploy/travis/script
+      - name: Upload Coverage to Codecov
+        if: ${{ matrix.travis_job == 'test' }}
+        uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: true
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  migrations:
+    name: Migration Consistency Check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.7
+        uses: deadsnakes/action@v3.2.0
+        with:
+          python-version: "3.7"
+      - name: Install Dependencies
+        run: |
+          # We need full dependencies for makemigrations to initialize apps
+          sudo apt-get update
+          sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres | grep -v ^libpq-dev | grep -v ^.*pip)
+          esp/packages_base_manual_install.sh
+          pip install -r esp/requirements.txt
+      - name: Run Migration Check
+        run: |
+          cd esp
+          python manage.py makemigrations --check --dry-run
+
+  security:
+    name: Security Checks (Bandit & pip-audit)
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.7
+        uses: deadsnakes/action@v3.2.0
+        with:
+          python-version: "3.7"
+      - name: Install Security Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit pip-audit
+      - name: Run Bandit
+        run: bandit -r esp/ -ll
+      - name: Run pip-audit
+        run: pip-audit -r esp/requirements.txt
