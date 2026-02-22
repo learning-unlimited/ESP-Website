@@ -2,20 +2,20 @@
 
 {% block cls_title %}
     <td title="{{cls}}" colspan="5">
-        {{ cls.parent_program.niceName }} -- 
+        <small class="text-muted">{{ cls.parent_program.niceName }}</small><br />
         {{ cls|truncatewords:6 }}
         <a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">&raquo;</a>
     </td>
-    <td>
-        <form action="{{ prog.get_teach_url }}copyaclass" request="GET">
+    <td style="white-space: nowrap;">
+        <form action="{{ prog.get_teach_url }}copyaclass" method="GET" style="display: inline;">
             <input type="hidden" name="cls" value="{{ cls.id }}">
-            <input type="submit" class="btn btn-primary" value="Import">
+            <input type="submit" class="btn btn-primary btn-sm" value="Import">
         </form>
     </td>
-    <td>
+    <td style="white-space: nowrap;">
         {% if cls.got_index_qsd %}
-        <form action="/learn/{{cls.getUrlBase}}/index.html">
-            <input type="submit" class="btn btn-primary" value="Visit web page">
+        <form action="/learn/{{cls.getUrlBase}}/index.html" style="display: inline;">
+            <input type="submit" class="btn btn-default btn-sm" value="Visit web page">
         </form>
         {% endif %}
     </td>
