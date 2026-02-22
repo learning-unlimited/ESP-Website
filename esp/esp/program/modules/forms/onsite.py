@@ -1,11 +1,8 @@
-from __future__ import absolute_import
 from django import forms
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import DateTimeWidget
 from esp.users.models import K12School, ESPUser
 import datetime
-from six.moves import range
-from six.moves import zip
 
 class OnSiteRegForm(forms.Form):
     first_name = forms.CharField(max_length=30, widget=forms.TextInput({'size':20, 'class':'required'}))
@@ -21,7 +18,7 @@ class OnSiteRegForm(forms.Form):
     liability = forms.BooleanField(required = False)
 
     def __init__(self, *args, **kwargs):
-        super(OnSiteRegForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['grade'].choices = (
             [('', '')] + [(x, x) for x in ESPUser.grade_options()])
 
@@ -38,4 +35,4 @@ class TeacherCheckinForm(forms.Form):
     def __init__(self, *args, **kwargs):
         now = datetime.datetime.now()
         self.base_fields['when'].initial=datetime.datetime(now.year, now.month, now.day) + datetime.timedelta(days=1, minutes=-1)
-        super(TeacherCheckinForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)

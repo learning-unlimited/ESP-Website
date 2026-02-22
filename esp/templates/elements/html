@@ -110,7 +110,7 @@
               submitted = true;
             }
           }
-          <!-- if we didn't end up submitting the form, reenable the submit button -->
+          <!-- if we didn't end up submitting the form, re-enable the submit button -->
           if(!submitted) {
             $j(this).prop('disabled', false);
           }

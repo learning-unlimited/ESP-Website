@@ -165,7 +165,7 @@ Minor new features
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
-- Fixed an error that occured when trying to access the profile form when morphed as a teacher.
+- Fixed an error that occurred when trying to access the profile form when morphed as a teacher.
 - Fixed a bug on the phase zero management page that would prevent the graph from being plotted.
 - Fixed a bug that had broken the credit card module.
 - Fixed a bug where students that had yet to fill out a profile would cause the phase zero management page to break. If such students are in the phase zero lottery, they are now reported on the management page.
