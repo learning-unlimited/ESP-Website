@@ -1,5 +1,4 @@
 
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -273,7 +272,6 @@ class UserAttributeGetter(object):
             return str(responses[2].question.subject) + ':  ' + str(responses[0])
         else:
             return None
-
 
 class ListGenForm(forms.Form):
     attr_choices = list(UserAttributeGetter.getFunctions().items())

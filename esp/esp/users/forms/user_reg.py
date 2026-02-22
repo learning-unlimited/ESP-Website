@@ -5,7 +5,6 @@ from django.forms.fields import HiddenInput, TextInput
 from esp.users.models import ESPUser, GradeChangeRequest
 from esp.utils.forms import StrippedCharField
 from phonenumber_field.formfields import PhoneNumberField
-import six
 
 class ValidHostEmailField(forms.EmailField):
     """ An EmailField that runs a DNS query to make sure the host is valid. """
@@ -46,7 +45,7 @@ class EmailUserRegForm(forms.Form):
 
     def clean_initial_role(self):
         data = self.cleaned_data['initial_role']
-        if data == six.u(''):
+        if data == '':
             raise forms.ValidationError('Please select an initial role')
         return data
 
@@ -81,7 +80,7 @@ class UserRegForm(forms.Form):
 
     def clean_initial_role(self):
         data = self.cleaned_data['initial_role']
-        if data == six.u(''):
+        if data == '':
             raise forms.ValidationError('Please select an initial role')
         return data
 

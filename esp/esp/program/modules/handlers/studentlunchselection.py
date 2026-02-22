@@ -1,5 +1,4 @@
 
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -99,7 +98,6 @@ class StudentLunchSelectionForm(forms.Form):
             msg = 'Lunch period declined.'
 
         return (result, msg)
-
 
 class StudentLunchSelection(ProgramModuleObj):
     doc = """Allows students to enroll in lunch blocks."""

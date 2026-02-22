@@ -13,7 +13,6 @@
 # Step 4 takes much longer to run than the others (O(n^2) where n is the number of scheduled classes).
 
 from esp.program.models import ClassSubject, ClassSection, Program
-from six.moves import range
 
 program_name = '2011_Spring'  # change to your program
 program = Program.objects.get(anchor__name = program_name)

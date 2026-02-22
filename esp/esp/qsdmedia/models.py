@@ -1,6 +1,5 @@
 
 from django.utils.encoding import python_2_unicode_compatible
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -124,4 +123,4 @@ class Media(models.Model):
         self.friendly_name = new_name
 
     def __str__(self):
-        return six.text_type(self.friendly_name)
+        return str(self.friendly_name)

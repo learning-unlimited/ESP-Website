@@ -1,5 +1,4 @@
 from django.utils.encoding import python_2_unicode_compatible
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -154,7 +153,7 @@ class ResourceRequest(models.Model):
     desired_value = models.TextField()
 
     def __str__(self):
-        return 'Resource request of %s for %s: %s' % (six.text_type(self.res_type), self.target.emailcode(), self.desired_value)
+        return 'Resource request of %s for %s: %s' % (str(self.res_type), self.target.emailcode(), self.desired_value)
 
 @python_2_unicode_compatible
 class ResourceGroup(models.Model):
@@ -185,12 +184,12 @@ class Resource(models.Model):
 
     def __str__(self):
         if self.user is not None:
-            return 'For %s: %s (%s)' % (six.text_type(self.user), self.name, six.text_type(self.res_type))
+            return 'For %s: %s (%s)' % (str(self.user), self.name, str(self.res_type))
         else:
             if self.num_students != -1:
-                return 'For %d students: %s (%s)' % (self.num_students, self.name, six.text_type(self.res_type))
+                return 'For %d students: %s (%s)' % (self.num_students, self.name, str(self.res_type))
             else:
-                return '%s (%s)' % (self.name, six.text_type(self.res_type))
+                return '%s (%s)' % (self.name, str(self.res_type))
 
     def save(self, *args, **kwargs):
         if self.res_group is None:
@@ -314,7 +313,7 @@ class Resource(models.Model):
         return (len(self.available_times(program)) > 0)
 
     def available_times_html(self, program=None):
-        return '<br /> '.join([six.text_type(e) for e in Event.collapse(self.available_times(program))])
+        return '<br /> '.join([str(e) for e in Event.collapse(self.available_times(program))])
 
     def available_times(self, program=None):
         event_list = [x for x in list(self.matching_times(program)) if self.is_available(timeslot=x)]
@@ -370,7 +369,7 @@ class ResourceAssignment(models.Model):
     assignment_group = models.ForeignKey(AssignmentGroup, null=True, blank=True, on_delete=models.CASCADE)
 
     def __str__(self):
-        result = 'Resource assignment for %s' % six.text_type(self.getTargetOrSubject())
+        result = 'Resource assignment for %s' % str(self.getTargetOrSubject())
         if self.lock_level > 0:
             result += ' (locked)'
         return result

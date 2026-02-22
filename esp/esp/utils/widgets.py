@@ -15,9 +15,6 @@ import datetime
 import time
 import json
 import logging
-import six
-from six.moves import range
-from six.moves import zip
 logger = logging.getLogger(__name__)
 
 class DateTimeWidget(forms.widgets.DateTimeInput):
@@ -43,7 +40,7 @@ class DateTimeWidget(forms.widgets.DateTimeInput):
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
         context.update({
-            'id': attrs['id'] if 'id' in attrs else six.u('%s_id') % (name),
+            'id': attrs['id'] if 'id' in attrs else '%s_id' % (name),
             'jquerywidget': self.jquerywidget,
             'media_url': settings.MEDIA_URL,
             'date_format': self.dformat,
@@ -82,7 +79,7 @@ class ClassAttrMergingSelect(forms.Select):
         #   Merge 'class' attributes - this is the difference from Django's default implementation
         if extra_attrs:
             if 'class' in attrs and 'class' in extra_attrs \
-                    and (isinstance(extra_attrs['class'], str) or isinstance(extra_attrs['class'], six.text_type)):
+                    and isinstance(extra_attrs['class'], str):
                 attrs['class'] += ' ' + extra_attrs['class']
                 del extra_attrs['class']
             attrs.update(extra_attrs)
@@ -141,7 +138,6 @@ class SplitDateWidget(forms.MultiWidget):
     def format_output(self, rendered_widgets):
         return '\n'.join(rendered_widgets)
 
-
 class BlankSelectWidget(forms.Select):
     """ A <select> widget whose first entry is blank. """
     template_name = 'django/forms/widgets/blankselect.html'
@@ -153,9 +149,8 @@ class BlankSelectWidget(forms.Select):
 
 class NullRadioSelect(forms.RadioSelect):
     def __init__(self, *args, **kwargs):
-        kwargs['choices'] = ((True, six.u('Yes')), (False, six.u('No')))
+        kwargs['choices'] = ((True, 'Yes'), (False, 'No'))
         super().__init__(*args, **kwargs)
-
 
 class NullCheckboxSelect(forms.CheckboxInput):
     def __init__(self, *args, **kwargs):
@@ -167,7 +162,7 @@ class NullCheckboxSelect(forms.CheckboxInput):
             return False
         value = data.get(name)
         values =  {'on': True, 'true': True, 'false': False}
-        if isinstance(value, str) or isinstance(value, six.text_type):
+        if isinstance(value, str):
             value = values.get(value.lower(), value)
         logger.info('NullCheckboxSelect converted %s to %s', data.get(name), value)
         return value
@@ -179,7 +174,7 @@ class DummyWidget(widgets.Input):
         return True
 
     def render(self, name, value, attrs=None, choices=(), renderer=None):
-        output = six.u('')
+        output = ''
         if attrs and 'text' in attrs:
             output += attrs['text']
         return mark_safe(output)
@@ -463,7 +458,7 @@ class RadioSelectWithData(forms.RadioSelect):
         context = super().get_context(name, value, attrs)
         for optgroup in context['widget'].get('optgroups', []):
             for option in optgroup[1]:
-                for k, v in six.iteritems(self.option_data.get(option['value'], {})):
+                for k, v in self.option_data.get(option['value'], {}).items():
                     option['attrs']['data-' + k] = v
         return context
 
@@ -503,10 +498,9 @@ class ChoiceWithOtherField(forms.MultiValueField):
         else:
             super().__init__(*args, **kwargs)
 
-
     def compress(self, value):
         if not value:
-            return [None, six.u('')]
+            return [None, '']
 
         option_value, other_value = value
         if self._was_required and not value or option_value in (None, ''):

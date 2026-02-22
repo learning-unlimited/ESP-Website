@@ -9,8 +9,7 @@ The functions in this file are globally relevant, too annoying to inline,
 """
 
 import sys
-from six.moves.urllib.parse import quote_plus
-import six
+from urllib.parse import quote_plus
 
 def force_str(x):
     """
@@ -22,9 +21,9 @@ def force_str(x):
     '\\xc3\\x85ngstrom'
 
     """
-    if isinstance(x, str) or isinstance(x, six.text_type):
+    if isinstance(x, str) or isinstance(x, str):
         return x
-    return six.text_type(x).encode('utf8')
+    return str(x).encode('utf8')
 
 def ascii(x):
     """

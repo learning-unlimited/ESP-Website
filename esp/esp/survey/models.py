@@ -1,9 +1,6 @@
 " Survey models for Educational Studies Program. "
 
 from django.utils.encoding import python_2_unicode_compatible
-import six
-from six.moves import map
-from six.moves import zip
 __author__    = "$LastChangedBy$"
 __date__      = "$LastChangedDate$"
 __rev__       = "$LastChangedRevision$"
@@ -105,7 +102,7 @@ class Survey(models.Model):
     category = models.CharField(max_length = 10, choices = survey_choices)
 
     def __str__(self):
-        return '%s (%s) for %s' % (self.name, self.category, six.text_type(self.program))
+        return '%s (%s) for %s' % (self.name, self.category, str(self.program))
 
     def num_participants(self):
         #   If there is a program for this survey, select the appropriate number
@@ -195,7 +192,7 @@ class SurveyResponse(models.Model):
         return answers
 
     def __str__(self):
-        return "Survey for %s filled out at %s" % (six.text_type(self.survey.program),
+        return "Survey for %s filled out at %s" % (str(self.survey.program),
                                                    self.time_filled)
 
 @python_2_unicode_compatible

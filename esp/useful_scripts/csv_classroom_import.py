@@ -17,7 +17,6 @@ import os
 
 from datetime import datetime
 from io import open
-from six.moves import input
 
 ETYPE_CLASSBLOCK = EventType.objects.get(description='Class Time Block')
 RTYPE_CLASSROOM = ResourceType.get_or_create('Classroom')
