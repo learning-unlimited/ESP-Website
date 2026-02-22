@@ -1,10 +1,6 @@
-from __future__ import with_statement
 
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
 import logging
-import six
 logger = logging.getLogger(__name__)
 
 from django.db import models, transaction, connection
@@ -44,7 +40,7 @@ class Section(models.Model):
     seq = models.IntegerField()
 
     def __str__(self):
-        return 'Sec. %d: %s' % (self.seq, six.text_type(self.title))
+        return 'Sec. %d: %s' % (self.seq, str(self.title))
 
 @python_2_unicode_compatible
 class Field(models.Model):
