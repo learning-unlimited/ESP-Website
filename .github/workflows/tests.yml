@@ -122,6 +122,9 @@ jobs:
           sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres | grep -v ^libpq-dev | grep -v ^.*pip)
           esp/packages_base_manual_install.sh
           pip install -r esp/requirements.txt
+      - name: Create local_settings.py
+        run: |
+          cp esp/esp/local_settings.py.ci esp/esp/local_settings.py
       - name: Run Migration Check
         run: |
           cd esp
@@ -130,7 +133,6 @@ jobs:
   security:
     name: Security Checks (Bandit & pip-audit)
     runs-on: ubuntu-24.04
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.7
@@ -142,6 +144,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install bandit pip-audit
       - name: Run Bandit
+        continue-on-error: true
         run: bandit -r esp/ -ll
       - name: Run pip-audit
+        continue-on-error: true
         run: pip-audit -r esp/requirements.txt
