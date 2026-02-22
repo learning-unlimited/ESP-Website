@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-import six
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -52,7 +49,7 @@ class JSONDataModuleTest(ProgramFrameworkTest):
     ## It also also needs to test all the other queries on this page.
 
     def setUp(self):
-        super(JSONDataModuleTest, self).setUp()
+        super().setUp()
         # Generate some nonzero stats
         self.schedule_randomly()
         self.add_user_profiles()
@@ -75,11 +72,11 @@ class JSONDataModuleTest(ProgramFrameworkTest):
             student_labels_dict.update(module.studentDesc())
         students_dict = self.program.students()
         student_display_dict = {}
-        for key in six.iterkeys(students_dict):
+        for key in students_dict.keys():
             if key not in ['attended_past', 'enrolled_past']:
                 student_display_dict[student_labels_dict.get(key, key)] = students_dict[key]
 
-        for query_label, query in six.iteritems(student_display_dict):
+        for query_label, query in student_display_dict.items():
             value = query.count()
             json_str = "[\"%s\", %d]" % (query_label, value)
             self.assertContains(self.stats_response, json_str)
@@ -91,11 +88,11 @@ class JSONDataModuleTest(ProgramFrameworkTest):
             teacher_labels_dict.update(module.teacherDesc())
         teachers_dict = self.program.teachers()
         teacher_display_dict = {}
-        for key in six.iterkeys(teachers_dict):
+        for key in teachers_dict.keys():
             if key not in ['taught_before']:
                 teacher_display_dict[teacher_labels_dict.get(key, key)] = teachers_dict[key]
 
-        for query_label, query in six.iteritems(teacher_display_dict):
+        for query_label, query in teacher_display_dict.items():
             value = query.count()
             json_str = "[\"%s\", %d]" % (query_label, value)
             self.assertContains(self.stats_response, json_str)

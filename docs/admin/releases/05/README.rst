@@ -18,7 +18,7 @@ The STRIPE_CONFIG settings should be configured for the module to interact with
 Stripe API servers.
 
 For more information on usage, see
-`</docs/admin/program_modules.rst#stripe-credit-card-module>`_.
+`<../../program_modules.rst#stripe-credit-card-module>`_.
 
 Group texting with Twilio
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -32,7 +32,7 @@ options need to be set.
 We expect that this will be primarily used for emergency notification situations.
 
 For more information on usage, see
-`</docs/admin/program_modules.rst#group-text-module>`_.
+`<../../program_modules.rst#group-text-module>`_.
 
 Student applications module
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -41,7 +41,7 @@ Some programs may want to run admissions and have students apply for enrollment
 to specific classes.  The new application system provides functionality for
 program and class-specific applications, teacher review of applicants, admin
 review of applicants, and admin admissions management. For more information,
-see `</docs/admin/student_apps.rst>`_.
+see `<../../student_apps.rst>`_.
 
 Improvements to the onsite class changes grid
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -54,7 +54,7 @@ There have been various improvements to the class changes grid, including:
 - It is possible to show all / hide all categories at once, without manually
   toggling all categories.
 
-- Timeblocks that have already occured can be hidden from the page, so that the
+- Timeblocks that have already occurred can be hidden from the page, so that the
   timeblock on the left is the current or upcoming timeblock.
 
 Donation module
@@ -69,7 +69,7 @@ costs. If you are interested in fundraising this way, get in contact with an LU
 volunteer.
 
 For more information on configuring and using the module, see
-`</docs/admin/program_modules.rst#donation-module>`_.
+`<../../program_modules.rst#donation-module>`_.
 
 Improvements to scheduling checks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -108,7 +108,7 @@ registration separately from that of normal teacher registration.
   registrations that have already been set up do not need any updating.
 
 NOTE: For more information on open classes, see the "Open classes" section of
-the previous release notes: `</docs/admin/releases/04/README.rst>`_.  The open
+the previous release notes: `<../04/README.rst>`_.  The open
 classes feature is disabled by default.  And when it is disabled, you can
 safely use either the "Create standard classes" or
 "Create classes of all types" deadlines, without accidentally opening
@@ -233,7 +233,7 @@ to update sites (including dev servers):
   be run as the webserver user.
 
 - ``manage.py update`` - The same as running the above three commands, plus
-  ``manage.py syncdb`` (to install new tables not under migration controll),
+  ``manage.py syncdb`` (to install new tables not under migration control),
   ``manage.py migrate``, and ``manage.py collectstatic``.
 
 When performing a production site release or pulling many new commits to

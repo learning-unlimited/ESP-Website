@@ -1,10 +1,8 @@
 """Utilities for use in resource constraints and scoring."""
 
-from __future__ import absolute_import
 import re
 
 from esp.program.controllers.autoscheduler import util
-import six
 
 
 class ResourceCriterion(object):
@@ -261,10 +259,10 @@ def create_resource_criteria(specification_dicts, valid_res_types,
     if use_weights:
         return [(ResourceCriterion.create_from_specification(
                     spec, name, valid_res_types), weight)
-                for name, (spec, weight) in six.iteritems(specifications)
+                for name, (spec, weight) in specifications.items()
                 if spec != "None" and spec is not None]
     else:
         return [ResourceCriterion.create_from_specification(
                     spec, name, valid_res_types)
-                for name, spec in six.iteritems(specifications)
+                for name, spec in specifications.items()
                 if spec != "None" and spec is not None]

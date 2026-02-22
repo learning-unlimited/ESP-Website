@@ -1,6 +1,5 @@
 
 
-from __future__ import absolute_import
 from django import template
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 

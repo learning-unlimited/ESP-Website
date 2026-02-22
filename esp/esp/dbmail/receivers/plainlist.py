@@ -1,6 +1,5 @@
 
 
-from __future__ import absolute_import
 from esp.dbmail.base import BaseHandler
 from esp.dbmail.models import PlainRedirect
 

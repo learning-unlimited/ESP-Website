@@ -1,11 +1,9 @@
-from __future__ import absolute_import
 import re
 
 from django import template
 from django.contrib.auth.models import User, AnonymousUser
 
 from esp.miniblog.views import get_visible_announcements
-from six.moves import zip
 
 __all__ = ['MiniblogNode', 'miniblog_for_user']
 
@@ -35,7 +33,7 @@ class MiniblogNode(template.Node):
             else:
                 raise template.VariableDoesNotExist("Argument to miniblog_for_user, %s, did not exist" % self.user)
         if not isinstance(user_obj, (User, AnonymousUser)):
-            raise template.TemplateSyntaxError("Requires a user object, recieved '%s'" % user_obj)
+            raise template.TemplateSyntaxError("Requires a user object, received '%s'" % user_obj)
 
         context[self.var_name] = get_visible_announcements(user_obj, self.limit, self.tl)
         return ''
