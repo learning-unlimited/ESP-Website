@@ -319,7 +319,7 @@ def loaddb(filename=None):
     else:
         # Get or prompt for HTTP download settings. These settings are saved in
         # dbconfig in the encrypted part of the Vagrant VM, which makes it
-        # easier for people to work with different chapters' databasees in
+        # easier for people to work with different chapters' databases in
         # different VMs.
         if files.exists(env.encfab + "dbconfig"):
             contents = run("cat " + env.encfab + "dbconfig")

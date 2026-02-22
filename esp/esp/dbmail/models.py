@@ -295,7 +295,7 @@ class MessageRequest(models.Model):
         Returns the callable sendto function whose name is the given string.
 
         The function must be one of the sendto_fn_name field choices, and must
-        be a callable defined in esp.dbmail.sendto_fns. Raises aan
+        be a callable defined in esp.dbmail.sendto_fns. Raises an
         ImproperlyConfigured exception if that is not the case.
         """
         if not cls.is_sendto_fn_name_choice(sendto_fn_name):
@@ -628,7 +628,7 @@ class PlainRedirect(models.Model):
 
     original = models.CharField(max_length=512, help_text='A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@&lt;yourdomain&gt; will be redirected to the destination email address(es).')
 
-    destination = models.CharField(max_length=512, help_text='A comma-seperated list of one or more real email address(es) that will receive the redirected email(s)')
+    destination = models.CharField(max_length=512, help_text='A comma-separated list of one or more real email address(es) that will receive the redirected email(s)')
 
     def __str__(self):
         return '%s --> %s'  % (self.original, self.destination)

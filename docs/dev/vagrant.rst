@@ -66,7 +66,7 @@ The following command connects to the running VM and installs the software depen
 
     fab setup
 
-If you are prompted for a password, try ``vagrant``. The development environment can be seeded with a database dump from an existing chapter, subject to a confidentiality agreement and security requirements on the part of the developer. (**NOTE:** Run **only one** of the next three commands. They are alternative ways to created the database.) If you have been provided with a download URL, run the following command. ::
+If you are prompted for a password, try ``vagrant``. The development environment can be seeded with a database dump from an existing chapter, subject to a confidentiality agreement and security requirements on the part of the developer. (**NOTE:** Run **only one** of the next three commands. They are alternative ways to create the database.) If you have been provided with a download URL, run the following command. ::
 
     fab loaddb
 
@@ -290,7 +290,7 @@ Follow the following steps to upgrade the base VM for everyone to use.
 
 9. 
 
-	Restore the vagrantfile by running ``git restore Vagrantfile``, and update it so that ``config.vm.box`` matches the box name (probably ``'ubuntu-*'``) and ``config.vm.box_url`` points to the new VM's URL (which you can copy from AWS).
+	Restore the Vagrantfile by running ``git restore Vagrantfile``, and update it so that ``config.vm.box`` matches the box name (probably ``'ubuntu-*'``) and ``config.vm.box_url`` points to the new VM's URL (which you can copy from AWS).
 	Make sure to commit the changes in ``Vagrantfile`` to GitHub!
 
 10. 

@@ -3438,7 +3438,7 @@ for (var j = 1; j &lt; p.length; j++) { url += "&amp;" + p[j]; }}
  Utility functions (do not customize)
      ********************************************************************** -->
 
-<!-- *** Find the substring after the last occurence of a separator *** -->
+<!-- *** Find the substring after the last occurrence of a separator *** -->
 <xsl:template name="last_substring_after">
 
   <xsl:param name="string"/>
