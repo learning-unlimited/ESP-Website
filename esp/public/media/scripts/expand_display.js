@@ -22,7 +22,18 @@ for (i = 0; i < coll.length; i++) {
 }
 
 if(!document.getElementById) {
-  document.write('<style type="text/css"><!--\n' +
-    '.dspcont{display:block;}\n' +
-    '//--></style>');
+  // Legacy fallback: inject CSS without using document.write
+  try {
+    var style = document.createElement('style');
+    style.type = 'text/css';
+    if (style.styleSheet) { // IE
+      style.styleSheet.cssText = '.dspcont{display:block;}';
+    } else {
+      style.appendChild(document.createTextNode('.dspcont{display:block;}'));
+    }
+    var head = document.getElementsByTagName('head')[0] || document.documentElement;
+    head.appendChild(style);
+  } catch (e) {
+    // Silently ignore — non-critical fallback for very old browsers
+  }
 }
