@@ -1,3 +1,4 @@
+
 from __future__ import absolute_import
 from esp.users.admin import ExpiredListFilter
 from esp.utils.admin_user_search import default_user_search
@@ -13,6 +14,7 @@ from esp.program.models import RegistrationProfile
 from esp.program.models import ProgramModule, ArchiveClass, Program
 from esp.admin import admin_site
 from django.contrib import admin
+
 __author__ = "Individual contributors (see AUTHORS file)"
 __date__ = "$DATE$"
 __rev__ = "$REV$"

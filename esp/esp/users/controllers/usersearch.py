@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-import six
-from six.moves import map
-from six.moves import range
-from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -413,7 +408,7 @@ class UserSearchController(object):
         recipient_type = data.get('recipient_type', '') or data.get('combo_base_list', ':').split(':')[0]
         sendtos = []
         if recipient_type == 'Student':
-            for key, value in six.iteritems(data):
+            for key, value in data.items():
                 if ('student_sendto_' in key) and (value == '1'):
                     sendtos.append(key[1+key.rindex('_'):])
             if not sendtos:
