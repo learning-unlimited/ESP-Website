@@ -1796,3 +1796,181 @@ class UpdateModulesTest(TestCase):
 
         # Clean up
         prog.delete()
+
+    def test_install_always_updates_inline_template(self):
+        """install() updates inline_template on existing modules."""
+        from esp.program.modules.models import install
+        install()
+
+        mod = ProgramModule.objects.get(
+            handler='StudentClassRegModule', module_type='learn')
+        original = mod.inline_template
+        mod.inline_template = 'bogus_template'
+        mod.save()
+
+        install()
+        mod.refresh_from_db()
+        self.assertEqual(mod.inline_template, original)
+
+    def test_install_always_updates_choosable(self):
+        """install() updates choosable on existing modules."""
+        from esp.program.modules.models import install
+        install()
+
+        mod = ProgramModule.objects.get(
+            handler='StudentClassRegModule', module_type='learn')
+        original = mod.choosable
+        mod.choosable = 2  # force to "excluded by default"
+        mod.save()
+
+        install()
+        mod.refresh_from_db()
+        self.assertEqual(mod.choosable, original)
+
+    def test_install_deleteExtra_removes_stale_modules(self):
+        """install(deleteExtra=True) removes modules not in the code."""
+        from esp.program.modules.models import install
+        install()
+
+        # Create a stale module that doesn't exist in any handler
+        stale_id = ProgramModule.objects.create(
+            handler='ObsoleteModule', module_type='learn',
+            admin_title='Should Be Deleted',
+        ).id
+
+        install()  # calls updateModules(deleteExtra=True)
+        self.assertFalse(ProgramModule.objects.filter(id=stale_id).exists())
+
+    def test_updateModules_no_deleteExtra_preserves_extra(self):
+        """updateModules(deleteExtra=False) preserves modules not in the list."""
+        from esp.program.modules.models import updateModules
+        # Create an existing module
+        stale = ProgramModule.objects.create(
+            handler='ObsoleteModule', module_type='learn',
+            admin_title='Should Be Preserved',
+        )
+
+        updateModules([{
+            'handler': 'TestHandler', 'module_type': 'learn',
+            'admin_title': 'Test', 'choosable': 0,
+        }], deleteExtra=False)
+
+        self.assertTrue(ProgramModule.objects.filter(handler='ObsoleteModule').exists())
+        # Clean up
+        ProgramModule.objects.filter(handler__in=['ObsoleteModule', 'TestHandler']).delete()
+
+
+class ProgramModuleEdgeCaseTest(TestCase):
+    """Edge case tests for the NULL-means-default pattern."""
+
+    def setUp(self):
+        user_role_setup()
+
+    # --- seq=0 is a valid override, not a fallback to default ---
+
+    def test_get_effective_seq_zero_is_override(self):
+        """seq=0 is a valid custom value (not NULL), must NOT fall back."""
+        mod = ProgramModule.objects.create(
+            handler='StudentClassRegModule', module_type='learn',
+            admin_title='Test', seq=0,
+        )
+        self.assertEqual(mod.get_effective_seq(), 0)
+        mod.delete()
+
+    def test_get_effective_seq_negative_is_override(self):
+        """Negative seq is a valid custom value."""
+        mod = ProgramModule.objects.create(
+            handler='StudentClassRegModule', module_type='learn',
+            admin_title='Test', seq=-5,
+        )
+        self.assertEqual(mod.get_effective_seq(), -5)
+        mod.delete()
+
+    # --- required=False vs required=None ---
+
+    def test_get_effective_required_explicit_false_is_override(self):
+        """required=False (explicit) is different from required=None (default).
+        For StudentClassRegModule the code default is True, so explicit False
+        must be returned as-is."""
+        mod = ProgramModule.objects.create(
+            handler='StudentClassRegModule', module_type='learn',
+            admin_title='Test', required=False,
+        )
+        # Should return False (the explicit override), NOT True (the code default)
+        self.assertFalse(mod.get_effective_required())
+        mod.delete()
+
+    # --- Multi-module handler with no matching module_type ---
+
+    def test_get_code_properties_multi_module_no_match(self):
+        """When a handler returns multiple dicts and none match module_type,
+        _get_code_properties() returns {} (not a wrong match)."""
+        # RegProfileModule returns learn + teach variants
+        mod = ProgramModule.objects.create(
+            handler='RegProfileModule', module_type='manage',  # neither learn nor teach
+            admin_title='Test',
+        )
+        props = mod._get_code_properties()
+        self.assertEqual(props, {})
+        mod.delete()
+
+    def test_get_effective_link_title_multi_module_no_match_fallback(self):
+        """When multi-module handler has no matching type, effective link_title
+        falls back to the handler name."""
+        mod = ProgramModule.objects.create(
+            handler='RegProfileModule', module_type='manage',
+            admin_title='Test', link_title=None,
+        )
+        self.assertEqual(mod.get_effective_link_title(), 'RegProfileModule')
+        mod.delete()
+
+    # --- Admin customization indicator methods ---
+
+    def test_admin_link_title_is_customized_null(self):
+        """Admin indicator: link_title=None -> not customized."""
+        from esp.program.admin import ProgramModuleAdmin
+        admin_obj = ProgramModuleAdmin(ProgramModule, None)
+        mod = ProgramModule(link_title=None)
+        self.assertFalse(admin_obj.link_title_is_customized(mod))
+
+    def test_admin_link_title_is_customized_empty(self):
+        """Admin indicator: link_title='' -> not customized."""
+        from esp.program.admin import ProgramModuleAdmin
+        admin_obj = ProgramModuleAdmin(ProgramModule, None)
+        mod = ProgramModule(link_title='')
+        self.assertFalse(admin_obj.link_title_is_customized(mod))
+
+    def test_admin_link_title_is_customized_set(self):
+        """Admin indicator: link_title='Custom' -> customized."""
+        from esp.program.admin import ProgramModuleAdmin
+        admin_obj = ProgramModuleAdmin(ProgramModule, None)
+        mod = ProgramModule(link_title='Custom Title')
+        self.assertTrue(admin_obj.link_title_is_customized(mod))
+
+    def test_admin_seq_is_customized_null(self):
+        """Admin indicator: seq=None -> not customized."""
+        from esp.program.admin import ProgramModuleAdmin
+        admin_obj = ProgramModuleAdmin(ProgramModule, None)
+        mod = ProgramModule(seq=None)
+        self.assertFalse(admin_obj.seq_is_customized(mod))
+
+    def test_admin_seq_is_customized_set(self):
+        """Admin indicator: seq=42 -> customized."""
+        from esp.program.admin import ProgramModuleAdmin
+        admin_obj = ProgramModuleAdmin(ProgramModule, None)
+        mod = ProgramModule(seq=42)
+        self.assertTrue(admin_obj.seq_is_customized(mod))
+
+    def test_admin_required_is_customized_null(self):
+        """Admin indicator: required=None -> not customized."""
+        from esp.program.admin import ProgramModuleAdmin
+        admin_obj = ProgramModuleAdmin(ProgramModule, None)
+        mod = ProgramModule(required=None)
+        self.assertFalse(admin_obj.required_is_customized(mod))
+
+    def test_admin_required_is_customized_false(self):
+        """Admin indicator: required=False (explicit) -> customized."""
+        from esp.program.admin import ProgramModuleAdmin
+        admin_obj = ProgramModuleAdmin(ProgramModule, None)
+        mod = ProgramModule(required=False)
+        self.assertTrue(admin_obj.required_is_customized(mod))
