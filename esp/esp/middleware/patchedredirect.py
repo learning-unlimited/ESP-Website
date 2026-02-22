@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.contrib.redirects.middleware import RedirectFallbackMiddleware
 from django.http import HttpResponseRedirect, HttpResponseNotFound
 

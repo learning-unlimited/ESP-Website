@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import datetime
 
 from django import forms
@@ -17,9 +16,6 @@ from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission, Record, RecordType
-import six
-from six.moves import map
-from six.moves import filter
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -112,6 +108,34 @@ class ESPUserTest(TestCase):
             adminUser.delete()
         if (c2):
             studentUser.delete()
+
+    def testUnsubscribe(self):
+        """Test that unsubscribe links work for usernames with special characters."""
+        test_usernames = [
+            'testuser',       # Alpha
+            'test:user',      # Colon (the original breaker)
+            'test user',      # Space
+            'test!user',      # Exclamation
+            'test.user@ext',  # Dot/At/Plus (common in email-y usernames)
+            'test+user'
+        ]
+
+        for username in test_usernames:
+            user = ESPUser.objects.create(username=username)
+            try:
+                link = user.unsubscribe_link()
+                self.assertTrue(link.startswith('/myesp/unsubscribe/') or link.startswith('/unsubscribe/'))
+
+                # Extract token and verify it works
+                # URL pattern is ^unsubscribe/(?P<username>[^/]+)/(?P<token>[\w.:\-_=]+)/$
+                # So link ends with /token/
+                parts = [p for p in link.split('/') if p]
+                token = parts[-1]
+
+                self.assertTrue(user.check_token(token),
+                                f"Token check failed for username: {username}")
+            finally:
+                user.delete()
 
 class PasswordRecoveryTicketTest(TestCase):
     def setUp(self):
@@ -241,12 +265,12 @@ class ValidHostEmailFieldTest(TestCase):
         # Hardcoding 'esp.mit.edu' here might be a bad idea
         # But at least it verifies that A records work in place of MX
         for domain in [ 'esp.mit.edu', 'gmail.com', 'yahoo.com' ]:
-            self.assertTrue( ValidHostEmailField().clean( six.u('fakeaddress@%s') % domain ) == six.u('fakeaddress@%s') % domain )
+            self.assertTrue( ValidHostEmailField().clean( 'fakeaddress@%s' % domain ) == 'fakeaddress@%s' % domain )
     def testFakeDomain(self):
         # If we have an internet connection, bad domains raise ValidationError.
         # This should be the *only* kind of error we ever raise!
         try:
-            ValidHostEmailField().clean( six.u('fakeaddress@idontex.ist') )
+            ValidHostEmailField().clean( 'fakeaddress@idontex.ist' )
         except forms.ValidationError:
             pass
 
@@ -286,6 +310,9 @@ class MakeAdminTest(TestCase):
         self.user, created = ESPUser.objects.get_or_create(username='admin_test')
         self.user.is_staff = False
         self.user.is_superuser = False
+        self.target_user, created2 = ESPUser.objects.get_or_create(username='target_user')
+        self.target_user.is_staff = False
+        self.target_user.is_superuser = False
         user_role_setup()
 
     def runTest(self):
@@ -305,6 +332,26 @@ class MakeAdminTest(TestCase):
         # Make sure that an unprivileged access to /myesp/makeadmin/ returns a redirect to the login page
         response = self.client.get('/myesp/makeadmin/')
         self.assertRedirects(response, '/accounts/login/?next=/myesp/makeadmin/')
+
+        # Test the view using an admin user
+        self.user.set_password('password')
+        self.user.save()
+        self.assertTrue(self.client.login(username=self.user.username, password='password'))
+        # Test valid submission
+        response = self.client.post('/myesp/makeadmin/', {'target_user': self.target_user.id})
+        self.assertEqual(response.status_code, 200)
+        # Check that it renders the same make_admin.html template (not the success template)
+        self.assertTemplateUsed(response, 'users/make_admin.html')
+        # Check that added_user is in the context
+        self.assertEqual(response.context['added_user'], self.target_user)
+        # Check that the banner text appears in the response
+        self.assertContains(response, 'successfully made into an administrator')
+        # Check that the form given back is clean
+        self.assertIn('form', response.context)
+        self.assertFalse(response.context['form'].is_bound)
+        # Check that the target_user is actually an admin now
+        self.assertTrue(ESPUser.objects.get(id=self.target_user.id).is_staff)
+        self.assertTrue(ESPUser.objects.get(id=self.target_user.id).is_superuser)
 
 class AjaxExistenceChecker(TestCase):
     """ Check that an Ajax view is there by trying to retrieve it and checking for the desired keys
@@ -326,7 +373,7 @@ class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
         self.keys = ['student_schedule_html']
         user=self.students[0]
         self.assertTrue(self.client.login(username=user.username, password='password'))
-        super(AjaxScheduleExistenceTest, self).runTest()
+        super().runTest()
 
 class AccountCreationTest(TestCase):
 
@@ -515,7 +562,7 @@ class TestChangeRequestView(TestCase):
 
 class RecordTest(TestCase):
     def setUp(self):
-        super(RecordTest, self).setUp()
+        super().setUp()
         self.past     = datetime.datetime(1970, 1, 1)
         self.future   = datetime.datetime.max
         self.user     = ESPUser.objects.create(username='RecordTest')
@@ -601,7 +648,7 @@ class RecordTest(TestCase):
 class PermissionTestCase(TestCase):
 
     def setUp(self):
-        super(PermissionTestCase, self).setUp()
+        super().setUp()
         self.role = Group.objects.create(name='group')
         self.user = ESPUser.objects.create(username='user')
         self.user.makeRole(self.role)
@@ -665,7 +712,7 @@ class PermissionTestCase(TestCase):
         self.assertTrue(self.user_has_perm('test'))
 
     def testImplications(self):
-        for base, implications in six.iteritems(Permission.implications):
+        for base, implications in Permission.implications.items():
             perm = self.create_role_perm_for_program(base)
             for implication in implications:
                 self.assertTrue(self.user_has_perm_for_program(implication))
