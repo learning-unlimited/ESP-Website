@@ -5,7 +5,6 @@ from timeit import default_timer
 from functools import wraps
 
 from esp.program.controllers.autoscheduler import config
-import six
 
 
 TIMES = {}
@@ -99,7 +98,7 @@ def override(dicts):
     in key has highest precedence."""
     output = {}
     for d in dicts:
-        for k, v in six.iteritems(d):
+        for k, v in d.items():
             output[k] = v
     return output
 

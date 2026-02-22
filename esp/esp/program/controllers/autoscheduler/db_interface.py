@@ -25,8 +25,6 @@ from esp.program.controllers.autoscheduler.data_model import \
     AS_Timeslot, AS_RoomSlot, AS_ResourceType
 from esp.program.controllers.autoscheduler import \
     util, config, resource_checker
-import six
-from six.moves import zip
 
 logger = logging.getLogger(__name__)
 
@@ -187,7 +185,7 @@ def save(schedule, check_consistency=True, check_constraints=True):
 
     # Find all sections which we've actually moved.
     changed_sections = set(
-        section for section in six.itervalues(schedule.class_sections)
+        section for section in schedule.class_sections.values()
         if section.initial_state
         != section.scheduling_hash())
     # Note: we need to be careful not to cache anything after we save
@@ -542,7 +540,7 @@ def load_resource_constraints(
         tag_overrides = json.loads(tag_value)
         if ignore_comments:
             tag_overrides = {
-                k: v for k, v in six.iteritems(tag_overrides)
+                k: v for k, v in tag_overrides.items()
                 if "_comment" not in k}
     except ValueError as e:
         raise SchedulingError(
@@ -554,7 +552,7 @@ def load_resource_constraints(
     if specs_only:
         return {
             name: spec for name, spec
-            in six.iteritems(util.override(specs))
+            in util.override(specs).items()
             if spec != "None" and spec is not None}
     else:
         valid_res_types = ResourceType.objects.filter(
@@ -576,7 +574,7 @@ def load_resource_scoring(
         tag_overrides = json.loads(tag_value)
         if ignore_comments:
             tag_overrides = {
-                k: v for k, v in six.iteritems(tag_overrides)
+                k: v for k, v in tag_overrides.items()
                 if "_comment" not in k}
     except ValueError as e:
         raise SchedulingError(
@@ -589,7 +587,7 @@ def load_resource_scoring(
     if specs_only:
         return {
             name: (spec, weight) for name, (spec, weight)
-            in six.iteritems(util.override(specs))
+            in util.override(specs).items()
             if spec != "None" and spec is not None}
     else:
         valid_res_types = ResourceType.objects.filter(

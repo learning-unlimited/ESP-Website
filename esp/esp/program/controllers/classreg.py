@@ -17,8 +17,6 @@ from datetime import timedelta, datetime
 from decimal import Decimal
 import json
 from django.conf import settings
-import six
-from six.moves import range
 
 def get_custom_fields():
     result = OrderedDict()
@@ -223,7 +221,7 @@ class ClassCreationController(object):
 
     def generate_director_mail_context(self, cls):
         new_data = cls.__dict__
-        mail_ctxt = dict(six.iteritems(new_data))
+        mail_ctxt = dict(new_data.items())
 
         mail_ctxt['title'] = cls.title
         mail_ctxt['one'] = cls.parent_program.program_type
@@ -259,7 +257,7 @@ class ClassCreationController(object):
                 teacher_ctxt['college'] = "[Teacher hasn't filled out teacher profile!]"
 
             # Get a list of the programs this person has taught for in the past, if any.
-            teacher_ctxt['taught_programs'] = six.u(', ').join([prog.niceName() for prog in teacher.getTaughtPrograms().order_by('pk').exclude(id=self.program.id)])
+            teacher_ctxt['taught_programs'] = ', '.join([prog.niceName() for prog in teacher.getTaughtPrograms().order_by('pk').exclude(id=self.program.id)])
             mail_ctxt['teachers'].append(teacher_ctxt)
         return mail_ctxt
 
