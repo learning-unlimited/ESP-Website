@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euf -o pipefail
 
-if [ "$TRAVIS_JOB" = "test" ]; then
-    cp esp/esp/local_settings.py.travis esp/esp/local_settings.py
+if [ "$CI_JOB" = "test" ]; then
+    cp esp/esp/local_settings.py.ci esp/esp/local_settings.py
     ln -f -s `pwd`/esp/public/media/default_images esp/public/media/images
     ln -f -s `pwd`/esp/public/media/default_styles esp/public/media/styles
     # the postgres service in Github Actions sets up the database for us
@@ -13,9 +13,9 @@ if [ "$TRAVIS_JOB" = "test" ]; then
         psql -c "CREATE ROLE testuser PASSWORD 'testpassword' LOGIN CREATEDB;" -U postgres
         psql -c "CREATE DATABASE test_django OWNER testuser;" -U postgres
     fi
-elif [ "$TRAVIS_JOB" = "lint" ]; then
+elif [ "$CI_JOB" = "lint" ]; then
     :
 else
-    echo "Unknown TRAVIS_JOB: $TRAVIS_JOB"
+    echo "Unknown CI_JOB: $CI_JOB"
     exit 1
 fi
