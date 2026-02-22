@@ -33,12 +33,14 @@ Learning Unlimited, Inc.
 """
 
 import json
+from collections import Counter
 
 from django.utils.html import escape
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.models import ClassSubject
+from esp.resources.models import ResourceType
 
 class JSONDataModuleTest(ProgramFrameworkTest):
     ## This test is very incomplete.
@@ -69,10 +71,21 @@ class JSONDataModuleTest(ProgramFrameworkTest):
         ProgramFrameworkTest.classreg_students(cls)
 
     def setUp(self):
-        # Note: do NOT call super().setUp() here; ProgramFrameworkTest.setUp
-        # was already executed once at the class level in setUpTestData above.
-        # Only do lightweight, per-test work: authenticate the client and
-        # (re-)fetch the JSON responses that the test methods assert against.
+        # We deliberately do NOT call super().setUp() here.  ProgramFrameworkTest
+        # mixes two concerns in its setUp: (a) expensive one-time DB scaffolding
+        # (program creation, user creation, etc.) which was already done once at
+        # the class level in setUpTestData, and (b) lightweight per-test state
+        # resets.  Calling super().setUp() per-test would re-run the full program
+        # creation form, which fails because the program already exists.
+        #
+        # We therefore replicate only the per-test isolation steps from
+        # ProgramFrameworkTest.setUp explicitly:
+        #   1. Reset the in-memory ResourceType cache so stale entries from one
+        #      test can't pollute the next (ProgramFrameworkTest.setUp line ~527).
+        #   2. No other shared mutable state is mutated by ProgramFrameworkTest.setUp.
+        #
+        # This preserves test isolation without the O(N) per-test DB overhead.
+        ResourceType._get_or_create_cache = {}
         self.pm = ProgramModule.objects.get(handler='AdminCore')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, self.pm)
         self.moduleobj.user = self.students[0]
@@ -162,20 +175,37 @@ class JSONDataModuleTest(ProgramFrameworkTest):
         all_classes = self.program.classes().filter(status__gte=0)
         all_sections = self.program.sections().filter(status__gte=0)
 
+        # Pre-fetch grade ranges and parent-class IDs in exactly two flat
+        # queries, then compute per-grade counts in Python.  This avoids the
+        # O(grades) query overhead of calling .count() twice per grade.
+        class_grade_ranges = list(
+            all_classes.values_list('id', 'grade_min', 'grade_max')
+        )
+        section_class_ids = list(
+            all_sections.values_list('parent_class_id', flat=True)
+        )
+        sections_per_class = Counter(section_class_ids)
+
         expected_response = {"data": [], "id": "grades"}
         for g in range(self.program.grade_min, self.program.grade_max + 1):
-            grade_classes = all_classes.filter(grade_min__lte=g, grade_max__gte=g)
-            grade_sections = all_sections.filter(parent_class__in=grade_classes)
+            grade_class_ids = [
+                cid for cid, gmin, gmax in class_grade_ranges
+                if gmin <= g <= gmax
+            ]
             expected_response["data"].append({
                 "grade": g,
-                "num_subjects": grade_classes.count(),
-                "num_sections": grade_sections.count(),
+                "num_subjects": len(grade_class_ids),
+                "num_sections": sum(
+                    sections_per_class.get(cid, 0) for cid in grade_class_ids
+                ),
                 "num_students": 10 if g == 10 else 0,
             })
+        # Use the pre-parsed self.stats_data (cached in setUp) throughout to
+        # avoid redundant JSON reparsing.
         self.assertContains(self.stats_response, 'stats', status_code=200)
-        self.assertIn('stats', list(self.stats_response.json().keys()))
+        self.assertIn('stats', list(self.stats_data.keys()))
         grades_count = 0
-        for res in self.stats_response.json()['stats']:
+        for res in self.stats_data['stats']:
             self.assertIn('id', list(res.keys()))
             if res['id'] == 'grades':
                 grades_count += 1
