@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from collections import OrderedDict
 from django import forms
 from django.forms import widgets
@@ -8,7 +7,6 @@ from decimal import Decimal
 import datetime
 
 from esp.users.forms import _states
-from six.moves import zip
 
 import json
 
@@ -516,28 +514,28 @@ all_global_tags = {
     },
     'current_theme_version': {
         'is_boolean': False,
-        'help_text': 'A random hexidecimal string to force browser refreshing of theme files',
+        'help_text': 'A random hexadecimal string to force browser refreshing of theme files',
         'default': "8daf9a",
         'category': 'theme',
         'is_setting': False,
     },
     'current_logo_version': {
         'is_boolean': False,
-        'help_text': 'A random hexidecimal string to force browser refreshing of the logo file',
+        'help_text': 'A random hexadecimal string to force browser refreshing of the logo file',
         'default': "8daf9a",
         'category': 'theme',
         'is_setting': False,
     },
     'current_header_version': {
         'is_boolean': False,
-        'help_text': 'A random hexidecimal string to force browser refreshing of the header file',
+        'help_text': 'A random hexadecimal string to force browser refreshing of the header file',
         'default': "8daf9a",
         'category': 'theme',
         'is_setting': False,
     },
     'current_favicon_version': {
         'is_boolean': False,
-        'help_text': 'A random hexidecimal string to force browser refreshing of the favicon file',
+        'help_text': 'A random hexadecimal string to force browser refreshing of the favicon file',
         'default': "8daf9a",
         'category': 'theme',
         'is_setting': False,
@@ -578,7 +576,7 @@ all_program_tags = {
     },
     'sibling_discount': {
         'is_boolean': False,
-        'help_text': 'The monitary value of the sibling discount',
+        'help_text': 'The monetary value of the sibling discount',
         'default': Decimal(0.00),
         'category': 'learn',
         'is_setting': False, # This is already included in the program settings

@@ -1,7 +1,5 @@
 
 
-from __future__ import absolute_import
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -200,11 +198,10 @@ class AdminReviewApps(ProgramModuleObj):
     @staticmethod
     def getSchedule(program, student):
 
-        schedule = six.u("""
+        schedule = """
 Student schedule for %s:
 
- Time               | Class                   | Room""") % student.name()
-
+ Time               | Class                   | Room""" % student.name()
 
         regs = StudentRegistration.valid_objects().filter(user=student, section__parent_class__parent_program=program, relationship__name='Accepted')
         classes = sorted([x.section.parent_class for x in regs])
@@ -214,12 +211,12 @@ Student schedule for %s:
         for cls in classes:
             rooms = cls.prettyrooms()
             if len(rooms) == 0:
-                rooms = six.u('N/A')
+                rooms = 'N/A'
             else:
-                rooms = six.u(", ").join(rooms)
+                rooms = ", ".join(rooms)
 
-            schedule += six.u("""
-%s|%s|%s""") % (six.u(",").join(cls.friendly_times()).ljust(20),
+            schedule += """
+%s|%s|%s""" % (",".join(cls.friendly_times()).ljust(20),
                cls.title.ljust(25),
                rooms)
 
