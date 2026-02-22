@@ -73,12 +73,19 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-${{ matrix.python-version }}-
     - name: Cache apt packages
+      id: apt-cache
       uses: actions/cache@v4
       with:
-        path: /var/cache/apt/archives/*.deb
+        path: ~/apt-cache
         key: ${{ runner.os }}-apt-${{ hashFiles('esp/packages_base.txt') }}
         restore-keys: |
           ${{ runner.os }}-apt-
+    - name: Restore apt packages from cache
+      run: |
+        mkdir -p ~/apt-cache
+        if [ -n "$(ls ~/apt-cache/*.deb 2>/dev/null)" ]; then
+          sudo cp -n ~/apt-cache/*.deb /var/cache/apt/archives/
+        fi
     - name: Prepare for Installing Dependencies
       run: deploy/ci/before_install
       env:
@@ -89,6 +96,8 @@ jobs:
         PYTHON_VERSION: ${{ matrix.python-version }}
         PIP_CACHE_HIT: ${{ steps.pip-cache.outputs.cache-hit }}
       run: deploy/ci/install
+    - name: Save apt packages to cache
+      run: sudo cp /var/cache/apt/archives/*.deb ~/apt-cache/ 2>/dev/null || true
     - name: Prepare for Test
       env:
         CI_JOB: test
