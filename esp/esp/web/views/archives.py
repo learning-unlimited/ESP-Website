@@ -1,10 +1,5 @@
 
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
-from six.moves import map
-import six
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -57,8 +52,8 @@ class ArchiveFilter(object):
     category = ""
     options = ""
     def __init__(self, category = "", options = ""):
-        self.category = six.text_type(category)
-        self.options  = six.text_type(options)
+        self.category = str(category)
+        self.options  = str(options)
 
     def __str__(self):
         return '%s, %s' % (self.category, self.options)
@@ -196,7 +191,7 @@ def archive_classes(request, category, options, sortorder = None):
     else:
         headings = [item.__dict__[sortorder[0]] for item in results[res_range['start']:res_range['end']]]
 
-    context['headings'] = list({six.text_type(h) for h in headings})
+    context['headings'] = list({str(h) for h in headings})
     context['headings'].sort()
 
     #    Fill in context some more

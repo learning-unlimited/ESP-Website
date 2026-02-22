@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.mailman import add_list_member
 from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
 from esp.middleware import ESPError
@@ -19,8 +18,6 @@ from django.utils import timezone
 from decimal import Decimal
 import json
 from django.conf import settings
-import six
-from six.moves import range
 
 def get_custom_fields():
     result = OrderedDict()
@@ -38,7 +35,7 @@ class ClassCreationValidationError(Exception):
     def __init__(self, reg_form, resource_formset, error_msg):
         self.reg_form = reg_form
         self.resource_formset = resource_formset
-        super(ClassCreationValidationError, self).__init__(error_msg)
+        super().__init__(error_msg)
 
 class ClassCreationController(object):
     def __init__(self, prog):
@@ -225,7 +222,7 @@ class ClassCreationController(object):
 
     def generate_director_mail_context(self, cls):
         new_data = cls.__dict__
-        mail_ctxt = dict(six.iteritems(new_data))
+        mail_ctxt = dict(new_data.items())
 
         mail_ctxt['title'] = cls.title
         mail_ctxt['one'] = cls.parent_program.program_type
@@ -261,7 +258,7 @@ class ClassCreationController(object):
                 teacher_ctxt['college'] = "[Teacher hasn't filled out teacher profile!]"
 
             # Get a list of the programs this person has taught for in the past, if any.
-            teacher_ctxt['taught_programs'] = six.u(', ').join([prog.niceName() for prog in teacher.getTaughtPrograms().order_by('pk').exclude(id=self.program.id)])
+            teacher_ctxt['taught_programs'] = ', '.join([prog.niceName() for prog in teacher.getTaughtPrograms().order_by('pk').exclude(id=self.program.id)])
             mail_ctxt['teachers'].append(teacher_ctxt)
         return mail_ctxt
 

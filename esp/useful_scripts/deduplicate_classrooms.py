@@ -4,10 +4,7 @@
 # and time).
 #
 
-from __future__ import absolute_import
-from __future__ import print_function
 from script_setup import *
-from six.moves import input
 
 ETYPE_CLASSBLOCK = EventType.objects.get(description='Class Time Block')
 RTYPE_CLASSROOM = ResourceType.get_or_create('Classroom')

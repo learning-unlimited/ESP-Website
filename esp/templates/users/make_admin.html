@@ -13,6 +13,12 @@
 
 <p>Select an account to make an administrator.</p>
 
+{% if added_user %}
+<div class="alert alert-success">
+    The account <b>{{ added_user.username }}</b> (<a href="mailto:{{ added_user.email }}">{{ added_user.email }}</a>) was successfully made into an administrator.
+</div>
+{% endif %}
+
 <form action="{{ request.path }}" method="post">
 
 <div id="program_form">

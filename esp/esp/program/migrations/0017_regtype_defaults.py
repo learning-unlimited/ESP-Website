@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
-from __future__ import absolute_import
 from django.db import migrations
-import six
 
 def set_my_defaults(apps, schema_editor):
     defaults_dict = {
@@ -21,14 +18,14 @@ def set_my_defaults(apps, schema_editor):
     for rt in RegistrationType.objects.all():
         if "Priority/" in rt.name:
             prior_num = int(rt.name.split("Priority/")[1])
-            if rt.displayName is None or rt.displayName == six.u(""):
+            if rt.displayName is None or rt.displayName == "":
                 rt.displayName = "Priority %i" % prior_num
-            if rt.description is None or rt.description == six.u(""):
+            if rt.description is None or rt.description == "":
                 rt.description = "Student marked this class as their #%i priority in the two-phase class lottery" % prior_num
         if rt.name in list(defaults_dict.keys()):
-            if rt.displayName is None or rt.displayName == six.u(""):
+            if rt.displayName is None or rt.displayName == "":
                 rt.displayName = defaults_dict[rt.name]["dn"]
-            if rt.description is None or rt.description == six.u(""):
+            if rt.description is None or rt.description == "":
                 rt.description = defaults_dict[rt.name]["des"]
         rt.save()
 

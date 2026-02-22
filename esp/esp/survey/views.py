@@ -1,8 +1,5 @@
 " A view to show surveys. "
 
-from __future__ import absolute_import
-from __future__ import division
-import six
 __author__    = "$LastChangedBy$"
 __date__      = "$LastChangedDate$"
 __rev__       = "$LastChangedRevision$"
@@ -246,7 +243,6 @@ def get_survey_info(request, tl, program, instance):
 
     return (user, prog, surveys)
 
-
 def display_survey(user, prog, surveys, request, tl, format, template = 'survey/review.html', context = {}):
     """ Wrapper doing the necessary work for the survey output. """
     from esp.program.models import ClassSubject, ClassSection
@@ -306,7 +302,6 @@ def delist(x):
         return ', '.join(x)
     else:
         return x
-
 
 def dump_survey_xlwt(user, prog, surveys, request, tl):
     from esp.program.models import ClassSubject, ClassSection
@@ -482,7 +477,6 @@ def top_classes(request, tl, program, instance):
         return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
 
     survey = surveys[0]
-
 
     if tl == 'manage':
         classes = prog.classes()
