@@ -68,9 +68,9 @@ class TeacherEventsModule(ProgramModuleObj):
     def teachers(self, QObject = False):
         """ Returns lists of teachers who've signed up for interviews and for teacher training. """
         q_objs = {
-            name: Q(useravailability__event__event_type=obj,
+            obj.description: Q(useravailability__event__event_type=obj,
                     useravailability__event__program=self.program)
-            for name, obj in EventType.teacher_event_types().items()
+            for obj in EventType.objects.filter(is_teacher_type=True)
         }
         if QObject:
             return q_objs
@@ -82,20 +82,19 @@ class TeacherEventsModule(ProgramModuleObj):
 
     def teacherDesc(self):
         return {
-            'interview': """Teachers who have signed up for an interview""",
-            'training':  """Teachers who have signed up for teacher training""",
+            obj.description: "Teachers who have signed up for %s" % obj.description.lower()
+            for obj in EventType.objects.filter(is_teacher_type=True)
         }
 
     # Helper functions
-    def getTimes(self, type):
+    def getTimes(self, event_type):
         """ Get events of the program's teacher interview/training slots. """
-        return Event.objects.filter( program=self.program, event_type=EventType.teacher_event_types()[type] ).order_by('start')
+        return Event.objects.filter( program=self.program, event_type=event_type ).order_by('start')
 
     def entriesByTeacher(self, user):
         return {
-            name: UserAvailability.objects.filter(
-                event__event_type=obj, user=user, event__program=self.program)
-            for name, obj in EventType.teacher_event_types().items()
+            obj.description: UserAvailability.objects.filter(user=user, event__event_type=obj, event__program=self.program)
+            for obj in EventType.objects.filter(is_teacher_type=True)
         }
 
     # Per-user info
@@ -110,7 +109,10 @@ class TeacherEventsModule(ProgramModuleObj):
         else:
             user = get_current_request().user
         entries = self.entriesByTeacher(user)
-        return (self.getTimes('interview').count() == 0 or entries['interview'].count() > 0) and (self.getTimes('training').count() == 0 or entries['training'].count() > 0)
+        for obj in EventType.objects.filter(is_teacher_type=True):
+            if self.getTimes(obj).exists() and not entries[obj.description].exists():
+                return False
+        return True
 
     # Views
     @main_call
@@ -122,36 +124,34 @@ class TeacherEventsModule(ProgramModuleObj):
             if form.is_valid():
                 data = form.cleaned_data
                 # Remove old bits
-                event_types = list(EventType.teacher_event_types().values())
+                event_types = EventType.objects.filter(is_teacher_type=True)
                 UserAvailability.objects.filter(user=request.user, event__event_type__in=event_types).delete()
-                # Register for interview
-                if data['interview']:
-                    ua, created = UserAvailability.objects.get_or_create( user=request.user, event=data['interview'], role=self.availability_role())
-                    # Send the directors an email
-                    if self.program.director_email and created:
-                        event_name = data['interview'].description
-                        send_mail('['+self.program.niceName()+'] Teacher Interview for ' + request.user.first_name + ' ' + request.user.last_name + ': ' + event_name, \
-                              """Teacher Interview Registration Notification\n--------------------------------- \n\nTeacher: %s %s\n\nTime: %s\n\n""" % \
-                              (request.user.first_name, request.user.last_name, event_name), \
-                              '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER), \
-                              [self.program.getDirectorCCEmail()], True, extra_headers = {'Reply-To': request.user.get_email_sendto_address()})
-
-                # Register for training
-                if data['training']:
-                    ua, created = UserAvailability.objects.get_or_create( user=request.user, event=data['training'], role=self.availability_role())
+                for event_type in event_types:
+                    field_name = 'event_type_%d' % event_type.id
+                    event = data.get(field_name)
+                    if event:
+                        ua, created = UserAvailability.objects.get_or_create( user=request.user, event=event, role=self.availability_role())
+                        # Send the directors an email
+                        if self.program.director_email and created and 'interview' in event_type.description.lower():
+                            event_name = event.description
+                            send_mail('['+self.program.niceName()+'] Teacher Interview for ' + request.user.first_name + ' ' + request.user.last_name + ': ' + event_name, \
+                                  """Teacher Interview Registration Notification\n--------------------------------- \n\nTeacher: %s %s\n\nTime: %s\n\n""" % \
+                                  (request.user.first_name, request.user.last_name, event_name), \
+                                  '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER), \
+                                  [self.program.getDirectorCCEmail()], True, extra_headers = {'Reply-To': request.user.get_email_sendto_address()})
                 return self.goToCore(tl)
         else:
             data = {}
             entries = self.entriesByTeacher(request.user)
-            if entries['interview'].count() > 0:
-                data['interview'] = entries['interview'][0].event.id
-            if entries['training'].count() > 0:
-                data['training'] = entries['training'][0].event.id
+            for event_type in EventType.objects.filter(is_teacher_type=True):
+                desc = event_type.description
+                if entries[desc].count() > 0:
+                    data['event_type_%d' % event_type.id] = entries[desc][0].event.id
             form = TeacherEventSignupForm(self, initial=data)
         return render_to_response( self.baseDir()+'event_signup.html', request, {'prog':prog, 'form': form} )
 
     def isStep(self):
-        return Event.objects.filter(program=self.program, event_type__in=list(EventType.teacher_event_types().values())).exists()
+        return Event.objects.filter(program=self.program, event_type__is_teacher_type=True).exists()
 
     class Meta:
         proxy = True

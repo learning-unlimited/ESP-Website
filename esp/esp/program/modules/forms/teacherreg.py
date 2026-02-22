@@ -332,9 +332,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
                 hide_field(self.fields[field], default)
 
 class TeacherEventSignupForm(FormWithRequiredCss):
-    """ Form for teachers to pick interview and teacher training times. """
-    interview = forms.ChoiceField( label='Interview', choices=[], required=False, widget=BlankSelectWidget(blank_choice=('', 'Pick an interview timeslot...')) )
-    training  = forms.ChoiceField( label='Teacher Training', choices=[], required=False, widget=BlankSelectWidget(blank_choice=('', 'Pick a teacher training session...')) )
+    """ Form for teachers to pick event times. """
 
     def _slot_is_taken(self, event):
         """ Determine whether an interview slot is taken. """
@@ -357,32 +355,40 @@ class TeacherEventSignupForm(FormWithRequiredCss):
         super().__init__(*args, **kwargs)
         self.module = module
         self.user = get_current_request().user
+        from esp.cal.models import EventType
 
-        interview_times = module.getTimes('interview')
-        if interview_times.count() > 0:
-            self.fields['interview'].choices = [ (x.id, x.description) for x in interview_times if self._slot_is_available(x) ]
-        else:
-            self.fields['interview'].widget = forms.HiddenInput()
+        self.event_types = EventType.objects.filter(is_teacher_type=True)
 
-        training_times = module.getTimes('training')
-        if training_times.count() > 0:
-            self.fields['training'].choices = [ (x.id, x.description) for x in training_times if not self._slot_too_late(x) ]
-        else:
-            self.fields['training'].widget = forms.HiddenInput()
-
-    def clean_interview(self):
-        event_id = self.cleaned_data['interview']
-        try:
-            data = Event.objects.get(id=event_id)
-        except ValueError:
-            return None
-        if not self._slot_is_available(data):
-            raise forms.ValidationError('That time is taken; please select a different one.')
-        return data
-
-    def clean_training(self):
-        event_id = self.cleaned_data['training']
-        try:
-            return Event.objects.get(id=event_id)
-        except ValueError:
-            return None
+        for event_type in self.event_types:
+            field_name = 'event_type_%d' % event_type.id
+            times = module.getTimes(event_type)
+            if times.count() > 0:
+                is_interview = 'interview' in event_type.description.lower()
+                choices = [ (x.id, x.description) for x in times if (self._slot_is_available(x) if is_interview else not self._slot_too_late(x)) ]
+                self.fields[field_name] = forms.ChoiceField(
+                    label=event_type.description,
+                    choices=choices,
+                    required=False,
+                    widget=BlankSelectWidget(blank_choice=('', 'Pick a %s...' % event_type.description.lower()))
+                )
+            else:
+                self.fields[field_name] = forms.ChoiceField(required=False, widget=forms.HiddenInput())
+        
+    def clean(self):
+        cleaned_data = self.cleaned_data
+        for event_type in getattr(self, 'event_types', []):
+            field_name = 'event_type_%d' % event_type.id
+            event_id = cleaned_data.get(field_name)
+            if event_id:
+                try:
+                    event = Event.objects.get(id=event_id)
+                except ValueError:
+                    continue
+                is_interview = 'interview' in event_type.description.lower()
+                if is_interview and not self._slot_is_available(event):
+                    self.add_error(field_name, 'That time is taken; please select a different one.')
+                else:
+                    cleaned_data[field_name] = event
+            else:
+                cleaned_data[field_name] = None
+        return cleaned_data
