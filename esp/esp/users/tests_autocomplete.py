@@ -12,7 +12,7 @@ class AutocompleteTest(TestCase):
         # Create a program
         from django.apps import apps
         Program = apps.get_model('program', 'Program')
-        self.program = Program.objects.create(name="Test Program", url="testprog")
+        self.program = Program.objects.create(name="Test Program", url="testprog", grade_min=7, grade_max=12)
         # Ensure program has some dates so current_schoolyear works
         from esp.cal.models import Event, EventType
         et, _ = EventType.objects.get_or_create(description='Class Time Block')

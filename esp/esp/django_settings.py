@@ -69,7 +69,7 @@ STATIC_URL = '/static/'
 
 LOGIN_REDIRECT_URL = '/'
 
-LOG_FILE = "/tmp/esp-website.log"
+LOG_FILE = "esp-website.log"
 # Set to DEBUG for more spam or WARNING for less.  Note: setting to 'DEBUG'
 # when DEBUG=True will cause every query to be logged (to the
 # django.db.backends logger).
@@ -118,7 +118,7 @@ DATABASES = {'default':
 ##########################
 EMAIL_HOST   = 'localhost'
 EMAIL_PORT   = '25'
-SERVER_EMAIL = 'server@{}'.format(os.uname()[1])
+SERVER_EMAIL = 'server@{}'.format(os.name)
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 EMAIL_HOST_SENDER = EMAIL_HOST
 EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
@@ -241,7 +241,7 @@ INSTALLED_APPS = (
     'esp.survey',
     'esp.accounting.apps.AccountingConfig',
     'esp.customforms.apps.CustomformsConfig',
-    'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
+    'esp.utils.apps.UtilsConfig',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.tagdict',
     'esp.seltests',
     'esp.themes',

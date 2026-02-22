@@ -458,6 +458,7 @@ class BaseESPUser(object):
         return ''
 
     def getTaughtPrograms(self):
+        from esp.program.models import Program
         taught_programs = Program.objects.filter(classsubject__teachers=self)
         taught_programs = taught_programs.distinct()
         return taught_programs
@@ -767,6 +768,7 @@ class BaseESPUser(object):
             rts = RegistrationType.objects.all()
 
         srs = self.studentregistration_set.filter(relationship__in=rts)
+        from esp.program.models import StudentRegistration
         if valid_only:
             srs = srs.filter(StudentRegistration.is_valid_qobject())
         sections = ClassSection.objects.filter(id__in=srs.values_list('section', flat=True))
@@ -796,6 +798,7 @@ class BaseESPUser(object):
         return self.getSections(None, verbs=['Enrolled'])
 
     def getLearntPrograms(self):
+        from esp.program.models import Program
         learnt_programs = Program.objects.filter(id__in = list(self.getSections().values_list('parent_class__parent_program', flat = True)))
         return learnt_programs
 
@@ -1197,7 +1200,7 @@ class BaseESPUser(object):
     @staticmethod
     def getRankInClass(student, subject, default=10):
         from esp.program.models.app_ import StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentApplication
-        from esp.program.models import StudentRegistration
+        from esp.program.models import StudentRegistration, ClassSubject
         if isinstance(subject, int):
             subject = ClassSubject.objects.get(id=subject)
         if not StudentAppQuestion.objects.filter(subject=subject).count():
@@ -2822,6 +2825,7 @@ class Permission(ExpirableModel):
 
     @classmethod
     def program_by_perm(cls, user, perm):
+        from esp.program.models import Program
         """Find all program that user has perm"""
         implies = [perm]
         implies+=[x for x, y in cls.implications.items() if perm in y]
@@ -2859,6 +2863,7 @@ class Permission(ExpirableModel):
         if m:
             (section, prog1, prog2, rest) = m.groups()
             prog_url = prog1 + "/" + prog2
+            from esp.program.models import Program, ClassSubject
             try:
                 prog = Program.objects.get(url=prog_url)
             except Program.DoesNotExist:
