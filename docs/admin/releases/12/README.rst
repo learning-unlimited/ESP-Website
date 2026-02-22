@@ -24,7 +24,7 @@ We've implemented a set of tools for teachers and admins to manage student class
    - The onsite checkin page now lists when a student was checked in and checked out. Checkins or checkouts can now be undone on this page. Students can also be checked out from this page by unchecking the "Attending" box.
    - Checked out students are accounted for in the onsite attendance module (#2 above).
    - The barcode checkin page will not raise an error if a student is checked out (and will then check them back in).
-   - Attendance numbers in the grid-based class canges and grid-based status pages are now based on attending students that are not checked out.
+   - Attendance numbers in the grid-based class changes and grid-based status pages are now based on attending students that are not checked out.
    - There are now new "Currently checked out students" and "Currently checked in students" options for the comm panel, arbitrary user list, and group text panel.
    - The teacher attendance page (#1 above) will mark a student as checked in again if they have been checked out.
 
@@ -144,13 +144,13 @@ Minor new features
 - Added "View on site" links to a number of user-related pages in the administration pages.
 - Added duration-from-now labels next to deadline form fields.
 - Made the text on the profile form clearer when users can not change their grade/dob.
-- Added emailcodes to the subjects of all emails to class/section lists (i.e. "[prefix] [emailcode] Subject"). The prefix can be changed in the admin pages (and will be omited from the subject if not set).
+- Added emailcodes to the subjects of all emails to class/section lists (i.e. "[prefix] [emailcode] Subject"). The prefix can be changed in the admin pages (and will be omitted from the subject if not set).
 - Changed the theme of the administration pages. Each section on the main page is now moveable, collapsible, and closable.
 - Added credit card transaction IDs to the Credit Card Viewpay Module.
 - Added global tags to change the options for the shirt size (one tag each for teachers, students, and volunteers), shirt style (universal tag), and food preference (only applicable to students) profile form fields.
 - Added a big board to the phase zero management page to track student lottery registration over time.
 - Added an option to supply a list of winners for the phase zero student lottery (instead of the default random algorithm).
-- Moved the schedule snippets that you can include in comm panel emails to templates, allowing them to be overriden.
+- Moved the schedule snippets that you can include in comm panel emails to templates, allowing them to be overridden.
 - Added a class registration filter to the comm panel, group text, and arbitrary user list modules.
 - Added tags "student_profile_hide_fields", "volunteer_profile_hide_fields", "educator_profile_hide_fields", and "guardian_profile_hide_fields" that allow any fields in the profile forms to be hidden (except for email address all profile forms and grade for the student profile form).
 - Made the scheduling diagnostics page more user-friendly and prettier.

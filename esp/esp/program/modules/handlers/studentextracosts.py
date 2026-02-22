@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from six.moves import range
-from six.moves import map
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -50,13 +47,12 @@ from esp.utils.web import render_to_response
 from esp.utils.widgets import ChoiceWithOtherField, RadioSelectWithData
 from esp.utils.query_utils import nest_Q
 
-
 class CostItem(forms.Form):
     def __init__(self, *args, **kwargs):
         required = kwargs.pop('required', False)
         cost = kwargs.pop('cost', 0)
         for_finaid = kwargs.pop('for_finaid', False)
-        super(CostItem, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['cost'] = forms.BooleanField(required=required, label='', widget=forms.CheckboxInput(attrs={'class': 'cost', 'data-cost': cost, 'data-for_finaid': 'true' if for_finaid else 'false'}))
 
 class MultiCostItem(forms.Form):
@@ -66,7 +62,7 @@ class MultiCostItem(forms.Form):
         for_finaid = kwargs.pop('for_finaid', False)
         max_quantity = kwargs.pop('max_quantity', 10)
         min_quantity = 1 if required else 0
-        super(MultiCostItem, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['count'] = forms.IntegerField(required=required, initial=min_quantity, max_value=max_quantity, min_value=min_quantity, widget=forms.NumberInput(attrs={'class': 'multicost input-mini', 'data-cost': cost, 'data-for_finaid': 1 if for_finaid else 0}))
 
 class MultiSelectCostItem(forms.Form):
@@ -76,7 +72,7 @@ class MultiSelectCostItem(forms.Form):
         for_finaid = kwargs.pop('for_finaid', False)
         is_custom = kwargs.pop('is_custom', False)
         option_data = kwargs.pop('option_data', {})
-        super(MultiSelectCostItem, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if is_custom:
             self.fields['option'] = ChoiceWithOtherField(required=required, label='', choices=choices, option_data=option_data)
         else:
@@ -97,7 +93,7 @@ class StudentExtraCosts(ProgramModuleObj):
             }
 
     def __init__(self, *args, **kwargs):
-        super(StudentExtraCosts, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.event = "extra_costs_done"
 
     def studentDesc(self):

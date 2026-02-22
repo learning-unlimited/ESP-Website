@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.views import LoginView
@@ -23,7 +22,6 @@ from .registration import user_registration_phase1, user_registration_phase2, re
 from .usersearch import get_user_list, get_user_checklist, search_for_user, getQForUser
 from esp.utils.web import render_to_response
 from esp.web.views.main import DefaultQSDView
-import six
 
 
 #   This is a huge hack while we figure out what to do about logins and cookies.
@@ -253,9 +251,9 @@ def unsubscribe_oneclick(request, username, token):
 
 @admin_required
 def morph_into_user(request):
-    morph_user = ESPUser.objects.get(id=request.GET[six.u('morph_user')])
+    morph_user = ESPUser.objects.get(id=request.GET['morph_user'])
     try:
-        onsite = Program.objects.get(id=request.GET[six.u('onsite')])
+        onsite = Program.objects.get(id=request.GET['onsite'])
     except (KeyError, ValueError, Program.DoesNotExist):
         onsite = None
     request.user.switch_to_user(request,
