@@ -71,13 +71,11 @@ jobs:
           ${{ runner.os }}-pip-${{ matrix.python-version }}-
           ${{ runner.os }}-pip-
     - name: Get apt packages list
-      if: ${{ matrix.ci_job == 'test' }}
       id: apt-action
       run: |
         PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^libpq-dev' | grep -v '^.*pip' | tr '\n' ' ')
         echo "packages=$PKGS" >> $GITHUB_OUTPUT
     - name: Cache apt packages
-      if: ${{ matrix.ci_job == 'test' }}
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
         packages: ${{ steps.apt-action.outputs.packages }}

@@ -12,6 +12,12 @@
 
   {% block main %}
 
+{% if settings.MAINTENANCE_READ_ONLY %}
+<div class="alert alert-warning" style="margin: 0 0 1em 0;">
+  {{ settings.MAINTENANCE_READ_ONLY_BANNER_MESSAGE }}
+</div>
+{% endif %}
+
     <div class="container">
       <div class="row-fluid">
         {% block sidebar %}
