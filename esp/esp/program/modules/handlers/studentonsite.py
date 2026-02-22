@@ -203,12 +203,12 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
             for module in modules:
                 # If completed all required modules so far...
                 if context['completedAll']:
-                    if not module.isCompleted() and module.isRequired():
+                    if not module.isCompleted(user) and module.isRequired():
                         context['completedAll'] = False
 
             records = StudentRegCore.get_reg_records(user, prog, 'learn')
 
-            context['modules'] = [x for x in modules if (x.isRequired() and not x.isCompleted())]
+            context['modules'] = [x for x in modules if (x.isRequired() and not x.isCompleted(user))]
             context['records'] = [x for x in records if not x['isCompleted']]
 
             if Tag.getBooleanTag('student_self_checkin_paid', program = prog):

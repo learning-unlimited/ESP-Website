@@ -759,7 +759,7 @@ class ResourceModule(ProgramModuleObj):
 
     setup_title = "Set up timeslots, resources, and classrooms"
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         return self.program.getTimeSlots().exists() and self.program.getResourceTypes().exists() and self.program.getClassrooms().exists()
 
     class Meta:

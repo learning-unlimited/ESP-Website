@@ -200,7 +200,7 @@ class ProgramModuleObj(models.Model):
                     m.request = request
                     if request.user.updateOnsite(request) and not isinstance(m, RegProfileModule):
                         continue
-                    if not isinstance(m, CoreModule) and not m.isCompleted() and m.main_view:
+                    if not isinstance(m, CoreModule) and not m.isCompleted(request.user) and m.main_view:
                         return m.main_view_fn(request, tl, one, two, call_txt, extra, prog)
 
         #   If the module isn't "core" or the user did all required steps,
@@ -339,7 +339,19 @@ class ProgramModuleObj(models.Model):
         return self.module.handler in ['OnSiteCheckinModule', 'TeacherCheckinModule', 'OnSiteCheckoutModule',
                                        'OnsiteClassSchedule', 'OnSiteClassList', 'OnSiteRegister',
                                        'OnSiteAttendance', 'OnsitePaidItemsModule']
-    def isCompleted(self):
+    def _resolve_user(self, user):
+        """Return the user to use for per-user module logic.
+
+        Precedence: explicit argument > self.user (set by getModules) >
+        get_current_request().user (fallback for template calls).
+        """
+        if user is not None:
+            return user
+        if hasattr(self, 'user'):
+            return self.user
+        return get_current_request().user
+
+    def isCompleted(self, user=None):
         return False
 
     def isRequired(self):

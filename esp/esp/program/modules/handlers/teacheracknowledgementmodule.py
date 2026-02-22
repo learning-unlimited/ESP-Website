@@ -38,11 +38,8 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
             'choosable': 1,
         }
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return Record.objects.filter(user=user,
                                      program=self.program,
                                      event__name="teacheracknowledgement").exists()
@@ -62,7 +59,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
                 return self.goToCore(tl)
             else:
                 rec.delete()
-        elif self.isCompleted():
+        elif self.isCompleted(request.user):
             context['form'] = teacheracknowledgementform_factory(prog)({'acknowledgement': True})
         else:
             context['form'] = teacheracknowledgementform_factory(prog)()

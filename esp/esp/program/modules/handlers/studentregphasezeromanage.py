@@ -278,7 +278,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
     setup_title = "Set up the 'program size by grade' tag for the student lottery"
     setup_path = "tags/learn"
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         return Tag.getProgramTag("program_size_by_grade", self.program) is not None
 
     class Meta:

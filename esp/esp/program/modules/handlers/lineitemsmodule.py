@@ -136,7 +136,7 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
 
     setup_title = "Set up custom items for purchase"
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         return self.program.lineitemtype_set.exclude(text__in=exclude_line_items).exists()
 
     class Meta:

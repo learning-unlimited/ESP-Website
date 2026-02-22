@@ -96,12 +96,9 @@ class TeacherCustomFormModule(ProgramModuleObj):
             'teacher_custom_form': """Teachers who have completed the custom form""",
         }
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         """Return true if user has filled out the teacher custom form."""
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+        user = self._resolve_user(user)
         return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
 
     @staticmethod
@@ -141,7 +138,7 @@ class TeacherCustomFormModule(ProgramModuleObj):
             raise ESPError(error, log=False)
 
         #   If the user already filled out the form, use their earlier response for the initial values
-        if self.isCompleted():
+        if self.isCompleted(request.user):
             prev_result_data = self.get_prev_data(cf, request)
             return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=TeacherCustomComboForm, initial_data = prev_result_data,
                                extra_context = {'prog': prog, 'qsd_name': 'teach:customform_header', 'module': self.module.link_title}, program = prog)

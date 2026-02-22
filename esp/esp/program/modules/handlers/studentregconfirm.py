@@ -55,11 +55,8 @@ class StudentRegConfirm(ProgramModuleObj):
     def do_confirmreg(self, request, tl, one, two, module, extra, prog):
         return HttpResponseRedirect("confirmreg")
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return self.program.isConfirmed(user)
 
     def hideNotRequired(self):

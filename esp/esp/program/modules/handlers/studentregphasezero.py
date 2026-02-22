@@ -64,11 +64,8 @@ class StudentRegPhaseZero(ProgramModuleObj):
     def studentDesc(self):
         return {'phasezero': """Students who have entered the Student Lottery"""}
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return user.can_skip_phase_zero(self.program)
 
     @classmethod

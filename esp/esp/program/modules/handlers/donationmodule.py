@@ -116,12 +116,9 @@ class DonationModule(ProgramModuleObj):
         (donate_type, created) = LineItemType.objects.get_or_create(program=self.program, text=self.get_setting('donation_text'))
         return donate_type
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         """Whether the user made a decision about donating to LU."""
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+        user = self._resolve_user(user)
         return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
 
     def students(self, QObject = False):
