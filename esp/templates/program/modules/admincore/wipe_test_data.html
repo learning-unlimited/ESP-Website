@@ -1,0 +1,114 @@
+{% extends "main.html" %}
+
+{% block title %}{{ prog.niceName }} — Wipe Test Data{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+<h1>Wipe Test Registration Data — {{ prog.niceName }}</h1>
+
+<div class="alert alert-warning">
+    <strong>Warning:</strong> This action permanently and irreversibly deletes
+    registration data for a single user. Use this only to reset test accounts.
+</div>
+
+{% if error %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+        {{ error }}
+    </div>
+{% endif %}
+
+{% if success %}
+    <div class="alert alert-success">
+        <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+        Successfully deleted all test data for
+        <strong>{{ target_user.username }}</strong>
+        ({{ target_user.get_full_name }}) in <strong>{{ prog.niceName }}</strong>.
+    </div>
+    <table class="table table-bordered" style="max-width: 560px;">
+        <thead><tr><th>Category</th><th>Deleted</th></tr></thead>
+        <tbody>
+            <tr><td>Student registrations</td><td>{{ counts.student_registrations }}</td></tr>
+            <tr><td>Subject interests</td><td>{{ counts.subject_interests }}</td></tr>
+            <tr><td>Phase Zero records</td><td>{{ counts.phase_zero_records }}</td></tr>
+            <tr><td>Financial aid requests</td><td>{{ counts.financial_aid_requests }}</td></tr>
+            <tr><td>Student application responses</td><td>{{ counts.student_applications }}</td></tr>
+            <tr><td>Teacher classes deleted (sole teacher)</td><td>{{ counts.taught_classes_deleted }}</td></tr>
+            <tr><td>Teacher classes removed from (co-taught)</td><td>{{ counts.taught_classes_removed }}</td></tr>
+            <tr><td>Moderator records</td><td>{{ counts.moderator_records }}</td></tr>
+            <tr><td>Availabilities</td><td>{{ counts.availabilities }}</td></tr>
+            <tr><td>Volunteer offers</td><td>{{ counts.volunteer_offers }}</td></tr>
+            <tr><td>Registration profiles</td><td>{{ counts.registration_profiles }}</td></tr>
+            <tr><td>Records</td><td>{{ counts.records }}</td></tr>
+            <tr><td>Custom form responses</td><td>{{ counts.custom_form_responses }}</td></tr>
+            <tr><th>Total</th><th>{{ total }}</th></tr>
+        </tbody>
+    </table>
+    <a href="/manage/{{ prog.getUrlBase }}/wipe_test_data/" class="btn btn-default">Wipe another user</a>
+
+{% elif preview %}
+    <p>The following data will be <strong>permanently deleted</strong> for
+    <strong>{{ target_user.username }}</strong> ({{ target_user.get_full_name }})
+    in <strong>{{ prog.niceName }}</strong>:</p>
+
+    <table class="table table-bordered" style="max-width: 560px;">
+        <thead><tr><th>Category</th><th>Count</th></tr></thead>
+        <tbody>
+            <tr><td>Student registrations</td><td>{{ counts.student_registrations }}</td></tr>
+            <tr><td>Subject interests</td><td>{{ counts.subject_interests }}</td></tr>
+            <tr><td>Phase Zero records</td><td>{{ counts.phase_zero_records }}</td></tr>
+            <tr><td>Financial aid requests</td><td>{{ counts.financial_aid_requests }}</td></tr>
+            <tr><td>Student application responses</td><td>{{ counts.student_applications }}</td></tr>
+            <tr><td>Teacher classes deleted (sole teacher)</td><td>{{ counts.taught_classes_deleted }}</td></tr>
+            <tr><td>Teacher classes removed from (co-taught)</td><td>{{ counts.taught_classes_removed }}</td></tr>
+            <tr><td>Moderator records</td><td>{{ counts.moderator_records }}</td></tr>
+            <tr><td>Availabilities</td><td>{{ counts.availabilities }}</td></tr>
+            <tr><td>Volunteer offers</td><td>{{ counts.volunteer_offers }}</td></tr>
+            <tr><td>Registration profiles</td><td>{{ counts.registration_profiles }}</td></tr>
+            <tr><td>Records</td><td>{{ counts.records }}</td></tr>
+            <tr><td>Custom form responses</td><td>{{ counts.custom_form_responses }}</td></tr>
+            <tr><th>Total</th><th>{{ total }}</th></tr>
+        </tbody>
+    </table>
+
+    {% if total == 0 %}
+        <div class="alert alert-info">No data found for this user in this program.</div>
+        <a href="/manage/{{ prog.getUrlBase }}/wipe_test_data/" class="btn btn-default">Try another user</a>
+    {% else %}
+        <form action="/manage/{{ prog.getUrlBase }}/wipe_test_data/" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="username" value="{{ username }}" />
+            <input type="hidden" name="confirmed" value="1" />
+            <p>
+                <button type="submit" class="btn btn-danger"
+                    onclick="return confirm('Are you absolutely sure? This will permanently delete {{ total }} record(s) for {{ target_user.username }}. This cannot be undone.');">
+                    Confirm — permanently delete {{ total }} record(s) for {{ target_user.username }}
+                </button>
+                <a href="/manage/{{ prog.getUrlBase }}/wipe_test_data/" class="btn btn-default">Cancel</a>
+            </p>
+        </form>
+    {% endif %}
+
+{% else %}
+    <p>Enter the username of the test account whose registration data you want to
+    wipe for <strong>{{ prog.niceName }}</strong>. Only data associated with this
+    specific program will be affected.</p>
+
+    <form action="/manage/{{ prog.getUrlBase }}/wipe_test_data/" method="post" style="max-width: 400px;">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="id_username">Username</label>
+            <input type="text" id="id_username" name="username" class="form-control"
+                   placeholder="e.g. testuser123" required autofocus />
+        </div>
+        <button type="submit" class="btn btn-warning">Look up user &rarr;</button>
+    </form>
+{% endif %}
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}
