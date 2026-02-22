@@ -1,4 +1,3 @@
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -170,7 +169,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @meets_deadline('/Webapp')
     def onsiteclearslot(self, request, tl, one, two, module, extra, prog):
         result = StudentClassRegModule.clearslot_logic(request, tl, one, two, module, extra, prog)
-        if isinstance(result, six.string_types):
+        if isinstance(result, str):
             raise ESPError(result, log=False)
         else:
             return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')

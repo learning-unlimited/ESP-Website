@@ -1,6 +1,5 @@
 
 from django.utils.encoding import python_2_unicode_compatible
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -110,9 +109,9 @@ class LineItemType(models.Model):
 
     def __str__(self):
         if self.amount_dec:
-            return six.u('%s for %s ($%s)') % (self.text, self.program, self.amount_dec)
+            return '%s for %s ($%s)' % (self.text, self.program, self.amount_dec)
         else:
-            return six.u('%s for %s') % (self.text, self.program)
+            return '%s for %s' % (self.text, self.program)
 
     class Meta:
         ordering = ('-program_id',)

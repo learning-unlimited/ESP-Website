@@ -1,4 +1,3 @@
-import six
 from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -143,7 +142,7 @@ class StudentRegSanityController(object):
             print('-------------Known Bugs-----------------')
             print("Guys, I'm not course 6 for a reason~shulinye")
             return None
-        if isinstance(checks, six.string_types):
+        if isinstance(checks, str):
             checks = [checks]
         if csvlog:
             import csv

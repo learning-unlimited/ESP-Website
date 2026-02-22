@@ -6,7 +6,6 @@
 from script_setup import *
 
 from esp.dbmail.models import send_mail
-from six.moves import input
 
 program = Program.objects.get(url='Splash/2015')
 

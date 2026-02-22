@@ -4,7 +4,6 @@ from django import template
 from django.contrib.auth.models import User, AnonymousUser
 
 from esp.miniblog.views import get_visible_announcements
-from six.moves import zip
 
 __all__ = ['MiniblogNode', 'miniblog_for_user']
 
