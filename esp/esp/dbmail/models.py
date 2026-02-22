@@ -46,6 +46,7 @@ from django.db.models import Q
 from argcache import cache_function
 from esp.middleware import ESPError
 from datetime import datetime
+from django.utils import timezone
 from esp.db.fields import AjaxForeignKey
 
 from esp.users.models import PersistentQueryFilter, ESPUser
@@ -212,7 +213,7 @@ class MessageRequest(models.Model):
     # Use `default` instead of `auto_now_add`, so that the migration creating
     # this field can set times in the past.
     created_at = models.DateTimeField(
-        default=datetime.now, null=False, blank=False, editable=False,
+        default=timezone.now, null=False, blank=False, editable=False,
         auto_now_add=False, help_text=_MESSAGE_CREATED_AT_HELP_TEXT,
     )
 
@@ -265,7 +266,7 @@ class MessageRequest(models.Model):
         """
         if orm_class is None:
             orm_class = cls
-        return orm_class.objects.filter(Q(processed_by__isnull=True) | Q(processed_by__lt=datetime.now()), processed=False).update(processed=True)
+        return orm_class.objects.filter(Q(processed_by__isnull=True) | Q(processed_by__lt=timezone.now()), processed=False).update(processed=True)
 
     def parseSmartText(self, text, user):
         """ Takes a text and user, and, within the confines of this message, will make it better. """
@@ -451,7 +452,7 @@ class TextOfEmail(models.Model):
         else:
             extra_headers = {}
 
-        now = datetime.now()
+        now = timezone.now()
 
         try:
             send_mail(self.subject,
@@ -497,7 +498,7 @@ class TextOfEmail(models.Model):
         """
         if orm_class is None:
             orm_class = cls
-        now = datetime.now()
+        now = timezone.now()
         return orm_class.objects.filter(Q(sent_by__isnull=True) | Q(sent_by__lt=now), sent__isnull=True, tries__gte=min_tries).update(sent=now)
 
     class Meta:

@@ -59,6 +59,7 @@ from esp.program.setup import prepare_program, commit_program
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 
 from datetime import datetime, timedelta
+from django.utils import timezone
 from decimal import Decimal
 from random import sample
 import hashlib
@@ -368,7 +369,7 @@ class ProgramHappenTest(TestCase):
         self.assertTrue( user_obj.getTaughtSections().count() == 0, "User tubbeachubber is teaching sections that don't exist")
 
         timeslot_type = EventType.get_from_desc('Class Time Block')
-        now = datetime.now()
+        now = timezone.now()
         self.timeslot = Event.objects.create(program=self.prog, description='Now', short_description='Right now',
             start=now, end=now+timedelta(0, 3600), event_type=timeslot_type )
 

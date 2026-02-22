@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from datetime import datetime
+from django.utils import timezone
 
 from django.db import models
 from django.db.models.query import Q
@@ -42,26 +42,26 @@ class ExpirableModel(models.Model):
     """
     Abstract model which any models requiring start/end and expiry should extend.
     """
-    start_date = models.DateTimeField(blank=True, null=True, default=datetime.now,
+    start_date = models.DateTimeField(blank=True, null=True, default=timezone.now,
                                       help_text="If blank, has always started.")
     end_date = models.DateTimeField(blank=True, null=True, default=None,
                                     help_text="If blank, never ends.")
 
     def expire(self, save=True):
-        self.end_date = datetime.now()
+        self.end_date = timezone.now()
         if save:
             self.save()
 
     def unexpire(self, save=True):
         self.end_date = None
-        if self.start_date > datetime.now():
-            self.start_date = datetime.now()
+        if self.start_date > timezone.now():
+            self.start_date = timezone.now()
         if save:
             self.save()
 
     def is_valid(self, when=None):
         if when is None:
-            when = datetime.now()
+            when = timezone.now()
         return (self.start_date is None or self.start_date < when) and \
                (self.end_date is None or self.end_date > when)
 
@@ -72,7 +72,7 @@ class ExpirableModel(models.Model):
     @staticmethod
     def is_valid_qobject(when=None):
         if when is None:
-            when = datetime.now()
+            when = timezone.now()
         qstart = Q(start_date=None) | Q(start_date__lte=when)
         qend = Q(end_date=None) | Q(end_date__gte=when)
         return qstart & qend

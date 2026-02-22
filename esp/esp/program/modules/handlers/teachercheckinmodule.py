@@ -49,6 +49,7 @@ from django.template.loader import get_template
 from django.db.models.aggregates import Min, Max
 from django.db.models.query   import Q
 from datetime import datetime, timedelta, time
+from django.utils import timezone
 
 from django.conf import settings
 
@@ -72,9 +73,9 @@ class TeacherCheckinModule(ProgramModuleObj):
     def checkIn(self, teacher, prog, when=None):
         """Check teacher into program for the rest of the day (given by 'when').
 
-        'when' defaults to datetime.now()."""
+        'when' defaults to timezone.now()."""
         if when is None:
-            when = datetime.now()
+            when = timezone.now()
         if teacher.getTaughtOrModeratingSectionsFromProgram(prog).exists():
             endtime = datetime(when.year, when.month, when.day) + timedelta(days=1, seconds=-1)
             checked_in_already = Record.user_completed(teacher, 'teacher_checked_in', prog, when, only_today=True)
@@ -94,7 +95,7 @@ class TeacherCheckinModule(ProgramModuleObj):
     def undoCheckIn(self, teacher, prog, when=None):
         """Undo what checkIn does"""
         if when is None:
-            when = datetime.now()
+            when = timezone.now()
         records = Record.filter(teacher, 'teacher_checked_in', prog, when, only_today=True)
         if records:
             records.delete()
@@ -118,7 +119,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             form = TeacherCheckinForm()
 
         if when is None:
-            when = datetime.now()
+            when = timezone.now()
         context['now'] = when
 
         context['module'] = self
@@ -252,7 +253,7 @@ class TeacherCheckinModule(ProgramModuleObj):
           when (datetime, optional):    The return reflects the state of
                                         teacher check-ins on this date, as of
                                         this time.
-                                        Defaults to datetime.now().
+                                        Defaults to timezone.now().
           show_flags (bool, optional):  If True, prefetch class flags
                                         information for the list of class
                                         sections.
@@ -275,7 +276,7 @@ class TeacherCheckinModule(ProgramModuleObj):
                       checked in.
         """
         if when is None:
-            when = datetime.now()
+            when = timezone.now()
 
         sections = prog.sections().annotate(begin_time=Min("meeting_times__start")) \
             .filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED, begin_time__isnull=False)

@@ -14,6 +14,7 @@ from collections import OrderedDict
 from django.db import transaction
 
 from datetime import timedelta, datetime
+from django.utils import timezone
 from decimal import Decimal
 import json
 from django.conf import settings
@@ -173,7 +174,7 @@ class ClassCreationController(object):
         email_context = {'teacher': teacher,
                          'timeslots': timeslots,
                          'program': self.program,
-                         'curtime': datetime.now(),
+                         'curtime': timezone.now(),
                          'note': note,
                          'DEFAULT_HOST': settings.DEFAULT_HOST}
         email_contents = render_to_string('program/modules/availabilitymodule/update_email.txt', email_context)

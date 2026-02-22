@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from datetime import datetime
+from django.utils import timezone
 
 from django.db.models.query import Q
 
@@ -63,7 +63,7 @@ def get_visible_announcements(user, limit, tl):
     grand_total = 0
     overflowed = False
     for model in models_to_search:
-        result = model.objects.order_by('-timestamp').filter(Q(highlight_expire__gte = datetime.now()) | Q(highlight_expire__isnull = True)).filter(Q(highlight_begin__lte = datetime.now()) | Q(highlight_begin__isnull = True))
+        result = model.objects.order_by('-timestamp').filter(Q(highlight_expire__gte = timezone.now()) | Q(highlight_expire__isnull = True)).filter(Q(highlight_begin__lte = timezone.now()) | Q(highlight_begin__isnull = True))
 
         if tl:
             result = result.filter(section=tl)

@@ -41,6 +41,7 @@ from django.views.generic.base import TemplateView
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 
 import datetime
+from django.utils import timezone
 import re
 
 from esp.dbmail.models import MessageRequest
@@ -238,7 +239,7 @@ def registration_redirect(request):
         # then check for which programs they have already registered a class
         for prog in user.getTaughtPrograms():
             # only include the program if it hasn't finished yet
-            if prog not in progs and prog.datetime_range()[1] > datetime.datetime.now():
+            if prog not in progs and prog.datetime_range()[1] > timezone.now():
                 progs.append(prog)
     elif user.isVolunteer():
         userrole['name'] = 'Volunteer'
@@ -255,7 +256,7 @@ def registration_redirect(request):
         # then check for which programs they have already registered for a class
         for prog in user.getLearntPrograms():
             # only include the program if it hasn't finished yet
-            if prog not in progs and prog.datetime_range()[1] > datetime.datetime.now():
+            if prog not in progs and prog.datetime_range()[1] > timezone.now():
                 progs.append(prog)
     else:
         progs = []

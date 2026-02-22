@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 
 from collections import defaultdict
 from datetime import datetime, timedelta, date
+from django.utils import timezone
 from pytz import country_names
 import json
 import logging
@@ -1159,7 +1160,7 @@ class BaseESPUser(object):
             subject = ClassSubject.objects.get(id=subject)
         if not StudentAppQuestion.objects.filter(subject=subject).count():
             return 10
-        elif StudentRegistration.objects.filter(section__parent_class=subject, relationship__name="Rejected", end_date__gte=datetime.now(), user=student).exists() or not StudentApplication.objects.filter(user=student, program__classsubject = subject).exists() or not StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student).exists():
+        elif StudentRegistration.objects.filter(section__parent_class=subject, relationship__name="Rejected", end_date__gte=timezone.now(), user=student).exists() or not StudentApplication.objects.filter(user=student, program__classsubject = subject).exists() or not StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student).exists():
             return 1
         for sar in StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student):
             if not len(sar.response.strip()):
@@ -2243,7 +2244,7 @@ class PasswordRecoveryTicket(models.Model):
         ticket = PasswordRecoveryTicket()
         ticket.user = user
         ticket.recover_key = PasswordRecoveryTicket.new_key()
-        ticket.expire = datetime.now() + timedelta(days = PasswordRecoveryTicket.RECOVER_EXPIRE)
+        ticket.expire = timezone.now() + timedelta(days = PasswordRecoveryTicket.RECOVER_EXPIRE)
 
         ticket.save()
         return ticket
@@ -2277,7 +2278,7 @@ class PasswordRecoveryTicket(models.Model):
 
     def is_valid(self):
         """ Check if the ticket is still valid, kill it if not. """
-        if self.id is not None and datetime.now() < self.expire:
+        if self.id is not None and timezone.now() < self.expire:
             return True
         else:
             self.cancel()
@@ -2393,7 +2394,7 @@ class Record(models.Model):
     program = models.ForeignKey("program.Program", blank=True, null=True, on_delete=models.CASCADE)
     user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
 
-    time = models.DateTimeField(blank=True, default = datetime.now)
+    time = models.DateTimeField(blank=True, default = timezone.now)
 
     class Meta:
         app_label = 'users'
@@ -2425,7 +2426,7 @@ class Record(models.Model):
                                        Defaults to False.
         """
         if when is None:
-            when = datetime.now()
+            when = timezone.now()
         filter = cls.objects.filter(user=user, event__name=event, time__lte=when)
         if program is not None:
             filter = filter.filter(program=program)
@@ -2897,7 +2898,7 @@ class GradeChangeRequest(TimeStampedModel):
             return
 
         if self.approved is not None and not self.acknowledged_time:
-            self.acknowledged_time = datetime.now()
+            self.acknowledged_time = timezone.now()
             self.send_confirmation_email()
 
         #   Update the student's grade if the request has been approved

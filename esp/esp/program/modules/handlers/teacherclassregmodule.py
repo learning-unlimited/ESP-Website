@@ -59,6 +59,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 import json
 import re
 import datetime
+from django.utils import timezone
 
 class TeacherClassRegModule(ProgramModuleObj):
     doc = """Allows teachers to register and manage classes and view their enrolled students."""
@@ -90,7 +91,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['can_create_open_class'] = self.open_class_reg_is_open()
         context['can_req_cancel'] = self.deadline_met('/Classes/CancelReq')
         context['survey_results'] = (self.program.getSurveys().filter(category = "learn", questions__per_class=True).exists() and
-                                     self.program.getTimeSlots()[0].start < datetime.datetime.now())
+                                     self.program.getTimeSlots()[0].start < timezone.now())
         context['crmi'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
         context['modlist'] = get_current_request().user.getModeratingSectionsFromProgram(self.program)

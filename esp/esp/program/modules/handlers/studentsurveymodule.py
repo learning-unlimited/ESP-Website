@@ -39,6 +39,7 @@ from django.db.models.query   import Q
 from esp.survey.views   import survey_view
 
 import datetime
+from django.utils import timezone
 
 class StudentSurveyModule(ProgramModuleObj):
     doc = """A module for students to take surveys about the program and/or classes."""
@@ -66,7 +67,7 @@ class StudentSurveyModule(ProgramModuleObj):
 
     def isStep(self):
         return (Tag.getBooleanTag('student_survey_isstep', program=self.program) and
-                self.program.getTimeSlots()[0].start < datetime.datetime.now() and
+                self.program.getTimeSlots()[0].start < timezone.now() and
                 self.program.getSurveys().filter(category = "learn").exists())
 
     @main_call

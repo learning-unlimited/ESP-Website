@@ -58,7 +58,7 @@ from collections import OrderedDict
 
 
 TZINFO = timezone.get_current_timezone()  # get timezone set in local_settings.py
-FTIMEZONE = " (" + datetime.now(tz=TZINFO).strftime("%Z") + ")"  # formatted timezone
+FTIMEZONE = " (" + timezone.now().astimezone(TZINFO).strftime("%Z") + ")"  # formatted timezone
 
 
 class EditPermissionForm(forms.Form):
@@ -70,7 +70,7 @@ class EditPermissionForm(forms.Form):
 class NewDeadlineForm(forms.Form):
     deadline_type = forms.ChoiceField(choices=[x for x in Permission.PERMISSION_CHOICES if "Administer" not in x[0]])
     role = forms.ChoiceField(choices = [("Student", "Students"), ("Teacher", "Teachers"), ("Volunteer", "Volunteers")])
-    start_date = forms.DateTimeField(label='Opening date/time' + FTIMEZONE, initial=datetime.now, widget=DateTimeWidget(), required=False)
+    start_date = forms.DateTimeField(label='Opening date/time' + FTIMEZONE, initial=timezone.now, widget=DateTimeWidget(), required=False)
     end_date = forms.DateTimeField(label='Closing date/time' + FTIMEZONE, initial=None, widget=DateTimeWidget(), required=False)
 
     def __init__(self, *args, **kwargs):
@@ -82,7 +82,7 @@ class NewPermissionForm(forms.Form):
     permission_type = forms.ChoiceField(choices=[x for x in Permission.PERMISSION_CHOICES if "Administer" not in x[0]])
     user = AjaxForeignKeyNewformField(key_type=ESPUser, field_name='user', label='User',
         help_text='Start typing a username or "Last Name, First Name", then select the user from the dropdown.')
-    perm_start_date = forms.DateTimeField(label='Opening date/time' + FTIMEZONE, initial=datetime.now, widget=DateTimeWidget(), required=False)
+    perm_start_date = forms.DateTimeField(label='Opening date/time' + FTIMEZONE, initial=timezone.now, widget=DateTimeWidget(), required=False)
     perm_end_date = forms.DateTimeField(label='Closing date/time' + FTIMEZONE, initial=None, widget=DateTimeWidget(), required=False)
 
 class AdminCore(ProgramModuleObj, CoreModule):
@@ -331,7 +331,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 if perms.count() > 0:
                     perms[0].unexpire()
                 else:
-                    Permission.objects.create(role = group, permission_type = request.GET['perm'], start_date = datetime.now(), program = prog)
+                    Permission.objects.create(role = group, permission_type = request.GET['perm'], start_date = timezone.now(), program = prog)
                 message_good = 'Deadline opened for %ss: %s.' % (group, Permission.nice_name_lookup(request.GET['perm']))
             elif 'perm_id' in request.GET:
                 perms = Permission.objects.filter(id=request.GET['perm_id'])
@@ -347,7 +347,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             if 'group' in request.GET and 'perm' in request.GET:
                 group = Group.objects.get(id = request.GET['group'])
                 perms = Permission.valid_objects().filter(permission_type = request.GET['perm'], program = prog, role = group)
-                perms.update(end_date = datetime.now())
+                perms.update(end_date = timezone.now())
                 message_good = 'Deadline closed for %ss: %s.' % (group, Permission.nice_name_lookup(request.GET['perm']))
             if 'perm_id' in request.GET:
                 perms = Permission.objects.filter(id=request.GET['perm_id'])

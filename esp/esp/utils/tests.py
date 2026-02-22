@@ -4,6 +4,7 @@ Test cases for Django-ESP utilities
 
 
 import datetime
+from django.utils import timezone
 import doctest
 try:
     import pylibmc as memcache
@@ -204,7 +205,7 @@ class QueryBuilderTest(DjangoTestCase):
         sad_printer = Printer.objects.create(name="Slow")
         nice_user = ESPUser.objects.create(username="nice_user")
         mean_user = ESPUser.objects.create(username="mean_user")
-        now = datetime.datetime.now()
+        now = timezone.now()
         PrintRequest.objects.create(printer=happy_printer, user=nice_user,
                                     time_executed=now)
         PrintRequest.objects.create(printer=happy_printer, user=nice_user,

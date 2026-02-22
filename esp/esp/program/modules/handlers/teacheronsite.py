@@ -34,6 +34,7 @@ from esp.users.models    import Record
 from esp.survey.views   import survey_view, survey_review
 from esp.tagdict.models  import Tag
 from datetime import datetime
+from django.utils import timezone
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 from django.db.models import Count
 
@@ -56,7 +57,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
     def teacheronsite(self, request, tl, one, two, module, extra, prog):
         """ Display the landing page for the teacher onsite webapp """
         user = request.user
-        now = datetime.now()
+        now = timezone.now()
 
         context = self.onsitecontext(request, tl, one, two, prog)
 

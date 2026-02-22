@@ -41,6 +41,7 @@ from django import forms
 from django.utils.deconstruct import deconstructible
 
 import datetime
+from django.utils import timezone
 
 __all__ = ['StudentAppQuestion', 'StudentAppResponse', 'StudentAppReview', 'StudentApplication']
 
@@ -111,7 +112,7 @@ class BaseAppElement(object):
         return form
 
     def update(self, form):
-        self.date = datetime.datetime.now()
+        self.date = timezone.now()
         for field_name in self._field_names:
             if field_name in form.cleaned_data:
                 setattr(self, field_name, form.cleaned_data[field_name])
@@ -166,7 +167,7 @@ class StudentAppReview(BaseAppElement, models.Model):
     teacher of a class for which the student applied. """
 
     reviewer = AjaxForeignKey(ESPUser, editable=False, on_delete=models.CASCADE)
-    date = models.DateTimeField(default=datetime.datetime.now, editable=False)
+    date = models.DateTimeField(default=timezone.now, editable=False)
     score = models.PositiveIntegerField(null=True, blank=True, help_text='Please rate each student', choices=((10, "Yes"), (5, "Maybe"), (1, "No")))
     comments = models.TextField()
     reject = models.BooleanField(default=False, editable=False)

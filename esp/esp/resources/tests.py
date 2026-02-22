@@ -1,4 +1,5 @@
-from datetime import datetime
+from __future__ import absolute_import
+from django.utils import timezone
 
 from django.db.models import ProtectedError
 
@@ -12,7 +13,7 @@ class ResourceTypeTest(TestCase):
 
     def setUp(self):
         super().setUp()
-        now = datetime.now()
+        now = timezone.now()
         self.event = Event.objects.create(
             name='event', start=now, end=now,
             short_description='', description='',

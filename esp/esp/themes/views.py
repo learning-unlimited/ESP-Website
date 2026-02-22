@@ -44,7 +44,7 @@ from esp.utils.web import render_to_response
 from django.http import HttpResponseRedirect
 from django.conf import settings
 
-from datetime import datetime
+from django.utils import timezone
 import random
 import string
 import os.path
@@ -112,7 +112,7 @@ def logos(request):
             # Update logo version
             Tag.setTag("current_logo_version", value = hex(random.getrandbits(16)))
             # Backup the new logo file
-            with open(settings.MEDIA_ROOT + 'images/backups/logo.' + datetime.now().strftime("%Y%m%d-%H%M%S") + '.png', 'wb+') as destination:
+            with open(settings.MEDIA_ROOT + 'images/backups/logo.' + timezone.localtime(timezone.now()).strftime("%Y%m%d-%H%M%S") + '.png', 'wb+') as destination:
                 for chunk in f.chunks():
                     destination.write(chunk)
         elif 'new_header' in request.FILES:
@@ -124,7 +124,7 @@ def logos(request):
             # Update header version
             Tag.setTag("current_header_version", value = hex(random.getrandbits(16)))
             # Backup the new header file
-            with open(settings.MEDIA_ROOT + 'images/backups/header.' + datetime.now().strftime("%Y%m%d-%H%M%S") + '.png', 'wb+') as destination:
+            with open(settings.MEDIA_ROOT + 'images/backups/header.' + timezone.localtime(timezone.now()).strftime("%Y%m%d-%H%M%S") + '.png', 'wb+') as destination:
                 for chunk in f.chunks():
                     destination.write(chunk)
         elif 'new_favicon' in request.FILES:
@@ -136,7 +136,7 @@ def logos(request):
             # Update favicon version
             Tag.setTag("current_favicon_version", value = hex(random.getrandbits(16)))
             # Backup the new favicon file
-            with open(settings.MEDIA_ROOT + 'images/backups/favicon.' + datetime.now().strftime("%Y%m%d-%H%M%S") + '.ico', 'wb+') as destination:
+            with open(settings.MEDIA_ROOT + 'images/backups/favicon.' + timezone.localtime(timezone.now()).strftime("%Y%m%d-%H%M%S") + '.ico', 'wb+') as destination:
                 for chunk in f.chunks():
                     destination.write(chunk)
         elif 'logo_select' in request.POST:
@@ -281,7 +281,7 @@ def editor(request):
                 if theme_name == 'None':
                     #   Generate a temporary theme name
                     random_slug  = ''.join(random.choice(string.ascii_lowercase) for i in range(4))
-                    theme_name = 'theme-%s-%s' % (datetime.now().strftime('%Y%m%d'), random_slug)
+                    theme_name = 'theme-%s-%s' % (timezone.localtime(timezone.now()).strftime('%Y%m%d'), random_slug)
             else:
                 theme_name = request.POST['saveThemeName']
             vars = request.POST.dict()

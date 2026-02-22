@@ -757,24 +757,28 @@ class Program(models.Model, CustomFormsLinkModel):
             return status == 1
 
     """ Returns a queryset of students that are checked out of the program at the specified time """
-    def checkedOutStudents(self, time_max = datetime.now()):
+    def checkedOutStudents(self, time_max = None):
+        if time_max is None:
+            time_max = timezone.now()
         recs = Record.objects.filter(program = self, event__name__in=["attended", "checked_out"], time__lt=time_max).order_by('user', '-time').distinct('user')
         return ESPUser.objects.filter(record__id__in=recs, record__event__name="checked_out")
 
     """ Returns a queryset of students that are CURRENTLY checked out of the program at the specified time """
     @cache_function
     def currentlyCheckedOutStudents(self):
-        return self.checkedOutStudents(time_max=datetime.now())
+        return self.checkedOutStudents(time_max=timezone.now())
     currentlyCheckedOutStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event and rec.event.name in ['attended', "checked_out"])
 
     """ Returns a queryset of students that are checked in to the program at the specified time """
-    def checkedInStudents(self, time_max = datetime.now()):
+    def checkedInStudents(self, time_max = None):
+        if time_max is None:
+            time_max = timezone.now()
         return ESPUser.objects.filter(Q(record__event__name="attended", record__program=self)).exclude(id__in=self.checkedOutStudents(time_max)).distinct()
 
     """ Returns a queryset of students that are CURRENTLY checked in to the program at the specified time """
     @cache_function
     def currentlyCheckedInStudents(self):
-        return self.checkedInStudents(time_max=datetime.now())
+        return self.checkedInStudents(time_max=timezone.now())
     currentlyCheckedInStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event and rec.event.name == 'attended')
 
     """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
@@ -928,7 +932,7 @@ class Program(models.Model, CustomFormsLinkModel):
             - Programs with "test" in their names are skipped.
         """
 
-        now = datetime.now()
+        now = timezone.now()
         near_future = now + timedelta(days=60)
         near_past = now - timedelta(days=30)
         far_future = now + timedelta(days=36500)
@@ -1508,7 +1512,7 @@ class RegistrationProfile(models.Model):
 
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
-        self.last_ts = datetime.now()
+        self.last_ts = timezone.now()
         RegistrationProfile.objects.filter(user = self.user, most_recent_profile = True).update(most_recent_profile = False)
         self.most_recent_profile = True
         super().save(*args, **kwargs)
@@ -1539,7 +1543,7 @@ class RegistrationProfile(models.Model):
             if regProf.id is not None:
                 # if the latest profile is old, wipe the id,
                 # then it will save as a new object if submitted with the profile form
-                if (datetime.now() - regProf.last_ts).days >= 5:
+                if (timezone.now() - regProf.last_ts).days >= 5:
                     regProf.id = None
                 # if the latest profile is new-ish,
                 # assume the info is up-to-date and save it now
@@ -1617,7 +1621,7 @@ class TeacherBio(models.Model):
 
     def save(self, *args, **kwargs):
         """ update the timestamp """
-        self.last_ts = datetime.now()
+        self.last_ts = timezone.now()
         super().save(*args, **kwargs)
 
     def url(self):
@@ -1707,7 +1711,7 @@ class FinancialAidRequest(models.Model):
                 email_context = {'student': self.user,
                                  'program': self.program,
                                  'grant': f,
-                                 'curtime': datetime.now(),
+                                 'curtime': timezone.now(),
                                  'DEFAULT_HOST': settings.DEFAULT_HOST}
                 email_contents = render_to_string('program/modules/finaidapprovemodule/approval_email.txt', email_context)
                 send_mail(subj, email_contents, email_from, email_to)

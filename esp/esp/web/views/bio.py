@@ -39,7 +39,7 @@ from esp.program.models   import TeacherBio, Program, ArchiveClass
 from esp.utils.web        import get_from_id, render_to_response
 from django.http          import HttpResponseRedirect, HttpResponsePermanentRedirect
 from django.contrib.auth.decorators import login_required
-from datetime             import datetime
+from django.utils import timezone
 from django.conf import settings
 
 @login_required
@@ -169,7 +169,7 @@ def bio_user(request, founduser, old_url=False):
     if teacherbio.bio is None or len(teacherbio.bio.strip()) == 0:
         teacherbio.bio     = 'Not Available.'
 
-    now = datetime.now()
+    now = timezone.now()
 
     # Only show classes that were approved and that have already run
     # If we show classes that are yet to run, it's possible that

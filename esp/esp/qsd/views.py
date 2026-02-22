@@ -39,7 +39,7 @@ from esp.utils.web import render_to_response
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 from esp.qsdmedia.models import Media
 from os.path import basename, dirname
-from datetime import datetime
+from django.utils import timezone
 from django.core.cache import cache
 from django.template.defaultfilters import urlencode
 from esp.middleware import Http403
@@ -107,7 +107,7 @@ def qsd(request, url):
                 qsd_rec.nav_category = default_navbarcategory()
                 qsd_rec.title = 'New Page'
                 qsd_rec.content = 'Please insert your text here'
-                qsd_rec.create_date = datetime.now()
+                qsd_rec.create_date = timezone.now()
                 qsd_rec.keywords = ''
                 qsd_rec.description = ''
                 action = 'edit'

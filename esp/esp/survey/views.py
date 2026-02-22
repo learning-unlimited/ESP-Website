@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 """
 
 import datetime
+from django.utils import timezone
 import xlwt
 import re
 from io import BytesIO
@@ -145,7 +146,7 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
 
                 # Set record to mark general survey as completed
                 rt = RecordType.objects.get(name=event)
-                r = Record(user=user, event=rt, program=prog, time=datetime.datetime.now())
+                r = Record(user=user, event=rt, program=prog, time=timezone.now())
                 r.save()
 
                 response.set_answers(request.POST, save=True)
@@ -170,7 +171,7 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
             sections = [sec for sec in sections if sec.meeting_times.count() > 0]
         # Mark sections for whether they've started yet and whether the user has filled out a survey for them yet
         for sec in sections:
-            sec.started = sec.start < datetime.datetime.now()
+            sec.started = sec.start < timezone.now()
             sec.completed = sec in completed_sections
 
         context['general_done'] = Record.user_completed(user, event, prog)

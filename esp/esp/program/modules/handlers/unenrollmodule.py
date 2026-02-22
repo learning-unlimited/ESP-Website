@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 import datetime
+from django.utils import timezone
 import logging
 from django.db.models import signals
 from esp.users.models import Record
@@ -83,7 +84,7 @@ class UnenrollModule(ProgramModuleObj):
                 selected_enrollments = request.POST['selected_enrollments']
                 ids = [int(id) for id in selected_enrollments.split(',')]
                 registrations = StudentRegistration.objects.filter(id__in=ids)
-                registrations.update(end_date=datetime.datetime.now())
+                registrations.update(end_date=timezone.now())
                 logger.info("Expired student registrations: %s", ids)
             # send signal to expire caches
             # XXX: sending all of them is actually kind of
@@ -98,7 +99,7 @@ class UnenrollModule(ProgramModuleObj):
                 self.baseDir()+'result.html', request, context)
 
         timeslots = prog.getTimeSlotList()
-        now = datetime.datetime.now()
+        now = timezone.now()
         hour = datetime.timedelta(minutes=60)
         selections = [{
             'slot': timeslot,

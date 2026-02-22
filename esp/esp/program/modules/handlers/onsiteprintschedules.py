@@ -37,9 +37,9 @@ from django.http      import HttpResponse
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from datetime         import datetime
+from django.utils import timezone
 from esp.utils.web    import render_to_response
 from esp.utils.models import Printer, PrintRequest
-from datetime         import datetime
 
 class OnsitePrintSchedules(ProgramModuleObj):
     doc = """Automatically print student schedules at onsite registration."""
@@ -74,7 +74,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
 
         if requests.exists():
             req = requests[0]
-            req.time_executed = datetime.now()
+            req.time_executed = timezone.now()
             req.save()
             response = ProgramPrintables.get_student_schedules(request, [req.user], prog, onsite=True)
             if request.GET['gen_img'] == 'json':

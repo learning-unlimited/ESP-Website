@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from datetime import datetime
+from django.utils import timezone
 import hashlib
 
 from django.db import models
@@ -107,7 +107,7 @@ class QuasiStaticData(models.Model):
 
     nav_category = models.ForeignKey(NavBarCategory, default=default_navbarcategory, on_delete=models.CASCADE)
 
-    create_date = models.DateTimeField(default=datetime.now, editable=False, verbose_name="last edited")
+    create_date = models.DateTimeField(default=timezone.now, editable=False, verbose_name="last edited")
     author = AjaxForeignKey(ESPUser, verbose_name="last modified by", on_delete=models.CASCADE) #I believe that these are,uh, no longer descriptive names. This is silly, but the verbose names should fit better.
     disabled = models.BooleanField(default=False)
     keywords = models.TextField(blank=True, null=True)
@@ -139,7 +139,7 @@ class QuasiStaticData(models.Model):
 
     def load_cur_user_time(self, request, ):
         self.author = request.user
-        self.create_date = datetime.now()
+        self.create_date = timezone.now()
 
 
     def __str__(self):

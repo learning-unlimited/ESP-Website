@@ -39,7 +39,7 @@ from esp.utils.web import render_to_response
 from django.db.models.query import QuerySet
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
-from datetime import datetime
+from django.utils import timezone
 
 #    Two inputs to each function:
 #    -    category: what you sort or view by
@@ -135,7 +135,7 @@ def archive_classes(request, category, options, sortorder = None):
         category_dict[category.category[0].upper()] = category.category
 
     filter_keys = {'category': [{'name': c, 'value': c, 'selected': False} for c in category_list],
-            'year': [{'name': str(y), 'value': str(y), 'selected': False} for y in range(1998, datetime.now().year + 1)],
+            'year': [{'name': str(y), 'value': str(y), 'selected': False} for y in range(1998, timezone.now().year + 1)],
             'title': [{'name': 'Starts with ' + letter, 'value': letter, 'selected': False} for letter in map(chr, list(range(65, 91)))],
              'program': [{'name': p, 'value': p, 'selected': False} for p in program_list],
             'teacher': [{}],
