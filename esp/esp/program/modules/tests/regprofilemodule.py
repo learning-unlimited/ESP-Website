@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -44,7 +43,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
 
         # Set up the program -- we want to be sure of these parameters
         kwargs.update({'num_students': 3,})
-        super(RegProfileModuleTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
 
         # Get and remember the instance of this module
         m = ProgramModule.objects.get(handler='RegProfileModule', module_type='learn')

@@ -1,8 +1,5 @@
 
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -82,7 +79,7 @@ class StudentClassRegModuleInfo(models.Model):
     #     b = class_cap_offset
     class_cap_multiplier = models.DecimalField(max_digits=3, decimal_places=2, default='1.00', help_text='A multiplier for class capacities (set to 0.5 to cap all classes at half their stored capacity).')
     class_cap_offset    = models.IntegerField(default=0, help_text='Offset for class capacities (this number is added to the original capacity of every class).')
-    apply_multiplier_to_room_cap = models.BooleanField(default=False, help_text='Apply class cap multipler and offset to room capacity instead of class capacity.')
+    apply_multiplier_to_room_cap = models.BooleanField(default=False, help_text='Apply class cap multiplier and offset to room capacity instead of class capacity.')
 
     #   Whether to use priority
     use_priority         = models.BooleanField(default=False, help_text='Check this box to enable priority registration. Note, this is NOT for the two-phase student registration module. This will remove \
@@ -322,7 +319,7 @@ class AJAXChangeLogEntry(models.Model):
 
     def save(self, *args, **kwargs):
         self.time = time.time()
-        super(AJAXChangeLogEntry, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def getTimeslots(self):
         if self.timeslots == "":

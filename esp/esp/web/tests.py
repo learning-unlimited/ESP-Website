@@ -1,6 +1,4 @@
-from __future__ import absolute_import
 from io import open
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -73,8 +71,8 @@ class PageTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Make sure that we've gotten an HTML document, and not a Django error
-        self.assertStringContains(six.text_type(response.content, encoding='UTF-8'), "<html")
-        self.assertNotStringContains(six.text_type(response.content, encoding='UTF-8'), "You're seeing this error because you have <code>DEBUG = True</code>")
+        self.assertStringContains(str(response.content, encoding='UTF-8'), "<html")
+        self.assertNotStringContains(str(response.content, encoding='UTF-8'), "You're seeing this error because you have <code>DEBUG = True</code>")
 
 class NavbarTest(TestCase):
 
@@ -82,7 +80,7 @@ class NavbarTest(TestCase):
         response = self.client.get(path)
 
         navbaritem_re = re.compile(r'<li class="divsecondarynavlink (?:indent)?">\s+(.*)\s+</li>')
-        re_results = re.findall(navbaritem_re, six.text_type(response.content, encoding='UTF-8'))
+        re_results = re.findall(navbaritem_re, str(response.content, encoding='UTF-8'))
         return re_results
 
     def navbars_enabled(self):
@@ -169,7 +167,7 @@ class NoVaryOnCookieTest(ProgramFrameworkTest):
         self.assertEqual("\n".join(difflib.context_diff(logged_out_content.split("\n"), logged_in_content.split("\n"))), "")
 
     def setUp(self):
-        super(NoVaryOnCookieTest, self).setUp()
+        super().setUp()
 
         #   Create a QSD page associated with the program
         from esp.qsd.models import QuasiStaticData

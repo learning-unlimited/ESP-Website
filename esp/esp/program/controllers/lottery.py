@@ -1,10 +1,5 @@
-from __future__ import with_statement
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import division
 from io import open
-from six.moves import range
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -57,6 +52,7 @@ from esp.mailman import add_list_members, remove_list_member, list_contents
 from esp.tagdict.models import Tag
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Min
 import os
 import operator
@@ -71,12 +67,12 @@ class LotteryException(Exception):
 class LotterySectionException(LotteryException):
     """ Something is wrong with a class section.    """
     def __init__(self, section, msg, **kwargs):
-        super(LotteryException, self).__init__('Class section %d (%s) %s' % (section.id, section.emailcode(), msg), **kwargs)
+        super().__init__('Class section %d (%s) %s' % (section.id, section.emailcode(), msg), **kwargs)
 
 class LotterySubjectException(LotteryException):
     """ Something is wrong with a class subject.    """
     def __init__(self, subject, msg, **kwargs):
-        super(LotteryException, self).__init__('Class subject %s %s' % (subject.emailcode(), msg), **kwargs)
+        super().__init__('Class subject %s %s' % (subject.emailcode(), msg), **kwargs)
 
 class LotteryAssignmentController(object):
 
@@ -238,7 +234,7 @@ class LotteryAssignmentController(object):
 
         # One array to keep track of the utility of each student
         # (defined as hours of interested class + 1.5*hours of priority classes)
-        # and the other arrary to keep track of student weigths (defined as # of classes signed up for)
+        # and the other array to keep track of student weights (defined as # of classes signed up for)
         self.student_utility_weights = numpy.zeros((self.num_students, ), dtype=numpy.float)
         self.student_utilities = numpy.zeros((self.num_students, ), dtype=numpy.float)
 
@@ -342,8 +338,6 @@ class LotteryAssignmentController(object):
                         if len(possible_classes):
                             choice = numpy.random.choice(possible_classes)
                             self.priority[i][student, choice]=True
-
-
 
 
     def fill_section(self, si, priority=False, rank=10):
@@ -451,7 +445,7 @@ class LotteryAssignmentController(object):
             self.student_schedules[selected_students, timeslots[i]] = True
             self.student_enrollments[selected_students, timeslots[i]] = self.section_ids[si]
 
-            #   Update student utilies
+            #   Update student utilities
             if priority:
                 self.student_utilities[selected_students] += 1.5
             else:
@@ -529,7 +523,7 @@ class LotteryAssignmentController(object):
         priority_fractions = [0 for i in range(self.effective_priority_limit+1)]
 
         # We expect that there will occasionally be 0/0 division errors,
-        # whenver a student has not specified any classes for a particular
+        # whenever a student has not specified any classes for a particular
         # priority level.  We handle this by calling nan_to_num(), but by
         # default numpy will still raise and print a RuntimeWarning.  We can
         # safely ignore this by passing 'ignore' to the errstate() context
@@ -614,7 +608,7 @@ class LotteryAssignmentController(object):
         #
         # Also use the utility to get a list of screwed students,
         # where the level of screwedness is defined by (1+utility)/(1+weight)
-        # So, people with low untilities and high weights (low screwedness scores)
+        # So, people with low utilities and high weights (low screwedness scores)
         # are considered screwed. This is pretty sketchy, so take it with a grain of salt.
         weighted_overall_utility = 0.0
         sum_of_weights=0.0
@@ -738,29 +732,31 @@ class LotteryAssignmentController(object):
         """ Store lottery assignments in the database once they have been computed.
             This is a fairly time consuming step compared to computing the assignments. """
 
-        self.clear_saved_assignments()
+        with transaction.atomic():
+            self.clear_saved_assignments()
 
-        assignments = numpy.nonzero(self.student_sections)
-        student_ids = self.student_ids[assignments[0]]
-        section_ids = self.section_ids[assignments[1]]
+            assignments = numpy.nonzero(self.student_sections)
+            student_ids = self.student_ids[assignments[0]]
+            section_ids = self.section_ids[assignments[1]]
 
-        assert(student_ids.shape == section_ids.shape)
+            assert(student_ids.shape == section_ids.shape)
 
-        relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
-        self.now = datetime.now()   # The time that all the registrations start at, in case all lottery registrations need to be manually reverted later
-        srs = StudentRegistration.objects.bulk_create([StudentRegistration(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship, start_date=self.now) for i in range(student_ids.shape[0])])
-        # Trigger any relevant caches
-        for sr in srs:
-            sr.save()
-        if self.options['stats_display']:
-            logger.info("StudentRegistration enrollments all created to start at %s", self.now)
-            logger.info('Created %d registrations', student_ids.shape[0])
+            relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
+            self.now = datetime.now()   # The time that all the registrations start at, in case all lottery registrations need to be manually reverted later
+            srs = StudentRegistration.objects.bulk_create([StudentRegistration(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship, start_date=self.now) for i in range(student_ids.shape[0])])
+            # Trigger any relevant caches
+            for sr in srs:
+                sr.save()
+            if self.options['stats_display']:
+                logger.info("StudentRegistration enrollments all created to start at %s", self.now)
+                logger.info('Created %d registrations', student_ids.shape[0])
 
         #As mailman has sometimes not worked in the past,
         #leave the option to disable.
         if try_mailman:
             self.update_mailman_lists()
 
+    @transaction.atomic
     def clear_saved_assignments(self, delete=False):
         """ Expire/delete all previous StudentRegistration enrollments associated with the program. """
 
