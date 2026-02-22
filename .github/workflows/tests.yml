@@ -91,7 +91,6 @@ jobs:
       env:
         CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
-        APT_CACHE_HIT: ${{ steps.apt-cache.outputs.cache-hit }}
         PIP_CACHE_HIT: ${{ steps.pip-cache.outputs.cache-hit }}
       run: deploy/ci/install
     - name: Prepare for Test
