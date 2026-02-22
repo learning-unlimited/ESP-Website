@@ -109,6 +109,19 @@ jobs:
   migrations:
     name: Migration Consistency Check
     runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:10.8
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: test_django
+        ports:
+          - 5432:5432
+        # needed because the postgres container does not provide a healthcheck
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DJANGO_SETTINGS_MODULE: esp.settings
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.7
