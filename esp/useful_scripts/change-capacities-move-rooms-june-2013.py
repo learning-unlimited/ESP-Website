@@ -12,12 +12,9 @@
 # Warning: if the class does not have a time set, this script will not assign it a room.
 #
 
-from __future__ import absolute_import
-from __future__ import print_function
 import csv
 from esp.program.models.class_ import ClassSubject
 from esp.resources.models import Resource
-from six.moves import map
 from io import open
 
 def makeChanges(filename,override=False):

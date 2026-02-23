@@ -19,7 +19,7 @@ Relationship with Database Models
 The controller is designed to read from the database to an in-memory
 representation of a schedule; most of the controller (excepting the DB
 interface and the part that interacts with the frontend) only operates on this
-in-memory representaton and is oblivious to the database and its models.
+in-memory representation and is oblivious to the database and its models.
 Consequently, if the database models change, you only need to update the DB
 interface to correctly translate from the new model to the in-memory
 representation.

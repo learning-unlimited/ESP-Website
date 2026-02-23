@@ -1,10 +1,4 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
-import six
-from six.moves import range
-from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -89,10 +83,10 @@ from esp.utils.query_utils import nest_Q
 from esp.program.class_status import ClassStatus
 from esp.utils import cmp
 
-from six.moves.urllib.parse import quote
+from urllib.parse import quote
 
 try:
-    import six.moves.cPickle as pickle
+    import pickle
 except ImportError:
     import pickle
 
@@ -127,7 +121,7 @@ class UserAvailability(models.Model):
         verbose_name_plural = 'User availabilities'
 
     def __str__(self):
-        return '%s available as %s at %s' % (self.user.username, self.role.name, six.text_type(self.event))
+        return '%s available as %s at %s' % (self.user.username, self.role.name, str(self.event))
 
     def save(self, *args, **kwargs):
         #   Assign default role if not set.
@@ -135,7 +129,7 @@ class UserAvailability(models.Model):
         #   (With this alphabetical ordering, you get roles in the order: teacher, student, guardian, educator, administrator)
         if (not hasattr(self, 'role')) or self.role is None:
             self.role = self.user.getUserTypes()[0]
-        return super(UserAvailability, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     @classmethod
     def entriesBySlot(self, event):
@@ -163,7 +157,7 @@ class BaseESPUser(object):
         # inheritance structure of this, ESPUser, or AnonymousESPUser,
         # or if Django has changed something. Adding it anyway in case
         # AnonymousUser changes in the future.
-        super(BaseESPUser, self).__init__()
+        super().__init__()
         self.create_membership_methods()
 
     @classmethod
@@ -265,10 +259,10 @@ class BaseESPUser(object):
         return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)
 
     def name(self):
-        return six.u('%s %s') % (self.first_name, self.last_name)
+        return '%s %s' % (self.first_name, self.last_name)
 
     def name_last_first(self):
-        return six.u('%s, %s') % (self.last_name, self.first_name)
+        return '%s, %s' % (self.last_name, self.first_name)
 
     def nonblank_name(self):
         name = self.name()
@@ -288,9 +282,9 @@ class BaseESPUser(object):
         """
         if name:
             # enclose name in quotes per RFC 2822 so that special characters in names are handled properly
-            return six.u('"%s" <%s>') % (name.replace('\\', '\\\\').replace('"', '\\"'), email)
+            return '"%s" <%s>' % (name.replace('\\', '\\\\').replace('"', '\\"'), email)
         else:
-            return six.u('<%s>') % email
+            return '<%s>' % email
 
     def get_email_sendto_address(self):
         """
@@ -418,7 +412,7 @@ class BaseESPUser(object):
             return "?code=%s" % otheruser.password
         elif key == 'unsubscribe_link':
             return otheruser.unsubscribe_link_full()
-        return six.u('')
+        return ''
 
     def getTaughtPrograms(self):
         taught_programs = Program.objects.filter(classsubject__teachers=self)
@@ -649,7 +643,7 @@ class BaseESPUser(object):
     getAvailableTimes.depend_on_row('users.UserAvailability', lambda ua:
                                         {'program': ua.event.program,
                                             'self': ua.user})
-    # Should depend on Event as well... IDs are safe, but not necessarily stored objects (seems a common occurence...)
+    # Should depend on Event as well... IDs are safe, but not necessarily stored objects (seems a common occurrence...)
     # though Event shouldn't change much
 
     def clearAvailableTimes(self, program):
@@ -686,7 +680,7 @@ class BaseESPUser(object):
         from esp.program.models.app_ import StudentApplication
 
         apps = StudentApplication.objects.filter(user=self, program=program)
-        if apps.count() == 0:
+        if not apps.exists():
             return []
         else:
             return apps[0].responses.all()
@@ -765,10 +759,10 @@ class BaseESPUser(object):
     @cache_function
     def getFirstClassTime(self, program):
         sections = self.getSections(program, verbs=['Enrolled']).order_by('meeting_times')
-        if sections.count() == 0:
+        if not sections.exists():
             return None
         else:
-            if sections[0].meeting_times.count() == 0:
+            if not sections[0].meeting_times.exists():
                 return None
             else:
                 return sections[0].meeting_times.order_by('start')[0]
@@ -823,7 +817,7 @@ class BaseESPUser(object):
 
     @cache_function
     def appliedFinancialAid(self, program):
-        return self.financialaidrequest_set.all().filter(program=program, done=True).count() > 0
+        return self.financialaidrequest_set.all().filter(program=program, done=True).exists()
     #   Invalidate cache when any of the user's financial aid requests are changed
     appliedFinancialAid.depend_on_row('program.FinancialAidRequest', lambda fr: {'self': fr.user})
     appliedFinancialAid.depend_on_row('accounting.FinancialAidGrant', lambda fr: {'self': fr.request.user})
@@ -973,10 +967,10 @@ class BaseESPUser(object):
     def get_unused_username(cls, first_name, last_name):
         import re
         username = base_uname = (first_name[0] + last_name).lower()
-        if cls.objects.filter(username = username).count() > 0:
+        if cls.objects.filter(username = username).exists():
             i = 2
             username = base_uname + str(i)
-            while cls.objects.filter(username = username).count() > 0:
+            while cls.objects.filter(username = username).exists():
                 i += 1
                 username = base_uname + str(i)
         return re.sub(r'[^\w.@+-]', '', username) # sanitize before returning
@@ -1179,10 +1173,12 @@ class BaseESPUser(object):
         user_hash = hash(str(self.id) + str(program.id))
         return '{0:06d}'.format(abs(user_hash))[:6]
 
-    # modified from here: https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
+    # modified from here:
+    # https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
     def unsubscribe_link(self):
-        username, token = self.make_token().split(":", 1)
-        return reverse('unsubscribe', kwargs={'username': username, 'token': token,})
+        token = self.make_token()[len(self.username) + 1:]
+        return reverse('unsubscribe',
+                       kwargs={'username': self.username, 'token': token})
 
     def unsubscribe_link_full(self):
         unsub_link = self.unsubscribe_link()
@@ -1215,7 +1211,7 @@ class ESPUser(User, BaseESPUser):
 
     def makeAdmin(self):
         """
-        Make the user an Adminstrator and a Django superuser.
+        Make the user an Administrator and a Django superuser.
         """
         # Django auth
         self.is_staff = True
@@ -1543,7 +1539,7 @@ class StudentInfo(models.Model):
         username = "N/A"
         if self.user is not None:
             username = self.user.username
-        return six.u('ESP Student Info (%s) -- %s') % (username, six.text_type(self.school))
+        return 'ESP Student Info (%s) -- %s' % (username, str(self.school))
 
     def get_absolute_url(self):
         return self.user.get_absolute_url()
@@ -1619,11 +1615,11 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
 
         for value in values:
             value['user'] = ESPUser.objects.get(id=value['user'])
-            value['ajax_str'] = six.u('%s - %s %s') % (value['user'].ajax_str(), value['college'], value['graduation_year'])
+            value['ajax_str'] = '%s - %s %s' % (value['user'].ajax_str(), value['college'], value['graduation_year'])
         return values
 
     def ajax_str(self):
-        return six.u('%s - %s %s') % (self.user.ajax_str(), self.college, self.graduation_year)
+        return '%s - %s %s' % (self.user.ajax_str(), self.college, self.graduation_year)
 
     def updateForm(self, form_dict):
         form_dict['pronoun']         = self.pronoun
@@ -1664,7 +1660,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         username = ""
         if self.user is not None:
             username = self.user.username
-        return six.u('ESP Teacher Info (%s)') % username
+        return 'ESP Teacher Info (%s)' % username
 
     def get_absolute_url(self):
         return self.user.get_absolute_url()
@@ -1728,7 +1724,7 @@ class GuardianInfo(models.Model):
         username = ""
         if self.user is not None:
             username = self.user.username
-        return six.u('ESP Guardian Info (%s)') % username
+        return 'ESP Guardian Info (%s)' % username
 
     def get_absolute_url(self):
         return self.user.get_absolute_url()
@@ -1806,7 +1802,7 @@ class EducatorInfo(models.Model):
         username = ""
         if self.user is not None:
             username = self.user.username
-        return six.u('ESP Educator Info (%s)') % username
+        return 'ESP Educator Info (%s)' % username
 
     def get_absolute_url(self):
         return self.user.get_absolute_url()
@@ -1923,7 +1919,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     @classmethod
     def cf_link_instance(cls, request):
         """
-        Ues the request object to return the appropriate instance for this model,
+        Uses the request object to return the appropriate instance for this model,
         for use by custom-forms.
         It should either return the instance, or 'None', if the corresponding instance doesn't exist.
         """
@@ -1952,7 +1948,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         db_table = 'users_contactinfo'
 
     def name(self):
-        return six.u('%s %s') % (self.first_name, self.last_name)
+        return '%s %s' % (self.first_name, self.last_name)
 
     email = property(lambda self: self.e_mail)
 
@@ -1969,7 +1965,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         return ESPUser.email_sendto_address(self.email, self.name())
 
     def address(self):
-        return six.u('%s, %s, %s %s') % \
+        return '%s, %s, %s %s' % \
             (self.address_street,
              self.address_city,
              self.address_state,
@@ -2029,7 +2025,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         if self.address_postal is not None:
             self.address_postal = str(self.address_postal)
 
-        super(ContactInfo, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
     def __str__(self):
@@ -2085,15 +2081,15 @@ class K12School(models.Model):
 
     def __str__(self):
         if self.contact_id and self.contact.address_city and self.contact.address_state:
-            return six.u('%s in %s, %s') % (self.name, self.contact.address_city,
+            return '%s in %s, %s' % (self.name, self.contact.address_city,
                                             self.contact.address_state)
         else:
-            return six.u('%s') % self.name
+            return '%s' % self.name
 
     @classmethod
     def choicelist(cls, other_help_text=''):
         if other_help_text:
-            other_help_text = six.u(' (%s)') % other_help_text
+            other_help_text = ' (%s)' % other_help_text
         o = cls.objects.other()
         lst = [ ( x.id, x.name ) for x in cls.objects.most() ]
         lst.append( (o.id, o.name + other_help_text) )
@@ -2102,7 +2098,7 @@ class K12School(models.Model):
 @python_2_unicode_compatible
 class PersistentQueryFilter(models.Model):
     """ This class stores generic query filters persistently in the database, for retrieval (by ID, presumably) and
-        to pass the query along to multiple pages and retrival (et al). """
+        to pass the query along to multiple pages and retrieval (et al). """
     item_model   = models.CharField(max_length=256)            # A string representing the model, for instance User or Program
     q_filter     = models.BinaryField()                         # A bytestring representing a query filter
     sha1_hash    = models.CharField(max_length=256)            # A sha1 hash of the string representing the query filter
@@ -2122,7 +2118,7 @@ class PersistentQueryFilter(models.Model):
         # Deal with multiple instances
         query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
         pqfs = PersistentQueryFilter.objects.filter(query_q)
-        if pqfs.count() > 0:
+        if pqfs.exists():
             foo = pqfs[0]
         else:
             foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
@@ -2307,7 +2303,7 @@ class DBList(object):
     """ Useful abstraction for the list of users.
         Not meant for anything but users_get_list...
     """
-    totalnum = False # we dont' know how many there are.
+    totalnum = False # we don't know how many there are.
     key      = ''
     QObject  = None
 
@@ -2456,7 +2452,7 @@ class Record(models.Model):
             return True
 
     def __str__(self):
-        return six.text_type(self.user) + " has completed " + six.text_type(self.event) + " for " + six.text_type(self.program)
+        return str(self.user) + " has completed " + str(self.event) + " for " + str(self.program)
 
 #helper method for designing implications
 def flatten(choices):
@@ -2887,7 +2883,7 @@ class GradeChangeRequest(TimeStampedModel):
         ordering = ['-acknowledged_time', '-created']
 
     def __init__(self, *args, **kwargs):
-        super(GradeChangeRequest, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         grade_options = ESPUser.grade_options()
 
         self._meta.get_field('claimed_grade').choices = list(zip(grade_options, grade_options))
@@ -2897,7 +2893,7 @@ class GradeChangeRequest(TimeStampedModel):
 
         if is_new:
             self.send_request_email()
-            super(GradeChangeRequest, self).save(**kwargs)
+            super().save(**kwargs)
             return
 
         if self.approved is not None and not self.acknowledged_time:
@@ -2908,7 +2904,7 @@ class GradeChangeRequest(TimeStampedModel):
         if self.approved is True:
             self.requesting_student.set_grade(self.claimed_grade)
 
-        super(GradeChangeRequest, self).save(**kwargs)
+        super().save(**kwargs)
 
     def _request_email_content(self):
         """

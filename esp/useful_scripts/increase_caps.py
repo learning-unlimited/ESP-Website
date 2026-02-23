@@ -3,12 +3,9 @@
 # Find classes which capacity below the room capacity, and send the teacher an email asking if
 # they want to increase their class capacity to the room capacity
 
-from __future__ import absolute_import
-from __future__ import print_function
 from script_setup import *
 
 from esp.dbmail.models import send_mail
-from six.moves import input
 
 program = Program.objects.get(url='Splash/2015')
 

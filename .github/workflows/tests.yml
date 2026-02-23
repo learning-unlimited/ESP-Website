@@ -1,11 +1,25 @@
-name: "Lint and Unit Tests"
+name: "Unit Tests"
 
 on:
   push:
-    branches: [main, ]
-  pull_request:
-    # The branches below must be a subset of the branches above
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+      - '.gitattributes'
+      - '.gitignore'
+      - 'Vagrantfile'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+      - '.gitattributes'
+      - '.gitignore'
+      - 'Vagrantfile'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -14,11 +28,16 @@ concurrency:
 permissions:
   contents: read
 
+
 jobs:
-  build:
-    name: ${{ matrix.travis_job }} (Python ${{ matrix.python-version }})
+  test:
+    name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.7]
     services:
       postgres:
         image: postgres:10.8
@@ -34,11 +53,6 @@ jobs:
         image: memcached:alpine
         ports:
           - 11211:11211
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [3.7]
-        travis_job: ["lint", "test"]
     env:
       DJANGO_SETTINGS_MODULE: esp.settings
 
@@ -49,34 +63,60 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Cache pip packages
+      id: pip-cache
       uses: actions/cache@v4
       with:
-        path: ~/.cache/pip
+        path: |
+          ~/.cache/pip
+          ~/pip-packages
         key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('esp/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-${{ matrix.python-version }}-
-          ${{ runner.os }}-pip-
+    - name: Restore pip packages from cache
+      run: |
+        mkdir -p ~/pip-packages
+        if [ -n "$(ls ~/pip-packages/ 2>/dev/null)" ]; then
+          sudo cp -rn ~/pip-packages/. /usr/local/lib/python${{ matrix.python-version }}/dist-packages/
+        fi
+    - name: Cache apt packages
+      id: apt-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/apt-cache
+        key: ${{ runner.os }}-apt-${{ hashFiles('esp/packages_base.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-apt-
+    - name: Restore apt packages from cache
+      run: |
+        mkdir -p ~/apt-cache
+        if [ -n "$(ls ~/apt-cache/*.deb 2>/dev/null)" ]; then
+          sudo cp -n ~/apt-cache/*.deb /var/cache/apt/archives/
+        fi
     - name: Prepare for Installing Dependencies
-      run: deploy/travis/before_install
+      run: deploy/ci/before_install
       env:
         PYTHON_VERSION: ${{ matrix.python-version }}
-    - name: Install Dependencies for ${{ matrix.travis_job }}
+    - name: Install Dependencies
       env:
-        TRAVIS_JOB: ${{ matrix.travis_job }}
+        CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
-      run: deploy/travis/install
-    - name: Prepare for ${{ matrix.travis_job }}
+        PIP_CACHE_HIT: ${{ steps.pip-cache.outputs.cache-hit }}
+      run: deploy/ci/install
+    - name: Save pip packages to cache
+      run: sudo cp -r /usr/local/lib/python${{ matrix.python-version }}/dist-packages/. ~/pip-packages/ 2>/dev/null || true
+    - name: Save apt packages to cache
+      run: sudo cp /var/cache/apt/archives/*.deb ~/apt-cache/ 2>/dev/null || true
+    - name: Prepare for Test
       env:
-        TRAVIS_JOB: ${{ matrix.travis_job }}
+        CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
-      run: deploy/travis/before_script
-    - name: Run ${{ matrix.travis_job }}
+      run: deploy/ci/before_script
+    - name: Run Tests
       env:
-        TRAVIS_JOB: ${{ matrix.travis_job }}
+        CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
-      run: deploy/travis/script
+      run: deploy/ci/script
     - name: Upload Coverage to Codecov
-      if: ${{ matrix.travis_job == 'test' }}
       uses: codecov/codecov-action@v5
       with:
         fail_ci_if_error: true

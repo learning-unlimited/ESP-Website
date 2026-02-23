@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -58,7 +57,7 @@ class VolunteerRequestForm(forms.Form):
             del kwargs['program']
         else:
             raise KeyError('Need to supply program as named argument to VolunteerRequestForm')
-        super(VolunteerRequestForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def load(self, vr):
         self.initial['vr_id'] = vr.id
@@ -120,7 +119,7 @@ class VolunteerOfferForm(forms.Form):
         else:
             raise KeyError('Need to supply program as named argument to VolunteerOfferForm')
 
-        super(VolunteerOfferForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         vrs = self.program.getVolunteerRequests()
         self.fields['requests'].choices = [(v.id, '%s: %s (%s more needed)' % (v.timeslot.pretty_time(), v.timeslot.description, positive_or_no(v.num_volunteers - v.num_offers()))) for v in vrs]
         self.fields['shirt_size'].choices = [('', '')]+[(x.strip(), x.strip()) for x in Tag.getTag('volunteer_shirt_sizes').split(',')]
@@ -239,7 +238,7 @@ class VolunteerImportForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         cur_prog = kwargs.pop('cur_prog', None)
-        super(VolunteerImportForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         qs = Program.objects.annotate(vr_count = Count('volunteerrequest')).filter(vr_count__gt=0)
         if cur_prog is not None:
             qs = qs.exclude(id=cur_prog.id)
