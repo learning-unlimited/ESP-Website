@@ -37,6 +37,7 @@ from django.core.files.base import ContentFile
 from esp.users.models     import ESPUser
 from esp.program.models   import TeacherBio, Program, ArchiveClass
 from esp.utils.web        import get_from_id, render_to_response
+from esp.middleware import ESPError
 from django.http          import HttpResponseRedirect, HttpResponsePermanentRedirect
 from django.contrib.auth.decorators import login_required
 from datetime             import datetime
