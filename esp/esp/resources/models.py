@@ -72,7 +72,7 @@ class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
     # TODO: this model can almost certainly be cleaned up. It is probably possible to delete the caching and dumping
     # and just use `attributes` as a pipe-separated list
-    from esp.survey.models import ListField
+    from esp.survey.fields import ListField
 
     name = models.CharField(max_length=40)                          #   Brief name
     description = models.TextField()                                #   What is this resource?

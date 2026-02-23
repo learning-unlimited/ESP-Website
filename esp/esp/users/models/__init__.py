@@ -1,4 +1,4 @@
-﻿from __future__ import absolute_import
+from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
@@ -239,7 +239,7 @@ class BaseESPUser(object):
                 if not hasattr(prog, 'program_schoolyear'):
                     from django.apps import apps
                     Program = apps.get_model('program', 'Program')
-                    if isinstance(prog, (int, six.string_types)):
+                    if isinstance(prog, (int, str)):
                         prog_obj = Program.objects.get(id=prog)
                     else:
                         prog_obj = None # Should not happen if views.py is correct

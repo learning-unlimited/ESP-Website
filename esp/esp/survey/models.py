@@ -52,43 +52,7 @@ from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
 from esp.program.models import Program
 from esp.tagdict.models import Tag
-
-class ListField(object):
-    """ Create a list type field descriptor. Allows you to
-    pack lists (actually tuples) into a delimited string easily.
-
-    Example Usage:
-        class A(models.Model):
-            b = models.TextField()
-            a = ListField('b')
-
-        c = A()
-
-        c.a = ('a','b','c')
-
-        print c.b
-        > "a|b|c"
-
-        c.save()
-
-    """
-    field_name = ''
-    separator = '|'
-
-    def __init__(self, field_name, separator='|'):
-        self.field_name = field_name
-        self.separator = separator
-
-    def __get__(self, instance, class_):
-        data = str(getattr(instance, self.field_name) or '').strip()
-        if not data:
-            return ()
-        else:
-            return tuple(data.split(self.separator))
-
-    def __set__(self, instance, value):
-        data = self.separator.join(map(str, value))
-        setattr(instance, self.field_name, data)
+from esp.survey.fields import ListField
 
 @python_2_unicode_compatible
 class Survey(models.Model):
