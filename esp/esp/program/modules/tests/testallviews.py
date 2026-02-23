@@ -193,7 +193,7 @@ class AllViewsTest(ProgramFrameworkTest):
                     except Exception as e:
                         failed_modules[module_view]['GET event'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
                     try: # Use a user ID as the extra argument
-                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + str(self.adminUser.id))
+                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + self.adminUser.id)
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
                     except Exception as e:

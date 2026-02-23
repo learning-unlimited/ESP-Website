@@ -63,35 +63,25 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Cache pip packages
-      id: pip-cache
       uses: actions/cache@v4
       with:
-        path: |
-          ~/.cache/pip
-          ~/pip-packages
+        path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('esp/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-${{ matrix.python-version }}-
-    - name: Restore pip packages from cache
+          ${{ runner.os }}-pip-
+    - name: Get apt packages list
+      if: ${{ matrix.ci_job == 'test' }}
+      id: apt-action
       run: |
-        mkdir -p ~/pip-packages
-        if [ -n "$(ls ~/pip-packages/ 2>/dev/null)" ]; then
-          sudo cp -rn ~/pip-packages/. /usr/local/lib/python${{ matrix.python-version }}/dist-packages/
-        fi
+        PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^libpq-dev' | grep -v '^.*pip' | tr '\n' ' ')
+        echo "packages=$PKGS" >> $GITHUB_OUTPUT
     - name: Cache apt packages
-      id: apt-cache
-      uses: actions/cache@v4
+      if: ${{ matrix.ci_job == 'test' }}
+      uses: awalsh128/cache-apt-pkgs-action@latest
       with:
-        path: ~/apt-cache
-        key: ${{ runner.os }}-apt-${{ hashFiles('esp/packages_base.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-apt-
-    - name: Restore apt packages from cache
-      run: |
-        mkdir -p ~/apt-cache
-        if [ -n "$(ls ~/apt-cache/*.deb 2>/dev/null)" ]; then
-          sudo cp -n ~/apt-cache/*.deb /var/cache/apt/archives/
-        fi
+        packages: ${{ steps.apt-action.outputs.packages }}
+        version: 1.0
     - name: Prepare for Installing Dependencies
       run: deploy/ci/before_install
       env:
@@ -100,12 +90,7 @@ jobs:
       env:
         CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
-        PIP_CACHE_HIT: ${{ steps.pip-cache.outputs.cache-hit }}
       run: deploy/ci/install
-    - name: Save pip packages to cache
-      run: sudo cp -r /usr/local/lib/python${{ matrix.python-version }}/dist-packages/. ~/pip-packages/ 2>/dev/null || true
-    - name: Save apt packages to cache
-      run: sudo cp /var/cache/apt/archives/*.deb ~/apt-cache/ 2>/dev/null || true
     - name: Prepare for Test
       env:
         CI_JOB: test
