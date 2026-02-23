@@ -82,9 +82,9 @@ class ExpiredListFilter(admin.SimpleListFilter):
             return queryset.filter(end_date__lte=datetime.datetime.now())
 
 class PermissionAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'role', 'permission_type', 'program', 'start_date', 'end_date']
-    search_fields = default_user_search() + ['permission_type', 'program__url']
-    list_filter = ['permission_type', 'program', 'role', ExpiredListFilter]
+    list_display = ['id', 'user', 'role', 'user_filter', 'permission_type', 'program', 'start_date', 'end_date']
+    search_fields = default_user_search() + ['permission_type', 'program__url', 'user_filter__useful_name']
+    list_filter = ['permission_type', 'program', 'role', 'user_filter', ExpiredListFilter]
     date_hierarchy = 'start_date'
     actions = [ 'expire', 'renew' ]
 

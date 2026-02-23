@@ -49,7 +49,7 @@ from esp.db.forms import AjaxForeignKeyNewformField
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call, aux_call
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.tagdict.models import Tag
-from esp.users.models import Permission, ESPUser
+from esp.users.models import Permission, ESPUser, PersistentQueryFilter
 from esp.utils.web import render_to_response
 from esp.utils.widgets import DateTimeWidget
 
@@ -86,6 +86,24 @@ class NewPermissionForm(forms.Form):
         help_text='Start typing a username or "Last Name, First Name", then select the user from the dropdown.')
     perm_start_date = forms.DateTimeField(label='Opening date/time' + FTIMEZONE, initial=datetime.now, widget=DateTimeWidget(), required=False)
     perm_end_date = forms.DateTimeField(label='Closing date/time' + FTIMEZONE, initial=None, widget=DateTimeWidget(), required=False)
+
+
+class NewFilterPermissionForm(forms.Form):
+    permission_type = forms.ChoiceField(choices=[x for x in Permission.PERMISSION_CHOICES if "Administer" not in x[0]])
+    user_filter = forms.ModelChoiceField(
+        queryset=PersistentQueryFilter.objects.none(),
+        label='User filter',
+        help_text='Saved user filter defining which users this permission applies to.',
+    )
+    perm_start_date = forms.DateTimeField(label='Opening date/time' + FTIMEZONE, initial=datetime.now, widget=DateTimeWidget(), required=False)
+    perm_end_date = forms.DateTimeField(label='Closing date/time' + FTIMEZONE, initial=None, widget=DateTimeWidget(), required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(NewFilterPermissionForm, self).__init__(*args, **kwargs)
+        # Only show filters that apply to ESPUser objects
+        self.fields['user_filter'].queryset = PersistentQueryFilter.objects.filter(
+            item_model__icontains='ESPUser'
+        ).order_by('useful_name')
 
 class AdminCore(ProgramModuleObj, CoreModule):
     doc = """Includes the core views for managing a program (e.g. settings, dashboard)."""
@@ -318,6 +336,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         EditPermissionFormset = formset_factory(EditPermissionForm)
         create_form = NewDeadlineForm()
         perm_form = NewPermissionForm()
+        filter_perm_form = NewFilterPermissionForm()
 
         #   Define good and bad status messages
         message_good = ''
@@ -397,6 +416,23 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     perm_form = NewPermissionForm()
                 else:
                     message_bad = 'Error(s) while creating permission (see below)'
+            elif request.POST['action'] == "add_filter_permission":
+                filter_perm_form = NewFilterPermissionForm(request.POST.copy())
+                if filter_perm_form.is_valid():
+                    perm = Permission.objects.create(
+                        user=None,
+                        role=None,
+                        user_filter=filter_perm_form.cleaned_data['user_filter'],
+                        permission_type=filter_perm_form.cleaned_data['permission_type'],
+                        program=prog,
+                        start_date=filter_perm_form.cleaned_data['perm_start_date'],
+                        end_date=filter_perm_form.cleaned_data['perm_end_date'],
+                    )
+                    target = perm.user_filter.useful_name or six.text_type(perm.user_filter_id)
+                    message_good = 'Permission created for filter %s: %s.' % (target, perm.nice_name())
+                    filter_perm_form = NewFilterPermissionForm()
+                else:
+                    message_bad = 'Error(s) while creating filter-based permission (see below)'
             elif request.POST['action'] == 'save_deadlines':
                 edit_formset = EditPermissionFormset(request.POST.copy(), prefix='edit')
                 if edit_formset.is_valid():
@@ -477,7 +513,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 group_perms[group][perm_type]['perms'].sort(key=lambda perm: (perm.is_valid(), perm.end_date or datetime.max, perm.start_date or datetime.min), reverse=True)
 
         #   find all the existing user permissions for this program
-        ind_perms = Permission.objects.filter(program=self.program, user__isnull=False).order_by('user__username', 'permission_type')
+        user_perms = Permission.objects.filter(program=self.program, user__isnull=False).order_by('user__username', 'permission_type')
+        filter_perms = Permission.objects.filter(program=self.program, user__isnull=True, user_filter__isnull=False).order_by('permission_type')
+        ind_perms = list(user_perms) + list(filter_perms)
 
         perm_initial_data = [perm.__dict__ for perm in ind_perms]
         perm_formset = EditPermissionFormset(initial = perm_initial_data, prefix = 'edit_perms')
@@ -496,6 +534,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['permissions'] = ind_perms
         context['create_form'] = create_form
         context['create_perm_form'] = perm_form
+        context['create_filter_perm_form'] = filter_perm_form
 
         return render_to_response(self.baseDir()+'deadlines.html', request, context)
 

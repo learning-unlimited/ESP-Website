@@ -145,9 +145,8 @@
 <button type="button" class="dsphead">
    <b>Existing Permissions</b> (click to expand/contract)
 </button>
-<div class="dspcont">
-
 <form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="manage_perms_form">
+<div class="dspcont">
 {{ perm_manage_form }}
 <input type="hidden" name="action" value="save_permissions">
 
@@ -162,14 +161,22 @@
     {% for perm in permissions %}
     {% if forloop.counter0|divisibleby:"5" %}
     <tr>
-        <th>User</th>
+        <th>Target</th>
         <th>Permission</th>
         <th>Timing {% now "(T)" %}</th>
         <th></th>
     </tr>
     {% endif %}
     <tr style="border-top: 1px solid grey;{% if details.perms|length_is:1 %}border-bottom: 1px solid grey;{% endif %}">
-        <th>{{ perm.user }}</th>
+        <th>
+            {% if perm.user %}
+                {{ perm.user }}
+            {% elif perm.user_filter %}
+                Filter: {{ perm.user_filter.useful_name|default:perm.user_filter_id }}
+            {% else %}
+                (none)
+            {% endif %}
+        </th>
         <th class="{% if perm.is_valid %}is_open{% else %}is_closed{% endif %}">
             {{ perm.permission_type|perm_nice_name }}<br>
             <span class="bituri">{{ perm.permission_type }}</span>
@@ -214,6 +221,25 @@
     <td align="center" valign="center" colspan="2">
         <input type="hidden" name="action" value="add_permission">
         <input class="button" type="Submit" name="submit_btn" value="Create Permission" />
+    </td>
+</tr>
+</table>
+{% endautoescape %}
+</form>
+
+<form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="create_filter_perm_form">
+
+<h3>Create new filter-based permissions</h3>
+
+<p>Use a saved user filter (for example, all 7th graders) to grant a permission to a dynamic group of users.</p>
+
+{% autoescape off %}
+<table cellspacing="0" cellpadding="3">
+{{ create_filter_perm_form }}
+<tr>
+    <td align="center" valign="center" colspan="2">
+        <input type="hidden" name="action" value="add_filter_permission">
+        <input class="button" type="Submit" name="submit_btn" value="Create Filter Permission" />
     </td>
 </tr>
 </table>

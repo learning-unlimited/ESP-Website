@@ -2475,6 +2475,17 @@ class Permission(ExpirableModel):
     role = models.ForeignKey("auth.Group", blank=True, null=True,
                              help_text="Apply this permission to an entire user role (can be blank).", on_delete=models.CASCADE)
 
+    # Alternatively, a permission can be assigned to a dynamic user filter.
+    # This allows applying permissions to all users matching a saved filter
+    # (e.g. all 7th graders), and will stay up-to-date as users change.
+    user_filter = models.ForeignKey(
+        PersistentQueryFilter,
+        blank=True,
+        null=True,
+        help_text="Apply this permission to all users matching this saved filter.",
+        on_delete=models.CASCADE,
+    )
+
     #For now, we'll use plain text for a description of what permission it is
     PERMISSION_CHOICES = (
         ("Administer", "Full administrative permissions"),
@@ -2647,11 +2658,42 @@ class Permission(ExpirableModel):
             `datetime`
         """
         quser = Q(user=user) | Q(user=None, role__in=user.groups.all())
-        q_obj = cls.q_permissions_on_program(quser, name, program, None, program_is_none_implies_all, is_valid=False).order_by("-end_date")
-        if q_obj.exists():
-            return q_obj[0].end_date
-        else:
+        direct_qs = cls.q_permissions_on_program(
+            quser, name, program, None, program_is_none_implies_all, is_valid=False
+        )
+
+        # Include permissions that apply via a dynamic user_filter
+        filter_qs = cls.q_permissions_on_program(
+            Q(user_filter__isnull=False),
+            name,
+            program,
+            None,
+            program_is_none_implies_all,
+            is_valid=False,
+        )
+
+        perms = list(direct_qs)
+        for perm in filter_qs:
+            uf = perm.user_filter
+            if uf is None:
+                continue
+            try:
+                if uf.getList(ESPUser).filter(pk=user.pk).exists():
+                    perms.append(perm)
+            except ESPError:
+                # Ignore invalid filters when computing deadlines
+                continue
+
+        if not perms:
             return None
+
+        # Match existing semantics: pick the latest closing time
+        latest = sorted(
+            perms,
+            key=lambda p: (p.end_date or datetime.max, p.start_date or datetime.min),
+            reverse=True,
+        )[0]
+        return latest.end_date
 
     @classmethod
     def user_has_perm(cls, user, name, program=None, when=None, program_is_none_implies_all=False):
@@ -2705,9 +2747,33 @@ class Permission(ExpirableModel):
         if user.isAdministrator(program=program):
             return True
 
+        # Direct user / role-based permissions
         quser = Q(user=user) | Q(user=None, role__in=user.groups.all())
-        return cls.q_permissions_on_program(quser, name, program, when,
-                program_is_none_implies_all).exists()
+        if cls.q_permissions_on_program(
+            quser, name, program, when, program_is_none_implies_all
+        ).exists():
+            return True
+
+        # Permissions granted via a dynamic user filter
+        filter_qs = cls.q_permissions_on_program(
+            Q(user_filter__isnull=False),
+            name,
+            program,
+            when,
+            program_is_none_implies_all,
+        )
+        for perm in filter_qs:
+            uf = perm.user_filter
+            if uf is None:
+                continue
+            try:
+                if uf.getList(ESPUser).filter(pk=user.pk).exists():
+                    return True
+            except ESPError:
+                # Ignore invalid filters when checking permissions
+                continue
+
+        return False
 
     @classmethod
     def list_roles_with_perm(cls, name, program):
@@ -2744,11 +2810,14 @@ class Permission(ExpirableModel):
         return bool(self.implications.get(self.permission_type, None))
 
     def __str__(self):
-        #TODO
         if self.user is not None:
-            user = self.user.username
+            grantee = self.user.username
+        elif self.role is not None:
+            grantee = six.text_type(self.role)
+        elif self.user_filter is not None:
+            grantee = six.text_type(self.user_filter)
         else:
-            user = self.role
+            grantee = "None"
 
         if self.program is not None:
             program = self.program.niceName()
@@ -2756,7 +2825,7 @@ class Permission(ExpirableModel):
             program = "None"
 
         return "GRANT %s ON %s TO %s" % (self.permission_type,
-                                         program, user)
+                                         program, grantee)
 
     @classmethod
     def nice_name_lookup(cls, perm_type):
