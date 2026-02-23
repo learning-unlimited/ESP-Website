@@ -242,7 +242,7 @@ def save(schedule, check_consistency=True, check_constraints=True):
         for so in section_objs:
             section = schedule.class_sections[so.id]
             ensure_section_not_moved(so, section)
-            if len(section_obj.get_meeting_times()) > 0:
+            if len(so.get_meeting_times()) > 0:
                 unschedule_section(so, ajax_change_log)
 
         check_can_schedule_sections(section_infos, schedule)
