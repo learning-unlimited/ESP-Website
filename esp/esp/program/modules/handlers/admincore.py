@@ -51,6 +51,7 @@ from esp.users.models import Permission, ESPUser, PersistentQueryFilter
 from esp.utils.web import render_to_response
 from esp.utils.widgets import DateTimeWidget
 
+import six
 from datetime import datetime
 from decimal import Decimal
 from copy import copy

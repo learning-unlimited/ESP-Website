@@ -84,6 +84,7 @@ from esp.program.class_status import ClassStatus
 from esp.utils import cmp
 
 from urllib.parse import quote
+import six
 
 try:
     import pickle
