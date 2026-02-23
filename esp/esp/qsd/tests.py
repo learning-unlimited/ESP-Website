@@ -377,3 +377,78 @@ class QSDImageUploadTest(TestCase):
         after = set(os.listdir(upload_dir)) if os.path.exists(upload_dir) else set()
         new_files = after - before
         self.assertEqual(new_files, set(), "Orphaned files found after failed batch upload: %s" % new_files)
+
+
+class QSDBase64StrippingTest(TestCase):
+    """Tests that base64 images are stripped when saving QSD content (#3612)."""
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='strip_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+    def _create_qsd(self, url_path, name):
+        """Helper to create a QSD page for testing."""
+        from esp.web.models import default_navbarcategory
+        qsd_rec = QuasiStaticData()
+        qsd_rec.url = url_path
+        qsd_rec.name = name
+        qsd_rec.author = self.admin
+        qsd_rec.nav_category = default_navbarcategory()
+        qsd_rec.content = 'Original content'
+        qsd_rec.title = 'Test Page'
+        qsd_rec.description = ''
+        qsd_rec.keywords = ''
+        qsd_rec.save()
+        return qsd_rec
+
+    def test_qsd_edit_strips_base64(self):
+        """Full-page QSD edit strips base64 images from content."""
+        qsd_rec = self._create_qsd('learn/teststrip', 'learn:teststrip')
+        self.client.login(username='strip_admin', password='password')
+
+        self.client.post('/learn/teststrip.edit.html', {
+            'post_edit': '1',
+            'nav_category': qsd_rec.nav_category.id,
+            'content': '<p>Hello</p><img src="data:image/png;base64,iVBORw0KGgo"/><p>World</p>',
+            'title': 'Test Page',
+            'description': '',
+            'keywords': '',
+        })
+        qsd_rec.refresh_from_db()
+        self.assertNotIn('data:image', qsd_rec.content)
+        self.assertIn('Hello', qsd_rec.content)
+        self.assertIn('World', qsd_rec.content)
+
+    def test_ajax_qsd_strips_base64(self):
+        """Inline AJAX QSD edit strips base64 images."""
+        qsd_rec = self._create_qsd('learn/testajaxstrip', 'learn:testajaxstrip')
+        self.client.login(username='strip_admin', password='password')
+
+        response = self.client.post('/admin/ajax_qsd', {
+            'cmd': 'update',
+            'url': 'learn/testajaxstrip',
+            'data': '<p>Text</p><img src="data:image/png;base64,HUGE_BLOB"/>',
+        }, HTTP_REFERER='http://testserver/learn/index.html')
+
+        self.assertEqual(response.status_code, 200)
+        qsd_rec.refresh_from_db()
+        self.assertNotIn('data:image', qsd_rec.content)
+        self.assertIn('Text', qsd_rec.content)
+
+    def test_qsd_edit_preserves_normal_images(self):
+        """Normal image URLs are not stripped by the base64 filter."""
+        qsd_rec = self._create_qsd('learn/testpreserve', 'learn:testpreserve')
+        self.client.login(username='strip_admin', password='password')
+
+        self.client.post('/learn/testpreserve.edit.html', {
+            'post_edit': '1',
+            'nav_category': qsd_rec.nav_category.id,
+            'content': '<p>Photo:</p><img src="/media/uploaded/qsd_images/abc123.png"/>',
+            'title': 'Test Page',
+            'description': '',
+            'keywords': '',
+        })
+        qsd_rec.refresh_from_db()
+        self.assertIn('/media/uploaded/qsd_images/abc123.png', qsd_rec.content)

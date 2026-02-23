@@ -50,11 +50,14 @@ from django.views.decorators.cache import cache_control
 from esp.varnish.varnish import purge_page
 from urllib.parse import urlparse
 from bleach import clean
+from django.contrib import messages
 
 from django.conf import settings
 from django.views.decorators.http import require_POST
 
 from reversion import revisions as reversion
+
+from esp.utils.sanitize import strip_base64_images
 
 import logging
 import os
@@ -174,6 +177,11 @@ def qsd(request, url):
         data = request.POST['content']
         if class_qsd:
             data = clean(data, strip = True)
+        data, n_stripped = strip_base64_images(data)
+        if n_stripped > 0:
+            messages.warning(request,
+                '%d embedded image(s) were removed. '
+                'Please use the image upload button in the toolbar to add images.' % n_stripped)
 
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
         # The revision will automatically be created upon calling the save function of the model object
@@ -257,6 +265,7 @@ def ajax_qsd(request):
         # Sanitize if this is for a class QSD
         if len(path_parts) > 3 and path_parts[3] == "Classes":
             data = clean(data, strip = True)
+        data, _ = strip_base64_images(data)
 
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
         # The revision will automatically be created upon calling the save function of the model object
@@ -288,6 +297,7 @@ def ajax_qsd_preview(request):
     # Sanitize if this is for a class QSD
     if len(path_parts) > 3 and path_parts[3] == "Classes":
         data = clean(data, strip = True)
+    data, _ = strip_base64_images(data)
 
     # We don't necessarily need to wrap it in JSON, but this seems more
     # future-proof.

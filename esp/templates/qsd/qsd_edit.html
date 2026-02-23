@@ -17,6 +17,7 @@
 <script src="https://unpkg.com/tiny-markdown-editor/dist/tiny-mde.min.js"></script>
 {% else %}
 <script src="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.js"></script>
+<script src="/media/scripts/jodit_base64_upload.js"></script>
 {% endif %}
 <!--jQuery.initialize plugin is created to help maintain dynamically created elements on the page-->
 <script src="https://cdn.jsdelivr.net/gh/pie6k/jquery.initialize@eb28c24e2eef256344777b45a455173cba36e850/jquery.initialize.js"></script>
@@ -91,6 +92,7 @@ var editor = new Jodit("#qsd_content", {
     }
   }
 });
+espHandleBase64Paste(editor);
 {% endif %}
 </script>
 {% endblock %}

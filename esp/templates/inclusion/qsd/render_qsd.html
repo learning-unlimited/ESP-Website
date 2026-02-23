@@ -1,5 +1,6 @@
 <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.css">
 <script src="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.js"></script>
+<script src="/media/scripts/jodit_base64_upload.js"></script>
 <!--jQuery.initialize plugin is created to help maintain dynamically created elements on the page-->
 <script src="https://cdn.jsdelivr.net/gh/pie6k/jquery.initialize@eb28c24e2eef256344777b45a455173cba36e850/jquery.initialize.js"></script>
 
@@ -71,6 +72,7 @@ var editor = new Jodit("#qsd_content_{{ qsdrec.edit_id }}", {
     }
   }
 });
+espHandleBase64Paste(editor);
 </script>
 <br />
 {% if not inline %}

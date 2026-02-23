@@ -441,6 +441,89 @@ class QueryBuilderTest(DjangoTestCase):
                          str(Q(a_db_field="foo bar baz")))
 
 
+class StripBase64ImagesTest(DjangoTestCase):
+    """Tests for esp.utils.sanitize.strip_base64_images (#3612)."""
+
+    def setUp(self):
+        from esp.utils.sanitize import strip_base64_images
+        self.strip = strip_base64_images
+
+    def test_no_images_unchanged(self):
+        html = '<p>Hello world</p><img src="/media/photo.png">'
+        result, count = self.strip(html)
+        self.assertEqual(result, html)
+        self.assertEqual(count, 0)
+
+    def test_none_returns_none(self):
+        result, count = self.strip(None)
+        self.assertIsNone(result)
+        self.assertEqual(count, 0)
+
+    def test_empty_returns_empty(self):
+        result, count = self.strip('')
+        self.assertEqual(result, '')
+        self.assertEqual(count, 0)
+
+    def test_single_base64_stripped(self):
+        html = '<p>Before</p><img src="data:image/png;base64,iVBORw0KGgo"/><p>After</p>'
+        result, count = self.strip(html)
+        self.assertEqual(count, 1)
+        self.assertNotIn('data:', result)
+        self.assertIn('Before', result)
+        self.assertIn('After', result)
+
+    def test_multiple_base64_stripped(self):
+        html = (
+            '<img src="data:image/png;base64,AAA"/>'
+            '<img src="data:image/jpeg;base64,BBB"/>'
+            '<img src="data:image/gif;base64,CCC"/>'
+        )
+        result, count = self.strip(html)
+        self.assertEqual(count, 3)
+        self.assertNotIn('data:', result)
+
+    def test_normal_images_preserved(self):
+        html = '<img src="/media/photo.png"><img src="https://example.com/img.jpg">'
+        result, count = self.strip(html)
+        self.assertEqual(result, html)
+        self.assertEqual(count, 0)
+
+    def test_mixed_normal_and_base64(self):
+        html = '<img src="/media/photo.png"><img src="data:image/png;base64,AAA"/><img src="https://example.com/img.jpg">'
+        result, count = self.strip(html)
+        self.assertEqual(count, 1)
+        self.assertIn('/media/photo.png', result)
+        self.assertIn('https://example.com/img.jpg', result)
+        self.assertNotIn('data:', result)
+
+    def test_single_quoted_src(self):
+        html = "<img src='data:image/png;base64,AAA'/>"
+        result, count = self.strip(html)
+        self.assertEqual(count, 1)
+        self.assertNotIn('data:', result)
+
+    def test_img_with_extra_attributes(self):
+        html = '<img width="300" src="data:image/png;base64,AAA" alt="screenshot" style="border:1px solid">'
+        result, count = self.strip(html)
+        self.assertEqual(count, 1)
+        self.assertNotIn('data:', result)
+        self.assertNotIn('width', result)
+
+    def test_css_background_data_uri_stripped(self):
+        html = '<div style="background-image: url(data:image/png;base64,AAA)">text</div>'
+        result, count = self.strip(html)
+        self.assertEqual(count, 1)
+        self.assertNotIn('data:image', result)
+        self.assertIn('url()', result)
+        self.assertIn('text', result)
+
+    def test_fast_path_no_data_colon(self):
+        html = '<p>No images at all, just some text with a colon: here.</p>'
+        result, count = self.strip(html)
+        self.assertEqual(result, html)
+        self.assertEqual(count, 0)
+
+
 def suite():
     """Choose tests to expose to the Django tester."""
     s = unittest.TestSuite()

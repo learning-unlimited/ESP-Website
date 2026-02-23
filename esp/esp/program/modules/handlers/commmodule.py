@@ -45,6 +45,7 @@ from django.template import Template
 from django.template import Context as DjangoContext
 from django.template.loader import render_to_string
 from esp.middleware import ESPError
+from esp.utils.sanitize import strip_base64_images
 
 import re
 
@@ -75,6 +76,7 @@ class CommModule(ProgramModuleObj):
                                               request.POST['listcount'],
                                               request.POST['subject'],
                                               request.POST['body']    ]
+        body, _ = strip_base64_images(body)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
         public_view = 'public_view' in request.POST
@@ -182,6 +184,7 @@ class CommModule(ProgramModuleObj):
                                     request.POST['replyto'],
                                     request.POST['subject'],
                                     request.POST['body']    ]
+        body, _ = strip_base64_images(body)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         public_view = 'public_view' in request.POST
 

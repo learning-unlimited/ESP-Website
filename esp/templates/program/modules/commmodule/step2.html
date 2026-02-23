@@ -5,6 +5,7 @@
 {% block xtrajs %}
 {{block.super}}
 <script src="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.js"></script>
+<script src="/media/scripts/jodit_base64_upload.js"></script>
 {% endblock %}
 {% block stylesheets %}
 {{block.super}}
@@ -148,5 +149,6 @@ var editor = new Jodit("#emailbody", {
     }
   ],
 });
+espHandleBase64Paste(editor);
 </script>
 {% endblock %}
