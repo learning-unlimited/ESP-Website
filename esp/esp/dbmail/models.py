@@ -665,3 +665,90 @@ class CustomSMTPBackend(SMTPEmailBackend):
                 raise
             return False
         return True
+
+
+@python_2_unicode_compatible
+class InboundEmailThread(models.Model):
+    """Groups related inbound emails into a conversation thread."""
+    subject = models.CharField(max_length=998)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True, db_index=True)
+    STATUS_CHOICES = (
+        ('open', 'Open'),
+        ('in_progress', 'In Progress'),
+        ('closed', 'Closed'),
+    )
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='open', db_index=True)
+    assigned_to = AjaxForeignKey(ESPUser, null=True, blank=True, on_delete=models.SET_NULL,
+                                  related_name='assigned_threads')
+
+    class Meta:
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return self.subject
+
+    @property
+    def email_count(self):
+        return self.emails.count()
+
+    @property
+    def latest_email(self):
+        return self.emails.order_by('-received_at').first()
+
+
+@python_2_unicode_compatible
+class InboundEmail(models.Model):
+    """Stores a single inbound (or outbound reply) email captured by the mailgate."""
+    thread = models.ForeignKey(InboundEmailThread, on_delete=models.CASCADE,
+                               related_name='emails', null=True, blank=True)
+    message_id = models.CharField(max_length=998, unique=True, db_index=True)
+    in_reply_to = models.CharField(max_length=998, blank=True, default='')
+    references = models.TextField(blank=True, default='')
+
+    sender = models.CharField(max_length=512)
+    sender_email = models.EmailField(db_index=True)
+    recipient = models.CharField(max_length=512)
+    subject = models.CharField(max_length=998)
+    body_text = models.TextField(blank=True, default='')
+    body_html = models.TextField(blank=True, default='')
+    raw_headers = models.TextField(blank=True, default='')
+
+    received_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    is_outbound_reply = models.BooleanField(default=False)
+    replied_by = AjaxForeignKey(ESPUser, null=True, blank=True, on_delete=models.SET_NULL,
+                                 related_name='inbox_replies')
+
+    class Meta:
+        ordering = ['received_at']
+
+    def __str__(self):
+        return '%s from %s' % (self.subject, self.sender_email)
+
+    @property
+    def has_attachments(self):
+        return self.attachments.exists()
+
+
+@python_2_unicode_compatible
+class InboundEmailAttachment(models.Model):
+    """Stores an attachment from an inbound email."""
+    email = models.ForeignKey(InboundEmail, on_delete=models.CASCADE, related_name='attachments')
+    filename = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=255)
+    file = models.FileField(upload_to='inbox_attachments/%Y/%m/')
+    size = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return self.filename
+
+
+class InboundEmailReadStatus(models.Model):
+    """Tracks per-admin read status for inbound email threads."""
+    user = AjaxForeignKey(ESPUser, on_delete=models.CASCADE, related_name='inbox_read_statuses')
+    thread = models.ForeignKey(InboundEmailThread, on_delete=models.CASCADE, related_name='read_statuses')
+    read_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'thread')

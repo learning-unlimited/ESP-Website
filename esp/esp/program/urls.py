@@ -2,6 +2,7 @@ from django.conf.urls import url
 
 from esp.program import views
 import esp.users.views.merge
+import esp.dbmail.views as inbox_views
 
 urlpatterns = [
     # manage stuff
@@ -22,4 +23,11 @@ urlpatterns = [
     url(r'^manage/statistics/?$', views.statistics),
     url(r'^manage/preview/?$', views.template_preview),
     url(r'^manage/mergeaccounts/?$', esp.users.views.merge.merge_accounts),
+
+    # Shared email inbox (Issue #3831)
+    url(r'^manage/inbox/?$', inbox_views.inbox),
+    url(r'^manage/inbox/thread/(?P<thread_id>\d+)/?$', inbox_views.inbox_thread),
+    url(r'^manage/inbox/thread/(?P<thread_id>\d+)/mark-read/?$', inbox_views.inbox_mark_read),
+    url(r'^manage/inbox/thread/(?P<thread_id>\d+)/update/?$', inbox_views.inbox_update_thread),
+    url(r'^manage/inbox/attachment/(?P<attachment_id>\d+)/?$', inbox_views.inbox_attachment),
 ]
