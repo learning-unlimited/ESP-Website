@@ -157,7 +157,10 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         self.expect_ajaxerror('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec3.parent_class.id, 'section_id': sec3.id}, 'You are already signed up for a section of this class!')
 
         #   Try adding another class that we can actually take and check that it's there
-        sec4 = random.choice(program.sections().exclude(parent_class__id=sec1.parent_class.id).exclude(meeting_times=sec1.meeting_times.all()))
+        available_sections = list(program.sections().exclude(parent_class__id=sec1.parent_class.id).exclude(meeting_times=sec1.meeting_times.all()))
+        if not available_sections:
+            self.skipTest('No non-conflicting sections available for this random configuration')
+        sec4 = random.choice(available_sections)
         response = self.client.post('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec4.parent_class.id, 'section_id': sec4.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_sections_in_schedule(response, [sec1, sec4])
 
@@ -169,7 +172,10 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
         sec1 = random.choice(program.sections())
         sec1.preregister_student(student)
-        sec2 = random.choice(program.sections().exclude(parent_class__id=sec1.parent_class.id).exclude(meeting_times=sec1.meeting_times.all()))
+        available_sections = list(program.sections().exclude(parent_class__id=sec1.parent_class.id).exclude(meeting_times=sec1.meeting_times.all()))
+        if not available_sections:
+            self.skipTest('No non-conflicting sections available for this random configuration')
+        sec2 = random.choice(available_sections)
         sec2.preregister_student(student)
 
         #   Get the schedule and check that both classes are there
