@@ -1,14 +1,21 @@
 #!/bin/bash
 set -euf -o pipefail
 
-cp esp/esp/local_settings.py.ci esp/esp/local_settings.py
-ln -f -s `pwd`/esp/public/media/default_images esp/public/media/images
-ln -f -s `pwd`/esp/public/media/default_styles esp/public/media/styles
-# the postgres service in Github Actions sets up the database for us
-if [ "$GITHUB_ACTIONS" != true ]; then
-    psql -c "DROP DATABASE IF EXISTS test_test_django;" -U postgres
-    psql -c "DROP DATABASE IF EXISTS test_django;" -U postgres
-    psql -c "DROP ROLE IF EXISTS testuser;" -U postgres
-    psql -c "CREATE ROLE testuser PASSWORD 'testpassword' LOGIN CREATEDB;" -U postgres
-    psql -c "CREATE DATABASE test_django OWNER testuser;" -U postgres
+if [ "$CI_JOB" = "test" ]; then
+    cp esp/esp/local_settings.py.ci esp/esp/local_settings.py
+    ln -f -s `pwd`/esp/public/media/default_images esp/public/media/images
+    ln -f -s `pwd`/esp/public/media/default_styles esp/public/media/styles
+    # the postgres service in Github Actions sets up the database for us
+    if [ "$GITHUB_ACTIONS" != true ]; then
+        psql -c "DROP DATABASE IF EXISTS test_test_django;" -U postgres
+        psql -c "DROP DATABASE IF EXISTS test_django;" -U postgres
+        psql -c "DROP ROLE IF EXISTS testuser;" -U postgres
+        psql -c "CREATE ROLE testuser PASSWORD 'testpassword' LOGIN CREATEDB;" -U postgres
+        psql -c "CREATE DATABASE test_django OWNER testuser;" -U postgres
+    fi
+elif [ "$CI_JOB" = "lint" ]; then
+    :
+else
+    echo "Unknown CI_JOB: $CI_JOB"
+    exit 1
 fi
