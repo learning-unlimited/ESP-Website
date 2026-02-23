@@ -18,6 +18,78 @@
 /*Fix css for template tag button*/
 .jodit_icon_insertDate { width: 16px; height: 16px}
 .jodit_toolbar_list>.jodit_toolbar { max-height: 150px; }
+.email-template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-top: 10px;
+}
+.email-template-card {
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  background: #fff;
+  padding: 10px;
+  text-align: left;
+  width: 100%;
+}
+.email-template-card.is-selected {
+  border-color: #337ab7;
+  box-shadow: 0 0 0 2px rgba(51,122,183,0.15);
+}
+.email-template-card h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+}
+.email-template-card p {
+  margin: 0 0 8px 0;
+  color: #555;
+  font-size: 12px;
+}
+.email-template-preview {
+  border: 1px solid #ddd;
+  background: #f8f8f8;
+  border-radius: 3px;
+  padding: 8px;
+  min-height: 92px;
+}
+.email-template-preview .line {
+  display: block;
+  height: 8px;
+  background: #d6d6d6;
+  border-radius: 3px;
+  margin-bottom: 5px;
+}
+.email-template-preview .line.wide { width: 100%; }
+.email-template-preview .line.med { width: 74%; }
+.email-template-preview .line.short { width: 45%; }
+.email-template-preview .block {
+  display: block;
+  height: 26px;
+  background: #cfcfcf;
+  border-radius: 3px;
+  margin-top: 6px;
+}
+.email-template-preview-default .footer {
+  display: block;
+  height: 9px;
+  width: 85%;
+  background: #dcdcdc;
+  border-radius: 3px;
+  margin-top: 8px;
+}
+.email-template-preview-minimal .block {
+  background: #d9d9d9;
+  height: 22px;
+}
+.email-template-preview-generic .block {
+  background: repeating-linear-gradient(
+    45deg,
+    #d0d0d0,
+    #d0d0d0 6px,
+    #d8d8d8 6px,
+    #d8d8d8 12px
+  );
+}
 </style>
 {% endblock %}
 
@@ -74,6 +146,31 @@ Both email address fields also support named "mailboxes", such as "{{ default_fr
   </label> <br />
   <textarea cols="80" rows="20" name="body" id="emailbody">{{body}}</textarea>
   <br />
+
+  <strong>Email Template:</strong>
+  <small>Choose a wrapper style for this email body.</small>
+  <input type="hidden" name="template" id="selected_template" value="{{ selected_template|default:'default' }}" />
+  <div class="email-template-grid">
+    {% for tpl in email_templates %}
+    <button type="button"
+            class="email-template-card{% if tpl.key == selected_template %} is-selected{% endif %}"
+            data-template-key="{{ tpl.key }}"
+            aria-pressed="{% if tpl.key == selected_template %}true{% else %}false{% endif %}">
+      <h4>{{ tpl.display_name }}</h4>
+      <p>{{ tpl.description }}</p>
+      <div class="email-template-preview email-template-preview-{{ tpl.preview_style }}">
+        <span class="line wide"></span>
+        <span class="line med"></span>
+        <span class="line short"></span>
+        <span class="block"></span>
+        {% if tpl.preview_style == 'default' %}
+        <span class="footer"></span>
+        {% endif %}
+      </div>
+    </button>
+    {% endfor %}
+  </div>
+  <br />
   </td>
 </tr>
 </table>
@@ -127,6 +224,28 @@ var editor = new Jodit("#emailbody", {
       tooltip: "Insert a template tag",
     }
   ],
+});
+
+$j(function() {
+  var selectedTemplateField = document.getElementById('selected_template');
+
+  function updateSelectedTemplate(templateKey) {
+    if (!templateKey) {
+      return;
+    }
+
+    selectedTemplateField.value = templateKey;
+    $j('.email-template-card').removeClass('is-selected').attr('aria-pressed', 'false');
+    $j('.email-template-card[data-template-key="' + templateKey + '"]')
+      .addClass('is-selected')
+      .attr('aria-pressed', 'true');
+  }
+
+  $j('.email-template-card').on('click', function() {
+    updateSelectedTemplate($j(this).data('template-key'));
+  });
+
+  updateSelectedTemplate(selectedTemplateField.value || 'default');
 });
 </script>
 {% endblock %}

@@ -43,9 +43,11 @@ from esp.dbmail.models import ActionHandler
 from esp.tagdict.models import Tag
 from django.template import Template
 from django.template import Context as DjangoContext
+from django.template import TemplateDoesNotExist
 from django.template.loader import render_to_string
 from esp.middleware import ESPError
 
+import os
 import re
 
 class CommModule(ProgramModuleObj):
@@ -64,6 +66,79 @@ class CommModule(ProgramModuleObj):
             "seq": 10,
             "choosable": 1,
             }
+
+    EMAIL_TEMPLATE_DATA = {
+        'default': {
+            'display_name': 'Default',
+            'description': 'Standard layout with footer and unsubscribe details.',
+            'preview_style': 'default',
+        },
+        'minimal': {
+            'display_name': 'Minimal',
+            'description': 'Simpler layout with a short unsubscribe footer.',
+            'preview_style': 'minimal',
+        },
+    }
+    EMAIL_TEMPLATE_KEY_RE = re.compile(r'^[A-Za-z0-9_-]+$')
+
+    @classmethod
+    def _discover_email_template_keys(cls):
+        from django.conf import settings
+        from esp.utils.models import TemplateOverride
+
+        keys = set()
+        templates_path = os.path.join(settings.PROJECT_ROOT, 'templates', 'email')
+        if os.path.isdir(templates_path):
+            for name in os.listdir(templates_path):
+                if name.endswith('_email.html'):
+                    key = name[:-11]
+                    if cls.EMAIL_TEMPLATE_KEY_RE.match(key):
+                        keys.add(key)
+
+        override_names = TemplateOverride.objects.filter(
+            name__startswith='email/',
+            name__endswith='_email.html',
+        ).values_list('name', flat=True).distinct()
+        for override_name in override_names:
+            file_name = os.path.basename(override_name)
+            key = file_name[:-11]
+            if cls.EMAIL_TEMPLATE_KEY_RE.match(key):
+                keys.add(key)
+
+        # Keep default available even if it was accidentally removed from disk.
+        keys.add('default')
+        return keys
+
+    @classmethod
+    def available_email_templates(cls):
+        keys = cls._discover_email_template_keys()
+
+        def sort_key(k):
+            if k == 'default':
+                return (0, k)
+            if k == 'minimal':
+                return (1, k)
+            return (2, k)
+
+        templates = []
+        for key in sorted(keys, key=sort_key):
+            data = cls.EMAIL_TEMPLATE_DATA.get(key, {})
+            templates.append({
+                'key': key,
+                'display_name': data.get('display_name', key.replace('_', ' ').replace('-', ' ').title()),
+                'description': data.get('description', 'Custom chapter template.'),
+                'preview_style': data.get('preview_style', 'generic'),
+            })
+        return templates
+
+    @classmethod
+    def normalize_email_template(cls, candidate, templates=None):
+        if templates is None:
+            templates = cls.available_email_templates()
+        valid_keys = {t['key'] for t in templates}
+        if candidate in valid_keys and cls.EMAIL_TEMPLATE_KEY_RE.match(candidate):
+            return candidate
+        return 'default'
 
     @aux_call
     @needs_admin
@@ -122,10 +197,14 @@ class CommModule(ProgramModuleObj):
         if '<html>' not in body:
             body = '<html>' + body + '</html>'
 
-        # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
-        template = request.POST.get('template', 'default')
-        rendered_text = render_to_string('email/{}_email.html'.format(template),
-                                        {'msgbody': body})
+        templates = self.available_email_templates()
+        template = self.normalize_email_template(request.POST.get('template', 'default'), templates)
+        try:
+            rendered_text = render_to_string('email/{}_email.html'.format(template),
+                                            {'msgbody': body})
+        except TemplateDoesNotExist:
+            template = 'default'
+            rendered_text = render_to_string('email/default_email.html', {'msgbody': body})
         # Render the text for the first user
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
                        'program': ActionHandler(self.program, firstuser),
@@ -185,10 +264,14 @@ class CommModule(ProgramModuleObj):
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         public_view = 'public_view' in request.POST
 
-        # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
-        template = request.POST.get('template', 'default')
-        rendered_text = render_to_string('email/{}_email.html'.format(template),
-                                        {'msgbody': body})
+        templates = self.available_email_templates()
+        template = self.normalize_email_template(request.POST.get('template', 'default'), templates)
+        try:
+            rendered_text = render_to_string('email/{}_email.html'.format(template),
+                                            {'msgbody': body})
+        except TemplateDoesNotExist:
+            template = 'default'
+            rendered_text = render_to_string('email/default_email.html', {'msgbody': body})
 
         try:
             filterid = int(filterid)
@@ -236,6 +319,8 @@ class CommModule(ProgramModuleObj):
 
         context['sendto_fn_name'] = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         context['sendto_fn'] = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(context['sendto_fn_name'])
+        context['email_templates'] = self.available_email_templates()
+        context['selected_template'] = 'default'
 
         context['default_from'] = '%s <%s@%s>' % (Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME),
                                               "info", settings.SITE_INFO[1])
@@ -289,6 +374,8 @@ class CommModule(ProgramModuleObj):
                 if not prs.exists():
                     redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
                 context['from'] = context['default_from']
+                context['email_templates'] = self.available_email_templates()
+                context['selected_template'] = self.normalize_email_template(data.get('template', 'default'), context['email_templates'])
                 return render_to_response(self.baseDir()+'step2.html', request, context)
 
             ##  Prepare a message starting from an earlier request
@@ -302,6 +389,8 @@ class CommModule(ProgramModuleObj):
                 context['subject'] = msgreq.subject
                 context['replyto'] = msgreq.special_headers_dict.get('Reply-To', '')
                 context['body'] = msgreq.msgtext
+                context['email_templates'] = self.available_email_templates()
+                context['selected_template'] = 'default'
                 return render_to_response(self.baseDir()+'step2.html', request, context)
 
             else:
@@ -326,6 +415,8 @@ class CommModule(ProgramModuleObj):
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
         public_view = 'public_view' in request.POST
+        templates = self.available_email_templates()
+        selected_template = self.normalize_email_template(request.POST.get('template', 'default'), templates)
 
         return render_to_response(self.baseDir()+'step2.html', request,
                                               {'listcount': listcount,
@@ -336,6 +427,8 @@ class CommModule(ProgramModuleObj):
                                                'replyto': replytoemail,
                                                'subject': subject,
                                                'body': body,
+                                               'email_templates': templates,
+                                               'selected_template': selected_template,
                                                'public_view': public_view})
 
     def isStep(self):

@@ -72,26 +72,31 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         m = ProgramModule.objects.get(handler='CommModule', module_type='manage')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, m)
 
-    def runTest(self):
-        #   Log in an administrator
-        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+    def _login_admin_and_get_filter_data(self):
+        self.assertTrue(
+            self.client.login(username=self.admins[0].username, password='password'),
+            "Failed to log in admin user.",
+        )
 
-        #   Select users to fetch
-        post_data = {
+        response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commpanel_old'), {
             'submit_user_list': 'true',
             'base_list': 'enrolled',
             'keys': '',
             'finalsent': 'Test List',
             'submitform': 'I have my list, go on!',
-        }
-        response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commpanel_old'), post_data)
+        })
         self.assertEqual(response.status_code, 200)
 
-        #   Extract filter ID from response
-        s = re.search(r'<input type="hidden" name="filterid" value="([0-9]+)" />', response.content.decode('UTF-8'))
-        filterid = s.groups()[0]
-        s = re.search(r'<input type="hidden" name="listcount" value="([0-9]+)" />', response.content.decode('UTF-8'))
-        listcount = s.groups()[0]
+        content = response.content.decode('UTF-8')
+        filter_match = re.search(r'<input type="hidden" name="filterid" value="([0-9]+)" />', content)
+        listcount_match = re.search(r'<input type="hidden" name="listcount" value="([0-9]+)" />', content)
+        self.assertIsNotNone(filter_match, 'Expected filterid hidden input in step2 response')
+        self.assertIsNotNone(listcount_match, 'Expected listcount hidden input in step2 response')
+
+        return filter_match.groups()[0], listcount_match.groups()[0], content
+
+    def runTest(self):
+        filterid, listcount, unused_content = self._login_admin_and_get_filter_data()
 
         #   Enter email information
         post_data = {
@@ -136,6 +141,69 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         m = MessageRequest.objects.filter(recipients__id=filterid, subject='Test Subject 123')
         self.assertTrue(m.count() == 1)
         self.assertTrue(m[0].processed)
+
+    def test_step2_includes_template_selector(self):
+        filterid, listcount, content = self._login_admin_and_get_filter_data()
+
+        self.assertIn('Email Template:', content)
+        self.assertIn('data-template-key="default"', content)
+        self.assertIn('data-template-key="minimal"', content)
+        self.assertIn('name="template" id="selected_template" value="default"', content)
+
+    def test_template_selection_persists_preview_to_edit(self):
+        filterid, listcount, unused_content = self._login_admin_and_get_filter_data()
+
+        preview_response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commprev'), {
+            'subject': 'Template persistence test',
+            'body': 'Hello from preview',
+            'from': 'info@testserver.learningu.org',
+            'replyto': 'replyto@testserver.learningu.org',
+            'filterid': filterid,
+            'listcount': listcount,
+            'template': 'minimal',
+        })
+        self.assertEqual(preview_response.status_code, 200)
+        self.assertIn('name="template" value="minimal"', preview_response.content.decode('UTF-8'))
+
+        edit_response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'maincomm2'), {
+            'subject': 'Template persistence test',
+            'body': 'Hello from preview',
+            'from': 'info@testserver.learningu.org',
+            'replyto': 'replyto@testserver.learningu.org',
+            'filterid': filterid,
+            'listcount': listcount,
+            'template': 'minimal',
+        })
+        self.assertEqual(edit_response.status_code, 200)
+        self.assertIn('name="template" id="selected_template" value="minimal"', edit_response.content.decode('UTF-8'))
+
+    def test_commfinal_uses_selected_template_wrapper(self):
+        filterid, listcount, unused_content = self._login_admin_and_get_filter_data()
+
+        response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commfinal'), {
+            'subject': 'Template wrapper test',
+            'body': 'Body in minimal template',
+            'from': 'info@testserver.learningu.org',
+            'replyto': 'replyto@testserver.learningu.org',
+            'filterid': filterid,
+            'template': 'minimal',
+        })
+        self.assertEqual(response.status_code, 200)
+
+        req = MessageRequest.objects.get(recipients__id=filterid, subject='Template wrapper test')
+        self.assertIn('user.unsubscribe_link', req.msgtext, 'Minimal wrapper should include unsubscribe footer')
+
+        process_messages()
+        send_email_requests()
+
+        msg = mail.outbox[0]
+        context_dict = {'user': ActionHandler(self.students[0], self.students[0]),
+                        'program': ActionHandler(self.program, self.students[0]),
+                        'request': ActionHandler(MessageRequest(), self.students[0]),
+                        'EMAIL_HOST_SENDER': settings.EMAIL_HOST_SENDER}
+        rendered_text = render_to_string('email/minimal_email.html', {'msgbody': 'Body in minimal template'})
+        rendered_text = Template(rendered_text).render(DjangoContext(context_dict))
+        self.assertEqual(msg.body, strip_tags(rendered_text).strip())
 
     def test_program_date_variables_in_comms(self):
         """Test that {{ program.date }}, {{ program.date_range }}, {{ program.teacher_reg_deadline }} work in email templates."""

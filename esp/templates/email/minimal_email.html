@@ -5,6 +5,14 @@
 
 <body>
 {% autoescape off %}{{msgbody|safe}}{% endautoescape %}
+<br /><br />
+<small>
+You are receiving this email because you have an account on
+<a href="https://{% templatetag openvariable %}EMAIL_HOST_SENDER{% templatetag closevariable %}">
+{% templatetag openvariable %}EMAIL_HOST_SENDER{% templatetag closevariable %}</a>.
+To unsubscribe this account ({% templatetag openvariable %}user.username{% templatetag closevariable %}),
+<a href="{% templatetag openvariable %}user.unsubscribe_link{% templatetag closevariable %}">click here</a>.
+</small>
 </body>
 
 </html>
