@@ -55,6 +55,33 @@ from django.conf import settings
 
 from reversion import revisions as reversion
 
+def _get_qsd_default_content(request, base_url):
+    """Try to load default QSD content from inline_qsd_block cache.
+    If not cached, try rendering the read page to populate the cache."""
+    default = cache.get('qsd_default_content:%s' % base_url)
+    if default:
+        return default
+
+    # Try rendering the read page internally to trigger inline_qsd_block
+    try:
+        from django.urls import resolve
+        from django.test import Client as TestClient
+
+        match = resolve('/' + base_url + '.html')
+        # Only proceed if it's NOT the qsd catch-all (avoid recursion)
+        if match.func is not qsd:
+            client = TestClient()
+            client.force_login(request.user)
+            try:
+                client.get('/' + base_url + '.html')
+            except Exception:
+                pass
+            default = cache.get('qsd_default_content:%s' % base_url)
+    except Exception:
+        pass
+
+    return default
+
 # default edit permission
 EDIT_PERM = 'V/Administer/Edit'
 
@@ -105,11 +132,18 @@ def qsd(request, url):
                 qsd_rec = QuasiStaticData()
                 qsd_rec.url = base_url
                 qsd_rec.nav_category = default_navbarcategory()
-                qsd_rec.title = 'New Page'
-                qsd_rec.content = 'Please insert your text here'
                 qsd_rec.create_date = datetime.now()
                 qsd_rec.keywords = ''
                 qsd_rec.description = ''
+
+                default = _get_qsd_default_content(request, base_url)
+                if default:
+                    qsd_rec.title = default.get('title', 'New Page')
+                    qsd_rec.content = default.get('content', 'Please insert your text here')
+                else:
+                    qsd_rec.title = 'New Page'
+                    qsd_rec.content = 'Please insert your text here'
+
                 action = 'edit'
 
             if (action == 'read'):

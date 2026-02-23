@@ -37,6 +37,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.users.models import ESPUser
 
+from django.core.cache import cache
 from django.template import Template, Context
 
 class QSDCorrectnessTest(TestCase):
@@ -140,4 +141,60 @@ class QSDCorrectnessTest(TestCase):
 
             #   Delete the new QSD so we can start again.
             qsd_rec_new.delete()
+
+
+class QSDDefaultContentTest(TestCase):
+    """ Tests for default QSD content loading in the .edit page (issue #3791). """
+
+    def setUp(self):
+        self.admin, created = ESPUser.objects.get_or_create(username='qsd_default_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+    def test_edit_shows_placeholder_when_no_default(self):
+        """For a URL with no template default, edit should show the placeholder."""
+        self.client.login(username='qsd_default_admin', password='password')
+        response = self.client.get('/learn/nonexistent_page.edit.html')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('Please insert your text here', content)
+
+    def test_edit_shows_cached_default(self):
+        """When default content is cached, edit should show it instead of placeholder."""
+        cache.set('qsd_default_content:contact', {
+            'content': '<p>Default contact content from template</p>',
+            'title': 'Contact Us',
+        }, timeout=3600)
+        self.client.login(username='qsd_default_admin', password='password')
+        response = self.client.get('/contact.edit.html')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('Default contact content from template', content)
+        self.assertNotIn('Please insert your text here', content)
+
+    def test_cache_populated_by_inline_qsd_block(self):
+        """Rendering a template with inline_qsd_block should populate the cache."""
+        cache.delete('qsd_default_content:test/defaultblock')
+        template_data = """
+            {% load render_qsd %}
+            {% inline_qsd_block "test/defaultblock" %}
+            <p>This is the default block content</p>
+            {% end_inline_qsd_block %}
+        """
+        template = Template(template_data)
+        template.render(Context({}))
+        cached = cache.get('qsd_default_content:test/defaultblock')
+        self.assertIsNotNone(cached)
+        self.assertIn('This is the default block content', cached['content'])
+
+    def test_edit_loads_default_via_internal_render(self):
+        """Visiting /contact.edit.html should load defaults even without prior cache."""
+        cache.delete('qsd_default_content:contact')
+        self.client.login(username='qsd_default_admin', password='password')
+        response = self.client.get('/contact.edit.html')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        # Should contain the contact page default content, not the placeholder
+        self.assertNotIn('Please insert your text here', content)
 
