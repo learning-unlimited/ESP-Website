@@ -33,40 +33,44 @@ Learning Unlimited, Inc.
 """
 from esp.qsd.models import QuasiStaticData
 from esp.seltests.util import try_normal_login, logout, noActiveAjaxJQuery
-from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
-from esp.web.models import NavBarCategory, default_navbarcategory
+from esp.web.models import NavBarCategory
 
-from django.conf import settings
-from django.contrib.sites.models import Site
-from django.utils.unittest.case import skipUnless
-from django_selenium.testcases import SeleniumTestCase
-from selenium import selenium
-from selenium.webdriver.support.ui import WebDriverWait
+import shutil
+import unittest
+from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from selenium import webdriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
 
-class TestQsdCachePurging(SeleniumTestCase):
+
+@unittest.skipUnless(
+    shutil.which('firefox') or shutil.which('firefox-esr'),
+    'Firefox not installed')
+class TestQsdCachePurging(StaticLiveServerTestCase):
     """
-       This test requires Varnish (or some proxy caching server that accepts
-       PURGE requests) to be set up on the port and host specified in
-       local_settings.py as VARNISH_HOST (a string) and VARNISH_PORT (an int).
+       This test verifies that QSD editing works correctly through the
+       browser interface.
     """
 
     PASSWORD_STRING = 'password'
     TEST_STRING = 'Hello there from a django test!'
 
     def editQSD(self):
-        elem = self.find_element_by_class_name("qsd_header")
+        elem = self.selenium.find_element(By.CLASS_NAME, "qsd_header")
         elem.click()
-        elem = self.find_element_by_name("qsd_content")
+        elem = self.selenium.find_element(By.CLASS_NAME, "jodit_wysiwyg")
         for x in range(0, len(elem.text)):
             elem.send_keys(Keys.DELETE)
         elem.send_keys(self.TEST_STRING)
-        elem.send_keys(Keys.TAB)
-        WebDriverWait(self, 10).until(noActiveAjaxJQuery)
+        elem = self.selenium.find_element(By.CLASS_NAME, "btn-success")
+        elem.click()
+        WebDriverWait(self.selenium, 10).until(noActiveAjaxJQuery)
 
     def setUp(self):
-        SeleniumTestCase.setUp(self)
+        super(TestQsdCachePurging, self).setUp()
 
         # Make our users
         self.admin_user, created = ESPUser.objects.get_or_create(username='admin', first_name='Harry', last_name='Alborez')
@@ -76,63 +80,50 @@ class TestQsdCachePurging(SeleniumTestCase):
         self.qsd_user.set_password(self.PASSWORD_STRING)
         self.qsd_user.save()
 
-        # Check that a NavBarCategory exists
-        if len(NavBarCategory.objects.all()) < 1:
-            nbc = NavBarCategory()
-            nbc.name = 'default'
-            nbc.save()
+        # Ensure a NavBarCategory exists and clear any stale cache
+        if hasattr(NavBarCategory, '_default'):
+            del NavBarCategory._default
+        nav_category, created = NavBarCategory.objects.get_or_create(name='default')
 
         # Make our test page
         qsd_rec_new = QuasiStaticData()
         qsd_rec_new.url = 'test'
         qsd_rec_new.name = 'test'
         qsd_rec_new.author = self.admin_user
-        qsd_rec_new.nav_category = default_navbarcategory()
+        qsd_rec_new.nav_category = nav_category
         qsd_rec_new.content = ''
         qsd_rec_new.title = 'Test page'
         qsd_rec_new.description = ''
         qsd_rec_new.keywords    = ''
         qsd_rec_new.save()
 
-        # Set the port that the webdriver will try to access
-        self._old_port = self.driver.testserver_port
-        self.driver.testserver_port = settings.VARNISH_PORT
+        options = Options()
+        options.add_argument("--headless")
+        self.selenium = webdriver.Firefox(options=options)
+        self.selenium.implicitly_wait(10)
 
-        # Add the varnish_purge tag
-        Tag.objects.get_or_create(key='varnish_purge', value='true')
+    def test_qsd_editing(self):
+        for page in ["/", "/test.html"]:
+            self.selenium.get('%s%s' % (self.live_server_url, "/"))
+            try_normal_login(self.selenium, self.live_server_url, self.admin_user.username, self.PASSWORD_STRING)
+            self.selenium.get('%s%s' % (self.live_server_url, page))
+            self.assertTrue(self.selenium.find_element(By.CLASS_NAME, "qsd_header").is_displayed(), "Admin should be able to see the QSD header on " + page)
+            self.editQSD()
 
-        # Set up the correct site
-        site = Site.objects.get_current()
-        site.domain = settings.VARNISH_HOST+":"+str(settings.VARNISH_PORT)
-        site.save()
+            self.selenium.delete_all_cookies()
+            self.selenium.get('%s%s' % (self.live_server_url, page))
+            self.assertTrue(self.TEST_STRING in self.selenium.page_source)
+            logout(self.selenium, self.live_server_url)
 
-    def check_page(self, page):
-        self.open_url("/")
-        try_normal_login(self, self.admin_user.username, self.PASSWORD_STRING)
-        self.open_url(page)
-        self.editQSD()
+            self.selenium.get('%s%s' % (self.live_server_url, "/"))
+            try_normal_login(self.selenium, self.live_server_url, self.qsd_user.username, self.PASSWORD_STRING)
+            self.selenium.get('%s%s' % (self.live_server_url, page))
+            self.assertFalse(self.selenium.find_element(By.CLASS_NAME, "qsd_header").is_displayed(), "Non-admin shouldn't be able to see the QSD header on " + page)
 
-        self.delete_all_cookies()
-        self.open_url(page)
-        self.assertTrue(self.is_text_present(self.TEST_STRING))
-        logout(self)
-
-        try_normal_login(self, self.qsd_user.username, self.PASSWORD_STRING)
-        self.open_url(page)
-        self.editQSD()
-
-        self.delete_all_cookies()
-        self.open_url(page)
-        self.assertTrue(self.is_text_present(self.TEST_STRING))
-
-    @skipUnless(hasattr(settings, 'VARNISH_HOST') and hasattr(settings, 'VARNISH_PORT'), "Varnish settings weren't set")
-    def test_inline(self):
-        self.check_page("/")
-
-    @skipUnless(hasattr(settings, 'VARNISH_HOST') and hasattr(settings, 'VARNISH_PORT'), "Varnish settings weren't set")
-    def test_regular(self):
-        self.check_page("/test.html")
+            self.selenium.delete_all_cookies()
+            self.selenium.get('%s%s' % (self.live_server_url, page))
+            self.assertTrue(self.TEST_STRING in self.selenium.page_source)
 
     def tearDown(self):
-        super().tearDown()
-        self.driver.testserver_port = self._old_port
+        self.selenium.quit()
+        super(TestQsdCachePurging, self).tearDown()
