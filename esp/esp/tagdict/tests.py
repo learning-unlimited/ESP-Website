@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.test import TestCase
 from django.contrib.auth.models import User
 from esp.tagdict import all_global_tags, all_program_tags
@@ -101,9 +100,6 @@ class TagTest(TestCase):
                 self.assertFalse(Tag.getTag("test", target=target))
 
 
-
-
-
         Tag.setTag("test", value="tag value")
 
         for target in [user1, user2]:
@@ -124,8 +120,6 @@ class TagTest(TestCase):
                 self.assertFalse(Tag.getTag("test", target=target))
 
 
-
-
         Tag.setTag("test", value="tag value 2")
 
         for target in [user1, user2]:
@@ -144,7 +138,6 @@ class TagTest(TestCase):
             with self.assertNumQueries(0):
                 self.assertFalse(Tag.getTag("test", target=target))
                 self.assertFalse(Tag.getTag("test", target=target))
-
 
 
         Tag.setTag("test", target=user1, value="tag value user1")
@@ -173,7 +166,6 @@ class TagTest(TestCase):
         with self.assertNumQueries(0):
             self.assertFalse(Tag.getTag("test", target=user2))
             self.assertFalse(Tag.getTag("test", target=user2))
-
 
 
         Tag.unSetTag("test")

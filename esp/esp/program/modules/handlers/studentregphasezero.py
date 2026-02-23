@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -74,8 +73,8 @@ class StudentRegPhaseZero(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
-            "admin_title": "Student Registration Phase Zero",
-            "link_title": "Student Registration Phase Zero",
+            "admin_title": "Program Lottery Registration",
+            "link_title": "Program Lottery Registration",
             "module_type": "learn",
             "seq": 2,
             "required": True,

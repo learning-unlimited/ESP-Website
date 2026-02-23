@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -108,7 +106,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
         return True
 
     def deadline_met(self):
-        return super(StudentJunctionAppModule, self).deadline_met('/Applications')
+        return super().deadline_met('/Applications')
 
     @main_call
     @needs_student_in_grade

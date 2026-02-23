@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -56,14 +55,14 @@ class TeacherQuizComboForm(ComboForm):
         rt = RecordType.objects.get(name=self.event)
         Record.objects.filter(user=self.curr_request.user, program=self.program, event=rt).delete()
         Record.objects.create(user=self.curr_request.user, program=self.program, event=rt)
-        return super(TeacherQuizComboForm, self).done(form_list=form_list, redirect_url = '/teach/'+self.program.getUrlBase()+'/teacherreg', **kwargs)
+        return super().done(form_list=form_list, redirect_url = '/teach/'+self.program.getUrlBase()+'/teacherreg', **kwargs)
 
 class TeacherQuizModule(ProgramModuleObj):
     doc = """Serves a custom form quiz during teacher registration."""
 
     # Initialization
     def __init__(self, *args, **kwargs):
-        super(TeacherQuizModule, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.event="teacher_quiz_done"
 
     # General Info functions
