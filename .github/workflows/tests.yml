@@ -68,30 +68,17 @@ jobs:
       with:
         path: |
           ~/.cache/pip
-          ~/pip-packages
+          /usr/local/lib/python${{ matrix.python-version }}/dist-packages
         key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('esp/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-${{ matrix.python-version }}-
-    - name: Restore pip packages from cache
-      run: |
-        mkdir -p ~/pip-packages
-        if [ -n "$(ls ~/pip-packages/ 2>/dev/null)" ]; then
-          sudo cp -rn ~/pip-packages/. /usr/local/lib/python${{ matrix.python-version }}/dist-packages/
-        fi
     - name: Cache apt packages
-      id: apt-cache
       uses: actions/cache@v4
       with:
-        path: ~/apt-cache
+        path: /var/cache/apt/archives/*.deb
         key: ${{ runner.os }}-apt-${{ hashFiles('esp/packages_base.txt') }}
         restore-keys: |
           ${{ runner.os }}-apt-
-    - name: Restore apt packages from cache
-      run: |
-        mkdir -p ~/apt-cache
-        if [ -n "$(ls ~/apt-cache/*.deb 2>/dev/null)" ]; then
-          sudo cp -n ~/apt-cache/*.deb /var/cache/apt/archives/
-        fi
     - name: Prepare for Installing Dependencies
       run: deploy/ci/before_install
       env:
@@ -102,10 +89,6 @@ jobs:
         PYTHON_VERSION: ${{ matrix.python-version }}
         PIP_CACHE_HIT: ${{ steps.pip-cache.outputs.cache-hit }}
       run: deploy/ci/install
-    - name: Save pip packages to cache
-      run: sudo cp -r /usr/local/lib/python${{ matrix.python-version }}/dist-packages/. ~/pip-packages/ 2>/dev/null || true
-    - name: Save apt packages to cache
-      run: sudo cp /var/cache/apt/archives/*.deb ~/apt-cache/ 2>/dev/null || true
     - name: Prepare for Test
       env:
         CI_JOB: test
