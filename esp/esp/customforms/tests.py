@@ -287,7 +287,6 @@ class HasPermTest(TestCase):
         self.user, _ = ESPUser.objects.get_or_create(username='perm_user')
         self.user.set_password('password')
         self.user.save()
-        
         self.anon_user = AnonymousESPUser()
 
     def tearDown(self):
@@ -423,8 +422,7 @@ class ViewResponseTest(TestCase):
 
 
 class FormBuilderViewTest(TestCase):
-    """Tests for formBuilder() — context data and access control."""
-    
+    """Tests for formBuilder() - context data and access control."""
     def setUp(self):
         self.admin, _ = ESPUser.objects.get_or_create(username='builder_admin')
         self.admin.set_password('password')
@@ -435,7 +433,6 @@ class FormBuilderViewTest(TestCase):
         self.teacher.set_password('password')
         self.teacher.save()
         self.teacher.makeRole('Teacher')
-        
         self.student, _ = ESPUser.objects.get_or_create(username='builder_student')
         self.student.set_password('password')
         self.student.save()
@@ -462,7 +459,6 @@ class FormBuilderViewTest(TestCase):
         self.client.login(username='builder_admin', password='password')
         response = self.client.get('/customforms/create')
         self.assertEqual(response.status_code, 200)
-        
         # 'form_list' in context is a QuerySet
         form_ids = [f.id for f in response.context['form_list']]
         self.assertIn(self.admin_form.id, form_ids)
@@ -473,18 +469,15 @@ class FormBuilderViewTest(TestCase):
         self.client.login(username='builder_teacher', password='password')
         response = self.client.get('/customforms/create')
         self.assertEqual(response.status_code, 200)
-        
         form_ids = [f.id for f in response.context['form_list']]
         self.assertIn(self.teacher_form.id, form_ids)
         self.assertNotIn(self.admin_form.id, form_ids)
-        
     def test_edit_param_in_context(self):
         """If ?edit=ID is passed, it should be in the context."""
         # Note: edit param is a string in context
         self.client.login(username='builder_teacher', password='password')
         response = self.client.get('/customforms/create?edit=%d' % self.teacher_form.id)
         self.assertEqual(response.context['edit'], str(self.teacher_form.id))
-        
     def test_student_cannot_access(self):
         """Student should be redirected."""
         self.client.login(username='builder_student', password='password')
