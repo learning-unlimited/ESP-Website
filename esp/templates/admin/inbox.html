@@ -1,0 +1,153 @@
+{% extends "main.html" %}
+
+{% block title %}Chapter Inbox{% endblock %}
+{% block content_title %}Chapter Inbox{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="/media/default_styles/inbox.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+
+<!-- Stats Cards -->
+<div class="inbox-stats">
+    <a href="/manage/inbox/?status=open" class="inbox-stat-card inbox-stat-card-open">
+        <div class="inbox-stat-icon"><span class="glyphicon glyphicon-envelope"></span></div>
+        <div class="inbox-stat-info">
+            <div class="inbox-stat-count">{{ stats.open }}</div>
+            <div class="inbox-stat-label">Open</div>
+        </div>
+    </a>
+    <a href="/manage/inbox/?status=in_progress" class="inbox-stat-card inbox-stat-card-in_progress">
+        <div class="inbox-stat-icon"><span class="glyphicon glyphicon-time"></span></div>
+        <div class="inbox-stat-info">
+            <div class="inbox-stat-count">{{ stats.in_progress }}</div>
+            <div class="inbox-stat-label">In Progress</div>
+        </div>
+    </a>
+    <a href="/manage/inbox/?status=closed" class="inbox-stat-card inbox-stat-card-closed">
+        <div class="inbox-stat-icon"><span class="glyphicon glyphicon-ok"></span></div>
+        <div class="inbox-stat-info">
+            <div class="inbox-stat-count">{{ stats.closed }}</div>
+            <div class="inbox-stat-label">Closed</div>
+        </div>
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="inbox-filters">
+    <form method="get" action="/manage/inbox/" class="inbox-filter-form">
+        <div class="inbox-filter-row">
+            <label>Search:</label>
+            {{ filter_form.q }}
+
+            <label>Status:</label>
+            {{ filter_form.status }}
+
+            <label>From:</label>
+            {{ filter_form.date_from }}
+
+            <label>To:</label>
+            {{ filter_form.date_to }}
+
+            <label class="inbox-checkbox-label">
+                {{ filter_form.mine_only }} My assignments
+            </label>
+
+            <input type="submit" value="Filter" class="btn btn-primary" />
+            <a href="/manage/inbox/" class="btn">Clear</a>
+        </div>
+    </form>
+</div>
+
+{% if not threads %}
+<div class="inbox-empty">
+    <div class="inbox-empty-icon"><span class="glyphicon glyphicon-inbox"></span></div>
+    {% if filter_form.is_bound %}
+    <div class="inbox-empty-title">No matching threads</div>
+    <div class="inbox-empty-subtitle">Try adjusting your filters or <a href="/manage/inbox/">clear all filters</a>.</div>
+    {% else %}
+    <div class="inbox-empty-title">Your inbox is empty</div>
+    <div class="inbox-empty-subtitle">Inbound emails will appear here when they arrive.</div>
+    {% endif %}
+</div>
+{% else %}
+
+<p class="inbox-count">Showing {{ total_count }} thread{{ total_count|pluralize }}:</p>
+
+<table class="inbox-table">
+    <thead>
+        <tr>
+            <th class="inbox-col-status"></th>
+            <th class="inbox-col-subject">Subject</th>
+            <th class="inbox-col-sender">Sender</th>
+            <th class="inbox-col-date">Updated</th>
+            <th class="inbox-col-count">#</th>
+            <th class="inbox-col-actions"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in threads %}
+        <tr class="inbox-row {% if not item.is_read %}inbox-unread{% endif %}">
+            <td class="inbox-col-status">
+                <span class="inbox-status-dot inbox-status-{{ item.thread.status }}" title="{{ item.thread.get_status_display }}"></span>
+            </td>
+            <td class="inbox-subject-cell">
+                <span class="inbox-subject-text">
+                    <a href="/manage/inbox/thread/{{ item.thread.id }}/">{{ item.thread.subject }}</a>
+                </span>
+                {% if item.snippet %}
+                <span class="inbox-snippet">{{ item.snippet }}</span>
+                {% endif %}
+            </td>
+            <td>
+                <div class="inbox-sender-cell">
+                    <div class="inbox-avatar" data-email="{{ item.latest_sender }}"></div>
+                    <span class="inbox-sender">{{ item.latest_sender }}</span>
+                </div>
+            </td>
+            <td class="inbox-date">
+                <span data-timestamp="{{ item.thread.updated_at|date:'c' }}">{{ item.thread.updated_at|date:"M d, Y" }}</span>
+            </td>
+            <td class="inbox-count-cell">{{ item.email_count }}</td>
+            <td class="inbox-col-actions" onclick="event.stopPropagation();">
+                <div class="inbox-quick-actions">
+                    {% if not item.thread.assigned_to %}
+                    <button class="btn btn-mini" onclick="InboxApp.quickAssignMe({{ item.thread.id }});" title="Assign to me">
+                        <span class="glyphicon glyphicon-user"></span>
+                    </button>
+                    {% endif %}
+                    {% if item.thread.status != 'closed' %}
+                    <button class="btn btn-mini" onclick="InboxApp.quickClose({{ item.thread.id }});" title="Close">
+                        <span class="glyphicon glyphicon-ok"></span>
+                    </button>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="inbox-pagination">
+    {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% for key, val in filter_form.data.items %}{% if key != 'page' and val %}&{{ key }}={{ val }}{% endif %}{% endfor %}" class="btn">&laquo; Previous</a>
+    {% endif %}
+
+    <span class="inbox-page-info">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% for key, val in filter_form.data.items %}{% if key != 'page' and val %}&{{ key }}={{ val }}{% endif %}{% endfor %}" class="btn">Next &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endif %}
+
+<script type="text/javascript" src="/media/scripts/inbox.js"></script>
+
+{% endblock %}
