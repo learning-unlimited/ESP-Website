@@ -42,7 +42,7 @@ $j(document).ready(function() {
             <div id="recipient_type_options">
                 <select id="recipient_type" name="recipient_type">
                     {% for user_type in user_types %}
-                    <option value="{{ user_type }}" id="{{ "recipient_type_"|add:user_type }}">{{ user_type|capfirst|add:"s" }}</option>
+                    <option value="{{ user_type }}" id="{{ "recipient_type_"|add:user_type }}"{% if default_user_type == user_type %} selected="selected"{% endif %}>{{ user_type|capfirst|add:"s" }}</option>
                     {% endfor %}
                     <option value="emaillist" id="recipient_type_emaillist">Mailing list</option>
                 </select>

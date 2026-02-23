@@ -1,0 +1,73 @@
+# Configuration for actions/labeler
+# Maps file paths to labels that will be automatically applied to PRs
+
+# Documentation changes
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+          - '**/*.md'
+          - '**/*.rst'
+
+# CI/CD changes
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - 'deploy/**'
+          - 'codecov.yml'
+          - 'Vagrantfile'
+
+# Backend/Django changes
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'esp/**/*.py'
+          - 'esp/requirements.txt'
+
+# Frontend/templates changes
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'esp/templates/**'
+          - 'esp/public/media/**'
+          - '**/*.js'
+          - '**/*.css'
+          - '**/*.html'
+
+# Database/migrations
+database:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/migrations/**'
+          - 'esp/esp/db/**'
+
+# Program module changes
+programs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'esp/esp/program/**'
+
+# User management
+users:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'esp/esp/users/**'
+
+# Testing
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/tests/**'
+          - '**/seltests/**'
+          - '**/*_test.py'
+          - '**/test_*.py'
+
+# Configuration/settings
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'esp/esp/settings.py'
+          - 'esp/esp/django_settings.py'
+          - 'esp/esp/local_settings.py.*'
+          - 'deploy/config_templates/**'

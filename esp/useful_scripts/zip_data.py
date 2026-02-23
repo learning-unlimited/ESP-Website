@@ -6,7 +6,6 @@ each zip code, with the number of students from that zip code at that program
 in the cell.
 """
 
-from __future__ import absolute_import
 from script_setup import *
 
 import collections

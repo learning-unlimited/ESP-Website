@@ -81,7 +81,7 @@ $j(function(){
             data.undo = true;
         $j.post('ajaxteachercheckin', data, "json").done(callback)
         .fail(function(){
-            alert("An error occurred while atempting to " + (undo?"un-check-in ":"check-in ") + username + ".");
+            alert("An error occurred while attempting to " + (undo?"un-check-in ":"check-in ") + username + ".");
             if (errorCallback) {
                 errorCallback();
             }
@@ -95,7 +95,7 @@ $j(function(){
             data.undo = true;
         $j.post('ajaxteachercheckin', data, "json").done(callback)
         .fail(function(){
-            alert("An error occurred while atempting to " + (undo?"un-check-in ":"check-in ") + username + ".");
+            alert("An error occurred while attempting to " + (undo?"un-check-in ":"check-in ") + username + ".");
             if (errorCallback) {
                 errorCallback();
             }
@@ -143,7 +143,7 @@ $j(function(){
         var data = {username: user, section: sec, csrfmiddlewaretoken: csrf_token()};
         $j.post('ajaxteachertext', data, "json").done(callback)
         .fail(function(){
-            alert("An error occurred while atempting to text " + user + ".");
+            alert("An error occurred while attempting to text " + user + ".");
             if (errorCallback) {
                 errorCallback();
             }
