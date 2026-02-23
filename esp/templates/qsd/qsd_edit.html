@@ -20,6 +20,7 @@
 {% endif %}
 <!--jQuery.initialize plugin is created to help maintain dynamically created elements on the page-->
 <script src="https://cdn.jsdelivr.net/gh/pie6k/jquery.initialize@eb28c24e2eef256344777b45a455173cba36e850/jquery.initialize.js"></script>
+<script type="text/javascript" src="/media/scripts/qsd.js"></script>
 {% endblock %}
 
 
@@ -56,6 +57,15 @@
   </div>
   <p><input type="hidden" name="post_edit"><input type="submit" value="Save Changes!" class="btn btn-primary" /> &nbsp;| <a href="{{ target_url }}">Cancel</a> | <a href="{{ return_to_view }}">Back to Page View</a></p>
 </form>
+{% if qsdrec.id %}
+<div style="margin-top: 10px;">
+  <button type="button" class="btn btn-default" onclick="qsd_toggle_history('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}')">
+    <span class="glyphicon glyphicon-time"></span> Version History
+  </button>
+</div>
+<div id="qsd_history_panel_{{ qsdrec.edit_id }}" class="qsd_history_panel" style="display:none;"></div>
+<div id="qsd_version_preview_{{ qsdrec.edit_id }}" style="display:none;"></div>
+{% endif %}
 <div id="divmainqsddatetimestamp">
   <p>Last modified by {{ qsdrec.author }} on {{ qsdrec.create_date }}</p>
 </div>
@@ -78,5 +88,27 @@ $j(document).ready(function() {
     $j(this).after("Upload files <a href='/admin/filebrowser/browse/' target='_blank'>here");
   });
 });
+
+{% if qsdrec.id %}
+// Override qsd_preview_version for full-page editor: show in a preview panel below
+qsd_preview_version = function(edit_id, version_id) {
+    var $previewDiv = $j("#qsd_version_preview_" + edit_id);
+    $j.get("/admin/ajax_qsd_version_preview", { version_id: version_id }, function(data) {
+        $previewDiv.html(
+            '<div class="alert alert-warning" style="margin-bottom:8px;">'
+            + '<span class="glyphicon glyphicon-time"></span> '
+            + 'Preview of historical version '
+            + '<button type="button" class="btn btn-xs btn-default" onclick="$j(this).closest(\'.alert\').parent().slideUp(200);">'
+            + 'Close preview</button></div>'
+            + '<h3>' + $j('<span>').text(data.title).html() + '</h3>'
+            + '<div style="border:1px solid #ccc; padding:12px; background:#fffff0;">'
+            + data.content_html + '</div>'
+        );
+        $previewDiv.slideDown(200);
+    }).fail(function(req) {
+        alert("Error loading version preview: " + req.responseText);
+    });
+};
+{% endif %}
 </script>
 {% endblock %}
