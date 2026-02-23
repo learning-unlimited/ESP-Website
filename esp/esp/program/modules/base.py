@@ -1,7 +1,4 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -54,7 +51,7 @@ from argcache import cache_function
 from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.conf import settings
-from six.moves.urllib.parse import quote
+from urllib.parse import quote
 from django.template.loader import get_template
 from django.template import TemplateDoesNotExist
 
@@ -280,10 +277,10 @@ class ProgramModuleObj(models.Model):
 
     def makeLink(self):
         if not self.module.module_type == 'manage':
-            link = six.u('<a href="%s" title="%s" class="vModuleLink" >%s</a>') % \
+            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
                 (self.get_full_path(), self.module.link_title, self.module.link_title)
         else:
-            link = six.u('<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>') % \
+            link = '<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
                (self.get_full_path(), self.module.link_title, self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title)
 
         return mark_safe(link)
@@ -306,17 +303,17 @@ class ProgramModuleObj(models.Model):
     def makeSetupLink(self):
         title = self.get_setup_title()
         link = self.get_setup_path()
-        return mark_safe(six.u('<a href="%s" title="%s">%s</a>') % (link, title, title))
+        return mark_safe('<a href="%s" title="%s">%s</a>' % (link, title, title))
 
     def makeButtonLink(self):
         if not self.module.module_type == 'manage':
-            link = six.u("""<div class="module_button">\
+            link = """<div class="module_button">\
                                 <a href="%s"><button type="button" class="module_link_large">
                                     <div class="module_link_main">%s</div>
                                 </button></a>
-                            </div>""") % (self.get_full_path(), self.module.link_title)
+                            </div>""" % (self.get_full_path(), self.module.link_title)
         else:
-            link = six.u('<a href="%s" onmouseover="updateDocs(\'<p>%s</p>\');"></a><button type="button" class="module_link_large btn btn-default btn-lg"> <div class="module_link_main">%s%s</div></button></a>') % \
+            link = '<a href="%s" onmouseover="updateDocs(\'<p>%s</p>\');"></a><button type="button" class="module_link_large btn btn-default btn-lg"> <div class="module_link_main">%s%s</div></button></a>' % \
                (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title, self.module.handler)
 
         return mark_safe(link)

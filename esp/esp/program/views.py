@@ -1,7 +1,4 @@
 
-from __future__ import absolute_import
-import six
-from six.moves import range
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -100,7 +97,6 @@ try:
 except ImportError:
     from io import StringIO
 
-
 @login_required
 def lottery_student_reg(request, program = None):
     """
@@ -135,8 +131,7 @@ def lottery_student_reg_simple(request, program = None):
 
     return render_to_response('program/modules/lotterystudentregmodule/student_reg_simple.html', request, {})
 
-
-#@transaction.atomic
+@transaction.atomic
 @login_required
 def lsr_submit(request, program=None):
 
@@ -156,7 +151,7 @@ def lsr_submit(request, program=None):
     reg_interested, created = RegistrationType.objects.get_or_create(name="Interested", category="student",
                                                                      defaults={"description":"For lottery reg, a student would be interested in being placed into this class, but it isn't their first choice"})
 
-    for reg_token, reg_status in six.iteritems(data):
+    for reg_token, reg_status in data.items():
         parts = reg_token.split('_')
         if parts[0] == 'flag':
             ## Flagged class
@@ -169,6 +164,7 @@ def lsr_submit(request, program=None):
             secid = parts[0]
             if reg_status:
                 classes_interest.add(int(secid))
+            else:
                 classes_no_interest.add(int(secid))
 
     errors = []
@@ -220,15 +216,14 @@ def lsr_submit(request, program=None):
 
     return HttpResponse(json.dumps(errors), content_type='application/json')
 
-
-#@transaction.atomic
+@transaction.atomic
 @login_required
 def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary function. will merge the two later -jmoldow 05/31
 
     classes_flagged = [set() for i in range(0, priority_limit+1)] # 1-indexed
     sections_by_block = [defaultdict(set) for i in range(0, priority_limit+1)] # 1-indexed - sections_by_block[i][block] is a set of classes that were given priority i in timeblock block. This should hopefully be a set of size 0 or 1.
 
-    for section_id, (priority, block_id) in six.iteritems(data):
+    for section_id, (priority, block_id) in data.items():
         section_id = int(section_id)
         priority = int(priority)
         block_id = int(block_id)
@@ -282,11 +277,10 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
 
     return HttpResponse(json.dumps(errors), content_type='application/json')
 
-
 def find_user(userstr):
     """
     Do a best-guess effort at finding a user based on a string identifying that user.
-    The string may be a user ID, username, or some permuation of the user's real name.
+    The string may be a user ID, username, or some permutation of the user's real name.
     Will return a list of users if the string is not a username and more than one
     name approximately matches.
     Will return something that evaluates to False if no matching users are found.
@@ -343,7 +337,6 @@ def find_user(userstr):
 
     return found_users
 
-
 @admin_required
 def usersearch(request):
     """
@@ -359,7 +352,7 @@ def usersearch(request):
     num_users = found_users.count()
 
     if num_users == 1:
-        from six.moves.urllib.parse import urlencode
+        from urllib.parse import urlencode
         return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users[0].username}))
     elif num_users > 1:
         found_users = found_users.all()
@@ -367,7 +360,6 @@ def usersearch(request):
         return render_to_response('users/userview_search.html', request, { 'found_users': sorted_users })
     else:
         raise ESPError("No user found by that name! Searched for `{}`".format(userstr), log=False)
-
 
 @admin_required
 def userview(request):
@@ -452,7 +444,6 @@ def userview(request):
     }
     return render_to_response("users/userview.html", request, context )
 
-
 def deactivate_user(request):
     return activate_or_deactivate_user(request, activate=False)
 
@@ -488,7 +479,6 @@ def activate_or_deactivate_user(request, activate):
             user.is_active = activate
             user.save()
             return HttpResponseRedirect('/manage/userview?username=%s' % user.username)
-
 
 @admin_required
 def manage_programs(request):
@@ -538,7 +528,6 @@ def newprogram(request):
 
         template_prog["base_cost"] = int(sum(x["amount_dec"] for x in line_items))
         template_prog["sibling_discount"] = tprogram.sibling_discount
-
 
     # If the form has been submitted, process it.
     if request.method == 'POST':
@@ -775,7 +764,11 @@ def get_email_data(start_date):
             req.num_rec = CommModule.approx_num_of_recipients(req.recipients, req.get_sendto_fn())
         req.num_sent = toes.filter(sent__isnull=False).count()
         if req.num_rec == req.num_sent:
-            req.finished_at = toes.order_by('-sent').first().sent
+            last_email = toes.order_by('-sent').first()
+            if last_email is not None:
+                req.finished_at = last_email.sent
+            else:
+                req.finished_at = "(Not finished)"
         else:
             req.finished_at = "(Not finished)"
         requests_list.append(req)
@@ -1078,7 +1071,7 @@ def statistics(request, program=None):
                 for item in form.cleaned_data['school_multisel']:
                     if item.startswith('K12:'):
                         k12school_ids.append(int(item[4:]))
-                    elif item.startwith('Sch:'):
+                    elif item.startswith('Sch:'):
                         school_names.append(item[4:])
                 users_q = users_q & (Q(studentinfo__school__in=school_names) | Q(studentinfo__k12school__id__in=k12school_ids))
 
