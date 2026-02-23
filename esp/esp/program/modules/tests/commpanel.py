@@ -46,7 +46,13 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 
 from datetime import datetime, timedelta
+import json
+import os
 import re
+try:
+    from unittest.mock import patch, MagicMock
+except ImportError:
+    from mock import patch, MagicMock
 
 class CommunicationsPanelTest(ProgramFrameworkTest):
     """ A test of the basic functionality of the communications panel:
@@ -170,3 +176,168 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertIn(expected_first_day, rendered, 'program.date should render as first program day')
         self.assertIn(expected_date_range, rendered, 'program.date_range should render as program date range')
         self.assertIn(expected_teacher_reg_deadline, rendered, 'program.teacher_reg_deadline should render as Teacher/Classes/Create end_date')
+
+    # ------------------------------------------------------------------
+    # Tests for the "Process Emails Now" button  (issue #2920)
+    # ------------------------------------------------------------------
+
+    def test_process_emails_success(self):
+        """POST to /manage/process_emails succeeds for admin and returns JSON."""
+        self.client.login(username=self.admins[0].username, password='password')
+        response = self.client.post('/manage/process_emails')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/json')
+        data = json.loads(response.content.decode('UTF-8'))
+        self.assertEqual(data['status'], 'started')
+        self.assertIn('message', data)
+
+    def test_process_emails_rejects_get(self):
+        """GET to /manage/process_emails returns 400."""
+        self.client.login(username=self.admins[0].username, password='password')
+        response = self.client.get('/manage/process_emails')
+        self.assertEqual(response.status_code, 400)
+
+    def test_process_emails_rejects_put(self):
+        """PUT to /manage/process_emails returns 400."""
+        self.client.login(username=self.admins[0].username, password='password')
+        response = self.client.put('/manage/process_emails')
+        self.assertEqual(response.status_code, 400)
+
+    def test_process_emails_rejects_delete(self):
+        """DELETE to /manage/process_emails returns 400."""
+        self.client.login(username=self.admins[0].username, password='password')
+        response = self.client.delete('/manage/process_emails')
+        self.assertEqual(response.status_code, 400)
+
+    def test_process_emails_anonymous_redirect(self):
+        """Anonymous user is redirected to login."""
+        response = self.client.post('/manage/process_emails')
+        self.assertEqual(response.status_code, 302)  # redirect to login
+
+    def test_process_emails_student_forbidden(self):
+        """Authenticated student gets 403 (not admin)."""
+        self.client.login(username=self.students[0].username, password='password')
+        response = self.client.post('/manage/process_emails')
+        self.assertEqual(response.status_code, 403)
+
+    def test_process_emails_teacher_forbidden(self):
+        """Authenticated teacher gets 403 (not admin)."""
+        self.client.login(username=self.teachers[0].username, password='password')
+        response = self.client.post('/manage/process_emails')
+        self.assertEqual(response.status_code, 403)
+
+    @patch('esp.program.views.subprocess.Popen')
+    def test_process_emails_spawns_correct_script(self, mock_popen):
+        """Verify subprocess.Popen is called with the correct dbmail_cron.py path."""
+        from django.conf import settings as django_settings
+        import sys as _sys
+        expected_path = os.path.join(django_settings.PROJECT_ROOT, 'dbmail_cron.py')
+
+        self.client.login(username=self.admins[0].username, password='password')
+        response = self.client.post('/manage/process_emails')
+        self.assertEqual(response.status_code, 200)
+
+        mock_popen.assert_called_once()
+        call_args = mock_popen.call_args
+        cmd = call_args[0][0]  # first positional arg is the command list
+        self.assertEqual(cmd[0], _sys.executable)
+        self.assertEqual(cmd[1], expected_path)
+
+    @patch('esp.program.views.subprocess.Popen', side_effect=OSError('No such file'))
+    def test_process_emails_subprocess_failure(self, mock_popen):
+        """When subprocess.Popen raises, view returns 500 with JSON error."""
+        self.client.login(username=self.admins[0].username, password='password')
+        response = self.client.post('/manage/process_emails')
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response['Content-Type'], 'application/json')
+        data = json.loads(response.content.decode('UTF-8'))
+        self.assertEqual(data['status'], 'error')
+        self.assertIn('No such file', data['message'])
+
+    def test_process_emails_button_on_emails_page(self):
+        """The 'Process Emails Now' button appears on /manage/emails."""
+        self.client.login(username=self.admins[0].username, password='password')
+        response = self.client.get('/manage/emails')
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('UTF-8')
+        self.assertIn('id="process-emails-btn"', content)
+        self.assertIn('Process Emails Now', content)
+        self.assertIn('/manage/process_emails', content)
+
+    @patch('esp.program.modules.handlers.commmodule.subprocess.Popen')
+    def test_commfinal_auto_triggers_email_processing(self, mock_popen):
+        """Submitting an email via commpanel auto-triggers dbmail_cron.py."""
+        self.assertTrue(self.client.login(
+            username=self.admins[0].username, password='password'))
+
+        # Step 1: generate a user list to get a filterid
+        post_data = {
+            'submit_user_list': 'true',
+            'base_list': 'enrolled',
+            'keys': '',
+            'finalsent': 'Test List',
+            'submitform': 'I have my list, go on!',
+        }
+        response = self.client.post(
+            '/manage/%s/commpanel_old' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 200)
+        s = re.search(
+            r'<input type="hidden" name="filterid" value="([0-9]+)" />',
+            response.content.decode('UTF-8'))
+        filterid = s.groups()[0]
+
+        # Step 2: submit the email — this should auto-trigger processing
+        post_data = {
+            'subject': 'Auto-trigger Test',
+            'body': 'Testing auto-trigger',
+            'from': 'info@testserver.learningu.org',
+            'replyto': 'replyto@testserver.learningu.org',
+            'filterid': filterid,
+        }
+        response = self.client.post(
+            '/manage/%s/commfinal' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 200)
+
+        # Verify subprocess.Popen was called (auto-trigger fired)
+        mock_popen.assert_called_once()
+        cmd = mock_popen.call_args[0][0]
+        self.assertTrue(cmd[1].endswith('dbmail_cron.py'))
+
+    @patch('esp.program.modules.handlers.commmodule.subprocess.Popen',
+           side_effect=OSError('spawn failed'))
+    def test_commfinal_auto_trigger_failure_does_not_break_submit(self, mock_popen):
+        """If auto-trigger fails, the email submission still succeeds."""
+        from esp.dbmail.models import MessageRequest as MR
+
+        self.assertTrue(self.client.login(
+            username=self.admins[0].username, password='password'))
+
+        post_data = {
+            'submit_user_list': 'true',
+            'base_list': 'enrolled',
+            'keys': '',
+            'finalsent': 'Test List',
+            'submitform': 'I have my list, go on!',
+        }
+        response = self.client.post(
+            '/manage/%s/commpanel_old' % self.program.getUrlBase(), post_data)
+        s = re.search(
+            r'<input type="hidden" name="filterid" value="([0-9]+)" />',
+            response.content.decode('UTF-8'))
+        filterid = s.groups()[0]
+
+        post_data = {
+            'subject': 'Resilience Test',
+            'body': 'This should still be saved',
+            'from': 'info@testserver.learningu.org',
+            'replyto': 'replyto@testserver.learningu.org',
+            'filterid': filterid,
+        }
+        response = self.client.post(
+            '/manage/%s/commfinal' % self.program.getUrlBase(), post_data)
+
+        # Email submission must succeed even though Popen raised
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
+            MR.objects.filter(subject='Resilience Test').exists(),
+            'MessageRequest should be saved even when auto-trigger fails')

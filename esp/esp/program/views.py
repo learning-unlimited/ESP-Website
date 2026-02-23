@@ -83,11 +83,14 @@ from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
 from django.conf import settings
 
+import os
 import re
 import pickle
 import operator
 import json
 import datetime
+import subprocess
+import sys
 from collections import defaultdict
 from decimal import Decimal
 from reversion import revisions as reversion
@@ -793,6 +796,44 @@ def emails(request):
     context['requests'] = get_email_data(start_date)
 
     return render_to_response('admin/emails.html', request, context)
+
+@admin_required
+def process_emails(request):
+    """Trigger immediate processing of pending emails.
+
+    Spawns dbmail_cron.py as a subprocess.  The cron script's own fcntl
+    file locking prevents concurrent execution -- if the cron job (or
+    another button press) is already running, the subprocess exits
+    immediately with no harm done.
+    """
+    if request.method != 'POST':
+        return HttpResponseBadRequest('POST required')
+
+    dbmail_cron_path = os.path.join(settings.PROJECT_ROOT, 'dbmail_cron.py')
+    try:
+        subprocess.Popen(
+            [sys.executable, dbmail_cron_path],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            close_fds=True,
+        )
+    except Exception as e:
+        logger.exception('Failed to launch dbmail_cron.py')
+        return HttpResponse(
+            json.dumps({'status': 'error', 'message': str(e)}),
+            content_type='application/json',
+            status=500,
+        )
+
+    return HttpResponse(
+        json.dumps({
+            'status': 'started',
+            'message': 'Email processing has been triggered. '
+                       'If another instance is already running, '
+                       'it will exit harmlessly.',
+        }),
+        content_type='application/json',
+    )
 
 @admin_required
 def tags(request, section=""):

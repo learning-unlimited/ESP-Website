@@ -39,6 +39,41 @@ The email is in the process of being sent. Visit <a href="/manage/emails">the em
 {% endif %}
 </p>
 
+<p>
+    <button id="process-emails-btn" class="btn btn-primary" type="button">
+        Process This Email Now
+    </button>
+    <span id="process-emails-status" style="margin-left: 10px;"></span>
+</p>
+
+<script>
+$j(function() {
+    $j("#process-emails-btn").click(function() {
+        var $btn = $j(this);
+        var $status = $j("#process-emails-status");
+        $btn.prop("disabled", true);
+        $status.text("Triggering email processing...").css("color", "");
+        $j.ajax({
+            url: "/manage/process_emails",
+            type: "POST",
+            data: { csrfmiddlewaretoken: csrf_token() },
+            dataType: "json",
+            success: function(data) {
+                $status.text(data.message).css("color", "green");
+            },
+            error: function(xhr) {
+                var msg = "An error occurred.";
+                try { msg = JSON.parse(xhr.responseText).message; } catch(e) {}
+                $status.text(msg).css("color", "red");
+            },
+            complete: function() {
+                $btn.prop("disabled", false);
+            }
+        });
+    });
+});
+</script>
+
 {% include "program/modules/admincore/returnlink.html" %}
 
 {% endblock %}

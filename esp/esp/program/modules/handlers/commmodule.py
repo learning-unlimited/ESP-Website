@@ -46,7 +46,13 @@ from django.template import Context as DjangoContext
 from django.template.loader import render_to_string
 from esp.middleware import ESPError
 
+import logging
+import os
 import re
+import subprocess
+import sys
+
+logger = logging.getLogger(__name__)
 
 class CommModule(ProgramModuleObj):
     doc = """Email users that match specific search criteria."""
@@ -215,6 +221,21 @@ class CommModule(ProgramModuleObj):
                                                                  = { 'Reply-To': replytoemail, }, )
 
         newmsg_request.save()
+
+        # Auto-trigger email processing so admins don't have to wait for the
+        # cron job.  dbmail_cron.py uses fcntl file locking to prevent
+        # concurrent execution, so this is safe even if the cron is running.
+        from django.conf import settings
+        dbmail_cron_path = os.path.join(settings.PROJECT_ROOT, 'dbmail_cron.py')
+        try:
+            subprocess.Popen(
+                [sys.executable, dbmail_cron_path],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                close_fds=True,
+            )
+        except Exception:
+            logger.exception('Failed to auto-trigger dbmail_cron.py after commpanel submit')
 
         context = {}
         if public_view:
