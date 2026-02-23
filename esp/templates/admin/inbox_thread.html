@@ -13,6 +13,15 @@
 <div class="inbox-thread-header">
     <div class="inbox-thread-nav">
         <a href="/manage/inbox/" class="btn">&laquo; Back to Inbox</a>
+
+        <div class="inbox-export-group">
+            <a href="/manage/inbox/thread/{{ thread.id }}/export/" class="btn btn-small">
+                <span class="glyphicon glyphicon-download-alt"></span> Export
+            </a>
+            <button class="btn btn-small" onclick="InboxApp.openForwardModal();">
+                <span class="glyphicon glyphicon-share"></span> Forward
+            </button>
+        </div>
     </div>
 
     <h2 class="inbox-thread-subject">{{ thread.subject }}</h2>
@@ -41,49 +50,69 @@
 
         <span id="thread-update-feedback" class="inbox-feedback"></span>
     </div>
+
+    <!-- Thread Labels -->
+    <div class="inbox-thread-labels-section" style="position:relative;">
+        <strong style="font-size:13px;margin-right:4px;">Labels:</strong>
+        {% for tl in thread_labels %}
+        <span class="inbox-label-pill" style="background:{{ tl.label.color }};">
+            {{ tl.label.name }}
+            <span class="inbox-label-pill-remove" onclick="InboxApp.removeLabel({{ thread.id }}, {{ tl.label.id }});">&times;</span>
+        </span>
+        {% endfor %}
+        <button class="btn btn-mini inbox-add-label-btn" onclick="InboxApp.toggleLabelDropdown();">
+            <span class="glyphicon glyphicon-tag"></span> Add
+        </button>
+        <div id="inbox-label-dropdown" class="inbox-label-dropdown">
+            {% for tl in thread_labels %}{% endfor %}
+            <!-- Populated by JS from all_labels_json -->
+        </div>
+    </div>
 </div>
 
-<!-- Email Timeline -->
+<!-- Timeline: Emails + Notes -->
 <div class="inbox-timeline">
-    {% for email in emails %}
+    {% for entry in timeline %}
+
+    {% if entry.type == 'email' %}
     <div class="inbox-timeline-item">
-        <div class="inbox-timeline-dot {% if email.is_outbound_reply %}inbox-timeline-dot-outbound{% else %}inbox-timeline-dot-inbound{% endif %}"></div>
-        <div class="inbox-email {% if email.is_outbound_reply %}inbox-email-outbound{% else %}inbox-email-inbound{% endif %}">
+        <div class="inbox-timeline-dot {% if entry.obj.is_outbound_reply %}inbox-timeline-dot-outbound{% else %}inbox-timeline-dot-inbound{% endif %}"></div>
+        <div class="inbox-email {% if entry.obj.is_outbound_reply %}inbox-email-outbound{% else %}inbox-email-inbound{% endif %}">
             <div class="inbox-email-header">
                 <div class="inbox-email-sender-info">
-                    <div class="inbox-avatar inbox-avatar-lg" data-email="{{ email.sender_email }}"></div>
+                    <div class="inbox-avatar inbox-avatar-lg" data-email="{{ entry.obj.sender_email }}"></div>
                     <div class="inbox-email-sender">
-                        {% if email.is_outbound_reply %}
+                        {% if entry.obj.is_outbound_reply %}
                             <span class="inbox-outbound-badge">Sent</span>
-                            <strong>{{ email.sender_email }}</strong>
-                            {% if email.replied_by %}
-                                <span class="inbox-replied-by">(by {{ email.replied_by.username }})</span>
+                            <strong>{{ entry.obj.sender_email }}</strong>
+                            {% if entry.obj.replied_by %}
+                                <span class="inbox-replied-by">(by {{ entry.obj.replied_by.username }})</span>
                             {% endif %}
                         {% else %}
-                            <strong>{{ email.sender }}</strong>
+                            <strong>{{ entry.obj.sender }}</strong>
                         {% endif %}
                     </div>
                 </div>
                 <div class="inbox-email-meta">
-                    <span class="inbox-email-relative-date" data-timestamp="{{ email.received_at|date:'c' }}">{{ email.received_at|date:"M d, Y g:i A" }}</span>
-                    <span>To: {{ email.recipient }}</span>
+                    <span class="inbox-email-relative-date" data-timestamp="{{ entry.obj.received_at|date:'c' }}">{{ entry.obj.received_at|date:"M d, Y g:i A" }}</span>
+                    <span>To: {{ entry.obj.recipient }}</span>
                 </div>
             </div>
 
             <div class="inbox-email-body">
-                {% if email.body_html %}
-                    <iframe srcdoc="{{ email.body_html|escape }}" sandbox class="inbox-email-iframe" onload="this.style.height=this.contentWindow.document.body.scrollHeight+16+'px';"></iframe>
-                {% elif email.body_text %}
-                    <pre class="inbox-email-text">{{ email.body_text }}</pre>
+                {% if entry.obj.body_html %}
+                    <iframe srcdoc="{{ entry.obj.body_html|escape }}" sandbox class="inbox-email-iframe" onload="this.style.height=this.contentWindow.document.body.scrollHeight+16+'px';"></iframe>
+                {% elif entry.obj.body_text %}
+                    <pre class="inbox-email-text">{{ entry.obj.body_text }}</pre>
                 {% else %}
                     <p class="inbox-no-content">(No content)</p>
                 {% endif %}
             </div>
 
-            {% if email.has_attachments %}
+            {% if entry.obj.has_attachments %}
             <div class="inbox-email-attachments">
                 <strong>Attachments:</strong>
-                {% for att in email.attachments.all %}
+                {% for att in entry.obj.attachments.all %}
                     <a href="/manage/inbox/attachment/{{ att.id }}/" class="inbox-attachment-link">
                         {{ att.filename }} ({{ att.size|filesizeformat }})
                     </a>
@@ -92,7 +121,36 @@
             {% endif %}
         </div>
     </div>
+
+    {% elif entry.type == 'note' %}
+    <div class="inbox-timeline-item" id="inbox-note-{{ entry.obj.id }}">
+        <div class="inbox-timeline-dot inbox-timeline-dot-note"></div>
+        <div class="inbox-note">
+            <div class="inbox-note-header">
+                <div class="inbox-note-author">
+                    <span class="inbox-note-badge">Note</span>
+                    {{ entry.obj.created_by.username }}
+                </div>
+                <div class="inbox-note-meta">
+                    <span data-timestamp="{{ entry.obj.created_at|date:'c' }}">{{ entry.obj.created_at|date:"M d, Y g:i A" }}</span>
+                    <button class="inbox-note-delete" onclick="InboxApp.deleteNote({{ entry.obj.id }});" title="Delete note">&times;</button>
+                </div>
+            </div>
+            <div class="inbox-note-body">{{ entry.obj.note_text }}</div>
+        </div>
+    </div>
+    {% endif %}
+
     {% endfor %}
+</div>
+
+<!-- Add Note Form -->
+<div class="inbox-note-form">
+    <h4><span class="glyphicon glyphicon-comment"></span> Add Internal Note</h4>
+    <textarea id="inbox-note-text" class="inbox-note-textarea" rows="3" placeholder="Add an internal note (not sent as email)..."></textarea>
+    <div style="margin-top:8px;">
+        <button id="inbox-add-note-btn" class="btn btn-small btn-warning" onclick="InboxApp.addNote({{ thread.id }});">Add Note</button>
+    </div>
 </div>
 
 <!-- Reply Section -->
@@ -116,7 +174,16 @@
     </div>
     {% endif %}
 
-    <form method="post" action="/manage/inbox/thread/{{ thread.id }}/" class="inbox-reply-form" onsubmit="this.querySelector('[type=submit]').disabled=true;this.querySelector('[type=submit]').value='Sending...';$j('#thread-status-select,#thread-assignee-select').prop('disabled',true);">
+    {% if canned_responses_json != '[]' %}
+    <div class="inbox-canned-row">
+        <label>Template:</label>
+        <select class="inbox-canned-select" onchange="InboxApp.loadCannedResponse(this);">
+            <option value="">— Select a canned response —</option>
+        </select>
+    </div>
+    {% endif %}
+
+    <form method="post" action="/manage/inbox/thread/{{ thread.id }}/" class="inbox-reply-form" onsubmit="this.querySelector('[type=submit]').disabled=true;this.querySelector('[type=submit]').value='Sending...';$j('#thread-status-select,#thread-assignee-select,.inbox-export-group .btn,.inbox-add-label-btn').prop('disabled',true);">
         {% csrf_token %}
         <div class="inbox-form-group">
             {{ reply_form.body }}
@@ -127,10 +194,56 @@
     </form>
 </div>
 
+<!-- Forward Modal -->
+<div id="inbox-forward-modal" class="inbox-modal-overlay">
+    <div class="inbox-modal">
+        <h3><span class="glyphicon glyphicon-share"></span> Forward Thread</h3>
+        <p style="font-size:13px;color:#666;">Send a summary of this thread to an email address.</p>
+        <input type="email" id="inbox-forward-email" class="inbox-modal-input" placeholder="recipient@example.com" />
+        <div class="inbox-modal-actions">
+            <button class="btn" onclick="InboxApp.closeForwardModal();">Cancel</button>
+            <button id="inbox-forward-btn" class="btn btn-primary" onclick="InboxApp.forwardThread({{ thread.id }});">Send</button>
+        </div>
+    </div>
+</div>
+
 <script type="text/javascript" src="/media/scripts/inbox.js"></script>
 <script type="text/javascript">
     // Mark this thread as read on page load
     InboxApp.markRead({{ thread.id }});
+
+    // Pass canned responses data to JS
+    window.inboxCannedResponses = {{ canned_responses_json|safe }};
+
+    // Populate canned responses dropdown
+    (function() {
+        var select = $j('.inbox-canned-select');
+        if (select.length && window.inboxCannedResponses.length) {
+            for (var i = 0; i < window.inboxCannedResponses.length; i++) {
+                var r = window.inboxCannedResponses[i];
+                select.append($j('<option>').val(r.id).text(r.title));
+            }
+        }
+    })();
+
+    // Populate label dropdown (using .text() to prevent XSS)
+    (function() {
+        var allLabels = {{ all_labels_json|safe }};
+        var dropdown = $j('#inbox-label-dropdown');
+        for (var i = 0; i < allLabels.length; i++) {
+            var l = allLabels[i];
+            var el = $j('<div class="inbox-label-option"></div>');
+            var dot = $j('<span class="inbox-label-dot"></span>').css('background', l.color);
+            var nameSpan = $j('<span></span>').text(l.name);
+            el.append(dot).append(nameSpan);
+            (function(labelId) {
+                el.on('click', function() {
+                    InboxApp.addLabel({{ thread.id }}, labelId);
+                });
+            })(l.id);
+            dropdown.append(el);
+        }
+    })();
 </script>
 
 {% endblock %}

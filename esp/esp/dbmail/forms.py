@@ -45,3 +45,15 @@ class InboxFilterForm(forms.Form):
         required=False,
         label='My assignments only',
     )
+
+
+class InboxNoteForm(forms.Form):
+    """Form for adding internal notes to a thread."""
+    note_text = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'rows': 3,
+            'class': 'inbox-note-textarea',
+            'placeholder': 'Add an internal note (not sent as email)...',
+        }),
+        label='Internal Note',
+    )

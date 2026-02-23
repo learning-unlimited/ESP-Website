@@ -37,7 +37,8 @@ from esp.admin import admin_site
 
 from esp.dbmail.models import (
     MessageVars, EmailList, PlainRedirect, MessageRequest, TextOfEmail,
-    InboundEmailThread, InboundEmail,
+    InboundEmailThread, InboundEmail, InboundEmailNote,
+    InboxCannedResponse, InboxLabel, InboundEmailThreadLabel,
 )
 from esp.utils.admin_user_search import default_user_search
 
@@ -83,3 +84,25 @@ class InboundEmailAdmin(admin.ModelAdmin):
     search_fields = ('subject', 'sender_email', 'body_text')
     date_hierarchy = 'received_at'
 admin_site.register(InboundEmail, InboundEmailAdmin)
+
+class InboundEmailNoteAdmin(admin.ModelAdmin):
+    list_display = ('thread', 'created_by', 'created_at')
+    search_fields = ('note_text',)
+    date_hierarchy = 'created_at'
+admin_site.register(InboundEmailNote, InboundEmailNoteAdmin)
+
+class InboxCannedResponseAdmin(admin.ModelAdmin):
+    list_display = ('title', 'is_active', 'seq', 'created_by', 'created_at')
+    list_filter = ('is_active',)
+    search_fields = ('title', 'body')
+admin_site.register(InboxCannedResponse, InboxCannedResponseAdmin)
+
+class InboxLabelAdmin(admin.ModelAdmin):
+    list_display = ('name', 'color', 'description')
+    search_fields = ('name',)
+admin_site.register(InboxLabel, InboxLabelAdmin)
+
+class InboundEmailThreadLabelAdmin(admin.ModelAdmin):
+    list_display = ('thread', 'label', 'added_by', 'added_at')
+    list_filter = ('label',)
+admin_site.register(InboundEmailThreadLabel, InboundEmailThreadLabelAdmin)

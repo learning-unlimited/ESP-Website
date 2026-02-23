@@ -61,6 +61,7 @@ from django.core.mail import get_connection
 from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
 from django.core.exceptions import ImproperlyConfigured
+from django.core.validators import RegexValidator
 
 # `user` is required for marketing and subscribed messages to add unsubscribe headers
 # this includes all comm panel emails
@@ -667,6 +668,8 @@ class CustomSMTPBackend(SMTPEmailBackend):
         return True
 
 
+# --- Inbound Email Inbox Models (Issue #3831) ---
+
 @python_2_unicode_compatible
 class InboundEmailThread(models.Model):
     """Groups related inbound emails into a conversation thread."""
@@ -695,6 +698,10 @@ class InboundEmailThread(models.Model):
     @property
     def latest_email(self):
         return self.emails.order_by('-received_at').first()
+
+    @property
+    def labels(self):
+        return InboxLabel.objects.filter(labeled_threads__thread=self)
 
 
 @python_2_unicode_compatible
@@ -752,3 +759,71 @@ class InboundEmailReadStatus(models.Model):
 
     class Meta:
         unique_together = ('user', 'thread')
+
+
+@python_2_unicode_compatible
+class InboundEmailNote(models.Model):
+    """Admin-only internal notes on inbox threads (not sent as email)."""
+    thread = models.ForeignKey(InboundEmailThread, on_delete=models.CASCADE,
+                               related_name='notes')
+    note_text = models.TextField()
+    created_by = AjaxForeignKey(ESPUser, on_delete=models.CASCADE,
+                                related_name='inbox_notes_created')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return 'Note on "%s" by %s' % (self.thread.subject[:50], self.created_by.username)
+
+
+@python_2_unicode_compatible
+class InboxCannedResponse(models.Model):
+    """Predefined reply templates for common inbox scenarios."""
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    created_by = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+    seq = models.SmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['seq', 'title']
+
+    def __str__(self):
+        return self.title
+
+
+@python_2_unicode_compatible
+class InboxLabel(models.Model):
+    """Lightweight colored tags for categorizing inbox threads."""
+    name = models.CharField(max_length=100, unique=True)
+    color = models.CharField(
+        max_length=7,
+        help_text='Hex color code, e.g. #ff0000',
+        validators=[RegexValidator(
+            regex=r'^#[0-9a-fA-F]{6}$',
+            message='Enter a valid 6-digit hex color (e.g. #ff0000).',
+        )],
+    )
+    description = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class InboundEmailThreadLabel(models.Model):
+    """M2M relationship between threads and labels."""
+    thread = models.ForeignKey(InboundEmailThread, on_delete=models.CASCADE,
+                               related_name='thread_labels')
+    label = models.ForeignKey(InboxLabel, on_delete=models.CASCADE,
+                              related_name='labeled_threads')
+    added_by = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('thread', 'label')

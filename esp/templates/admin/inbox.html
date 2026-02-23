@@ -74,11 +74,30 @@
 </div>
 {% else %}
 
+<!-- Bulk Action Bar -->
+<div id="inbox-bulk-bar" class="inbox-bulk-bar">
+    <span id="inbox-bulk-count" class="inbox-bulk-count">0 selected</span>
+    <div class="inbox-bulk-actions">
+        <button class="btn btn-small" onclick="InboxApp.bulkAction('assign_me');">
+            <span class="glyphicon glyphicon-user"></span> Assign to Me
+        </button>
+        <button class="btn btn-small btn-warning" onclick="InboxApp.bulkAction('close');">
+            <span class="glyphicon glyphicon-ok"></span> Close
+        </button>
+        <button class="btn btn-small" onclick="InboxApp.bulkAction('open');">
+            <span class="glyphicon glyphicon-repeat"></span> Re-open
+        </button>
+    </div>
+</div>
+
 <p class="inbox-count">Showing {{ total_count }} thread{{ total_count|pluralize }}:</p>
 
 <table class="inbox-table">
     <thead>
         <tr>
+            <th class="inbox-col-checkbox">
+                <input type="checkbox" onchange="InboxApp.toggleSelectAll(this);" title="Select all" />
+            </th>
             <th class="inbox-col-status"></th>
             <th class="inbox-col-subject">Subject</th>
             <th class="inbox-col-sender">Sender</th>
@@ -90,12 +109,18 @@
     <tbody>
         {% for item in threads %}
         <tr class="inbox-row {% if not item.is_read %}inbox-unread{% endif %}">
+            <td class="inbox-col-checkbox" onclick="event.stopPropagation();">
+                <input type="checkbox" class="inbox-row-checkbox" value="{{ item.thread.id }}" onchange="InboxApp.toggleBulkCheckbox(this);" />
+            </td>
             <td class="inbox-col-status">
                 <span class="inbox-status-dot inbox-status-{{ item.thread.status }}" title="{{ item.thread.get_status_display }}"></span>
             </td>
             <td class="inbox-subject-cell">
                 <span class="inbox-subject-text">
                     <a href="/manage/inbox/thread/{{ item.thread.id }}/">{{ item.thread.subject }}</a>
+                    {% for tl in item.thread.thread_labels.all %}
+                    <span class="inbox-label-pill" style="background:{{ tl.label.color }};">{{ tl.label.name }}</span>
+                    {% endfor %}
                 </span>
                 {% if item.snippet %}
                 <span class="inbox-snippet">{{ item.snippet }}</span>
