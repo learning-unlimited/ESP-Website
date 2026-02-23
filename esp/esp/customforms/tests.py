@@ -384,6 +384,7 @@ class ViewResponseTest(TestCase):
 
         self.form = Form.objects.create(
             title='Test Form', created_by=self.admin,
+            link_type='-1', link_id=-1,
             success_message='OK', success_url='/'
         )
         # Create dynamic model table so view doesn't crash on query
