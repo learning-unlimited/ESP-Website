@@ -451,3 +451,42 @@ def suite():
     return s
 
 
+class DiffTemplateOverrideViewTests(TestCase):
+
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_superuser(
+            username="admin",
+            email="admin@test.com",
+            password="pass"
+        )
+        self.user = User.objects.create_user(
+            username="user",
+            password="pass"
+        )
+        self.override = TemplateOverride.objects.create(
+            name="test_template.html",
+            content="Hello Override",
+            version=1
+        )
+
+    def test_admin_can_access_diff(self):
+        self.client.login(username="admin", password="pass")
+        response = self.client.get(
+            f"/manage/templateoverride/{self.override.id}"
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_non_admin_blocked(self):
+        self.client.login(username="user", password="pass")
+        response = self.client.get(
+            f"/manage/templateoverride/{self.override.id}"
+        )
+        self.assertNotEqual(response.status_code, 200)
+
+    def test_invalid_template_id_404(self):
+        self.client.login(username="admin", password="pass")
+        response = self.client.get(
+            "/manage/templateoverride/9999"
+        )
+        self.assertEqual(response.status_code, 404)
