@@ -32,18 +32,26 @@
 <p>
 Congratulations!<br />
 <br />
-The email is in the process of being sent. Visit <a href="/manage/emails">the email status page</a> to monitor its status. To avoid being marked as a spam source, <strong>there may be a delay</strong> with sending it to everyone on the list, so please be patient!
+Your email has been queued and <strong>processing has been automatically triggered</strong>.
+Visit <a href="/manage/emails">the email status page</a> to monitor its status.
+To avoid being marked as a spam source, <strong>there may be a delay</strong> with sending it to everyone on the list, so please be patient!
 <br /><br />
 {% if req_id %}
 <a href="/email/{{ req_id }}" target="_blank">The email is viewable by the public at this link.</a>
 {% endif %}
 </p>
 
+<div style="margin: 15px 0; padding: 10px 15px; background-color: #dff0d8; border: 1px solid #d6e9c6; border-radius: 4px; color: #3c763d;">
+    &#10003; Email processing was automatically started. Emails will be sent shortly.
+</div>
+
 <p>
-    <button id="process-emails-btn" class="btn btn-primary" type="button">
-        Process This Email Now
+    <button id="process-emails-btn" class="btn btn-default" type="button">
+        Re-trigger Processing
     </button>
     <span id="process-emails-status" style="margin-left: 10px;"></span>
+    <br />
+    <small style="color: #777;">Use this if processing seems stalled. Safe to click multiple times &mdash; concurrent runs are prevented automatically.</small>
 </p>
 
 <script>
