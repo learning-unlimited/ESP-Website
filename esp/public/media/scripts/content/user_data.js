@@ -12,6 +12,13 @@ if (typeof(window["$j"]) == "undefined") {
 var esp_user = {};
 var esp_user_keys = new Array('cur_username','cur_userid','cur_email','cur_first_name','cur_last_name','cur_other_user','cur_retTitle', 'cur_admin','cur_yog','cur_grade','cur_roles','cur_qsd_bits');
 
+function decode_user_cookie(value) {
+    if (value === undefined || value === null || value === '' || value === 'undefined' || value === 'null') {
+        return '';
+    }
+    return unescape(value);
+}
+
 for (var i=0; i < esp_user_keys.length; i++) {
     var tmp = $j.cookie(esp_user_keys[i]);
     if (tmp) {
@@ -21,14 +28,22 @@ for (var i=0; i < esp_user_keys.length; i++) {
      * : see esp/middleware/esperrormiddleware.py
      */
 }
-esp_user['cur_userid'] = parseInt(esp_user['cur_userid']);
-esp_user['cur_email'] = unescape(esp_user['cur_email']);
-esp_user['cur_first_name'] = unescape(esp_user['cur_first_name']);
-esp_user['cur_last_name'] = unescape(esp_user['cur_last_name']);
-esp_user['cur_yog'] = parseInt(esp_user['cur_yog']);
-esp_user['cur_grade'] = parseInt(esp_user['cur_grade']);
+
+esp_user['cur_userid'] = parseInt(esp_user['cur_userid'], 10);
+esp_user['cur_yog'] = parseInt(esp_user['cur_yog'], 10);
+esp_user['cur_grade'] = parseInt(esp_user['cur_grade'], 10);
+if (isNaN(esp_user['cur_userid'])) { esp_user['cur_userid'] = null; }
+if (isNaN(esp_user['cur_yog'])) { esp_user['cur_yog'] = null; }
+if (isNaN(esp_user['cur_grade'])) { esp_user['cur_grade'] = null; }
+
+esp_user['cur_email'] = decode_user_cookie(esp_user['cur_email']);
+esp_user['cur_first_name'] = decode_user_cookie(esp_user['cur_first_name']);
+esp_user['cur_last_name'] = decode_user_cookie(esp_user['cur_last_name']);
+esp_user['cur_retTitle'] = decode_user_cookie(esp_user['cur_retTitle']);
+
 if (esp_user['cur_roles']) {
-    esp_user['cur_roles'] = unescape(esp_user['cur_roles']).split(',');
+    var decoded_roles = decode_user_cookie(esp_user['cur_roles']);
+    esp_user['cur_roles'] = decoded_roles ? decoded_roles.split(',') : [];
 } else {
     esp_user['cur_roles'] = [];
 }
@@ -41,7 +56,8 @@ if (esp_user['cur_username']) {
     if (esp_user['cur_other_user'] == '1') {
 	esp_user_login += '<a href="/myesp/switchback/">Go back to ' + esp_user['cur_retTitle'] + '</a>';
     } else {
-	esp_user_login += 'Welcome, ' + esp_user['cur_first_name'] + '!';
+        var welcome_name = esp_user['cur_first_name'] || esp_user['cur_username'] || 'Guest';
+	esp_user_login += 'Welcome, ' + welcome_name + '!';
     }
     esp_user_login += '</div></td><td colspan="2"><div class="divformcol2" style="text-align:right"><a href="/myesp/signout/">Sign Out</a></div></tr></table>';
 }
