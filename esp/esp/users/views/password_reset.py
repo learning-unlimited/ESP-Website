@@ -1,11 +1,12 @@
-from esp.users.forms.password_reset import PasswordResetForm, NewPasswordSetForm
+from esp.users.forms.password_reset import PasswordResetForm
+from django.contrib.auth.views import PasswordResetConfirmView
 from django.http import HttpResponseRedirect
-from esp.users.models import ESPUser, PasswordRecoveryTicket
+from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 from esp.users.decorators import anonymous_only
 from django.contrib.auth import authenticate, login
 
-__all__ = ['initial_passwd_request', 'email_passwd_followup', 'email_passwd_cancel']
+__all__ = ['initial_passwd_request', 'password_reset_confirm', 'password_reset_done']
 
 @anonymous_only()
 def initial_passwd_request(request, success=None):
@@ -14,7 +15,9 @@ def initial_passwd_request(request, success=None):
     to have the password reset.
 
     Upon successful completion of this view,
-    the user will be emailed at their account.
+    the user will be emailed at their account with a
+    password reset link that uses Django's built-in
+    token generator (no plaintext token is stored in the DB).
     """
 
     if success:
@@ -46,64 +49,39 @@ def initial_passwd_request(request, success=None):
                               {'form':form})
 
 
-def email_passwd_followup(request,success=None):
-    """ Allow users to reset their password, given a recovery code. """
+class ESPPasswordResetConfirmView(PasswordResetConfirmView):
+    """
+    Wraps Django's PasswordResetConfirmView to use ESP's templates
+    and auto-login the user after password reset.
 
-    if success:
-        return render_to_response('users/recovery_finished.html',
-                                  request, {})
-    try:
-        code = request.GET['code']
-    except KeyError:
-        code = request.POST.get('code', '')
+    Django's PasswordResetConfirmView validates the token using
+    PasswordResetTokenGenerator which computes an HMAC from the user's
+    pk, password hash, and last_login timestamp.  No token is ever
+    stored in the database, so a database leak cannot expose valid
+    reset tokens.
+    """
+    template_name = 'users/recovery_email.html'
+    success_url = '/myesp/resetpassword/done/'
 
-    ticket = PasswordRecoveryTicket.objects.filter(recover_key=code)[:1]
-    if len(ticket) == 0 or not ticket[0].is_valid():
-        return render_to_response('users/recovery_invalid_code.html',
-                                  request, {})
-    ticket = ticket[0]
+    def form_valid(self, form):
+        user = form.save()
+        # Activate the user (in case they were inactive)
+        if not user.is_active:
+            user.is_active = True
+            user.save()
+        # Auto-login the user after successful password reset
+        auth_user = authenticate(
+            username=user.username,
+            password=form.cleaned_data['new_password1']
+        )
+        if auth_user is not None:
+            login(self.request, auth_user)
+        return HttpResponseRedirect(self.success_url)
 
-    if request.method == 'POST':
-        form = NewPasswordSetForm(request.POST)
 
-        if form.is_valid():
-            username = form.cleaned_data['username']
-            password = form.cleaned_data['password']
+password_reset_confirm = ESPPasswordResetConfirmView.as_view()
 
-            changed = ticket.change_password(username, password)
 
-            if changed:
-                auth_user = authenticate(username = form.cleaned_data['username'],
-                                         password = form.cleaned_data['password'])
-                login(request, auth_user)
-                return HttpResponseRedirect('%ssuccess/' % request.path)
-            else:
-                return render_to_response('users/recovery_invalid_code.html',
-                                  request, {})
-
-    else:
-        form = NewPasswordSetForm(initial={'code':code})
-
-    return render_to_response('users/recovery_email.html', request,
-                              {'form':form})
-
-def email_passwd_cancel(request,success=None):
-    """ Allow users to cancel a mis-assigned recovery code. """
-
-    if success:
-        return render_to_response('users/recovery_finished.html',
-                                  request, {})
-    try:
-        code = request.GET['code']
-    except KeyError:
-        code = request.POST.get('code', '')
-
-    ticket = PasswordRecoveryTicket.objects.filter(recover_key=code)[:1]
-    if len(ticket) == 0 or not ticket[0].is_valid():
-        return render_to_response('users/recovery_invalid_code.html',
-                                  request, {})
-    ticket = ticket[0]
-    ticket.cancel()
-
-    return render_to_response('users/recovery_cancelled.html',
-                request, {})
+def password_reset_done(request):
+    """Show the password reset complete page."""
+    return render_to_response('users/recovery_finished.html', request, {})

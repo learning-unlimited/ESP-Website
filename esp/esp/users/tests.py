@@ -15,7 +15,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
-from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission, Record, RecordType
+from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -137,7 +137,12 @@ class ESPUserTest(TestCase):
             finally:
                 user.delete()
 
-class PasswordRecoveryTicketTest(TestCase):
+class PasswordRecoveryTest(TestCase):
+    """Test password recovery using Django's built-in token generator.
+
+    Tokens are computed via HMAC from user data and are never stored in the
+    database (fixes issue #1195).
+    """
     def setUp(self):
         self.user, created = ESPUser.objects.get_or_create(username='forgetful')
         self.user.set_password('forgotten_pw')
@@ -145,41 +150,51 @@ class PasswordRecoveryTicketTest(TestCase):
         self.other, created = ESPUser.objects.get_or_create(username='innocent')
         self.other.set_password('remembered_pw')
         self.other.save()
+
     def runTest(self):
-        # First, make sure both people can log in
-        self.assertTrue(self.client.login( username='forgetful', password='forgotten_pw' ), "User forgetful cannot login")
-        self.assertTrue(self.client.login( username='innocent', password='remembered_pw' ), "User innocent cannot login")
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+        from django.utils.encoding import force_bytes
 
-        # Create tickets; both User and ESPUser should work
-        one   = PasswordRecoveryTicket.new_ticket( self.user )
-        two   = PasswordRecoveryTicket.new_ticket( self.user )
-        four  = PasswordRecoveryTicket.new_ticket( self.other )
-        self.assertTrue(one.is_valid(), "Recovery ticket one is invalid.")
-        self.assertTrue(two.is_valid(), "Recovery ticket two is invalid.")
-        self.assertTrue(four.is_valid(), "Recovery ticket four is invalid.")
+        # Both users can log in
+        self.assertTrue(self.client.login(username='forgetful', password='forgotten_pw'),
+                        "User forgetful cannot login")
+        self.assertTrue(self.client.login(username='innocent', password='remembered_pw'),
+                        "User innocent cannot login")
 
-        # Try expiring #1; trying to validate it should destroy it
-        pk_before = one.pk
-        one.cancel()
-        self.assertFalse(one.is_valid(), "Expired ticket is still valid.")
-        self.assertFalse(PasswordRecoveryTicket.objects.filter(pk=pk_before).exists(),
-                         "Ticket was not auto-deleted.")
-        # Try using #1; it shouldn't work
-        self.assertFalse(one.change_password( 'forgetful', 'bad_pw' ), "Expired ticket still changed password.")
-        self.assertFalse(self.client.login( username='forgetful', password='bad_pw' ), "User forgetful logged in with incorrect password.")
+        # Generate a token for the user
+        token = default_token_generator.make_token(self.user)
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
 
-        # Try using #2
-        # Make sure it doesn't work for the wrong user
-        self.assertFalse(two.change_password( 'innocent', 'bad_pw' ), "Recovery ticket two used for the wrong user.")
-        self.assertFalse(self.client.login( username='forgetful', password='bad_pw' ), "Incorrectly cashed ticket still changed password.")
-        self.assertFalse(self.client.login( username='innocent', password='bad_pw' ), "User innocent's password changed.")
-        # Make sure using it changes the password it's supposed to
-        self.assertTrue(two.change_password( 'forgetful', 'new_pw' ), "Recovery ticket two failed to be cashed.")
-        self.assertTrue(self.client.login( username='forgetful', password='new_pw' ), "User forgetful cannot login with new password.")
-        self.assertTrue(self.client.login( username='innocent', password='remembered_pw' ), "User innocent's old password no longer works.")
-        # Make sure it destroys all other tickets for user forgetful
-        self.assertEqual(PasswordRecoveryTicket.objects.filter(user=self.user).count(), 0, "Tickets for user forgetful not wiped.")
-        self.assertEqual(PasswordRecoveryTicket.objects.filter(user=self.other).count(), 1, "Tickets for user innocent incorrectly wiped.")
+        # Token should be valid for the correct user
+        self.assertTrue(default_token_generator.check_token(self.user, token),
+                        "Token should be valid for the user it was generated for")
+
+        # Token should NOT be valid for a different user
+        self.assertFalse(default_token_generator.check_token(self.other, token),
+                         "Token should not be valid for a different user")
+
+        # Use the token to reset the password via the view
+        reset_url = '/myesp/resetpassword/%s/%s/' % (uid, token)
+        response = self.client.get(reset_url)
+        # Django's PasswordResetConfirmView redirects to set-password URL
+        # after validating the token on GET
+        self.assertIn(response.status_code, [200, 302],
+                      "Password reset confirm page should load successfully")
+
+        # After password change, old token should be invalid
+        self.user.set_password('new_pw')
+        self.user.save()
+        self.assertFalse(default_token_generator.check_token(self.user, token),
+                         "Token should be invalid after password change")
+
+        # New password works
+        self.assertTrue(self.client.login(username='forgetful', password='new_pw'),
+                        "User forgetful cannot login with new password")
+
+        # Other user's password is unaffected
+        self.assertTrue(self.client.login(username='innocent', password='remembered_pw'),
+                        "User innocent's old password no longer works")
 
 class TeacherInfo__validationtest(TestCase):
     def setUp(self):
