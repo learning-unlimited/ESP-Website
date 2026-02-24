@@ -1,3 +1,5 @@
+import hashlib
+
 from django import template
 from django.core.cache import cache
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
@@ -88,7 +90,11 @@ class InlineQSDNode(template.Node):
 
         # Cache default content so the .edit view can find it
         if not qsd_obj.pk:
-            cache.set('qsd_default_content:%s' % url, {
+            if len(url) < 200:
+                cache_key = 'qsd_default_content:%s' % url
+            else:
+                cache_key = 'qsd_default_content:%s' % hashlib.md5(url.encode('utf-8')).hexdigest()
+            cache.set(cache_key, {
                 'content': qsd_obj.content,
                 'title': qsd_obj.title or title,
             }, timeout=86400 * 30)

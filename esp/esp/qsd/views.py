@@ -32,6 +32,11 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import hashlib
+import logging
+
+logger = logging.getLogger(__name__)
+
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, Permission
 from esp.web.models import NavBarEntry, NavBarCategory, default_navbarcategory
@@ -55,30 +60,39 @@ from django.conf import settings
 
 from reversion import revisions as reversion
 
+def _qsd_cache_key(url):
+    """Build a cache key for QSD default content, hashing long URLs."""
+    if len(url) < 200:
+        return 'qsd_default_content:%s' % url
+    return 'qsd_default_content:%s' % hashlib.md5(url.encode('utf-8')).hexdigest()
+
 def _get_qsd_default_content(request, base_url):
     """Try to load default QSD content from inline_qsd_block cache.
     If not cached, try rendering the read page to populate the cache."""
-    default = cache.get('qsd_default_content:%s' % base_url)
+    cache_key = _qsd_cache_key(base_url)
+    default = cache.get(cache_key)
     if default:
         return default
 
-    # Try rendering the read page internally to trigger inline_qsd_block
+    # Try rendering the read page internally to trigger inline_qsd_block.
+    # We use django.test.Client because it goes through the full middleware
+    # stack, which is required for the template tags to render properly.
     try:
         from django.urls import resolve
-        from django.test import Client as TestClient
+        from django.test import Client as InternalClient
 
         match = resolve('/' + base_url + '.html')
         # Only proceed if it's NOT the qsd catch-all (avoid recursion)
         if match.func is not qsd:
-            client = TestClient()
+            client = InternalClient()
             client.force_login(request.user)
             try:
                 client.get('/' + base_url + '.html')
             except Exception:
-                pass
-            default = cache.get('qsd_default_content:%s' % base_url)
+                logger.debug('Internal render failed for QSD default: %s', base_url, exc_info=True)
+            default = cache.get(cache_key)
     except Exception:
-        pass
+        logger.debug('Could not resolve URL for QSD default: %s', base_url, exc_info=True)
 
     return default
 
