@@ -483,6 +483,11 @@ You should include this module in all programs.  It provides the main program ma
 * Registration type management
 * Lunch constraints control
 
+.. figure:: images/dashboard.png
+   :width: 80 %
+
+   The program dashboard showing expandable sections with program statistics
+
 Course Materials (AdminMaterials)
 ---------------------------------
 
@@ -511,6 +516,11 @@ AJAX Scheduling Module (AJAXSchedulingModule)
 ---------------------------------------------
 
 This module provides one view, ajax_scheduling.  It is the main interface for assigning times and rooms to classes, using a grid-based interface in your browser.
+
+.. figure:: images/ajax_scheduler.png
+   :width: 80 %
+
+   The AJAX scheduler interface with keyboard shortcuts and tabbed navigation
 
 The scheduling interface will periodically fetch updates from the server so that multiple people can work on scheduling at the same time.  You will be warned if you are trying to create conflicting assignments.  For overriding schedule conflicts and other special cases (like assigning a class to non-contiguous time slots or multiple classrooms), use the manage class page.
 
@@ -720,6 +730,11 @@ program management page, or at /manage/[program]/[instance]/bigboard.  It has
 some of the same statistics as the dashboard, but is a lot faster to load, and
 has some fun extra numbers too.  Most of the statistics are most useful during
 lottery registration, but it is not restricted to the lottery.
+
+.. figure:: images/bigboard.png
+   :width: 80 %
+
+   The BigBoard page for monitoring student registration statistics in real-time
 
 Teacher Registration Big Board
 --------------------------------------
