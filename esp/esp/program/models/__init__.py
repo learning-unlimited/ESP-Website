@@ -168,6 +168,8 @@ class ProgramModule(models.Model):
             self._code_properties_cache = {}
             return {}
         except Exception:
+            logger.debug('Could not load code properties for handler=%s module_type=%s',
+                         self.handler, self.module_type, exc_info=True)
             self._code_properties_cache = {}
             return {}
 

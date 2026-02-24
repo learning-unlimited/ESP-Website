@@ -9,7 +9,11 @@ If they match, sets the field to NULL (meaning "use code default").
 If they differ, keeps the value (chapter has explicitly customized it).
 """
 
+import logging
+
 from django.db import migrations
+
+logger = logging.getLogger(__name__)
 
 
 def _build_code_defaults():
@@ -25,6 +29,8 @@ def _build_code_defaults():
                 key = (props.get('handler'), props.get('module_type'))
                 code_defaults[key] = props
         except Exception:
+            logger.warning('Failed to load module_properties from %s',
+                           getattr(module_cls, '__name__', module_cls), exc_info=True)
             continue
     return code_defaults
 
