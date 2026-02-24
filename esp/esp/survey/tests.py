@@ -82,7 +82,7 @@ class SurveyTest(TestCase):
         # based on the tag filters. We can mock students() to return a dictionary with a user.
         from unittest.mock import MagicMock
         self.program.students = MagicMock(return_value={'test_filter': ['user1']})
-        
+
         # We need to mock Tag.getProgramTag as well so it returns 'test_filter'
         from unittest.mock import patch
         with patch('esp.tagdict.models.Tag.getProgramTag', return_value='test_filter'):
