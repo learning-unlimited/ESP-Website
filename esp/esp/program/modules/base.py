@@ -55,6 +55,7 @@ from urllib.parse import quote
 from django.template.loader import get_template
 from django.template import TemplateDoesNotExist
 
+from django.core.exceptions import ImproperlyConfigured
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -722,6 +723,20 @@ def meets_any_deadline(extensions=[]):
     if at least one of the deadlines is met, or a function that generates an
     error page if none of the deadlines are met.
     """
+    _tl_prefixes = ('Student', 'Teacher', 'Volunteer')
+    valid_perms = Permission.PERMISSION_CHOICES_FLAT
+    for ext in extensions:
+        if not any((prefix + ext) in valid_perms for prefix in _tl_prefixes):
+            raise ImproperlyConfigured(
+                "@meets_deadline('{ext}') uses an invalid permission extension. "
+                "None of {candidates} are valid permission choices. "
+                "Valid deadline choices are: {valid}".format(
+                    ext=ext,
+                    candidates=[prefix + ext for prefix in _tl_prefixes],
+                    valid=sorted(p for p in valid_perms
+                                 if p.startswith(_tl_prefixes)),
+                )
+            )
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             for ext in extensions:
