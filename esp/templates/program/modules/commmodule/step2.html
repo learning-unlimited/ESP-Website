@@ -52,7 +52,7 @@ Both email address fields also support named "mailboxes", such as "{{ default_fr
   <td>
   <label for="from">
   <strong>From:</strong>
-  <small>(If blank: {{ default_from }}</small>)</small>
+  <small>(If blank: {{ default_from }})</small>
   </label>
   <input type="text" size="30" name="from" id="from" value="{{from}}" pattern="(^.+@{{ current_site.domain|regexsite }}$)|(^.+<.+@{{ current_site.domain|regexsite }}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)"/>
   <br /><br />
@@ -102,6 +102,9 @@ var editor = new Jodit("#emailbody", {
         '{% templatetag openvariable %}user.first_name{% templatetag closevariable %}': 'User\'s First Name',
         '{% templatetag openvariable %}user.last_name{% templatetag closevariable %}': 'User\'s Last Name',
         '{% templatetag openvariable %}user.unsubscribe_link{% templatetag closevariable %}': 'User-Specific Unsubscribe Link',
+        '{% templatetag openvariable %}program.date{% templatetag closevariable %}': 'Program first day (date)',
+        '{% templatetag openvariable %}program.date_range{% templatetag closevariable %}': 'Program date range',
+        '{% templatetag openvariable %}program.teacher_reg_deadline{% templatetag closevariable %}': 'Teacher registration deadline',
         '{% templatetag openvariable %}program.student_schedule{% templatetag closevariable %}': 'Student\'s schedule for Program',
         '{% templatetag openvariable %}program.student_schedule_norooms{% templatetag closevariable %}': 'Student\'s schedule without room numbers',
         '{% templatetag openvariable %}program.teacher_schedule{% templatetag closevariable %}': 'Teacher\'s schedule for Program',
