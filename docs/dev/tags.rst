@@ -3,7 +3,7 @@
 Basic process of creating and using a new tag:
 ----------------------------------------------
 
-To create a *global tag* (one applies to all programs), add a new item to the global tag dictionary ``all_global_tags`` in the
+To create a *global tag* (one that applies to all programs), add a new item to the global tag dictionary ``all_global_tags`` in the
 file https://github.com/learning-unlimited/ESP-Website/blob/main/esp/esp/tagdict/__init__.py.
 To create a *program-specific tag*, add a new item to the program tag dictionary ``all_program_tags`` in the same file as above.
 

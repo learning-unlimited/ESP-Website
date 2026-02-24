@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.dbmail.base import BaseHandler
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject
