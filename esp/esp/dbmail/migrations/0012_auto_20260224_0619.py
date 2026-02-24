@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('dbmail', '0010_textofemail_messagerequest'),
+        ('dbmail', '0011_populate_default_emaillists'),
     ]
 
     operations = [
