@@ -28,6 +28,12 @@ from esp import utils
 from esp.utils import query_builder
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
 
+from django.test import TestCase, Client
+from django.contrib.auth.models import User
+from esp.utils.models import TemplateOverride
+
+from esp.utils.property import PropertyDict, FlatListItem
+from django.test import TestCase
 
 # Code from <http://snippets.dzone.com/posts/show/6313>
 # My understanding is that snippets from this site are public domain,
@@ -490,3 +496,55 @@ class DiffTemplateOverrideViewTests(TestCase):
             "/manage/templateoverride/9999"
         )
         self.assertEqual(response.status_code, 404)
+        
+
+
+class PropertyDictTests(TestCase):
+    def test_merge_adds_new_key(self):
+        base = PropertyDict({"a": 1})
+        base.merge({"b": 2})
+
+        self.assertEqual(base["a"], 1)
+        self.assertEqual(base["b"], 2)
+    
+    def test_merge_overwrites_scalar_value(self):
+        base = PropertyDict({"a": 1})
+        base.merge({"a": 4})
+
+        self.assertEqual(base["a"], 4)
+    
+    def test_merge_appends_list_values(self):
+        base = PropertyDict({"a": [1, 2]})
+        base.merge({"a": [3]})
+
+        self.assertEqual(base["a"], [1, 2, 3])
+        
+    def test_merge_dict_values(self):
+        base = PropertyDict({"a": {"x": 1}})
+        base.merge({"a": {"y": 2}})
+
+        self.assertEqual(base["a"]["x"], 1)
+        self.assertEqual(base["a"]["y"], 2)
+        
+    def test_flatten_returns_flatlistitems(self):
+        base = PropertyDict({"a": 1, "b": 2})
+        flat = base.flatten()
+
+        self.assertEqual(len(flat), 2)
+
+        keys = [item.key for item in flat]
+        values = [item.value for item in flat]
+
+        self.assertIn("a", keys)
+        self.assertIn("b", keys)
+        self.assertIn(1, values)
+        self.assertIn(2, values)
+    
+    def test_merge_propertydict_values(self):
+        base = PropertyDict({"a": PropertyDict({"x": 1})})
+        other = {"a": PropertyDict({"y": 2})}
+
+        base.merge(other)
+
+        self.assertEqual(base["a"]["x"], 1)
+        self.assertEqual(base["a"]["y"], 2)
