@@ -102,7 +102,7 @@ test suite using Docker::
 
 Or run a specific test file::
 
-  docker exec -it esp-website-web-1 bash -c "cd /code/esp && python manage.py test esp.tests.test_accounting_models --settings=esp.settings 2>&1"
+  docker exec -it esp-website-web-1 bash -c "cd /code/esp && python manage.py test esp.accounting.tests --settings=esp.settings 2>&1"
 
 Without Docker::
 
