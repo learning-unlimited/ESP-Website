@@ -44,6 +44,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 
 @unittest.skipUnless(
@@ -99,15 +100,20 @@ class TestQsdCachePurging(StaticLiveServerTestCase):
 
         options = Options()
         options.add_argument("--headless")
-        self.selenium = webdriver.Firefox(options=options)
-        self.selenium.implicitly_wait(10)
+        try:
+            self.selenium = webdriver.Firefox(options=options)
+            self.selenium.implicitly_wait(10)
+        except Exception as e:
+            self.skipTest(f"Firefox WebDriver could not be started: {e}")
 
     def test_qsd_editing(self):
         for page in ["/", "/test.html"]:
             self.selenium.get('%s%s' % (self.live_server_url, "/"))
             try_normal_login(self.selenium, self.live_server_url, self.admin_user.username, self.PASSWORD_STRING)
             self.selenium.get('%s%s' % (self.live_server_url, page))
-            self.assertTrue(self.selenium.find_element(By.CLASS_NAME, "qsd_header").is_displayed(), "Admin should be able to see the QSD header on " + page)
+            WebDriverWait(self.selenium, 10).until(
+                EC.visibility_of_element_located((By.CLASS_NAME, "qsd_header"))
+            )
             self.editQSD()
 
             self.selenium.delete_all_cookies()
@@ -118,7 +124,9 @@ class TestQsdCachePurging(StaticLiveServerTestCase):
             self.selenium.get('%s%s' % (self.live_server_url, "/"))
             try_normal_login(self.selenium, self.live_server_url, self.qsd_user.username, self.PASSWORD_STRING)
             self.selenium.get('%s%s' % (self.live_server_url, page))
-            self.assertFalse(self.selenium.find_element(By.CLASS_NAME, "qsd_header").is_displayed(), "Non-admin shouldn't be able to see the QSD header on " + page)
+            WebDriverWait(self.selenium, 10).until(
+                EC.invisibility_of_element_located((By.CLASS_NAME, "qsd_header"))
+            )
 
             self.selenium.delete_all_cookies()
             self.selenium.get('%s%s' % (self.live_server_url, page))

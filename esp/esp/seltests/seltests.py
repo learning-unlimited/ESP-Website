@@ -5,6 +5,8 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from esp.seltests.util import try_normal_login, logout
 from esp.users.models import ESPUser
 from esp.utils.models import TemplateOverride
@@ -28,8 +30,11 @@ class CsrfTestCase(StaticLiveServerTestCase):
              self.good_version = to.next_version() - 1
         options = Options()
         options.add_argument("--headless")
-        self.selenium = webdriver.Firefox(options=options)
-        self.selenium.implicitly_wait(10)
+        try:
+            self.selenium = webdriver.Firefox(options=options)
+            self.selenium.implicitly_wait(10)
+        except Exception as e:
+            self.skipTest(f"Firefox WebDriver could not be started: {e}")
 
     def tearDown(self):
         self.selenium.quit()
@@ -62,15 +67,27 @@ class CsrfTestCase(StaticLiveServerTestCase):
         self.selenium.get('%s%s' % (self.live_server_url, '/'))  # Load index
 
         try_normal_login(self.selenium, self.live_server_url, "student", "student")
-        self.assertTrue(self.selenium.find_element(By.CLASS_NAME, 'logged_in').is_displayed())
-        self.assertTrue(self.selenium.find_element(By.ID, 'user_first_name').text == "Student")
-        self.assertTrue(self.selenium.find_element(By.ID, 'user_last_name').text == "Student")
+        WebDriverWait(self.selenium, 10).until(
+            EC.visibility_of_element_located((By.CLASS_NAME, 'logged_in'))
+        )
+        WebDriverWait(self.selenium, 10).until(
+            EC.text_to_be_present_in_element((By.ID, 'user_first_name'), "Student")
+        )
+        WebDriverWait(self.selenium, 10).until(
+            EC.text_to_be_present_in_element((By.ID, 'user_last_name'), "Student")
+        )
         logout(self.selenium, self.live_server_url)
 
         self.selenium.delete_cookie("esp_csrftoken")
 
         try_normal_login(self.selenium, self.live_server_url, "student", "student")
-        self.assertTrue(self.selenium.find_element(By.CLASS_NAME, 'logged_in').is_displayed())
-        self.assertTrue(self.selenium.find_element(By.ID, 'user_first_name').text == "Student")
-        self.assertTrue(self.selenium.find_element(By.ID, 'user_last_name').text == "Student")
+        WebDriverWait(self.selenium, 10).until(
+            EC.visibility_of_element_located((By.CLASS_NAME, 'logged_in'))
+        )
+        WebDriverWait(self.selenium, 10).until(
+            EC.text_to_be_present_in_element((By.ID, 'user_first_name'), "Student")
+        )
+        WebDriverWait(self.selenium, 10).until(
+            EC.text_to_be_present_in_element((By.ID, 'user_last_name'), "Student")
+        )
         logout(self.selenium, self.live_server_url)
