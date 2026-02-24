@@ -32,13 +32,33 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from django.contrib import admin
+from django.contrib import admin, messages
 from esp.admin import admin_site
 from esp.web.models import NavBarEntry, NavBarCategory
+
 
 class NavBarEntryAdmin(admin.ModelAdmin):
     list_display = ('category', 'sort_rank', 'text', 'link')
     list_filter = ('category',)
 
+
+class NavBarCategoryAdmin(admin.ModelAdmin):
+
+    def has_delete_permission(self, request, obj=None):
+        if obj and obj.name == "default":
+            return False
+        return super().has_delete_permission(request, obj)
+
+    def delete_queryset(self, request, queryset):
+        if queryset.filter(name="default").exists():
+            self.message_user(
+                request,
+                "The default NavBarCategory cannot be deleted.",
+                level=messages.ERROR,
+            )
+            return
+        super().delete_queryset(request, queryset)
+
+
 admin_site.register(NavBarEntry, NavBarEntryAdmin)
-admin_site.register(NavBarCategory)
+admin_site.register(NavBarCategory, NavBarCategoryAdmin)
