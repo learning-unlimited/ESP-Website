@@ -6,7 +6,6 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.core import mail
-from django.test import RequestFactory
 
 import stripe
 
