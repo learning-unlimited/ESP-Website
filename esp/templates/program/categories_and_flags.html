@@ -160,13 +160,15 @@ You will need to use the main settings page for a specific program to modify whi
     <br />
 
     <table align="center" cellpadding="0" cellspacing="0" width="100%">
-        <tr><th colspan="6">Class Flag Types</th></tr>
+        <tr><th colspan="8">Class Flag Types</th></tr>
         <tr>
             <td><b>Name</b></td>
             <td><b>Color</b></td>
             <td><b>Seq</b></td>
             <td><b>Show in Scheduler?</b></td>
             <td><b>Show in Dashboard?</b></td>
+            <td><b>Show to Teacher?</b></td>
+            <td><b>Notify Teacher?</b></td>
             <td><b>Options</b></td>
         </tr>
         {% for ft in flag_types %}
@@ -176,6 +178,8 @@ You will need to use the main settings page for a specific program to modify whi
             <td>{{ ft.seq }}</td>
             <td>{{ ft.show_in_scheduler }}</td>
             <td>{{ ft.show_in_dashboard }}</td>
+            <td>{{ ft.show_to_teacher }}</td>
+            <td>{{ ft.notify_teacher_by_email }}</td>
             <td>
                 <center>
                     <form method="post">
