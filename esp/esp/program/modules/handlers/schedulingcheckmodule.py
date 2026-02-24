@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
 from django.http import HttpResponse
 from esp.program.models import ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
@@ -16,9 +14,6 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 import json
 import re
-import six
-from six.moves import map
-from six.moves import range
 
 
 class SchedulingCheckModule(ProgramModuleObj):
@@ -106,7 +101,7 @@ class JSONFormatter:
         output = {}
         output["help_text"] = help_text
         output["headings"] = list(map(str, headings))
-        output["body"] = [self._table_row([key] + [row[h] for h in headings if h]) for key, row in sorted(six.iteritems(d))]
+        output["body"] = [self._table_row([key] + [row[h] for h in headings if h]) for key, row in sorted(d.items())]
         return output
 
 class SchedulingCheckRunner:
@@ -226,7 +221,7 @@ class SchedulingCheckRunner:
             #filter out unscheduled classes
             qs = qs.exclude(resourceassignment__isnull=True)
             #filter out lunch
-            qs = qs.exclude(parent_class__category__category=six.u('Lunch'))
+            qs = qs.exclude(parent_class__category__category='Lunch')
             qs = qs.select_related('parent_class', 'parent_class__parent_program', 'parent_class__category')
             qs = qs.prefetch_related('meeting_times', 'resourceassignment_set', 'resourceassignment_set__resource', 'parent_class__teachers', 'moderators')
             if include_walkins:
@@ -602,7 +597,7 @@ class SchedulingCheckRunner:
         classes = json.loads(Tag.getProgramTag('no_overlap_classes',program=self.p))
         classes_lookup = {x.id: x for x in ClassSubject.objects.filter(id__in=sum(classes.values(),[]))}
         bad_classes = []
-        for key, l in six.iteritems(classes):
+        for key, l in classes.items():
             eventtuples = list(Event.objects.filter(meeting_times__parent_class__in=l).values_list('description', 'meeting_times', 'meeting_times__parent_class'))
             overlaps = {}
             for event, sec, cls in eventtuples:
@@ -640,7 +635,7 @@ class SchedulingCheckRunner:
         HEADINGS = ["Class Section", "Unfulfilled Request", "Current Room"]
         mismatches = []
 
-        for type_regex, matching_rooms in six.iteritems(DEFAULT_CONFIG):
+        for type_regex, matching_rooms in DEFAULT_CONFIG.items():
             resource_requests = ResourceRequest.objects.filter(
                 res_type__program=self.p, desired_value__iregex=type_regex)
 
