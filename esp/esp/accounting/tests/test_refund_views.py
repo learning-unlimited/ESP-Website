@@ -91,7 +91,7 @@ class RefundViewsTest(ProgramFrameworkTest):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'accounting/refund_confirmation.html')
-        # There's a newline in the template between 'processed' and 'successfully', 
+        # There's a newline in the template between 'processed' and 'successfully',
         # so check for something else that indicates success.
         self.assertContains(response, 'cfo@learningu.org')
         self.assertContains(response, self.student.username)
