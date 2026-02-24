@@ -47,19 +47,24 @@ Design principles:
   the side-effects.
 - Fixtures use ProgramFrameworkTest where a full program environment is
   needed, and minimal manual fixtures otherwise.
+
+Known source bug (not fixed here):
+  sanitize() / sanitize_walkin() / sanitize_lunch() open the CSV log file
+  in binary mode ('ab+') but pass the file handle to csv.writer, which
+  requires text mode in Python 3.  Tests for csvlog=True therefore patch
+  the open() call so they can exercise the dispatch logic without hitting
+  the Python 3 csv/binary incompatibility.
 """
 
 import datetime
-
-from django.test import TestCase
+import io
+import os
+from unittest.mock import patch
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import StudentRegistration, RegistrationType
-from esp.program.models.class_ import ClassCategories, ClassSubject, ClassSection
+from esp.program.models.class_ import ClassCategories, ClassSection
 from esp.program.controllers.studentregsanity import StudentRegSanityController
-from esp.tests.util import CacheFlushTestCase, user_role_setup
-from esp.users.models import ESPUser, StudentInfo
-from esp.program.models import RegistrationProfile
 
 
 # ---------------------------------------------------------------------------
@@ -95,6 +100,7 @@ class StudentRegSanityFrameworkTest(ProgramFrameworkTest):
 
     def _create_special_class(self, category_name):
         """Create a one-section class belonging to *category_name*."""
+        from esp.program.models.class_ import ClassSubject
         category = self._get_or_create_category(category_name)
         teacher = self.teachers[0]
         cls = ClassSubject.objects.create(
@@ -143,7 +149,6 @@ class StudentRegSanityControllerInitTest(StudentRegSanityFrameworkTest):
     def test_init_default_options(self):
         """Default options are applied when none are passed."""
         ctrl = StudentRegSanityController(self.program)
-        import os
         self.assertEqual(ctrl.options['directory'], os.getenv('HOME'))
 
     def test_init_custom_option_override(self):
@@ -256,14 +261,11 @@ class SanitizeWalkinTest(StudentRegSanityFrameworkTest):
         Walk-in sanitisation must never touch registrations in ordinary
         (non-walk-in) class sections.
         """
-        regular_section = self.program.sections().filter(
-            parent_class__category__category="Core"  # or whatever the default is
+        # Exclude only the Walk-in Activity category; do not assume any
+        # particular default category name (e.g. "Core") exists in fixtures.
+        regular_section = self.program.sections().exclude(
+            parent_class__category__category="Walk-in Activity"
         ).first()
-        if regular_section is None:
-            # Use any non-walkin section
-            regular_section = self.program.sections().exclude(
-                parent_class__category__category="Walk-in Activity"
-            ).first()
         if regular_section is None:
             self.skipTest("No non-walk-in section available in test program")
 
@@ -549,3 +551,27 @@ class SanitizeDispatcherTest(StudentRegSanityFrameworkTest):
             "sanitize() must set self.reports",
         )
         self.assertIn('walkin', self.controller.reports)
+
+    # --- csvlog=True: exercise the logging dispatch path ---
+
+    def test_csvlog_true_dispatches_checks_and_returns_dict(self):
+        """
+        When csvlog=True, sanitize() opens a file and creates a csv.writer.
+        We patch open() so no actual file I/O occurs, then verify that the
+        dispatch logic still runs and returns the expected dict structure.
+
+        NOTE: The source opens the file in binary mode ('ab+') but passes it
+        to csv.writer, which requires text mode in Python 3.  This test
+        therefore patches open() to return a text-mode StringIO so the
+        dispatch path can be exercised without hitting that source-level bug.
+        """
+        fake_file = io.StringIO()
+        with patch('esp.program.controllers.studentregsanity.open', return_value=fake_file):
+            result = self.controller.sanitize(
+                checks=['antiwalk-in', 'antilunch'],
+                fake=True,
+                csvlog=True,
+            )
+        self.assertIsInstance(result, dict)
+        self.assertIn('walkin', result)
+        self.assertIn('antilunch', result)
