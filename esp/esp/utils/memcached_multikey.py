@@ -1,6 +1,5 @@
 "Memcached cache backend"
 
-from __future__ import absolute_import
 import logging
 logger = logging.getLogger(__name__)
 
@@ -13,7 +12,7 @@ from esp.utils import ascii
 import hashlib
 
 try:
-    import six.moves.cPickle as pickle
+    import pickle
 except:
     import pickle
 

@@ -1,8 +1,4 @@
 
-from __future__ import absolute_import
-from six.moves import map
-import six
-from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -112,12 +108,10 @@ class ProgramCreationForm(BetterModelForm):
         self.fields['program_size_max'].required = True
         self.fields['program_size_max'].validators.append(validators.MaxValueValidator((1 << 31) - 1))
 
-
     def save(self, commit=True):
         self.instance.url = self.cleaned_data['new_url']
         self.instance.name = self.cleaned_data['new_name']
         return super().save(commit=commit)
-
 
     def load_program(self, program):
         #   Copy the data in the program into the form so that we don't have to re-select modules and stuff.
@@ -138,11 +132,11 @@ class ProgramCreationForm(BetterModelForm):
         if 'term' in self.cleaned_data and 'term_friendly' in self.cleaned_data:
             #   Filter out unwanted characters from program type to form URL
             ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
-            new_url = six.u('%(type)s/%(term)s') \
+            new_url = '%(type)s/%(term)s' \
                 % {'type': ptype_slug
                   ,'term': self.cleaned_data['term']
                   }
-            new_name = six.u('%(type)s %(term)s') \
+            new_name = '%(type)s %(term)s' \
                 % {'type': self.cleaned_data['program_type']
                   ,'term': self.cleaned_data['term_friendly']
                   }
@@ -285,7 +279,10 @@ class StatisticsQueryForm(forms.Form):
         super().__init__(*args, **kwargs)
 
         self.fields['program_type'].choices = StatisticsQueryForm.get_program_type_choices()
-        self.fields['program_instances'].choices = StatisticsQueryForm.get_program_instance_choices(self.fields['program_type'].choices[0][0])
+        if self.fields['program_type'].choices:
+            self.fields['program_instances'].choices = StatisticsQueryForm.get_program_instance_choices(self.fields['program_type'].choices[0][0])
+        else:
+            self.fields['program_instances'].choices = []
 
         school_choices = StatisticsQueryForm.get_school_choices()
         if len(school_choices) > 0:
@@ -426,7 +423,6 @@ class StatisticsQueryForm(forms.Form):
             if isinstance(StatisticsQueryForm.base_fields[field_name], forms.MultipleChoiceField):
                 result.append(field_name)
         return result
-
 
 class ClassFlagForm(forms.ModelForm):
     class Meta:
