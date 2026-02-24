@@ -41,6 +41,6 @@ from esp.accounting.refund_views import refund, process_refund
 urlpatterns = [
     url(r'^$', summary),
     url(r'^user$', user_summary),
-    url(r'^refund/$', refund, name='accounting_refund'),
-    url(r'^refund/process/$', process_refund, name='accounting_refund_process'),
+    url(r'^refund/?$', refund, name='accounting_refund'),
+    url(r'^refund/process/?$', process_refund, name='accounting_refund_process'),
 ]

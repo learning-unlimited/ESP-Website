@@ -56,7 +56,7 @@
                 <th>User ID</th>
                 <th>Username</th>
                 <th>Full Name</th>
-                <th>Transaction ID</th>
+
                 <th>Date</th>
                 <th>Amount Paid</th>
                 <th>Already Refunded</th>
@@ -70,7 +70,6 @@
                 <td>{{ row.user_id }}</td>
                 <td>{{ row.username }}</td>
                 <td>{{ row.full_name }}</td>
-                <td><code>{{ row.transaction_id }}</code></td>
                 <td>{{ row.timestamp|date:"Y-m-d H:i" }}</td>
                 <td>${{ row.amount_paid }}</td>
                 <td>${{ row.amount_refunded }}</td>
@@ -94,11 +93,33 @@
         Set the refund amount to 0 (or clear it) for any transaction you do NOT want to refund.
     </div>
 
-    <button type="submit" class="btn btn-danger" style="margin-top: 10px;"
+    <button type="submit" id="process-refunds-btn" class="btn btn-danger" style="margin-top: 10px;" disabled
         onclick="return confirm('Are you sure you want to process these refunds? This action cannot be undone.');">
         Process Refunds
     </button>
 </form>
+
+<script>
+    (function () {
+        var btn = document.getElementById('process-refunds-btn');
+        var inputs = document.querySelectorAll('input[name^="refund_amount_"]');
+        function updateButton() {
+            var hasPositive = false;
+            for (var i = 0; i < inputs.length; i++) {
+                var val = parseFloat(inputs[i].value);
+                if (!isNaN(val) && val > 0) {
+                    hasPositive = true;
+                    break;
+                }
+            }
+            btn.disabled = !hasPositive;
+        }
+        for (var i = 0; i < inputs.length; i++) {
+            inputs[i].addEventListener('input', updateButton);
+        }
+        updateButton();
+    })();
+</script>
 
 {% else %}
 <p><em>No payment transactions found for the selected program{% if searched_with_user %} and student{% endif %}
