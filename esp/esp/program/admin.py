@@ -60,6 +60,11 @@ from esp.users.admin import ExpiredListFilter
 class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler')
     search_fields = ['link_title', 'admin_title', 'handler']
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('handler', 'module_type')
+        return self.readonly_fields
 admin_site.register(ProgramModule, ProgramModuleAdmin)
 
 class ArchiveClassAdmin(admin.ModelAdmin):
@@ -74,6 +79,11 @@ class ProgramAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'url', 'director_email', 'grade_min', 'grade_max',)
     filter_horizontal = ('program_modules', 'class_categories', 'flag_types',)
     search_fields = ('name', )
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('url',)
+        return self.readonly_fields
 admin_site.register(Program, ProgramAdmin)
 
 class RegistrationProfileAdmin(admin.ModelAdmin):
@@ -222,6 +232,11 @@ admin_site.register(VolunteerOffer, VolunteerOfferAdmin)
 
 class Admin_RegistrationType(admin.ModelAdmin):
     list_display = ('name', 'category', 'displayName', 'description', )
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('name', 'category')
+        return self.readonly_fields
 admin_site.register(RegistrationType, Admin_RegistrationType)
 
 def expire_student_registrations(modeladmin, request, queryset):
@@ -259,6 +274,11 @@ class SectionAdmin(admin.ModelAdmin):
     list_display_links = ('title',)
     list_filter = ['status', 'parent_class__parent_program']
     search_fields = ['=id', '=parent_class__id', 'parent_class__title', 'parent_class__class_info', 'resourceassignment__resource__name']
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('parent_class',)
+        return self.readonly_fields
 admin_site.register(ClassSection, SectionAdmin)
 
 class SectionInline(admin.TabularInline):
@@ -276,6 +296,12 @@ class SubjectAdmin(admin.ModelAdmin):
     readonly_fields = ('timestamp',)
     list_filter = ('parent_program', 'category')
     inlines = (SectionInline,)
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('parent_program',)
+        return self.readonly_fields
+
     fieldsets = (
         (None, {
             'fields': ('title', 'parent_program', 'timestamp', 'category',
@@ -301,6 +327,11 @@ admin_site.register(ClassSubject, SubjectAdmin)
 
 class Admin_ClassCategories(admin.ModelAdmin):
      list_display = ('category', 'symbol', 'seq', )
+
+     def get_readonly_fields(self, request, obj=None):
+         if obj:  # Editing an existing object
+             return self.readonly_fields + ('symbol',)
+         return self.readonly_fields
 admin_site.register(ClassCategories, Admin_ClassCategories)
 
 class Admin_ClassSizeRange(admin.ModelAdmin):

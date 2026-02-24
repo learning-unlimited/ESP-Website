@@ -53,6 +53,11 @@ admin_site.register(SurveyResponse, SurveyResponseAdmin)
 
 class QuestionTypeAdmin(admin.ModelAdmin):
     list_display = ('name', '_param_names', 'is_numeric', 'is_countable')
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('name',)
+        return self.readonly_fields
 admin_site.register(QuestionType, QuestionTypeAdmin)
 
 class QuestionAdmin(admin.ModelAdmin):

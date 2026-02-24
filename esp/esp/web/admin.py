@@ -42,4 +42,13 @@ class NavBarEntryAdmin(admin.ModelAdmin):
     list_filter = ('category',)
 
 admin_site.register(NavBarEntry, NavBarEntryAdmin)
-admin_site.register(NavBarCategory)
+
+class NavBarCategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'path')
+    search_fields = ['name', 'path']
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('name',)
+        return self.readonly_fields
+admin_site.register(NavBarCategory, NavBarCategoryAdmin)

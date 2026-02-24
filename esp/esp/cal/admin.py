@@ -37,7 +37,15 @@ from django.contrib import admin
 from esp.admin import admin_site
 from esp.cal.models import EventType, Event
 
-admin_site.register(EventType)
+class EventTypeAdmin(admin.ModelAdmin):
+    list_display = ('description',)
+    search_fields = ['description']
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('description',)
+        return self.readonly_fields
+admin_site.register(EventType, EventTypeAdmin)
 
 class EventAdmin(admin.ModelAdmin):
     list_display = ('id', 'program', 'name', 'short_time', 'pretty_date', 'event_type', 'short_description')
