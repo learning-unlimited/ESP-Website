@@ -31,8 +31,6 @@ function update_user_classes() {
     }
     
     //    Write user's name in the appropriate spot in the login box
-    $j("#user_first_name").text(esp_user.cur_first_name);
-    $j("#user_last_name").text(esp_user.cur_last_name);
     $j("#user_username").text(esp_user.cur_username);
     $j("#user_userid").text(esp_user.cur_userid);
 }
