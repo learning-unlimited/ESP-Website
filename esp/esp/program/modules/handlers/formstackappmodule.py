@@ -38,10 +38,17 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.db.models.query import Q
+from django.template import Variable, Context, VariableDoesNotExist
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, main_call, aux_call
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser
 from esp.application.models import FormstackStudentProgramApp
+
+def resolve_field_expression(expression, context_vars):
+    try:
+        return str(Variable(expression).resolve(Context(context_vars)))
+    except VariableDoesNotExist:
+        return ""
 
 class FormstackAppModule(ProgramModuleObj):
     doc = """
@@ -88,13 +95,12 @@ class FormstackAppModule(ProgramModuleObj):
         context['app_is_open'] = fsas.app_is_open or request.user.isAdmin(prog)
         context['autopopulated'] = autopopulated = []
         for line in fsas.autopopulated_fields.strip().split('\n'):
-            field, _, expr = line.partition(':')
-            try:
-                value = eval(expr, {'user': request.user})
-            except Exception as e:
-                logger.exception("Error in FormstackAppSettings: %s", e)
+            if not line.strip():
                 continue
-            autopopulated.append((field, value))
+            field, _, expr = line.partition(':')
+            value = resolve_field_expression(expr, {'user': request.user})
+            if value:
+                autopopulated.append((field.strip(), value))
         return render_to_response(self.baseDir()+'studentapp.html',
                                   request, context)
 
