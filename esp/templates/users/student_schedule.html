@@ -96,7 +96,17 @@ you arrive.
 </tr>
 {% for timeslot in timeslots %}
     {% ifchanged timeslot.0.start.day %}
-        <tr style="background-color: #f9f9f9"><th colspan="3" height="3" style="text-align: center;">Classes beginning on {{ timeslot.0.pretty_date }}</th></tr>
+        <tr style="background-color: #f9f9f9"><th colspan="3" height="3" style="text-align: center;">
+            Classes beginning on {{ timeslot.0.pretty_date }}
+            {% if module.deadline_met_or_lottery_open %}
+                <br/>
+                <a href="/learn/{{one}}/{{two}}/cancel_day/{{ timeslot.0.start|date:"Y-m-d" }}"
+                   class="btn btn-mini btn-danger"
+                   onclick="return confirm('Are you sure you want to cancel ALL your registrations for {{ timeslot.0.pretty_date }}?');">
+                   [Cancel all for this day]
+                </a>
+            {% endif %}
+        </th></tr>
     {% endifchanged %}
     {% ifchanged timeslot.2 %}
         <tr style="background-color: #f9f9f9"><th colspan="3" height="3" style="text-align: center;">Block {{ timeslot.2 }}</th></tr>
