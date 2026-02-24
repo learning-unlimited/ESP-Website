@@ -92,6 +92,28 @@ In our workflow, there is generally no need to rebase or squash.  If you are wor
 
 One exception: when merging a pull request to ``main`` via the GitHub UI button, we generally prefer the "squash" option, unless the individual changes in the pull request are fairly distinct or there is a lot of history to preserve, in which case "merge" is better.  (If GitHub doesn't offer "squash", then "merge" is also best.)  If the pull request is *from* ``main`` or will be merged into multiple branches, definitely use "merge".  If you're not sure, ask a more experienced contributor which to use!
 
+Testing
+-------
+
+**All tests must pass before submitting a pull request.** You can run the full
+test suite using Docker::
+
+  docker exec -it esp-website-web-1 bash -c "cd /code/esp && python manage.py test --settings=esp.settings 2>&1"
+
+Or run a specific test file::
+
+  docker exec -it esp-website-web-1 bash -c "cd /code/esp && python manage.py test esp.tests.test_accounting_models --settings=esp.settings 2>&1"
+
+Without Docker::
+
+  cd esp
+  python manage.py test --settings=esp.settings
+
+Test files live in ``esp/esp/tests/`` and are named after the source module they
+cover (e.g. ``test_accounting_models.py`` → ``accounting/models.py``). When
+adding new functionality, add corresponding tests following this naming
+convention: ``test_<module>_<component>.py``.
+
 Code reviews
 ------------
 
