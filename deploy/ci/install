@@ -1,0 +1,6 @@
+#!/bin/bash
+set -euf -o pipefail
+
+# Install Python dependencies
+pip3 install -r esp/requirements.txt -q --log pip.log || (tail pip.log && exit 1)
+pip3 install coverage
