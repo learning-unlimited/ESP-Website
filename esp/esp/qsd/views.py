@@ -310,8 +310,18 @@ def ajax_qsd_image_upload(request):
             status=401,
         )
 
-    # Permission check: must be able to edit QSD (admin or program admin)
-    if not request.user.isAdministrator():
+    # Permission check: must be able to edit QSD content.
+    # If a qsd_url is provided, check edit permission for that specific page
+    # (allows class teachers to upload images for their class QSDs).
+    # Otherwise, fall back to requiring administrator status.
+    qsd_url = request.POST.get('qsd_url', '')
+    if qsd_url:
+        if not Permission.user_can_edit_qsd(request.user, qsd_url):
+            return JsonResponse(
+                {'success': False, 'data': {'messages': ['You do not have permission to upload images.']}},
+                status=403,
+            )
+    elif not request.user.isAdministrator():
         return JsonResponse(
             {'success': False, 'data': {'messages': ['You do not have permission to upload images.']}},
             status=403,

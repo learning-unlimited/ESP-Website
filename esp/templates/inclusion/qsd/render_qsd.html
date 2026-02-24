@@ -54,6 +54,7 @@ var editor = new Jodit("#qsd_content_{{ qsdrec.edit_id }}", {
     "url": "/admin/ajax_qsd_image_upload/",
     "format": "json",
     "headers": { "X-CSRFToken": csrf_token() },
+    "data": { "qsd_url": "{{ qsdrec.url }}" },
     "isSuccess": function(resp) { return resp.success; },
     "getMessage": function(resp) {
       return resp.data && resp.data.messages ? resp.data.messages.join("\n") : "";
