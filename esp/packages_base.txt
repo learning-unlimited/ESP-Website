@@ -2,7 +2,6 @@ npm
 build-essential
 texlive
 texlive-latex-extra
-ghostscript
 imagemagick
 dvipng
 python3.7
