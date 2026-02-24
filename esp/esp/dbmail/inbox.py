@@ -21,8 +21,9 @@ logger = logging.getLogger('esp.mailgate')
 MAX_BODY_SIZE = 1 * 1024 * 1024    # 1 MB
 MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024  # 25 MB
 
-# Subject normalization pattern: strip Re:, Fwd:, FW:, Fw: prefixes
-_SUBJECT_PREFIX_RE = re.compile(r'^(\s*(Re|Fwd|FW|Fw)\s*:\s*)+', re.IGNORECASE)
+# Subject normalization: strip a single Re:/Fwd:/FW:/Fw: prefix per pass
+# to avoid nested quantifiers that can cause catastrophic backtracking.
+_SUBJECT_PREFIX_RE = re.compile(r'^\s*(Re|Fwd|FW|Fw)\s*:\s*', re.IGNORECASE)
 
 # Unicode bidirectional control characters (RLO, LRO, RLE, LRE, PDF, etc.)
 _BIDI_CONTROL_RE = re.compile(u'[\u200e\u200f\u202a-\u202e\u2066-\u2069]')
@@ -49,7 +50,12 @@ def normalize_subject(subject):
     """Strip Re:/Fwd:/FW: prefixes and whitespace for threading comparison."""
     if not subject:
         return ''
-    return _SUBJECT_PREFIX_RE.sub('', subject).strip()
+    # Strip one prefix per iteration to avoid nested-quantifier ReDoS
+    prev = None
+    while subject != prev:
+        prev = subject
+        subject = _SUBJECT_PREFIX_RE.sub('', subject, count=1)
+    return subject.strip()
 
 
 def extract_body_parts(message):
@@ -68,16 +74,34 @@ def extract_body_parts(message):
             disposition = str(part.get('Content-Disposition', ''))
 
             if content_type == 'text/plain' and 'attachment' not in disposition:
-                payload = part.get_payload(decode=True)
-                if payload:
-                    charset = part.get_content_charset() or 'utf-8'
-                    text_body += payload.decode(charset, errors='replace')
+                # Check encoded size before decoding to limit memory use
+                raw = part.get_payload()
+                if isinstance(raw, str) and len(raw) > MAX_BODY_SIZE * 2:
+                    text_body += raw[:MAX_BODY_SIZE].encode('utf-8', errors='replace').decode('utf-8', errors='replace')
+                    text_body += '\n\n[Content truncated]'
+                else:
+                    payload = part.get_payload(decode=True)
+                    if payload:
+                        charset = part.get_content_charset() or 'utf-8'
+                        text_body += payload.decode(charset, errors='replace')
             elif content_type == 'text/html' and 'attachment' not in disposition:
-                payload = part.get_payload(decode=True)
-                if payload:
-                    charset = part.get_content_charset() or 'utf-8'
-                    html_body += payload.decode(charset, errors='replace')
+                raw = part.get_payload()
+                if isinstance(raw, str) and len(raw) > MAX_BODY_SIZE * 2:
+                    html_body += raw[:MAX_BODY_SIZE].encode('utf-8', errors='replace').decode('utf-8', errors='replace')
+                    html_body += '\n\n<!-- Content truncated -->'
+                else:
+                    payload = part.get_payload(decode=True)
+                    if payload:
+                        charset = part.get_content_charset() or 'utf-8'
+                        html_body += payload.decode(charset, errors='replace')
             elif disposition and 'attachment' in disposition:
+                # Check encoded size before decoding
+                raw = part.get_payload()
+                raw_size = len(raw) if isinstance(raw, str) else 0
+                if raw_size > MAX_ATTACHMENT_SIZE * 2:
+                    logger.warning("Skipping attachment '%s' (encoded ~%d bytes > limit)",
+                                   part.get_filename(), raw_size)
+                    continue
                 payload = part.get_payload(decode=True)
                 if payload and len(payload) <= MAX_ATTACHMENT_SIZE:
                     attachments.append({
