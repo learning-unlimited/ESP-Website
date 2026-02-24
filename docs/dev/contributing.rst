@@ -109,10 +109,10 @@ Without Docker::
   cd esp
   python manage.py test --settings=esp.settings
 
-Test files live in ``esp/esp/tests/`` and are named after the source module they
-cover (e.g. ``test_accounting_models.py`` → ``accounting/models.py``). When
-adding new functionality, add corresponding tests following this naming
-convention: ``test_<module>_<component>.py``.
+Test files live in their respective application directories, typically in a ``tests.py`` file or
+a ``tests/`` directory (e.g. ``accounting/tests.py`` or ``users/controllers/tests/test_usersearch.py``). When
+adding new functionality, add corresponding tests to the appropriate application's
+test module or directory.
 
 Code reviews
 ------------
