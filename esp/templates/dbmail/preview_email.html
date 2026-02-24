@@ -1,0 +1,59 @@
+{% extends "main.html" %}
+
+{% block title %}Email Preview{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Email Preview</h2>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="card mb-3">
+        <div class="card-header bg-info text-white">
+            <h5>Email Details</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>From:</strong> {{ send_from }}</p>
+            <p><strong>To:</strong> {{ recipient_count }} recipient(s)</p>
+            <p><strong>Sample User:</strong> {{ sample_user.username }} ({{ sample_user.email }})</p>
+        </div>
+    </div>
+    
+    <div class="card mb-3">
+        <div class="card-header bg-primary text-white">
+            <h5>Email Preview</h5>
+        </div>
+        <div class="card-body">
+            <h4>Subject: {{ subject }}</h4>
+            <hr>
+            <div class="email-content">
+                {{ msgtext|linebreaks }}
+            </div>
+        </div>
+    </div>
+    
+    <div class="btn-group" role="group">
+        <form method="POST" action="{% url 'send_test_email' msg_req.id %}" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-warning">
+                Send Test Email to Me
+            </button>
+        </form>
+        
+        <a href="{% url 'send_email' msg_req.id %}" class="btn btn-success ml-2">
+            Send to All Recipients
+        </a>
+        
+        <a href="javascript:history.back()" class="btn btn-secondary ml-2">
+            Back to Edit
+        </a>
+    </div>
+</div>
+{% endblock %}
