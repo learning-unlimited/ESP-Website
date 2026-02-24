@@ -355,10 +355,11 @@ class Resource(models.Model):
             return collision.exists()
 
     def has_unreturned_prior_assignment(self, timeslot):
-        """Check if any identical resource (same name) in an earlier timeslot
-        has an unreturned ResourceAssignment."""
+        """Check if any identical resource (same name and type) in an earlier
+        timeslot has an unreturned ResourceAssignment."""
         earlier_resources = Resource.objects.filter(
             name=self.name,
+            res_type=self.res_type,
             event__end__lte=timeslot.start,
             event__program=timeslot.program,
         )
