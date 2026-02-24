@@ -6,7 +6,6 @@ from esp.program.modules.handlers.schedulingcheckmodule import (
 )
 
 class DummyProgram:
-    """Minimal stub program object for testing."""
     def getTimeSlots(self):
         return []
 
@@ -15,12 +14,22 @@ class DummyProgram:
 
 
 def test_lunch_blocks_setup_empty():
-    """Should return empty list when no lunch blocks exist."""
     program = DummyProgram()
     runner = SchedulingCheckRunner(program, formatter=RawSCFormatter())
 
-    runner.lunch_blocks = []  # simulate no lunch blocks
+    runner.lunch_blocks = []
 
     result = runner.lunch_blocks_setup()
 
     assert result == []
+
+
+def test_lunch_blocks_setup_with_blocks():
+    program = DummyProgram()
+    runner = SchedulingCheckRunner(program, formatter=RawSCFormatter())
+
+    runner.lunch_blocks = [["Block A", "Block B"]]
+
+    result = runner.lunch_blocks_setup()
+
+    assert result == ["Block A", "Block B"]
