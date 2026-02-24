@@ -357,7 +357,7 @@ class AdminClass(ProgramModuleObj):
     @needs_admin
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
         # Search for teachers with names that start with search string
-        if not 'name' in request.GET or 'name' in request.POST:
+        if 'name' not in request.GET and 'name' not in request.POST:
             return self.goToCore(tl)
 
         return TeacherClassRegModule.teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass)
