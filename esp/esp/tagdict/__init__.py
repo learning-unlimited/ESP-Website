@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from collections import OrderedDict
 from django import forms
 from django.forms import widgets
@@ -8,7 +7,6 @@ from decimal import Decimal
 import datetime
 
 from esp.users.forms import _states
-from six.moves import zip
 
 import json
 

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.http import HttpResponse, Http404
 from django.dispatch import receiver
 from django.views.decorators.csrf import csrf_exempt

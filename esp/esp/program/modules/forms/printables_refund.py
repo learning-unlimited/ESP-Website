@@ -1,6 +1,4 @@
-from __future__ import absolute_import
 import django.forms as forms
-
 
 
 class RefundInfoForm(forms.Form):
