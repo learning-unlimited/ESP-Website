@@ -124,10 +124,12 @@ class ClassFlag(models.Model):
 
     def send_teacher_notification(self):
         """Email all teachers of the flagged class about this flag."""
+        import logging
         from esp.dbmail.models import send_mail
         from django.template.loader import render_to_string
         from django.conf import settings
 
+        logger = logging.getLogger(__name__)
         cls = self.subject
         program = cls.parent_program
         teachers = cls.get_teachers()
@@ -142,10 +144,18 @@ class ClassFlag(models.Model):
             program.director_email,
             '%s at %s' % (program.program_type, settings.INSTITUTION_NAME)
         )
+        failures = []
         for teacher in teachers:
-            to_email = [teacher.get_email_sendto_address()]
-            send_mail(
-                'Class Flag Added - %s: %s' % (cls.emailcode(), cls.title),
-                email_content, from_email, to_email
-            )
+            try:
+                to_email = [teacher.get_email_sendto_address()]
+                send_mail(
+                    'Class Flag Added - %s: %s' % (cls.emailcode(), cls.title),
+                    email_content, from_email, to_email
+                )
+            except Exception:
+                logger.error("Failed to email teacher %s for flag %s on class %s",
+                             teacher.username, self.id, cls.id, exc_info=True)
+                failures.append(teacher.username)
+        if failures:
+            raise RuntimeError("Failed to email %d teacher(s): %s" % (len(failures), ', '.join(failures)))
 
