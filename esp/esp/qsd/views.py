@@ -52,6 +52,7 @@ from urllib.parse import urlparse
 from bleach import clean
 
 from django.conf import settings
+from django.views.decorators.http import require_POST
 
 from reversion import revisions as reversion
 
@@ -311,20 +312,34 @@ def ajax_qsd_history(request):
         object_id__in=object_ids,
     ).select_related('revision').order_by('-revision__date_created')[:50]
 
-    result = []
+    # Bulk-fetch all user IDs we'll need to resolve usernames (avoids N+1)
+    user_ids = set()
+    version_data = []
     for v in versions:
         field_dict = v.field_dict
         rev = v.revision
+        if rev.user_id:
+            user_ids.add(rev.user_id)
+        if 'author' in field_dict:
+            try:
+                user_ids.add(int(field_dict['author']))
+            except (ValueError, TypeError):
+                pass
+        version_data.append((v, field_dict, rev))
+
+    user_map = {}
+    if user_ids:
+        user_map = dict(ESPUser.objects.filter(pk__in=user_ids).values_list('pk', 'username'))
+
+    result = []
+    for v, field_dict, rev in version_data:
         user_name = ''
         if rev.user_id:
-            try:
-                user_name = ESPUser.objects.get(pk=rev.user_id).username
-            except ESPUser.DoesNotExist:
-                user_name = 'Unknown'
+            user_name = user_map.get(rev.user_id, 'Unknown')
         if not user_name and 'author' in field_dict:
             try:
-                user_name = ESPUser.objects.get(pk=field_dict['author']).username
-            except (ESPUser.DoesNotExist, ValueError, TypeError):
+                user_name = user_map.get(int(field_dict['author']), 'Unknown')
+            except (ValueError, TypeError):
                 user_name = 'Unknown'
 
         content = field_dict.get('content', '')
@@ -347,14 +362,16 @@ def ajax_qsd_version_preview(request):
     """ Return rendered content for a specific version. """
     import json
     from reversion.models import Version
+    from django.contrib.contenttypes.models import ContentType
     from markdown import markdown
 
     version_id = request.GET.get('version_id', '')
     if not version_id:
         return JsonResponse({'error': 'Missing version_id'}, status=400)
 
+    ct = ContentType.objects.get_for_model(QuasiStaticData)
     try:
-        version = Version.objects.select_related('revision').get(pk=version_id)
+        version = Version.objects.select_related('revision').get(pk=version_id, content_type=ct)
     except Version.DoesNotExist:
         return HttpResponse('Version not found', status=404)
 
@@ -373,15 +390,14 @@ def ajax_qsd_version_preview(request):
     return JsonResponse(result)
 
 
+@require_POST
 @reversion.create_revision()
 def ajax_qsd_restore(request):
     """ Restore a QSD to a specific historical version. """
     import json
     from reversion.models import Version
+    from django.contrib.contenttypes.models import ContentType
     from markdown import markdown
-
-    if request.method != 'POST':
-        return HttpResponseNotAllowed(['POST'])
 
     if request.user.id is None:
         return HttpResponse('Session expired', status=401)
@@ -390,8 +406,9 @@ def ajax_qsd_restore(request):
     if not version_id:
         return JsonResponse({'error': 'Missing version_id'}, status=400)
 
+    ct = ContentType.objects.get_for_model(QuasiStaticData)
     try:
-        version = Version.objects.select_related('revision').get(pk=version_id)
+        version = Version.objects.select_related('revision').get(pk=version_id, content_type=ct)
     except Version.DoesNotExist:
         return HttpResponse('Version not found', status=404)
 
