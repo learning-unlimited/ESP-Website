@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.contrib.sites.models import Site
 from django.conf import settings
 

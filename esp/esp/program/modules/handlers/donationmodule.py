@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -53,13 +52,12 @@ from decimal import Decimal
 import json
 
 
-
 class DonationForm(forms.Form):
     amount_donation = forms.ChoiceField(widget=forms.RadioSelect())
     custom_amount = forms.DecimalField(decimal_places=2, min_value=1, max_value=1000, required=False)
 
     def __init__(self, *args, **kwargs):
-        super(DonationForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.amount = None
 
     def load_donation(self, amount_donation_initial=None, custom_amount_initial=None):
