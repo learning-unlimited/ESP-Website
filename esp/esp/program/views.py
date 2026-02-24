@@ -810,6 +810,19 @@ def process_emails(request):
     if request.method != 'POST':
         return HttpResponseBadRequest('POST required')
 
+    # Rate-limit: allow at most one spawn every 30 seconds
+    cache_key = 'process_emails_last_trigger'
+    if cache.get(cache_key):
+        return HttpResponse(
+            json.dumps({
+                'status': 'throttled',
+                'message': 'Email processing was already triggered recently. '
+                           'Please wait before trying again.',
+            }),
+            content_type='application/json',
+            status=429,
+        )
+
     dbmail_cron_path = os.path.join(settings.PROJECT_ROOT, 'dbmail_cron.py')
     try:
         subprocess.Popen(
@@ -817,6 +830,7 @@ def process_emails(request):
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             close_fds=True,
+            start_new_session=True,
         )
     except Exception as e:
         logger.exception('Failed to launch dbmail_cron.py')
@@ -825,6 +839,8 @@ def process_emails(request):
             content_type='application/json',
             status=500,
         )
+
+    cache.set(cache_key, True, 30)
 
     return HttpResponse(
         json.dumps({
