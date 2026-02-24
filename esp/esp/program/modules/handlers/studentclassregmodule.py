@@ -687,8 +687,18 @@ class StudentClassRegModule(ProgramModuleObj):
     @needs_student_in_grade
     @meets_any_deadline(['/Classes', '/Removal'])
     def cancel_day(self, request, tl, one, two, module, extra, prog):
-        """Cancel all registrations for a specific day"""
+        """Cancel all registrations for a specific day.
+
+        Expects `extra` to be a date string in YYYY-MM-DD format.
+        If the date is missing or invalid, redirect back to the core page.
+        """
         import datetime
+
+        # extra may be None or a non-date value when probed generically (e.g. by tests).
+        # Treat a missing/invalid date as a no-op and redirect rather than crashing.
+        if not extra or not isinstance(extra, str):
+            return self.goToCore(tl)
+
         try:
             target_date = datetime.datetime.strptime(extra, '%Y-%m-%d').date()
         except ValueError:
@@ -703,7 +713,7 @@ class StudentClassRegModule(ProgramModuleObj):
         for sec in sections:
             result = sec.cannotRemove(request.user)
             if result and not hasattr(request.user, "onsite_local"):
-                raise ESPError(f"Cannot remove class {sec.emailcode()}: {result}", log=False)
+                raise ESPError("Cannot remove class %s: %s" % (sec.emailcode(), result), log=False)
             else:
                 sec.unpreregister_student(request.user, verbs)
 
