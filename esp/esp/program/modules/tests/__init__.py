@@ -61,3 +61,4 @@ from esp.program.modules.tests.test_class_creation import (
     ClassFormValidationTest,
     TeacherAvailabilityConsistencyTest,
 )
+from esp.program.modules.tests.module_progress import RegistrationProgressTagTest, RequiredModuleProgressIntegrationTest
