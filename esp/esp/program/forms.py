@@ -279,7 +279,10 @@ class StatisticsQueryForm(forms.Form):
         super().__init__(*args, **kwargs)
 
         self.fields['program_type'].choices = StatisticsQueryForm.get_program_type_choices()
-        self.fields['program_instances'].choices = StatisticsQueryForm.get_program_instance_choices(self.fields['program_type'].choices[0][0])
+        if self.fields['program_type'].choices:
+            self.fields['program_instances'].choices = StatisticsQueryForm.get_program_instance_choices(self.fields['program_type'].choices[0][0])
+        else:
+            self.fields['program_instances'].choices = []
 
         school_choices = StatisticsQueryForm.get_school_choices()
         if len(school_choices) > 0:
