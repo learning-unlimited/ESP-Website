@@ -9,7 +9,6 @@ on:
       - 'LICENSE'
       - '.gitattributes'
       - '.gitignore'
-      - 'Vagrantfile'
   pull_request:
     branches: [main]
     paths-ignore:
@@ -18,7 +17,6 @@ on:
       - 'LICENSE'
       - '.gitattributes'
       - '.gitignore'
-      - 'Vagrantfile'
   workflow_dispatch:
 
 concurrency:
@@ -40,7 +38,7 @@ jobs:
         python-version: [3.7]
     services:
       postgres:
-        image: postgres:10.8
+        image: postgres:14
         env:
           POSTGRES_USER: testuser
           POSTGRES_PASSWORD: testpassword
