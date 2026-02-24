@@ -144,8 +144,10 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   required forms, before paying by credit card.)
         modules = prog.getModules(request.user, tl)
         completedAll = True
-        for module in modules:
-            if not module.isCompleted() and module.isRequired():
+        for mod in modules:
+            if isinstance(mod, CreditCardModule_Stripe):
+                continue  # skip self — cannot be "completed" until after payment
+            if not mod.isCompleted() and mod.isRequired():
                 completedAll = False
         if not completedAll and not request.user.isAdmin(prog):
             raise ESPError("Please go back and ensure that you have completed all required steps of registration before paying by credit card.", log=False)
