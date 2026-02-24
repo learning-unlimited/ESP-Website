@@ -20,12 +20,34 @@ _BASE64_IMG_RE = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 
-# Match url(data:image/...) in inline CSS (e.g. background-image).
-# Handles: optional quotes around the URL, whitespace after (.
-_CSS_DATA_URI_RE = re.compile(
-    r'url\(\s*["\']?data:image/[^)]*\)',
+# Match the prefix of url(data:image/...) patterns in CSS.
+# Used with finditer + str.find(')') for linear-time matching,
+# avoiding polynomial backtracking from a single regex with [^)]*\).
+_CSS_DATA_URI_PREFIX_RE = re.compile(
+    r'url\(\s*["\']?data:image/',
     re.IGNORECASE,
 )
+
+
+def _strip_css_data_uris(html):
+    """Replace url(data:image/...) CSS patterns with url() in linear time."""
+    count = 0
+    parts = []
+    last = 0
+    for m in _CSS_DATA_URI_PREFIX_RE.finditer(html):
+        start = m.start()
+        if start < last:
+            # This match overlaps with a previous replacement; skip it
+            continue
+        close = html.find(')', m.end())
+        if close == -1:
+            continue
+        parts.append(html[last:start])
+        parts.append('url()')
+        last = close + 1
+        count += 1
+    parts.append(html[last:])
+    return ''.join(parts), count
 
 
 def strip_base64_images(html):
@@ -45,24 +67,21 @@ def strip_base64_images(html):
     if not html or 'data:' not in html:
         return html, 0
 
-    count = [0]
+    img_count = [0]
 
-    def _replace_img(match):
-        count[0] += 1
+    def _replace_img(_match):
+        img_count[0] += 1
         return ''
 
-    def _replace_css(match):
-        count[0] += 1
-        return 'url()'
-
     result = _BASE64_IMG_RE.sub(_replace_img, html)
-    result = _CSS_DATA_URI_RE.sub(_replace_css, result)
+    result, css_count = _strip_css_data_uris(result)
 
-    if count[0] > 0:
+    total = img_count[0] + css_count
+    if total > 0:
         logger.warning(
             "Stripped %d base64 image(s) from content (%d chars removed)",
-            count[0],
+            total,
             len(html) - len(result),
         )
 
-    return result, count[0]
+    return result, total

@@ -20,7 +20,7 @@
     'use strict';
 
     var MAX_CONCURRENT = 2;
-    var MAX_FILE_SIZE = 5 * 1024 * 1024;  // 5 MB decoded binary
+    var MAX_FILE_SIZE = 25 * 1024 * 1024;  // 25 MB decoded binary
     var UPLOAD_URL = '/admin/ajax_qsd_image_upload/';
 
     // Shared queue state across all editor instances on the page
@@ -196,7 +196,7 @@
 
             // Client-side size check before uploading
             if (file.size > MAX_FILE_SIZE) {
-                handleFailure(editor, img, 'Image exceeds the 5 MB size limit — please resize and try again');
+                handleFailure(editor, img, 'Image exceeds the 25 MB size limit — please resize and try again');
                 continue;
             }
 

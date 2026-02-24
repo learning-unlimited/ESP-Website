@@ -250,9 +250,9 @@ class QSDImageUploadTest(TestCase):
         self.assertIn('does not appear to be an image', data['data']['messages'][0])
 
     def test_upload_rejects_oversized_file(self):
-        """Files exceeding 5MB are rejected."""
+        """Files exceeding 25MB are rejected."""
         self.client.login(username='upload_admin', password='password')
-        f = self._make_image_file(size=6 * 1024 * 1024)  # 6 MB
+        f = self._make_image_file(size=26 * 1024 * 1024)  # 26 MB
         response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
         self.assertEqual(response.status_code, 400)
         import json

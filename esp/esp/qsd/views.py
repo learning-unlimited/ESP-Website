@@ -66,7 +66,7 @@ import uuid
 logger = logging.getLogger(__name__)
 
 # Image upload constraints
-QSD_IMAGE_MAX_SIZE = 5 * 1024 * 1024  # 5 MB
+QSD_IMAGE_MAX_SIZE = 25 * 1024 * 1024  # 25 MB
 QSD_IMAGE_ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
 QSD_IMAGE_UPLOAD_DIR = 'uploaded/qsd_images'
 
@@ -390,10 +390,19 @@ def ajax_qsd_image_upload(request):
     # Phase 2: Write all validated files to disk.
     saved_urls = []
     saved_paths = []
+    real_upload_dir = os.path.realpath(upload_dir)
     for uploaded_file, ext in validated_files:
         # Generate a safe, unique filename (UUID prevents collisions and path traversal)
         safe_filename = '%s.%s' % (uuid.uuid4().hex, ext)
-        file_path = os.path.join(upload_dir, safe_filename)
+        file_path = os.path.realpath(os.path.join(upload_dir, safe_filename))
+
+        # Defense-in-depth: verify resolved path stays within upload directory
+        if not file_path.startswith(real_upload_dir + os.sep):
+            logger.error("Path traversal blocked: %s not in %s", file_path, real_upload_dir)
+            return JsonResponse(
+                {'success': False, 'data': {'messages': ['Server error: invalid file path.']}},
+                status=400,
+            )
 
         # Write file to disk in chunks to handle large files safely
         try:
@@ -404,6 +413,8 @@ def ajax_qsd_image_upload(request):
             logger.error("Failed to write uploaded image to %s", file_path, exc_info=True)
             # Clean up any files already written in this batch
             for path in saved_paths:
+                if not os.path.realpath(path).startswith(real_upload_dir + os.sep):
+                    continue
                 try:
                     os.remove(path)
                 except OSError:
