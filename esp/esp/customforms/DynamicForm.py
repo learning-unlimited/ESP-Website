@@ -725,24 +725,29 @@ class FormHandler:
         from io import BytesIO
 
         response_data = self.getResponseData(self.form)
-        wbk = openpyxl.Workbook()
-        sheet = wbk.active
-        sheet.title = 'sheet 1'
+        wbk = openpyxl.Workbook(write_only=True)
+        sheet = wbk.create_sheet('sheet 1')
 
         font = Font(name="Times New Roman", bold=True)
+        from openpyxl.cell import WriteOnlyCell
 
-        # write the questions first
+        # write the questions as header row
+        header_row = []
         for i in range(0, len(response_data['questions'])):
-            cell = sheet.cell(row=1, column=i+1, value=response_data['questions'][i][1])
+            cell = WriteOnlyCell(sheet, value=response_data['questions'][i][1])
             cell.font = font
+            header_row.append(cell)
+        sheet.append(header_row)
 
         # Build up a simple dict storing question_name and question_index (=column number)
         ques_cols = {}
+        num_cols = len(response_data['questions'])
         for qid, ques in enumerate(response_data['questions']):
             ques_cols.update({ques[0]: qid})
 
-        # Now writing the answers
-        for idx, response in enumerate(response_data['answers']):
+        # Now writing the answers row by row
+        for response in response_data['answers']:
+            row = [None] * num_cols
             for ques, ans in response.items():
                 try:
                     col = ques_cols[ques]
@@ -752,14 +757,16 @@ class FormHandler:
                 if isinstance(ans, list):
                     write_ans = " ".join(ans)
                 else: write_ans = ans
-                
+
                 if isinstance(write_ans, datetime):
                     write_ans = write_ans.replace(tzinfo=None)
 
-                sheet.cell(row=idx+2, column=col+1, value=write_ans)
+                row[col] = write_ans
+            sheet.append(row)
 
         output = BytesIO()
         wbk.save(output)
+        wbk.close()
         return output
 
     def rebuildData(self):

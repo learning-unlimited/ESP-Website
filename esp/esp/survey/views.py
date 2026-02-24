@@ -390,7 +390,9 @@ def dump_survey_xlsx(user, prog, surveys, request, tl):
 
         out = BytesIO()
         wb.save(out)
+        wb.close()
         response = HttpResponse(out.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        out.close()
         response['Content-Disposition'] = 'attachment; filename=dump-%s.xlsx' % (prog.name)
         return response
     else:
