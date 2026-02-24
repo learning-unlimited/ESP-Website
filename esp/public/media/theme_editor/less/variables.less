@@ -1,4 +1,4 @@
-//
+﻿//
 // Variables
 
 // Note: Variables that are customized by theme editor
@@ -7,6 +7,11 @@
 //       selected values will be included in the final
 //       LESS output that is compiled to CSS.
 // --------------------------------------------------
+
+// Variables
+// --------------------------------------------------
+// Note (Feb 2026 upgrade): Many variables below were originally commented out but have been
+// uncommented to support Less 3.13.1+ variable resolution requirements.
 
 
 // Global values
@@ -38,32 +43,32 @@
 
 // Scaffolding
 // -------------------------
-//@bodyBackground:        @white;
-//@contentBackground:     @white;
-//@textColor:             @grayDark;
+@bodyBackground:        @white;
+@contentBackground:     @white;
+@textColor:             @grayDark;
 
 
 // Links
 // -------------------------
-//@linkColor:             #08c;
-//@linkColorHover:        darken(@linkColor, 15%);
+@linkColor:             #08c;
+@linkColorHover:        darken(@linkColor, 15%);
 
 
 // Typography
 // -------------------------
-//@sansFontFamily:        "Helvetica Neue", Helvetica, Arial, sans-serif;
+@sansFontFamily:        "Helvetica Neue", Helvetica, Arial, sans-serif;
 @serifFontFamily:       Georgia, "Times New Roman", Times, serif;
 @monoFontFamily:        Monaco, Menlo, Consolas, "Courier New", monospace;
 
-//@baseFontSize:          14px;
+@baseFontSize:          14px;
 @baseFontFamily:        @sansFontFamily;
 @baseLineHeight:        20px;
 @altFontFamily:         @serifFontFamily;
 
 @headingsFontFamily:    inherit; // empty to use BS default, @baseFontFamily
 @headingsFontWeight:    bold;    // instead of browser default, bold
-//@headingsColor:         inherit; // empty to use BS default, @textColor
-//@titleColor:         inherit; // empty to use BS default, @textColor
+@headingsColor:         inherit; // empty to use BS default, @textColor
+@titleColor:         inherit; // empty to use BS default, @textColor
 
 
 // Component sizing
@@ -92,14 +97,14 @@
 
 // Buttons
 // -------------------------
-//@btnBackground:                     @white;
+@btnBackground:                     @white;
 @btnBackgroundHighlight:            darken(@btnBackground, 10%);
 @btnBorder:                         #ccc;
-//@btnLinkColor:                    @linkColor;
+@btnLinkColor:                    @linkColor;
 
-//@btnPrimaryBackground:              @linkColor;
+@btnPrimaryBackground:              @linkColor;
 @btnPrimaryBackgroundHighlight:     darken(@btnPrimaryBackground, 10%);
-//@btnPrimaryLinkColor:             @white;
+@btnPrimaryLinkColor:             @white;
 
 @btnInfoBackground:                 #5bc0de;
 @btnInfoBackgroundHighlight:        #2f96b4;
@@ -113,9 +118,9 @@
 @btnDangerBackground:               #ee5f5b;
 @btnDangerBackgroundHighlight:      #bd362f;
 
-//@btnInverseBackground:              #444;
+@btnInverseBackground:              #444;
 @btnInverseBackgroundHighlight:     darken(@btnInverseBackground, 10%);
-//@btnInverseLinkColor:             @white;
+@btnInverseLinkColor:             @white;
 
 @btnApproveBackground:              #def7c6;
 @btnApproveBackgroundHighlight:     darken(@btnApproveBackground, 15%);
@@ -208,17 +213,17 @@
 
 // Navbar
 // -------------------------
-//@navbarCollapseWidth:             979px;
+@navbarCollapseWidth:             979px;
 @navbarCollapseDesktopWidth:      ~"calc( @{navbarCollapseWidth} + 1px)";
 
 @navbarHeight:                    40px;
-//@navbarBackgroundHighlight:       #ffffff;
-//@navbarBackground:                darken(@navbarBackgroundHighlight, 5%);
+@navbarBackgroundHighlight:       #ffffff;
+@navbarBackground:                darken(@navbarBackgroundHighlight, 5%);
 @navbarBorder:                    darken(@navbarBackground, 12%);
 
-//@navbarText:                      #777;
-//@navbarLinkColor:                 #777;
-//@navbarLinkColorHover:            @grayDark;
+@navbarText:                      #777;
+@navbarLinkColor:                 #777;
+@navbarLinkColorHover:            @grayDark;
 @navbarLinkColorActive:           @gray;
 @navbarLinkBackgroundHover:       transparent;
 @navbarLinkBackgroundActive:      darken(@navbarBackground, 5%);
@@ -226,13 +231,13 @@
 @navbarBrandColor:                @navbarLinkColor;
 
 // Inverted navbar
-//@navbarInverseBackground:                #111111;
-//@navbarInverseBackgroundHighlight:       #222222;
+@navbarInverseBackground:                #111111;
+@navbarInverseBackgroundHighlight:       #222222;
 @navbarInverseBorder:                    #252525;
 
 @navbarInverseText:                      @grayLight;
-//@navbarInverseLinkColor:                 @grayLight;
-//@navbarInverseLinkColorHover:            @white;
+@navbarInverseLinkColor:                 @grayLight;
+@navbarInverseLinkColorHover:            @white;
 @navbarInverseLinkColorActive:           @navbarInverseLinkColorHover;
 @navbarInverseLinkBackgroundHover:       transparent;
 @navbarInverseLinkBackgroundActive:      @navbarInverseBackground;
@@ -242,19 +247,19 @@
 @navbarInverseSearchBorder:              @navbarInverseBackground;
 @navbarInverseSearchPlaceholderColor:    #ccc;
 
-//@navbarInverseBrandColor:                @navbarInverseLinkColor;
+@navbarInverseBrandColor:                @navbarInverseLinkColor;
 
 
 // Sidebar
 // -------------------------
-//@sidebarText:               #777;
-//@sidebarLink:               #08c;
-//@sidebarHeader:             #651818;
-//@sidebarBackground:         #eee;
-//@sidebarLinkHover:          #07a;
-//@sidebarHover:              #fff;
-//@sidebarActive:             #fff;
-//@sidebarActiveBackground:   #07a;
+@sidebarText:               #777;
+@sidebarLink:               #08c;
+@sidebarHeader:             #651818;
+@sidebarBackground:         #eee;
+@sidebarLinkHover:          #07a;
+@sidebarHover:              #fff;
+@sidebarActive:             #fff;
+@sidebarActiveBackground:   #07a;
 
 
 // Pagination
@@ -266,7 +271,7 @@
 
 // Hero unit
 // -------------------------
-//@heroUnitBackground:              @grayLighter;
+@heroUnitBackground:              @grayLighter;
 @heroUnitHeadingColor:            inherit;
 @heroUnitLeadColor:               inherit;
 

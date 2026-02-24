@@ -40,3 +40,6 @@ local_fabfile.py
 
 # Mac
 .DS_Store
+
+# Node.js
+node_modules/
