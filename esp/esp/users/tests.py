@@ -16,9 +16,6 @@ from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission, Record, RecordType
-import six
-from six.moves import map
-from six.moves import filter
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -268,12 +265,12 @@ class ValidHostEmailFieldTest(TestCase):
         # Hardcoding 'esp.mit.edu' here might be a bad idea
         # But at least it verifies that A records work in place of MX
         for domain in [ 'esp.mit.edu', 'gmail.com', 'yahoo.com' ]:
-            self.assertTrue( ValidHostEmailField().clean( six.u('fakeaddress@%s') % domain ) == six.u('fakeaddress@%s') % domain )
+            self.assertTrue( ValidHostEmailField().clean( 'fakeaddress@%s' % domain ) == 'fakeaddress@%s' % domain )
     def testFakeDomain(self):
         # If we have an internet connection, bad domains raise ValidationError.
         # This should be the *only* kind of error we ever raise!
         try:
-            ValidHostEmailField().clean( six.u('fakeaddress@idontex.ist') )
+            ValidHostEmailField().clean( 'fakeaddress@idontex.ist' )
         except forms.ValidationError:
             pass
 
@@ -313,6 +310,9 @@ class MakeAdminTest(TestCase):
         self.user, created = ESPUser.objects.get_or_create(username='admin_test')
         self.user.is_staff = False
         self.user.is_superuser = False
+        self.target_user, created2 = ESPUser.objects.get_or_create(username='target_user')
+        self.target_user.is_staff = False
+        self.target_user.is_superuser = False
         user_role_setup()
 
     def runTest(self):
@@ -332,6 +332,26 @@ class MakeAdminTest(TestCase):
         # Make sure that an unprivileged access to /myesp/makeadmin/ returns a redirect to the login page
         response = self.client.get('/myesp/makeadmin/')
         self.assertRedirects(response, '/accounts/login/?next=/myesp/makeadmin/')
+
+        # Test the view using an admin user
+        self.user.set_password('password')
+        self.user.save()
+        self.assertTrue(self.client.login(username=self.user.username, password='password'))
+        # Test valid submission
+        response = self.client.post('/myesp/makeadmin/', {'target_user': self.target_user.id})
+        self.assertEqual(response.status_code, 200)
+        # Check that it renders the same make_admin.html template (not the success template)
+        self.assertTemplateUsed(response, 'users/make_admin.html')
+        # Check that added_user is in the context
+        self.assertEqual(response.context['added_user'], self.target_user)
+        # Check that the banner text appears in the response
+        self.assertContains(response, 'successfully made into an administrator')
+        # Check that the form given back is clean
+        self.assertIn('form', response.context)
+        self.assertFalse(response.context['form'].is_bound)
+        # Check that the target_user is actually an admin now
+        self.assertTrue(ESPUser.objects.get(id=self.target_user.id).is_staff)
+        self.assertTrue(ESPUser.objects.get(id=self.target_user.id).is_superuser)
 
 class AjaxExistenceChecker(TestCase):
     """ Check that an Ajax view is there by trying to retrieve it and checking for the desired keys
@@ -692,7 +712,7 @@ class PermissionTestCase(TestCase):
         self.assertTrue(self.user_has_perm('test'))
 
     def testImplications(self):
-        for base, implications in six.iteritems(Permission.implications):
+        for base, implications in Permission.implications.items():
             perm = self.create_role_perm_for_program(base)
             for implication in implications:
                 self.assertTrue(self.user_has_perm_for_program(implication))

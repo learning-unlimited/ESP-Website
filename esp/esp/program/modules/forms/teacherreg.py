@@ -1,6 +1,4 @@
 
-import six
-from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -113,7 +111,6 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
     message_for_directors       = forms.CharField( label='Message for Directors', widget=forms.Textarea(), required=False,
                                                    help_text='Please explain any special circumstances and equipment requests. Remember that you can be reimbursed for up to $30 (or more with the directors\' approval) for class expenses if you submit itemized receipts.' )
-
 
     def __init__(self, crmi, *args, **kwargs):
         from esp.program.controllers.classreg import get_custom_fields
@@ -267,7 +264,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             grade_min = int(grade_min)
             grade_max = int(grade_max)
             if grade_min > grade_max:
-                msg = six.u('Minimum grade must be less than the maximum grade.')
+                msg = 'Minimum grade must be less than the maximum grade.'
                 self.add_error('grade_min', msg)
                 self.add_error('grade_max', msg)
 
@@ -278,7 +275,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             class_size_optimal = int(class_size_optimal)
             class_size_max = int(class_size_max)
             if class_size_optimal > class_size_max:
-                msg = six.u('Optimal class size must be less than or equal to the maximum class size.')
+                msg = 'Optimal class size must be less than or equal to the maximum class size.'
                 self.add_error('class_size_optimal', msg)
                 self.add_error('class_size_max', msg)
 
@@ -295,7 +292,6 @@ class TeacherClassRegForm(FormWithRequiredCss):
     def _get_total_time_requested(self):
         """ Get total time requested. Do not call before validation. """
         return float(self.cleaned_data['duration']) * int(self.cleaned_data['num_sections'])
-
 
 class TeacherOpenClassRegForm(TeacherClassRegForm):
 
@@ -334,7 +330,6 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
             if field in self.fields:
                 self.fields[field].required = False
                 hide_field(self.fields[field], default)
-
 
 class TeacherEventSignupForm(FormWithRequiredCss):
     """ Form for teachers to pick interview and teacher training times. """

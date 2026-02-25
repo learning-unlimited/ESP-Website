@@ -11,9 +11,6 @@ from django.conf import settings
 import json
 from pytz import country_names
 from phonenumber_field.formfields import PhoneNumberField
-import six
-from six.moves import range
-from six.moves import zip
 
 class DropdownOtherWidget(forms.MultiWidget):
     """
@@ -377,17 +374,17 @@ class TeacherInfoForm(FormWithRequiredCss):
             affiliation_field = self.fields['affiliation']
             affiliation, school = affiliation_field.widget.decompress(cleaned_data.get('affiliation'))
             if affiliation == '':
-                msg = six.u('Please select your affiliation with %s.') % settings.INSTITUTION_NAME
+                msg = 'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
                 self.add_error('affiliation', msg)
             elif affiliation in (AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC):
                 cleaned_data['affiliation'] = affiliation_field.compress([affiliation, '']) # ignore the box
             else: # OTHER or NONE -- Make sure they entered something into the other box
                 if school.strip() == '':
-                    msg = six.u('Please select your affiliation with %s.') % settings.INSTITUTION_NAME
+                    msg = 'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
                     if affiliation == AFFILIATION_OTHER:
-                        msg = six.u('Please enter your affiliation with %s.') % settings.INSTITUTION_NAME
+                        msg = 'Please enter your affiliation with %s.' % settings.INSTITUTION_NAME
                     elif affiliation == AFFILIATION_NONE:
-                        msg = six.u('Please enter your school or employer.')
+                        msg = 'Please enter your school or employer.'
                     self.add_error('affiliation', msg)
         return cleaned_data
 

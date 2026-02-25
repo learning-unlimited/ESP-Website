@@ -5,8 +5,6 @@ Test cases for Django-ESP utilities
 
 import datetime
 import doctest
-from six.moves import map
-from six.moves import range
 try:
     import pylibmc as memcache
 except:

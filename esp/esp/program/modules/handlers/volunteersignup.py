@@ -1,5 +1,4 @@
 
-from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -33,7 +32,6 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-
 
 from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call, no_auth, meets_deadline, needs_account
 from esp.middleware import ESPError
