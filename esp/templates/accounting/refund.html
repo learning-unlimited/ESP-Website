@@ -39,8 +39,35 @@
         </tr>
     </table>
     <br />
-    <button type="submit" class="btn btn-primary">Search Transactions</button>
+    <button type="submit" id="search-transactions-btn" class="btn btn-primary">Search Transactions</button>
 </form>
+
+<script>
+    (function () {
+        var searchBtn = document.getElementById('search-transactions-btn');
+        var studentInput = document.getElementById('id_target_user');
+
+        function updateSearchButton() {
+            if (studentInput) {
+                // Determine if a student is genuinely selected based on the input text
+                searchBtn.disabled = !studentInput.value.trim();
+            }
+        }
+
+        if (studentInput) {
+            studentInput.addEventListener('input', updateSearchButton);
+            studentInput.addEventListener('change', updateSearchButton);
+            // Also listen to jQuery events on the hidden input in case autocomplete triggers it
+            if (window.$j || window.jQuery) {
+                var $ = window.$j || window.jQuery;
+                $(studentInput).on('autocompleteselect autocompletechange', function () {
+                    setTimeout(updateSearchButton, 50);
+                });
+            }
+            updateSearchButton();
+        }
+    })();
+</script>
 
 {% if selected_program %}
 <hr />
