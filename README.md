@@ -12,10 +12,23 @@ The fastest way to get a local development server running:
 ```bash
 git clone https://github.com/learning-unlimited/ESP-Website.git devsite
 cd devsite
-docker compose up --build
+make up
 ```
 
 Then visit http://localhost:8000. See the [Docker setup guide](/docs/dev/docker.rst) for full details.
+
+## Development Commands
+
+A `Makefile` is provided to simplify common development tasks. You can use the following commands:
+
+- `make help`: List all available commands.
+- `make build`: Build or rebuild Docker images.
+- `make up`: Start the development server in the background.
+- `make migrate`: Run Django migrations.
+- `make test`: Run tests.
+
+For other commands like `make shell`, `make superuser`, `make lint`, and `make clean`, run `make help`.
+
 
 
 ## Looking to contribute?
