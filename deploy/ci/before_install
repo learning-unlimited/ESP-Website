@@ -1,15 +1,9 @@
 #!/bin/bash
 set -euf -o pipefail
 
-<<<<<<< HEAD
-# Install system dependencies for Python 3.7 and database clients
-sudo apt-get update
-sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^postgres | grep -v ^libpq-dev | grep -v ^memcached | grep -v ^pip)
-=======
 sudo add-apt-repository ppa:deadsnakes/ppa
 
 sudo apt update
 
 # install pip
 sudo apt -y install python3-pip
->>>>>>> main
