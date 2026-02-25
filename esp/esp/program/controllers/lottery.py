@@ -717,13 +717,13 @@ class LotteryAssignmentController(object):
 
         fullfilename = directory + '/screwed_csv_' + tday + '.csv'
 
-        csvfile = open(fullfilename, 'wb')
+        csvfile = open(fullfilename, 'w', newline='', encoding='utf-8')
         csvwriter = csv.writer(csvfile)
 
         csvwriter.writerow(["Student", "Student ID", "StudentScrewedScore", "#Classes"])
 
         for s in studentlist:
-            csvwriter.writerow([ESPUser.objects.get(id=s[1]).name().encode('ascii', 'ignore'), s[1], s[0], len(self.get_computed_schedule(s[1]))])
+            csvwriter.writerow([ESPUser.objects.get(id=s[1]).name(), s[1], s[0], len(self.get_computed_schedule(s[1]))])
 
         csvfile.close()
         logger.info('File can be found at: %s', fullfilename)
