@@ -164,6 +164,7 @@ def lsr_submit(request, program=None):
             secid = parts[0]
             if reg_status:
                 classes_interest.add(int(secid))
+            else:
                 classes_no_interest.add(int(secid))
 
     errors = []
