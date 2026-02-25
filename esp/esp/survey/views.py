@@ -319,7 +319,7 @@ def dump_survey_xlsx(user, prog, surveys, request, tl):
                 ws = wb.create_sheet("%d %s... (%s)" % (survey_index, s.name[:17], s.category[:5]))
             else:
                 ws = wb.create_sheet(s.name)
-            
+
             ws.cell(row=1, column=1, value='Response ID')
             ws.cell(row=1, column=2, value='Timestamp')
             qs = list(s.questions.filter(per_class=False).order_by('seq', 'id'))
@@ -342,7 +342,7 @@ def dump_survey_xlsx(user, prog, surveys, request, tl):
             for a in Answer.objects.filter(question__in=qs).order_by('id'):
                 if a.survey_response_id in sr_dict and a.question_id in q_dict:
                     ws.cell(row=sr_dict[a.survey_response_id], column=q_dict[a.question_id], value=delist(a.answer))
-            
+
             # PER-CLASS QUESTIONS
             if len(s.name) > 19:
                 ws_perclass = wb.create_sheet("%d %s... (%s, per-class)" % (survey_index, s.name[:5], s.category[:5]))
@@ -383,7 +383,7 @@ def dump_survey_xlsx(user, prog, surveys, request, tl):
                     i += 1
                 if a.question_id in q_dict_perclass:
                     ws_perclass.cell(row=row, column=q_dict_perclass[a.question_id], value=delist(a.answer))
-        
+
         # Ensure at least one sheet exists
         if len(wb.sheetnames) == 0:
             wb.create_sheet("Empty")
