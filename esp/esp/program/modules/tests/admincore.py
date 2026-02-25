@@ -133,42 +133,76 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
             pmo = ProgramModuleObj.objects.get(id=int(mod_id))
             self.assertEqual(pmo.link_title, 'Custom Title for %s' % mod_id)
 
-    def _step_pmos(self):
-        """Return ProgramModuleObj queryset limited to learn/teach step modules
-        (the ones actually managed by the Module Management page)."""
-        return ProgramModuleObj.objects.filter(
-            program=self.program,
-            module__module_type__in=['learn', 'teach'],
-        )
+    def _step_module_ids(self, tl=None):
+        """Return the PMO IDs for learn/teach step modules, mirroring the handler's
+        reset loop exactly: getModules(tl=...) filtered by inModulesList()."""
+        if tl is None:
+            learn_ids = [m.id for m in self.program.getModules(tl='learn') if m.inModulesList()]
+            teach_ids = [m.id for m in self.program.getModules(tl='teach') if m.inModulesList()]
+            return learn_ids + teach_ids
+        return [m.id for m in self.program.getModules(tl=tl) if m.inModulesList()]
 
     def test_module_management_resets_link_title(self):
         """POSTing with default_link_title resets all link_title overrides to empty."""
         self.client.login(username='admin_modmgmt', password='password')
 
-        for pmo in self._step_pmos():
+        # Mirror the handler's reset loop: getModules filtered by inModulesList()
+        step_ids = self._step_module_ids()
+
+        for mid in step_ids:
+            pmo = ProgramModuleObj.objects.get(id=mid)
             pmo.link_title = "Custom Title"
             pmo.save()
 
         r = self.client.post(self._modules_url(), {'default_link_title': 'on'})
         self.assertIn(r.status_code, [200, 302])
 
-        for pmo in self._step_pmos():
+        for mid in step_ids:
+            pmo = ProgramModuleObj.objects.get(id=mid)
             self.assertEqual(pmo.link_title, "")
 
     def test_module_management_link_title_reset_independent(self):
         """default_link_title alone triggers the reset without requiring other reset flags."""
         self.client.login(username='admin_modmgmt', password='password')
 
-        for pmo in self._step_pmos():
+        # Mirror the handler's reset loop: getModules filtered by inModulesList()
+        learn_mods = [m for m in self.program.getModules(tl='learn') if m.inModulesList()]
+        teach_mods = [m for m in self.program.getModules(tl='teach') if m.inModulesList()]
+        step_ids = [m.id for m in learn_mods + teach_mods]
+
+        # The handler's override section always forces certain modules' seq/required
+        # (e.g. RegProfileModule -> seq=0, CreditCard -> seq=10000, etc.) on every
+        # POST regardless of which reset flags are sent.  Exclude those so we can
+        # test seq independence on unaffected modules.
+        forced_override_names = frozenset({
+            'RegProfileModule', 'StudentRegConfirm', 'AvailabilityModule',
+            'StudentRegTwoPhase',
+        })
+        non_override_ids = [
+            m.id for m in learn_mods + teach_mods
+            if type(m).__name__ not in forced_override_names
+            and 'CreditCardModule' not in type(m).__name__
+            and 'AcknowledgementModule' not in type(m).__name__
+        ]
+
+        for mid in step_ids:
+            pmo = ProgramModuleObj.objects.get(id=mid)
             pmo.link_title = "Should be cleared"
+            pmo.save()
+
+        for mid in non_override_ids:
+            pmo = ProgramModuleObj.objects.get(id=mid)
             pmo.seq = 999
             pmo.save()
 
-        # Only send default_link_title — seq and required should NOT change
+        # Only send default_link_title — seq should NOT change for non-override modules
         r = self.client.post(self._modules_url(), {'default_link_title': 'on'})
         self.assertIn(r.status_code, [200, 302])
 
-        for pmo in self._step_pmos():
+        for mid in step_ids:
+            pmo = ProgramModuleObj.objects.get(id=mid)
             self.assertEqual(pmo.link_title, "")
+        for mid in non_override_ids:
+            pmo = ProgramModuleObj.objects.get(id=mid)
             # seq should be unchanged (not reset) because default_seq was not sent
             self.assertEqual(pmo.seq, 999)
