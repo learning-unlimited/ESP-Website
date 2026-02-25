@@ -55,6 +55,11 @@ admin_site.register(ESPUser, ESPUserAdmin)
 class RecordTypeAdmin(admin.ModelAdmin):
     list_display = ['id', 'name', 'description']
     search_fields = ['name', 'description']
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('name',)
+        return self.readonly_fields
 admin_site.register(RecordType, RecordTypeAdmin)
 
 class RecordAdmin(admin.ModelAdmin):
