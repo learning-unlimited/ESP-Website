@@ -88,7 +88,7 @@ class ThemesTest(TestCase):
         # should be doing all these tests in some sort of tmpdir to avoid
         # touching anything of the user's.
         images_dir = os.path.join(settings.MEDIA_ROOT, 'images', 'theme')
-        # Really we should use a tempdir, but on vagrant it may be on a
+        # Really we should use a tempdir, but on Docker it may be on a
         # different file system, which causes problems, so we do a hackier
         # thing instead.
         images_backup_dir = os.path.join(settings.MEDIA_ROOT, 'images',
