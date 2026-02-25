@@ -1101,10 +1101,9 @@ def statistics(request, program=None):
             result_dict['num_users'] = users.count()
             user_list = list(users)
             # Batch-fetch latest profile per user to avoid N+1
-            user_ids = [u.id for u in user_list]
             profile_by_user = {}
-            if user_ids:
-                for p in RegistrationProfile.objects.filter(user_id__in=user_ids).select_related('user').order_by('user_id', '-last_ts'):
+            if user_list:
+                for p in RegistrationProfile.objects.filter(user__in=users).select_related('user').order_by('user_id', '-last_ts'):
                     if p.user_id not in profile_by_user:
                         profile_by_user[p.user_id] = p
             profiles = [profile_by_user.get(u.id) or RegistrationProfile(user=u) for u in user_list]
@@ -1112,7 +1111,7 @@ def statistics(request, program=None):
             #   Accumulate desired information for selected query
             from esp.program import statistics as statistics_functions
             if hasattr(statistics_functions, form.cleaned_data['query']):
-                context['result'] = getattr(statistics_functions, form.cleaned_data['query'])(form, programs, user_list, profiles, result_dict)
+                context['result'] = getattr(statistics_functions, form.cleaned_data['query'])(form, programs, users, profiles, result_dict)
             else:
                 context['result'] = 'Unsupported query'
 
