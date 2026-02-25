@@ -3,13 +3,31 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 {% if theme %}<!-- Theme: {{ theme.theme_name }} -->{% endif %}
   <head>
-    <title>{% block fulltitle %}{% endblock %}</title>
+
   {% block meta %}
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <meta name="description" content="{% block description %}{% endblock %}" />
-    <meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
-    <meta http-equiv="X-UA-Compatible" content="chrome=1"/>
+    <meta name="description" content="{{ theme.theme_name }}" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- OpenGraph Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="{% block fulltitle %}{{ theme.theme_name }}{% endblock %}" />
+    <meta property="og:description" content="{{ theme.theme_name }}" />
+    <meta property="og:url" content="{{ request.build_absolute_uri }}" />
+
+    {% if theme and theme.logo %}
+      <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ theme.logo.url }}" />
+    {% endif %}
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{ theme.theme_name }}" />
+    <meta name="twitter:description" content="{{ theme.theme_name }}" />
+
+    {% if theme and theme.logo %}
+      <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{{ theme.logo.url }}" />
+    {% endif %}
+
   {% endblock meta %}
 
     {% block stylesheets %}
