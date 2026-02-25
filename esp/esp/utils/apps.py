@@ -11,8 +11,7 @@ def run_install(sender, **kwargs):
     function; in that case we should simply do nothing rather than error.
     """
     models_module = sender.models_module
-    if hasattr(models_module, "install"):
-        models_module.install()
+    models_module.install()
 
 
 class InstallConfig(AppConfig):
@@ -23,6 +22,7 @@ class InstallConfig(AppConfig):
 
     def ready(self):
         signals.post_migrate.connect(run_install, sender=self)
+
 
 class UtilsConfig(InstallConfig):
     name = 'esp.utils'

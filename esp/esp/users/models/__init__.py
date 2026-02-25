@@ -1,6 +1,4 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
 from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -236,20 +234,9 @@ class BaseESPUser(object):
             # Grade G at year Y has YOG = Y + (12 - G) + 1 (if before summer)
             try:
                 grade_int = int(grade)
-                if not hasattr(prog, 'program_schoolyear'):
-                    from django.apps import apps
-                    Program = apps.get_model('program', 'Program')
-                    if isinstance(prog, (int, str)):
-                        prog_obj = Program.objects.get(id=prog)
-                    else:
-                        prog_obj = None # Should not happen if views.py is correct
-                else:
-                    prog_obj = prog
-
-                if prog_obj:
-                    schoolyear = cls.program_schoolyear(prog_obj)
-                    yog = schoolyear + (12 - grade_int)
-                    query_set = query_set.filter(registrationprofile__student_info__graduation_year = yog, registrationprofile__program = prog_obj)
+                schoolyear = cls.program_schoolyear(prog)
+                yog = schoolyear + (12 - grade_int)
+                query_set = query_set.filter(registrationprofile__student_info__graduation_year = yog, registrationprofile__program = prog)
             except (ValueError, TypeError, cls.DoesNotExist):
                 pass
 
@@ -262,7 +249,7 @@ class BaseESPUser(object):
                 # We want to include names starting with end_char, so we use a trick or just range.
                 # String range "A" to "G" includes "G" but stops before "H".
                 # Django's __range is inclusive.
-                query_set = query_set.filter(last_name__range=(start_char, end_char + 'z'))
+                query_set = query_set.filter(last_name__range=(start_char, end_char + '\uffff'))
 
         if QObject:
             query_set = query_set.filter(QObject)

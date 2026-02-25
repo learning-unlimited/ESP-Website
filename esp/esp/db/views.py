@@ -44,12 +44,18 @@ def ajax_autocomplete(request):
     # import the model
     Model = getattr(__import__(model_module, (), (), [str(model_name)]), model_name)
 
-    kwargs = {'grade': grade, 'last_name_range': last_name_range, 'prog': prog}
+    from esp.program.models import Program
+    try:
+        prog_obj = Program.objects.get(id=prog)
+    except (Program.DoesNotExist, ValueError):
+        prog_obj = None
+
+    kwargs = {'grade': grade, 'last_name_range': last_name_range, 'prog': prog_obj}
 
     if hasattr(Model.objects, ajax_func):
-        query_set = autocomplete_wrapper(getattr(Model.objects, ajax_func), data, request.user.is_staff, prog, **kwargs)
+        query_set = autocomplete_wrapper(getattr(Model.objects, ajax_func), data, request.user.is_staff, prog_obj, **kwargs)
     else:
-        query_set = autocomplete_wrapper(getattr(Model, ajax_func), data, request.user.is_staff, prog, **kwargs)
+        query_set = autocomplete_wrapper(getattr(Model, ajax_func), data, request.user.is_staff, prog_obj, **kwargs)
 
     output = list(query_set[:limit])
     output2 = []
